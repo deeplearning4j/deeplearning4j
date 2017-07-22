@@ -236,15 +236,27 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                 while (!externalSource.isEmpty()) {
                     INDArray compressed = externalSource.poll();
 
+
+
+
                     // if we have multiple devices without p2p support - just duplicate messages right from host side
                     if (relocatable) {
                         try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
                                         .getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
                             INDArray compressed_copy = compressed.unsafeDuplication(true);
-                            INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
+
+                            int encoding = compressed.data().getInt(3);
+                            if (encoding == 0)
+                                Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
+                            else
+                                Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
                         }
                     } else {
-                        INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                        int encoding = compressed.data().getInt(3);
+                        if (encoding == 0)
+                            Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                        else
+                            Nd4j.getExecutioner().bitmapDecode(compressed, updates);
                     }
                     cnt++;
                     ent++;
@@ -305,10 +317,18 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                         try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
                                         .getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
                             INDArray compressed_copy = compressed.unsafeDuplication(true);
-                            INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
+                            int encoding = compressed.data().getInt(3);
+                            if (encoding == 0)
+                                Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
+                            else
+                                Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
                         }
                     } else {
-                        INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                        int encoding = compressed.data().getInt(3);
+                        if (encoding == 0)
+                            Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                        else
+                            Nd4j.getExecutioner().bitmapDecode(compressed, updates);
                     }
                     cnt++;
                     ent++;
