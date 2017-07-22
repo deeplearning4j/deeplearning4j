@@ -34,7 +34,7 @@ import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterS
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
-import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
+import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -69,7 +69,7 @@ public class MNISTOptimizationTest {
                                         .iterationTerminationConditions(
                                                         new MaxTimeIterationTerminationCondition(5, TimeUnit.MINUTES),
                                                         new MaxScoreIterationTerminationCondition(4.6) //Random score: -log_e(0.1) ~= 2.3
-                                        ).scoreCalculator(new DataSetLossCalculator(new MnistDataSetIterator(64, 2000, false, false, true, 123), true)).modelSaver(new InMemoryModelSaver<MultiLayerNetwork>()).build();
+                                        ).scoreCalculator(new DataSetLossCalculator(new MnistDataSetIterator(64, 2000, false, false, true, 123), true)).modelSaver(new InMemoryModelSaver()).build();
 
         //Define: network config (hyperparameter space)
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
@@ -97,8 +97,8 @@ public class MNISTOptimizationTest {
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
 
         //Define configuration:
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls, commands);
-        DataProvider<Object> dataProvider = new MnistDataSetProvider();
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
+        DataProvider dataProvider = new MnistDataSetProvider();
 
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterMNISTSmall\\").getAbsolutePath();
@@ -110,17 +110,17 @@ public class MNISTOptimizationTest {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation> configuration =
-                        new OptimizationConfiguration.Builder<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation>()
+        OptimizationConfiguration configuration =
+                        new OptimizationConfiguration.Builder()
                                         .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                                        .modelSaver(new LocalMultiLayerNetworkSaver(modelSavePath))
+                                        .modelSaver(new FileModelSaver(modelSavePath))
                                         .scoreFunction(new TestSetLossScoreFunction(true))
                                         .terminationConditions(new MaxTimeCondition(120, TimeUnit.MINUTES),
                                                         new MaxCandidatesCondition(100))
                                         .build();
 
-        IOptimizationRunner<DL4JConfiguration, MultiLayerNetwork, Evaluation> runner =
-                        new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<Evaluation>());
+        IOptimizationRunner runner =
+                        new LocalOptimizationRunner(configuration, new MultiLayerNetworkTaskCreator());
 
         //        ArbiterUIServer server = ArbiterUIServer.getInstance();
         //        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
@@ -132,7 +132,7 @@ public class MNISTOptimizationTest {
     }
 
 
-    private static class MnistDataSetProvider implements DataProvider<Object> {
+    private static class MnistDataSetProvider implements DataProvider {
 
         @Override
         public DataSetIterator trainData(Map<String, Object> dataParameters) {
@@ -153,6 +153,11 @@ public class MNISTOptimizationTest {
         @Override
         public DataSetIterator testData(Map<String, Object> dataParameters) {
             return trainData(dataParameters);
+        }
+
+        @Override
+        public Class<?> getDataType() {
+            return DataSetIterator.class;
         }
 
         @Override

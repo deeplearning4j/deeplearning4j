@@ -37,7 +37,7 @@ import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterS
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
-import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
+import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.impl.TestSetAccuracyScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
 import org.deeplearning4j.arbiter.util.LeafUtils;
@@ -357,31 +357,31 @@ public class TestMultiLayerSpace {
         DataSetIterator mnistTest = new ExistingDataSetIterator(
                         Collections.singletonList(new DataSet(Nd4j.create(1, 1, 28, 28), Nd4j.create(10))));
 
-        DataProvider<Object> dataProvider = new DataSetIteratorProvider(mnistTrain, mnistTest);
+        DataProvider dataProvider = new DataSetIteratorProvider(mnistTrain, mnistTest);
 
         String baseSaveDirectory = "arbiterExample2/";
         File f = new File(baseSaveDirectory);
         if (f.exists())
             f.delete();
         f.mkdir();
-        ResultSaver<DL4JConfiguration, MultiLayerNetwork, Object> modelSaver =
-                        new LocalMultiLayerNetworkSaver<>(baseSaveDirectory);
+        ResultSaver modelSaver =
+                        new FileModelSaver(baseSaveDirectory);
 
-        ScoreFunction<MultiLayerNetwork, Object> scoreFunction = new TestSetAccuracyScoreFunction();
+        ScoreFunction scoreFunction = new TestSetAccuracyScoreFunction();
 
         int maxCandidates = 4;
         TerminationCondition[] terminationConditions;
         terminationConditions = new TerminationCondition[] {new MaxCandidatesCondition(maxCandidates)};
 
         //Given these configuration options, let's put them all together:
-        OptimizationConfiguration<DL4JConfiguration, MultiLayerNetwork, Object, Object> configuration =
-                        new OptimizationConfiguration.Builder<DL4JConfiguration, MultiLayerNetwork, Object, Object>()
-                                        .candidateGenerator(new RandomSearchGenerator<>(hyperparameterSpace, null))
+        OptimizationConfiguration configuration =
+                        new OptimizationConfiguration.Builder()
+                                        .candidateGenerator(new RandomSearchGenerator(hyperparameterSpace, null))
                                         .dataProvider(dataProvider).modelSaver(modelSaver).scoreFunction(scoreFunction)
                                         .terminationConditions(terminationConditions).build();
 
-        IOptimizationRunner<DL4JConfiguration, MultiLayerNetwork, Object> runner =
-                        new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<>());
+        IOptimizationRunner runner =
+                        new LocalOptimizationRunner(configuration, new MultiLayerNetworkTaskCreator());
         runner.execute();
 
         assertEquals(maxCandidates, runner.getResults().size());
@@ -398,7 +398,7 @@ public class TestMultiLayerSpace {
                         new MultiLayerSpace.Builder().addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build())
                                         .l1(l1Hyperparam).l2(l2Hyperparam).build();
 
-        CandidateGenerator c = new RandomSearchGenerator<>(hyperparameterSpace, null);
+        CandidateGenerator c = new RandomSearchGenerator(hyperparameterSpace, null);
 
         Candidate candidate = c.getCandidate();
     }

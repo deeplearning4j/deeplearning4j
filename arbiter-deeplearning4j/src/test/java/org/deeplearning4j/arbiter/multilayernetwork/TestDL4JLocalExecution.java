@@ -36,7 +36,7 @@ import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterS
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
-import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
+import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -84,8 +84,8 @@ public class TestDL4JLocalExecution {
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
 
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls, commands);
-        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
+        DataProvider dataProvider = new DataSetIteratorFactoryProvider();
 
 
         //        String modelSavePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/");
@@ -99,17 +99,17 @@ public class TestDL4JLocalExecution {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation> configuration =
-                        new OptimizationConfiguration.Builder<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation>()
+        OptimizationConfiguration configuration =
+                        new OptimizationConfiguration.Builder()
                                         .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                                        .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelSavePath))
+                                        .modelSaver(new FileModelSaver(modelSavePath))
                                         .scoreFunction(new TestSetLossScoreFunction())
                                         .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                                                         new MaxCandidatesCondition(100))
                                         .build();
 
-        IOptimizationRunner<DL4JConfiguration, MultiLayerNetwork, Evaluation> runner = new LocalOptimizationRunner<>(
-                        configuration, new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()));
+        IOptimizationRunner runner = new LocalOptimizationRunner(
+                        configuration, new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()));
 
         //        ArbiterUIServer server = ArbiterUIServer.getInstance();
         //        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
@@ -141,9 +141,9 @@ public class TestDL4JLocalExecution {
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
 
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new GridSearchCandidateGenerator<>(mls, 5,
+        CandidateGenerator candidateGenerator = new GridSearchCandidateGenerator(mls, 5,
                         GridSearchCandidateGenerator.Mode.Sequential, commands);
-        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
+        DataProvider dataProvider = new DataSetIteratorFactoryProvider();
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterDL4JTest/").getAbsolutePath();
 
@@ -155,17 +155,17 @@ public class TestDL4JLocalExecution {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation> configuration =
-                        new OptimizationConfiguration.Builder<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation>()
+        OptimizationConfiguration configuration =
+                        new OptimizationConfiguration.Builder()
                                         .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                                        .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelSavePath))
+                                        .modelSaver(new FileModelSaver(modelSavePath))
                                         .scoreFunction(new TestSetLossScoreFunction())
                                         .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                                                         new MaxCandidatesCondition(100))
                                         .build();
 
-        IOptimizationRunner<DL4JConfiguration, MultiLayerNetwork, Evaluation> runner = new LocalOptimizationRunner<>(
-                        configuration, new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()));
+        IOptimizationRunner runner = new LocalOptimizationRunner(
+                        configuration, new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()));
 
         //        ArbiterUIServer server = ArbiterUIServer.getInstance();
         //        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
@@ -184,7 +184,7 @@ public class TestDL4JLocalExecution {
                                         .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
                                         .scoreCalculator(new DataSetLossCalculator(new IrisDataSetIterator(150, 150),
                                                         true))
-                                        .modelSaver(new InMemoryModelSaver<MultiLayerNetwork>()).build();
+                                        .modelSaver(new InMemoryModelSaver()).build();
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
 
@@ -206,8 +206,8 @@ public class TestDL4JLocalExecution {
 
         //Define configuration:
 
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls, commands);
-        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
+        DataProvider dataProvider = new DataSetIteratorFactoryProvider();
 
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterDL4JTest2\\").getAbsolutePath();
@@ -220,17 +220,17 @@ public class TestDL4JLocalExecution {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation> configuration =
-                        new OptimizationConfiguration.Builder<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation>()
+        OptimizationConfiguration configuration =
+                        new OptimizationConfiguration.Builder()
                                         .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                                        .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelSavePath))
+                                        .modelSaver(new FileModelSaver(modelSavePath))
                                         .scoreFunction(new TestSetLossScoreFunction())
                                         .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                                                         new MaxCandidatesCondition(100))
                                         .build();
 
-        IOptimizationRunner<DL4JConfiguration, MultiLayerNetwork, Evaluation> runner = new LocalOptimizationRunner<>(
-                        configuration, new MultiLayerNetworkTaskCreator<>(new ClassificationEvaluator()));
+        IOptimizationRunner runner = new LocalOptimizationRunner(
+                        configuration, new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()));
 
         /* ArbiterUIServer server = new ArbiterUIServer();
         String[] str = new String[]{"server", "dropwizard.yml"};

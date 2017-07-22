@@ -17,7 +17,7 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
-public class DataSetIteratorFactoryProvider implements DataProvider<DataSetIteratorFactory> {
+public class DataSetIteratorFactoryProvider implements DataProvider {
 
     public final static String FACTORY_KEY = "org.deeplearning4j.arbiter.data.data.factory";
 
@@ -45,6 +45,11 @@ public class DataSetIteratorFactoryProvider implements DataProvider<DataSetItera
     @Override
     public DataSetIteratorFactory testData(Map<String, Object> dataParameters) {
         return create(dataParameters);
+    }
+
+    @Override
+    public Class<?> getDataType() {
+        return DataSetIteratorFactory.class;
     }
 
     private DataSetIteratorFactory create(Map<String, Object> dataParameters) {

@@ -18,8 +18,7 @@
 package org.deeplearning4j.arbiter.computationgraph;
 
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
-import org.deeplearning4j.arbiter.GraphConfiguration;
-import org.deeplearning4j.arbiter.evaluator.graph.GraphClassificationDataSetEvaluator;
+import org.deeplearning4j.arbiter.evaluator.multilayer.ClassificationEvaluator;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
 import org.deeplearning4j.arbiter.multilayernetwork.MnistDataSetIteratorFactory;
@@ -35,7 +34,7 @@ import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterS
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
-import org.deeplearning4j.arbiter.saver.local.graph.LocalComputationGraphSaver;
+import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
 import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -43,7 +42,6 @@ import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculatorCG;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
-import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -85,8 +83,8 @@ public class TestGraphLocalExecution {
                         .setOutputs("out").numEpochs(3).pretrain(false).backprop(true).build();
 
         //Define configuration:
-        CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls, commands);
-        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
+        DataProvider dataProvider = new DataSetIteratorFactoryProvider();
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterDL4JTest\\").getAbsolutePath();
 
@@ -98,17 +96,17 @@ public class TestGraphLocalExecution {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration<GraphConfiguration, ComputationGraph, Object, Evaluation> configuration =
-                        new OptimizationConfiguration.Builder<GraphConfiguration, ComputationGraph, Object, Evaluation>()
+        OptimizationConfiguration configuration =
+                        new OptimizationConfiguration.Builder()
                                         .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                                        .modelSaver(new LocalComputationGraphSaver<Evaluation>(modelSavePath))
-                                        .scoreFunction(ScoreFunctions.testSetLossGraphDataSet(true))
+                                        .modelSaver(new FileModelSaver(modelSavePath))
+                                        .scoreFunction(ScoreFunctions.testSetLoss(true))
                                         .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                                                         new MaxCandidatesCondition(100))
                                         .build();
 
-        IOptimizationRunner<GraphConfiguration, ComputationGraph, Evaluation> runner = new LocalOptimizationRunner<>(
-                        configuration, new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()));
+        IOptimizationRunner runner = new LocalOptimizationRunner(
+                        configuration, new ComputationGraphTaskCreator(new ClassificationEvaluator()));
 
         //        UIServer server = UIServer.getInstance();
         //        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
@@ -126,7 +124,7 @@ public class TestGraphLocalExecution {
                                         .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
                                         .scoreCalculator(new DataSetLossCalculatorCG(new IrisDataSetIterator(150, 150),
                                                         true))
-                                        .modelSaver(new InMemoryModelSaver<ComputationGraph>()).build();
+                                        .modelSaver(new InMemoryModelSaver()).build();
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
 
@@ -148,8 +146,8 @@ public class TestGraphLocalExecution {
 
         //Define configuration:
 
-        CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(cgs, commands);
-        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(cgs, commands);
+        DataProvider dataProvider = new DataSetIteratorFactoryProvider();
 
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterDL4JTest2CG\\").getAbsolutePath();
@@ -162,18 +160,18 @@ public class TestGraphLocalExecution {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration<GraphConfiguration, ComputationGraph, Object, Evaluation> configuration =
-                        new OptimizationConfiguration.Builder<GraphConfiguration, ComputationGraph, Object, Evaluation>()
+        OptimizationConfiguration configuration =
+                        new OptimizationConfiguration.Builder()
                                         .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                                        .modelSaver(new LocalComputationGraphSaver<Evaluation>(modelSavePath))
-                                        .scoreFunction(ScoreFunctions.testSetLossGraphDataSet(true))
+                                        .modelSaver(new FileModelSaver(modelSavePath))
+                                        .scoreFunction(ScoreFunctions.testSetLoss(true))
                                         .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                                                         new MaxCandidatesCondition(100))
                                         .build();
 
 
-        IOptimizationRunner<GraphConfiguration, ComputationGraph, Evaluation> runner = new LocalOptimizationRunner<>(
-                        configuration, new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()));
+        IOptimizationRunner runner = new LocalOptimizationRunner(
+                        configuration, new ComputationGraphTaskCreator(new ClassificationEvaluator()));
 
         //        ArbiterUIServer server = ArbiterUIServer.getInstance();
         //        runner.addListeners(new UIOptimizationRunnerStatusListener(server));

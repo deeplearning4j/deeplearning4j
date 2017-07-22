@@ -15,7 +15,7 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.saver.local.multilayer;
+package org.deeplearning4j.arbiter.saver.local;
 
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -24,11 +24,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
+import org.deeplearning4j.arbiter.GraphConfiguration;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
@@ -36,6 +40,9 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Basic MultiLayerNetwork saver. Saves config, parameters and score to: baseDir/0/, baseDir/1/, etc
@@ -47,13 +54,13 @@ import java.nio.file.Files;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
-public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfiguration, MultiLayerNetwork, A> {
+public class FileModelSaver implements ResultSaver {
     @JsonProperty
     private String path;
     private File fPath;
 
     @JsonCreator
-    public LocalMultiLayerNetworkSaver(String path) {
+    public FileModelSaver(String path) {
         if (path == null)
             throw new NullPointerException();
         this.path = path;
@@ -64,64 +71,77 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfigura
             throw new IllegalArgumentException("Invalid path: is not directory. " + path);
         }
 
-        log.info("LocalMultiLayerNetworkSaver saving networks to local directory: {}", path);
+        log.info("FileModelSaver saving networks to local directory: {}", path);
     }
 
     @Override
-    public ResultReference<DL4JConfiguration, MultiLayerNetwork, A> saveModel(
-                    OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A> result) throws IOException {
+    public ResultReference saveModel( OptimizationResult result) throws IOException {
         String dir = new File(path, result.getIndex() + "/").getAbsolutePath();
 
         File f = new File(dir);
         f.mkdir();
 
-        File paramsFile = new File(FilenameUtils.concat(dir, "params.bin"));
-        File jsonFile = new File(FilenameUtils.concat(dir, "config.json"));
+        File modelFile = new File(FilenameUtils.concat(dir, "params.bin"));
         File scoreFile = new File(FilenameUtils.concat(dir, "score.txt"));
         File additionalResultsFile = new File(FilenameUtils.concat(dir, "additionalResults.bin"));
         File esConfigFile = new File(FilenameUtils.concat(dir, "earlyStoppingConfig.bin"));
         File numEpochsFile = new File(FilenameUtils.concat(dir, "numEpochs.txt"));
 
         FileUtils.writeStringToFile(scoreFile, String.valueOf(result.getScore()));
-        String jsonConfig = result.getCandidate().getValue().getMultiLayerConfiguration().toJson();
-        FileUtils.writeStringToFile(jsonFile, jsonConfig);
+
+        Model m = (Model)result.getResult();
+        ModelSerializer.writeModel(m, modelFile, true);
 
 
-        if (result.getResult() != null) {
-            INDArray params = result.getResult().params();
-            try (DataOutputStream dos = new DataOutputStream(Files.newOutputStream(paramsFile.toPath()))) {
-                Nd4j.write(params, dos);
-            }
-        }
-
-
-        A additionalResults = result.getModelSpecificResults();
-        if (additionalResults != null) {
+        Object additionalResults = result.getModelSpecificResults();
+        if (additionalResults != null && additionalResults instanceof Serializable) {
             try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(additionalResultsFile))) {
                 oos.writeObject(additionalResults);
             }
         }
 
         //Write early stopping configuration (if present) to file:
-        EarlyStoppingConfiguration esc = result.getCandidate().getValue().getEarlyStoppingConfiguration();
+        int nEpochs;
+        EarlyStoppingConfiguration esc;
+        if(result.getCandidate().getValue() instanceof DL4JConfiguration){
+            DL4JConfiguration c = ((DL4JConfiguration)result.getCandidate().getValue());
+            esc = c.getEarlyStoppingConfiguration();
+            nEpochs = c.getNumEpochs();
+        } else {
+            GraphConfiguration c = ((GraphConfiguration)result.getCandidate().getValue());
+            esc = c.getEarlyStoppingConfiguration();
+            nEpochs = c.getNumEpochs();
+        }
+
+
         if (esc != null) {
             try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(esConfigFile))) {
                 oos.writeObject(esc);
             }
         } else {
-            int nEpochs = result.getCandidate().getValue().getNumEpochs();
             FileUtils.writeStringToFile(numEpochsFile, String.valueOf(nEpochs));
         }
 
         log.debug("Deeplearning4j model result (id={}, score={}) saved to directory: {}", result.getIndex(),
                         result.getScore(), dir);
 
-        return new LocalFileMultiLayerNetworkResultReference(result.getIndex(), dir, jsonFile, paramsFile, scoreFile,
+        boolean isGraph = m instanceof ComputationGraph;
+        return new LocalFileNetResultReference(result.getIndex(), dir, isGraph, modelFile, scoreFile,
                         additionalResultsFile, esConfigFile, numEpochsFile, result.getCandidate());
     }
 
     @Override
+    public List<Class<?>> getSupportedCandidateTypes() {
+        return Collections.<Class<?>>singletonList(Object.class);
+    }
+
+    @Override
+    public List<Class<?>> getSupportedModelTypes() {
+        return Arrays.<Class<?>>asList(MultiLayerNetwork.class, ComputationGraph.class);
+    }
+
+    @Override
     public String toString() {
-        return "LocalMultiLayerNetworkSaver(path=" + path + ")";
+        return "FileModelSaver(path=" + path + ")";
     }
 }

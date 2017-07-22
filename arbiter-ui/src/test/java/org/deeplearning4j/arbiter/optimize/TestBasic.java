@@ -20,9 +20,7 @@ import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpa
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
-import org.deeplearning4j.arbiter.saver.local.graph.LocalComputationGraphSaver;
-import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
-import org.deeplearning4j.arbiter.scoring.graph.GraphTestSetLossScoreFunctionDataSet;
+import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
@@ -105,7 +103,7 @@ public class TestBasic {
         OptimizationConfiguration<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation> configuration =
                 new OptimizationConfiguration.Builder<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation>()
                         .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                        .modelSaver(new LocalMultiLayerNetworkSaver(modelSavePath))
+                        .modelSaver(new FileModelSaver(modelSavePath))
                         .scoreFunction(new TestSetLossScoreFunction(true))
                         .terminationConditions(new MaxTimeCondition(120, TimeUnit.MINUTES),
                                 new MaxCandidatesCondition(100))

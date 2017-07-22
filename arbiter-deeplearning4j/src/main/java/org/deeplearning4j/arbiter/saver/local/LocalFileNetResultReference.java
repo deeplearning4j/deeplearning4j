@@ -15,35 +15,36 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.saver.local.multilayer;
+package org.deeplearning4j.arbiter.saver.local;
 
 import lombok.AllArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
+import org.deeplearning4j.arbiter.GraphConfiguration;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
+import org.deeplearning4j.util.ModelSerializer;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 
 /**
- * Result reference for MultiLayerNetworks saved to local file system
- *
- * @param <A> Additional evaluation type
+ * Result reference for MultiLayerNetworks and ComputationGraphs saved to local file system
  */
 @AllArgsConstructor
-public class LocalFileMultiLayerNetworkResultReference<A>
-                implements ResultReference<DL4JConfiguration, MultiLayerNetwork, A> {
+public class LocalFileNetResultReference implements ResultReference {
 
     private int index;
     private String dir;
-    private File configFile;
-    private File networkParamsFile;
+    private boolean isGraph;
+    private File modelFile;
     private File scoreFile;
     private File additionalResultsFile;
     private File esConfigFile;
@@ -51,17 +52,15 @@ public class LocalFileMultiLayerNetworkResultReference<A>
     private Candidate<DL4JConfiguration> candidate;
 
     @Override
-    public OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A> getResult() throws IOException {
-        String jsonConfig = FileUtils.readFileToString(configFile);
-        INDArray params;
-        try (DataInputStream dis = new DataInputStream(new FileInputStream(networkParamsFile))) {
-            params = Nd4j.read(dis);
+    public OptimizationResult getResult() throws IOException {
+
+        Model m;
+        if(isGraph){
+            m = ModelSerializer.restoreComputationGraph(modelFile, false);
+        } else {
+            m = ModelSerializer.restoreMultiLayerNetwork(modelFile, false);
         }
 
-        MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(jsonConfig);
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-        net.setParams(params);
 
         String scoreStr = FileUtils.readFileToString(scoreFile);
         //TODO: properly parsing. Probably want to store additional info other than just score...
@@ -81,13 +80,19 @@ public class LocalFileMultiLayerNetworkResultReference<A>
             nEpochs = Integer.parseInt(numEpochs);
         }
 
-        DL4JConfiguration dl4JConfiguration = new DL4JConfiguration(conf, earlyStoppingConfiguration, nEpochs);
+        Object dl4jConfiguration;
+        if(isGraph){
+            dl4jConfiguration = new GraphConfiguration(((ComputationGraph)m).getConfiguration(), earlyStoppingConfiguration, nEpochs);
+        } else {
+            dl4jConfiguration = new DL4JConfiguration(((MultiLayerNetwork)m).getLayerWiseConfigurations(), earlyStoppingConfiguration, nEpochs);
+        }
 
 
-        A additionalResults;
+
+        Object additionalResults;
         if (additionalResultsFile.exists()) {
             try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(additionalResultsFile))) {
-                additionalResults = (A) ois.readObject();
+                additionalResults = ois.readObject();
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Error loading additional results", e);
             }
@@ -95,11 +100,11 @@ public class LocalFileMultiLayerNetworkResultReference<A>
             additionalResults = null;
         }
 
-        return new OptimizationResult<>(candidate, net, d, index, additionalResults, null);
+        return new OptimizationResult(candidate, m, d, index, additionalResults, null);
     }
 
     @Override
     public String toString() {
-        return "LocalFileGraphResultReference(" + dir + ")";
+        return "LocalFileNetResultReference(" + dir + ")";
     }
 }

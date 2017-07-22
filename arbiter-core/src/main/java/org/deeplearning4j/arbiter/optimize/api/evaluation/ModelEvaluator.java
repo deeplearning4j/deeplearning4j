@@ -31,5 +31,5 @@ public interface ModelEvaluator extends Serializable {
 
     List<Class<?>> getSupportedModelTypes();
 
-    List<Class<?>> getSuportedDataTypes();
+    List<Class<?>> getSupportedDataTypes();
 }

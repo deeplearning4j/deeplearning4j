@@ -108,12 +108,12 @@ public class TestJson {
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
 
-        CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(cgs, commands);
-        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(cgs, commands);
+        DataProvider dataProvider = new DataSetIteratorFactoryProvider();
 
 
-        OptimizationConfiguration<GraphConfiguration, MultiLayerNetwork, Object, Evaluation> configuration =
-                        new OptimizationConfiguration.Builder<GraphConfiguration, MultiLayerNetwork, Object, Evaluation>()
+        OptimizationConfiguration configuration =
+                        new OptimizationConfiguration.Builder()
                                         .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
                                         .scoreFunction(new TestSetLossScoreFunction())
                                         .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
@@ -121,9 +121,8 @@ public class TestJson {
                                         .build();
 
         String json = configuration.toJson();
-        OptimizationConfiguration<GraphConfiguration, MultiLayerNetwork, DataSetIterator, Evaluation> loadConf =
-                        OptimizationConfiguration.fromJson(json, GraphConfiguration.class, MultiLayerNetwork.class,
-                                        DataSetIterator.class, Evaluation.class);
+        OptimizationConfiguration loadConf =
+                        OptimizationConfiguration.fromJson(json);
         assertEquals(configuration, loadConf);
     }
 
