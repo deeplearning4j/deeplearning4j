@@ -603,7 +603,7 @@ public class CompressionTests extends BaseNd4jTest {
 
         long elements = Nd4j.getExecutioner().bitmapEncode(initial, enc, 1e-3);
         log.info("Encoded: {}", Arrays.toString(enc.data().asInt()));
-        assertArrayEquals(new int[] {6, 6, 981668463, 1, 1310744}, enc.data().asInt());
+        assertArrayEquals(new int[] {6, 6, 981668463, 1, 655372}, enc.data().asInt());
 
         assertEquals(3, elements);
 
@@ -616,9 +616,48 @@ public class CompressionTests extends BaseNd4jTest {
         assertEquals(exp_1, target);
     }
 
-    @Test
-    public void testMap1() {
 
+
+    @Test
+    public void testBitmapEncoding4() throws Exception {
+        Nd4j.getRandom().setSeed(119);
+        INDArray initial = Nd4j.rand(1, 10000, 0, 1, Nd4j.getRandom());
+        INDArray exp_1 = initial.dup();
+
+        INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-1);
+
+        Nd4j.getExecutioner().bitmapDecode(enc, initial);
+
+        assertEquals(exp_1, initial);
+    }
+
+    @Test
+    public void testBitmapEncoding5() throws Exception {
+        Nd4j.getRandom().setSeed(119);
+        INDArray initial = Nd4j.rand(1, 10000, -1, -0.5, Nd4j.getRandom());
+        INDArray exp_0 = initial.dup().addi(1e-1);
+        INDArray exp_1 = initial.dup();
+
+        INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-1);
+        assertEquals(exp_0, initial);
+
+        Nd4j.getExecutioner().bitmapDecode(enc, initial);
+
+        assertEquals(exp_1, initial);
+    }
+
+    @Test
+    public void testBitmapEncoding6() throws Exception {
+        Nd4j.getRandom().setSeed(119);
+        INDArray initial = Nd4j.rand(1, 100000, -1, 1, Nd4j.getRandom());
+        INDArray exp_1 = initial.dup();
+
+        INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
+        //assertEquals(exp_0, initial);
+
+        Nd4j.getExecutioner().bitmapDecode(enc, initial);
+
+        assertEquals(exp_1, initial);
     }
 
 
