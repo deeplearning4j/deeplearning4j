@@ -187,22 +187,22 @@ public class VPTree {
     public void calcDistancesRelativeTo(INDArray basePoint, INDArray distancesArr) {
         switch (similarityFunction) {
             case "euclidean":
-                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, items.length()), 1);
+                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, items.lengthLong()), 1);
                 break;
             case "coinedistance":
-                Nd4j.getExecutioner().exec(new CosineDistance(items, basePoint, distancesArr, items.length()), 1);
+                Nd4j.getExecutioner().exec(new CosineDistance(items, basePoint, distancesArr, items.lengthLong()), 1);
                 break;
             case "cosinesimilarity":
-                Nd4j.getExecutioner().exec(new CosineSimilarity(items, basePoint, distancesArr, items.length()), 1);
+                Nd4j.getExecutioner().exec(new CosineSimilarity(items, basePoint, distancesArr, items.lengthLong()), 1);
                 break;
             case "manhattan":
-                Nd4j.getExecutioner().exec(new ManhattanDistance(items, basePoint, distancesArr, items.length()), 1);
+                Nd4j.getExecutioner().exec(new ManhattanDistance(items, basePoint, distancesArr, items.lengthLong()), 1);
                 break;
             case "dot":
-                Nd4j.getExecutioner().exec(new Dot(items, basePoint, distancesArr, items.length()), 1);
+                Nd4j.getExecutioner().exec(new Dot(items, basePoint, distancesArr, items.lengthLong()), 1);
                 break;
             default:
-                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, items.length()), 1);
+                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, items.lengthLong()), 1);
                 break;
 
         }

@@ -34,6 +34,7 @@ import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
+import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -210,9 +211,21 @@ public class SharedTrainingWrapper {
                     // FIXME: if localIP is null - use original ip discovery available in VoidParameterServer
                     String localIP = System.getenv("SPARK_PUBLIC_DNS");
 
-                    // or just set to null?
+                    // picking IP address based on network mask
+                    if (localIP == null && voidConfiguration.getNetworkMask() != null) {
+                        NetworkOrganizer organizer = new NetworkOrganizer(voidConfiguration.getNetworkMask());
+                        localIP = organizer.getMatchingAddress();
+                    }
+
+                    // last resort here...
                     if (localIP == null)
+                        localIP = System.getenv("DL4J_VOID_IP");
+
+                    // set it to localhost, and hope for BroadcastTransport used
+                    if (localIP == null) {
                         localIP = "127.0.0.1";
+                        log.warn("Can't get IP address to start VoidParameterServer client. Using localhost instead");
+                    }
 
                     // FIXME: do we need port here, in case of Multicast/Broadcast Transport?
                     SilentIntroductoryMessage sim =

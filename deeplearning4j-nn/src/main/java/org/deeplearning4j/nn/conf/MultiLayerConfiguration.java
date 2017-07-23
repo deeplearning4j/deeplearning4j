@@ -24,6 +24,9 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
+import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,10 +41,7 @@ import org.nd4j.shade.jackson.databind.node.ArrayNode;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Configuration for a multi layer network
@@ -305,6 +305,39 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     public InputPreProcessor getInputPreProcess(int curr) {
         return inputPreProcessors.get(curr);
+    }
+
+    /**
+     * Get a {@link MemoryReport} for the given MultiLayerConfiguration. This is used to estimate the
+     * memory requirements for the given network configuration and input
+     *
+     * @param inputType Input types for the network
+     * @return Memory report for the network
+     */
+    public NetworkMemoryReport getMemoryReport(InputType inputType){
+
+        Map<String,MemoryReport> memoryReportMap = new LinkedHashMap<>();
+        int nLayers = confs.size();
+        for( int i=0; i<nLayers; i++ ){
+            String layerName = confs.get(i).getLayer().getLayerName();
+            if(layerName == null){
+                layerName = String.valueOf(i);
+            }
+
+            //Pass input type through preprocessor, if necessary
+            InputPreProcessor preproc = getInputPreProcess(0);
+            //TODO memory requirements for preprocessor
+            if(preproc != null){
+                inputType = preproc.getOutputType(inputType);
+            }
+
+            LayerMemoryReport report = confs.get(i).getLayer().getMemoryReport(inputType);
+            memoryReportMap.put(layerName, report);
+
+            inputType = confs.get(i).getLayer().getOutputType(i, inputType);
+        }
+
+        return new NetworkMemoryReport(memoryReportMap, MultiLayerConfiguration.class, "MultiLayerNetwork", inputType);
     }
 
     @Data

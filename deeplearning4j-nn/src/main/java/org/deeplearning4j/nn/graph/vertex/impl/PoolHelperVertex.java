@@ -71,8 +71,8 @@ public class PoolHelperVertex extends BaseGraphVertex {
         if (inputs.length > 1)
             throw new IllegalStateException("PoolHelper vertex requires a single input.");
 
-        INDArray strippedInput = inputs[0].get(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.interval(1, inputs[0].size(2)), NDArrayIndex.interval(1, inputs[0].size(3)),});
+        INDArray strippedInput = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.interval(1, inputs[0].size(2)), NDArrayIndex.interval(1, inputs[0].size(3)));
         return strippedInput;
     }
 

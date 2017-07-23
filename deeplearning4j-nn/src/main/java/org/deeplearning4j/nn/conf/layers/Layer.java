@@ -26,6 +26,8 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.activations.Activation;
@@ -203,6 +205,14 @@ public abstract class Layer implements Serializable, Cloneable {
         throw new UnsupportedOperationException(
                         "Not supported: all layers with parameters should override this method");
     }
+
+    /**
+     * This is a report of the estimated memory consumption for the given layer
+     *
+     * @param inputType Input type to the layer. Memory consumption is often a function of the input type
+     * @return Memory report for the layer
+     */
+    public abstract LayerMemoryReport getMemoryReport(InputType inputType);
 
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {

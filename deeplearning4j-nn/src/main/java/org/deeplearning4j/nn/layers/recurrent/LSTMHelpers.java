@@ -6,6 +6,12 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.graph.ScaleVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -23,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
@@ -668,5 +675,94 @@ public class LSTMHelpers {
         retGradient.gradientForVariable().put(biasWeightKey, bGradientsOut);
 
         return new Pair<>(retGradient, epsilonNext);
+    }
+
+
+    public static LayerMemoryReport getMemoryReport(AbstractLSTM lstmLayer, InputType inputType) {
+        boolean isGraves = lstmLayer instanceof org.deeplearning4j.nn.conf.layers.GravesLSTM;
+        return getMemoryReport(isGraves, lstmLayer, inputType);
+    }
+
+    public static LayerMemoryReport getMemoryReport(GravesBidirectionalLSTM lstmLayer, InputType inputType) {
+        LayerMemoryReport r = getMemoryReport(true, lstmLayer, inputType);
+
+        //Double everything for bidirectional
+        Map<CacheMode,Long> fixedTrain = new HashMap<>();
+        Map<CacheMode,Long> varTrain = new HashMap<>();
+        Map<CacheMode,Long> cacheFixed = new HashMap<>();
+        Map<CacheMode,Long> cacheVar = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            fixedTrain.put(cm, 2 * r.getWorkingMemoryFixedTrain().get(cm));
+            varTrain.put(cm, 2 * r.getWorkingMemoryVariableTrain().get(cm));
+            cacheFixed.put(cm, 2 * r.getCacheModeMemFixed().get(cm));
+            cacheVar.put(cm, 2 * r.getCacheModeMemVariablePerEx().get(cm));
+        }
+
+        return new LayerMemoryReport.Builder(r.getLayerName(), r.getClass(), r.getInputType(), r.getOutputType())
+                .standardMemory(2 * r.getParameterSize(), 2 * r.getUpdaterStateSize())
+                .workingMemory(2 * r.getWorkingMemoryFixedInference(), 2 * r.getWorkingMemoryVariableInference(), fixedTrain, varTrain)
+                .cacheMemory(cacheFixed, cacheVar)
+                .build();
+    }
+
+    public static LayerMemoryReport getMemoryReport(boolean isGraves, org.deeplearning4j.nn.conf.layers.FeedForwardLayer lstmLayer, InputType inputType ){
+
+
+        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent)inputType;
+        int tsLength = itr.getTimeSeriesLength();
+
+        InputType outputType = lstmLayer.getOutputType(-1, inputType);
+
+        int numParams = lstmLayer.initializer().numParams(lstmLayer);
+        int updaterSize = (int)lstmLayer.getIUpdater().stateSize(numParams);
+
+        //Memory use during forward pass:
+        //ifogActivations: nTimeSteps * [minibatch,4*layerSize] (not cached during inference fwd pass)
+        int workingMemInferencePerEx = tsLength * 4 * lstmLayer.getNOut();   //Reduced by factor of tsLength if using workspace
+
+        //For training, we also have
+        //nTimeSteps * 5 * [minibatch, nOut] - 4 x gate pre-outs, memory cell state - may be cached
+        //nTimeSteps * [minibatch, nOut] - peephole conneciton activations, graves LSTM only - may be cached
+        //Total: 4 + 5 + 1 = 10xnOut per time step (training) or 4x (inference)
+        int fwdPassPerTimeStepTrainCache = tsLength * 6 * lstmLayer.getNOut();
+
+        //During backprop:
+        //2 dups of size [minibatch, nOut] for nablaCellState (1 alloc only for no peephole)
+        //1 [minibatch, nOut] for deltao
+        //2 for memory cell error
+        //1 allocation for input modulation gate
+        //1 for layer input
+        //3 dups [minibatch, nOut] for peephole (Graves only)
+        // 5xnOut (independent of minibatch size) - deltaiFog, peephole etc. Only 2 if no peephole TODO
+        //6 for non-graves, 9 for graves
+
+        int backpropWorkingSpace = (isGraves ? 9 : 6) * tsLength * lstmLayer.getNOut();
+
+        //TODO NO WAY TO TAKE LSTM WORKSPACE INTO ACCOUNT HERE :(
+
+
+        Map<CacheMode,Long> trainVariable = new HashMap<>();
+        Map<CacheMode,Long> cacheVariable = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            long trainWorking;
+            long cacheMem;
+
+            if(cm == CacheMode.NONE){
+                trainWorking = workingMemInferencePerEx + fwdPassPerTimeStepTrainCache + backpropWorkingSpace;
+                cacheMem = 0;
+            } else {
+                trainWorking = workingMemInferencePerEx + backpropWorkingSpace;
+                cacheMem = fwdPassPerTimeStepTrainCache;
+            }
+
+            trainVariable.put(cm, trainWorking);
+            cacheVariable.put(cm, cacheMem);
+        }
+
+        return new LayerMemoryReport.Builder(null, lstmLayer.getClass(), inputType, outputType )
+                .standardMemory(numParams, updaterSize)
+                .workingMemory(0, workingMemInferencePerEx, MemoryReport.CACHE_MODE_ALL_ZEROS, trainVariable)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, cacheVariable)
+                .build();
     }
 }

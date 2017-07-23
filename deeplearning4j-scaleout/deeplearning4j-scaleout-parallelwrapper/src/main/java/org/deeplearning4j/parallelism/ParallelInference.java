@@ -62,9 +62,20 @@ public class ParallelInference {
     protected void init() {
         observables = new LinkedBlockingQueue<>(queueLimit);
 
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        AtomicBoolean assignedRoot = new AtomicBoolean(false);
+
         zoo = new InferenceWorker[workers];
         for (int i = 0; i < workers; i++) {
-            zoo[i] = new InferenceWorker(i, model, observables);
+            int cDevice = i % numDevices;
+            boolean cRoot = !assignedRoot.get() && cDevice == currentDevice;
+            assignedRoot.compareAndSet(false, cRoot);
+
+            zoo[i] = new InferenceWorker(i, model, observables, cRoot);
+
+            Nd4j.getAffinityManager().attachThreadToDevice(zoo[i], cDevice);
+            zoo[i].setDaemon(true);
             zoo[i].start();
         }
 
@@ -263,13 +274,16 @@ public class ParallelInference {
         private Model protoModel;
         private Model replicatedModel;
         private AtomicLong counter = new AtomicLong(0);
+        private boolean rootDevice;
 
-        private InferenceWorker(int id, @NonNull Model model, @NonNull BlockingQueue inputQueue) {
+        private InferenceWorker(int id, @NonNull Model model, @NonNull BlockingQueue inputQueue, boolean rootDevice) {
             this.inputQueue = inputQueue;
             this.protoModel = model;
+            this.rootDevice = rootDevice;
 
             this.setDaemon(true);
             this.setName("InferenceThread-" + id);
+
         }
 
         protected long getCounterValue() {
@@ -281,24 +295,32 @@ public class ParallelInference {
             try {
                 // model should be replicated & initialized here
                 if (protoModel instanceof ComputationGraph) {
-                    this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration
-                                    .fromJson(((ComputationGraph) protoModel).getConfiguration().toJson()));
-                    this.replicatedModel.init();
+                    if (!rootDevice) {
+                        this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration
+                                .fromJson(((ComputationGraph) protoModel).getConfiguration().toJson()));
+                        this.replicatedModel.init();
 
-                    synchronized (locker) {
-                        this.replicatedModel.setParams(protoModel.params());
+                        synchronized (locker) {
+                            this.replicatedModel.setParams(protoModel.params().unsafeDuplication(true));
 
-                        Nd4j.getExecutioner().commit();
+                            Nd4j.getExecutioner().commit();
+                        }
+                    } else {
+                        this.replicatedModel = protoModel;
                     }
                 } else if (protoModel instanceof MultiLayerNetwork) {
-                    this.replicatedModel = new MultiLayerNetwork(MultiLayerConfiguration
-                                    .fromJson(((MultiLayerNetwork) protoModel).getLayerWiseConfigurations().toJson()));
-                    this.replicatedModel.init();
+                    if (!rootDevice) {
+                        this.replicatedModel = new MultiLayerNetwork(MultiLayerConfiguration
+                                .fromJson(((MultiLayerNetwork) protoModel).getLayerWiseConfigurations().toJson()));
+                        this.replicatedModel.init();
 
-                    synchronized (locker) {
-                        this.replicatedModel.setParams(protoModel.params());
+                        synchronized (locker) {
+                            this.replicatedModel.setParams(protoModel.params().unsafeDuplication(true));
 
-                        Nd4j.getExecutioner().commit();
+                            Nd4j.getExecutioner().commit();
+                        }
+                    } else {
+                        this.replicatedModel = protoModel;
                     }
                 }
 

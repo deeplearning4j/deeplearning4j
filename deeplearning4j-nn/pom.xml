@@ -54,6 +54,12 @@
             <artifactId>commons-compress</artifactId>
             <version>1.8</version>
         </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>

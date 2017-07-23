@@ -7,9 +7,7 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Batch normalization variable init
@@ -27,6 +25,10 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     public static final String BETA = "beta";
     public static final String GLOBAL_MEAN = "mean";
     public static final String GLOBAL_VAR = "var";
+
+    public static List<String> keys(){
+        return Arrays.asList(GAMMA, BETA, GLOBAL_MEAN, GLOBAL_VAR);
+    }
 
     @Override
     public int numParams(NeuralNetConfiguration conf) {

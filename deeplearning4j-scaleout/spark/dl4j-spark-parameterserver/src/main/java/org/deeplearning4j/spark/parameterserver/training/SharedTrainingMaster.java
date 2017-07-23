@@ -51,6 +51,7 @@ import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
+import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.PropertyAccessor;
 import org.nd4j.shade.jackson.core.JsonFactory;
@@ -429,13 +430,22 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             numWorkers = network != null ? network.getSparkContext().defaultParallelism()
                             : graph.getSparkContext().defaultParallelism();
 
-        // set current box as controller, if field is unset
+        // set current box as controller, if field is unset - switch to next stop
         if (voidConfiguration.getControllerAddress() == null)
             voidConfiguration.setControllerAddress(System.getenv("SPARK_PUBLIC_DNS"));
 
+        // next step - is to get ip address that matches specific network mask
+        if (voidConfiguration.getControllerAddress() == null && voidConfiguration.getNetworkMask() != null) {
+            NetworkOrganizer organizer = new NetworkOrganizer(voidConfiguration.getNetworkMask());
+            voidConfiguration.setControllerAddress(organizer.getMatchingAddress());
+        }
+
+        if (voidConfiguration.getControllerAddress() == null)
+            voidConfiguration.setControllerAddress(System.getenv("DL4J_VOID_IP"));
+
         if (voidConfiguration.getControllerAddress() == null)
             throw new DL4JInvalidConfigException(
-                            "Can't get Spark Master local address. Please specify it manually using VoidConfiguration.setControllerAddress(String) method");
+                            "Can't get Spark Master local address. Please specify it manually using VoidConfiguration.setControllerAddress(String) method or VoidConfiguration.setNetworkMask(String) method");
 
         // we're forcing proper defaults
         log.info("Setting controller address to {}:{}", voidConfiguration.getControllerAddress(),
@@ -941,7 +951,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         public Builder(double threshold, int rddDataSetNumExamples) {
             this(VoidConfiguration.builder().executionMode(ExecutionMode.MANAGED).forcedRole(NodeRole.SHARD)
 
-                            // we're setting controller to Spark Master
+                            // we're setting controller to Spark Master, if it's null - that's ok for now.
                             .controllerAddress(System.getenv("SPARK_PUBLIC_DNS")).build(), null, threshold,
                             rddDataSetNumExamples);
         }
@@ -961,6 +971,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                         int rddDataSetNumExamples) {
             this.threshold = threshold;
             this.voidConfiguration = voidConfiguration;
+
+            // we're enforcing managed mode in all cases here
+            this.voidConfiguration.setExecutionMode(ExecutionMode.MANAGED);
         }
 
         /**

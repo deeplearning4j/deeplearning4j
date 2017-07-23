@@ -19,12 +19,18 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.conf.CacheMode;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
  * For example, the activations may be combined by addition, subtraction or multiplication.
@@ -150,5 +156,15 @@ public class ElementWiseVertex extends GraphVertex {
             }
         }
         return first; //Same output shape/size as
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        //No working memory in addition to output activations
+        return new LayerMemoryReport.Builder(null, ElementWiseVertex.class, inputTypes[0], inputTypes[0])
+                .standardMemory(0, 0)
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)
+                .build();
     }
 }

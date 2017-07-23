@@ -21,6 +21,8 @@ package org.deeplearning4j.nn.conf.graph;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -75,6 +77,11 @@ public class StackVertex extends GraphVertex {
     }
 
     @Override
+    public String toString(){
+        return "StackVertex()";
+    }
+
+    @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length == 1)
             return vertexInputs[0];
@@ -88,6 +95,7 @@ public class StackVertex extends GraphVertex {
         } else if (first.getType() != InputType.Type.CNN) {
             //FF or RNN data inputs
             int size = 0;
+            int tsLength = -1;
             InputType.Type type = null;
             for (int i = 0; i < vertexInputs.length; i++) {
                 if (vertexInputs[i].getType() != first.getType()) {
@@ -105,6 +113,7 @@ public class StackVertex extends GraphVertex {
                         break;
                     case RNN:
                         thisSize = ((InputType.InputTypeRecurrent) vertexInputs[i]).getSize();
+                        tsLength = ((InputType.InputTypeRecurrent) vertexInputs[i]).getTimeSeriesLength();
                         type = InputType.Type.RNN;
                         break;
                     default:
@@ -122,13 +131,13 @@ public class StackVertex extends GraphVertex {
                 if (type == InputType.Type.FF)
                     return InputType.feedForward(size);
                 else
-                    return InputType.recurrent(size);
+                    return InputType.recurrent(size, tsLength);
             } else {
                 //size is unknown
                 if (type == InputType.Type.FF)
                     return InputType.feedForward(-1);
                 else
-                    return InputType.recurrent(-1);
+                    return InputType.recurrent(-1, tsLength);
             }
         } else {
             //CNN inputs... also check that the depth, width and heights match:
@@ -165,5 +174,17 @@ public class StackVertex extends GraphVertex {
 
             return InputType.convolutional(fh, fw, depthSum);
         }
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        //No working memory, just output activations
+        InputType outputType = getOutputType(-1, inputTypes);
+
+        return new LayerMemoryReport.Builder(null, StackVertex.class, inputTypes[0], outputType )
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)  //No caching
+                .build();
     }
 }

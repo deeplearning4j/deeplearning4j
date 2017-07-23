@@ -340,7 +340,7 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
                         if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()
-                                        && iterationsCounter.incrementAndGet() % averagingFrequency == 0
+                                        && ( averagingFrequency == 0 || iterationsCounter.incrementAndGet() % averagingFrequency == 0)
                                         && averagingRequired()) {
                             // we ensure all operations are finished in this training round
                             Nd4j.getExecutioner().commit();
@@ -378,7 +378,7 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
                         if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()
-                                        && iterationsCounter.incrementAndGet() % averagingFrequency == 0
+                                        && (averagingFrequency == 0 ||iterationsCounter.incrementAndGet() % averagingFrequency == 0)
                                         && averagingRequired()) {
                             // we ensure all operations are finished in this training round
                             Nd4j.getExecutioner().commit();
