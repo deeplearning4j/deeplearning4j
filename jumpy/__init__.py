@@ -5,13 +5,43 @@ from itertools import chain
 
 import numpy as np
 
+global nd4j
+nd4j = None
+global INDArray
+INDArray = None
+global transforms
+transforms = None
+indexing = None
+DataBuffer = None
+system = None
+Integer = None
+Float = None
+Double = None
+nd4j_index = None
+serde = None
+native_ops_holder = None
+native_ops = None
+shape = None
+serde = None
+DoublePointer = None
+FloatPointer = None
+IntPointer = None
+DataTypeUtil = None
+MemoryManager = None
+memory_manager = None
+methods = None
+global SameDiff
+SameDiff = None
+
+
 def _expand_directory(path):
     if not path.endswith('*'):
-        return [path,]
+        return [path, ]
     else:
         # wild card expansions like /somedir/* (we do this because of jnius being unable to handle class path expansion
         clean_path = path.rstrip('*')
         return [os.path.join(clean_path, y) for y in os.listdir(clean_path)]
+
 
 def get_classpath(base_path):
     """
@@ -21,8 +51,6 @@ def get_classpath(base_path):
     """
     return ':'.join(chain.from_iterable(map(lambda x: _expand_directory(x), base_path.split(':'))))
 
-if __name__ == "__main__":
-    init()
 
 def init():
     jnius_config.add_options('-Dorg.bytedeco.javacpp.nopointergc=true')
@@ -95,6 +123,9 @@ def init():
     for name, method in methods:
         Nd4jBuffer.name = method
 
+    global SameDiff
+    SameDiff = autoclass('org.nd4j.autodiff.samediff.SameDiff')
+
 
 def disable_gc():
     memory_manager.togglePeriodicGc(False)
@@ -102,6 +133,15 @@ def disable_gc():
 
 def set_gc_interval(interval=5000):
     memory_manager.setAutoGcWindow(interval)
+
+
+def same_diff_create():
+    '''
+    Create a samediff instance.
+    :return:
+    '''
+    global SameDiff
+    return SameDiff.create()
 
 
 def data_type():
@@ -137,7 +177,7 @@ def dot(array1, array2):
 
 
 def _get_numpy_buffer_reference(np_arr):
-    return np.asarray(np_arr,dtype=_numpy_datatype_from_nd4j_context())
+    return np.asarray(np_arr, dtype=_numpy_datatype_from_nd4j_context())
 
 
 def get_buffer_from_arr(np_arr):
@@ -296,7 +336,6 @@ class Nd4jBuffer(object):
         self.data_buffer = data_buffer
         self.numpy_pointer = numpy_pointer
 
-
     def __getitem__(self, item):
         if isinstance(item, int):
             return self.data_buffer.getDouble(item)
@@ -314,6 +353,7 @@ class Nd4jBuffer(object):
 
     def element_size(self):
         return self.data_buffer.getElementSize()
+
 
 def _nd4j_datatype_from_np(np_datatype_name):
     """
@@ -408,3 +448,7 @@ def from_np(np_arr):
     strides = map(lambda x: x / data_buffer.getElementSize(), np_arr.strides)
     arr_shape = np_arr.shape
     return Nd4jArray(nd4j_array=nd4j.create(data_buffer, arr_shape, strides, 0))
+
+
+if __name__ == "__main__":
+    init()
