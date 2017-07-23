@@ -2065,7 +2065,7 @@ public class WordVectorSerializer {
         for (int x = 0; x < vocabCache.numWords(); x++) {
             T element = vocabCache.elementAtIndex(x);
             String json = factory.serialize(element);
-            double[] vector = lookupTable.vector(element.getLabel()).data().asDouble();
+            double[] vector = lookupTable.vector(element.getLabel()).dup().data().asDouble();
 
             ElementPair pair = new ElementPair(json, vector);
             writer.println(pair.toEncodedJson());

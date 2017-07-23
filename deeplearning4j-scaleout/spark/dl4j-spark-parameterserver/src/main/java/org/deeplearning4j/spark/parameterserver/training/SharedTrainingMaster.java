@@ -86,6 +86,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     // TODO: this option should be abstracted, if we decide to generalize this trainingmaster
     protected double threshold;
+    protected double thresholdStep;
+    protected double minThreshold;
+    protected int shakeFrequency;
 
     protected Repartition repartition;
     protected RepartitionStrategy repartitionStrategy;
@@ -108,10 +111,11 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers,
                     RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats,
-                    RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold,
+                    RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold, double minThreshold, double thresholdStep,
                     int batchSizePerWorker, long debugLongerIterations, int numWorkersPerNode) {
         this.voidConfiguration = voidConfiguration;
         this.numWorkers = numWorkers;
+        this.minThreshold = minThreshold;
         this.rddTrainingApproach = rddTrainingApproach;
         this.repartitionStrategy = repartitionStrategy;
         this.repartition = repartition;
@@ -208,6 +212,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                         network.getNetwork().params(), network.getNetwork().getUpdater().getStateViewArray());
 
         SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder().threshold(threshold)
+                        .minThreshold(minThreshold).shakeFrequency(shakeFrequency).thresholdStep(thresholdStep)
                         .voidConfiguration(voidConfiguration).debugLongerIterations(debugLongerIterations)
                         .numberOfWorkersPerNode(numWorkersPerNode).build();
 
@@ -234,6 +239,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                         graph.getNetwork().params(), graph.getNetwork().getUpdater().getStateViewArray());
 
         SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder().threshold(threshold)
+                        .minThreshold(minThreshold).shakeFrequency(shakeFrequency).thresholdStep(thresholdStep)
                         .voidConfiguration(voidConfiguration).debugLongerIterations(debugLongerIterations)
                         .numberOfWorkersPerNode(numWorkersPerNode).build();
 
@@ -925,6 +931,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     public static class Builder {
         protected double threshold = 1e-3;
+        protected double thresholdStep = 1e-5;
+        protected double minThreshold = 1e-5;
+        protected int shakeFrequency = 0;
         protected Repartition repartition = Repartition.Always;
         protected RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
         protected StorageLevel storageLevel = StorageLevel.MEMORY_ONLY_SER();
@@ -939,6 +948,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         protected int batchSize;
         protected long debugLongerIterations = 0L;
         protected int numWorkersPerNode = -1;
+
 
         public Builder(int rddDataSetNumExamples) {
             this(1e-3, rddDataSetNumExamples);
@@ -1077,6 +1087,51 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
+         * Once update with given threshold become too sparse, threshold will be decreased by thresholdStep
+         *
+         * Default value: 1e-5
+         * @param threshold
+         * @return
+         */
+        public Builder minUpdatesThreshold(double threshold) {
+            this.minThreshold = threshold;
+            return this;
+        }
+
+        /**
+         *
+         *
+         * @param step
+         * @return
+         */
+        public Builder thresholdStep(double step) {
+            if (step < 0.0)
+                throw new DL4JInvalidConfigException("shakeFrequency should be non-negative value");
+
+            this.thresholdStep = step;
+            return this;
+        }
+
+        /**
+         * During NN training, each X iterations, executors will send encoded dense updates with lower threshold.
+         * Please note: If you'll set this value too low (i.e. 1) - it might lead to worse performance
+         *
+         * Default value: 0 (disabled)
+         * @param frequency
+         * @return
+         */
+        public Builder shakeFrequency(int frequency) {
+            if (frequency < 0)
+                throw new DL4JInvalidConfigException("shakeFrequency should be non-negative value");
+
+            if (frequency == 1)
+                log.warn("shakeFrequency of 1 means that all updates will be sparse, and might lead to worse performance");
+
+            this.shakeFrequency = frequency;
+            return this;
+        }
+
+        /**
          * Batch size value,  used for repartition purposes
          *
          * @param batchSize
@@ -1107,11 +1162,12 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         /**
          * This method allows you to artificially extend iteration time using Thread.sleep() for a given time.
          *
-         * PLEASE NOTE: Never use that option in production environment. It's suited for debugging purposes.
+         * PLEASE NOTE: Never use that option in production environment. It's suited for debugging purposes only.
          *
          * @param timeMs
          * @return
          */
+        @Deprecated
         public Builder debugLongerIterations(long timeMs) {
             if (timeMs < 0)
                 timeMs = 0L;
@@ -1132,7 +1188,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         public SharedTrainingMaster build() {
             SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach,
-                            storageLevel, true, repartitionStrategy, repartition, threshold, batchSize,
+                            storageLevel, true, repartitionStrategy, repartition, threshold, minThreshold, thresholdStep, batchSize,
                             debugLongerIterations, numWorkersPerNode);
             if (transport != null)
                 master.transport = this.transport;

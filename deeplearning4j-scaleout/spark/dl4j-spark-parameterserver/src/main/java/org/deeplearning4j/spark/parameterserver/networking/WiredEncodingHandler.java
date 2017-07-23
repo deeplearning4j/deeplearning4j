@@ -32,6 +32,14 @@ public class WiredEncodingHandler extends EncodingHandler {
         super(threshold, boundary);
     }
 
+    public WiredEncodingHandler(double threshold, double minThreshold, double thresholdStep,  int shakeFrequency) {
+        this(threshold, minThreshold, thresholdStep, shakeFrequency, null);
+    }
+
+    public WiredEncodingHandler(double threshold, double minThreshold, double thresholdStep, int shakeFrequency, Double boundary) {
+        super(threshold, minThreshold, thresholdStep, shakeFrequency, boundary);
+    }
+
     /**
      * This method sends given message to all registered recipients
      *
