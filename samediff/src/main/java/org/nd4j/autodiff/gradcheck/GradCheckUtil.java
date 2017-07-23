@@ -108,7 +108,7 @@ public class GradCheckUtil {
                  */
                 INDArray[] newDifferences = new INDArray[minusParams.length];
                 for (int j = 0; j < newDifferences.length; j++) {
-                    newDifferences[i] = plusParams[i].subi(minusParams[i]).divi(epsilon);
+                    newDifferences[j] = plusParams[j].subi(minusParams[j]).divi(epsilon);
                 }
 
                 double diff = plusParams[plusParams.length - 1].sumNumber().doubleValue() - minusParams[minusParams.length - 1].sumNumber().doubleValue();

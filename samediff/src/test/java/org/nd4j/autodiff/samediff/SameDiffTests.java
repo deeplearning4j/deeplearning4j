@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.samediff;
 
 import org.junit.Test;
+import org.nd4j.autodiff.gradcheck.GradCheckUtil;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
@@ -247,6 +248,51 @@ public class SameDiffTests {
         Nd4j.getExecutioner().exec(op2);
     }
 
+
+    @Test
+    public void testGradCheck() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray inputs = Nd4j.create(new double[][]{
+                {0.52, 1.12,  0.77},
+                {0.88, -1.08, 0.15},
+                {0.52, 0.06, -1.30},
+                {0.74, -2.49, 1.39}
+        });
+
+        INDArray labels = Nd4j.create(new double[]{1,1,0,0}).reshape(4,1);
+
+        INDArray weights = Nd4j.rand(3,1,1);
+
+        SDVariable x = sameDiff.var("x",inputs);
+        SDVariable y = sameDiff.var("y",labels);
+        SDVariable w = sameDiff.var("w",weights);
+
+        SDVariable learningRate = sameDiff.scalar("lr",0.01);
+
+        SDVariable preOutput = sameDiff.mmul(0,x,w);
+
+        SDVariable outputs = sameDiff.sigmoid(preOutput);
+        List<Op> ops = sameDiff.exec();
+        assertEquals(2,ops.size());
+        assertEquals("mmul",ops.get(0).name());
+        assertEquals("sigmoid",ops.get(1).name());
+        assertEquals(6,sameDiff.graph().numVertices());
+        assertEquals(3,sameDiff.graph().getEdges().size());
+        //    label_probabilities = preds * targets + (1 - preds) * (1 - targets)
+        SDVariable outputTimesY = outputs.mul(y);
+        SDVariable oneMinusOutput = outputs.rsub(sameDiff.scalar("one",1.0));
+        SDVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(sameDiff.scalar("onetwo",1.0))));
+        SDVariable logProbs = sameDiff.log(probs);
+        SDVariable sum = sameDiff.sum(logProbs,Integer.MAX_VALUE);
+        //ensure the output is scalar shape
+        assertEquals(1,ArrayUtil.prod(sum.getShape()));
+        SDVariable negSum = sameDiff.neg(sum);
+        Map<String,INDArray> inputMap = new HashMap<>();
+        inputMap.put("x",inputs);
+        inputMap.put("y",labels);
+        inputMap.put("w",weights);
+        GradCheckUtil.checkGradients(negSum,w,1e-3,1e-3,true,inputMap);
+    }
 
     @Test
     public void testLogisticRegression() throws Exception {
