@@ -201,7 +201,7 @@ public class TestGridSearch {
                     System.out.println(
                             candidate.getX1() + "\t" + candidate.getX2() + "\t" + score);
 
-                    Thread.sleep(500);
+                    Thread.sleep(20);
 
                     if (statusListeners != null) {
                         for (StatusListener sl : statusListeners) {

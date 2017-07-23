@@ -15,8 +15,6 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.List;
-
 /**
  * Layer space for {@link VariationalAutoencoder}
  *
@@ -42,7 +40,7 @@ public class VariationalAutoencoderLayerSpace extends BasePretrainNetworkLayerSp
         this.pzxActivationFn = builder.pzxActivationFn;
         this.numSamples = builder.numSamples;
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override

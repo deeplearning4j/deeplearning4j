@@ -27,7 +27,7 @@ public class ActivationLayerSpace extends LayerSpace<ActivationLayer> {
     protected ActivationLayerSpace(Builder builder) {
         super(builder);
         this.activationFunction = builder.activationFunction;
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
 
@@ -35,6 +35,7 @@ public class ActivationLayerSpace extends LayerSpace<ActivationLayer> {
     public ActivationLayer getValue(double[] parameterValues) {
         ActivationLayer.Builder b = new ActivationLayer.Builder();
         super.setLayerOptionsBuilder(b, parameterValues);
+        b.activation(activationFunction.getValue(parameterValues));
         return b.build();
     }
 

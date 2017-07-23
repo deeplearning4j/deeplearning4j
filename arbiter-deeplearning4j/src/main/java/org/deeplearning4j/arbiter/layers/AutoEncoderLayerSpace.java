@@ -27,8 +27,6 @@ import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.util.List;
-
 /**
  * Layer space for autoencoder layers
  */
@@ -45,7 +43,7 @@ public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEnc
         super(builder);
         this.corruptionLevel = builder.corruptionLevel;
         this.sparsity = builder.sparsity;
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override

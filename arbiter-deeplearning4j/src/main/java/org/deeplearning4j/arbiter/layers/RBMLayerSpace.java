@@ -26,8 +26,6 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.RBM;
 
-import java.util.List;
-
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
@@ -45,7 +43,7 @@ public class RBMLayerSpace extends BasePretrainNetworkLayerSpace<RBM> {
         this.k = builder.k;
         this.sparsity = builder.sparsity;
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override

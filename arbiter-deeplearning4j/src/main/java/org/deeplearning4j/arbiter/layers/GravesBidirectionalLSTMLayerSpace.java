@@ -44,7 +44,8 @@ public class GravesBidirectionalLSTMLayerSpace extends FeedForwardLayerSpace<Gra
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        List<ParameterSpace> l = collectLeaves();
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
 

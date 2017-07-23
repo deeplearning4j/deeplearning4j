@@ -313,11 +313,11 @@ public class ArbiterModule implements UIModule {
         double[] paramSpaceValues = mip.getParamSpaceValues();
         if(paramSpaceValues != null){
             BaseNetworkSpace bns = (BaseNetworkSpace)oc.getCandidateGenerator().getParameterSpace();
-            Map<String,ParameterSpace<?>> m = bns.getGlobalConfigAsMap();
+            Map<String,ParameterSpace> m = bns.getNestedSpaces();
 
             String[][] hSpaceTable = new String[m.size()][3];
             int i=0;
-            for(Map.Entry<String,ParameterSpace<?>> e : m.entrySet()){
+            for(Map.Entry<String,ParameterSpace> e : m.entrySet()){
                 hSpaceTable[i][0] = e.getKey();
                 Object currCandidateValue = e.getValue().getValue(paramSpaceValues);
                 hSpaceTable[i][1] = ObjectUtils.valueToString(currCandidateValue);
@@ -342,11 +342,11 @@ public class ArbiterModule implements UIModule {
 
             for(BaseNetworkSpace.LayerConf l : layerConfs){
                 LayerSpace<?> ls = l.getLayerSpace();
-                Map<String,ParameterSpace<?>> lpsm = ls.getConfigAsMap();
+                Map<String,ParameterSpace> lpsm = ls.getNestedSpaces();
 
                 String[][] t = new String[lpsm.size()][3];
                 i=0;
-                for(Map.Entry<String,ParameterSpace<?>> e : lpsm.entrySet()){
+                for(Map.Entry<String,ParameterSpace> e : lpsm.entrySet()){
                     t[i][0] = e.getKey();
                     Object currCandidateValue = e.getValue().getValue(paramSpaceValues);
                     t[i][1] = ObjectUtils.valueToString(currCandidateValue);
@@ -456,11 +456,11 @@ public class ArbiterModule implements UIModule {
         components.add(DIV_SPACER_20PX);
         components.add(new ComponentText.Builder(title, STYLE_TEXT_SZ12).build());
         BaseNetworkSpace<?> ps = (BaseNetworkSpace)oc.getCandidateGenerator().getParameterSpace();
-        Map<String,ParameterSpace<?>> m = ps.getGlobalConfigAsMap();
+        Map<String,ParameterSpace> m = ps.getNestedSpaces();
 
         String[][] hSpaceTable = new String[m.size()][2];
         int i=0;
-        for(Map.Entry<String,ParameterSpace<?>> e : m.entrySet()){
+        for(Map.Entry<String,ParameterSpace> e : m.entrySet()){
             hSpaceTable[i][0] = e.getKey();
             hSpaceTable[i][1] = e.getValue().toString();
             i++;
@@ -479,11 +479,11 @@ public class ArbiterModule implements UIModule {
         List<BaseNetworkSpace.LayerConf> layerConfs = ps.getLayerSpaces();
         for(BaseNetworkSpace.LayerConf l : layerConfs){
             LayerSpace<?> ls = l.getLayerSpace();
-            Map<String,ParameterSpace<?>> lpsm = ls.getConfigAsMap();
+            Map<String,ParameterSpace> lpsm = ls.getNestedSpaces();
 
             String[][] t = new String[lpsm.size()][2];
             i=0;
-            for(Map.Entry<String,ParameterSpace<?>> e : lpsm.entrySet()){
+            for(Map.Entry<String,ParameterSpace> e : lpsm.entrySet()){
                 t[i][0] = e.getKey();
                 t[i][1] = e.getValue().toString();
                 i++;

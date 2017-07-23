@@ -26,8 +26,6 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 
-import java.util.List;
-
 /**
  * Layer hyperparameter configuration space for subsampling layers
  *
@@ -50,7 +48,7 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
         this.stride = builder.stride;
         this.padding = builder.padding;
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override

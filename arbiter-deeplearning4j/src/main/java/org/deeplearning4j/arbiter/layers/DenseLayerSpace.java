@@ -36,7 +36,7 @@ public class DenseLayerSpace extends FeedForwardLayerSpace<DenseLayer> {
     private DenseLayerSpace(Builder builder) {
         super(builder);
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override

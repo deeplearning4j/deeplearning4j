@@ -38,6 +38,8 @@ public abstract class AbstractParameterSpace<T> implements ParameterSpace<T> {
                     continue;
                 }
 
+                f.setAccessible(true);
+
                 ParameterSpace<?> p;
                 try {
                     p = (ParameterSpace<?>) f.get(this);

@@ -250,14 +250,19 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
 
     @Override
     public List<ParameterSpace> collectLeaves() {
-        Map<String, ParameterSpace<?>> global = getGlobalConfigAsMap();
-
+        Map<String, ParameterSpace> global = getNestedSpaces();
         List<ParameterSpace> list = new ArrayList<>();
         list.addAll(global.values());
 
-        return list;
+        //Note: Results on previous line does NOT include the LayerSpaces, therefore we need to add these manually...
+        //This is because the type is a list, not a ParameterSpace
 
-        //TODO layer param spaces...
+        for(LayerConf layerConf : layerSpaces ){
+            LayerSpace ls = layerConf.getLayerSpace();
+            list.addAll(ls.collectLeaves());
+        }
+
+        return list;
     }
 
 
@@ -271,53 +276,11 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         throw new UnsupportedOperationException("Cannot set indices for non leaf");
     }
 
-    public Map<String, ParameterSpace<?>> getGlobalConfigAsMap() {
-        Map<String, ParameterSpace<?>> m = new LinkedHashMap<>();
-
-        //Need to manually build and walk the class heirarchy...
-
-        Class<?> currClass = this.getClass();
-        List<Class<?>> classHeirarchy = new ArrayList<>();
-        while (currClass != Object.class) {
-            classHeirarchy.add(currClass);
-            currClass = currClass.getSuperclass();
-        }
-
-        for (int i = classHeirarchy.size() - 1; i >= 0; i--) {
-            //Use reflection here to avoid a mass of boilerplate code...
-            Field[] allFields = classHeirarchy.get(i).getDeclaredFields();
-
-            for (Field f : allFields) {
-
-                String name = f.getName();
-                Class<?> fieldClass = f.getType();
-                boolean isParamSpacefield = ParameterSpace.class.isAssignableFrom(fieldClass);
-
-                if (!isParamSpacefield) {
-                    continue;
-                }
-
-                ParameterSpace<?> p;
-                try {
-                    p = (ParameterSpace<?>) f.get(this);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-
-                if (p != null) {
-                    m.put(name, p);
-                }
-            }
-        }
-
-        return m;
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        for(Map.Entry<String,ParameterSpace<?>> e : getGlobalConfigAsMap().entrySet() ){
+        for(Map.Entry<String,ParameterSpace> e : getNestedSpaces().entrySet() ){
             sb.append(e.getKey()).append(": ").append(e.getValue()).append("\n");
         }
 

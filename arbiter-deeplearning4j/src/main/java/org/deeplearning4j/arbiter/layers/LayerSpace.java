@@ -35,7 +35,6 @@ import java.util.*;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class LayerSpace<L extends Layer> extends AbstractParameterSpace<L> {
@@ -56,7 +55,7 @@ public abstract class LayerSpace<L extends Layer> extends AbstractParameterSpace
 
         List<ParameterSpace> out = new ArrayList<>();
         while(!stack.isEmpty()){
-            ParameterSpace next = stack.getLast();
+            ParameterSpace next = stack.removeLast();
             if(next.isLeaf()){
                 out.add(next);
             } else {
@@ -110,48 +109,6 @@ public abstract class LayerSpace<L extends Layer> extends AbstractParameterSpace
             return s.substring(0, last);
         } else
             return s;
-    }
-
-    public Map<String, ParameterSpace<?>> getConfigAsMap() {
-        Map<String, ParameterSpace<?>> m = new LinkedHashMap<>();
-
-        //Need to manually build and walk the class heirarchy...
-
-        Class<?> currClass = this.getClass();
-        List<Class<?>> classHeirarchy = new ArrayList<>();
-        while (currClass != Object.class) {
-            classHeirarchy.add(currClass);
-            currClass = currClass.getSuperclass();
-        }
-
-        for (int i = classHeirarchy.size() - 1; i >= 0; i--) {
-            //Use reflection here to avoid a mass of boilerplate code...
-            Field[] allFields = classHeirarchy.get(i).getDeclaredFields();
-
-            for (Field f : allFields) {
-
-                String name = f.getName();
-                Class<?> fieldClass = f.getType();
-                boolean isParamSpacefield = ParameterSpace.class.isAssignableFrom(fieldClass);
-
-                if (!isParamSpacefield) {
-                    continue;
-                }
-
-                ParameterSpace<?> p;
-                try {
-                    p = (ParameterSpace<?>) f.get(this);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-
-                if (p != null) {
-                    m.put(name, p);
-                }
-            }
-        }
-
-        return m;
     }
 
     @SuppressWarnings("unchecked")

@@ -30,8 +30,16 @@ public class LeafUtils {
         return unique;
     }
 
-    public static int countUnique(List<ParameterSpace> allLeaves) {
-        return getUniqueObjects(allLeaves).size();
+    public static int countUniqueParameters(List<ParameterSpace> allLeaves) {
+        List<ParameterSpace> unique = getUniqueObjects(allLeaves);
+        int count = 0;
+        for( ParameterSpace ps : unique ){
+            if(!ps.isLeaf()){
+                throw new IllegalStateException("Method should only be used with leaf nodes");
+            }
+            count += ps.numParameters();
+        }
+        return count;
     }
 
 }

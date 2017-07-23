@@ -9,8 +9,6 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 
-import java.util.List;
-
 /**
  * LayerSpace for batch normalization layers
  *
@@ -37,7 +35,7 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
         this.gamma = builder.gamma;
         this.beta = builder.beta;
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override

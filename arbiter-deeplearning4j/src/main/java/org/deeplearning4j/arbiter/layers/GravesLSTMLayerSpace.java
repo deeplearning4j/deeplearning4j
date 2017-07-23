@@ -26,8 +26,6 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 
-import java.util.List;
-
 /**
  * Layer space for LSTM layers
  *
@@ -44,7 +42,7 @@ public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
 

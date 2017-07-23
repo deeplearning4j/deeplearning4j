@@ -27,8 +27,6 @@ import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 
-import java.util.List;
-
 /**
  * Layer space for convolutional layers
  *
@@ -50,7 +48,7 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
         this.padding = builder.padding;
         this.convolutionMode = builder.convolutionMode;
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override

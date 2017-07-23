@@ -10,8 +10,6 @@ import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 
-import java.util.List;
-
 /**
  * Layer space for a {@link GlobalPoolingLayer}
  *
@@ -36,7 +34,7 @@ public class GlobalPoolingLayerSpace extends LayerSpace<GlobalPoolingLayer> {
         this.poolingType = builder.poolingType;
         this.pNorm = builder.pNorm;
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override
