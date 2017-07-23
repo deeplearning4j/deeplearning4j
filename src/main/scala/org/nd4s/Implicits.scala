@@ -154,7 +154,7 @@ object Implicits {
   }
 
   implicit class NDArrayIndexWrapper(val underlying: INDArrayIndex) extends IndexNumberRange {
-    protected[nd4s] override def asRange(max: => Int): DRange = DRange(underlying.current(),underlying.end(),false,underlying.stride(),max)
+    protected[nd4s] override def asRange(max: => Int): DRange = DRange(underlying.current().asInstanceOf[Int],underlying.end().asInstanceOf[Int],false,underlying.stride().asInstanceOf[Int],max)
 
     override protected[nd4s] def asNDArrayIndex(max: => Int): INDArrayIndex = underlying
 
