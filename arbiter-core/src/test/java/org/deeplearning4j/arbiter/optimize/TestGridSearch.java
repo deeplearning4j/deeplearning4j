@@ -22,7 +22,7 @@ import org.deeplearning4j.arbiter.optimize.api.*;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
-import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
+import org.deeplearning4j.arbiter.optimize.generator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.junit.Test;

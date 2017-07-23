@@ -14,7 +14,7 @@
  *  *    limitations under the License.
  */
 
-package org.deeplearning4j.arbiter.optimize.candidategenerator;
+package org.deeplearning4j.arbiter.optimize.generator;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

@@ -10,7 +10,7 @@ import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
-import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
+import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 public class TestBasic {
 
     @Test
+    @Ignore
     public void testBasicUiOnly() throws Exception {
 
         UIServer.getInstance();
@@ -171,6 +172,72 @@ public class TestBasic {
 
         IOptimizationRunner runner =
                 new LocalOptimizationRunner(configuration, new ComputationGraphTaskCreator());
+
+        StatsStorage ss = new InMemoryStatsStorage();
+        StatusListener sl = new ArbiterStatusListener(ss);
+        runner.addListeners(sl);
+
+        UIServer.getInstance().attach(ss);
+
+        runner.execute();
+        Thread.sleep(100000);
+    }
+
+
+    @Test
+    @Ignore
+    public void testExceptionsMnist() throws Exception {
+
+        //Idea: Create a configuration that is not physically realizable, which should throw an exception
+        // after instantiating the model
+        //This exception should be visible in UI, but training should continue otherwise
+
+        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                .learningRate(new ContinuousParameterSpace(0.0001, 0.2))
+                .l2(new ContinuousParameterSpace(0.0001, 0.05))
+                .dropOut(new ContinuousParameterSpace(0.2, 0.7))
+                .addLayer(
+                        new ConvolutionLayerSpace.Builder().nIn(1)
+                                .nOut(new IntegerParameterSpace(5, 5))
+                                .kernelSize(new DiscreteParameterSpace<>(new int[] {14, 14}, new int[] {30, 30}))
+                                .stride(2, 2)
+                                .activation(new DiscreteParameterSpace<>(Activation.RELU,Activation.SOFTPLUS, Activation.LEAKYRELU))
+                                .build())
+                .addLayer(new DenseLayerSpace.Builder().nOut(new IntegerParameterSpace(32, 128))
+                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
+                        .build(), new IntegerParameterSpace(0, 1), true) //0 to 1 layers
+                .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .setInputType(InputType.convolutionalFlat(28, 28, 1))
+                .build();
+        Map<String, Object> commands = new HashMap<>();
+//        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
+
+        //Define configuration:
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
+        DataProvider dataProvider = new MnistDataSetProvider();
+
+
+        String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterUiTestBasicMnist\\").getAbsolutePath();
+
+        File f = new File(modelSavePath);
+        if (f.exists())
+            f.delete();
+        f.mkdir();
+        if (!f.exists())
+            throw new RuntimeException();
+
+        OptimizationConfiguration configuration =
+                new OptimizationConfiguration.Builder()
+                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                        .modelSaver(new FileModelSaver(modelSavePath))
+                        .scoreFunction(new TestSetLossScoreFunction(true))
+                        .terminationConditions(new MaxTimeCondition(120, TimeUnit.MINUTES),
+                                new MaxCandidatesCondition(100))
+                        .build();
+
+        IOptimizationRunner runner =
+                new LocalOptimizationRunner(configuration, new MultiLayerNetworkTaskCreator());
 
         StatsStorage ss = new InMemoryStatsStorage();
         StatusListener sl = new ArbiterStatusListener(ss);

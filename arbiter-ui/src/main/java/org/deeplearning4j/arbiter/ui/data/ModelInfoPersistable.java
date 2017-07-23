@@ -23,12 +23,11 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
     // settings for this model
     private double[] paramSpaceValues;
     private int totalNumUpdates;
-
     //Values for score vs. iteration chart
     private int[] iter;
     private float[] scoreVsIter;
-
     private String modelConfigJson;
+    private String exceptionStackTrace;
 
     public ModelInfoPersistable(String sessionId, String workerId, long timeStamp){
         super(sessionId, timeStamp);
@@ -50,6 +49,7 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
         this.paramSpaceValues = builder.paramSpaceValues;
         this.modelConfigJson = builder.modelConfigJson;
         this.totalNumUpdates = builder.totalNumUpdates;
+        this.exceptionStackTrace = builder.exceptionStackTrace;
     }
 
     @Override
@@ -72,6 +72,7 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
         private int[] iter;
         private float[] scoreVsIter;
         private String modelConfigJson;
+        private String exceptionStackTrace;
 
         public Builder workerId(String workerId){
             this.workerId = workerId;
@@ -126,6 +127,11 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
 
         public Builder modelConfigJson(String modelConfigJson){
             this.modelConfigJson = modelConfigJson;
+            return this;
+        }
+
+        public Builder exceptionStackTrace(String exceptionStackTrace){
+            this.exceptionStackTrace = exceptionStackTrace;
             return this;
         }
 

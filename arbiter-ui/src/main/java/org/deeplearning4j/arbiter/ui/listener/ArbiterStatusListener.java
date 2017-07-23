@@ -80,6 +80,7 @@ public class ArbiterStatusListener implements StatusListener {
                     .modelIdx(candidateInfo.getIndex())
                     .score(candidateInfo.getScore())
                     .status(candidateInfo.getCandidateStatus())
+                    .exceptionStackTrace(candidateInfo.getExceptionStackTrace())
                     .build();
 
             lastModelInfoPersistable.put(candidateInfo.getIndex(), p);
@@ -164,7 +165,6 @@ public class ArbiterStatusListener implements StatusListener {
             fScores[i] = scores.get(i);
         }
 
-
         ModelInfoPersistable p = new ModelInfoPersistable.Builder()
                 .timestamp(candidateInfo.getCreatedTime())
                 .sessionId(sessionId)
@@ -179,6 +179,7 @@ public class ArbiterStatusListener implements StatusListener {
                 .totalNumUpdates(totalNumUpdates)
                 .paramSpaceValues(candidateInfo.getFlatParams())
                 .modelConfigJson(modelConfigJson)
+                .exceptionStackTrace(candidateInfo.getExceptionStackTrace())
                 .build();
 
 

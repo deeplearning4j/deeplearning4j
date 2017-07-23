@@ -288,8 +288,14 @@ public class ArbiterModule implements UIModule {
         //First table: mix of static + dynamic in a table
         long runtimeDurationMs = mip.getLastUpdateTime() - mip.getTimeStamp();
         double avgMinibatchesPerSec = mip.getTotalNumUpdates() / (runtimeDurationMs/1000.0);
-
+        String avgMinibatchesPerSecStr = DECIMAL_FORMAT_2DP.format(avgMinibatchesPerSec);
         String runtimeStr = UIUtils.formatDuration(runtimeDurationMs);
+
+        if(mip.getStatus() == CandidateStatus.Failed){
+            runtimeStr = "";
+            avgMinibatchesPerSecStr = "";
+        }
+
         String[][] table = new String[][]{
                 {"Model Index", String.valueOf(mip.getModelIdx())},
                 {"Status", mip.getStatus().toString()},
@@ -297,7 +303,7 @@ public class ArbiterModule implements UIModule {
                 {"Created", TIME_FORMATTER.print(mip.getTimeStamp())},
                 {"Runtime", runtimeStr},
                 {"Total Number of Model Updates", String.valueOf(mip.getTotalNumUpdates())},
-                {"Average # Updates / Sec", DECIMAL_FORMAT_2DP.format(avgMinibatchesPerSec)},
+                {"Average # Updates / Sec", avgMinibatchesPerSecStr},
                 {"Number of Parameters", String.valueOf(mip.getNumParameters())},
                 {"Number of Layers", String.valueOf(mip.getNumLayers())}
         };
@@ -398,13 +404,23 @@ public class ArbiterModule implements UIModule {
         }
 
 
-        //Finally: post full network configuration JSON
-        components.add(DIV_SPACER_60PX);
-        components.add(new ComponentDiv(STYLE_DIV_WIDTH_100_PC, new ComponentText("Model Configuration", STYLE_TEXT_SZ12)));
+        //Post full network configuration JSON, if available:
         String modelJson = mip.getModelConfigJson();
         if(modelJson != null){
+            components.add(DIV_SPACER_60PX);
+            components.add(new ComponentDiv(STYLE_DIV_WIDTH_100_PC, new ComponentText("Model Configuration", STYLE_TEXT_SZ12)));
             ComponentText jsonText = new ComponentText(modelJson, STYLE_TEXT_SZ10_WHITESPACE_PRE);
             ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, jsonText);
+            components.add(cd);
+        }
+
+
+        //Post exception stack trace, if necessary:
+        if( mip.getExceptionStackTrace() != null ){
+            components.add(DIV_SPACER_60PX);
+            components.add(new ComponentDiv(STYLE_DIV_WIDTH_100_PC, new ComponentText("Model Exception - Stack Trace", STYLE_TEXT_SZ12)));
+            ComponentText exText = new ComponentText(mip.getExceptionStackTrace(), STYLE_TEXT_SZ10_WHITESPACE_PRE);
+            ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, exText);
             components.add(cd);
         }
 

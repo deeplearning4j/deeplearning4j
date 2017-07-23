@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
@@ -44,10 +45,6 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * BaseOptimization runner: responsible for scheduling tasks, saving results using the result saver, etc.
  *
- * @param <C> Type of configuration
- * @param <M> Type of model learned
- * @param <D> Type of data used to train model
- * @param <A> Type of additional results
  * @author Alex Black
  */
 @Slf4j
@@ -155,14 +152,21 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
             //Add additional tasks
             while (config.getCandidateGenerator().hasMoreCandidates() && queuedFutures.size() < maxConcurrentTasks()) {
                 Candidate candidate = config.getCandidateGenerator().getCandidate();
-                ListenableFuture<OptimizationResult> f = execute(candidate, config.getDataProvider(), config.getScoreFunction());
-                f.addListener(new OnCompletionListener(f), futureListenerExecutor);
-                queuedFutures.add(f);
-                totalCandidateCount.getAndIncrement();
 
-                CandidateInfo status = new CandidateInfo(candidate.getIndex(), CandidateStatus.Created, null,
-                                System.currentTimeMillis(), null, null, candidate.getFlatParameters(), null);
-                currentStatus.put(candidate.getIndex(), status);
+                CandidateInfo status;
+                if(candidate.getException() != null){
+                    //Failed on generation...
+                    status = processFailedCandidates(candidate);
+                } else {
+                    ListenableFuture<OptimizationResult> f = execute(candidate, config.getDataProvider(), config.getScoreFunction());
+                    f.addListener(new OnCompletionListener(f), futureListenerExecutor);
+                    queuedFutures.add(f);
+                    totalCandidateCount.getAndIncrement();
+
+                    status = new CandidateInfo(candidate.getIndex(), CandidateStatus.Created, null,
+                            System.currentTimeMillis(), null, null, candidate.getFlatParameters(), null);
+                    currentStatus.put(candidate.getIndex(), status);
+                }
 
                 for (StatusListener listener : statusListeners) {
                     listener.onCandidateStatusChange(status, this, null);
@@ -184,12 +188,24 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
         }
     }
 
+
+    private CandidateInfo processFailedCandidates(Candidate<?> candidate){
+        //In case the candidate fails during the creation of the candidate
+
+        long time = System.currentTimeMillis();
+        String stackTrace = ExceptionUtils.getStackTrace(candidate.getException());
+        CandidateInfo newStatus = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null,
+                time, time, time, candidate.getFlatParameters(), stackTrace);
+        currentStatus.put(candidate.getIndex(), newStatus);
+
+        return newStatus;
+    }
+
     /**
      * Process returned task (either completed or failed
      */
     private void processReturnedTask(Future<OptimizationResult> future) {
         long currentTime = System.currentTimeMillis();
-        //TODO: track and log execution time
         OptimizationResult result;
         try {
             result = future.get(100, TimeUnit.MILLISECONDS);

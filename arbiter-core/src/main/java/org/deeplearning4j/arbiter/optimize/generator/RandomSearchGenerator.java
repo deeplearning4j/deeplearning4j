@@ -15,7 +15,7 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.optimize.candidategenerator;
+package org.deeplearning4j.arbiter.optimize.generator;
 
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
@@ -59,8 +59,17 @@ public class RandomSearchGenerator extends BaseCandidateGenerator {
         double[] randomValues = new double[parameterSpace.numParameters()];
         for (int i = 0; i < randomValues.length; i++)
             randomValues[i] = rng.nextDouble();
-        return new Candidate(parameterSpace.getValue(randomValues), candidateCounter.getAndIncrement(), randomValues,
-                        dataParameters);
+
+        Object value = null;
+        Exception e = null;
+        try{
+            value = parameterSpace.getValue(randomValues);
+        } catch (Exception e2){
+            e = e2;
+        }
+
+        return new Candidate(value, candidateCounter.getAndIncrement(), randomValues,
+                        dataParameters, e);
     }
 
     @Override

@@ -14,7 +14,7 @@
  *  *    limitations under the License.
  */
 
-package org.deeplearning4j.arbiter.optimize.candidategenerator;
+package org.deeplearning4j.arbiter.optimize.generator;
 
 import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.random.RandomAdaptor;
@@ -154,7 +154,15 @@ public class GridSearchCandidateGenerator extends BaseCandidateGenerator {
         //Next: max integer (candidate number) to values
         double[] values = indexToValues(numValuesPerParam, next, totalNumCandidates);
 
-        return new Candidate(parameterSpace.getValue(values), candidateCounter.getAndIncrement(), values);
+        Object value = null;
+        Exception e = null;
+        try{
+            value = parameterSpace.getValue(values);
+        } catch (Exception e2){
+            e = e2;
+        }
+
+        return new Candidate(value, candidateCounter.getAndIncrement(), values, dataParameters, e);
     }
 
     @Override
