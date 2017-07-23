@@ -343,7 +343,7 @@ public class SameDiffTests {
         for(int i = 0; i < 10; i++) {
             INDArray output =  weights;
             INDArray score = sameDiff.execAndEndResult(ops);
-            System.out.println("Update " + output + " with score " + score);
+            System .out.println("Update " + output + " with score " + score);
         }
 
         System.out.println(ops);
