@@ -92,12 +92,12 @@ public class EncodingHandler implements MessageHandler {
         INDArray encoded =  null;
 
         if (!bitmapMode.get().get()) {
-            // if shakeFrequency hits here, we'll use bitmap encoding for one round for 1/2 of current threshold
+            // if shakeFrequency hits here, we'll use bitmap encoding for one round for 1/3 of current threshold
             if (shakeFrequency != 0 && iterations.get().get() % shakeFrequency == 0) {
                 DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.lengthLong() / 16 + 5);
                 encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
 
-                Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get() / 2);
+                Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get() / 3);
             } else {
                 // otherwise (probably most often - we go for sparse
                 encoded = Nd4j.getExecutioner().thresholdEncode(updates, currentThreshold.get().get(), boundary == null ? null : atomicBoundary.get());
