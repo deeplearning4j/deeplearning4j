@@ -23,7 +23,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
-import org.deeplearning4j.arbiter.paramspace.misc.ActivationParameterSpaceAdapter;
+import org.deeplearning4j.arbiter.adapter.ActivationParameterSpaceAdapter;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -33,8 +33,6 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 /**

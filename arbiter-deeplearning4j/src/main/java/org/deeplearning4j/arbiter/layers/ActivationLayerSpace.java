@@ -6,13 +6,11 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
-import org.deeplearning4j.arbiter.paramspace.misc.ActivationParameterSpaceAdapter;
+import org.deeplearning4j.arbiter.adapter.ActivationParameterSpaceAdapter;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
-
-import java.util.List;
 
 /**
  * Layer space for {@link ActivationLayer}

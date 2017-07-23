@@ -38,7 +38,7 @@ import java.util.*;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
-public abstract class LayerSpace<L extends Layer> extends AbstractParameterSpace<L> { //implements ParameterSpace<L> {
+public abstract class LayerSpace<L extends Layer> extends AbstractParameterSpace<L> {
     protected ParameterSpace<Double> dropOut;
     protected int numParameters;
 

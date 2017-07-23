@@ -18,6 +18,7 @@
 package org.deeplearning4j.arbiter.layers;
 
 import lombok.*;
+import org.deeplearning4j.arbiter.adapter.LossFunctionParameterSpaceAdapter;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
@@ -58,7 +59,7 @@ public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends Fe
         }
 
         public T lossFunction(ParameterSpace<LossFunction> lossFunction) {
-            return iLossFunction(new LossFunctionParameterSpace(lossFunction));
+            return iLossFunction(new LossFunctionParameterSpaceAdapter(lossFunction));
         }
 
         public T iLossFunction(ILossFunction lossFunction) {
@@ -70,49 +71,4 @@ public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends Fe
             return (T) this;
         }
     }
-
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Data
-    public static class LossFunctionParameterSpace implements ParameterSpace<ILossFunction> {
-
-        private ParameterSpace<LossFunction> lossFunctionParameterSpace;
-
-
-        @Override
-        public ILossFunction getValue(double[] parameterValues) {
-            return lossFunctionParameterSpace.getValue(parameterValues).getILossFunction();
-        }
-
-        @Override
-        public int numParameters() {
-            return lossFunctionParameterSpace.numParameters();
-        }
-
-        @Override
-        public List<ParameterSpace> collectLeaves() {
-            return lossFunctionParameterSpace.collectLeaves();
-        }
-
-        @Override
-        public Map<String, ParameterSpace> getNestedSpaces() {
-            return lossFunctionParameterSpace.getNestedSpaces();
-        }
-
-        @Override
-        public boolean isLeaf() {
-            return lossFunctionParameterSpace.isLeaf();
-        }
-
-        @Override
-        public void setIndices(int... indices) {
-            lossFunctionParameterSpace.setIndices(indices);
-        }
-
-        @Override
-        public String toString(){
-            return lossFunctionParameterSpace.toString();
-        }
-    }
-
 }
