@@ -48,8 +48,9 @@ public class OpExecutionerUtil {
         return stridesSameAsInit;
     }
 
-    public static void checkForNaN(INDArray z){
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+    public static void checkForNaN(INDArray z) {
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC
+                        && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
             return;
 
         int match = 0;
@@ -75,8 +76,9 @@ public class OpExecutionerUtil {
         checkForInf(z);
     }
 
-    public static void checkForInf(INDArray z){
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+    public static void checkForInf(INDArray z) {
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC
+                        && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
             return;
 
         int match = 0;
@@ -98,8 +100,9 @@ public class OpExecutionerUtil {
 
     }
 
-    public static void checkForNaN(Op op){
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+    public static void checkForNaN(Op op) {
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC
+                        && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
             return;
 
         if (op.z() != null && !(op instanceof MatchCondition)) {
@@ -107,8 +110,9 @@ public class OpExecutionerUtil {
         }
     }
 
-    public static void checkForInf(Op op){
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+    public static void checkForInf(Op op) {
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC
+                        && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
             return;
 
         if (op.z() != null && !(op instanceof MatchCondition)) {
@@ -295,10 +299,10 @@ public class OpExecutionerUtil {
         int numTensors = array.tensorssAlongDimension(dimension);
 
         //First tensor always starts with the first element in the NDArray, regardless of dimension
-        int firstTensorOffset = array.offset();
+        long firstTensorOffset = array.offset();
 
         //Next: Need to work out the separation between the start (first element) of each 1d tensor
-        int tensorStartSeparation;
+        long tensorStartSeparation;
         int elementWiseStride; //Separation in buffer between elements in the tensor
         if (numTensors == 1) {
             tensorStartSeparation = -1; //Not applicable
@@ -321,10 +325,10 @@ public class OpExecutionerUtil {
     @AllArgsConstructor
     @Data
     public static class Tensor1DStats {
-        public final int firstTensorOffset;
-        public final int tensorStartSeparation;
-        public final int numTensors;
-        public final int tensorLength;
+        public final long firstTensorOffset;
+        public final long tensorStartSeparation;
+        public final long numTensors;
+        public final long tensorLength;
         public final int elementWiseStride;
     }
 }

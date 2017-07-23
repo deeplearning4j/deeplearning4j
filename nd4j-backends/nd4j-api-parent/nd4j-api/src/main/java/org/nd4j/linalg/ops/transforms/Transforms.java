@@ -24,12 +24,17 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.Atan2Op;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.inverse.InvertMatrix;
 
 /**
  * Functional interface for the different op classes
@@ -54,6 +59,32 @@ public class Transforms {
                         .doubleValue();
     }
 
+    public static double cosineDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
+        return Nd4j.getExecutioner().execAndReturn(new CosineDistance(d1, d2, d1.length())).getFinalResult()
+                .doubleValue();
+    }
+
+    public static INDArray allCosineSimilarities(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
+        return Nd4j.getExecutioner().exec(new CosineSimilarity(d1, d2, true), dimensions);
+    }
+
+    public static INDArray allCosineDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
+        return Nd4j.getExecutioner().exec(new CosineDistance(d1, d2, true), dimensions);
+    }
+
+    public static INDArray allEuclideanDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
+        return Nd4j.getExecutioner().exec(new EuclideanDistance(d1, d2, true), dimensions);
+    }
+
+    public static INDArray allManhattanDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
+        return Nd4j.getExecutioner().exec(new ManhattanDistance(d1, d2, true), dimensions);
+    }
+
+
+    public static INDArray reverse(INDArray x, boolean dup) {
+        return Nd4j.getExecutioner().exec(new Reverse(x, dup ? Nd4j.createUninitialized(x.shape(), x.ordering()): x)).z();
+    }
+
     /**
      *
      * @param d1
@@ -62,6 +93,17 @@ public class Transforms {
      */
     public static double manhattanDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
         return d1.distance1(d2);
+    }
+
+    /**
+     * Atan2 operation, new INDArray instance will be returned
+     *
+     * @param x
+     * @param y
+     * @return
+     */
+    public static INDArray atan2(@NonNull INDArray x, @NonNull INDArray y) {
+        return Nd4j.getExecutioner().execAndReturn(new Atan2Op(x, y, Nd4j.createUninitialized(x.shape(), x.ordering())));
     }
 
     /**
@@ -963,5 +1005,44 @@ public class Transforms {
         return Nd4j.getExecutioner().execAndReturn(op);
     }
 
+    /**
+     * Raises a square matrix to a power <i>n</i>, which can be positive, negative, or zero.
+     * The behavior is similar to the numpy matrix_power() function.  The algorithm uses
+     * repeated squarings to minimize the number of mmul() operations needed
+     * <p>If <i>n</i> is zero, the identity matrix is returned.</p>
+     * <p>If <i>n</i> is negative, the matrix is inverted and raised to the abs(n) power.</p>
+     * @param in A square matrix to raise to an integer power, which will be changed if dup is false.
+     * @param n The integer power to raise the matrix to.
+     * @param dup If dup is true, the original input is unchanged.
+     * @return The result of raising <i>in</i> to the <i>n</i>th power.
+     */
+    public static INDArray mpow(INDArray in, int n, boolean dup) {
+        assert in.rows() == in.columns();
+        if (n == 0) {
+            if (dup) return Nd4j.eye(in.rows());
+            else return in.assign(Nd4j.eye(in.rows()));
+        }
+        INDArray temp;
+        if (n < 0) {
+            temp = InvertMatrix.invert(in, !dup);
+            n = -n;
+        } else temp = in.dup();
+        INDArray result = temp.dup();
+        if (n < 4) {
+            for (int i = 1; i < n; i++) {
+                result.mmuli(temp);
+            }
+            if (dup) return result;
+            else return in.assign(result);
+        } else {
+            // lets try to optimize by squaring itself a bunch of times
+            int squares = (int)(Math.log(n)/Math.log(2.0));
+            for (int i = 0; i < squares; i++) result = result.mmul(result);
+            int diff = (int)Math.round(n-Math.pow(2.0,squares));
+            for (int i = 0; i < diff; i++) result.mmuli(temp);
+            if (dup) return result;
+            else return in.assign(result);
+        }
+    }
 
 }

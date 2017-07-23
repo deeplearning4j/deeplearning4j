@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -57,6 +58,7 @@ import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
+import org.nd4j.linalg.api.ops.impl.transforms.Reverse;
 import org.nd4j.linalg.api.ops.random.impl.Choice;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.api.ops.random.impl.Linspace;
@@ -1087,7 +1089,7 @@ public class Nd4j {
      * @param type  the type to create
      * @return the created buffer
      */
-    public static DataBuffer createBuffer(int[] shape, DataBuffer.Type type, int offset) {
+    public static DataBuffer createBuffer(int[] shape, DataBuffer.Type type, long offset) {
         int length = ArrayUtil.prod(shape);
         return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length], offset)
                 : createBuffer(new float[length], offset);
@@ -1104,7 +1106,7 @@ public class Nd4j {
      * @param length the length of the buffer
      * @return
      */
-    public static DataBuffer createBuffer(ByteBuffer buffer, DataBuffer.Type type, int length, int offset) {
+    public static DataBuffer createBuffer(ByteBuffer buffer, DataBuffer.Type type, int length, long offset) {
         switch (type) {
             case INT:
                 return DATA_BUFFER_FACTORY_INSTANCE.createInt(offset, buffer, length);
@@ -1124,7 +1126,7 @@ public class Nd4j {
      * @param data the data to create the buffer with
      * @return the created buffer
      */
-    public static DataBuffer createBuffer(byte[] data, int length, int offset) {
+    public static DataBuffer createBuffer(byte[] data, int length, long offset) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data, length);
@@ -1140,7 +1142,7 @@ public class Nd4j {
      * @param data the shape of the buffer to create
      * @return the created buffer
      */
-    public static DataBuffer createBuffer(int[] data, int offset) {
+    public static DataBuffer createBuffer(int[] data, long offset) {
         DataBuffer ret;
         ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(offset, data);
         logCreationIfNecessary(ret);
@@ -1153,7 +1155,7 @@ public class Nd4j {
      * @param length the length of te buffer
      * @return the buffer to create
      */
-    public static DataBuffer createBuffer(int length, int offset) {
+    public static DataBuffer createBuffer(int length, long offset) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, length);
@@ -1213,7 +1215,7 @@ public class Nd4j {
      * @param data the data to create the buffer with
      * @return the created buffer
      */
-    public static DataBuffer createBuffer(float[] data, int offset) {
+    public static DataBuffer createBuffer(float[] data, long offset) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
             ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -1231,7 +1233,7 @@ public class Nd4j {
      * @param data the data to create the buffer with
      * @return the created buffer
      */
-    public static DataBuffer createBuffer(double[] data, int offset) {
+    public static DataBuffer createBuffer(double[] data, long offset) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
             ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -1688,6 +1690,11 @@ public class Nd4j {
         return ndarray;
     }
 
+
+    public static INDArray sort(INDArray ndarray, boolean ascending) {
+        return getNDArrayFactory().sort(ndarray, !ascending);
+    }
+
     /**
      * Sort an ndarray along a particular dimension
      *
@@ -1696,6 +1703,8 @@ public class Nd4j {
      * @return the sorted ndarray
      */
     public static INDArray sort(INDArray ndarray, int dimension, boolean ascending) {
+        return getNDArrayFactory().sort(ndarray, !ascending, dimension);
+        /*
         for (int i = 0; i < ndarray.vectorsAlongDimension(dimension); i++) {
             INDArray vec = ndarray.vectorAlongDimension(i, dimension);
             double[] data = new double[vec.length()];
@@ -1717,7 +1726,7 @@ public class Nd4j {
 
         }
 
-        return ndarray;
+        return ndarray;*/
     }
 
     /**Sort (shuffle) the rows of a 2d array according to the value at a specified column.
@@ -2416,7 +2425,7 @@ public class Nd4j {
      */
     public static INDArray createArrayFromShapeBuffer(DataBuffer data, DataBuffer shapeInfo) {
         int rank = Shape.rank(shapeInfo);
-        int offset = Shape.offset(shapeInfo);
+        long offset = Shape.offset(shapeInfo);
         INDArray result = Nd4j.create(data, toIntArray(rank, Shape.shapeOf(shapeInfo)),
                 toIntArray(rank, Shape.stride(shapeInfo)), offset, Shape.order(shapeInfo));
         if (data instanceof CompressedDataBuffer)
@@ -2424,6 +2433,24 @@ public class Nd4j {
 
         return result;
     }
+
+    /**
+     *
+     * @param data
+     * @param shapeInfo
+     * @return
+     */
+    public static INDArray createArrayFromShapeBuffer(DataBuffer data, Pair<DataBuffer, int[]> shapeInfo) {
+        int rank = Shape.rank(shapeInfo.getFirst());
+        long offset = Shape.offset(shapeInfo.getFirst());
+        INDArray result = Nd4j.create(data, toIntArray(rank, Shape.shapeOf(shapeInfo.getFirst())),
+                toIntArray(rank, Shape.stride(shapeInfo.getFirst())), offset, Shape.order(shapeInfo.getFirst()));
+        if (data instanceof CompressedDataBuffer)
+            result.markAsCompressed(true);
+
+        return result;
+    }
+
 
 
     /**
@@ -2576,9 +2603,9 @@ public class Nd4j {
      * @return the reversed matrix
      */
     public static INDArray reverse(INDArray reverse) {
-        INDArray ret = INSTANCE.reverse(reverse);
-        logCreationIfNecessary(ret);
-        return ret;
+        //INDArray ret = INSTANCE.reverse(reverse);
+        //logCreationIfNecessary(ret);
+        return Nd4j.getExecutioner().exec(new Reverse(reverse)).z();
     }
 
     /**
@@ -3408,7 +3435,7 @@ public class Nd4j {
      * @return the complex ndarray with the specified ndarray as the
      * real components
      */
-    public static IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int offset, char order) {
+    public static IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, long offset, char order) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -3582,7 +3609,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset) {
+    public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, long offset) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -3603,7 +3630,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(double[] data, int[] shape, int[] stride, int offset) {
+    public static INDArray create(double[] data, int[] shape, int[] stride, long offset) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -3633,7 +3660,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset) {
+    public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, long offset) {
         checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset);
@@ -3651,7 +3678,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(float[] data, int rows, int columns, int[] stride, int offset) {
+    public static INDArray create(float[] data, int rows, int columns, int[] stride, long offset) {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
@@ -3670,7 +3697,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(float[] data, int rows, int columns, int[] stride, int offset) {
+    public static IComplexNDArray createComplex(float[] data, int rows, int columns, int[] stride, long offset) {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
@@ -3689,7 +3716,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(double[] data, int rows, int columns, int[] stride, int offset) {
+    public static INDArray create(double[] data, int rows, int columns, int[] stride, long offset) {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
@@ -3707,7 +3734,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(double[] data, int rows, int columns, int[] stride, int offset) {
+    public static IComplexNDArray createComplex(double[] data, int rows, int columns, int[] stride, long offset) {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
@@ -3724,7 +3751,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(float[] data, int[] shape, int offset) {
+    public static INDArray create(float[] data, int[] shape, long offset) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -3752,7 +3779,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(double[] data, int[] shape, int offset, char ordering) {
+    public static INDArray create(double[] data, int[] shape, long offset, char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -3781,7 +3808,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(float[] data, int[] shape, int[] stride, int offset) {
+    public static INDArray create(float[] data, int[] shape, int[] stride, long offset) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -3830,7 +3857,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(int rows, int columns, int[] stride, int offset) {
+    public static IComplexNDArray createComplex(int rows, int columns, int[] stride, long offset) {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
@@ -3848,7 +3875,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(int rows, int columns, int[] stride, int offset) {
+    public static INDArray create(int rows, int columns, int[] stride, long offset) {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
@@ -3857,7 +3884,7 @@ public class Nd4j {
         return ret;
     }
 
-    public static INDArray zeros(int rows, int columns, int[] stride, int offset) {
+    public static INDArray zeros(int rows, int columns, int[] stride, long offset) {
         return create(rows, columns, stride, offset);
     }
 
@@ -3869,7 +3896,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(int[] shape, int[] stride, int offset) {
+    public static IComplexNDArray createComplex(int[] shape, int[] stride, long offset) {
         checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(shape, stride, offset);
@@ -3885,7 +3912,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(int[] shape, int[] stride, int offset) {
+    public static INDArray create(int[] shape, int[] stride, long offset) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -3899,7 +3926,7 @@ public class Nd4j {
 
     }
 
-    public static INDArray zeros(int[] shape, int[] stride, int offset) {
+    public static INDArray zeros(int[] shape, int[] stride, long offset) {
         return create(shape, stride, offset);
     }
 
@@ -4010,7 +4037,7 @@ public class Nd4j {
      * @param offset
      * @return
      */
-    public static INDArray create(float[] data, int[] shape, int[] stride, char ordering, int offset) {
+    public static INDArray create(float[] data, int[] shape, int[] stride, char ordering, long offset) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4039,7 +4066,7 @@ public class Nd4j {
      * @param offset
      * @return
      */
-    public static INDArray create(float[] data, int[] shape, char ordering, int offset) {
+    public static INDArray create(float[] data, int[] shape, char ordering, long offset) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4068,7 +4095,7 @@ public class Nd4j {
      * @param offset
      * @return
      */
-    public static INDArray create(DataBuffer data, int[] shape, int[] strides, int offset) {
+    public static INDArray create(DataBuffer data, int[] shape, int[] strides, long offset) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4088,7 +4115,7 @@ public class Nd4j {
      * @param offset
      * @return
      */
-    public static INDArray create(DataBuffer data, int[] shape, int offset) {
+    public static INDArray create(DataBuffer data, int[] shape, long offset) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4111,7 +4138,7 @@ public class Nd4j {
      * @param ordering
      * @return
      */
-    public static INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering) {
+    public static INDArray create(DataBuffer data, int[] newShape, int[] newStride, long offset, char ordering) {
         checkShapeValues(newShape);
 
         INDArray ret = INSTANCE.create(data, newShape, newStride, offset, ordering);
@@ -4127,7 +4154,7 @@ public class Nd4j {
      * @param offset
      * @return
      */
-    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] newStrides, int offset) {
+    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] newStrides, long offset) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4147,7 +4174,7 @@ public class Nd4j {
      * @param offset
      * @return
      */
-    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int offset) {
+    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, long offset) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4169,7 +4196,7 @@ public class Nd4j {
      * @param ordering
      * @return
      */
-    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] newStrides, int offset,
+    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] newStrides, long offset,
                                                 char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
@@ -4191,7 +4218,7 @@ public class Nd4j {
      * @param ordering
      * @return
      */
-    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int offset, char ordering) {
+    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, long offset, char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4280,7 +4307,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(float[] data, int rows, int columns, int[] stride, int offset,
+    public static IComplexNDArray createComplex(float[] data, int rows, int columns, int[] stride, long offset,
                                                 char ordering) {
         int[] shape = new int[] {rows, columns};
         //ensure shapes that wind up being scalar end up with the write shape
@@ -4305,7 +4332,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(float[] data, int rows, int columns, int[] stride, int offset, char ordering) {
+    public static INDArray create(float[] data, int rows, int columns, int[] stride, long offset, char ordering) {
         int[] shape = new int[] {rows, columns};
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
@@ -4345,7 +4372,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+    public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, long offset, char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4366,7 +4393,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+    public static INDArray create(double[] data, int[] shape, int[] stride, long offset, char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4534,7 +4561,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(double[] data, int rows, int columns, int[] stride, int offset,
+    public static IComplexNDArray createComplex(double[] data, int rows, int columns, int[] stride, long offset,
                                                 char ordering) {
         int[] shape = new int[] {rows, columns};
         //ensure shapes that wind up being scalar end up with the write shape
@@ -4559,7 +4586,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(double[] data, int rows, int columns, int[] stride, int offset, char ordering) {
+    public static INDArray create(double[] data, int rows, int columns, int[] stride, long offset, char ordering) {
         int[] shape = new int[] {rows, columns};
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
@@ -4581,7 +4608,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+    public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, long offset, char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4602,7 +4629,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+    public static INDArray create(float[] data, int[] shape, int[] stride, long offset, char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4651,7 +4678,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(int rows, int columns, int[] stride, int offset, char ordering) {
+    public static IComplexNDArray createComplex(int rows, int columns, int[] stride, long offset, char ordering) {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
@@ -4669,7 +4696,7 @@ public class Nd4j {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(int rows, int columns, int[] stride, int offset, char ordering) {
+    public static INDArray create(int rows, int columns, int[] stride, long offset, char ordering) {
         int[] shape = new int[] {rows, columns};
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
@@ -4683,7 +4710,7 @@ public class Nd4j {
         return ret;
     }
 
-    public static INDArray zeros(int rows, int columns, int[] stride, int offset, char ordering) {
+    public static INDArray zeros(int rows, int columns, int[] stride, long offset, char ordering) {
         return create(rows, columns, stride, offset, ordering);
     }
 
@@ -4695,7 +4722,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(int[] shape, int[] stride, int offset, char ordering) {
+    public static IComplexNDArray createComplex(int[] shape, int[] stride, long offset, char ordering) {
         checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(shape, stride, offset, ordering);
@@ -4711,7 +4738,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(int[] shape, int[] stride, int offset, char ordering) {
+    public static INDArray create(int[] shape, int[] stride, long offset, char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4725,7 +4752,7 @@ public class Nd4j {
 
     }
 
-    public static INDArray zeros(int[] shape, int[] stride, int offset, char ordering) {
+    public static INDArray zeros(int[] shape, int[] stride, long offset, char ordering) {
         return create(shape, stride, offset, ordering);
     }
 
@@ -5036,7 +5063,7 @@ public class Nd4j {
      * @param ordering
      * @return
      */
-    public static IComplexNDArray createComplex(float[] data, int[] shape, int offset, char ordering) {
+    public static IComplexNDArray createComplex(float[] data, int[] shape, long offset, char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -5057,7 +5084,7 @@ public class Nd4j {
      * @param offset
      * @return
      */
-    public static IComplexNDArray createComplex(double[] data, int[] shape, int offset) {
+    public static IComplexNDArray createComplex(double[] data, int[] shape, long offset) {
         return createComplex(data, shape, offset, Nd4j.order());
     }
 
@@ -5068,7 +5095,7 @@ public class Nd4j {
      * @param offset
      * @return
      */
-    public static INDArray create(double[] data, int[] shape, int offset) {
+    public static INDArray create(double[] data, int[] shape, long offset) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -5097,7 +5124,7 @@ public class Nd4j {
      * @param ordering
      * @return
      */
-    public static IComplexNDArray createComplex(double[] data, int[] shape, int offset, char ordering) {
+    public static IComplexNDArray createComplex(double[] data, int[] shape, long offset, char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -5128,7 +5155,7 @@ public class Nd4j {
      * @param offset
      * @return
      */
-    public static IComplexNDArray createComplex(float[] data, int[] shape, int offset) {
+    public static IComplexNDArray createComplex(float[] data, int[] shape, long offset) {
         checkShapeValues(shape);
 
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset);
@@ -5705,7 +5732,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the created ndarray
      */
-    public static INDArray scalar(Number value, int offset) {
+    public static INDArray scalar(Number value, long offset) {
         return INSTANCE.scalar(value, offset);
     }
 
@@ -5716,7 +5743,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the created ndarray
      */
-    public static IComplexNDArray complexScalar(Number value, int offset) {
+    public static IComplexNDArray complexScalar(Number value, long offset) {
         IComplexNDArray arr = INSTANCE.complexScalar(value, offset);
         logCreationIfNecessary(arr);
         return arr;
@@ -5739,7 +5766,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the scalar nd array
      */
-    public static INDArray scalar(double value, int offset) {
+    public static INDArray scalar(double value, long offset) {
         INDArray ret = INSTANCE.scalar(value, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -5752,7 +5779,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the scalar nd array
      */
-    public static INDArray scalar(float value, int offset) {
+    public static INDArray scalar(float value, long offset) {
         INDArray ret = INSTANCE.scalar(value, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -5802,7 +5829,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the created ndarray
      */
-    public static IComplexNDArray scalar(IComplexNumber value, int offset) {
+    public static IComplexNDArray scalar(IComplexNumber value, long offset) {
         IComplexNDArray ret = INSTANCE.scalar(value, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -5852,7 +5879,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the scalar nd array
      */
-    public static IComplexNDArray scalar(IComplexFloat value, int offset) {
+    public static IComplexNDArray scalar(IComplexFloat value, long offset) {
         IComplexNDArray ret = INSTANCE.scalar(value, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -5865,7 +5892,7 @@ public class Nd4j {
      * @param offset the offset of the ndarray
      * @return the scalar nd array
      */
-    public static IComplexNDArray scalar(IComplexDouble value, int offset) {
+    public static IComplexNDArray scalar(IComplexDouble value, long offset) {
         IComplexNDArray ret = INSTANCE.scalar(value, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -6277,9 +6304,16 @@ public class Nd4j {
         int[] shape = arrays[0].shape();
         int[] newShape = ArrayUtils.add(shape, 0, 1);
 
+        boolean shouldReshape = true;
+        if (arrays[0].size(0) == 1)
+            shouldReshape = false;
+
         List<INDArray> reshaped = new ArrayList<>();
         for(INDArray array: arrays) {
-            reshaped.add(array.reshape(array.ordering(), newShape));
+            if (!shouldReshape)
+                reshaped.add(array);
+            else
+                reshaped.add(array.reshape(array.ordering(), newShape));
         }
 
         return Nd4j.vstack(reshaped);

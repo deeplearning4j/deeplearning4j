@@ -120,6 +120,13 @@ public interface AffinityManager {
     void ensureLocation(INDArray array, Location location);
 
     /**
+     * This method returns last-updated location for the given INDArray
+     * @param array
+     * @return
+     */
+    Location getActiveLocation(INDArray array);
+
+    /**
      * This method forces specific device for current thread.
      *
      * PLEASE NOTE: This method is UNSAFE and should NOT be used with 100% clearance about it.

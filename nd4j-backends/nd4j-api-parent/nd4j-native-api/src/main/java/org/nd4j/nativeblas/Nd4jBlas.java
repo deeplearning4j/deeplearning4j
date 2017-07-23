@@ -29,7 +29,7 @@ public abstract class Nd4jBlas implements Blas {
                 int cores = Loader.totalCores();
                 int chips = Loader.totalChips();
                 if (cores > 0 && chips > 0)
-                    numThreads = Math.max(1, cores /chips);
+                    numThreads = Math.max(1, cores / chips);
                 else
                     numThreads = getCores(Runtime.getRuntime().availableProcessors());
                 setMaxThreads(numThreads);

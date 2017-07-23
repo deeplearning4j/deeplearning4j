@@ -256,7 +256,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
         DataBuffer newDataBuffer = replicateToDevice(deviceId, array.data());
         DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0,
-                        elementWiseStride, ordering);
+                        elementWiseStride, ordering).getFirst();
         INDArray result = Nd4j.createArrayFromShapeBuffer(newDataBuffer, newShapeBuffer);
 
         attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
@@ -360,6 +360,18 @@ public class CudaAffinityManager extends BasicAffinityManager {
         }
     }
 
+    @Override
+    public Location getActiveLocation(INDArray array) {
+        AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(array);
+
+        if (point.isActualOnDeviceSide() && point.isActualOnHostSide()) {
+            return Location.EVERYWHERE;
+        } else if (point.isActualOnDeviceSide()) {
+            return Location.DEVICE;
+        } else {
+            return Location.HOST;
+        }
+    }
 
     @Override
     public boolean isCrossDeviceAccessSupported() {

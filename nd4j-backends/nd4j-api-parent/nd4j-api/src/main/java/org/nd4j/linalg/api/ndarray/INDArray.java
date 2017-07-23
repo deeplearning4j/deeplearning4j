@@ -152,7 +152,7 @@ public interface INDArray extends Serializable {
      * @param offset the offset to get at
      * @return this
      */
-    double getDoubleUnsafe(int offset);
+    double getDoubleUnsafe(long offset);
 
     /**
      * Insert a scalar
@@ -161,7 +161,7 @@ public interface INDArray extends Serializable {
      * @param value the value to insert
      * @return this
      */
-    INDArray putScalarUnsafe(int offset, double value);
+    INDArray putScalarUnsafe(long offset, double value);
 
     /**
      * Return the major stride for an ndarray
@@ -1723,6 +1723,42 @@ public interface INDArray extends Serializable {
     Number sumNumber();
 
     /**
+     * Returns entropy value for this INDArray
+     * @return
+     */
+    Number entropyNumber();
+
+    /**
+     * Returns non-normalized Shannon entropy value for this INDArray
+     * @return
+     */
+    Number shannonEntropyNumber();
+
+    /**
+     * Returns log entropy value for this INDArray
+     * @return
+     */
+    Number logEntropyNumber();
+
+    /**
+     * Returns entropy value for this INDArray along specified dimension(s)
+     * @return
+     */
+    INDArray entropy(int... dimension);
+
+    /**
+     * Returns entropy value for this INDArray along specified dimension(s)
+     * @return
+     */
+    INDArray shannonEntropy(int... dimension);
+
+    /**
+     * Returns entropy value for this INDArray along specified dimension(s)
+     * @return
+     */
+    INDArray logEntropy(int... dimension);
+
+    /**
      * Sum the entire array
      * @return
      */
@@ -1760,7 +1796,7 @@ public interface INDArray extends Serializable {
      * @param stride
      * @return
      */
-    INDArray subArray(int[] offsets, int[] shape, int[] stride);
+    INDArray subArray(long[] offsets, int[] shape, int[] stride);
 
     /**
      * Returns the elements at the the specified indices
@@ -1908,14 +1944,14 @@ public interface INDArray extends Serializable {
      *
      * @return the starting offset
      */
-    int offset();
+    long offset();
 
 
     /**
      * Returns the start of where the ndarray is for the original data buffer
      * @return
      */
-    int originalOffset();
+    long originalOffset();
 
 
     /**
@@ -2513,4 +2549,34 @@ public interface INDArray extends Serializable {
      * @return
      */
     INDArray migrate();
+
+    /**
+     * This method returns percentile value for this INDArray
+     *
+     * @param percentile target percentile in range of 0..100
+     * @return
+     */
+    Number percentileNumber(Number percentile);
+
+    /**
+     * This method returns median value for this INDArray
+     *
+     * @return
+     */
+    Number medianNumber();
+
+    /**
+     * This method returns median along given dimension(s)
+     * @param dimension
+     * @return
+     */
+    INDArray median(int... dimension);
+
+    /**
+     * This method returns median along given dimension(s)
+     * @param percentile target percentile in range of 0..100
+     * @param dimension
+     * @return
+     */
+    INDArray percentile(Number percentile, int... dimension);
 }

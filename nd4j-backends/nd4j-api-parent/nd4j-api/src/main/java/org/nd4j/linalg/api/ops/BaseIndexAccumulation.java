@@ -66,11 +66,11 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-            this.extraArgs = new Object[]{zeroDouble()};
+            this.extraArgs = new Object[] {zeroDouble()};
         } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            this.extraArgs = new Object[]{zeroFloat()};
+            this.extraArgs = new Object[] {zeroFloat()};
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
-            this.extraArgs = new Object[]{zeroHalf()};
+            this.extraArgs = new Object[] {zeroHalf()};
         }
     }
 

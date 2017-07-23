@@ -1,5 +1,7 @@
 package org.nd4j.linalg;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -13,6 +15,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -22,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by agibsonccc on 4/1/16.
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public class LoneTest extends BaseNd4jTest {
     public LoneTest(Nd4jBackend backend) {
@@ -177,5 +181,62 @@ public class LoneTest extends BaseNd4jTest {
         currentArgMax = Nd4j.argMax(A).getInt(0, 0);
         System.out.println("Returned argMax is " + currentArgMax);
         assertEquals(max - 1, currentArgMax);
+    }
+
+
+    @Test
+    public void testConcat3D_Vstack_C() throws Exception {
+        int[] shape = new int[]{1,1000,150};
+        //INDArray cOrder =  Nd4j.rand(shape,123);
+
+
+        List<INDArray> cArrays = new ArrayList<>();
+        List<INDArray> fArrays = new ArrayList<>();
+
+        for (int e = 0; e < 32; e++) {
+            cArrays.add(Nd4j.create(shape, 'c').assign(e));
+//            fArrays.add(cOrder.dup('f'));
+        }
+
+        Nd4j.getExecutioner().commit();
+
+        long time1 = System.currentTimeMillis();
+        INDArray res = Nd4j.vstack(cArrays);
+        long time2 = System.currentTimeMillis();
+
+        log.info("Time spent: {} ms", time2 - time1);
+
+        for (int e = 0; e < 32; e++ ) {
+            INDArray tad = res.tensorAlongDimension(e, 1,2);
+            assertEquals((double) e, tad.meanNumber().doubleValue(), 1e-5);
+        }
+    }
+
+
+    @Test
+    public void testGetRow1() throws Exception {
+        INDArray array = Nd4j.create(10000, 10000);
+
+        //Thread.sleep(10000);
+
+        int numTries = 1000;
+        List<Long> times = new ArrayList<>();
+        long time = 0;
+        for (int i = 0; i < numTries; i++) {
+
+            int idx = RandomUtils.nextInt(0, 10000);
+            long time1 = System.nanoTime();
+            array.getRow(idx);
+            long time2 = System.nanoTime() - time1;
+
+            times.add(time2);
+            time += time2;
+        }
+
+        time /= numTries;
+
+        Collections.sort(times);
+
+        log.info("p50: {}; avg: {};", times.get(times.size() / 2), time);
     }
 }

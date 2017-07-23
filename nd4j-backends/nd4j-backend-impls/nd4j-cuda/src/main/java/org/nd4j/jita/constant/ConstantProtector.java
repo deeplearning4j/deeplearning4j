@@ -1,5 +1,6 @@
 package org.nd4j.jita.constant;
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.shape.ShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -22,8 +23,9 @@ public class ConstantProtector {
         return ourInstance;
     }
 
-    private List<DataBuffer> protector = new CopyOnWriteArrayList<>();
-    private List<Map<ShapeDescriptor, DataBuffer>> deviceCache = new ArrayList<>();
+    private List<DataBuffer> protectorLegacy = new CopyOnWriteArrayList<>();
+    private List<Pair<DataBuffer, int[]>> protector = new CopyOnWriteArrayList<>();
+    private List<Map<ShapeDescriptor, Pair<DataBuffer, int[]>>> deviceCache = new ArrayList<>();
 
     private ConstantProtector() {
         purgeProtector();
@@ -36,19 +38,23 @@ public class ConstantProtector {
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 
         for (int i = 0; i < numDevices; i++) {
-            deviceCache.add(i, new ConcurrentHashMap<ShapeDescriptor, DataBuffer>());
+            deviceCache.add(i, new ConcurrentHashMap<ShapeDescriptor, Pair<DataBuffer, int[]>>());
         }
     }
 
     public void persistDataBuffer(DataBuffer buffer) {
+        protectorLegacy.add(buffer);
+    }
+
+    public void persistDataBuffer(Pair<DataBuffer, int[]> buffer) {
         protector.add(buffer);
     }
 
-    public void persistDataBuffer(int deviceId, ShapeDescriptor descriptor, DataBuffer buffer) {
+    public void persistDataBuffer(int deviceId, ShapeDescriptor descriptor, Pair<DataBuffer, int[]> buffer) {
         deviceCache.get(deviceId).put(descriptor, buffer);
     }
 
-    public DataBuffer getDataBuffer(int deviceId, ShapeDescriptor descriptor) {
+    public Pair<DataBuffer, int[]> getDataBuffer(int deviceId, ShapeDescriptor descriptor) {
         return deviceCache.get(deviceId).get(descriptor);
     }
 

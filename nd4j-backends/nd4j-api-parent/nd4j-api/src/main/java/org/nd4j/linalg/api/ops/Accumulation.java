@@ -217,4 +217,11 @@ public interface Accumulation extends Op {
      *@return the complex initial value
      */
     IComplexNumber zeroComplex();
+
+
+    /**
+     * This method is only used for Distance functions
+     * @return
+     */
+    boolean isComplexAccumulation();
 }

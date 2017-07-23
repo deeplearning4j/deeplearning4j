@@ -51,25 +51,25 @@ public class LeakyReLUDerivative extends BaseTransformOp {
     public LeakyReLUDerivative(INDArray x, INDArray z, double alpha) {
         super(x, z);
         this.alpha = alpha;
-        init(x,y,z,n);  //Need to re-init to properly set alpha in extra args array
+        init(x, y, z, n); //Need to re-init to properly set alpha in extra args array
     }
 
     public LeakyReLUDerivative(INDArray x, INDArray z, long n, double alpha) {
         super(x, z, n);
         this.alpha = alpha;
-        init(x,y,z,n);
+        init(x, y, z, n);
     }
 
     public LeakyReLUDerivative(INDArray x, INDArray y, INDArray z, long n, double alpha) {
         super(x, y, z, n);
         this.alpha = alpha;
-        init(x,y,z,n);
+        init(x, y, z, n);
     }
 
     public LeakyReLUDerivative(INDArray x, double alpha) {
         super(x);
         this.alpha = alpha;
-        init(x,y,z,n);
+        init(x, y, z, n);
     }
 
     @Override
@@ -151,6 +151,6 @@ public class LeakyReLUDerivative extends BaseTransformOp {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        this.extraArgs = new Object[]{alpha};
+        this.extraArgs = new Object[] {alpha};
     }
 }

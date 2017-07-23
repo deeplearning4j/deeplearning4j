@@ -40,7 +40,6 @@
             </releases>
             <snapshots>
                 <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
             </snapshots>
         </repository>
     </repositories>
@@ -569,6 +568,9 @@
                   <directory>nd4j-buffer</directory>
                   <directory>nd4j-context</directory>
                   <directory>nd4j-parameter-server-parent</directory>
+                  <directory>nd4j-uberjar</directory>
+                  <directory>nd4j-backends/nd4j-api-parent</directory>
+                  <directory>nd4j-backends/nd4j-tests</directory>
                 </directories>
               </configuration>
             </plugin>

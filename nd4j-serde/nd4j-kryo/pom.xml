@@ -13,6 +13,7 @@
 
     <properties>
         <kryo.version>2.21</kryo.version>
+        <jkserializers.version>0.41</jkserializers.version>
     </properties>
 
     <dependencies>
@@ -21,6 +22,14 @@
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- Kryo serializers for java immutable collections -->
+        <dependency>
+            <groupId>de.javakaffee</groupId>
+            <artifactId>kryo-serializers</artifactId>
+            <version>${jkserializers.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.11</artifactId>
@@ -33,6 +42,7 @@
               </exclusion>
             </exclusions>
         </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>

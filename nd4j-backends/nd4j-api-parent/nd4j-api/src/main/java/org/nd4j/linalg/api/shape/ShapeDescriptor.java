@@ -8,7 +8,7 @@ import java.util.Arrays;
 public class ShapeDescriptor {
 
     private char order;
-    private int offset;
+    private long offset;
     private int ews;
     private long hashShape = 0;
     private long hashStride = 0;
@@ -16,7 +16,7 @@ public class ShapeDescriptor {
     private int[] shape;
     private int[] stride;
 
-    public ShapeDescriptor(int[] shape, int[] stride, int offset, int ews, char order) {
+    public ShapeDescriptor(int[] shape, int[] stride, long offset, int ews, char order) {
         /*
         if (shape != null) {
             hashShape = shape[0];
@@ -62,7 +62,8 @@ public class ShapeDescriptor {
     @Override
     public int hashCode() {
         int result = (int) order;
-        result = 31 * result + offset;
+        // FIXME: LONG
+        result = 31 * result + (int) offset;
         result = 31 * result + ews;
         result = 31 * result + Arrays.hashCode(shape);
         result = 31 * result + Arrays.hashCode(stride);

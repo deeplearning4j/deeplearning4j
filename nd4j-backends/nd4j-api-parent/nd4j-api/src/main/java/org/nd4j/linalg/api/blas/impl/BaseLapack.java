@@ -22,11 +22,11 @@ public abstract class BaseLapack implements Lapack {
         int n = A.columns();
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
-                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
+                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}).getFirst());
 
         int mn = Math.min(m, n);
         INDArray IPIV = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(mn),
-                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, mn}));
+                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, mn}).getFirst());
 
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
             dgetrf(m, n, A, IPIV, INFO);
@@ -71,7 +71,7 @@ public abstract class BaseLapack implements Lapack {
         int n = A.columns();
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
-                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
+                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}).getFirst());
 
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
             dpotrf( uplo, n, A, INFO);
@@ -114,7 +114,7 @@ public abstract class BaseLapack implements Lapack {
         int n = A.columns();
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
-                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
+                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}).getFirst());
 
         if( R.rows() != A.columns() || R.columns() != A.columns() ) {
             throw new Error( "geqrf: R must be N x N (n = columns in A)") ;
@@ -197,7 +197,7 @@ public abstract class BaseLapack implements Lapack {
         byte jobvt = (byte) (VT == null ? 'N' : 'A');
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
-                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
+                        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}).getFirst());
 
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
             dgesvd(jobu, jobvt, m, n, A, S, U, VT, INFO);

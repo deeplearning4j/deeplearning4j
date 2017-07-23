@@ -214,6 +214,15 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static long sumLong(long...add) {
+        if (add.length < 1)
+            return 0;
+        int ret = 0;
+        for (int i = 0; i < add.length; i++)
+            ret += add[i];
+        return ret;
+    }
+
     /**
      * Product of an int array
      * @param mult the elements
@@ -276,6 +285,15 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static long prodLong(long... mult) {
+        if (mult.length < 1)
+            return 0;
+        long ret = 1;
+        for (int i = 0; i < mult.length; i++)
+            ret *= mult[i];
+        return ret;
+    }
+
     public static boolean equals(float[] data, double[] data2) {
         if (data.length != data2.length)
             return false;
@@ -305,6 +323,14 @@ public class ArrayUtil {
     public static boolean isZero(int[] as) {
         for (int i = 0; i < as.length; i++) {
             if (as[i] == 0)
+                return true;
+        }
+        return false;
+    }
+
+    public static boolean isZero(long[] as) {
+        for (int i = 0; i < as.length; i++) {
+            if (as[i] == 0L)
                 return true;
         }
         return false;
@@ -386,6 +412,23 @@ public class ArrayUtil {
      * @return the offset for the given shape,offset,and strides
      */
     public static long calcOffsetLong(List<Integer> shape, List<Integer> offsets, List<Integer> strides) {
+        if (shape.size() != offsets.size() || shape.size() != strides.size())
+            throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
+        long ret = 0;
+        for (int i = 0; i < offsets.size(); i++) {
+            //we should only do this in the general case, not on vectors
+            //the reason for this is we force everything including scalars
+            //to be 2d
+            if (shape.get(i) == 1 && offsets.size() > 2 && i > 0)
+                continue;
+            ret += (long) offsets.get(i) * strides.get(i);
+        }
+
+        return ret;
+    }
+
+
+    public static long calcOffsetLong2(List<Long> shape, List<Long> offsets, List<Long> strides) {
         if (shape.size() != offsets.size() || shape.size() != strides.size())
             throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
         long ret = 0;
@@ -487,6 +530,25 @@ public class ArrayUtil {
      * @param ys
      * @return
      */
+    public static long dotProductLong2(List<Long> xs, List<Long> ys) {
+        long result = 0;
+        int n = xs.size();
+
+        if (ys.size() != n)
+            throw new IllegalArgumentException("Different array sizes");
+
+        for (int i = 0; i < n; i++) {
+            result += (long) xs.get(i) * ys.get(i);
+        }
+        return result;
+    }
+
+    /**
+     *
+     * @param xs
+     * @param ys
+     * @return
+     */
     public static long dotProductLong(int[] xs, int[] ys) {
         long result = 0;
         int n = xs.length;
@@ -512,6 +574,12 @@ public class ArrayUtil {
 
     public static int[] copy(int[] copy) {
         int[] ret = new int[copy.length];
+        System.arraycopy(copy, 0, ret, 0, ret.length);
+        return ret;
+    }
+
+    public static long[] copy(long[] copy) {
+        long[] ret = new long[copy.length];
         System.arraycopy(copy, 0, ret, 0, ret.length);
         return ret;
     }
@@ -639,6 +707,32 @@ public class ArrayUtil {
         return ret;
     }
 
+
+    public static long[] range(long from, long to, long increment) {
+        long diff = Math.abs(from - to);
+        long[] ret = new long[(int) (diff / increment)];
+        if (ret.length < 1)
+            ret = new long[1];
+
+        if (from < to) {
+            int count = 0;
+            for (long i = from; i < to; i += increment) {
+                if (count >= ret.length)
+                    break;
+                ret[count++] = i;
+            }
+        } else if (from > to) {
+            int count = 0;
+            for (int i = (int) from - 1; i >= to; i -= increment) {
+                if (count >= ret.length)
+                    break;
+                ret[count++] = i;
+            }
+        }
+
+        return ret;
+    }
+
     /**
      * Generate an int array ranging from
      * from to to.
@@ -652,6 +746,12 @@ public class ArrayUtil {
     public static int[] range(int from, int to) {
         if (from == to)
             return new int[0];
+        return range(from, to, 1);
+    }
+
+    public static long[] range(long from, long to) {
+        if (from == to)
+            return new long[0];
         return range(from, to, 1);
     }
 
@@ -1276,6 +1376,19 @@ public class ArrayUtil {
         int[] copy = new int[e.length];
         for (int i = 0; i <= e.length / 2; i++) {
             int temp = e[i];
+            copy[i] = e[e.length - i - 1];
+            copy[e.length - i - 1] = temp;
+        }
+        return copy;
+    }
+
+    public static long[] reverseCopy(long[] e) {
+        if (e.length < 1)
+            return e;
+
+        long[] copy = new long[e.length];
+        for (int i = 0; i <= e.length / 2; i++) {
+            long temp = e[i];
             copy[i] = e[e.length - i - 1];
             copy[e.length - i - 1] = temp;
         }

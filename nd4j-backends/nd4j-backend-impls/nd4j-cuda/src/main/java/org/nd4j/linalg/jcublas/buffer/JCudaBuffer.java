@@ -55,5 +55,5 @@ public interface JCudaBuffer extends DataBuffer {
      * @return the pointer at the given byte offset
      */
     @Deprecated
-    Pointer getHostPointer(int offset);
+    Pointer getHostPointer(long offset);
 }

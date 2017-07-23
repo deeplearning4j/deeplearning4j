@@ -1,6 +1,7 @@
 package org.nd4j.jita.constant;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -47,7 +48,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
     }
 
     @Override
-    public DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order) {
+    public Pair<DataBuffer, int[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order) {
         // We enforce offset to 0 in shapeBuffer, since we need it for cache efficiency + we don't actually use offset value @ native side
         offset = 0;
 
@@ -56,15 +57,15 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
         ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
 
         if (!protector.containsDataBuffer(deviceId, descriptor)) {
-            DataBuffer buffer = null;
+            Pair<DataBuffer, int[]> buffer = null;
             synchronized (this) {
                 if (!protector.containsDataBuffer(deviceId, descriptor)) {
                     //log.info("Cache miss: {}", descriptor);
                     buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
-                    buffer.setConstant(true);
+                    buffer.getFirst().setConstant(true);
 
                     if (CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
-                        Nd4j.getConstantHandler().moveToConstantSpace(buffer);
+                        Nd4j.getConstantHandler().moveToConstantSpace(buffer.getFirst());
                     }
 
                     //deviceCache.get(deviceId).put(descriptor, buffer);

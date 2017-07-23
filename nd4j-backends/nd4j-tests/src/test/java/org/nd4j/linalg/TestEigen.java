@@ -1,15 +1,18 @@
+package org.nd4j.linalg;
 
-package org.nd4j.linalg.eigen;
-
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.eigen.Eigen ;
-
+import org.nd4j.linalg.eigen.Eigen;
+import org.nd4j.linalg.inverse.InvertMatrix;
+import org.nd4j.linalg.util.ArrayUtil;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -19,8 +22,38 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class TestEigen extends BaseNd4jTest {
 
+	protected DataBuffer.Type initialType;
+
     public TestEigen(Nd4jBackend backend) {
         super(backend);
+        initialType = Nd4j.dataType();
+    }
+
+    @Before
+	public void before() {
+    	Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+	}
+
+	@After
+	public void after() {
+    	Nd4j.setDataType(initialType);
+	}
+
+    // test of functions added by Luke Czapla
+    // Compares solution of A x = L x  to solution to A x = L B x when it is simple
+    @Test
+    public void test2Syev() {
+    	double[][] matrix = new double[][] {{0.0427, -0.04, 0, 0, 0, 0}, {-0.04, 0.0427, 0, 0, 0, 0}, {0, 0.00, 0.0597, 0, 0, 0}, {0, 0, 0, 50, 0, 0}, {0, 0, 0, 0, 50, 0}, {0, 0, 0, 0, 0, 50}};
+	INDArray m = Nd4j.create(ArrayUtil.flattenDoubleArray(matrix), new int[] {6,6});
+	INDArray res = Eigen.symmetricGeneralizedEigenvalues(m, true);
+	
+	INDArray n = Nd4j.create(ArrayUtil.flattenDoubleArray(matrix), new int[] {6,6});
+	INDArray res2 = Eigen.symmetricGeneralizedEigenvalues(n, Nd4j.eye(6).mul(2.0), true);
+
+	for (int i = 0; i < 6; i++) {
+		assertEquals(res.getDouble(i), 2*res2.getDouble(i), 0.000001);
+	}
+	
     }
 
     @Test
@@ -52,4 +85,3 @@ public class TestEigen extends BaseNd4jTest {
         return 'f';
     }
 }
-
