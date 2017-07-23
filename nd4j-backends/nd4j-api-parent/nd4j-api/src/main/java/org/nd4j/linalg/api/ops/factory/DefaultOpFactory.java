@@ -138,44 +138,44 @@ public class DefaultOpFactory implements OpFactory {
         Accumulation ret = null;
         switch (name) {
             case "sum":
-                ret = new Sum(x, y, x.length());
+                ret = new Sum(x, y, z,x.length());
                 break;
             case "max":
-                ret = new Max(x, y, x.length());
+                ret = new Max(x, y, z,x.length());
                 break;
             case "min":
-                ret = new Min(x, y, x.length());
+                ret = new Min(x, y, z,x.length());
                 break;
             case "norm1":
-                ret = new Norm1(x, y, x.length());
+                ret = new Norm1(x, y,z, x.length());
                 break;
             case "norm2":
-                ret = new Norm2(x, y, x.length());
+                ret = new Norm2(x, y,z, x.length());
                 break;
             case "prod":
-                ret = new Prod(x, y, x.length());
+                ret = new Prod(x, y,z, x.length());
                 break;
             case "std":
-                ret = new StandardDeviation(x, y, x.length());
+                ret = new StandardDeviation(x, y,z, x.length(),(boolean) extraArgs[0]);
                 break;
             case "var":
-                ret = new Variance(x, y, x.length());
+                ret = new Variance(x, y,z, x.length(),(boolean) extraArgs[0]);
                 break;
             case "euclidean":
-                ret = new EuclideanDistance(x, y, x.length());
+                ret = new EuclideanDistance(x, y,z, x.length());
                 break;
             case "cosine":
             case "cosinesimilarity":
-                ret = new CosineSimilarity(x, y, x.length());
+                ret = new CosineSimilarity(x, y,z, x.length());
                 break;
             case "manhattan":
-                ret = new ManhattanDistance(x, y, x.length());
+                ret = new ManhattanDistance(x, y,z, x.length());
                 break;
             case "mmul":
-                ret = new Mmul(x, y, x.length());
+                ret = new Mmul(x, y,z, x.length());
                 break;
             case "tensorMmul":
-                ret = new TensorMmul(x, y,(int[][]) extraArgs[0]);
+                ret = new TensorMmul(x, y,z,(int[][]) extraArgs[0]);
                 break;
 
 

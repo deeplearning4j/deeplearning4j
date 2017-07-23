@@ -99,7 +99,7 @@ public class SDVariable  implements Serializable {
      */
     public void allocate() {
         if(arr == null)
-            arr = Nd4j.createUninitialized(getShape());
+            arr = Nd4j.zeros(getShape());
     }
 
 

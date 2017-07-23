@@ -25,6 +25,7 @@ import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * Created by agibsonccc on 4/4/17.
@@ -779,6 +780,7 @@ public class ArrayField implements Field<ArrayField> {
                                                  Object[] extraArgs) {
         NDArrayInformation ndArrayInformation =  NDArrayInformation.builder()
                 .id(name + "(" + input.getId() + ")").scalarValue(this.getInput().getScalarValue())
+                .arrId(UUID.randomUUID().toString())
                 .shape(getInput().getShape()).build();
         //result
         NDArrayVertex newVertex = new NDArrayVertex(
@@ -803,6 +805,9 @@ public class ArrayField implements Field<ArrayField> {
                 ,true);
 
         ndArrayInformation.setOwner(owner);
+        if(owner.isInPlace()) {
+            ndArrayInformation.setArrId(input.getArrId());
+        }
         return new ArrayField(newVertex,ops);
     }
 
@@ -810,7 +815,7 @@ public class ArrayField implements Field<ArrayField> {
                                             Number scalarValue,
                                             boolean inPlace) {
         NDArrayInformation result =  NDArrayInformation.builder().scalarValue(scalarValue)
-                .id(name + "(" + input.getId() + ")")
+                .id(name + "(" + input.getId() + ")").arrId(UUID.randomUUID().toString())
                 .shape(input.getShape()).build();
         //result
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(),result);
@@ -830,6 +835,9 @@ public class ArrayField implements Field<ArrayField> {
         this.ops.addEdge(vertex.vertexID(),
                 newVertex.vertexID(), owner,true);
         result.setOwner(owner);
+        if(owner.isInPlace()) {
+            result.setArrId(input.getArrId());
+        }
         return new ArrayField(newVertex,ops);
     }
 
@@ -854,6 +862,7 @@ public class ArrayField implements Field<ArrayField> {
 
         NDArrayInformation information =   NDArrayInformation.builder()
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
+                .arrId(UUID.randomUUID().toString())
                 .shape(resultShape).build();
 
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(), information);
@@ -879,6 +888,11 @@ public class ArrayField implements Field<ArrayField> {
                 .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.ACCUMULATION).build();
         yToZ.setResult(information);
+
+        if(xToz.isInPlace()) {
+            information.setArrId(input.getArrId());
+        }
+
         this.ops.addEdge(i_v.getVertex().vertexID(),
                 newVertex.vertexID(),yToZ,true);
 
@@ -891,7 +905,7 @@ public class ArrayField implements Field<ArrayField> {
                                        ArrayField i_v,
                                        Object[] extraArgs) {
         //result
-        NDArrayInformation resultInfo =  NDArrayInformation.builder()
+        NDArrayInformation resultInfo =  NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
                 .shape(input.getShape()).build();
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(), resultInfo);
@@ -920,6 +934,12 @@ public class ArrayField implements Field<ArrayField> {
         this.ops.addEdge(i_v.getVertex().getIdx(),
                 newVertex.vertexID(),yToZ,true);
         resultInfo.setOwner(yToZ);
+
+        if(xToZ.isInPlace()) {
+            resultInfo.setArrId(input.getArrId());
+        }
+
+
         return new ArrayField(newVertex,ops);
     }
 
@@ -930,7 +950,7 @@ public class ArrayField implements Field<ArrayField> {
                     i_v,extraArgs);
         }
         //result
-        NDArrayInformation resultInfo =  NDArrayInformation.builder()
+        NDArrayInformation resultInfo =  NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
                 .shape(input.getShape()).build();
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(), resultInfo);
@@ -961,10 +981,15 @@ public class ArrayField implements Field<ArrayField> {
         this.ops.addEdge(i_v.getVertex().vertexID(),
                 newVertex.vertexID(),yToZ,true);
         resultInfo.setOwner(yToZ);
+
+        if(xToZ.isInPlace()) {
+            resultInfo.setArrId(input.getArrId());
+        }
+
         return new ArrayField(newVertex,ops);
     }
 
-    private ArrayField addPairTransformOp(String name,ArrayField i_v) {
+    private ArrayField  addPairTransformOp(String name,ArrayField i_v) {
         return addPairTransformOp(name,i_v,null);
     }
 
@@ -984,7 +1009,7 @@ public class ArrayField implements Field<ArrayField> {
     private NDArrayVertex getVertex(String name,int[] shape) {
         //result
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId() ,
-                NDArrayInformation.builder()
+                NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                         .id(name + "(" + input.getId() + ")")
                         .shape(shape).build());
         return newVertex;
@@ -1012,15 +1037,20 @@ public class ArrayField implements Field<ArrayField> {
         //add the result vertex to the graph
         this.getOps().addVertex(newVertex);
 
+        OpState opState = OpState.builder()
+                .n(ArrayUtil.prod(input.getShape()))
+                .opName(name).extraArgs(extraArgs).axes(axes)
+                .result(newVertex.getValue())
+                .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
+                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                .opType(opType).build();
+
+        if(opState.isInPlace()) {
+            newVertex.getValue().setArrId(input.getArrId());
+        }
         //map x -> z
         this.ops.addEdge(vertex.vertexID(),
-                newVertex.vertexID(),OpState.builder()
-                        .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name).extraArgs(extraArgs).axes(axes)
-                        .result(newVertex.getValue())
-                        .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                        .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
-                        .opType(opType).build(),true);
+                newVertex.vertexID(),opState,true);
 
         return new ArrayField(newVertex,ops);
     }

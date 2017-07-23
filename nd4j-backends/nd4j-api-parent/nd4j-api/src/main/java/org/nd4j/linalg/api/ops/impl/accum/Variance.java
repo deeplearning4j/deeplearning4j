@@ -41,6 +41,10 @@ public class Variance extends BaseAccumulation {
 
     public Variance() {}
 
+    public Variance(boolean biasCorrected) {
+        this.biasCorrected = biasCorrected;
+    }
+
     public Variance(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         init(x, y, z, n);
