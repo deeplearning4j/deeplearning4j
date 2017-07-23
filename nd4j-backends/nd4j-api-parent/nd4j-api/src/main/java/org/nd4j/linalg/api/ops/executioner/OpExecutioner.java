@@ -81,6 +81,8 @@ public interface OpExecutioner {
     INDArray execAndReturn(TransformOp op);
 
 
+
+
     /**
      * Execute and return the result from an accumulation
      *

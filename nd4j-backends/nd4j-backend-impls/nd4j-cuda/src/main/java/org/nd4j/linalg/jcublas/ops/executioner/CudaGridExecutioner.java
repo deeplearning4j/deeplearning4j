@@ -44,7 +44,10 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class CudaGridExecutioner extends CudaExecutioner implements GridExecutioner {
     protected enum MetaType {
-        NOT_APPLICABLE, PREDICATE, INVERTED_PREDICATE, POSTULATE,
+        NOT_APPLICABLE,
+        PREDICATE,
+        INVERTED_PREDICATE,
+        POSTULATE
     }
 
     // general queues

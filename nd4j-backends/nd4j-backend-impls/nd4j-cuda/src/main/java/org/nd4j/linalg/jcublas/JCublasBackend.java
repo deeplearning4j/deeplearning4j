@@ -36,7 +36,6 @@ public class JCublasBackend extends Nd4jBackend {
 
     @Override
     public boolean isAvailable() {
-        // execute SimpleJCublas static initializer to confirm that the library is usable
         try {
             if (!canRun())
                 return false;

@@ -69,7 +69,6 @@ public class LossMixtureDensity implements ILossFunction {
      * 
      * @param mixtures Number of gaussian mixtures to model.
      * @param labelWidth Size of the labels vector for each sample.
-     * @param weights Weights to apply to each of the scores based on the label vectors.
      */
     private LossMixtureDensity(
             @JsonProperty("mixtures") int mixtures,
@@ -292,7 +291,17 @@ public class LossMixtureDensity implements ILossFunction {
         Pair<Double, INDArray> returnCode = new Pair<>(score, gradient);
         return returnCode;
     }
-    
+
+    /**
+     * The name of this function
+     *
+     * @return
+     */
+    @Override
+    public String name() {
+        return "lossmixturedensity";
+    }
+
     /**
      * This method returns an array consisting of each of the training samples,
      * for each label in each sample, the negative log likelihood of that
