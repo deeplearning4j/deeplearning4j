@@ -306,7 +306,7 @@ public class SameDiffTests {
 
         INDArray labels = Nd4j.create(new double[]{1,1,0,0}).reshape(4,1);
 
-        INDArray weights = Nd4j.rand(3,1,1);
+        INDArray weights = Nd4j.randn(3,1);
 
         SDVariable x = sameDiff.var("x",inputs);
         SDVariable y = sameDiff.var("y",labels);

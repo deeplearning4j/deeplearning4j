@@ -15,6 +15,7 @@ import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -1564,6 +1565,12 @@ public class SameDiff {
         for(int i = 0; i < ops.size(); i++) {
             Op op = ops.get(i);
             Nd4j.getExecutioner().exec(op);
+            //Accumulation final result
+            if(op instanceof Accumulation && op.n() == ArrayUtil.prod(op.x().shape()) && !op.isExecSpecial()) {
+                if(i < ops.size() - 1) {
+                    ops.get(i + 1).x().assign(((Accumulation) op).getFinalResult());
+                }
+            }
         }
         return ops;
     }
