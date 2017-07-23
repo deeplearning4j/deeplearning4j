@@ -450,6 +450,7 @@ void quickSort_parallel_internal(T* array, int *xShapeInfo, int left, int right,
 
     }
 
+    //
 
     if ( ((right-left)<cutoff) ){
         if (left < j){ quickSort_parallel_internal(array, xShapeInfo, left, j, cutoff, descending); }
