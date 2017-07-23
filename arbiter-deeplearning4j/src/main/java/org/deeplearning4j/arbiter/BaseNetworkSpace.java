@@ -21,6 +21,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
+import org.deeplearning4j.arbiter.optimize.api.AbstractParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
@@ -54,7 +55,7 @@ import java.util.Map;
 @EqualsAndHashCode
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @Data
-public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
+public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
 
     protected ParameterSpace<Boolean> useDropConnect;
     protected ParameterSpace<Integer> iterations;

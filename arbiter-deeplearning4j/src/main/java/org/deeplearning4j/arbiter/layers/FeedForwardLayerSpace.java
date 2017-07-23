@@ -48,16 +48,6 @@ public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends 
             builder.nOut(nOut.getValue(values));
     }
 
-    @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (nIn != null)
-            list.addAll(nIn.collectLeaves());
-        if (nOut != null)
-            list.addAll(nOut.collectLeaves());
-        return list;
-    }
-
 
     public abstract static class Builder<T> extends BaseLayerSpace.Builder<T> {
 

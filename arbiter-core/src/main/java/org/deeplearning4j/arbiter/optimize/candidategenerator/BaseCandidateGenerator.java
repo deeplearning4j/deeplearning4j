@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @param <T> Type of candidates to generate
  */
 @Data
-@EqualsAndHashCode(exclude = {"rng"})
+@EqualsAndHashCode(exclude = {"rng", "candidateCounter"})
 public abstract class BaseCandidateGenerator<T> implements CandidateGenerator {
     protected ParameterSpace<T> parameterSpace;
     protected AtomicInteger candidateCounter = new AtomicInteger(0);

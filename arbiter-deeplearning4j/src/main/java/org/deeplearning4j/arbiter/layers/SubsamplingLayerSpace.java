@@ -54,20 +54,6 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
     }
 
     @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (poolingType != null)
-            list.addAll(poolingType.collectLeaves());
-        if (kernelSize != null)
-            list.addAll(kernelSize.collectLeaves());
-        if (stride != null)
-            list.addAll(stride.collectLeaves());
-        if (padding != null)
-            list.addAll(padding.collectLeaves());
-        return list;
-    }
-
-    @Override
     public SubsamplingLayer getValue(double[] values) {
         SubsamplingLayer.Builder b = new SubsamplingLayer.Builder();
         setLayerOptionsBuilder(b, values);

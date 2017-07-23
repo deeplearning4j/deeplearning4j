@@ -54,20 +54,6 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
     }
 
     @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (kernelSize != null)
-            list.addAll(kernelSize.collectLeaves());
-        if (stride != null)
-            list.addAll(stride.collectLeaves());
-        if (padding != null)
-            list.addAll(padding.collectLeaves());
-        if (convolutionMode != null)
-            list.addAll(convolutionMode.collectLeaves());
-        return list;
-    }
-
-    @Override
     public ConvolutionLayer getValue(double[] values) {
         ConvolutionLayer.Builder b = new ConvolutionLayer.Builder();
         setLayerOptionsBuilder(b, values);

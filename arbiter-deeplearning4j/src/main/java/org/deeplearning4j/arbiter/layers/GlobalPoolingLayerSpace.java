@@ -60,20 +60,6 @@ public class GlobalPoolingLayerSpace extends LayerSpace<GlobalPoolingLayer> {
     }
 
     @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> out = super.collectLeaves();
-        if (poolingDimensions != null)
-            out.addAll(poolingDimensions.collectLeaves());
-        if (collapseDimensions != null)
-            out.addAll(collapseDimensions.collectLeaves());
-        if (poolingType != null)
-            out.addAll(poolingType.collectLeaves());
-        if (pNorm != null)
-            out.addAll(pNorm.collectLeaves());
-        return out;
-    }
-
-    @Override
     public boolean isLeaf() {
         return false;
     }

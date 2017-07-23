@@ -41,25 +41,6 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
     }
 
     @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (decay != null)
-            list.addAll(decay.collectLeaves());
-        if (eps != null)
-            list.addAll(eps.collectLeaves());
-        if (isMinibatch != null)
-            list.addAll(isMinibatch.collectLeaves());
-        if (lockGammaBeta != null)
-            list.addAll(lockGammaBeta.collectLeaves());
-        if (gamma != null)
-            list.addAll(gamma.collectLeaves());
-        if (beta != null)
-            list.addAll(beta.collectLeaves());
-        return list;
-    }
-
-
-    @Override
     public BatchNormalization getValue(double[] parameterValues) {
         BatchNormalization.Builder b = new BatchNormalization.Builder();
         setLayerOptionsBuilder(b, parameterValues);

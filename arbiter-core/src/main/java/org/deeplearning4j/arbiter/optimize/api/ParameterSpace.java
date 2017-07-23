@@ -27,6 +27,7 @@ import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * ParameterSpace: defines the acceptable ranges of values a given parameter may take.
@@ -59,6 +60,8 @@ public interface ParameterSpace<P> {
      * Collect a list of parameters, recursively.
      */
     List<ParameterSpace> collectLeaves();
+
+    Map<String,ParameterSpace> getNestedSpaces();
 
     /**
      * Is this ParameterSpace a leaf? (i.e., does it contain other ParameterSpace values?)

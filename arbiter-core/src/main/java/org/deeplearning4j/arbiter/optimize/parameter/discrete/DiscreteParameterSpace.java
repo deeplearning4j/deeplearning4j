@@ -81,6 +81,11 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
     }
 
     @Override
+    public Map<String, ParameterSpace> getNestedSpaces() {
+        return Collections.emptyMap();
+    }
+
+    @Override
     public boolean isLeaf() {
         return true;
     }

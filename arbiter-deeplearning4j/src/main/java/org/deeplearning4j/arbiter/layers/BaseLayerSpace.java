@@ -94,54 +94,6 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
     }
 
-    //    public abstract L randomLayer();
-
-    @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = new ArrayList<>();
-        if (activationFunction != null)
-            list.addAll(activationFunction.collectLeaves());
-        if (weightInit != null)
-            list.addAll(weightInit.collectLeaves());
-        if (biasInit != null)
-            list.addAll(biasInit.collectLeaves());
-        if (dist != null)
-            list.addAll(dist.collectLeaves());
-        if (learningRate != null)
-            list.addAll(learningRate.collectLeaves());
-        if (biasLearningRate != null)
-            list.addAll(biasLearningRate.collectLeaves());
-        if (learningRateAfter != null)
-            list.addAll(learningRateAfter.collectLeaves());
-        if (lrScoreBasedDecay != null)
-            list.addAll(lrScoreBasedDecay.collectLeaves());
-        if (l1 != null)
-            list.addAll(l1.collectLeaves());
-        if (l2 != null)
-            list.addAll(l2.collectLeaves());
-        if (momentum != null)
-            list.addAll(momentum.collectLeaves());
-        if (momentumAfter != null)
-            list.addAll(momentumAfter.collectLeaves());
-        if (updater != null)
-            list.addAll(updater.collectLeaves());
-        if (epsilon != null)
-            list.addAll(epsilon.collectLeaves());
-        if (rho != null)
-            list.addAll(rho.collectLeaves());
-        if (rmsDecay != null)
-            list.addAll(rmsDecay.collectLeaves());
-        if (adamMeanDecay != null)
-            list.addAll(adamMeanDecay.collectLeaves());
-        if (adamVarDecay != null)
-            list.addAll(adamVarDecay.collectLeaves());
-        if (gradientNormalization != null)
-            list.addAll(gradientNormalization.collectLeaves());
-        if (gradientNormalizationThreshold != null)
-            list.addAll(gradientNormalizationThreshold.collectLeaves());
-        return list;
-    }
-
     @Override
     public int numParameters() {
         return numParameters;

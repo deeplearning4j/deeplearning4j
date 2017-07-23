@@ -49,20 +49,6 @@ public class RBMLayerSpace extends BasePretrainNetworkLayerSpace<RBM> {
     }
 
     @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (hiddenUnit != null)
-            list.addAll(hiddenUnit.collectLeaves());
-        if (visibleUnit != null)
-            list.addAll(visibleUnit.collectLeaves());
-        if (k != null)
-            list.addAll(k.collectLeaves());
-        if (sparsity != null)
-            list.addAll(sparsity.collectLeaves());
-        return list;
-    }
-
-    @Override
     public RBM getValue(double[] values) {
         RBM.Builder b = new RBM.Builder();
         setLayerOptionsBuilder(b, values);

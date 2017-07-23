@@ -55,16 +55,6 @@ public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEnc
         return b.build();
     }
 
-    @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (corruptionLevel != null)
-            list.addAll(corruptionLevel.collectLeaves());
-        if (sparsity != null)
-            list.addAll(sparsity.collectLeaves());
-        return list;
-    }
-
     protected void setLayerOptionsBuilder(AutoEncoder.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
         if (corruptionLevel != null)

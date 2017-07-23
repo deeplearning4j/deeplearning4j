@@ -87,8 +87,8 @@ public class TestBasic {
 //        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
 
         //Define configuration:
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls, commands);
-        DataProvider<Object> dataProvider = new MnistDataSetProvider();
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
+        DataProvider dataProvider = new MnistDataSetProvider();
 
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterUiTestBasicMnist\\").getAbsolutePath();
@@ -100,8 +100,8 @@ public class TestBasic {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation> configuration =
-                new OptimizationConfiguration.Builder<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation>()
+        OptimizationConfiguration configuration =
+                new OptimizationConfiguration.Builder()
                         .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
                         .modelSaver(new FileModelSaver(modelSavePath))
                         .scoreFunction(new TestSetLossScoreFunction(true))
@@ -109,8 +109,8 @@ public class TestBasic {
                                 new MaxCandidatesCondition(100))
                         .build();
 
-        IOptimizationRunner<DL4JConfiguration, MultiLayerNetwork, Evaluation> runner =
-                new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<Evaluation>());
+        IOptimizationRunner runner =
+                new LocalOptimizationRunner(configuration, new MultiLayerNetworkTaskCreator());
 
         StatsStorage ss = new InMemoryStatsStorage();
         StatusListener sl = new ArbiterStatusListener(ss);
@@ -152,8 +152,8 @@ public class TestBasic {
                 .build();
 
         //Define configuration:
-        CandidateGenerator<GraphConfiguration> candidateGenerator = new RandomSearchGenerator<>(cgs, Collections.EMPTY_MAP);
-        DataProvider<Object> dataProvider = new MnistDataSetProvider();
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(cgs, Collections.EMPTY_MAP);
+        DataProvider dataProvider = new MnistDataSetProvider();
 
 
         String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterUiTestBasicMnistCG\\").getAbsolutePath();
@@ -165,17 +165,17 @@ public class TestBasic {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration<GraphConfiguration, ComputationGraph, Object, Evaluation> configuration =
-                new OptimizationConfiguration.Builder<GraphConfiguration, ComputationGraph, Object, Evaluation>()
+        OptimizationConfiguration configuration =
+                new OptimizationConfiguration.Builder()
                         .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                        .modelSaver(new LocalComputationGraphSaver(modelSavePath))
-                        .scoreFunction(new GraphTestSetLossScoreFunctionDataSet(true))
+                        .modelSaver(new FileModelSaver(modelSavePath))
+                        .scoreFunction(new TestSetLossScoreFunction(true))
                         .terminationConditions(new MaxTimeCondition(120, TimeUnit.MINUTES),
                                 new MaxCandidatesCondition(100))
                         .build();
 
-        IOptimizationRunner<GraphConfiguration, ComputationGraph, Evaluation> runner =
-                new LocalOptimizationRunner<>(configuration, new ComputationGraphTaskCreator<>());
+        IOptimizationRunner runner =
+                new LocalOptimizationRunner(configuration, new ComputationGraphTaskCreator());
 
         StatsStorage ss = new InMemoryStatsStorage();
         StatusListener sl = new ArbiterStatusListener(ss);
@@ -189,7 +189,7 @@ public class TestBasic {
 
 
 
-    private static class MnistDataSetProvider implements DataProvider<Object> {
+    private static class MnistDataSetProvider implements DataProvider {
 
         @Override
         public DataSetIterator trainData(Map<String, Object> dataParameters) {
@@ -210,6 +210,11 @@ public class TestBasic {
         @Override
         public DataSetIterator testData(Map<String, Object> dataParameters) {
             return trainData(dataParameters);
+        }
+
+        @Override
+        public Class<?> getDataType() {
+            return DataSetIterator.class;
         }
 
         @Override

@@ -30,6 +30,7 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * FixedValue is a ParameterSpace that defines only a single fixed value
@@ -67,6 +68,11 @@ public class FixedValue<T> implements ParameterSpace<T> {
     @Override
     public List<ParameterSpace> collectLeaves() {
         return Collections.emptyList();
+    }
+
+    @Override
+    public Map<String, ParameterSpace> getNestedSpaces() {
+        return Collections.emptyMap();
     }
 
     @Override

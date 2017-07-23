@@ -62,14 +62,6 @@ public class GravesBidirectionalLSTMLayerSpace extends FeedForwardLayerSpace<Gra
     }
 
     @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (forgetGateBiasInit != null)
-            list.addAll(forgetGateBiasInit.collectLeaves());
-        return list;
-    }
-
-    @Override
     public String toString() {
         return toString(", ");
     }

@@ -50,20 +50,6 @@ public class LocalResponseNormalizationLayerSpace extends LayerSpace<LocalRespon
     }
 
     @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (n != null)
-            list.addAll(n.collectLeaves());
-        if (k != null)
-            list.addAll(k.collectLeaves());
-        if (alpha != null)
-            list.addAll(alpha.collectLeaves());
-        if (beta != null)
-            list.addAll(beta.collectLeaves());
-        return list;
-    }
-
-    @Override
     public LocalResponseNormalization getValue(double[] values) {
         LocalResponseNormalization.Builder b = new LocalResponseNormalization.Builder();
         setLayerOptionsBuilder(b, values);

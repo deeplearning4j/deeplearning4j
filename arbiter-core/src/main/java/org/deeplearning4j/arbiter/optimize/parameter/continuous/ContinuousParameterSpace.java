@@ -30,6 +30,7 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * ContinuousParametSpace is a {@code ParameterSpace<Double>} that (optionally) takes an Apache Commons
@@ -83,6 +84,11 @@ public class ContinuousParameterSpace implements ParameterSpace<Double> {
     @Override
     public List<ParameterSpace> collectLeaves() {
         return Collections.singletonList((ParameterSpace) this);
+    }
+
+    @Override
+    public Map<String, ParameterSpace> getNestedSpaces() {
+        return Collections.emptyMap();
     }
 
     @Override

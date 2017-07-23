@@ -25,6 +25,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @param <L>    Type of the (concrete) output layer
@@ -45,14 +46,6 @@ public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends Fe
         super.setLayerOptionsBuilder(builder, values);
         if (lossFunction != null)
             builder.lossFunction(lossFunction.getValue(values));
-    }
-
-    @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (lossFunction != null)
-            list.addAll(lossFunction.collectLeaves());
-        return list;
     }
 
     @SuppressWarnings("unchecked")
@@ -99,6 +92,11 @@ public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends Fe
         @Override
         public List<ParameterSpace> collectLeaves() {
             return lossFunctionParameterSpace.collectLeaves();
+        }
+
+        @Override
+        public Map<String, ParameterSpace> getNestedSpaces() {
+            return lossFunctionParameterSpace.getNestedSpaces();
         }
 
         @Override

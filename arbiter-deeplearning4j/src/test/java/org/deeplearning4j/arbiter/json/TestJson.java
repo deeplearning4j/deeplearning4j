@@ -121,8 +121,7 @@ public class TestJson {
                                         .build();
 
         String json = configuration.toJson();
-        OptimizationConfiguration loadConf =
-                        OptimizationConfiguration.fromJson(json);
+        OptimizationConfiguration loadConf = OptimizationConfiguration.fromJson(json);
         assertEquals(configuration, loadConf);
     }
 

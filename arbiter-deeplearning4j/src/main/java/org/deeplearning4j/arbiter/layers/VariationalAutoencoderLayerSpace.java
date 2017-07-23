@@ -46,22 +46,6 @@ public class VariationalAutoencoderLayerSpace extends BasePretrainNetworkLayerSp
     }
 
     @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (encoderLayerSizes != null)
-            list.addAll(encoderLayerSizes.collectLeaves());
-        if (decoderLayerSizes != null)
-            list.addAll(decoderLayerSizes.collectLeaves());
-        if (outputDistribution != null)
-            list.addAll(outputDistribution.collectLeaves());
-        if (pzxActivationFn != null)
-            list.addAll(pzxActivationFn.collectLeaves());
-        if (numSamples != null)
-            list.addAll(numSamples.collectLeaves());
-        return list;
-    }
-
-    @Override
     public VariationalAutoencoder getValue(double[] parameterValues) {
         VariationalAutoencoder.Builder b = new VariationalAutoencoder.Builder();
         setLayerOptionsBuilder(b, parameterValues);

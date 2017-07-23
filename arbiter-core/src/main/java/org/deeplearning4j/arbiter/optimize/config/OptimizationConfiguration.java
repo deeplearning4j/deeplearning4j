@@ -24,6 +24,7 @@ import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.nd4j.reflectionloader.JacksonReflectionLoader;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
@@ -59,17 +60,17 @@ public class OptimizationConfiguration {
     private List<TerminationCondition> terminationConditions;
     @JsonSerialize
     private Long rngSeed;
-    private static ObjectMapper jsonMapper;
-    private static ObjectMapper yamlMapper;
+//    private static ObjectMapper jsonMapper;
+//    private static ObjectMapper yamlMapper;
 
     @Getter @Setter
     private long executionStartTime;
 
-    static {
-        // List<Class<?>> classes = Arrays.asList(DataProvider.class,CandidateGenerator.class,ResultSaver.class,ScoreFunction.class,TerminationCondition.class);
-        jsonMapper = JacksonReflectionLoader.findTypesFor(new ArrayList<Class<?>>());
-        yamlMapper = JacksonReflectionLoader.findTypesFor(new ArrayList<Class<?>>(), false);
-    }
+//    static {
+//        // List<Class<?>> classes = Arrays.asList(DataProvider.class,CandidateGenerator.class,ResultSaver.class,ScoreFunction.class,TerminationCondition.class);
+//        jsonMapper = JacksonReflectionLoader.findTypesFor(new ArrayList<Class<?>>());
+//        yamlMapper = JacksonReflectionLoader.findTypesFor(new ArrayList<Class<?>>(), false);
+//    }
 
 
     private OptimizationConfiguration(Builder builder) {
@@ -151,7 +152,7 @@ public class OptimizationConfiguration {
      */
     public static  OptimizationConfiguration fromYaml(String json) {
         try {
-            return jsonMapper.readValue(json, OptimizationConfiguration.class);
+            return JsonMapper.getYamlMapper().readValue(json, OptimizationConfiguration.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -164,7 +165,7 @@ public class OptimizationConfiguration {
      */
     public static  OptimizationConfiguration fromJson(String json) {
         try {
-            return jsonMapper.readValue(json, OptimizationConfiguration.class);
+            return JsonMapper.getMapper().readValue(json, OptimizationConfiguration.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -177,7 +178,7 @@ public class OptimizationConfiguration {
      */
     public String toJson() {
         try {
-            return jsonMapper.writeValueAsString(this);
+            return JsonMapper.getMapper().writeValueAsString(this);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -190,7 +191,7 @@ public class OptimizationConfiguration {
      */
     public String toYaml() {
         try {
-            return yamlMapper.writeValueAsString(this);
+            return JsonMapper.getYamlMapper().writeValueAsString(this);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

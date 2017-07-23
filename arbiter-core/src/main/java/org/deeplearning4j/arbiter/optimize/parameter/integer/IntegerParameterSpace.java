@@ -32,6 +32,7 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * IntegerParameterSpace is a {@code ParameterSpace<Integer>}; i.e., defines an ordered space of integers between
@@ -92,6 +93,11 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
     @Override
     public List<ParameterSpace> collectLeaves() {
         return Collections.singletonList((ParameterSpace) this);
+    }
+
+    @Override
+    public Map<String, ParameterSpace> getNestedSpaces() {
+        return Collections.emptyMap();
     }
 
     @Override
