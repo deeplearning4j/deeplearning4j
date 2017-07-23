@@ -47,6 +47,17 @@ public class LossMSE extends LossL2 {
         return gradients.divi(labels.size(1));
     }
 
+    /**
+     * The name of this function
+     *
+     * @return
+     */
+    @Override
+    public String name() {
+        return toString();
+    }
+
+
     @Override
     public String toString() {
         if (weights == null)

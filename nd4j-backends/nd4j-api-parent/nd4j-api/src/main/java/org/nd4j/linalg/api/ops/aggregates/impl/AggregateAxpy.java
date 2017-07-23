@@ -6,7 +6,8 @@ import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * This op describes Axpy call that'll happen soon(TM) in batch mode
+ * This op describes Axpy call
+ * that'll happen soon(TM) in batch mode
  *
  * @author raver119
  */
@@ -25,7 +26,8 @@ public class AggregateAxpy extends BaseAggregate {
 
     /**
      * This method returns amount of shared memory required for this specific Aggregate.
-     * PLEASE NOTE: this method is especially important for CUDA backend. On CPU backend it might be ignored, depending on Aggregate.
+     * PLEASE NOTE: this method is especially important for CUDA backend. On
+     * CPU backend it might be ignored, depending on Aggregate.
      *
      * @return
      */
@@ -36,16 +38,15 @@ public class AggregateAxpy extends BaseAggregate {
 
     /**
      * This method returns desired number of threads per Aggregate instance
-     * PLEASE NOTE: this method is especially important for CUDA backend. On CPU backend it might be ignored, depending on Aggregate.
+     * PLEASE NOTE: this method is especially important for
+     * CUDA backend. On CPU backend it might be ignored,
+     * depending on Aggregate.
      *
      * @return
      */
     @Override
     public int getThreadsPerInstance() {
-        if (vectorLength > 768)
-            return 768;
-
-        return vectorLength;
+        return Math.min(768,vectorLength);
     }
 
     @Override

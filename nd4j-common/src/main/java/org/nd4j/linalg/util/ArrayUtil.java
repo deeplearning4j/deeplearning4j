@@ -867,6 +867,179 @@ public class ArrayUtil {
     }
 
 
+    /**
+     * Zip 2 arrays in to:
+     *
+     * @param as
+     * @param bs
+     * @return
+     */
+    public static int[][] zip(int[] as, int[] bs) {
+        int[][] result = new int[as.length][2];
+        for(int i = 0; i < result.length; i++) {
+            result[i] = new int[] {as[i],bs[i]};
+        }
+
+        return result;
+    }
+
+    /**
+     * Get the tensor matrix multiply shape
+     * @param aShape the shape of the first array
+     * @param bShape the shape of the seocnd array
+     * @param axes the axes to do the multiply
+     * @return the shape for tensor matrix multiply
+     */
+    public static int[] getTensorMmulShape(int[] aShape, int[] bShape, int[][] axes) {
+        int validationLength = Math.min(axes[0].length, axes[1].length);
+        for (int i = 0; i < validationLength; i++) {
+            if (aShape[axes[0][i]] != bShape[axes[1][i]])
+                throw new IllegalArgumentException("Size of the given axes a" +
+                        "t each dimension must be the same size.");
+            if (axes[0][i] < 0)
+                axes[0][i] += aShape.length;
+            if (axes[1][i] < 0)
+                axes[1][i] += bShape.length;
+
+        }
+
+        List<Integer> listA = new ArrayList<>();
+        for (int i = 0; i < aShape.length; i++) {
+            if (!Ints.contains(axes[0], i))
+                listA.add(i);
+        }
+
+
+
+        List<Integer> listB = new ArrayList<>();
+        for (int i = 0; i < bShape.length; i++) {
+            if (!Ints.contains(axes[1], i))
+                listB.add(i);
+        }
+
+
+        int n2 = 1;
+        int aLength = Math.min(aShape.length, axes[0].length);
+        for (int i = 0; i < aLength; i++) {
+            n2 *= aShape[axes[0][i]];
+        }
+
+        //if listA and listB are empty these donot initialize.
+        //so initializing with {1} which will then get overriden if not empty
+        int[] oldShapeA;
+        if (listA.size() == 0) {
+            oldShapeA = new int[] {1};
+        } else {
+            oldShapeA = Ints.toArray(listA);
+            for (int i = 0; i < oldShapeA.length; i++)
+                oldShapeA[i] = aShape[oldShapeA[i]];
+        }
+
+        int n3 = 1;
+        int bNax = Math.min(bShape.length, axes[1].length);
+        for (int i = 0; i < bNax; i++) {
+            n3 *= bShape[axes[1][i]];
+        }
+
+
+        int[] oldShapeB;
+        if (listB.size() == 0) {
+            oldShapeB = new int[] {1};
+        } else {
+            oldShapeB = Ints.toArray(listB);
+            for (int i = 0; i < oldShapeB.length; i++)
+                oldShapeB[i] = bShape[oldShapeB[i]];
+        }
+
+
+        int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
+        return aPlusB;
+    }
+
+    /**
+     * Permute the given input
+     * switching the dimensions of the input shape
+     * array with in the order of the specified
+     * dimensions
+     * @param shape the shape to permute
+     * @param dimensions the dimensions
+     * @return
+     */
+    public static int[] permute(int[] shape,int[] dimensions) {
+        int[] ret = new int[shape.length];
+        for(int i = 0; i < shape.length; i++) {
+            ret[i] = shape[dimensions[i]];
+        }
+
+        return ret;
+    }
+
+
+    /**
+     * Original credit: https://github.com/alberts/array4j/blob/master/src/main/java/net/lunglet/util/ArrayUtils.java
+     * @param a
+     * @return
+     */
+    public static int[] argsort( int[] a) {
+        return argsort(a, true);
+    }
+
+
+    public static int[] argsort(final int[] a, final boolean ascending) {
+        Integer[] indexes = new Integer[a.length];
+        for (int i = 0; i < indexes.length; i++) {
+            indexes[i] = i;
+        }
+        Arrays.sort(indexes, new Comparator<Integer>() {
+            @Override
+            public int compare(final Integer i1, final Integer i2) {
+                return (ascending ? 1 : -1) * Ints.compare(a[i1], a[i2]);
+            }
+        });
+
+        int[] ret = new int[indexes.length];
+        for(int i = 0; i  < ret.length; i++)
+            ret[i] = indexes[i];
+
+        return ret;
+    }
+
+
+
+    /**
+     * Convert all dimensions in the specified
+     * axes array to be positive
+     * based on the specified range of values
+     * @param range
+     * @param axes
+     * @return
+     */
+    public static int[] convertNegativeIndices(int range,int[] axes) {
+        int[] axesRet = ArrayUtil.range(0,range);
+        int[] newAxes = ArrayUtil.copy(axes);
+        for(int i = 0; i < axes.length; i++) {
+              newAxes[i] = axes[axesRet[i]];
+        }
+
+        return newAxes;
+    }
+
+
+
+
+    /**
+     * Generate an array from 0 to length
+     * and generate take a subset
+     * @param length the length to generate to
+     * @param from the begin of the interval to take
+     * @param to the end of the interval to take
+     * @return the generated array
+     */
+    public static int[] copyOfRangeFrom(int length,int from,int to) {
+        return  Arrays.copyOfRange(ArrayUtil.range(0,length),from,to);
+
+    }
+
     //Credit: http://stackoverflow.com/questions/15533854/converting-byte-array-to-double-array
 
     /**

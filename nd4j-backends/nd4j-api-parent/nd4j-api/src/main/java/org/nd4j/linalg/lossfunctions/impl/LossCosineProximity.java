@@ -16,6 +16,14 @@ import java.util.Arrays;
 @EqualsAndHashCode
 public class LossCosineProximity implements ILossFunction {
 
+    /**
+     *
+     * @param labels
+     * @param preOutput
+     * @param activationFn
+     * @param mask
+     * @return
+     */
     public INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         if (labels.size(1) != preOutput.size(1)) {
             throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
@@ -116,6 +124,17 @@ public class LossCosineProximity implements ILossFunction {
         return new Pair<>(computeScore(labels, preOutput, activationFn, mask, average),
                         computeGradient(labels, preOutput, activationFn, mask));
     }
+
+    /**
+     * The name of this function
+     *
+     * @return
+     */
+    @Override
+    public String name() {
+        return toString();
+    }
+
 
     @Override
     public String toString() {
