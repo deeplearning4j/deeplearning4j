@@ -17,13 +17,8 @@
  */
 package org.deeplearning4j.arbiter.optimize.api;
 
-import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
-import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
-import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
-import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.List;

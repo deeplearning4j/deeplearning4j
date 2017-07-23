@@ -7,9 +7,6 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.util.List;
-import java.util.Map;
-
 /**
  * Created by Alex on 30/06/2017.
  */

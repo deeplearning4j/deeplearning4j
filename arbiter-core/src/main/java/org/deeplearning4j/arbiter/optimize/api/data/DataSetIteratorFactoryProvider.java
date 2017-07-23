@@ -3,7 +3,6 @@ package org.deeplearning4j.arbiter.optimize.api.data;
 import lombok.Data;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
 
-import java.util.Collections;
 import java.util.Map;
 
 /**

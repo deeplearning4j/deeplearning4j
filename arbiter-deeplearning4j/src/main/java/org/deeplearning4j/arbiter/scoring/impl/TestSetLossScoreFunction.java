@@ -18,8 +18,6 @@
 package org.deeplearning4j.arbiter.scoring.impl;
 
 import lombok.Data;
-import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
-import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -27,15 +25,11 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
 /**
  *
  */
 @Data
-public class TestSetLossScoreFunction implements ScoreFunction {
+public class TestSetLossScoreFunction extends BaseNetScoreFunction {
     @JsonProperty
     private final boolean average;
 
@@ -47,23 +41,6 @@ public class TestSetLossScoreFunction implements ScoreFunction {
         this.average = average;
     }
 
-    @Override
-    public double score(Object model, DataProvider dataProvider,
-                    Map<String, Object> dataParameters) {
-        DataSetIterator testData = ScoreUtil.getIterator(dataProvider.testData(dataParameters));
-//        return ScoreUtil.score(model, testData, average);
-        return 0.0;
-    }
-
-    @Override
-    public List<Class<?>> getSupportedModelTypes() {
-        return Arrays.<Class<?>>asList(MultiLayerNetwork.class, ComputationGraph.class);
-    }
-
-    @Override
-    public List<Class<?>> getSupportedDataTypes() {
-        return Arrays.<Class<?>>asList(DataSetIterator.class, MultiDataSetIterator.class);
-    }
 
     @Override
     public boolean minimize() {
@@ -73,5 +50,25 @@ public class TestSetLossScoreFunction implements ScoreFunction {
     @Override
     public String toString() {
         return "TestSetLossScoreFunction()";
+    }
+
+    @Override
+    public double score(MultiLayerNetwork net, DataSetIterator iterator) {
+        return ScoreUtil.score(net, iterator, average);
+    }
+
+    @Override
+    public double score(MultiLayerNetwork net, MultiDataSetIterator iterator) {
+        throw new UnsupportedOperationException("Cannot evaluate MultiLayerNetwork on MultiDataSetIterator");
+    }
+
+    @Override
+    public double score(ComputationGraph graph, DataSetIterator iterator) {
+        return ScoreUtil.score(graph, iterator, average);
+    }
+
+    @Override
+    public double score(ComputationGraph graph, MultiDataSetIterator iterator) {
+        return ScoreUtil.score(graph, iterator, average);
     }
 }

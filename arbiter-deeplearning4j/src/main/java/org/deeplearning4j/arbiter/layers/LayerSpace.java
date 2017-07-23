@@ -26,8 +26,10 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 
-import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * LayerSpace contains common Layer hyperparameters; should match {@link Layer} in terms of features

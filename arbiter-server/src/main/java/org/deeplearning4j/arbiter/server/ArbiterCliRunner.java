@@ -4,8 +4,6 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.arbiter.DL4JConfiguration;
-import org.deeplearning4j.arbiter.GraphConfiguration;
 import org.deeplearning4j.arbiter.evaluator.multilayer.ClassificationEvaluator;
 import org.deeplearning4j.arbiter.evaluator.multilayer.RegressionDataEvaluator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
@@ -17,9 +15,6 @@ import org.deeplearning4j.arbiter.server.cli.NeuralNetTypeValidator;
 import org.deeplearning4j.arbiter.server.cli.ProblemTypeValidator;
 import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
-import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.io.File;
 import java.util.HashMap;

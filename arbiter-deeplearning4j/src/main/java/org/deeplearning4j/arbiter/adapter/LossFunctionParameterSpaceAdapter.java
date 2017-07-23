@@ -1,6 +1,5 @@
 package org.deeplearning4j.arbiter.adapter;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;

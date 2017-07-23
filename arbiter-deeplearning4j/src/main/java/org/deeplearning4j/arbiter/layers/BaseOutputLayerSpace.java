@@ -17,16 +17,16 @@
  */
 package org.deeplearning4j.arbiter.layers;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.adapter.LossFunctionParameterSpaceAdapter;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * @param <L>    Type of the (concrete) output layer

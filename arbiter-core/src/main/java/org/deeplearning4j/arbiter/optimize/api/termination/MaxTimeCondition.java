@@ -20,7 +20,6 @@ package org.deeplearning4j.arbiter.optimize.api.termination;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
-import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
