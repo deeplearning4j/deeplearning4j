@@ -306,7 +306,7 @@ public class SameDiffTests {
 
         INDArray labels = Nd4j.create(new double[]{1,1,0,0}).reshape(4,1);
 
-        INDArray weights = Nd4j.rand(3,1,1);
+        INDArray weights = Nd4j.randn(3,1);
 
         SDVariable x = sameDiff.var("x",inputs);
         SDVariable y = sameDiff.var("y",labels);
@@ -349,4 +349,26 @@ public class SameDiffTests {
         System.out.println(ops);
     }
 
+
+    @Test
+    public void testSums() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray ones = Nd4j.ones(4);
+        SDVariable sdVariable = sameDiff.var("ones",ones);
+        SDVariable scalarOne = sameDiff.var("add1",Nd4j.scalar(1.0));
+        SDVariable result = sdVariable.addi(scalarOne);
+        SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
+        List<Op> ops = sameDiff.exec();
+        INDArray output = null;
+        for(int i = 0; i < 5; i++) {
+            output = sameDiff.execAndEndResult(ops);
+            System.out.println("Ones " + ones);
+            System.out.println(output);
+        }
+
+        assertEquals(Nd4j.valueArrayOf(4,7),ones);
+        assertEquals(28,output.getDouble(0),1e-1);
+    }
+
 }
+

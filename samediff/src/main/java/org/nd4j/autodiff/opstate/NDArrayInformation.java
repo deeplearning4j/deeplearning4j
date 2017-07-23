@@ -7,6 +7,7 @@ import org.nd4j.autodiff.ArrayField;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * Created by agibsonccc on 4/6/17.
@@ -19,7 +20,14 @@ public class NDArrayInformation implements Serializable {
     private String id;
     private OpState owner;
     private Number scalarValue;
+    private String arrId;
 
+    public String getArrId() {
+        if(arrId == null)
+            arrId = UUID.randomUUID().toString();
+        return arrId;
+
+    }
 
     public Number scalar() {
         if(scalarValue != null)

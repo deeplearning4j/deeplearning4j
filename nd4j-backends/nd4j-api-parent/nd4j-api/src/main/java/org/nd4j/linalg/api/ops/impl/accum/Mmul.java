@@ -66,6 +66,11 @@ public class Mmul extends BaseAccumulation {
     }
 
     @Override
+    public long n() {
+        return 0;
+    }
+
+    @Override
     public boolean isPassThrough() {
         return true;
     }

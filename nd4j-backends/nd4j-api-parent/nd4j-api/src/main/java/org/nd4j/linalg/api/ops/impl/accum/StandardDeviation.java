@@ -36,6 +36,10 @@ public class StandardDeviation extends Variance {
         super(x, biasCorrected);
     }
 
+    public StandardDeviation(INDArray x, INDArray y, INDArray z, long n, boolean biasCorrected) {
+        super(x, y, z, n, biasCorrected);
+    }
+
     public StandardDeviation() {}
 
     public StandardDeviation(INDArray x, INDArray y, long n) {

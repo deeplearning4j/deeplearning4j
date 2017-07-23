@@ -38,6 +38,20 @@ public class Max extends BaseAccumulation {
         super(x, y, n);
     }
 
+    /**
+     * Initialize with the given
+     * input, pairwise transform, result, and number
+     * of elements
+     *
+     * @param x the input
+     * @param y the pairwise transform
+     * @param z the result
+     * @param n the number of elements
+     */
+    public Max(INDArray x, INDArray y, INDArray z, long n) {
+        super(x, y, z, n);
+    }
+
     public Max(INDArray x) {
         super(x);
     }

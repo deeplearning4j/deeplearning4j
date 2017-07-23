@@ -202,12 +202,18 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     @Override
     public double getAndSetFinalResult(double accum) {
         this.finalResult = accum;
+        if(z() != null && z.isScalar()) {
+            z.assign(accum);
+        }
         return accum;
     }
 
     @Override
     public float getAndSetFinalResult(float accum) {
         this.finalResult = accum;
+        if(z() != null && z.isScalar()) {
+            z.assign(accum);
+        }
         return accum;
     }
 
@@ -235,6 +241,9 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     @Override
     public void setFinalResult(Number number) {
         this.finalResult = number;
+        if(z() != null && z.isScalar()) {
+            z.assign(number);
+        }
     }
 
     @Override

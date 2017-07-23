@@ -15,6 +15,7 @@ import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -22,6 +23,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by agibsonccc on 4/9/17.
@@ -35,7 +37,9 @@ public class SameDiff {
     private DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory;
     private List<SDVariable> sameDiffVariables = new ArrayList<>();
     private Map<String,SDVariable> variableMap;
-
+    private Map<String,INDArray> vertexToArray;
+    private Map<Integer,NDArrayInformation> vertexIdxToInfo;
+    private AtomicBoolean allocated;
     private SameDiff() {
         graph = new SDGraph();
         graph.setSameDiff(this);
@@ -43,6 +47,9 @@ public class SameDiff {
         arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
         sameDiffVariables = new ArrayList<>();
         variableMap = new HashMap<>();
+        vertexToArray = new HashMap<>();
+        vertexIdxToInfo = new HashMap<>();
+        allocated = new AtomicBoolean(false);
     }
 
     public SDGraph graph() {
@@ -166,6 +173,8 @@ public class SameDiff {
      *
      */
     public void allocate() {
+        if(allocated.get())
+            return;
         for (Integer i : graph().getVertices().keySet()) {
             NDArrayInformation info = graph.getInformationFor(i);
             if(!variableMap.containsKey(info.getId())) {
@@ -177,12 +186,24 @@ public class SameDiff {
                 sameDiffVariables.add(variable);
                 variableMap.put(info.getId(),variable);
 
+
+            }
+
+            /**
+             * Problem:
+             * Vertexes are not a unique identifier of an actual array.
+             * Duplicate vertices are put in to place
+             * to avoid cycles by may point at the same array.
+             * NDArrayInformation should somehow be unique
+             * and point to an actual array.
+             */
+            if(!vertexToArray.containsKey(info.getArrId())) {
+                vertexToArray.put(info.getArrId(), Nd4j.zeros(info.getShape()));
+
             }
         }
 
-        for(SDVariable variable : variables()) {
-            variable.allocate();
-        }
+        allocated.set(true);
     }
 
     public List<SDVariable> variables() {
@@ -198,7 +219,8 @@ public class SameDiff {
      */
     public SDVariable var(String name, INDArray arr) {
         NDArrayInformation ndArrayInformation = NDArrayInformation.builder()
-                .shape(arr.shape()).id(name).build();
+                .shape(arr.shape()).id(name).arrId(UUID.randomUUID().toString())
+                .build();
         if(ArrayUtil.prod(arr.shape()) == 1)
             ndArrayInformation.setScalarValue(arr.getDouble(0));
         NDArrayVertex ndArrayVertex = new NDArrayVertex(graph.nextVertexId(), ndArrayInformation);
@@ -210,6 +232,10 @@ public class SameDiff {
                 .varName(name)
                 .arr(arr).build();
         addVariable(ret);
+        //ensure there is a reference to the array in the integer index
+        //this is used later for op creation
+        vertexToArray.put(ndArrayInformation.getArrId(),arr);
+        vertexIdxToInfo.put(ndArrayVertex.vertexID(),ndArrayInformation);
         return ret;
 
     }
@@ -1441,20 +1467,25 @@ public class SameDiff {
 
 
     private INDArray getX(OpExecAction opExecAction) {
-        //   return variables().get(opExecAction.getInputsIds()[0]).getArr();
-        return variableMap.get(opExecAction.getInputs()[0].getId()).getArr();
+        INDArray ret =  vertexToArray.get(opExecAction.getInputs()[0].getArrId());
+        return ret;
     }
 
     private INDArray getY(OpExecAction opExecAction) {
-        if(opExecAction.getInputsIds().length > 1)
-            return variableMap.get(opExecAction.getInputs()[1].getId()).getArr();
+        if(opExecAction.getInputsIds().length > 1) {
+            NDArrayInformation opId = opExecAction.getInputs()[1];
+            INDArray ret = vertexToArray.get(opId.getArrId());
+            return ret;
+        }
         return null;
     }
 
     private INDArray getZ(OpExecAction opExecAction) {
         if(opExecAction.isInPlace())
             return getX(opExecAction);
-        return variableMap.get(opExecAction.getOutput().getId()).getArr();
+        NDArrayInformation opId = opExecAction.getOutput();
+        INDArray ret =  vertexToArray.get(opId.getArrId());
+        return ret;
     }
 
 

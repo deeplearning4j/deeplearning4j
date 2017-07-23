@@ -40,6 +40,20 @@ public class TensorMmul extends BaseAccumulation {
         this.extraArgs = new Object[] {axes};
     }
 
+    /**
+     * Initialize with the given
+     * input, pairwise transform, result, and number
+     * of elements
+     *
+     * @param x the input
+     * @param y the pairwise transform
+     * @param z the result
+     */
+    public TensorMmul(INDArray x, INDArray y, INDArray z, int[][] axes) {
+        super(x, y, z, 0);
+        this.axes = axes;
+    }
+
     @Override
     public boolean isExecSpecial() {
         return true;
@@ -53,6 +67,11 @@ public class TensorMmul extends BaseAccumulation {
     @Override
     public int opNum() {
         return 3;
+    }
+
+    @Override
+    public long n() {
+        return 0;
     }
 
     @Override

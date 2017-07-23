@@ -8,10 +8,7 @@ import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SDGraph;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @AllArgsConstructor
 @Data
@@ -202,6 +199,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     @Override
     public ArrayField zero(int[] shape) {
         NDArrayInformation information = NDArrayInformation.builder()
+                .arrId(UUID.randomUUID().toString())
                 .id("zero").owner(null).shape(shape).build();
         return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }
@@ -209,6 +207,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     @Override
     public ArrayField one(int[] shape) {
         NDArrayInformation information = NDArrayInformation.builder()
+                .arrId(UUID.randomUUID().toString())
                 .id("one").owner(null).shape(shape).build();
         return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }
@@ -222,6 +221,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     @Override
     public ArrayField scalar(double value) {
         NDArrayInformation information = NDArrayInformation.builder()
+                .arrId(UUID.randomUUID().toString())
                 .id(String.valueOf(value)).owner(null).shape(new int[]{1,1}).build();
         return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }
