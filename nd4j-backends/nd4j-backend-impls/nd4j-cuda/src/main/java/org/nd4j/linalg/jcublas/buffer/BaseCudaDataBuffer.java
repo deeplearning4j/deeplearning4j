@@ -200,11 +200,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
             indexer = IntIndexer.create((IntPointer) pointer);
         } else if (dataType() == Type.HALF) {
-            // FIXME: proper pointer and proper indexer should be used here
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
             indexer = HalfIndexer.create((ShortPointer) pointer);
         } else if (dataType() == Type.LONG) {
-            // FIXME: proper pointer and proper indexer should be used here
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
             indexer = LongIndexer.create((LongPointer) pointer);
         }
@@ -222,10 +220,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.allocationMode = AllocationMode.JAVACPP;
         initTypeAndSize();
 
-        //if (dataType() != Type.INT) {
-            this.attached = true;
-            this.parentWorkspace = workspace;
-        //}
+        this.attached = true;
+        this.parentWorkspace = workspace;
 
         this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
                 new AllocationShape(length, this.elementSize, dataType()), initialize);
@@ -322,26 +318,19 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         //        log.info("BCDB create for view: length: ["+ length+"], offset: ["+ offset+"], originalOffset: ["+ underlyingBuffer.originalOffset() +"], elementSize: ["+elementSize+"]");
 
         if (underlyingBuffer.dataType() == Type.DOUBLE) {
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length())
-                            .asDoublePointer();
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asDoublePointer();
             indexer = DoubleIndexer.create((DoublePointer) pointer);
         } else if (underlyingBuffer.dataType() == Type.FLOAT) {
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length())
-                            .asFloatPointer();
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asFloatPointer();
             indexer = FloatIndexer.create((FloatPointer) pointer);
         } else if (underlyingBuffer.dataType() == Type.INT) {
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length())
-                            .asIntPointer();
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asIntPointer();
             indexer = IntIndexer.create((IntPointer) pointer);
         } else if (underlyingBuffer.dataType() == Type.HALF) {
-            // FIXME: proper pointer and indexer required here
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length())
-                            .asShortPointer();
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asShortPointer();
             indexer = HalfIndexer.create((ShortPointer) pointer);
         } else if (underlyingBuffer.dataType() == Type.LONG) {
-            // FIXME: proper pointer and indexer required here
-            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length())
-                    .asLongPointer();
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asLongPointer();
             indexer = LongIndexer.create((LongPointer) pointer);
         }
 

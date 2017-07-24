@@ -140,7 +140,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             if (bytes % 4 != 0) {
                 bytes += 2;
             }
-        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE || dataBuffer.dataType() == DataBuffer.Type.LONG) {
             // for double data type, we must be assured, that all DOUBLE pointers are starting from even addresses, to avoid banks spills
             long div = bytes / 4;
             if (div % 2 != 0)
