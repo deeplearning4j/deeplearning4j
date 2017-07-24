@@ -13,6 +13,7 @@ import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -81,7 +82,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                             int...shape) {
         if(i_v1.getValue(true) instanceof ArrayField) {
             ArrayField v1 = (ArrayField) i_v1.getValue(true);
-            NDArrayInformation information =    NDArrayInformation.builder()
+            NDArrayInformation information =    NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                     .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
                     .shape(shape).build();
             //result
@@ -100,6 +101,9 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
             newVertex.setOpState(owner);
             information.setOwner(owner);
             owner.setResult(information);
+            if(owner.isInPlace()) {
+                information.setArrId(v1.getInput().getArrId());
+            }
             this.opState = owner;
 
         }

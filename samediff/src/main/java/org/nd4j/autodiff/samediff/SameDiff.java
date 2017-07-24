@@ -39,7 +39,6 @@ public class SameDiff {
     private Map<String,SDVariable> variableMap;
     private Map<String,INDArray> vertexToArray;
     private Map<Integer,NDArrayInformation> vertexIdxToInfo;
-    private AtomicBoolean allocated;
     private SameDiff() {
         graph = new SDGraph();
         graph.setSameDiff(this);
@@ -49,7 +48,6 @@ public class SameDiff {
         variableMap = new HashMap<>();
         vertexToArray = new HashMap<>();
         vertexIdxToInfo = new HashMap<>();
-        allocated = new AtomicBoolean(false);
     }
 
     public SDGraph graph() {
@@ -173,8 +171,6 @@ public class SameDiff {
      *
      */
     public void allocate() {
-        if(allocated.get())
-            return;
         for (Integer i : graph().getVertices().keySet()) {
             NDArrayInformation info = graph.getInformationFor(i);
             if(!variableMap.containsKey(info.getId())) {
@@ -203,7 +199,6 @@ public class SameDiff {
             }
         }
 
-        allocated.set(true);
     }
 
     public List<SDVariable> variables() {
