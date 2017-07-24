@@ -96,7 +96,7 @@ public class RemoteConvolutionalIterationListener implements IterationListener {
                     INDArray output = layer.activate();
 
                     if (sampleDim < 0)
-                        sampleDim = rnd.nextInt(output.shape()[0] - 1) + 1;
+                        sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
 
                     if (cnt == 0) {
                         INDArray inputs = ((ConvolutionLayer) layer).input();
