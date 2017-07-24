@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.LongUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -202,6 +203,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             // FIXME: proper pointer and proper indexer should be used here
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
             indexer = HalfIndexer.create((ShortPointer) pointer);
+        } else if (dataType() == Type.LONG) {
+            // FIXME: proper pointer and proper indexer should be used here
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
+            indexer = LongIndexer.create((LongPointer) pointer);
         }
 
         /*
@@ -257,6 +262,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             // FIXME: proper pointer and proper indexer should be used here
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
             indexer = HalfIndexer.create((ShortPointer) pointer);
+        } else if (dataType() == Type.LONG) {
+            this.attached = true;
+            this.parentWorkspace = workspace;
+
+            // FIXME: proper pointer and proper indexer should be used here
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
+            indexer = LongIndexer.create((LongPointer) pointer);
         }
 
         /*
@@ -326,6 +338,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length())
                             .asShortPointer();
             indexer = HalfIndexer.create((ShortPointer) pointer);
+        } else if (underlyingBuffer.dataType() == Type.LONG) {
+            // FIXME: proper pointer and indexer required here
+            this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length())
+                    .asLongPointer();
+            indexer = LongIndexer.create((LongPointer) pointer);
         }
 
         //this.wrappedBuffer = this.pointer.asByteBuffer();
@@ -418,6 +435,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             pointer.address();
         } else if (dataType() == Type.HALF) {
             ShortPointer pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+
+            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+            // we're keeping pointer reference for JVM
+            pointer.address();
+        } else if (dataType() == Type.LONG) {
+            LongPointer pointer = new LongPointer(LongUtils.toLongs(data));
             Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
             allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);

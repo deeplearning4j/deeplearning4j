@@ -28,6 +28,7 @@ import static org.junit.Assert.assertNotEquals;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Ignore
 @RunWith(Parameterized.class)
 public class LongTests extends BaseNd4jTest {
 
@@ -39,7 +40,6 @@ public class LongTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
     public void testSomething1() {
         // we create 2D array, total nr. of elements is 2.4B elements, > MAX_INT
         INDArray huge = Nd4j.create(8000000, 300);
@@ -66,7 +66,6 @@ public class LongTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
     public void testSomething2() {
         // we create 2D array, total nr. of elements is 2.4B elements, > MAX_INT
         INDArray huge = Nd4j.create(100, 10);
@@ -93,7 +92,6 @@ public class LongTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
     public void testLongTadOffsets1() {
         INDArray huge = Nd4j.create(230000000, 10);
 
@@ -121,7 +119,6 @@ public class LongTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
     public void testLongTadOp2() {
 
         INDArray hugeX = Nd4j.create(2300000, 1000).assign(1.0);
@@ -133,7 +130,6 @@ public class LongTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
     public void testLongTadOp2_micro() {
 
         INDArray hugeX = Nd4j.create(230, 1000).assign(1.0);
@@ -145,7 +141,6 @@ public class LongTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
     public void testLongTadOp3() {
 
         INDArray hugeX = Nd4j.create(2300000, 1000).assign(1.0);
@@ -157,7 +152,6 @@ public class LongTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
     public void testLongTadOp4() {
 
         INDArray hugeX = Nd4j.create(2300000, 1000).assign(1.0);
@@ -169,7 +163,6 @@ public class LongTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
     public void testLongTadOp5() {
 
         List<INDArray> list = new ArrayList<>();

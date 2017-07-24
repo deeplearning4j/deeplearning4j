@@ -10,6 +10,7 @@ import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
 import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -48,7 +49,7 @@ public class BasicTADManager implements TADManager {
             //    logger.info("dimension: {}, tadLength: {}, offsetLength for TAD: {}", Arrays.toString(dimension),tadLength, offsetLength);
 
             DataBuffer outputBuffer = new CudaIntDataBuffer(targetRank * 2 + 4);
-            DataBuffer offsetsBuffer = new CudaDoubleDataBuffer(offsetLength);
+            DataBuffer offsetsBuffer = new CudaLongDataBuffer(offsetLength);
 
             DataBuffer dimensionBuffer = AtomicAllocator.getInstance().getConstantBuffer(dimension);
             Pointer dimensionPointer = AtomicAllocator.getInstance().getHostPointer(dimensionBuffer);
