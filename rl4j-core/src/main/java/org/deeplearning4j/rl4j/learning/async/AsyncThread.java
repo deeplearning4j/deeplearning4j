@@ -88,9 +88,8 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
                     postEpoch();
 
                     DataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length, score);
-                    log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter());
                     getDataManager().appendStat(statEntry);
-                    log.info("ThreadNum-" + threadNumber + " reward:" + statEntry.getReward());
+                    log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
 
                     initMdp = Learning.initMdp(getMdp(), historyProcessor);
                     obs = initMdp.getLastObs();

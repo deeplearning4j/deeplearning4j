@@ -68,7 +68,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
             }
 
             //if step of training, just repeat lastAction
-            if (getStepCounter() % skipFrame != 0 && lastAction != null) {
+            if (i % skipFrame != 0 && lastAction != null) {
                 action = lastAction;
             } else {
                 hstack = processHistory(input);
@@ -79,7 +79,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
             accuReward += stepReply.getReward() * getConf().getRewardFactor();
 
             //if it's not a skipped frame, you can do a step of training
-            if (getStepCounter() % skipFrame == 0 || lastAction == null || stepReply.isDone()) {
+            if (i % skipFrame == 0 || lastAction == null || stepReply.isDone()) {
                 obs = stepReply.getObservation();
 
                 if (hstack == null) {

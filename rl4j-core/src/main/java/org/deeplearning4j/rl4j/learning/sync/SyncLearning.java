@@ -35,9 +35,6 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
 
 
             while (getStepCounter() < getConfiguration().getMaxStep()) {
-
-                log.info("Epoch: " + getEpochCounter());
-
                 preEpoch();
                 DataManager.StatEntry statEntry = trainEpoch();
                 postEpoch();
@@ -50,9 +47,9 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
                 }
 
                 getDataManager().appendStat(statEntry);
-                log.info("reward:" + statEntry.getReward());
                 getDataManager().writeInfo(this);
 
+                log.info("Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
             }
         } catch (Exception e) {
             log.error("Training failed.", e);

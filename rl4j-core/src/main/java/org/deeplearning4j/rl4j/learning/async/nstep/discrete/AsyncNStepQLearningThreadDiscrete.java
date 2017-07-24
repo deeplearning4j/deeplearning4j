@@ -70,7 +70,7 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
         INDArray targets = Nd4j.create(size, mdp.getActionSpace().getSize());
 
         double r = minTrans.getReward();
-        for (int i = 0; i < size; i++) {
+        for (int i = size - 1; i >= 0; i--) {
             minTrans = rewards.pop();
 
             r = minTrans.getReward() + conf.getGamma() * r;

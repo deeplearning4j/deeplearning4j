@@ -73,7 +73,7 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
         INDArray logSoftmax = Nd4j.zeros(size, mdp.getActionSpace().getSize());
 
         double r = minTrans.getReward();
-        for (int i = 0; i < size; i++) {
+        for (int i = size - 1; i >= 0; i--) {
             minTrans = rewards.pop();
 
 
