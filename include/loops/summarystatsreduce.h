@@ -432,7 +432,7 @@ template<typename OpType>
 						int xCoord[MAX_RANK];
 
 						for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-							int tadOffsetForBlock = tadOffsets[r];
+							Nd4jIndex tadOffsetForBlock = tadOffsets[r];
 
 							val.initWithValue(startingVal);
 					        val.n = 0;
@@ -440,7 +440,7 @@ template<typename OpType>
 
 							for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 								shape::ind2subC(tadRank, tadShape, i, xCoord);
-								int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+								Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
 								SummaryStatsData <T> indexVal2;
 								indexVal2.initWithValue(dx[xOffset]);
@@ -467,7 +467,7 @@ template<typename OpType>
 					        val.n = 0;
 					        sPartials[threadIdx.x] = val;
 
-							int indexX = tadOffsetForBlock + xElementWiseStride * threadIdx.x;
+							Nd4jIndex indexX = tadOffsetForBlock + (xElementWiseStride * threadIdx.x);
 
 							if (threadIdx.x < tadLength) {
 								SummaryStatsData <T> indexVal;
@@ -501,7 +501,7 @@ template<typename OpType>
 					__syncthreads();
 
 					if (xElementWiseStride >= 1) {
-						for (int i = tid; i < n; i += (blockDim.x * gridDim.x)) {
+						for (Nd4jIndex i = tid; i < n; i += (blockDim.x * gridDim.x)) {
 							SummaryStatsData <T> indexVal2;
 							indexVal2.initWithValue(dx[i * xElementWiseStride]);
 							reduction = update(reduction, indexVal2, extraParams);
@@ -520,9 +520,9 @@ template<typename OpType>
 
 						int ind2sub[MAX_RANK];
 #pragma unroll
-						for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
+						for (Nd4jIndex i = tid; i < n; i += blockDim.x * gridDim.x) {
 							shape::ind2sub(rank, shape::shapeOf(xShapeInfo), i, ind2sub);
-							int offset = shape::getOffset(0, xShape, xStride, ind2sub, rank);
+							Nd4jIndex offset = shape::getOffset(0, xShape, xStride, ind2sub, rank);
 							SummaryStatsData <T> indexVal2;
 							indexVal2.initWithValue(dx[offset]);
 							reduction = update(reduction, indexVal2, extraParams);
@@ -645,10 +645,10 @@ template<typename OpType>
                     T *extraParams) {
                 SummaryStatsData<T> startingIndex;
                 startingIndex.initialize();
-                int length = shape::length(xShapeInfo);
+                Nd4jIndex length = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 if (xElementWiseStride == 1) {
-                    for (int i = 0; i < length; i++) {
+                    for (Nd4jIndex i = 0; i < length; i++) {
                         SummaryStatsData<T> curr;
                         curr.initWithValue(x[i]);
                         startingIndex = update(startingIndex, curr,
@@ -659,7 +659,7 @@ template<typename OpType>
                     return finalVal;
                 }
                 else {
-                    for (int i = 0; i < length; i++) {
+                    for (Nd4jIndex i = 0; i < length; i++) {
                         SummaryStatsData<T> curr;
                         curr.initWithValue(x[i]);
                         startingIndex = update(startingIndex, curr,
@@ -732,7 +732,7 @@ template<typename OpType>
                     int rank = shape::rank(tadShapeShapeInfo);
 #pragma omp parallel for schedule(guided) default(shared)
                     for (int i = 0; i < resultLength; i++) {
-                        int offset = tad.tadOffsets[i];
+                        Nd4jIndex offset = tad.tadOffsets[i];
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;
@@ -775,7 +775,7 @@ template<typename OpType>
 
 #pragma omp parallel for schedule(guided) default(shared)
                         for (int i = 0; i < resultLength; i++) {
-                            int baseOffset = tad.tadOffsets[i];
+                            Nd4jIndex baseOffset = tad.tadOffsets[i];
                             SummaryStatsData<T> comp;
                             comp.initWithValue(x[baseOffset]);
 // FIXME: reduction to be used here
@@ -798,7 +798,7 @@ template<typename OpType>
 #pragma omp parallel for schedule(guided) default(shared)
                         for (int r = 0; r < resultLength; r++) {
                             int xCoord[MAX_RANK];
-                            int tadOffsetForBlock = tad.tadOffsets[r];
+                            Nd4jIndex tadOffsetForBlock = tad.tadOffsets[r];
 
                             SummaryStatsData<T> comp;
                             comp.initWithValue(x[tadOffsetForBlock]);
@@ -806,7 +806,7 @@ template<typename OpType>
 // FIXME: reduction should be fixed
                             for (int i = 1; i < tadLength; i ++) {
                                 shape::ind2subC(tadRank, tadShape, i, xCoord);
-                                int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+                                Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
                                 SummaryStatsData <T> indexVal2;
                                 indexVal2.initWithValue(x[xOffset]);
