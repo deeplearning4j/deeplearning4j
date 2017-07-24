@@ -317,9 +317,9 @@ public:
                              int *dimension,
                              int dimensionLength,
                              int *xTadShapeInfo,
-                             int *xOffsets,
+                             Nd4jIndex *xOffsets,
                              int *yTadShapeInfo,
-                             int *yOffsets);
+                             Nd4jIndex *yOffsets);
 
     void execReduce3AllFloat(Nd4jPointer *extraPointers,
                               int opNum,
@@ -333,9 +333,9 @@ public:
                               int *dimension,
                               int dimensionLength,
                               int *xTadShapeInfo,
-                              int *xOffsets,
+                             Nd4jIndex *xOffsets,
                               int *yTadShapeInfo,
-                              int *yOffsets);
+                             Nd4jIndex *yOffsets);
 
     void execReduce3AllHalf(Nd4jPointer *extraPointers,
                               int opNum,
@@ -349,9 +349,9 @@ public:
                               int *dimension,
                               int dimensionLength,
                               int *xTadShapeInfo,
-                              int *xOffsets,
+                            Nd4jIndex *xOffsets,
                               int *yTadShapeInfo,
-                              int *yOffsets);
+                            Nd4jIndex *yOffsets);
 
 
 

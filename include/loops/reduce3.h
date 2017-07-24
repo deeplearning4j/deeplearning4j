@@ -326,9 +326,9 @@ template<typename OpType>
 					int *allocationPointer,
 					UnifiedSharedMemory *manager,
 					int *xTadShapeInfo,
-					int *xOffsets,
+					Nd4jIndex *xOffsets,
 					int *yTadShapeInfo,
-					int *yOffsets) {
+					Nd4jIndex *yOffsets) {
 
                         // initialize partials first
                         T *sPartials = (T *) manager->getSharedReductionBuffer();
@@ -1035,7 +1035,7 @@ template<typename OpType>
 
 #pragma  omp parallel for proc_bind(AFFINITY) default(shared) private(xCoord, yCoord)
                 for (int r = 0; r < tads; r++) {
-                    int offset = tadOffsets[r];
+                    Nd4jIndex offset = tadOffsets[r];
 
                     T *localExtraParams = nullptr;
                     if (OpType::extraParamsLen > 0)

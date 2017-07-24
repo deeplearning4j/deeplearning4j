@@ -530,7 +530,7 @@ double   NativeOps::execIndexReduceScalarDouble(Nd4jPointer *extraPointers,int o
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("D1 opNum:[%i]\n", opNum);
@@ -586,7 +586,7 @@ void   NativeOps::execIndexReduceDouble(
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("D2 opNum:[%i]\n", opNum);
@@ -641,9 +641,9 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 	int *deviceTADShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
-	int *deviceTADOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
+	Nd4jIndex *deviceTADOffsetsZ = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 
 	if (debug && verbose)
@@ -885,7 +885,7 @@ void   NativeOps::execReduceDouble(
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("D8 opNum:[%i]\n", opNum);
@@ -984,10 +984,10 @@ void   NativeOps::execReduce3Double(
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
     int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
-    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
+	Nd4jIndex *yDeviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 	if (debug && verbose)
 		printf("D10 opNum:[%i]\n", opNum);
@@ -1039,7 +1039,7 @@ double   NativeOps::execReduce3ScalarDouble(
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	double *resultPointer = reinterpret_cast<double *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
@@ -1047,7 +1047,7 @@ double   NativeOps::execReduce3ScalarDouble(
     double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
     int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
-    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
+	Nd4jIndex *yDeviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[21]);
 
@@ -1104,12 +1104,12 @@ void   NativeOps::execReduce3Double(
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 
     int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
-    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
+	Nd4jIndex *yDeviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[21]);
 
@@ -1277,7 +1277,7 @@ double   NativeOps::execSummaryStatsScalarDouble(
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("D16 opNum:[%i]\n", opNum);
@@ -1337,7 +1337,7 @@ void   NativeOps::execSummaryStatsDouble(
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
@@ -1389,7 +1389,7 @@ void   NativeOps::execSummaryStatsDouble(
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("D18 opNum:[%i]\n", opNum);
@@ -1631,7 +1631,7 @@ void   NativeOps::execTransformDouble(
 						fillIsMaxDouble<<< 1, 128, 0, *stream >>>(result, shape::length(hostXShapeInfo), targetIdx);
 					} else {
 						int *tadMaxShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
-						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
+                        Nd4jIndex *tadMaxOffsets = reinterpret_cast<Nd4jIndex *> (extraPointers[11]);
 						int *dimension = reinterpret_cast<int *> (extraPointers[15]);
                         special = reinterpret_cast<double *>(extraPointers[17]);
                         int dimensionLength = getDeviceId(extraPointers[18]);
@@ -1763,7 +1763,7 @@ float   NativeOps::execIndexReduceScalarFloat(
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	float *resultPointer = reinterpret_cast<float *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
@@ -1809,7 +1809,7 @@ float   NativeOps::execIndexReduceScalarHalf(
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	float16 *resultPointer = reinterpret_cast<float16 *>(extraPointers[5]);
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
@@ -1867,7 +1867,7 @@ void   NativeOps::execIndexReduceFloat(
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("F2 opNum:[%i]\n", opNum);
@@ -1914,7 +1914,7 @@ void   NativeOps::execIndexReduceHalf(
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
 
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("H2 opNum:[%i]\n", opNum);
@@ -1981,9 +1981,9 @@ void   NativeOps::execBroadcastFloat(
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 	int *deviceTADShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
-	int *deviceTADOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
+	Nd4jIndex *deviceTADOffsetsZ = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 	if (debug && verbose)
 		printf("F3 opNum:[%i]\n", opNum);
@@ -2052,9 +2052,9 @@ void   NativeOps::execBroadcastHalf(
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 	int *deviceTADShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
-	int *deviceTADOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
+	Nd4jIndex *deviceTADOffsetsZ = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 
 	if (debug && verbose)
@@ -2475,7 +2475,7 @@ void   NativeOps::execReduceFloat(
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("F8 opNum:[%i]\n", opNum);
@@ -2521,7 +2521,7 @@ void   NativeOps::execReduceHalf(
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("H8 opNum:[%i]\n", opNum);
@@ -2652,10 +2652,10 @@ void   NativeOps::execReduce3Float(
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
     int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
-    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
+	Nd4jIndex *yDeviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 	if (debug && verbose)
 		printf("F10 opNum:[%i]\n", opNum);
@@ -2700,10 +2700,10 @@ void   NativeOps::execReduce3Half(
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
     int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
-    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
+	Nd4jIndex *yDeviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 	if (debug && verbose)
 		printf("H10 opNum:[%i]\n", opNum);
@@ -2755,10 +2755,10 @@ float   NativeOps::execReduce3ScalarFloat(
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
     int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
-    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
+	Nd4jIndex *yDeviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 	if (debug && verbose)
 		printf("F11 opNum:[%i]\n", opNum);
@@ -2805,10 +2805,10 @@ float   NativeOps::execReduce3ScalarHalf(
 	int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
     int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
-    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
+	Nd4jIndex *yDeviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 	if (debug && verbose)
 		printf("H11 opNum:[%i]\n", opNum);
@@ -2873,10 +2873,10 @@ void   NativeOps::execReduce3Float(
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
     int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
-    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
+	Nd4jIndex *yDeviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 	if (debug && verbose)
 		printf("F12 opNum:[%i]\n", opNum);
@@ -2938,10 +2938,10 @@ void   NativeOps::execReduce3Half(
 	int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
 
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
     int *yDeviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[12]);
-    int *yDeviceTADOffsets = reinterpret_cast<int *>(extraPointers[13]);
+	Nd4jIndex *yDeviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 	if (debug && verbose)
 		printf("H12 opNum:[%i]\n", opNum);
@@ -3220,7 +3220,7 @@ float   NativeOps::execSummaryStatsScalarFloat(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+    Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[3], 1, sizeof(float), 8);
 
@@ -3269,7 +3269,7 @@ float   NativeOps::execSummaryStatsScalarHalf(
 	int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
 	float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
 
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+    Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[3], 1, sizeof(float16), 8);
 
@@ -3321,7 +3321,7 @@ void   NativeOps::execSummaryStatsFloat(
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("F17 opNum:[%i]\n", opNum);
@@ -3368,7 +3368,7 @@ void   NativeOps::execSummaryStatsHalf(
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("H17 opNum:[%i]\n", opNum);
@@ -3428,7 +3428,7 @@ void   NativeOps::execSummaryStatsFloat(
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("F18 opNum:[%i]\n", opNum);
@@ -3478,7 +3478,7 @@ void   NativeOps::execSummaryStatsHalf(
 
 	int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 	int *deviceTADShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-	int *deviceTADOffsets = reinterpret_cast<int *>(extraPointers[11]);
+	Nd4jIndex *deviceTADOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 	if (debug && verbose)
 		printf("H18 opNum:[%i]\n", opNum);
@@ -3777,7 +3777,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					} else {
 						// going for dimension-based IsMax
 						int *tadMaxShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
-						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
+                        Nd4jIndex *tadMaxOffsets = reinterpret_cast<Nd4jIndex *> (extraPointers[11]);
 						int *dimension = reinterpret_cast<int *> (extraPointers[15]);
                         special = reinterpret_cast<float *>(extraPointers[17]);
                         int dimensionLength = getDeviceId(extraPointers[18]);
@@ -4027,7 +4027,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 					} else {
 						// going for dimension-based IsMax
 						int *tadMaxShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
-						int *tadMaxOffsets = reinterpret_cast<int *> (extraPointers[11]);
+                        Nd4jIndex *tadMaxOffsets = reinterpret_cast<Nd4jIndex *> (extraPointers[11]);
 						int *dimension = reinterpret_cast<int *> (extraPointers[15]);
                         special = reinterpret_cast<float16 *>(extraPointers[17]);
                         int dimensionLength = getDeviceId(extraPointers[18]);
@@ -5031,7 +5031,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 		//smem = nd4j::math::nd4j_max<int>(funcAttributes[31].sharedSizeBytes + 768, 1280);
 
         int *devZTadShape = reinterpret_cast<int *>(extraPointers[10]);
-        int *devZOffsets = reinterpret_cast<int *>(extraPointers[11]);
+		Nd4jIndex *devZOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 		concatKernelFloat<<< 2048, 128, funcAttributes[31].sharedSizeBytes , *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
 	}
@@ -5132,7 +5132,7 @@ void NativeOps::concatHalf(
 		//smem = nd4j::math::nd4j_max<int>(funcAttributes[31].sharedSizeBytes + 768, 1280);
 
         int *devZTadShape = reinterpret_cast<int *>(extraPointers[10]);
-        int *devZOffsets = reinterpret_cast<int *>(extraPointers[11]);
+		Nd4jIndex *devZOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 		concatKernelHalf<<< 2048, 128, funcAttributes[31].sharedSizeBytes, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
 	}
@@ -5292,7 +5292,7 @@ void NativeOps::concatDouble(
 			printf("Going generic concat\n");
 
         int *devZTadShape = reinterpret_cast<int *>(extraPointers[10]);
-        int *devZOffsets = reinterpret_cast<int *>(extraPointers[11]);
+        Nd4jIndex *devZOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
 		concatKernelDouble<<< 2048, 128, funcAttributes[35].sharedSizeBytes, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
 	}
@@ -5306,7 +5306,7 @@ void NativeOps::concatDouble(
 /**
  * This method saves
  */
-void NativeOps::tadOnlyShapeInfo(int *xShapeInfo, int *dimension, int dimensionLength, int *target, int *offsets) {
+void NativeOps::tadOnlyShapeInfo(int *xShapeInfo, int *dimension, int dimensionLength, int *target, Nd4jIndex *offsets) {
 	shape::TAD *tad = new shape::TAD();
 	tad->init(xShapeInfo, dimension, dimensionLength);
 	//tad->setOutputBuffer(target);
@@ -5366,7 +5366,7 @@ Nd4jPointer NativeOps::getConstantSpace() {
 	return dConstAddr;
 }
 
-void NativeOps::pullRowsHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, float16 *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *zTadShapeInfo, int *zTadOffsets) {
+void NativeOps::pullRowsHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, float16 *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *zTadShapeInfo, Nd4jIndex *zTadOffsets) {
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -5377,7 +5377,7 @@ void NativeOps::pullRowsHalf(Nd4jPointer *extraPointers, float16 *x, int *xShape
 }
 
 
-void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, float *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *zTadShapeInfo, int *zTadOffsets) {
+void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, float *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *zTadShapeInfo, Nd4jIndex *zTadOffsets) {
 
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -5387,7 +5387,7 @@ void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, float *x, int *xShapeI
 		checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
-void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, double *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *zTadShapeInfo, int *zTadOffsets) {
+void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, double *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *zTadShapeInfo, Nd4jIndex *zTadOffsets) {
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
 	pullRowsKernelDouble<<<64, 256, 1024, *stream>>>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
@@ -5532,7 +5532,7 @@ void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer 
     int **xShape = reinterpret_cast<int **>(xShapeInfo);
     int **zShape = reinterpret_cast<int **>(zShapeInfo);
     int **tadOnlyShapeInfo = reinterpret_cast<int **>(tadShapeInfo);
-    int **tadOffset = reinterpret_cast<int **>(tadOffsets);
+    Nd4jIndex **tadOffset = reinterpret_cast<Nd4jIndex **>(tadOffsets);
 
     shuffleKernelDouble<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset);
 
@@ -5548,7 +5548,7 @@ void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer *
     int **xShape = reinterpret_cast<int **>(xShapeInfo);
     int **zShape = reinterpret_cast<int **>(zShapeInfo);
     int **tadOnlyShapeInfo = reinterpret_cast<int **>(tadShapeInfo);
-    int **tadOffset = reinterpret_cast<int **>(tadOffsets);
+    Nd4jIndex **tadOffset = reinterpret_cast<Nd4jIndex **>(tadOffsets);
 
     shuffleKernelFloat<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset);
 
@@ -5564,7 +5564,7 @@ void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer *x
     int **xShape = reinterpret_cast<int **>(xShapeInfo);
     int **zShape = reinterpret_cast<int **>(zShapeInfo);
     int **tadOnlyShapeInfo = reinterpret_cast<int **>(tadShapeInfo);
-    int **tadOffset = reinterpret_cast<int **>(tadOffsets);
+    Nd4jIndex **tadOffset = reinterpret_cast<Nd4jIndex **>(tadOffsets);
 
     shuffleKernelHalf<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset);
 
@@ -5728,9 +5728,9 @@ void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
     int *hostTadShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
 
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-    Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[11]);
+    Nd4jIndex *tadOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
-    Nd4jIndex *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
+    Nd4jIndex *tadOffsetsZ = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
     dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]),hostXShapeInfo, hostTadShapeInfo, funcAttributes[47] ,dimensionLength, sizeof(float), 0);
 
@@ -5754,9 +5754,9 @@ void NativeOps::execScalarDouble(Nd4jPointer *extraPointers,int opNum,
     dim3 launchDims = dim3(256, 256, 1024);
 
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-    Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[11]);
+    Nd4jIndex *tadOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
-    Nd4jIndex *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
+    Nd4jIndex *tadOffsetsZ = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(scalarAlongDimension, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
@@ -5778,9 +5778,9 @@ void NativeOps::execScalarHalf(Nd4jPointer *extraPointers,int opNum,
     dim3 launchDims = dim3(256, 256, 1024);
 
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[10]);
-    Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[11]);
+    Nd4jIndex *tadOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[12]);
-    Nd4jIndex *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[13]);
+    Nd4jIndex *tadOffsetsZ = reinterpret_cast<Nd4jIndex *>(extraPointers[13]);
 
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(scalarAlongDimension, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
@@ -6325,9 +6325,9 @@ void NativeOps::execReduce3AllDouble(Nd4jPointer *extraPointers,
 									 int *dimension,
 									 int dimensionLength,
 									 int *xTadShapeInfo,
-									 int *xOffsets,
+                                     Nd4jIndex *xOffsets,
 									 int *yTadShapeInfo,
-									 int *yOffsets) {
+                                     Nd4jIndex *yOffsets) {
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -6376,9 +6376,9 @@ void NativeOps::execReduce3AllFloat(Nd4jPointer *extraPointers,
 									int *dimension,
 									int dimensionLength,
 									int *xTadShapeInfo,
-									int *xOffsets,
+                                    Nd4jIndex *xOffsets,
 									int *yTadShapeInfo,
-									int *yOffsets) {
+                                    Nd4jIndex *yOffsets) {
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -6427,9 +6427,9 @@ void NativeOps::execReduce3AllHalf(Nd4jPointer *extraPointers,
 								   int *dimension,
 								   int dimensionLength,
 								   int *xTadShapeInfo,
-								   int *xOffsets,
+                                   Nd4jIndex *xOffsets,
 								   int *yTadShapeInfo,
-								   int *yOffsets) {
+                                   Nd4jIndex *yOffsets) {
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
