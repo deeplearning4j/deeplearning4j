@@ -26,6 +26,7 @@ import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
+import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -228,6 +229,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(Accumulation op, int... dimension) {
         Arrays.sort(dimension);
+
 
         validateDataType(Nd4j.dataType(), op);
 
@@ -567,7 +569,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             validateDataType(Nd4j.dataType(), op);
 
-            if (op.x().length() != op.z().length())
+            if (op.x().lengthLong() != op.z().lengthLong())
                 throw new ND4JIllegalStateException("op.X length should be equal to op.Y length: ["
                                 + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "] != ["
                                 + Arrays.toString(op.z().shapeInfoDataBuffer().asInt()) + "]");
@@ -849,7 +851,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private void exec(Accumulation op) {
         if (op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
-        } else {
+        }
+        else if(op.isExecSpecial()) {
+            op.exec();
+        }
+        else {
             long st = profilingHookIn(op);
 
             validateDataType(Nd4j.dataType(), op);
@@ -1320,14 +1326,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         DataBuffer buffer = input.data();
 
         long originalLength = buffer.length() * Nd4j.sizeOfDataType(buffer.dataType());
-        int compressedLength = cntAbs + 3;
+        int compressedLength = cntAbs + 4;
         // first 3 elements contain header
 
-        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(3+cntAbs, false) : Nd4j.getDataBufferFactory().createInt(3+cntAbs, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(4+cntAbs, false) : Nd4j.getDataBufferFactory().createInt(4+cntAbs, false, Nd4j.getMemoryManager().getCurrentWorkspace());
 
         encodedBuffer.put(0, cntAbs);
         encodedBuffer.put(1, (int) buffer.length());
         encodedBuffer.put(2, Float.floatToIntBits((float) threshold));
+
+        // format id
+        encodedBuffer.put(3, ThresholdCompression.FLEXIBLE_ENCODING);
 
         CompressionDescriptor descriptor = new CompressionDescriptor();
         descriptor.setCompressedLength(compressedLength * 4); // sizeOf(INT)
@@ -1364,6 +1373,50 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         DataBuffer.TypeEx typeDst = AbstractCompressor.getBufferTypeEx(target.data());
 
         loop.convertTypes(null, DataBuffer.TypeEx.THRESHOLD.ordinal(), buffer.addressPointer(), target.length(), typeDst.ordinal(), target.data().addressPointer());
+
+        return target;
+    }
+
+
+    @Override
+    public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
+        long length = indArray.lengthLong();
+        long tLen = target.data().length();
+
+        if (tLen != (length / 16 + 5))
+            throw new ND4JIllegalStateException("Length of target array should be " + (length / 16 + 5));
+
+        if (target.data().dataType() != DataBuffer.Type.INT)
+            throw new ND4JIllegalStateException("Target array should have INT dataType");
+
+        DataBuffer buffer = target.data();
+
+        buffer.put(0, (int) length);
+        buffer.put(1, (int) length);
+        buffer.put(2, Float.floatToIntBits((float) threshold));
+
+        // format id
+        buffer.put(3, ThresholdCompression.BITMAP_ENCODING);
+
+        long affected = 0;
+
+        if (indArray.data().dataType() == DataBuffer.Type.FLOAT) {
+            affected = loop.encodeBitmapFloat(null, (FloatPointer) indArray.data().addressPointer(), length, (IntPointer) buffer.addressPointer(), (float) threshold);
+        } else if (indArray.data().dataType() == DataBuffer.Type.DOUBLE) {
+            affected = loop.encodeBitmapDouble(null, (DoublePointer) indArray.data().addressPointer(), length, (IntPointer) buffer.addressPointer(), (float) threshold);
+        } else
+            throw new UnsupportedOperationException("HALF precision isn't supported on CPU yet");
+
+        return affected;
+    }
+
+    @Override
+    public INDArray bitmapDecode(INDArray encoded, INDArray target) {
+
+
+        if (target.data().dataType() == DataBuffer.Type.FLOAT) {
+            loop.decodeBitmapFloat(null, encoded.data().addressPointer(), target.length(), (FloatPointer) target.data().addressPointer());
+        }
 
         return target;
     }

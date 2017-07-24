@@ -52,6 +52,106 @@ public class Shape {
     private Shape() {}
 
     /**
+     *
+     * @param newShape
+     * @return
+     */
+    public static int[] resolveNegativeShapeIfNeccessary(int[] newShape) {
+        int numberNegativesOnes = 0;
+        int[] shape = ArrayUtil.copy(newShape);
+        for (int i = 0; i < shape.length; i++) {
+            if (shape[i] < 0) {
+                if (numberNegativesOnes >= 1)
+                    throw new IllegalArgumentException("Only one dimension can be negative ones");
+
+                numberNegativesOnes++;
+
+                int shapeLength = 1;
+                for (int j = 0; j < shape.length; j++)
+                    if (shape[j] >= 1)
+                        shapeLength *= shape[j];
+                int realShape = Math.abs(ArrayUtil.prod(newShape) / shapeLength);
+                int[] thisNewShape = new int[shape.length];
+                for (int j = 0; j < shape.length; j++) {
+                    if (i != j) {
+                        thisNewShape[j] = shape[j];
+                    } else
+                        thisNewShape[j] = realShape;
+                }
+
+                shape = thisNewShape;
+                break;
+
+            }
+
+        }
+
+        return shape;
+
+    }
+    /**
+     * Returns true if the dimension is null
+     * or the dimension length is 1 and the first entry
+     * is {@link Integer#MAX_VALUE}
+     * @param shape the shape of the input array
+     * @param dimension the dimensions specified
+     *
+     * @return true if the dimension length is equal to the shape length
+     * the dimension is null or the dimension length is 1 and the first entry is
+     * {@link Integer#MAX_VALUE}
+     */
+    public static boolean isWholeArray(int[] shape,int...dimension) {
+        return   dimension == null || (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) || dimension.length == shape.length;
+    }
+
+    /**
+     * Get the shape of the reduced array
+     * @param wholeShape the shape of the array
+     *                   with the reduce op being performed
+     * @param dimensions the dimensions the reduce op is being performed on
+     * @return the shape of the result array as the result of the reduce
+     */
+    public static int[] getReducedShape(int[] wholeShape,int[] dimensions) {
+        if(isWholeArray(wholeShape,dimensions))
+            return new int[]{1,1};
+        else if(dimensions.length == 1 && wholeShape.length == 2) {
+            int[] ret = new int[2];
+            if(dimensions[0] == 0) {
+                ret[0] = wholeShape[0];
+                ret[1] = 1;
+            }
+            else if(dimensions[0]  == 1) {
+                ret[0] = 1;
+                ret[1] = wholeShape[1];
+            }
+            return ret;
+        }
+
+        return ArrayUtil.removeIndex(wholeShape,dimensions);
+    }
+
+
+    /**
+     * Get the output shape of a matrix multiply
+     *
+     * @param left the first matrix shape to multiply
+     * @param right the second matrix shape to multiply
+     * @return the shape of the output array (the left's rows and right's columns)
+     */
+    public static int[] getMatrixMultiplyShape(int[] left,int[] right) {
+        if(left.length != 2 && right.length != 2) {
+            throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2");
+        }
+
+        if(left[1] != right[0])
+            throw new IllegalArgumentException("Columns of left not equal to rows of right");
+
+        int[] shape = {left[0], right[1]};
+        return shape;
+
+    }
+
+    /**
      * Create a copy of the matrix
      * where the new offset is zero
      *
@@ -833,7 +933,10 @@ public class Shape {
      */
     public static boolean isColumnVectorShape(int[] shape) {
         return (shape.length == 2 && shape[1] == 1);
+    }
 
+    public static boolean isColumnVectorShape(long[] shape) {
+        return (shape.length == 2 && shape[1] == 1);
     }
 
     /**
@@ -1957,7 +2060,7 @@ public class Shape {
      * @param order the order for the buffer
      * @return the shape information buffer given the parameters
      */
-    public static DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride,
+    public static DataBuffer createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride,
                     char order) {
         if (shape.length != stride.length)
             throw new IllegalStateException("Shape and stride must be the same length");
@@ -1972,7 +2075,7 @@ public class Shape {
         for (int e = 0; e < stride.length; e++)
             shapeBuffer[count++] = stride[e];
 
-        shapeBuffer[count++] = offset;
+        shapeBuffer[count++] = (int) offset;
         shapeBuffer[count++] = elementWiseStride;
         shapeBuffer[count] = (int) order;
 
@@ -2000,7 +2103,7 @@ public class Shape {
         return ret;
     }
 
-    public static DataBuffer createSparseInformation(int[] flags, int[] sparseOffsets, int[] hiddenDimensions, int underlyingRank){
+    public static DataBuffer createSparseInformation(int[] flags, long[] sparseOffsets, int[] hiddenDimensions, int underlyingRank){
         int flagLength = flags.length;
         int offsetsLength = sparseOffsets.length;
         int hiddenDimLength = hiddenDimensions.length;
@@ -2013,8 +2116,8 @@ public class Shape {
             accu.add(flag);
         }
         accu.add(offsetsLength);
-        for(int off : sparseOffsets){
-            accu.add(off);
+        for(long off : sparseOffsets){
+            accu.add((int) off);
         }
 
         accu.add(hiddenDimLength);

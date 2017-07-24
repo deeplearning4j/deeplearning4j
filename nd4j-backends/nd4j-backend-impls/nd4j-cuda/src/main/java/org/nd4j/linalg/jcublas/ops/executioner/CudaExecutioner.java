@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
+import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
@@ -2156,12 +2157,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         log.info("Number of blocks for compression: {}", numBlocks);
         log.info("BlocksCounts: {}", Arrays.toString(blocksBuffer.asInt()));
 */
-        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(3+numMatches, false) : Nd4j.getDataBufferFactory().createInt(3+numMatches, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(4+numMatches, false) : Nd4j.getDataBufferFactory().createInt(4+numMatches, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickHostWrite();
         encodedBuffer.put(0, numMatches);
         encodedBuffer.put(1, (int) buffer.length());
         encodedBuffer.put(2, Float.floatToIntBits((float) threshold));
         AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickHostWrite();
+
+        encodedBuffer.put(3, ThresholdCompression.FLEXIBLE_ENCODING);
 
 
         int prefixThreads = 512;
@@ -2266,16 +2269,113 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         //log.info("DEC Source: {}", Arrays.toString(buffer.asInt()));
 
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().decodeThresholdFloat(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (FloatPointer) AtomicAllocator.getInstance().getPointer(result));
+            nativeOps.decodeThresholdFloat(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (FloatPointer) AtomicAllocator.getInstance().getPointer(result));
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().decodeThresholdDouble(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (DoublePointer) AtomicAllocator.getInstance().getPointer(result));
+            nativeOps.decodeThresholdDouble(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (DoublePointer) AtomicAllocator.getInstance().getPointer(result));
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().decodeThresholdHalf(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (ShortPointer) AtomicAllocator.getInstance().getPointer(result));
+            nativeOps.decodeThresholdHalf(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (ShortPointer) AtomicAllocator.getInstance().getPointer(result));
         }
 
         AtomicAllocator.getInstance().getAllocationPoint(result).tickDeviceWrite();
 
+
         //DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.THRESHOLD, buffer, getGlobalTypeEx());
+
+        return target;
+    }
+
+
+    @Override
+    public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
+        long length = indArray.lengthLong();
+        long tLen = target.data().length();
+
+        if (tLen != (length / 16 + 5))
+            throw new ND4JIllegalStateException("Length of target array should be " + (length / 16 + 5));
+
+        if (target.data().dataType() != DataBuffer.Type.INT)
+            throw new ND4JIllegalStateException("Target array should have INT dataType");
+
+        DataBuffer buffer = target.data();
+        buffer.put(0, (int) length);
+        buffer.put(1, (int) length);
+        buffer.put(2, Float.floatToIntBits((float) threshold));
+
+        // format id
+        buffer.put(3, ThresholdCompression.BITMAP_ENCODING);
+
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(indArray);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+
+        PointerPointer extras = extraz.get().put(
+                AtomicAllocator.getInstance().getHostPointer(indArray),
+                context.getOldStream(),
+                context.getBufferScalar(),
+                context.getBufferReduction()
+        );
+
+        long val = 0;
+        if (indArray.data().dataType() == DataBuffer.Type.FLOAT) {
+            val = nativeOps.encodeBitmapFloat(extras,
+                    (FloatPointer) AtomicAllocator.getInstance().getPointer(indArray, context),
+                    length,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(buffer, context),
+                    (float) threshold
+                    );
+        } else if (indArray.data().dataType() == DataBuffer.Type.DOUBLE) {
+            val = nativeOps.encodeBitmapDouble(extras,
+                    (DoublePointer) AtomicAllocator.getInstance().getPointer(indArray, context),
+                    length,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(buffer, context),
+                    (float) threshold
+            );
+        } else if (indArray.data().dataType() == DataBuffer.Type.HALF) {
+            val = nativeOps.encodeBitmapHalf(extras,
+                    (ShortPointer) AtomicAllocator.getInstance().getPointer(indArray, context),
+                    length,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(buffer, context),
+                    (float) threshold
+            );
+        } else
+            throw new ND4JIllegalStateException("Unknown dataType " + indArray.data().dataType());
+
+
+        AtomicAllocator.getInstance().getFlowController().registerAction(context, indArray);
+
+        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
+
+        return val;
+    }
+
+    @Override
+    public INDArray bitmapDecode(INDArray encoded, INDArray target) {
+
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(target);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+
+        PointerPointer extras = extraz.get().put(
+                AtomicAllocator.getInstance().getHostPointer(target),
+                context.getOldStream(),
+                context.getBufferScalar(),
+                context.getBufferReduction());
+
+        if (target.data().dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.decodeBitmapFloat(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.lengthLong(), (FloatPointer) AtomicAllocator.getInstance().getPointer(target, context));
+        } else if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.decodeBitmapDouble(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.lengthLong(), (DoublePointer) AtomicAllocator.getInstance().getPointer(target, context));
+        } else if (target.data().dataType() == DataBuffer.Type.HALF) {
+            nativeOps.decodeBitmapHalf(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.lengthLong(), (ShortPointer) AtomicAllocator.getInstance().getPointer(target, context));
+        } else
+            throw new ND4JIllegalStateException("Unknown dataType " + target.data().dataType());
+
+
+        AtomicAllocator.getInstance().getFlowController().registerAction(context, target);
 
         return target;
     }

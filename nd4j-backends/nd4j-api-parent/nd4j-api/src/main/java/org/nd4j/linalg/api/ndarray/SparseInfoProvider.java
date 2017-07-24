@@ -7,7 +7,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
  */
 public interface SparseInfoProvider {
 
-    DataBuffer createSparseInformation(int[] flags, int[] sparseOffsets, int[] hiddenDimensions, int underlyingRank);
+    DataBuffer createSparseInformation(int[] flags, long[] sparseOffsets, int[] hiddenDimensions, int underlyingRank);
 
     void purgeCache();
 }

@@ -204,12 +204,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public double getDoubleUnsafe(int offset) {
+    public double getDoubleUnsafe(long offset) {
         return 0;
     }
 
     @Override
-    public INDArray putScalarUnsafe(int offset, double value) {
+    public INDArray putScalarUnsafe(long offset, double value) {
         return null;
     }
 
@@ -1154,7 +1154,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray subArray(int[] offsets, int[] shape, int[] stride) {
+    public INDArray subArray(long[] offsets, int[] shape, int[] stride) {
         return null;
     }
 
@@ -1249,12 +1249,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public int offset() {
+    public long offset() {
         return 0;
     }
 
     @Override
-    public int originalOffset() {
+    public long originalOffset() {
         return 0;
     }
 

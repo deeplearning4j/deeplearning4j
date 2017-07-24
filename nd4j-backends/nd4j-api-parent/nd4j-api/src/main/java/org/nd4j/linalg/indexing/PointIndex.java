@@ -1,12 +1,13 @@
 package org.nd4j.linalg.indexing;
 
+import com.google.common.primitives.Longs;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * @author Adam Gibson
  */
 public class PointIndex implements INDArrayIndex {
-    private int point;
+    private long point;
     private boolean notUsed = true;
 
     /**
@@ -18,27 +19,27 @@ public class PointIndex implements INDArrayIndex {
     }
 
     @Override
-    public int end() {
+    public long end() {
         return point;
     }
 
     @Override
-    public int offset() {
+    public long offset() {
         return point;
     }
 
     @Override
-    public int length() {
+    public long length() {
         return 1;
     }
 
     @Override
-    public int stride() {
+    public long stride() {
         return 1;
     }
 
     @Override
-    public int current() {
+    public long current() {
         return point;
     }
 
@@ -48,8 +49,8 @@ public class PointIndex implements INDArrayIndex {
     }
 
     @Override
-    public int next() {
-        int ret = point;
+    public long next() {
+        long ret = point;
         notUsed = false;
         return ret;
     }
@@ -71,7 +72,7 @@ public class PointIndex implements INDArrayIndex {
     }
 
     @Override
-    public void init(INDArray arr, int begin, int dimension) {
+    public void init(INDArray arr, long begin, int dimension) {
 
     }
 
@@ -81,7 +82,7 @@ public class PointIndex implements INDArrayIndex {
     }
 
     @Override
-    public void init(int begin, int end) {
+    public void init(long begin, long end) {
 
     }
 
@@ -107,7 +108,7 @@ public class PointIndex implements INDArrayIndex {
 
     @Override
     public int hashCode() {
-        int result = point;
+        int result = Longs.hashCode(point);
         result = 31 * result + (notUsed ? 1 : 0);
         return result;
     }

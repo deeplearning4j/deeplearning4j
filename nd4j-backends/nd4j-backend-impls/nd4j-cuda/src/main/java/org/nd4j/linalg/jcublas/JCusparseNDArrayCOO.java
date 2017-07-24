@@ -24,7 +24,7 @@ public class JCusparseNDArrayCOO extends BaseSparseNDArrayCOO {
         super(values, indices, sparseInformation, shape);
     }
 
-    public JCusparseNDArrayCOO(DataBuffer values, DataBuffer indices, int[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape) {
+    public JCusparseNDArrayCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape) {
         super(values, indices, sparseOffsets, flags, hiddenDimensions, underlyingRank, shape);
     }
 }

@@ -484,12 +484,31 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
+    /**
+     * Validate the data types
+     * for the given operation
+     * @param expectedType
+     * @param op
+     */
     public static void validateDataType(DataBuffer.Type expectedType, Op op) {
-        if (op.x() != null && op.x().data().dataType() != expectedType)
+        if(op.x() != null && op.x().data().dataType() == DataBuffer.Type.COMPRESSED) {
+            Nd4j.getCompressor().decompressi(op.x());
+        }
+
+        if(op.y() != null && op.y().data().dataType() == DataBuffer.Type.COMPRESSED) {
+            Nd4j.getCompressor().decompressi(op.y());
+        }
+
+        if(op.z() != null && op.z().data().dataType() == DataBuffer.Type.COMPRESSED) {
+            Nd4j.getCompressor().decompressi(op.z());
+        }
+
+
+        if (op.x() != null && op.x().data().dataType() != expectedType && op.x().data().dataType() != DataBuffer.Type.COMPRESSED)
             throw new ND4JIllegalStateException("op.X dataType is [" + op.x().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
 
-        if (op.z() != null && op.z().data().dataType() != expectedType)
+        if (op.z() != null && op.z().data().dataType() != expectedType && op.z().data().dataType() != DataBuffer.Type.COMPRESSED)
             throw new ND4JIllegalStateException("op.Z dataType is [" + op.z().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
 
@@ -571,6 +590,27 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray thresholdDecode(INDArray encoded, INDArray target) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public INDArray bitmapEncode(INDArray indArray, double threshold) {
+        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(indArray.length() / 16 + 5);
+
+        INDArray ret = Nd4j.createArrayFromShapeBuffer(buffer, indArray.shapeInfoDataBuffer());
+
+        bitmapEncode(indArray, ret, threshold);
+
+        return ret;
+    }
+
+    @Override
+    public INDArray bitmapDecode(INDArray encoded, INDArray target) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

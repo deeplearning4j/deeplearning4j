@@ -1,10 +1,12 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import lombok.Data;
 import net.ericaro.neoitertools.Generator;
 import net.ericaro.neoitertools.Itertools;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.util.LongUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -15,35 +17,39 @@ import java.util.NoSuchElementException;
  */
 @Data
 public class SpecifiedIndex implements INDArrayIndex {
-    private int[] indexes;
+    private long[] indexes;
     private int counter = 0;
 
     public SpecifiedIndex(int... indexes) {
+        this.indexes = LongUtils.toLongs(indexes);
+    }
+
+    public SpecifiedIndex(long... indexes) {
         this.indexes = indexes;
     }
 
     @Override
-    public int end() {
+    public long end() {
         return indexes[indexes.length - 1];
     }
 
     @Override
-    public int offset() {
+    public long offset() {
         return indexes[0];
     }
 
     @Override
-    public int length() {
+    public long length() {
         return indexes.length;
     }
 
     @Override
-    public int stride() {
+    public long stride() {
         return 1;
     }
 
     @Override
-    public int current() {
+    public long current() {
         return indexes[counter - 1];
     }
 
@@ -53,14 +59,14 @@ public class SpecifiedIndex implements INDArrayIndex {
     }
 
     @Override
-    public int next() {
+    public long next() {
         return indexes[counter++];
     }
     /**
      * Return the next index with its position in the indexes array
      * */
-    public int[] nextSparse() {
-        return new int[]{indexes[counter], counter++};
+    public long[] nextSparse() {
+        return new long[]{indexes[counter], counter++};
     }
 
     @Override
@@ -79,7 +85,7 @@ public class SpecifiedIndex implements INDArrayIndex {
     }
 
     @Override
-    public void init(INDArray arr, int begin, int dimension) {
+    public void init(INDArray arr, long begin, int dimension) {
 
     }
 
@@ -89,7 +95,7 @@ public class SpecifiedIndex implements INDArrayIndex {
     }
 
     @Override
-    public void init(int begin, int end) {
+    public void init(long begin, long end) {
 
     }
 
@@ -107,8 +113,8 @@ public class SpecifiedIndex implements INDArrayIndex {
      *                otherwise it will end up throwing an exception
      * @return the generator for iterating over all the combinations of the specified indexes.
      */
-    public static Generator<List<List<Integer>>> iterate(INDArrayIndex... indexes) {
-        Generator<List<List<Integer>>> gen = Itertools.product(new SpecifiedIndexesGenerator(indexes));
+    public static Generator<List<List<Long>>> iterate(INDArrayIndex... indexes) {
+        Generator<List<List<Long>>> gen = Itertools.product(new SpecifiedIndexesGenerator(indexes));
         return gen;
     }
 
@@ -120,8 +126,8 @@ public class SpecifiedIndex implements INDArrayIndex {
      *                otherwise it will end up throwing an exception
      * @return the generator for iterating over all the combinations of the specified indexes.
      */
-    public static Generator<List<List<Integer>>> iterateOverSparse(INDArrayIndex... indexes) {
-        Generator<List<List<Integer>>> gen = Itertools.product(new SparseSpecifiedIndexesGenerator(indexes));
+    public static Generator<List<List<Long>>> iterateOverSparse(INDArrayIndex... indexes) {
+        Generator<List<List<Long>>> gen = Itertools.product(new SparseSpecifiedIndexesGenerator(indexes));
         return gen;
     }
 
@@ -132,7 +138,7 @@ public class SpecifiedIndex implements INDArrayIndex {
      *    to iterate
      over an array given a set of  iterators
      */
-    public static class SpecifiedIndexesGenerator implements Generator<Generator<List<Integer>>> {
+    public static class SpecifiedIndexesGenerator implements Generator<Generator<List<Long>>> {
         private int index = 0;
         private INDArrayIndex[] indexes;
 
@@ -145,13 +151,13 @@ public class SpecifiedIndex implements INDArrayIndex {
         }
 
         @Override
-        public Generator<List<Integer>> next() throws NoSuchElementException {
+        public Generator<List<Long>> next() throws NoSuchElementException {
             if (index >= indexes.length) {
                 throw new NoSuchElementException("Done");
             }
 
             SpecifiedIndex specifiedIndex = (SpecifiedIndex) indexes[index++];
-            Generator<List<Integer>> ret = specifiedIndex.generator();
+            Generator<List<Long>> ret = specifiedIndex.generator();
             return ret;
         }
     }
@@ -162,7 +168,7 @@ public class SpecifiedIndex implements INDArrayIndex {
      *    to iterate
      over an array given a set of  iterators
      */
-    public static class SparseSpecifiedIndexesGenerator implements Generator<Generator<List<Integer>>> {
+    public static class SparseSpecifiedIndexesGenerator implements Generator<Generator<List<Long>>> {
         private int index = 0;
         private INDArrayIndex[] indexes;
 
@@ -175,49 +181,49 @@ public class SpecifiedIndex implements INDArrayIndex {
         }
 
         @Override
-        public Generator<List<Integer>> next() throws NoSuchElementException {
+        public Generator<List<Long>> next() throws NoSuchElementException {
             if (index >= indexes.length) {
                 throw new NoSuchElementException("Done");
             }
 
             SpecifiedIndex specifiedIndex = (SpecifiedIndex) indexes[index++];
-            Generator<List<Integer>> ret = specifiedIndex.sparseGenerator();
+            Generator<List<Long>> ret = specifiedIndex.sparseGenerator();
             return ret;
         }
     }
 
 
-    public class SingleGenerator implements Generator<List<Integer>> {
+    public class SingleGenerator implements Generator<List<Long>> {
         /**
          * @return the next item in the sequence.
          * @throws NoSuchElementException when sequence is exhausted.
          */
         @Override
-        public List<Integer> next() throws NoSuchElementException {
+        public List<Long> next() throws NoSuchElementException {
             if (!SpecifiedIndex.this.hasNext())
                 throw new NoSuchElementException();
 
-            return Ints.asList(SpecifiedIndex.this.next());
+            return Longs.asList(SpecifiedIndex.this.next());
         }
     }
-    public class SparseSingleGenerator implements Generator<List<Integer>> {
+    public class SparseSingleGenerator implements Generator<List<Long>> {
         /**
          * @return the next item in the sequence.
          * @throws NoSuchElementException when sequence is exhausted.
          */
         @Override
-        public List<Integer> next() throws NoSuchElementException {
+        public List<Long> next() throws NoSuchElementException {
             if (!SpecifiedIndex.this.hasNext())
                 throw new NoSuchElementException();
-            int[] pair = SpecifiedIndex.this.nextSparse();
+            long[] pair = SpecifiedIndex.this.nextSparse();
             return Arrays.asList(pair[0], pair[1]);
         }
     }
 
-    public Generator<List<Integer>> generator() {
+    public Generator<List<Long>> generator() {
         return new SingleGenerator();
     }
-    public Generator<List<Integer>> sparseGenerator() {
+    public Generator<List<Long>> sparseGenerator() {
         return new SparseSingleGenerator();
     }
 

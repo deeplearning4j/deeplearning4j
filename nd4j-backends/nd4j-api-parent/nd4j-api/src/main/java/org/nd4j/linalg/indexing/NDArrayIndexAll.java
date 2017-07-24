@@ -19,7 +19,7 @@ public class NDArrayIndexAll extends IntervalIndex {
 
 
     @Override
-    public void init(INDArray arr, int begin, int dimension) {
+    public void init(INDArray arr, long begin, int dimension) {
         this.begin = 0;
         this.end = arr.size(dimension);
         this.length = (Math.abs(end - begin));

@@ -140,6 +140,16 @@ public class LossMAPE implements ILossFunction {
         return new Pair<>(computeScore(labels, preOutput, activationFn, mask, average),
                         computeGradient(labels, preOutput, activationFn, mask));
     }
+    /**
+     * The name of this function
+     *
+     * @return
+     */
+    @Override
+    public String name() {
+        return toString();
+    }
+
 
     @Override
     public String toString() {

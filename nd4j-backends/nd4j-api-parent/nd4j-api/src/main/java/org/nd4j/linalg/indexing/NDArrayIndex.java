@@ -20,6 +20,7 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Ints;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -35,6 +36,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class NDArrayIndex implements INDArrayIndex {
 
     private int[] indices = new int[1];
@@ -91,7 +93,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param indices the offsets for each dimension
      * @return the offset that should be used for indexing
      */
-    public static int offset(INDArray arr, INDArrayIndex... indices) {
+    public static long offset(INDArray arr, INDArrayIndex... indices) {
         return offset(arr.stride(), Indices.offsets(arr.shape(), indices));
     }
 
@@ -171,8 +173,23 @@ public class NDArrayIndex implements INDArrayIndex {
         }
 
         return ret;
+    }
 
+    public static long offset(int[] strides, long[] offsets) {
+        int ret = 0;
 
+        if (ArrayUtil.prodLong(offsets) == 1) {
+            for (int i = 0; i < offsets.length; i++) {
+                ret += offsets[i] * strides[i];
+            }
+        } else {
+            for (int i = 0; i < offsets.length; i++) {
+                ret += offsets[i] * strides[i];
+            }
+
+        }
+
+        return ret;
     }
 
 
@@ -287,13 +304,14 @@ public class NDArrayIndex implements INDArrayIndex {
                     ret[i] = intendedIndexes[i];
                 else {
                     if (intendedIndexes[i] instanceof NDArrayIndexAll) {
-                        SpecifiedIndex specifiedIndex = new SpecifiedIndex(ArrayUtil.range(0, shape.getInt(i)));
+                        // FIXME: LONG
+                        SpecifiedIndex specifiedIndex = new SpecifiedIndex(ArrayUtil.range(0L, (long) shape.getInt(i)));
                         ret[i] = specifiedIndex;
                     } else if (intendedIndexes[i] instanceof NDArrayIndexEmpty) {
-                        ret[i] = new SpecifiedIndex(new int[0]);
+                        ret[i] = new SpecifiedIndex(new long[0]);
                     } else if (intendedIndexes[i] instanceof IntervalIndex) {
                         IntervalIndex intervalIndex = (IntervalIndex) intendedIndexes[i];
-                        ret[i] = new SpecifiedIndex(ArrayUtil.range(0, intervalIndex.end(), intervalIndex.stride()));
+                        ret[i] = new SpecifiedIndex(ArrayUtil.range(intervalIndex.begin, intervalIndex.end(), intervalIndex.stride()));
                     }
                 }
             }
@@ -407,15 +425,17 @@ public class NDArrayIndex implements INDArrayIndex {
         while (retList.size() < length)
             retList.add(NDArrayIndex.all());
 
+
+
         return retList.toArray(new INDArrayIndex[retList.size()]);
     }
 
-    protected static INDArrayIndex validate(int size, INDArrayIndex index) {
+    protected static INDArrayIndex validate(long size, INDArrayIndex index) {
         if ((index instanceof IntervalIndex || index instanceof PointIndex) && size <= index.current() && size > 1)
             throw new IllegalArgumentException("NDArrayIndex is out of range. Beginning index: " + index.current()
                             + " must be less than its size: " + size);
         if (index instanceof IntervalIndex && size < index.end()) {
-            int begin = ((IntervalIndex) index).begin;
+            long begin = ((IntervalIndex) index).begin;
             index = NDArrayIndex.interval(begin, index.stride(), size);
         }
         return index;
@@ -563,7 +583,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param end   the end index
      * @return the interval
      */
-    public static INDArrayIndex interval(int begin, int stride, int end) {
+    public static INDArrayIndex interval(long begin, long stride, long end) {
         if (Math.abs(begin - end) < 1)
             end++;
         if (stride > 1 && Math.abs(begin - end) == 1) {
@@ -588,6 +608,13 @@ public class NDArrayIndex implements INDArrayIndex {
         return index;
     }
 
+    public static INDArrayIndex interval(long begin, long stride, long end, boolean inclusive) {
+        assert begin <= end : "Beginning index in range must be less than end";
+        INDArrayIndex index = new IntervalIndex(inclusive, stride);
+        index.init(begin, end);
+        return index;
+    }
+
 
     /**
      * Generates an interval from begin (inclusive) to end (exclusive)
@@ -597,6 +624,10 @@ public class NDArrayIndex implements INDArrayIndex {
      * @return the interval
      */
     public static INDArrayIndex interval(int begin, int end) {
+        return interval(begin, 1, end, false);
+    }
+
+    public static INDArrayIndex interval(long begin, long end) {
         return interval(begin, 1, end, false);
     }
 
@@ -613,14 +644,14 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     @Override
-    public int end() {
+    public long end() {
         if (indices != null && indices.length > 0)
             return indices[indices.length - 1];
         return 0;
     }
 
     @Override
-    public int offset() {
+    public long offset() {
         if (indices.length < 1)
             return 0;
         return indices[0];
@@ -632,17 +663,17 @@ public class NDArrayIndex implements INDArrayIndex {
      * @return the length of the range
      */
     @Override
-    public int length() {
+    public long length() {
         return indices.length;
     }
 
     @Override
-    public int stride() {
+    public long stride() {
         return 1;
     }
 
     @Override
-    public int current() {
+    public long current() {
         return 0;
     }
 
@@ -652,7 +683,7 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     @Override
-    public int next() {
+    public long next() {
         return 0;
     }
 
@@ -697,7 +728,7 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     @Override
-    public void init(INDArray arr, int begin, int dimension) {
+    public void init(INDArray arr, long begin, int dimension) {
 
     }
 
@@ -707,7 +738,7 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     @Override
-    public void init(int begin, int end) {
+    public void init(long begin, long end) {
 
     }
 

@@ -59,7 +59,7 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(length, elementSize);
     }
 
-    public DoubleBuffer(int length, int elementSize, int offset) {
+    public DoubleBuffer(int length, int elementSize, long offset) {
         super(length, elementSize, offset);
     }
 
@@ -91,7 +91,7 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(data, copyOnOps);
     }
 
-    public DoubleBuffer(int[] data, boolean copy, int offset) {
+    public DoubleBuffer(int[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -103,7 +103,7 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(data, copyOnOps);
     }
 
-    public DoubleBuffer(float[] data, boolean copy, int offset) {
+    public DoubleBuffer(float[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -111,7 +111,7 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(buffer, length);
     }
 
-    public DoubleBuffer(ByteBuffer buffer, int length, int offset) {
+    public DoubleBuffer(ByteBuffer buffer, int length, long offset) {
         super(buffer, length, offset);
     }
 
@@ -133,11 +133,11 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(doubles, copy);
     }
 
-    public DoubleBuffer(double[] data, boolean copy, int offset) {
+    public DoubleBuffer(double[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
-    public DoubleBuffer(double[] data, boolean copy, int offset, MemoryWorkspace workspace) {
+    public DoubleBuffer(double[] data, boolean copy, long offset, MemoryWorkspace workspace) {
         super(data, copy, offset, workspace);
     }
 

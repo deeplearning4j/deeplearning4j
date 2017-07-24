@@ -18,6 +18,7 @@ import java.util.NoSuchElementException;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.primitives.Ints;
+import org.nd4j.linalg.util.LongUtils;
 
 /**
  * @author Audrey Loeffel
@@ -80,7 +81,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
         init(shape);
         int[] flags = new int[rank()];
-        int[] sparseOffsets = new int[rank()];
+        long[] sparseOffsets = new long[rank()];
         int[] hiddenDimension = new int[]{-1};
         //this.numHiddenDimension = 0;
         this.sparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,hiddenDimension, rank());
@@ -96,7 +97,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         init(shape);
         this.length = values.length();
         int[] flags = new int[rank()];
-        int[] sparseOffsets = new int[rank()];
+        long[] sparseOffsets = new long[rank()];
         int[] hiddenDimension = new int[]{-1};
         this.sparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,hiddenDimension, rank());
 
@@ -111,7 +112,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         init(shape);
         this.length = values.length;
         int[] flags = new int[rank()];
-        int[] sparseOffsets = new int[rank()];
+        long[] sparseOffsets = new long[rank()];
         int[] hiddenDimension = new int[]{-1};
         this.sparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,hiddenDimension, rank());
     }
@@ -125,7 +126,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         this.length = countNNZ();
 
     }
-    public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, int[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape){
+    public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape){
         this(values, indices, Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets, hiddenDimensions, underlyingRank), shape);
     }
 
@@ -302,8 +303,8 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
             indices[0].reset();
             int cnt = 0;
             while (indices[0].hasNext()) {
-                int idx = indices[0].next();
-                putScalar(idx, element.getDouble(cnt));
+                long idx = indices[0].next();
+                putScalar((int) idx, element.getDouble(cnt));
                 cnt++;
             }
             return this;
@@ -457,7 +458,8 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         if (indexes.length < 1)
             throw new IllegalStateException("Invalid index found of zero length");
 
-        int[] shape = resolution.getShapes();
+        // FIXME: LONG
+        int[] shape = LongUtils.toInts(resolution.getShapes());
         int numSpecifiedIndex = 0;
 
         for (int i = 0; i < indexes.length; i++)
@@ -465,20 +467,20 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                 numSpecifiedIndex++;
 
         if (shape != null && numSpecifiedIndex > 0) {
-            Generator<List<List<Integer>>> gen = SpecifiedIndex.iterateOverSparse(indexes);
+            Generator<List<List<Long>>> gen = SpecifiedIndex.iterateOverSparse(indexes);
             INDArray ret = Nd4j.createSparseCOO(new double[]{}, new int[][]{}, shape);
             int count = 0;
             int maxValue = ArrayUtil.prod(shape());
             while (count<maxValue) {
                 try {
-                    List<List<Integer>> next = gen.next();
+                    List<List<Long>> next = gen.next();
                     List<Integer> coordsCombo = new ArrayList<>();
                     List<Integer> cooIdx = new ArrayList<>();
                     for (int i = 0; i < next.size(); i++) {
                         if (next.get(i).size() != 2)
                             throw new IllegalStateException("Illegal entry returned");
-                        coordsCombo.add(next.get(i).get(0));
-                        cooIdx.add(next.get(i).get(1));
+                        coordsCombo.add(next.get(i).get(0).intValue());
+                        cooIdx.add(next.get(i).get(1).intValue());
                     }
                     count++;
 
@@ -758,14 +760,14 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     @Override
     public INDArray subArray(ShapeOffsetResolution resolution) {
-        int[] offsets = resolution.getOffsets();
-        int[] shape = resolution.getShapes();
-        int[] stride = resolution.getStrides();
+        long[] offsets = resolution.getOffsets();
+        int[] shape = LongUtils.toInts(resolution.getShapes());
+        int[] stride = LongUtils.toInts(resolution.getStrides());
         int[] flags = resolution.getFixed();
         flags = updateFlags(flags, shape);
-        int offset = (int) (offset() + resolution.getOffset());
+        long offset = (int) (offset() + resolution.getOffset());
         int newRank = shape.length;
-        int[] sparseOffsets = createSparseOffsets(offset);
+        long[] sparseOffsets = createSparseOffsets(offset);
         int[] newAxis = createHiddenDimensions(resolution.getPrependAxis());
 
 
@@ -790,35 +792,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
     //@Override
     public INDArray subArray(ShapeOffsetResolution resolution, ShapeOffsetResolution resolutionWithoutNewAxis) {
-        int[] offsets = resolution.getOffsets();
-        int[] shape = resolution.getShapes();
-        int[] stride = resolution.getStrides();
-        int[] flags = resolution.getFixed();
-        flags = updateFlags(flags, shape);
-        int offset = (int) (offset() + resolution.getOffset());
-        int newRank = shape.length;
-        int[] sparseOffsets = createSparseOffsets(offset);
-        int[] newAxis = createHiddenDimensions(resolution.getPrependAxis());
-
-
-        if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Offset of array can not be >= Integer.MAX_VALUE");
-
-        if (offsets.length != newRank)
-            throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
-        if (stride.length != newRank)
-            throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
-
-        if (shape.length == rank() && Shape.contentEquals(shape, shapeOf())) {
-            if (ArrayUtil.isZero(offsets)) {
-                return this;
-            } else {
-                throw new IllegalArgumentException("Invalid subArray offsets");
-            }
-        }
-        DataBuffer newSparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets, newAxis, underlyingRank());
-        return create(values, indices, newSparseInformation, Arrays.copyOf(shape, shape.length));
-
+        return null;
     }
 
     /**
@@ -826,22 +800,22 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @param offset the offset of the view
      * @return an int array containing the sparse offsets
      * */
-    private int[] createSparseOffsets(int offset){
+    private long[] createSparseOffsets(long offset){
 
         // resolve the offsets in the view dimension
         int underlyingRank = sparseOffsets().length;
-        int[] newOffsets = new int[rank()];
+        long[] newOffsets = new long[rank()];
         List<Integer> shapeList = Ints.asList(shape());
         int penultimate = rank() -1;
         for(int i = 0; i < penultimate; i++){
-            int prod = ArrayUtil.prod(shapeList.subList(i+1, rank()));
+            long prod = ArrayUtil.prod(shapeList.subList(i+1, rank()));
             newOffsets[i] = offset / prod;
             offset = offset - newOffsets[i] * prod;
         }
         newOffsets[rank()-1] =  offset % shape()[rank()-1];
 
         // Merge the offsets with the original sparseOffsets
-        int[] finalOffsets = new int[underlyingRank];
+        long[] finalOffsets = new long[underlyingRank];
         int dimNotFixed = 0;
         for(int dim = 0; dim < underlyingRank; dim++){
             if(flags()[dim] == 1){
@@ -924,7 +898,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
-    public INDArray subArray(int[] offsets, int[] shape, int[] stride) {
+    public INDArray subArray(long[] offsets, int[] shape, int[] stride) {
         throw new UnsupportedOperationException();
     }
 

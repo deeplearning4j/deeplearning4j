@@ -569,7 +569,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
-    public Pointer getHostPointer(int offset) {
+    public Pointer getHostPointer(long offset) {
         throw new UnsupportedOperationException();
     }
 
@@ -601,7 +601,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
 
     @Deprecated
-    public Pointer getHostPointer(INDArray arr, int stride, int offset, int length) {
+    public Pointer getHostPointer(INDArray arr, int stride, long offset, int length) {
         throw new UnsupportedOperationException("This method is deprecated");
     }
 

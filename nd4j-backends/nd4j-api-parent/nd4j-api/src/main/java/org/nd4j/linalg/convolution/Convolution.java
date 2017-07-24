@@ -104,6 +104,7 @@ public class Convolution {
      * @return
      */
     public static INDArray im2col(INDArray img, int[] kernel, int[] stride, int[] padding) {
+        Nd4j.getCompressor().autoDecompress(img);
         return im2col(img, kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false);
     }
 
@@ -121,6 +122,7 @@ public class Convolution {
      *
      */
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode) {
+        Nd4j.getCompressor().autoDecompress(img);
         Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, isSameMode);
         return Nd4j.getExecutioner().exec(im2col).z();
     }

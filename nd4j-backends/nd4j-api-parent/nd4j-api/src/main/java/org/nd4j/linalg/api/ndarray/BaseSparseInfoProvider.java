@@ -7,7 +7,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
  */
 abstract public class BaseSparseInfoProvider implements SparseInfoProvider{
     @Override
-    public DataBuffer createSparseInformation(int[] flags, int[] sparseOffsets, int[] hiddenDimensions, int underlyingRank) {
+    public DataBuffer createSparseInformation(int[] flags, long[] sparseOffsets, int[] hiddenDimensions, int underlyingRank) {
         return createSparseInformation(flags, sparseOffsets, hiddenDimensions, underlyingRank);
     }
 }

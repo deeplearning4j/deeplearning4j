@@ -8,11 +8,11 @@ import java.util.Arrays;
 public class SparseDescriptor {
 
     int[] flags;
-    int[] sparseOffsets;
+    long[] sparseOffsets;
     int[] hiddenDimension;
     int underlyingRank;
 
-    public SparseDescriptor(int[] flags, int[] sparseOffsets, int[] hiddenDimension, int underlyingRank){
+    public SparseDescriptor(int[] flags, long[] sparseOffsets, int[] hiddenDimension, int underlyingRank){
         this.flags = Arrays.copyOf(flags, flags.length);
         this.sparseOffsets = Arrays.copyOf(sparseOffsets, sparseOffsets.length);
         this.hiddenDimension = Arrays.copyOf(hiddenDimension, hiddenDimension.length);

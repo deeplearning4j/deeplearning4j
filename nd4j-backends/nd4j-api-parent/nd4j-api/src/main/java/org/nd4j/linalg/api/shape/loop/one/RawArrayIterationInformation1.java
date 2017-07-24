@@ -25,13 +25,13 @@ import java.io.Serializable;
 @Builder
 public class RawArrayIterationInformation1 implements Serializable {
     private int nDim;
-    private int aOffset = -1;
+    private long aOffset = -1;
     private int[] aStrides;
     private int[] shape;
     private DataBuffer a;
 
     public RawArrayIterationInformation1 computeOut() {
-        int aOffset = this.aOffset;
+        long aOffset = this.aOffset;
         int[] aStrides = ArrayUtil.copy(this.aStrides);
         int[] shape = ArrayUtil.copy(this.shape);
         int nDim = this.nDim;

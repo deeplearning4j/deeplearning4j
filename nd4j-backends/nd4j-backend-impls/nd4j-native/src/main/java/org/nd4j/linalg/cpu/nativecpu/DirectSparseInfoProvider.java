@@ -19,7 +19,7 @@ public class DirectSparseInfoProvider extends BaseSparseInfoProvider {
     private static final int MAX_ENTRIES = 100;
 
     @Override
-    public DataBuffer createSparseInformation(int[] flags, int[] sparseOffsets, int[] hiddenDimensions, int underlyingRank) {
+    public DataBuffer createSparseInformation(int[] flags, long[] sparseOffsets, int[] hiddenDimensions, int underlyingRank) {
 
         SparseDescriptor descriptor = new SparseDescriptor(flags, sparseOffsets, hiddenDimensions, underlyingRank);
 

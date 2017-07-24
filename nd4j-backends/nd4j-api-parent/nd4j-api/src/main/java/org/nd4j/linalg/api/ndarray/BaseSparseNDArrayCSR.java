@@ -4,6 +4,7 @@ import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
+import org.nd4j.linalg.util.LongUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -133,7 +134,8 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         if (indexes.length < 1)
             throw new IllegalStateException("Invalid index found of zero length");
 
-        int[] shape = resolution.getShapes();
+        // FIXME: LONG
+        int[] shape = LongUtils.toInts(resolution.getShapes());
         int numSpecifiedIndex = 0;
 
         for (int i = 0; i < indexes.length; i++)
@@ -233,8 +235,9 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     @Override
     public INDArray subArray(ShapeOffsetResolution resolution) {
 
-        int[] offsets = resolution.getOffsets();
-        int[] shape = resolution.getShapes();
+        long[] offsets = resolution.getOffsets();
+        int[] shape = LongUtils.toInts(resolution.getShapes());
+
 
         List<Integer> accuColumns = new ArrayList<>();
         List<Integer> accuPointerB = new ArrayList<>();
@@ -246,10 +249,10 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
                 offsets[0] = (int) resolution.getOffset() / shape()[1];
                 offsets[1] = (int) resolution.getOffset() % shape()[1];
             }
-            int firstRow = offsets [0];
-            int lastRow = firstRow + shape[0];
-            int firstElement = offsets [1];
-            int lastElement = firstElement + shape[1];
+            long firstRow = offsets[0];
+            long lastRow = firstRow + shape[0];
+            long firstElement = offsets [1];
+            long lastElement = firstElement + shape[1];
 
             int count = 0;
             int i  = 0;
@@ -264,7 +267,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
                     if(colIdx >= firstElement && colIdx < lastElement && rowIdx >= firstRow && rowIdx < lastRow){
 
                         // add the new column pointer for this element
-                        accuColumns.add(colIdx - firstElement);
+                        accuColumns.add((int)(colIdx - firstElement));
 
                         if(isFirstInRow){
                             // Add the index of the first element of the row in the pointer array
@@ -273,7 +276,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
                             isFirstInRow = false;
                         } else {
                             // update the last element pointer array
-                            accuPointerE.set(rowIdx - firstRow,idx + 1);
+                            accuPointerE.set((int) (rowIdx - firstRow),idx + 1);
                         }
                     }
                      count++;
@@ -306,7 +309,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
 
 
     @Override
-    public INDArray subArray(int[] offsets, int[] shape, int[] stride) {
+    public INDArray subArray(long[] offsets, int[] shape, int[] stride) {
         throw new UnsupportedOperationException();
     }
 

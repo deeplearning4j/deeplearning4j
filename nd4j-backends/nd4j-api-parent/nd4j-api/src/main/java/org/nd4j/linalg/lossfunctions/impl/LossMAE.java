@@ -51,6 +51,17 @@ public class LossMAE extends LossL1 {
         return gradients;
     }
 
+    /**
+     * The name of this function
+     *
+     * @return
+     */
+    @Override
+    public String name() {
+        return toString();
+    }
+
+
     @Override
     public String toString() {
         if (weights == null)
