@@ -1,28 +1,19 @@
 ---
-title: Toy problems
+title: 玩具问题
 layout: cn-default
 ---
 
-## Toy problems 
+## 玩具问题 
 
-People often come to us with toy examples they see in text books with small numbers of examples.
+人们经常向我们提及教科书中出现的样例数量很少的“玩具”示例。
 
-Deeplearning4j's defaults assume lots of data and its often confusing for beginners. Here are a few tuning tips to ensure
-your beginning experience with toy problems goes well. We often advocate for beginners to learn python or matlab
-due to the fact that deeplearning4j assumes a very different audience.
+Deeplearning4j在默认情况下假设数据量很大，初学者常会因此感到迷惑。以下的调试建议可以确保您在刚开始探索玩具问题时能获得良好的体验。我们经常提倡初学者学习Python或者Matlab，因为Deeplearning4j主要面向的是完全不同的用户群。
 
 
-      1. minibatch(false) in your config - this will prevent the 
-      gradient from being normalized minibatch learning
-          performs a divide by n which normalizes the learned gradient. 
-          When you have the whole problem in memory
-          there is no reason to do this.
-      
-      2. double precision: Neural nets can learn from 32 bit when 
-          exposed to lots of data. Use 64 bit (double precision for 
-          better results): http://nd4j.org/userguide#miscdatatype
+      1. 配置中设置minibatch(false)－这将避免梯度被标准化。微批次学习会将学习到
+         的梯度标准化，即除以微批次大小。如果整个问题都在内存中，就没有理由这样做。
+         
+      2. 双精度：如果数据量大，神经网络可以进行32位数据的学习。一般请使用64位数据
+         （双精度型结果更好）：http://nd4j.org/userguide#miscdatatype
           
-      3. Use the sgd updater with the sgd optimization algo. 
-         This will prevent complicated things 
-         like the line search
-         from being activated.
+      3. 请使用基于SGD优化算法的SGD更新器，避免启用线搜索等比较复杂的功能。
