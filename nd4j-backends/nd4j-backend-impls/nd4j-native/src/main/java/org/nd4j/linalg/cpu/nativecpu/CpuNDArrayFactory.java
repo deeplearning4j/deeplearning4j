@@ -964,8 +964,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         long[] ptrs = new long[arrays.size()];
 
+
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
+
+            log.info("Shape {};", Arrays.toString(array.shapeInfoDataBuffer().asInt()));
 
             Nd4j.getCompressor().autoDecompress(array);
 
@@ -979,8 +982,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
             DataBuffer offsets = tadBuffers.getSecond();
 
+            if (offsets.length() != numTads)
+                throw new ND4JIllegalStateException("Can't symmetrically shuffle arrays with non-equal number of TADs");
+
             if (offsets == null)
-                throw new IllegalStateException("Offsets for shuffle can't be null");
+                throw new ND4JIllegalStateException("Offsets for shuffle can't be null");
 
 
             dataPointers.put(i, array.data().addressPointer());

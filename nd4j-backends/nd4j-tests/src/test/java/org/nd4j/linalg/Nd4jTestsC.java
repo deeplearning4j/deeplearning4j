@@ -61,6 +61,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;

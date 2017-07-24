@@ -1167,6 +1167,10 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             Pointer tadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
 
             DataBuffer offsets = tadBuffers.getSecond();
+
+            if (offsets.length() != numTads)
+                throw new ND4JIllegalStateException("Can't symmetrically shuffle arrays with non-equal number of TADs");
+
             Pointer tadOffset = AtomicAllocator.getInstance().getPointer(offsets, context);
 
             xPointers[i] = x.address();
