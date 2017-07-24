@@ -15,10 +15,15 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 /**
+ * These tests should be ignored by default, since they require fairly large amounts of memory to run (>32GB some of them)
+ *
  * @author raver119@gmail.com
  */
 @Slf4j
@@ -33,7 +38,6 @@ public class LongTests extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
     public void testSomething1() {
         // we create 2D array, total nr. of elements is 2.4B elements, > MAX_INT
         INDArray huge = Nd4j.create(8000000, 300);
@@ -131,6 +135,43 @@ public class LongTests extends BaseNd4jTest {
 
         for (int x = 0; x < hugeX.rows(); x++){
             assertEquals("Failed at row " + x, 3000, hugeX.getRow(x).sumNumber().intValue());
+        }
+    }
+
+    @Test
+    public void testLongTadOp3() {
+
+        INDArray hugeX = Nd4j.create(2300000, 1000).assign(1.0);
+        INDArray mean = hugeX.mean(1);
+
+        for (int x = 0; x < hugeX.rows(); x++){
+            assertEquals("Failed at row " + x, 1.0, mean.getDouble(x), 1e-5);
+        }
+    }
+
+    @Test
+    public void testLongTadOp4() {
+
+        INDArray hugeX = Nd4j.create(2300000, 1000).assign(1.0);
+        INDArray mean = hugeX.argMax(1);
+
+        for (int x = 0; x < hugeX.rows(); x++){
+            assertEquals("Failed at row " + x, 0.0, mean.getDouble(x), 1e-5);
+        }
+    }
+
+    @Test
+    public void testLongTadOp5() {
+
+        List<INDArray> list = new ArrayList<>();
+        for (int i = 0; i < 2300000; i++) {
+            list.add(Nd4j.create(1000).assign(2.0));
+        }
+
+        INDArray hugeX = Nd4j.vstack(list);
+
+        for (int x = 0; x < hugeX.rows(); x++){
+            assertEquals("Failed at row " + x, 2.0, hugeX.getRow(x).meanNumber().doubleValue(), 1e-5);
         }
     }
 
