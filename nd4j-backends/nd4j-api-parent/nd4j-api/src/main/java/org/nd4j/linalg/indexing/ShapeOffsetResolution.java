@@ -652,9 +652,17 @@ public class    ShapeOffsetResolution implements Serializable {
                 fixed[j] = 1;
                 j++;
             }
-            if(indexes[i] instanceof IntervalIndex || indexes[i] instanceof NDArrayIndexAll
-                    || indexes[i] instanceof SpecifiedIndex){
+            if(indexes[i] instanceof IntervalIndex || indexes[i] instanceof NDArrayIndexAll){
                 fixed[j] = 0;
+                j++;
+            }
+            if(indexes[i] instanceof SpecifiedIndex){
+                SpecifiedIndex idx = (SpecifiedIndex) indexes[i];
+                if(idx.getIndexes().length == 1){
+                    fixed[j] = 1;
+                } else {
+                    fixed[j] = 0;
+                }
                 j++;
             }
             if(indexes[i] instanceof NewAxis){

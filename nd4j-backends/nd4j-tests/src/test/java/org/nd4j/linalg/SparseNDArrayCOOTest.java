@@ -216,12 +216,12 @@ public class SparseNDArrayCOOTest {
         INDArray array = Nd4j.createSparseCOO(values, indices, shape);
         //TODO FIXME : Issue in shapeOffsetResolution, lower bound is not taken into account
         BaseSparseNDArrayCOO newArray = (BaseSparseNDArrayCOO) array.get(
-                NDArrayIndex.interval(1, 3),
+                NDArrayIndex.interval(1, 4),
                 new SpecifiedIndex(new int[]{0}),
                 new SpecifiedIndex(new int[]{0, 2}));
         assertEquals(2, newArray.nnz());
         assertArrayEquals(new double[]{3, 8}, newArray.getIncludedValues().asDouble(), 1e-1);
-        assertArrayEquals(new int[]{0, 0, 0, 2, 0, 1}, newArray.getIncludedIndices().asInt());
+        assertArrayEquals(new int[]{0, 0, 2, 1}, newArray.getIncludedIndices().asInt());
     }
 
     /*

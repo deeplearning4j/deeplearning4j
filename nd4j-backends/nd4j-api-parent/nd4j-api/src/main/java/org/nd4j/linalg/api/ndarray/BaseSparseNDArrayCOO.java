@@ -197,16 +197,10 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                     idxPhy++;
                 }
             }
-
-
-                /*if(idxPhy < underlyingRank() && !isDimensionFixed(idxPhy)){
-                    physicalIndexes[idxPhy] = sparseOffsets()[idxPhy] + virtualIndexes[idxVir];
-                    idxPhy++;
-                }*/
-
         }
         return physicalIndexes;
     }
+
     /**
      * Return if a given dimension is flags in the view.
      * */
@@ -493,7 +487,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                     int[] idx = Ints.toArray(coordsCombo);
                     if(!isZero(idx)){
                         double val = getDouble(idx);
-                        ret.putScalar(Ints.toArray(cooIdx), val);
+                        ret.putScalar(filterOutFixedDimensions(resolution.getFixed(), cooIdx), val);
                     }
 
                 } catch (NoSuchElementException e) {
@@ -502,8 +496,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
             }
 
             return ret;
-
-
         }
 
         int numNewAxis = 0;
@@ -516,11 +508,19 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
         INDArray ret = subArray(resolution);
         return ret;
-
-
-
     }
 
+
+    public int[] filterOutFixedDimensions(int[] flags, List<Integer> idx){
+        checkArgument(flags.length == idx.size());
+        int lastIdx = idx.size()-1;
+        for(int i = lastIdx; i >= 0; i--){
+            if(flags[i]==1){
+                idx.remove(i);
+            }
+        }
+        return Ints.toArray(idx);
+    }
 
     /**
      * Return the index of the value corresponding to the indexes
