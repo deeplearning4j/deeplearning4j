@@ -6,6 +6,7 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.
@@ -42,7 +43,11 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
     public void launchThreads() {
         startGlobalThread();
         for (int i = 0; i < getConfiguration().getNumThread(); i++) {
-            newThread(i).start();
+            Thread t = newThread(i);
+            Nd4j.getAffinityManager().attachThreadToDevice(t,
+                            i % Nd4j.getAffinityManager().getNumberOfDevices());
+            t.start();
+
         }
         log.info("Threads launched.");
     }
