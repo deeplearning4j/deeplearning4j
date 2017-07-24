@@ -38,8 +38,7 @@ public class LocalOptimizationRunner extends BaseOptimizationRunner {
         this(DEFAULT_MAX_CONCURRENT_TASKS, config, taskCreator);
     }
 
-    public LocalOptimizationRunner(int maxConcurrentTasks, OptimizationConfiguration config,
-                    TaskCreator taskCreator) {
+    public LocalOptimizationRunner(int maxConcurrentTasks, OptimizationConfiguration config, TaskCreator taskCreator) {
         super(config);
         if (maxConcurrentTasks <= 0)
             throw new IllegalArgumentException("maxConcurrentTasks must be > 0 (got: " + maxConcurrentTasks + ")");
@@ -68,14 +67,14 @@ public class LocalOptimizationRunner extends BaseOptimizationRunner {
     }
 
     @Override
-    protected ListenableFuture<OptimizationResult> execute(Candidate candidate,
-                    DataProvider dataProvider, ScoreFunction scoreFunction) {
+    protected ListenableFuture<OptimizationResult> execute(Candidate candidate, DataProvider dataProvider,
+                    ScoreFunction scoreFunction) {
         return execute(Collections.singletonList(candidate), dataProvider, scoreFunction).get(0);
     }
 
     @Override
-    protected List<ListenableFuture<OptimizationResult>> execute(List<Candidate> candidates,
-                    DataProvider dataProvider, ScoreFunction scoreFunction) {
+    protected List<ListenableFuture<OptimizationResult>> execute(List<Candidate> candidates, DataProvider dataProvider,
+                    ScoreFunction scoreFunction) {
         List<ListenableFuture<OptimizationResult>> list = new ArrayList<>(candidates.size());
         for (Candidate candidate : candidates) {
             Callable<OptimizationResult> task =

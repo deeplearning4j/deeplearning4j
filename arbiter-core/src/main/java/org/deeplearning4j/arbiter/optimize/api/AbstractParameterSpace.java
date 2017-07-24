@@ -12,7 +12,7 @@ import java.util.Map;
 public abstract class AbstractParameterSpace<T> implements ParameterSpace<T> {
 
     @Override
-    public Map<String,ParameterSpace> getNestedSpaces(){
+    public Map<String, ParameterSpace> getNestedSpaces() {
         Map<String, ParameterSpace> m = new LinkedHashMap<>();
 
         //Need to manually build and walk the class heirarchy...

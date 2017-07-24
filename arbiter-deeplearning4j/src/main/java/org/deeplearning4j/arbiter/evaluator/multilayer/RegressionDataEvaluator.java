@@ -25,9 +25,9 @@ public class RegressionDataEvaluator implements ModelEvaluator {
     @Override
     public Double evaluateModel(Object model, DataProvider dataProvider) {
 
-        if(model instanceof MultiLayerNetwork){
+        if (model instanceof MultiLayerNetwork) {
             DataSetIterator iterator = ScoreUtil.getIterator(dataProvider.testData(params));
-            return ScoreUtil.score((MultiLayerNetwork)model, iterator, regressionValue);
+            return ScoreUtil.score((MultiLayerNetwork) model, iterator, regressionValue);
         } else {
             DataSetIterator iterator = ScoreUtil.getIterator(dataProvider.testData(params));
             return ScoreUtil.score((ComputationGraph) model, iterator, regressionValue);

@@ -53,8 +53,7 @@ public class ComputationGraphTaskCreator implements TaskCreator {
     private ModelEvaluator modelEvaluator;
 
     @Override
-    public Callable<OptimizationResult> create(
-                    Candidate candidate, DataProvider dataProvider,
+    public Callable<OptimizationResult> create(Candidate candidate, DataProvider dataProvider,
                     ScoreFunction scoreFunction, List<StatusListener> statusListener) {
 
         return new GraphLearningTask(candidate, dataProvider, scoreFunction, modelEvaluator, statusListener);
@@ -71,8 +70,7 @@ public class ComputationGraphTaskCreator implements TaskCreator {
 
         private long startTime;
 
-        public GraphLearningTask(Candidate candidate, DataProvider dataProvider,
-                        ScoreFunction scoreFunction,
+        public GraphLearningTask(Candidate candidate, DataProvider dataProvider, ScoreFunction scoreFunction,
                         ModelEvaluator modelEvaluator, List<StatusListener> listeners) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
@@ -85,13 +83,13 @@ public class ComputationGraphTaskCreator implements TaskCreator {
         @Override
         public OptimizationResult call() throws Exception {
 
-            try{
+            try {
                 return callHelper();
-            }catch (Exception e){
+            } catch (Exception e) {
                 String stackTrace = ExceptionUtils.getStackTrace(e);
 
-                CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null,
-                        startTime, null, null, candidate.getFlatParameters(), stackTrace);
+                CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null, startTime,
+                                null, null, candidate.getFlatParameters(), stackTrace);
                 return new OptimizationResult(candidate, null, null, candidate.getIndex(), null, ci);
             }
 
@@ -99,22 +97,24 @@ public class ComputationGraphTaskCreator implements TaskCreator {
 
         private OptimizationResult callHelper() throws Exception {
             startTime = System.currentTimeMillis();
-            CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null,
-                    startTime, null, null, candidate.getFlatParameters(), null);
+            CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null, startTime, null,
+                            null, candidate.getFlatParameters(), null);
 
             //Create network
-            ComputationGraph net = new ComputationGraph(((GraphConfiguration)candidate.getValue()).getConfiguration());
+            ComputationGraph net = new ComputationGraph(((GraphConfiguration) candidate.getValue()).getConfiguration());
             net.init();
 
-            if(listeners != null){
+            if (listeners != null) {
                 net.setListeners(new DL4JArbiterStatusReportingListener(listeners, ci));
             }
 
             //Early stopping or fixed number of epochs:
-            DataSetIterator dataSetIterator = ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
+            DataSetIterator dataSetIterator =
+                            ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
 
 
-            EarlyStoppingConfiguration<ComputationGraph> esConfig = ((GraphConfiguration)candidate.getValue()).getEarlyStoppingConfiguration();
+            EarlyStoppingConfiguration<ComputationGraph> esConfig =
+                            ((GraphConfiguration) candidate.getValue()).getEarlyStoppingConfiguration();
             EarlyStoppingResult<ComputationGraph> esResult = null;
             if (esConfig != null) {
                 EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConfig, net, dataSetIterator, null); //dl4jListener);
@@ -134,7 +134,7 @@ public class ComputationGraphTaskCreator implements TaskCreator {
 
             } else {
                 //Fixed number of epochs
-                int nEpochs = ((GraphConfiguration)candidate.getValue()).getNumEpochs();
+                int nEpochs = ((GraphConfiguration) candidate.getValue()).getNumEpochs();
                 for (int i = 0; i < nEpochs; i++) {
                     net.fit(dataSetIterator);
                 }
@@ -143,7 +143,8 @@ public class ComputationGraphTaskCreator implements TaskCreator {
 
             Object additionalEvaluation = null;
             if (esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error) {
-                additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
+                additionalEvaluation =
+                                (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
             }
 
             Double score = null;

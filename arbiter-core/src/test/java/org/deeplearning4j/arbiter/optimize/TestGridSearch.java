@@ -38,7 +38,7 @@ public class TestGridSearch {
     public void testIndexing() {
         int[] nValues = {2, 3};
         int prod = 2 * 3;
-        double[][] expVals = new double[][]{{0.0, 0.0}, {1.0, 0.0}, {0.0, 0.5}, {1.0, 0.5}, {0.0, 1.0}, {1.0, 1.0}};
+        double[][] expVals = new double[][] {{0.0, 0.0}, {1.0, 0.0}, {0.0, 0.5}, {1.0, 0.5}, {0.0, 1.0}, {1.0, 1.0}};
         for (int i = 0; i < prod; i++) {
             double[] out = GridSearchCandidateGenerator.indexToValues(nValues, i, prod);
             double[] exp = expVals[i];
@@ -53,13 +53,13 @@ public class TestGridSearch {
 
         //Define configuration:
         CandidateGenerator candidateGenerator = new GridSearchCandidateGenerator(new BraninSpace(), 4,
-                GridSearchCandidateGenerator.Mode.Sequential, commands);
+                        GridSearchCandidateGenerator.Mode.Sequential, commands);
 
         //Check sequential:
         double[] expValuesFirst = {-5, 0, 5, 10}; //Range: -5 to +10, with 4 values
         double[] expValuesSecond = {0, 5, 10, 15}; //Range: 0 to +15, with 4 values
         for (int i = 0; i < 4 * 4; i++) {
-            BraninConfig conf = (BraninConfig)candidateGenerator.getCandidate().getValue();
+            BraninConfig conf = (BraninConfig) candidateGenerator.getCandidate().getValue();
             double expF = expValuesFirst[i % 4]; //Changes most rapidly
             double expS = expValuesSecond[i / 4];
 
@@ -81,12 +81,12 @@ public class TestGridSearch {
 
 
         candidateGenerator = new GridSearchCandidateGenerator(new BraninSpace(), 4,
-                GridSearchCandidateGenerator.Mode.RandomOrder, commands);
+                        GridSearchCandidateGenerator.Mode.RandomOrder, commands);
         boolean[] seen = new boolean[16];
         int seenCount = 0;
         for (int i = 0; i < 4 * 4; i++) {
             assertTrue(candidateGenerator.hasMoreCandidates());
-            BraninConfig config = (BraninConfig)candidateGenerator.getCandidate().getValue();
+            BraninConfig config = (BraninConfig) candidateGenerator.getCandidate().getValue();
             double x1 = config.getX1();
             double x2 = config.getX2();
             //Work out which of the values this is...
@@ -161,7 +161,7 @@ public class TestGridSearch {
 
         @Override
         public double score(Object m, DataProvider data, Map<String, Object> dataParameters) {
-            BraninConfig model = (BraninConfig)m;
+            BraninConfig model = (BraninConfig) m;
             double x1 = model.getX1();
             double x2 = model.getX2();
 
@@ -186,20 +186,17 @@ public class TestGridSearch {
 
     public static class BraninTaskCreator implements TaskCreator {
         @Override
-        public Callable<OptimizationResult> create(
-                final Candidate c, DataProvider dataProvider,
-                final ScoreFunction scoreFunction,
-                final List<StatusListener> statusListeners) {
+        public Callable<OptimizationResult> create(final Candidate c, DataProvider dataProvider,
+                        final ScoreFunction scoreFunction, final List<StatusListener> statusListeners) {
 
             return new Callable<OptimizationResult>() {
                 @Override
                 public OptimizationResult call() throws Exception {
 
-                    BraninConfig candidate = (BraninConfig)c.getValue();
+                    BraninConfig candidate = (BraninConfig) c.getValue();
 
                     double score = scoreFunction.score(candidate, null, null);
-                    System.out.println(
-                            candidate.getX1() + "\t" + candidate.getX2() + "\t" + score);
+                    System.out.println(candidate.getX1() + "\t" + candidate.getX2() + "\t" + score);
 
                     Thread.sleep(20);
 

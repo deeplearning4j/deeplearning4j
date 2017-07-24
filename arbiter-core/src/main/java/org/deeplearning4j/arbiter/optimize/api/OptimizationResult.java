@@ -47,7 +47,7 @@ public class OptimizationResult implements Serializable {
     private CandidateInfo candidateInfo;
 
     public OptimizationResult(Candidate candidate, Object result, Double score, int index, Object modelSpecificResults,
-                              CandidateInfo candidateInfo) {
+                    CandidateInfo candidateInfo) {
         this.candidate = candidate;
         this.result = result;
         this.score = score;

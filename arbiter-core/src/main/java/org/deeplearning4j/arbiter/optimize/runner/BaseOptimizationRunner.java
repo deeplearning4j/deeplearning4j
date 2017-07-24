@@ -131,8 +131,8 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
                 processReturnedTask(f);
             }
 
-            if(tempList.size() > 0){
-                for(StatusListener sl : statusListeners){
+            if (tempList.size() > 0) {
+                for (StatusListener sl : statusListeners) {
                     sl.onRunnerStatusChange(this);
                 }
             }
@@ -149,17 +149,18 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
                 Candidate candidate = config.getCandidateGenerator().getCandidate();
 
                 CandidateInfo status;
-                if(candidate.getException() != null){
+                if (candidate.getException() != null) {
                     //Failed on generation...
                     status = processFailedCandidates(candidate);
                 } else {
-                    ListenableFuture<OptimizationResult> f = execute(candidate, config.getDataProvider(), config.getScoreFunction());
+                    ListenableFuture<OptimizationResult> f =
+                                    execute(candidate, config.getDataProvider(), config.getScoreFunction());
                     f.addListener(new OnCompletionListener(f), futureListenerExecutor);
                     queuedFutures.add(f);
                     totalCandidateCount.getAndIncrement();
 
                     status = new CandidateInfo(candidate.getIndex(), CandidateStatus.Created, null,
-                            System.currentTimeMillis(), null, null, candidate.getFlatParameters(), null);
+                                    System.currentTimeMillis(), null, null, candidate.getFlatParameters(), null);
                     currentStatus.put(candidate.getIndex(), status);
                 }
 
@@ -184,13 +185,13 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
     }
 
 
-    private CandidateInfo processFailedCandidates(Candidate<?> candidate){
+    private CandidateInfo processFailedCandidates(Candidate<?> candidate) {
         //In case the candidate fails during the creation of the candidate
 
         long time = System.currentTimeMillis();
         String stackTrace = ExceptionUtils.getStackTrace(candidate.getException());
-        CandidateInfo newStatus = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null,
-                time, time, time, candidate.getFlatParameters(), stackTrace);
+        CandidateInfo newStatus = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null, time, time,
+                        time, candidate.getFlatParameters(), stackTrace);
         currentStatus.put(candidate.getIndex(), newStatus);
 
         return newStatus;
@@ -220,8 +221,8 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
         //Update internal status:
         CandidateInfo status = currentStatus.get(result.getIndex());
         CandidateInfo newStatus = new CandidateInfo(result.getIndex(), result.getCandidateInfo().getCandidateStatus(),
-                result.getScore(), status.getCreatedTime(), result.getCandidateInfo().getStartTime(),
-                currentTime, status.getFlatParams(), result.getCandidateInfo().getExceptionStackTrace());
+                        result.getScore(), status.getCreatedTime(), result.getCandidateInfo().getStartTime(),
+                        currentTime, status.getFlatParams(), result.getCandidateInfo().getExceptionStackTrace());
         currentStatus.put(result.getIndex(), newStatus);
 
         //Listeners:
@@ -230,7 +231,7 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
         }
 
 
-        if(result.getCandidateInfo().getCandidateStatus() == CandidateStatus.Failed){
+        if (result.getCandidateInfo().getCandidateStatus() == CandidateStatus.Failed) {
             log.info("Task {} failed during execution", result.getIndex());
             numCandidatesFailed.getAndIncrement();
         } else {
@@ -241,10 +242,9 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
             Double score = result.getScore();
             log.info("Completed task {}, score = {}", result.getIndex(), result.getScore());
 
-            //TODO handle minimization vs. maximization
             boolean minimize = config.getScoreFunction().minimize();
             if (score != null && (bestScore == null
-                    || ((minimize && score < bestScore) || (!minimize && score > bestScore)))) {
+                            || ((minimize && score < bestScore) || (!minimize && score > bestScore)))) {
                 if (bestScore == null) {
                     log.info("New best score: {} (first completed model)", score);
                 } else {
@@ -382,8 +382,8 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
 
     protected abstract int maxConcurrentTasks();
 
-    protected abstract ListenableFuture<OptimizationResult> execute(Candidate candidate,
-                    DataProvider dataProvider, ScoreFunction scoreFunction);
+    protected abstract ListenableFuture<OptimizationResult> execute(Candidate candidate, DataProvider dataProvider,
+                    ScoreFunction scoreFunction);
 
     protected abstract List<ListenableFuture<OptimizationResult>> execute(List<Candidate> candidates,
                     DataProvider dataProvider, ScoreFunction scoreFunction);

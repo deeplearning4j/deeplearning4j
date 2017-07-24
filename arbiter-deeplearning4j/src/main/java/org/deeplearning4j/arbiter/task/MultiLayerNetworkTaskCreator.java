@@ -53,8 +53,7 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
     private ModelEvaluator modelEvaluator;
 
     @Override
-    public Callable<OptimizationResult> create(
-                    Candidate candidate, DataProvider dataProvider,
+    public Callable<OptimizationResult> create(Candidate candidate, DataProvider dataProvider,
                     ScoreFunction scoreFunction, List<StatusListener> statusListeners) {
 
         return new DL4JLearningTask(candidate, dataProvider, scoreFunction, modelEvaluator, statusListeners);
@@ -72,10 +71,8 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
 
         private long startTime;
 
-        public DL4JLearningTask(Candidate candidate, DataProvider dataProvider,
-                        ScoreFunction scoreFunction,
-                        ModelEvaluator modelEvaluator,
-                        List<StatusListener> listeners) {
+        public DL4JLearningTask(Candidate candidate, DataProvider dataProvider, ScoreFunction scoreFunction,
+                        ModelEvaluator modelEvaluator, List<StatusListener> listeners) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
@@ -87,13 +84,13 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
         @Override
         public OptimizationResult call() throws Exception {
 
-            try{
+            try {
                 return callHelper();
-            }catch (Exception e){
+            } catch (Exception e) {
                 String stackTrace = ExceptionUtils.getStackTrace(e);
 
-                CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null,
-                        startTime, null, null, candidate.getFlatParameters(), stackTrace);
+                CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null, startTime,
+                                null, null, candidate.getFlatParameters(), stackTrace);
                 return new OptimizationResult(candidate, null, null, candidate.getIndex(), null, ci);
             }
 
@@ -102,13 +99,14 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
         private OptimizationResult callHelper() throws Exception {
             startTime = System.currentTimeMillis();
             CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null,
-                    System.currentTimeMillis(), null, null, candidate.getFlatParameters(), null);
+                            System.currentTimeMillis(), null, null, candidate.getFlatParameters(), null);
 
             //Create network
-            MultiLayerNetwork net = new MultiLayerNetwork(((DL4JConfiguration)candidate.getValue()).getMultiLayerConfiguration());
+            MultiLayerNetwork net = new MultiLayerNetwork(
+                            ((DL4JConfiguration) candidate.getValue()).getMultiLayerConfiguration());
             net.init();
 
-            if(listeners != null){
+            if (listeners != null) {
                 net.setListeners(new DL4JArbiterStatusReportingListener(listeners, ci));
             }
 
@@ -118,7 +116,7 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
 
 
             EarlyStoppingConfiguration<MultiLayerNetwork> esConfig =
-                    ((DL4JConfiguration)candidate.getValue()).getEarlyStoppingConfiguration();
+                            ((DL4JConfiguration) candidate.getValue()).getEarlyStoppingConfiguration();
             EarlyStoppingResult<MultiLayerNetwork> esResult = null;
             if (esConfig != null) {
                 EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConfig, net, dataSetIterator, null);
@@ -138,7 +136,7 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
 
             } else {
                 //Fixed number of epochs
-                int nEpochs = ((DL4JConfiguration)candidate.getValue()).getNumEpochs();
+                int nEpochs = ((DL4JConfiguration) candidate.getValue()).getNumEpochs();
                 for (int i = 0; i < nEpochs; i++) {
                     net.fit(dataSetIterator);
                 }
@@ -147,7 +145,8 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
 
             Object additionalEvaluation = null;
             if (esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error) {
-                additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
+                additionalEvaluation =
+                                (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
             }
 
             Double score = null;

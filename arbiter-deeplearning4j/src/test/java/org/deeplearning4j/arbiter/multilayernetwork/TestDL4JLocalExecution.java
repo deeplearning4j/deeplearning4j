@@ -97,20 +97,15 @@ public class TestDL4JLocalExecution {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration configuration =
-                        new OptimizationConfiguration.Builder()
-                                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                                        .modelSaver(new FileModelSaver(modelSavePath))
-                                        .scoreFunction(new TestSetLossScoreFunction())
-                                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                                                        new MaxCandidatesCondition(100))
-                                        .build();
+        OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
+                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                        .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(new TestSetLossScoreFunction())
+                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
+                                        new MaxCandidatesCondition(100))
+                        .build();
 
-        IOptimizationRunner runner = new LocalOptimizationRunner(
-                        configuration, new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()));
-
-        //        ArbiterUIServer server = ArbiterUIServer.getInstance();
-        //        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
+        IOptimizationRunner runner = new LocalOptimizationRunner(configuration,
+                        new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()));
 
         runner.execute();
 
@@ -153,23 +148,17 @@ public class TestDL4JLocalExecution {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration configuration =
-                        new OptimizationConfiguration.Builder()
-                                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                                        .modelSaver(new FileModelSaver(modelSavePath))
-                                        .scoreFunction(new TestSetLossScoreFunction())
-                                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                                                        new MaxCandidatesCondition(100))
-                                        .build();
+        OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
+                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                        .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(new TestSetLossScoreFunction())
+                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
+                                        new MaxCandidatesCondition(100))
+                        .build();
 
-        IOptimizationRunner runner = new LocalOptimizationRunner(
-                        configuration, new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()));
-
-        //        ArbiterUIServer server = ArbiterUIServer.getInstance();
-        //        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
+        IOptimizationRunner runner = new LocalOptimizationRunner(configuration,
+                        new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()));
 
         runner.execute();
-
 
         System.out.println("----- COMPLETE -----");
     }
@@ -177,12 +166,10 @@ public class TestDL4JLocalExecution {
     @Test
     @Ignore
     public void testLocalExecutionEarlyStopping() throws Exception {
-        EarlyStoppingConfiguration esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
-                                        .scoreCalculator(new DataSetLossCalculator(new IrisDataSetIterator(150, 150),
-                                                        true))
-                                        .modelSaver(new InMemoryModelSaver()).build();
+        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
+                        .scoreCalculator(new DataSetLossCalculator(new IrisDataSetIterator(150, 150), true))
+                        .modelSaver(new InMemoryModelSaver()).build();
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
 
@@ -218,31 +205,17 @@ public class TestDL4JLocalExecution {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration configuration =
-                        new OptimizationConfiguration.Builder()
-                                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                                        .modelSaver(new FileModelSaver(modelSavePath))
-                                        .scoreFunction(new TestSetLossScoreFunction())
-                                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                                                        new MaxCandidatesCondition(100))
-                                        .build();
+        OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
+                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                        .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(new TestSetLossScoreFunction())
+                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
+                                        new MaxCandidatesCondition(100))
+                        .build();
 
-        IOptimizationRunner runner = new LocalOptimizationRunner(
-                        configuration, new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()));
+        IOptimizationRunner runner = new LocalOptimizationRunner(configuration,
+                        new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()));
 
-        /* ArbiterUIServer server = new ArbiterUIServer();
-        String[] str = new String[]{"server", "dropwizard.yml"};
-        server.run(str);
-        WebUtils.tryOpenBrowser("http://localhost:8080/arbiter", log);    //TODO don't hardcode
-        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
-        
-        */ runner.execute();
-
-
+        runner.execute();
         System.out.println("----- COMPLETE -----");
-
     }
-
-
-
 }

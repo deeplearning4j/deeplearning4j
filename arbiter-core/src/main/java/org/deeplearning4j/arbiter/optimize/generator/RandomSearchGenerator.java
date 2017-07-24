@@ -62,14 +62,13 @@ public class RandomSearchGenerator extends BaseCandidateGenerator {
 
         Object value = null;
         Exception e = null;
-        try{
+        try {
             value = parameterSpace.getValue(randomValues);
-        } catch (Exception e2){
+        } catch (Exception e2) {
             e = e2;
         }
 
-        return new Candidate(value, candidateCounter.getAndIncrement(), randomValues,
-                        dataParameters, e);
+        return new Candidate(value, candidateCounter.getAndIncrement(), randomValues, dataParameters, e);
     }
 
     @Override

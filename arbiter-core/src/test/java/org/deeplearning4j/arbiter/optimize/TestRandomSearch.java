@@ -43,16 +43,12 @@ public class TestRandomSearch {
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, new HashMap<>());
 
         //Define configuration:
-        CandidateGenerator candidateGenerator =
-                        new RandomSearchGenerator(new TestGridSearch.BraninSpace(), commands);
-        OptimizationConfiguration configuration =
-                        new OptimizationConfiguration.Builder()
-                                        .candidateGenerator(candidateGenerator)
-                                        .scoreFunction(new TestGridSearch.BraninScoreFunction())
-                                        .terminationConditions(new MaxCandidatesCondition(50)).build();
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(new TestGridSearch.BraninSpace(), commands);
+        OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
+                        .candidateGenerator(candidateGenerator).scoreFunction(new TestGridSearch.BraninScoreFunction())
+                        .terminationConditions(new MaxCandidatesCondition(50)).build();
 
-        IOptimizationRunner runner =
-                        new LocalOptimizationRunner(configuration, new TestGridSearch.BraninTaskCreator());
+        IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new TestGridSearch.BraninTaskCreator());
 
         runner.addListeners(new LoggingStatusListener());
         runner.execute();

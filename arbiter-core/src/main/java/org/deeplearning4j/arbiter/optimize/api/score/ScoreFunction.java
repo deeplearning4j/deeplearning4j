@@ -52,8 +52,13 @@ public interface ScoreFunction extends Serializable {
      */
     boolean minimize();
 
-
+    /**
+     * @return The model types supported by this class
+     */
     List<Class<?>> getSupportedModelTypes();
 
+    /**
+     * @return The data types supported by this class
+     */
     List<Class<?>> getSupportedDataTypes();
 }

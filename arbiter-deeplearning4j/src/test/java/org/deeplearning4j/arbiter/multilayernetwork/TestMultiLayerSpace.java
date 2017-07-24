@@ -363,8 +363,7 @@ public class TestMultiLayerSpace {
         if (f.exists())
             f.delete();
         f.mkdir();
-        ResultSaver modelSaver =
-                        new FileModelSaver(baseSaveDirectory);
+        ResultSaver modelSaver = new FileModelSaver(baseSaveDirectory);
 
         ScoreFunction scoreFunction = new TestSetAccuracyScoreFunction();
 
@@ -373,14 +372,12 @@ public class TestMultiLayerSpace {
         terminationConditions = new TerminationCondition[] {new MaxCandidatesCondition(maxCandidates)};
 
         //Given these configuration options, let's put them all together:
-        OptimizationConfiguration configuration =
-                        new OptimizationConfiguration.Builder()
-                                        .candidateGenerator(new RandomSearchGenerator(hyperparameterSpace, null))
-                                        .dataProvider(dataProvider).modelSaver(modelSaver).scoreFunction(scoreFunction)
-                                        .terminationConditions(terminationConditions).build();
+        OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
+                        .candidateGenerator(new RandomSearchGenerator(hyperparameterSpace, null))
+                        .dataProvider(dataProvider).modelSaver(modelSaver).scoreFunction(scoreFunction)
+                        .terminationConditions(terminationConditions).build();
 
-        IOptimizationRunner runner =
-                        new LocalOptimizationRunner(configuration, new MultiLayerNetworkTaskCreator());
+        IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new MultiLayerNetworkTaskCreator());
         runner.execute();
 
         assertEquals(maxCandidates, runner.getResults().size());

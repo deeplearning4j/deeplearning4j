@@ -55,8 +55,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-// import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
-// import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
 
 public class TestGraphLocalExecution {
 
@@ -96,20 +94,15 @@ public class TestGraphLocalExecution {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration configuration =
-                        new OptimizationConfiguration.Builder()
-                                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                                        .modelSaver(new FileModelSaver(modelSavePath))
-                                        .scoreFunction(ScoreFunctions.testSetLoss(true))
-                                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                                                        new MaxCandidatesCondition(100))
-                                        .build();
+        OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
+                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                        .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(ScoreFunctions.testSetLoss(true))
+                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
+                                        new MaxCandidatesCondition(100))
+                        .build();
 
-        IOptimizationRunner runner = new LocalOptimizationRunner(
-                        configuration, new ComputationGraphTaskCreator(new ClassificationEvaluator()));
-
-        //        UIServer server = UIServer.getInstance();
-        //        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
+        IOptimizationRunner runner = new LocalOptimizationRunner(configuration,
+                        new ComputationGraphTaskCreator(new ClassificationEvaluator()));
 
         runner.execute();
 
@@ -119,12 +112,10 @@ public class TestGraphLocalExecution {
     @Test
     @Ignore
     public void testLocalExecutionEarlyStopping() throws Exception {
-        EarlyStoppingConfiguration<ComputationGraph> esConf =
-                        new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
-                                        .scoreCalculator(new DataSetLossCalculatorCG(new IrisDataSetIterator(150, 150),
-                                                        true))
-                                        .modelSaver(new InMemoryModelSaver()).build();
+        EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
+                        .scoreCalculator(new DataSetLossCalculatorCG(new IrisDataSetIterator(150, 150), true))
+                        .modelSaver(new InMemoryModelSaver()).build();
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
 
@@ -160,26 +151,19 @@ public class TestGraphLocalExecution {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration configuration =
-                        new OptimizationConfiguration.Builder()
-                                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                                        .modelSaver(new FileModelSaver(modelSavePath))
-                                        .scoreFunction(ScoreFunctions.testSetLoss(true))
-                                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                                                        new MaxCandidatesCondition(100))
-                                        .build();
+        OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
+                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                        .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(ScoreFunctions.testSetLoss(true))
+                        .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
+                                        new MaxCandidatesCondition(100))
+                        .build();
 
 
-        IOptimizationRunner runner = new LocalOptimizationRunner(
-                        configuration, new ComputationGraphTaskCreator(new ClassificationEvaluator()));
-
-        //        ArbiterUIServer server = ArbiterUIServer.getInstance();
-        //        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
-
+        IOptimizationRunner runner = new LocalOptimizationRunner(configuration,
+                        new ComputationGraphTaskCreator(new ClassificationEvaluator()));
         runner.execute();
 
 
         System.out.println("----- COMPLETE -----");
-
     }
 }

@@ -43,7 +43,7 @@ public class MaxTimeCondition implements TerminationCondition {
 
 
     private MaxTimeCondition(@JsonProperty("duration") long duration, @JsonProperty("timeUnit") TimeUnit timeUnit,
-                             @JsonProperty("startTime") long startTime, @JsonProperty("endTime") long endTime){
+                    @JsonProperty("startTime") long startTime, @JsonProperty("endTime") long endTime) {
         this.duration = duration;
         this.timeUnit = timeUnit;
         this.startTime = startTime;
@@ -72,9 +72,9 @@ public class MaxTimeCondition implements TerminationCondition {
 
     @Override
     public String toString() {
-        if(startTime > 0){
-            return "MaxTimeCondition(" + duration + "," + timeUnit + ",start=\"" + formatter.print(startTime) + "\",end=\""
-                    + formatter.print(endTime) + "\")";
+        if (startTime > 0) {
+            return "MaxTimeCondition(" + duration + "," + timeUnit + ",start=\"" + formatter.print(startTime)
+                            + "\",end=\"" + formatter.print(endTime) + "\")";
         } else {
             return "MaxTimeCondition(" + duration + "," + timeUnit + "\")";
         }

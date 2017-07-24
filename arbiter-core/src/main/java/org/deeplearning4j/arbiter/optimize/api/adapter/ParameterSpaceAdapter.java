@@ -7,10 +7,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by Alex on 23/07/2017.
+ * An abstract class used for adapting one type into another. Subclasses of this need to merely implement 2 simple methods
+ *
+ * @param <F> Type to convert from
+ * @param <T> Type to convert to
+ * @author Alex Black
  */
 @AllArgsConstructor
-public abstract class ParameterSpaceAdapter<F,T> implements ParameterSpace<T> {
+public abstract class ParameterSpaceAdapter<F, T> implements ParameterSpace<T> {
 
 
     protected abstract T convertValue(F from);

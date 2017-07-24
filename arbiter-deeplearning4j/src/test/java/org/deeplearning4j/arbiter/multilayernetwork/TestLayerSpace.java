@@ -66,9 +66,9 @@ public class TestLayerSpace {
 
             //Set the parameter numbers...
             List<ParameterSpace> list = ls.collectLeaves();
-            int k=0;
+            int k = 0;
             for (int j = 0; j < list.size(); j++) {
-                if(list.get(j).numParameters() > 0){
+                if (list.get(j).numParameters() > 0) {
                     list.get(j).setIndices(k++);
                 }
             }
@@ -103,9 +103,9 @@ public class TestLayerSpace {
 
         //Set the parameter numbers...
         List<ParameterSpace> list = sp.collectLeaves();
-        int k=0;
+        int k = 0;
         for (int j = 0; j < list.size(); j++) {
-            if(list.get(j).numParameters() > 0){
+            if (list.get(j).numParameters() > 0) {
                 list.get(j).setIndices(k++);
             }
         }
@@ -158,9 +158,9 @@ public class TestLayerSpace {
                         .nIn(10).nOut(new IntegerParameterSpace(10, 20)).build();
         //Set the parameter numbers...
         List<ParameterSpace> list = els.collectLeaves();
-        int k=0;
+        int k = 0;
         for (int j = 0; j < list.size(); j++) {
-            if(list.get(j).numParameters() > 0){
+            if (list.get(j).numParameters() > 0) {
                 list.get(j).setIndices(k++);
             }
         }
@@ -194,22 +194,20 @@ public class TestLayerSpace {
         Activation[] actFns = new Activation[] {Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
 
         GravesBidirectionalLSTMLayerSpace ls =
-                        new GravesBidirectionalLSTMLayerSpace.Builder()
-                                .activation(new DiscreteParameterSpace<>(actFns))
-                                .forgetGateBiasInit(new ContinuousParameterSpace(0.5, 0.8))
-                                .nIn(10)
-                                .nOut(new IntegerParameterSpace(10, 20)).build();
+                        new GravesBidirectionalLSTMLayerSpace.Builder().activation(new DiscreteParameterSpace<>(actFns))
+                                        .forgetGateBiasInit(new ContinuousParameterSpace(0.5, 0.8)).nIn(10)
+                                        .nOut(new IntegerParameterSpace(10, 20)).build();
         //Set the parameter numbers...
         List<ParameterSpace> list = ls.collectLeaves();
-        int k=0;
+        int k = 0;
         for (int j = 0; j < list.size(); j++) {
-            if(list.get(j).numParameters() > 0){
+            if (list.get(j).numParameters() > 0) {
                 list.get(j).setIndices(k++);
             }
         }
 
         int nParam = ls.numParameters();
-        assertEquals(3, nParam);    //Excluding fixed value for nIn
+        assertEquals(3, nParam); //Excluding fixed value for nIn
 
         Random r = new Random(12345);
 

@@ -59,18 +59,11 @@ public class TestJson {
                         .setInputType(InputType.convolutional(28, 28, 1)).pretrain(false).backprop(true).build();
 
         String asJson = mls.toJson();
-        String asYaml = mls.toYaml();
-
         //        System.out.println(asJson);
-        //        System.out.println(asYaml);
 
         MultiLayerSpace fromJson = MultiLayerSpace.fromJson(asJson);
-        //        MultiLayerSpace fromYaml = MultiLayerSpace.fromYaml(asYaml);
 
         assertEquals(mls, fromJson);
-        //        assertEquals(mls, fromYaml);
-
-
     }
 
 
@@ -109,9 +102,8 @@ public class TestJson {
 
 
         OptimizationConfiguration configuration =
-                        new OptimizationConfiguration.Builder()
-                                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                                        .scoreFunction(new TestSetLossScoreFunction())
+                        new OptimizationConfiguration.Builder().candidateGenerator(candidateGenerator)
+                                        .dataProvider(dataProvider).scoreFunction(new TestSetLossScoreFunction())
                                         .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                                                         new MaxCandidatesCondition(100))
                                         .build();

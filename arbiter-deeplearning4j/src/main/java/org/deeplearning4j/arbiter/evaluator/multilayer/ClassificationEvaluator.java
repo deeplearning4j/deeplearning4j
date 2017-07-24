@@ -48,9 +48,9 @@ public class ClassificationEvaluator implements ModelEvaluator {
     @Override
     public Evaluation evaluateModel(Object model, DataProvider dataProvider) {
 
-        if(model instanceof MultiLayerNetwork){
+        if (model instanceof MultiLayerNetwork) {
             DataSetIterator iterator = ScoreUtil.getIterator(dataProvider.testData(params));
-            return ScoreUtil.getEvaluation((MultiLayerNetwork)model, iterator);
+            return ScoreUtil.getEvaluation((MultiLayerNetwork) model, iterator);
         } else {
             DataSetIterator iterator = ScoreUtil.getIterator(dataProvider.testData(params));
             return ScoreUtil.getEvaluation((ComputationGraph) model, iterator);

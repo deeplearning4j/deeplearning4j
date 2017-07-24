@@ -31,9 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonSubTypes(value = {
-                @JsonSubTypes.Type(value = GridSearchCandidateGenerator.class, name = "GridSearchCandidateGenerator"),
-                @JsonSubTypes.Type(value = RandomSearchGenerator.class, name = "RandomSearchCandidateGenerator")})
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface CandidateGenerator {
 
@@ -50,23 +47,23 @@ public interface CandidateGenerator {
 
     /**
      * Report results for the candidate generator.
-     * @param result
+     *
+     * @param result The results to report
      */
     void reportResults(OptimizationResult result);
 
     /**
-     *
-     * @return
+     * @return Get the parameter space for this candidate generator
      */
     ParameterSpace<?> getParameterSpace();
 
     /**
-     *
-     * @param rngSeed
+     * @param rngSeed Set the random number generator seed for the candidate generator
      */
     void setRngSeed(long rngSeed);
 
+    /**
+     * @return The type (class) of the generated candidates
+     */
     Class<?> getCandidateType();
-
-
 }

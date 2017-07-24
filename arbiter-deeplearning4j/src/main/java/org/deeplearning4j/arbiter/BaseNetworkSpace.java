@@ -255,7 +255,7 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         //Note: Results on previous line does NOT include the LayerSpaces, therefore we need to add these manually...
         //This is because the type is a list, not a ParameterSpace
 
-        for(LayerConf layerConf : layerSpaces ){
+        for (LayerConf layerConf : layerSpaces) {
             LayerSpace ls = layerConf.getLayerSpace();
             list.addAll(ls.collectLeaves());
         }
@@ -278,7 +278,7 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        for(Map.Entry<String,ParameterSpace> e : getNestedSpaces().entrySet() ){
+        for (Map.Entry<String, ParameterSpace> e : getNestedSpaces().entrySet()) {
             sb.append(e.getKey()).append(": ").append(e.getValue()).append("\n");
         }
 
@@ -286,8 +286,8 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         for (LayerConf conf : layerSpaces) {
 
             sb.append("Layer config ").append(i++).append(": (Number layers:").append(conf.numLayers)
-                    .append(", duplicate: ").append(conf.duplicateConfig).append("), ")
-                    .append(conf.layerSpace.toString()).append("\n");
+                            .append(", duplicate: ").append(conf.duplicateConfig).append("), ")
+                            .append(conf.layerSpace.toString()).append("\n");
         }
 
 

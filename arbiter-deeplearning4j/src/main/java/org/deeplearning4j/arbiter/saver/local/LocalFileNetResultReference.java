@@ -55,7 +55,7 @@ public class LocalFileNetResultReference implements ResultReference {
     public OptimizationResult getResult() throws IOException {
 
         Model m;
-        if(isGraph){
+        if (isGraph) {
             m = ModelSerializer.restoreComputationGraph(modelFile, false);
         } else {
             m = ModelSerializer.restoreMultiLayerNetwork(modelFile, false);
@@ -81,10 +81,12 @@ public class LocalFileNetResultReference implements ResultReference {
         }
 
         Object dl4jConfiguration;
-        if(isGraph){
-            dl4jConfiguration = new GraphConfiguration(((ComputationGraph)m).getConfiguration(), earlyStoppingConfiguration, nEpochs);
+        if (isGraph) {
+            dl4jConfiguration = new GraphConfiguration(((ComputationGraph) m).getConfiguration(),
+                            earlyStoppingConfiguration, nEpochs);
         } else {
-            dl4jConfiguration = new DL4JConfiguration(((MultiLayerNetwork)m).getLayerWiseConfigurations(), earlyStoppingConfiguration, nEpochs);
+            dl4jConfiguration = new DL4JConfiguration(((MultiLayerNetwork) m).getLayerWiseConfigurations(),
+                            earlyStoppingConfiguration, nEpochs);
         }
 
 

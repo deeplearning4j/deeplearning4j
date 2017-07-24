@@ -9,7 +9,8 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 /**
- * Score function for regression (including multi-label regression) for a MultiLayerNetwork on a test set
+ * Score function for regression (including multi-label regression) for a MultiLayerNetwork or ComputationGraph
+ * on a test set
  *
  * @author Alex Black
  */

@@ -156,9 +156,9 @@ public class GridSearchCandidateGenerator extends BaseCandidateGenerator {
 
         Object value = null;
         Exception e = null;
-        try{
+        try {
             value = parameterSpace.getValue(values);
-        } catch (Exception e2){
+        } catch (Exception e2) {
             e = e2;
         }
 

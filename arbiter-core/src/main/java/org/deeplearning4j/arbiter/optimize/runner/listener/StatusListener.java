@@ -5,7 +5,10 @@ import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 
 /**
- * Created by Alex on 20/07/2017.
+ * The status Listener interface is used to inspect/track the status of execution, both for individual candidates,
+ * and for the optimisation runner overall.
+ *
+ * @author Alex Black
  */
 public interface StatusListener {
 
@@ -19,15 +22,22 @@ public interface StatusListener {
      * number scheduled, number completed, number failed, best score, etc. */
     void onRunnerStatusChange(IOptimizationRunner runner);
 
+    /**
+     * Called when the status of the candidate is change. For example created, completed, failed.
+     *
+     * @param candidateInfo Candidate information
+     * @param runner        Optimisation runner calling this method
+     * @param result        Optimisation result. Maybe null.
+     */
     void onCandidateStatusChange(CandidateInfo candidateInfo, IOptimizationRunner runner, OptimizationResult result);
 
     /**
-     *  this method may be called by tasks as they are executing. The intent of this method is to report partial results,
+     *  This method may be called by tasks as they are executing. The intent of this method is to report partial results,
      *  such as different stages of learning, or scores/evaluations so far
      *
-     * @param candidateInfo
-     * @param candidate
-     * @param iteration
+     * @param candidateInfo Candidate information
+     * @param candidate     Current candidate value/configuration
+     * @param iteration     Current iteration number
      */
     void onCandidateIteration(CandidateInfo candidateInfo, Object candidate, int iteration);
 

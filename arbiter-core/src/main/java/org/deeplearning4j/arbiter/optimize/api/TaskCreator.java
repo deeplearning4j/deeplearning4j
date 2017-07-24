@@ -41,6 +41,6 @@ public interface TaskCreator {
      * @param statusListeners Status listeners, that can be used for callbacks (to UI, for example)
      * @return A callable that returns an OptimizationResult, once optimization is complete
      */
-    Callable<OptimizationResult> create(Candidate candidate, DataProvider dataProvider,
-                    ScoreFunction scoreFunction, List<StatusListener> statusListeners);
+    Callable<OptimizationResult> create(Candidate candidate, DataProvider dataProvider, ScoreFunction scoreFunction,
+                    List<StatusListener> statusListeners);
 }

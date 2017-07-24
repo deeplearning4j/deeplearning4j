@@ -20,17 +20,17 @@ public abstract class BaseNetScoreFunction implements ScoreFunction {
     @Override
     public double score(Object model, DataProvider dataProvider, Map<String, Object> dataParameters) {
         Object testData = dataProvider.testData(dataParameters);
-        if(model instanceof MultiLayerNetwork){
-            if(testData instanceof DataSetIterator){
-                return score((MultiLayerNetwork)model, (DataSetIterator)testData);
+        if (model instanceof MultiLayerNetwork) {
+            if (testData instanceof DataSetIterator) {
+                return score((MultiLayerNetwork) model, (DataSetIterator) testData);
             } else {
-                return score((MultiLayerNetwork)model, (MultiDataSetIterator)testData);
+                return score((MultiLayerNetwork) model, (MultiDataSetIterator) testData);
             }
         } else {
-            if(testData instanceof DataSetIterator){
-                return score((ComputationGraph)model, (DataSetIterator)testData);
+            if (testData instanceof DataSetIterator) {
+                return score((ComputationGraph) model, (DataSetIterator) testData);
             } else {
-                return score((ComputationGraph)model, (MultiDataSetIterator)testData);
+                return score((ComputationGraph) model, (MultiDataSetIterator) testData);
             }
         }
     }

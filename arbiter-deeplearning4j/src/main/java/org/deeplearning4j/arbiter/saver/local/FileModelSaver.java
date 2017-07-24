@@ -72,7 +72,7 @@ public class FileModelSaver implements ResultSaver {
     }
 
     @Override
-    public ResultReference saveModel( OptimizationResult result) throws IOException {
+    public ResultReference saveModel(OptimizationResult result) throws IOException {
         String dir = new File(path, result.getIndex() + "/").getAbsolutePath();
 
         File f = new File(dir);
@@ -86,7 +86,7 @@ public class FileModelSaver implements ResultSaver {
 
         FileUtils.writeStringToFile(scoreFile, String.valueOf(result.getScore()));
 
-        Model m = (Model)result.getResult();
+        Model m = (Model) result.getResult();
         ModelSerializer.writeModel(m, modelFile, true);
 
 
@@ -100,12 +100,12 @@ public class FileModelSaver implements ResultSaver {
         //Write early stopping configuration (if present) to file:
         int nEpochs;
         EarlyStoppingConfiguration esc;
-        if(result.getCandidate().getValue() instanceof DL4JConfiguration){
-            DL4JConfiguration c = ((DL4JConfiguration)result.getCandidate().getValue());
+        if (result.getCandidate().getValue() instanceof DL4JConfiguration) {
+            DL4JConfiguration c = ((DL4JConfiguration) result.getCandidate().getValue());
             esc = c.getEarlyStoppingConfiguration();
             nEpochs = c.getNumEpochs();
         } else {
-            GraphConfiguration c = ((GraphConfiguration)result.getCandidate().getValue());
+            GraphConfiguration c = ((GraphConfiguration) result.getCandidate().getValue());
             esc = c.getEarlyStoppingConfiguration();
             nEpochs = c.getNumEpochs();
         }

@@ -12,6 +12,12 @@ public class LeafUtils {
 
     private LeafUtils() {}
 
+    /**
+     * Returns a list of unique objects, not using the .equals() method, but rather using ==
+     *
+     * @param allLeaves Leaf values to process
+     * @return A list of unique parameter space values
+     */
     public static List<ParameterSpace> getUniqueObjects(List<ParameterSpace> allLeaves) {
         List<ParameterSpace> unique = new ArrayList<>();
         for (ParameterSpace p : allLeaves) {
@@ -30,11 +36,17 @@ public class LeafUtils {
         return unique;
     }
 
+    /**
+     * Count the number of unique parameters in the specified leaf nodes
+     *
+     * @param allLeaves Leaf values to count the parameters fore
+     * @return Number of parameters for all unique objects
+     */
     public static int countUniqueParameters(List<ParameterSpace> allLeaves) {
         List<ParameterSpace> unique = getUniqueObjects(allLeaves);
         int count = 0;
-        for( ParameterSpace ps : unique ){
-            if(!ps.isLeaf()){
+        for (ParameterSpace ps : unique) {
+            if (!ps.isLeaf()) {
                 throw new IllegalStateException("Method should only be used with leaf nodes");
             }
             count += ps.numParameters();

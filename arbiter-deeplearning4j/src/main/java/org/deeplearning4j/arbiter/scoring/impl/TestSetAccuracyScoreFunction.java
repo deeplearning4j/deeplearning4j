@@ -8,7 +8,7 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 /**
  * Score function that calculates the accuracy on a
- * test set for a {@link MultiLayerNetwork}
+ * test set for a {@link MultiLayerNetwork} or {@link ComputationGraph}
  *
  * @author Alex Black
  */

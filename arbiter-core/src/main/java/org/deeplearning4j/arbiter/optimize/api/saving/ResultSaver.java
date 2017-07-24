@@ -43,8 +43,14 @@ public interface ResultSaver {
      */
     ResultReference saveModel(OptimizationResult result) throws IOException;
 
+    /**
+     * @return The candidate types supported by this class
+     */
     List<Class<?>> getSupportedCandidateTypes();
 
+    /**
+     * @return The model types supported by this class
+     */
     List<Class<?>> getSupportedModelTypes();
 
 

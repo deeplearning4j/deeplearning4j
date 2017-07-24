@@ -26,7 +26,10 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
+ * Score function that calculates the test set loss
+ * on a test set for a {@link MultiLayerNetwork} or {@link ComputationGraph}
  *
+ * @author Alex Black
  */
 @Data
 public class TestSetLossScoreFunction extends BaseNetScoreFunction {

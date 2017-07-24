@@ -108,17 +108,14 @@ public class MNISTOptimizationTest {
         if (!f.exists())
             throw new RuntimeException();
 
-        OptimizationConfiguration configuration =
-                        new OptimizationConfiguration.Builder()
-                                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
-                                        .modelSaver(new FileModelSaver(modelSavePath))
-                                        .scoreFunction(new TestSetLossScoreFunction(true))
-                                        .terminationConditions(new MaxTimeCondition(120, TimeUnit.MINUTES),
-                                                        new MaxCandidatesCondition(100))
-                                        .build();
+        OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
+                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                        .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(new TestSetLossScoreFunction(true))
+                        .terminationConditions(new MaxTimeCondition(120, TimeUnit.MINUTES),
+                                        new MaxCandidatesCondition(100))
+                        .build();
 
-        IOptimizationRunner runner =
-                        new LocalOptimizationRunner(configuration, new MultiLayerNetworkTaskCreator());
+        IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new MultiLayerNetworkTaskCreator());
 
         //        ArbiterUIServer server = ArbiterUIServer.getInstance();
         //        runner.addListeners(new UIOptimizationRunnerStatusListener(server));

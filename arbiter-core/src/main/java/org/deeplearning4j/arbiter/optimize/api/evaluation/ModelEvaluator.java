@@ -29,7 +29,13 @@ import java.util.List;
 public interface ModelEvaluator extends Serializable {
     Object evaluateModel(Object model, DataProvider dataProvider);
 
+    /**
+     * @return The model types supported by this class
+     */
     List<Class<?>> getSupportedModelTypes();
 
+    /**
+     * @return The datatypes supported by this class
+     */
     List<Class<?>> getSupportedDataTypes();
 }

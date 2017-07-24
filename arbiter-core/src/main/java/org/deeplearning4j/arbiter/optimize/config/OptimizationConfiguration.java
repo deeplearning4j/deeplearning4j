@@ -57,17 +57,10 @@ public class OptimizationConfiguration {
     private List<TerminationCondition> terminationConditions;
     @JsonSerialize
     private Long rngSeed;
-//    private static ObjectMapper jsonMapper;
-//    private static ObjectMapper yamlMapper;
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private long executionStartTime;
-
-//    static {
-//        // List<Class<?>> classes = Arrays.asList(DataProvider.class,CandidateGenerator.class,ResultSaver.class,ScoreFunction.class,TerminationCondition.class);
-//        jsonMapper = JacksonReflectionLoader.findTypesFor(new ArrayList<Class<?>>());
-//        yamlMapper = JacksonReflectionLoader.findTypesFor(new ArrayList<Class<?>>(), false);
-//    }
 
 
     private OptimizationConfiguration(Builder builder) {
@@ -81,9 +74,8 @@ public class OptimizationConfiguration {
         if (rngSeed != null)
             candidateGenerator.setRngSeed(rngSeed);
 
-
-
         //Validate the configuration: data types, score types, etc
+        //TODO
     }
 
     public static class Builder {
@@ -147,7 +139,7 @@ public class OptimizationConfiguration {
      *  For type definitions
      *  @see OptimizationConfiguration
      */
-    public static  OptimizationConfiguration fromYaml(String json) {
+    public static OptimizationConfiguration fromYaml(String json) {
         try {
             return JsonMapper.getYamlMapper().readValue(json, OptimizationConfiguration.class);
         } catch (IOException e) {
@@ -160,7 +152,7 @@ public class OptimizationConfiguration {
      * @param json the json to create the config from
      *  @see OptimizationConfiguration
      */
-    public static  OptimizationConfiguration fromJson(String json) {
+    public static OptimizationConfiguration fromJson(String json) {
         try {
             return JsonMapper.getMapper().readValue(json, OptimizationConfiguration.class);
         } catch (IOException e) {
