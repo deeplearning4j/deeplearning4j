@@ -73,7 +73,7 @@ public class DataSetIteratorTest {
     @Test
     public void testMnist() throws Exception {
         ClassPathResource cpr = new ClassPathResource("mnist_first_200.txt");
-        CSVRecordReader rr = new CSVRecordReader(0, ",");
+        CSVRecordReader rr = new CSVRecordReader(0, ',');
         rr.initialize(new FileSplit(cpr.getTempFileFromArchive()));
         RecordReaderDataSetIterator dsi = new RecordReaderDataSetIterator(rr, 10, 0, 10);
 
