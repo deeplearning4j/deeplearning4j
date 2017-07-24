@@ -55,6 +55,7 @@ import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
@@ -829,15 +830,15 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         if (ret.data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.pullRowsDouble(extras, (DoublePointer) x, (IntPointer) xShape, (DoublePointer) z,
                             (IntPointer) zShape, indexes.length, (IntPointer) pIndex, (IntPointer) tadShapeInfo,
-                            (IntPointer) tadOffsets, (IntPointer) zTadShapeInfo, (IntPointer) zTadOffsets);
+                            new LongPointerWrapper(tadOffsets), (IntPointer) zTadShapeInfo, new LongPointerWrapper(zTadOffsets));
         } else if (ret.data().dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.pullRowsFloat(extras, (FloatPointer) x, (IntPointer) xShape, (FloatPointer) z,
                             (IntPointer) zShape, indexes.length, (IntPointer) pIndex, (IntPointer) tadShapeInfo,
-                            (IntPointer) tadOffsets, (IntPointer) zTadShapeInfo, (IntPointer) zTadOffsets);
+                        new LongPointerWrapper(tadOffsets), (IntPointer) zTadShapeInfo, new LongPointerWrapper(zTadOffsets));
         } else {
             nativeOps.pullRowsHalf(extras, (ShortPointer) x, (IntPointer) xShape, (ShortPointer) z, (IntPointer) zShape,
-                            indexes.length, (IntPointer) pIndex, (IntPointer) tadShapeInfo, (IntPointer) tadOffsets,
-                            (IntPointer) zTadShapeInfo, (IntPointer) zTadOffsets);
+                            indexes.length, (IntPointer) pIndex, (IntPointer) tadShapeInfo, new LongPointerWrapper(tadOffsets),
+                            (IntPointer) zTadShapeInfo, new LongPointerWrapper(zTadOffsets));
         }
 
         allocator.registerAction(context, ret, source);
@@ -1499,7 +1500,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
                     (IntPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
                     (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
-                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)
+                    new LongPointerWrapper((IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context))
             );
         } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.tearFloat(extraz,
@@ -1508,7 +1509,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
                     (IntPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
                     (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
-                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)
+                    new LongPointerWrapper(AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context))
             );
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
             nativeOps.tearHalf(extraz,
@@ -1517,7 +1518,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
                     (IntPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
                     (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
-                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)
+                    new LongPointerWrapper(AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context))
             );
         }
 
@@ -1621,7 +1622,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     (IntPointer) dimensionPointer,
                     dimension.length,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
-                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context),
+                    new LongPointerWrapper(AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)),
                     descending
             );
         } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
@@ -1631,7 +1632,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     (IntPointer) dimensionPointer,
                     dimension.length,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
-                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context),
+                    new LongPointerWrapper(AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)),
                     descending
             );
         } else if (x.data().dataType() == DataBuffer.Type.HALF) {
@@ -1641,7 +1642,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     (IntPointer) dimensionPointer,
                     dimension.length,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
-                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context),
+                    new LongPointerWrapper(AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)),
                     descending
             );
         } else {

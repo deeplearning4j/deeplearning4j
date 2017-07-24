@@ -2,14 +2,17 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.NonNull;
 import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.cache.TadDescriptor;
+import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 
 import java.util.Map;
@@ -55,16 +58,16 @@ public class CpuTADManager implements TADManager {
 
                 // FIXME: this is fast triage, remove it later
                 int targetRank = array.rank(); //dimensionLength <= 1 ? 2 : dimensionLength;
-                int offsetLength;
-                int tadLength = 1;
+                long offsetLength;
+                long tadLength = 1;
                 for (int i = 0; i < dimensionLength; i++) {
                     tadLength *= array.shape()[dimension[i]];
                 }
 
-                offsetLength = array.length() / tadLength;
+                offsetLength = array.lengthLong() / tadLength;
 
                 DataBuffer outputBuffer = new IntBuffer(targetRank * 2 + 4);
-                DataBuffer offsetsBuffer = new IntBuffer(offsetLength);
+                DataBuffer offsetsBuffer = new DoubleBuffer(offsetLength);
 
                 DataBuffer dimensionBuffer = constantHandler.getConstantBuffer(dimension);
                 Pointer dimensionPointer = dimensionBuffer.addressPointer();
@@ -74,7 +77,7 @@ public class CpuTADManager implements TADManager {
                 Pointer offsetsPointer = offsetsBuffer.addressPointer();
 
                 nativeOps.tadOnlyShapeInfo((IntPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length,
-                                (IntPointer) targetPointer, (IntPointer) offsetsPointer);
+                                (IntPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
 
 
                 // If the line below will be uncommented, shapes from JVM will be used on native side

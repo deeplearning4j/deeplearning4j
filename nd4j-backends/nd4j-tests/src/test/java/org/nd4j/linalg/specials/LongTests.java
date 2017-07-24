@@ -1,6 +1,8 @@
 package org.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.IntPointer;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,7 +12,10 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 /**
@@ -79,6 +84,56 @@ public class LongTests extends BaseNd4jTest {
 // and this fails, so rowA and rowB are pointing to the same offset, despite different getRow() arguments were used
         assertNotEquals(rowA, rowB);
     }
+
+    @Test
+    public void testLongTadOffsets1() {
+        INDArray huge = Nd4j.create(230000000, 10);
+
+        Pair<DataBuffer, DataBuffer> tad = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(huge, 1);
+
+        assertEquals(230000000, tad.getSecond().length());
+    }
+
+    @Test
+    public void testLongTadOp1() {
+
+        double exp = Transforms.manhattanDistance(Nd4j.create(1000).assign(1.0), Nd4j.create(1000).assign(2.0));
+
+        INDArray hugeX = Nd4j.create(2200000, 1000).assign(1.0);
+        INDArray hugeY = Nd4j.create(2200000, 1000).assign(2.0);
+
+        for (int x = 0; x < hugeX.rows(); x++){
+            assertEquals("Failed at row " + x, 1000, hugeX.getRow(x).sumNumber().intValue());
+        }
+
+        INDArray result = Transforms.allManhattanDistances(hugeX, hugeY, 1);
+        for (int x = 0; x < hugeX.rows(); x++) {
+            assertEquals(exp, result.getDouble(x), 1e-5);
+        }
+    }
+
+    @Test
+    public void testLongTadOp2() {
+
+        INDArray hugeX = Nd4j.create(2300000, 1000).assign(1.0);
+        hugeX.addiRowVector(Nd4j.create(1000).assign(2.0));
+
+        for (int x = 0; x < hugeX.rows(); x++){
+            assertEquals("Failed at row " + x, 3000, hugeX.getRow(x).sumNumber().intValue());
+        }
+    }
+
+    @Test
+    public void testLongTadOp2_micro() {
+
+        INDArray hugeX = Nd4j.create(230, 1000).assign(1.0);
+        hugeX.addiRowVector(Nd4j.create(1000).assign(2.0));
+
+        for (int x = 0; x < hugeX.rows(); x++){
+            assertEquals("Failed at row " + x, 3000, hugeX.getRow(x).sumNumber().intValue());
+        }
+    }
+
 
     @Override
     public char ordering() {
