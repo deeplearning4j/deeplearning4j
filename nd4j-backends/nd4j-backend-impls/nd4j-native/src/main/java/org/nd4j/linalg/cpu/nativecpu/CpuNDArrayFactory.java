@@ -968,8 +968,6 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
 
-            log.info("Shape {};", Arrays.toString(array.shapeInfoDataBuffer().asInt()));
-
             Nd4j.getCompressor().autoDecompress(array);
 
 
