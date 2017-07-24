@@ -18,7 +18,7 @@ public class MnistDataSetIteratorFactory implements DataSetIteratorFactory {
     @Override
     public DataSetIterator create() {
         try {
-            return new MnistDataSetIterator(1000,1000);
+            return new MnistDataSetIterator(1000, 1000);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

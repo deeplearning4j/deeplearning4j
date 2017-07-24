@@ -20,7 +20,6 @@ package org.deeplearning4j.arbiter.optimize.api.termination;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
-import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -35,16 +34,21 @@ import java.util.concurrent.TimeUnit;
 @NoArgsConstructor
 @Data
 public class MaxTimeCondition implements TerminationCondition {
+    private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("dd-MMM HH:mm ZZ");
 
-    private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS zzz").withZone(DateTimeZone.UTC);
-    @JsonProperty
     private long duration;
-    @JsonProperty
     private TimeUnit timeUnit;
-    @JsonProperty
     private long startTime;
-    @JsonProperty
     private long endTime;
+
+
+    private MaxTimeCondition(@JsonProperty("duration") long duration, @JsonProperty("timeUnit") TimeUnit timeUnit,
+                    @JsonProperty("startTime") long startTime, @JsonProperty("endTime") long endTime) {
+        this.duration = duration;
+        this.timeUnit = timeUnit;
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
 
     /**
      * @param duration Duration of time
@@ -68,6 +72,11 @@ public class MaxTimeCondition implements TerminationCondition {
 
     @Override
     public String toString() {
-        return "MaxTimeCondition(" + duration + "," + timeUnit + ",start=\"" + formatter.print(startTime) + "\",end=\"" + formatter.print(endTime) + "\")";
+        if (startTime > 0) {
+            return "MaxTimeCondition(" + duration + "," + timeUnit + ",start=\"" + formatter.print(startTime)
+                            + "\",end=\"" + formatter.print(endTime) + "\")";
+        } else {
+            return "MaxTimeCondition(" + duration + "," + timeUnit + "\")";
+        }
     }
 }

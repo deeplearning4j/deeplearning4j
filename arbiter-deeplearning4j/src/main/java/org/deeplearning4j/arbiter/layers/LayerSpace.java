@@ -20,13 +20,16 @@ package org.deeplearning4j.arbiter.layers;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.arbiter.optimize.api.AbstractParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * LayerSpace contains common Layer hyperparameters; should match {@link Layer} in terms of features
@@ -34,9 +37,9 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-
-@Data @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
-public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
+@Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
+public abstract class LayerSpace<L extends Layer> extends AbstractParameterSpace<L> {
     protected ParameterSpace<Double> dropOut;
     protected int numParameters;
 
@@ -47,9 +50,26 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
 
     @Override
     public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = new ArrayList<>();
-        if (dropOut != null) list.addAll(dropOut.collectLeaves());
-        return list;
+        //To avoid manually coding EVERY parameter, in every layer:
+        // Do a depth-first search of nested spaces
+        LinkedList<ParameterSpace> stack = new LinkedList<>();
+        stack.add(this);
+
+        List<ParameterSpace> out = new ArrayList<>();
+        while (!stack.isEmpty()) {
+            ParameterSpace next = stack.removeLast();
+            if (next.isLeaf()) {
+                out.add(next);
+            } else {
+                Map<String, ParameterSpace> m = next.getNestedSpaces();
+                ParameterSpace[] arr = m.values().toArray(new ParameterSpace[m.size()]);
+                for (int i = arr.length - 1; i >= 0; i--) {
+                    stack.add(arr[i]);
+                }
+            }
+        }
+
+        return out;
     }
 
     @Override
@@ -69,7 +89,8 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
 
 
     protected void setLayerOptionsBuilder(Layer.Builder builder, double[] values) {
-        if (dropOut != null) builder.dropOut(dropOut.getValue(values));
+        if (dropOut != null)
+            builder.dropOut(dropOut.getValue(values));
     }
 
 
@@ -80,14 +101,16 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
 
     protected String toString(String delim) {
         StringBuilder sb = new StringBuilder();
-        if (dropOut != null) sb.append("dropOut: ").append(dropOut).append(delim);
+        if (dropOut != null)
+            sb.append("dropOut: ").append(dropOut).append(delim);
         String s = sb.toString();
 
         if (s.endsWith(delim)) {
             //Remove final delimiter
             int last = s.lastIndexOf(delim);
             return s.substring(0, last);
-        } else return s;
+        } else
+            return s;
     }
 
     @SuppressWarnings("unchecked")

@@ -11,12 +11,12 @@ import org.apache.commons.math3.distribution.*;
  */
 public class DistributionUtils {
 
-    private DistributionUtils() {
-    }
+    private DistributionUtils() {}
 
 
     public static boolean distributionsEqual(RealDistribution a, RealDistribution b) {
-        if (a.getClass() != b.getClass()) return false;
+        if (a.getClass() != b.getClass())
+            return false;
         Class<?> c = a.getClass();
         if (c == BetaDistribution.class) {
             BetaDistribution ba = (BetaDistribution) a;
@@ -38,7 +38,8 @@ public class DistributionUtils {
         } else if (c == FDistribution.class) {
             FDistribution fa = (FDistribution) a;
             FDistribution fb = (FDistribution) b;
-            return fa.getNumeratorDegreesOfFreedom() == fb.getNumeratorDegreesOfFreedom() && fa.getDenominatorDegreesOfFreedom() == fb.getDenominatorDegreesOfFreedom();
+            return fa.getNumeratorDegreesOfFreedom() == fb.getNumeratorDegreesOfFreedom()
+                            && fa.getDenominatorDegreesOfFreedom() == fb.getDenominatorDegreesOfFreedom();
         } else if (c == GammaDistribution.class) {
             GammaDistribution ga = (GammaDistribution) a;
             GammaDistribution gb = (GammaDistribution) b;
@@ -60,20 +61,22 @@ public class DistributionUtils {
             ParetoDistribution pb = (ParetoDistribution) b;
             return pa.getScale() == pb.getScale() && pa.getShape() == pb.getShape();
         } else if (c == TDistribution.class) {
-            TDistribution ta = (TDistribution)a;
-            TDistribution tb = (TDistribution)b;
+            TDistribution ta = (TDistribution) a;
+            TDistribution tb = (TDistribution) b;
             return ta.getDegreesOfFreedom() == tb.getDegreesOfFreedom();
         } else if (c == TriangularDistribution.class) {
-            TriangularDistribution ta = (TriangularDistribution)a;
-            TriangularDistribution tb = (TriangularDistribution)b;
-            return ta.getSupportLowerBound() == tb.getSupportLowerBound() && ta.getSupportUpperBound() == tb.getSupportUpperBound() && ta.getMode() == tb.getMode();
+            TriangularDistribution ta = (TriangularDistribution) a;
+            TriangularDistribution tb = (TriangularDistribution) b;
+            return ta.getSupportLowerBound() == tb.getSupportLowerBound()
+                            && ta.getSupportUpperBound() == tb.getSupportUpperBound() && ta.getMode() == tb.getMode();
         } else if (c == UniformRealDistribution.class) {
             UniformRealDistribution ua = (UniformRealDistribution) a;
             UniformRealDistribution ub = (UniformRealDistribution) b;
-            return ua.getSupportLowerBound() == ub.getSupportLowerBound() && ua.getSupportUpperBound() == ub.getSupportUpperBound();
+            return ua.getSupportLowerBound() == ub.getSupportLowerBound()
+                            && ua.getSupportUpperBound() == ub.getSupportUpperBound();
         } else if (c == WeibullDistribution.class) {
-            WeibullDistribution wa = (WeibullDistribution)a;
-            WeibullDistribution wb = (WeibullDistribution)b;
+            WeibullDistribution wa = (WeibullDistribution) a;
+            WeibullDistribution wb = (WeibullDistribution) b;
             return wa.getShape() == wb.getShape() && wa.getScale() == wb.getScale();
         } else {
             throw new UnsupportedOperationException("Unknown or not supported RealDistribution: " + c);
@@ -81,13 +84,15 @@ public class DistributionUtils {
     }
 
     public static boolean distributionEquals(IntegerDistribution a, IntegerDistribution b) {
-        if (a.getClass() != b.getClass()) return false;
+        if (a.getClass() != b.getClass())
+            return false;
         Class<?> c = a.getClass();
 
         if (c == BinomialDistribution.class) {
             BinomialDistribution ba = (BinomialDistribution) a;
             BinomialDistribution bb = (BinomialDistribution) b;
-            return ba.getNumberOfTrials() == bb.getNumberOfTrials() && ba.getProbabilityOfSuccess() == bb.getProbabilityOfSuccess();
+            return ba.getNumberOfTrials() == bb.getNumberOfTrials()
+                            && ba.getProbabilityOfSuccess() == bb.getProbabilityOfSuccess();
         } else if (c == GeometricDistribution.class) {
             GeometricDistribution ga = (GeometricDistribution) a;
             GeometricDistribution gb = (GeometricDistribution) b;
@@ -95,12 +100,14 @@ public class DistributionUtils {
         } else if (c == HypergeometricDistribution.class) {
             HypergeometricDistribution ha = (HypergeometricDistribution) a;
             HypergeometricDistribution hb = (HypergeometricDistribution) b;
-            return ha.getPopulationSize() == hb.getPopulationSize() && ha.getNumberOfSuccesses() == hb.getNumberOfSuccesses()
-                    && ha.getSampleSize() == hb.getSampleSize();
+            return ha.getPopulationSize() == hb.getPopulationSize()
+                            && ha.getNumberOfSuccesses() == hb.getNumberOfSuccesses()
+                            && ha.getSampleSize() == hb.getSampleSize();
         } else if (c == PascalDistribution.class) {
             PascalDistribution pa = (PascalDistribution) a;
             PascalDistribution pb = (PascalDistribution) b;
-            return pa.getNumberOfSuccesses() == pb.getNumberOfSuccesses() && pa.getProbabilityOfSuccess() == pb.getProbabilityOfSuccess();
+            return pa.getNumberOfSuccesses() == pb.getNumberOfSuccesses()
+                            && pa.getProbabilityOfSuccess() == pb.getProbabilityOfSuccess();
         } else if (c == PoissonDistribution.class) {
             PoissonDistribution pa = (PoissonDistribution) a;
             PoissonDistribution pb = (PoissonDistribution) b;
@@ -108,7 +115,8 @@ public class DistributionUtils {
         } else if (c == UniformIntegerDistribution.class) {
             UniformIntegerDistribution ua = (UniformIntegerDistribution) a;
             UniformIntegerDistribution ub = (UniformIntegerDistribution) b;
-            return ua.getSupportUpperBound() == ub.getSupportUpperBound() && ua.getSupportUpperBound() == ub.getSupportUpperBound();
+            return ua.getSupportUpperBound() == ub.getSupportUpperBound()
+                            && ua.getSupportUpperBound() == ub.getSupportUpperBound();
         } else if (c == ZipfDistribution.class) {
             ZipfDistribution za = (ZipfDistribution) a;
             ZipfDistribution zb = (ZipfDistribution) b;

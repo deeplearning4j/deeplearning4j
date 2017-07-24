@@ -21,6 +21,7 @@ import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.GenericDeserializer;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.GenericSerializer;
+import org.deeplearning4j.arbiter.util.ObjectUtils;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -29,6 +30,7 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * FixedValue is a ParameterSpace that defines only a single fixed value
@@ -50,12 +52,12 @@ public class FixedValue<T> implements ParameterSpace<T> {
 
     @Override
     public String toString() {
-        return "FixedValue(" + value + ")";
+        return "FixedValue(" + ObjectUtils.valueToString(value) + ")";
     }
 
     @Override
     public T getValue(double[] input) {
-        return (T)value;
+        return (T) value;
     }
 
     @Override
@@ -69,6 +71,11 @@ public class FixedValue<T> implements ParameterSpace<T> {
     }
 
     @Override
+    public Map<String, ParameterSpace> getNestedSpaces() {
+        return Collections.emptyMap();
+    }
+
+    @Override
     public boolean isLeaf() {
         return true;
     }
@@ -76,7 +83,7 @@ public class FixedValue<T> implements ParameterSpace<T> {
     @Override
     public void setIndices(int... indices) {
         if (indices != null && indices.length != 0)
-            throw new IllegalArgumentException("Invalid call: FixedValue ParameterSpace "
-                    + "should not be given an index (0 params)");
+            throw new IllegalArgumentException(
+                            "Invalid call: FixedValue ParameterSpace " + "should not be given an index (0 params)");
     }
 }

@@ -44,34 +44,27 @@ import static org.junit.Assert.assertTrue;
 public class TestComputationGraphSpace {
 
     @Test
-    public void testBasic(){
+    public void testBasic() {
 
-        ComputationGraphConfiguration expected = new NeuralNetConfiguration.Builder()
-                .learningRate(0.005)
-                .seed(12345)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
-                .addLayer("1", new DenseLayer.Builder().nIn(10).nOut(10).build(), "0")
-                .addLayer("2", new OutputLayer.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build(), "1")
-                .setOutputs("2")
-                .backprop(true).pretrain(false)
-                .build();
+        ComputationGraphConfiguration expected = new NeuralNetConfiguration.Builder().learningRate(0.005).seed(12345)
+                        .graphBuilder().addInputs("in")
+                        .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                        .addLayer("1", new DenseLayer.Builder().nIn(10).nOut(10).build(), "0").addLayer("2",
+                                        new OutputLayer.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5)
+                                                        .build(),
+                                        "1")
+                        .setOutputs("2").backprop(true).pretrain(false).build();
 
-        ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
-                .learningRate(0.005)
-                .seed(12345)
-                .addInputs("in")
-                .addLayer("0", new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), "in")
-                .addLayer("1",new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), "0")
-                .addLayer("2", new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build(), "1")
-                .setOutputs("2")
-                .backprop(true).pretrain(false)
-                .setInputTypes(InputType.feedForward(10))
-                .build();
+        ComputationGraphSpace cgs = new ComputationGraphSpace.Builder().learningRate(0.005).seed(12345).addInputs("in")
+                        .addLayer("0", new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), "in")
+                        .addLayer("1", new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), "0")
+                        .addLayer("2", new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5)
+                                        .build(), "1")
+                        .setOutputs("2").backprop(true).pretrain(false).setInputTypes(InputType.feedForward(10))
+                        .build();
 
         int nParams = cgs.numParameters();
-        assertEquals(0,nParams);
+        assertEquals(0, nParams);
 
         ComputationGraphConfiguration conf = cgs.getValue(new double[0]).getConfiguration();
 
@@ -79,37 +72,38 @@ public class TestComputationGraphSpace {
     }
 
     @Test
-    public void testBasic2(){
+    public void testBasic2() {
 
         ComputationGraphSpace mls = new ComputationGraphSpace.Builder()
-                .learningRate(new ContinuousParameterSpace(0.0001,0.1))
-                .regularization(true)
-                .l2(new ContinuousParameterSpace(0.2,0.5))
-                .addInputs("in")
-                .addLayer("0",new DenseLayerSpace.Builder().nIn(10).nOut(10)
-                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
-                        .build(),"in")
-                .addLayer("1",new OutputLayerSpace.Builder().nIn(10).nOut(10)
-                        .activation(Activation.SOFTMAX).build(),"0")
-                .setOutputs("1")
-                .setInputTypes(InputType.feedForward(10))
-                .pretrain(false).backprop(true).build();
+                        .learningRate(new ContinuousParameterSpace(0.0001, 0.1)).regularization(true)
+                        .l2(new ContinuousParameterSpace(0.2, 0.5))
+                        .addInputs("in").addLayer("0",
+                                        new DenseLayerSpace.Builder().nIn(10).nOut(10)
+                                                        .activation(new DiscreteParameterSpace<>(Activation.RELU,
+                                                                        Activation.TANH))
+                                                        .build(),
+                                        "in")
+                        .addLayer("1", new OutputLayerSpace.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX)
+                                        .build(), "0")
+                        .setOutputs("1").setInputTypes(InputType.feedForward(10)).pretrain(false).backprop(true)
+                        .build();
 
         int nParams = mls.numParameters();
-        assertEquals(3,nParams);
+        assertEquals(3, nParams);
 
         //Assign numbers to each leaf ParameterSpace object (normally done by candidate generator)
         List<ParameterSpace> noDuplicatesList = LeafUtils.getUniqueObjects(mls.collectLeaves());
 
         //Second: assign each a number
-        int c=0;
-        for( ParameterSpace ps : noDuplicatesList){
+        int c = 0;
+        for (ParameterSpace ps : noDuplicatesList) {
             int np = ps.numParameters();
-            if(np == 1){
+            if (np == 1) {
                 ps.setIndices(c++);
             } else {
                 int[] values = new int[np];
-                for( int j=0; j<np; j++ ) values[c++] = j;
+                for (int j = 0; j < np; j++)
+                    values[c++] = j;
                 ps.setIndices(values);
             }
         }
@@ -119,10 +113,11 @@ public class TestComputationGraphSpace {
 
         Random r = new Random(12345);
 
-        for(int i = 0; i < 50; i++) {
+        for (int i = 0; i < 50; i++) {
 
             double[] rvs = new double[nParams];
-            for( int j = 0; j < rvs.length; j++ ) rvs[j] = r.nextDouble();
+            for (int j = 0; j < rvs.length; j++)
+                rvs[j] = r.nextDouble();
 
 
             ComputationGraphConfiguration conf = mls.getValue(rvs).getConfiguration();
@@ -130,24 +125,27 @@ public class TestComputationGraphSpace {
             assertEquals(true, conf.isBackprop());
 
             int nLayers = conf.getVertexInputs().size();
-            assertEquals(2,nLayers);
+            assertEquals(2, nLayers);
 
-            for( int j=0; j<nLayers; j++ ){
-                NeuralNetConfiguration layerConf = ((LayerVertex)conf.getVertices().get(String.valueOf(j))).getLayerConf();
+            for (int j = 0; j < nLayers; j++) {
+                NeuralNetConfiguration layerConf =
+                                ((LayerVertex) conf.getVertices().get(String.valueOf(j))).getLayerConf();
 
-                double lr = ((BaseLayer)layerConf.getLayer()).getLearningRate();
+                double lr = ((BaseLayer) layerConf.getLayer()).getLearningRate();
                 assertTrue(lr >= 0.0001 && lr <= 0.1);
                 assertEquals(true, layerConf.isUseRegularization());
-                double l2 = ((BaseLayer)layerConf.getLayer()).getL2();
-                assertTrue( l2 >= 0.2 && l2 <= 0.5);
+                double l2 = ((BaseLayer) layerConf.getLayer()).getL2();
+                assertTrue(l2 >= 0.2 && l2 <= 0.5);
 
-                if(j == nLayers - 1) { //Output layer
-                    assertEquals("softmax",((BaseLayer)layerConf.getLayer()).getActivationFn().toString());
+                if (j == nLayers - 1) { //Output layer
+                    assertEquals("softmax", ((BaseLayer) layerConf.getLayer()).getActivationFn().toString());
                 } else {
-                    String actFn = ((BaseLayer)layerConf.getLayer()).getActivationFn().toString();
+                    String actFn = ((BaseLayer) layerConf.getLayer()).getActivationFn().toString();
                     assertTrue("relu".equals(actFn) || "tanh".equals(actFn));
-                    if("relu".equals(actFn)) reluCount++;
-                    else tanhCount++;
+                    if ("relu".equals(actFn))
+                        reluCount++;
+                    else
+                        tanhCount++;
                 }
             }
         }

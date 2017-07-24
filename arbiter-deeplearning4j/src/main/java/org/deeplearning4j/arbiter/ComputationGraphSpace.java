@@ -45,29 +45,29 @@ import java.util.List;
  *
  * @author Alex Black
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)    //For Jackson JSON ser/de
+@NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON ser/de
 @Data
 @EqualsAndHashCode(callSuper = true)
-@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property="type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @JsonTypeName("ComputationGraphSpace")
 public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> {
     @JsonProperty
-    private List<LayerConf> layerSpaces = new ArrayList<>();
+    protected List<LayerConf> layerSpaces = new ArrayList<>();
     @JsonProperty
-    private List<VertexConf> vertices = new ArrayList<>();
+    protected List<VertexConf> vertices = new ArrayList<>();
     @JsonProperty
-    private String[] networkInputs;
+    protected String[] networkInputs;
     @JsonProperty
-    private String[] networkOutputs;
+    protected String[] networkOutputs;
     @JsonProperty
-    private ParameterSpace<InputType[]> inputTypes;
+    protected ParameterSpace<InputType[]> inputTypes;
     @JsonProperty
-    private int numParameters;
+    protected int numParameters;
 
     //Early stopping configuration / (fixed) number of epochs:
-    private EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration;
+    protected EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration;
 
-    private ComputationGraphSpace(Builder builder) {
+    protected ComputationGraphSpace(Builder builder) {
         super(builder);
 
         this.earlyStoppingConfiguration = builder.earlyStoppingConfiguration;
@@ -80,7 +80,8 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
 
         //Determine total number of parameters:
         List<ParameterSpace> list = LeafUtils.getUniqueObjects(collectLeaves());
-        for (ParameterSpace ps : list) numParameters += ps.numParameters();
+        for (ParameterSpace ps : list)
+            numParameters += ps.numParameters();
     }
 
 
@@ -92,7 +93,8 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         ComputationGraphConfiguration.GraphBuilder graphBuilder = builder.graphBuilder();
         graphBuilder.addInputs(this.networkInputs);
         graphBuilder.setOutputs(this.networkOutputs);
-        if (inputTypes != null ) graphBuilder.setInputTypes(inputTypes.getValue(values));
+        if (inputTypes != null)
+            graphBuilder.setInputTypes(inputTypes.getValue(values));
 
         //Build/add our layers and vertices:
         for (LayerConf c : layerSpaces) {
@@ -104,11 +106,16 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         }
 
 
-        if (backprop != null) graphBuilder.backprop(backprop.getValue(values));
-        if (pretrain != null) graphBuilder.pretrain(pretrain.getValue(values));
-        if (backpropType != null) graphBuilder.backpropType(backpropType.getValue(values));
-        if (tbpttFwdLength != null) graphBuilder.tBPTTForwardLength(tbpttFwdLength.getValue(values));
-        if (tbpttBwdLength != null) graphBuilder.tBPTTBackwardLength(tbpttBwdLength.getValue(values));
+        if (backprop != null)
+            graphBuilder.backprop(backprop.getValue(values));
+        if (pretrain != null)
+            graphBuilder.pretrain(pretrain.getValue(values));
+        if (backpropType != null)
+            graphBuilder.backpropType(backpropType.getValue(values));
+        if (tbpttFwdLength != null)
+            graphBuilder.tBPTTForwardLength(tbpttFwdLength.getValue(values));
+        if (tbpttBwdLength != null)
+            graphBuilder.tBPTTBackwardLength(tbpttBwdLength.getValue(values));
 
         ComputationGraphConfiguration configuration = graphBuilder.build();
         return new GraphConfiguration(configuration, earlyStoppingConfiguration, numEpochs);
@@ -125,7 +132,8 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         for (LayerConf lc : layerSpaces) {
             list.addAll(lc.layerSpace.collectLeaves());
         }
-        if(inputTypes != null) list.add(inputTypes);
+        if (inputTypes != null)
+            list.add(inputTypes);
         return list;
     }
 
@@ -136,14 +144,14 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
 
         for (LayerConf conf : layerSpaces) {
             sb.append("Layer config: \"").append(conf.layerName).append("\", ").append(conf.layerSpace)
-                    .append(", inputs: ").append(conf.inputs == null ? "[]" : Arrays.toString(conf.inputs))
-                    .append("\n");
+                            .append(", inputs: ").append(conf.inputs == null ? "[]" : Arrays.toString(conf.inputs))
+                            .append("\n");
         }
 
         for (VertexConf conf : vertices) {
             sb.append("GraphVertex: \"").append(conf.vertexName).append("\", ").append(conf.graphVertex)
-                    .append(", inputs: ").append(conf.inputs == null ? "[]" : Arrays.toString(conf.inputs))
-                    .append("\n");
+                            .append(", inputs: ").append(conf.inputs == null ? "[]" : Arrays.toString(conf.inputs))
+                            .append("\n");
         }
 
         if (earlyStoppingConfiguration != null) {
@@ -152,7 +160,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
             sb.append("Training # epochs:").append(numEpochs).append("\n");
         }
 
-        if(inputTypes != null){
+        if (inputTypes != null) {
             sb.append("Input types: ").append(inputTypes).append("\n");
         }
 
@@ -161,20 +169,11 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
 
     @AllArgsConstructor
     @Data
-    @NoArgsConstructor  //For Jackson JSON
-    private static class LayerConf {
-        private LayerSpace<?> layerSpace;
-        private String layerName;
-        private String[] inputs;
-    }
-
-    @AllArgsConstructor
-    @Data
-    @NoArgsConstructor  //For Jackson JSON
-    private static class VertexConf {
-        private GraphVertex graphVertex;
-        private String vertexName;
-        private String[] inputs;
+    @NoArgsConstructor //For Jackson JSON
+    protected static class VertexConf {
+        protected GraphVertex graphVertex;
+        protected String vertexName;
+        protected String[] inputs;
     }
 
     public static class Builder extends BaseNetworkSpace.Builder<Builder> {
@@ -194,14 +193,14 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
          * Early stopping configuration (optional). Note if both EarlyStoppingConfiguration and number of epochs is
          * present, early stopping will be used in preference.
          */
-        public Builder earlyStoppingConfiguration(EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration) {
+        public Builder earlyStoppingConfiguration(
+                        EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration) {
             this.earlyStoppingConfiguration = earlyStoppingConfiguration;
             return this;
         }
 
-        public Builder addLayer(String layerName, LayerSpace<? extends Layer> layerSpace,
-                                String... layerInputs) {
-            layerList.add(new LayerConf(layerSpace, layerName, layerInputs));
+        public Builder addLayer(String layerName, LayerSpace<? extends Layer> layerSpace, String... layerInputs) {
+            layerList.add(new LayerConf(layerSpace, layerName, layerInputs, new FixedValue<>(1), false));
             return this;
         }
 
@@ -224,7 +223,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
             return setInputTypes(new FixedValue<InputType[]>(inputTypes));
         }
 
-        public Builder setInputTypes(ParameterSpace<InputType[]> inputTypes){
+        public Builder setInputTypes(ParameterSpace<InputType[]> inputTypes) {
             this.inputTypes = inputTypes;
             return this;
         }

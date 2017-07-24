@@ -17,16 +17,12 @@
  */
 package org.deeplearning4j.arbiter.optimize.api;
 
-import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
-import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
-import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
-import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * ParameterSpace: defines the acceptable ranges of values a given parameter may take.
@@ -36,13 +32,7 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type(value = ContinuousParameterSpace.class, name = "ContinuousParameterSpace"),
-        @JsonSubTypes.Type(value = DiscreteParameterSpace.class, name = "DiscreteParameterSpace"),
-        @JsonSubTypes.Type(value = IntegerParameterSpace.class, name = "IntegerParameterSpace"),
-        @JsonSubTypes.Type(value = FixedValue.class, name = "FixedValue")
-})
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface ParameterSpace<P> {
 
     /**
@@ -62,12 +52,21 @@ public interface ParameterSpace<P> {
     int numParameters();
 
     /**
-     * Collect a list of parameters, recursively.
+     * Collect a list of parameters, recursively. Note that leaf parameters are parameters that do not have any
+     * nested parameter spaces
      */
     List<ParameterSpace> collectLeaves();
 
     /**
-     * Is this ParameterSpace a leaf? (i.e., does it contain other ParameterSpace values?)
+     * Get a list of nested parameter spaces by name. Note that the returned parameter spaces may in turn have further
+     * nested parameter spaces. The map should be empty for leaf parameter spaces
+     *
+     * @return  A map of nested parameter spaces
+     */
+    Map<String, ParameterSpace> getNestedSpaces();
+
+    /**
+     * Is this ParameterSpace a leaf? (i.e., does it contain other ParameterSpaces internally?)
      */
     @JsonIgnore
     boolean isLeaf();
@@ -76,7 +75,7 @@ public interface ParameterSpace<P> {
      * For leaf ParameterSpaces: set the indices of the leaf ParameterSpace.
      * Expects input of length {@link #numParameters()}. Throws exception if {@link #isLeaf()} is false.
      *
-     * @param indices
+     * @param indices Indices to set. Length should equal {@link #numParameters()}
      */
     void setIndices(int... indices);
 

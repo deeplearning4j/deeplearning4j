@@ -9,8 +9,6 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 
-import java.util.List;
-
 /**
  * LayerSpace for batch normalization layers
  *
@@ -37,21 +35,8 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
         this.gamma = builder.gamma;
         this.beta = builder.beta;
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
-
-    @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (decay != null) list.addAll(decay.collectLeaves());
-        if (eps != null) list.addAll(eps.collectLeaves());
-        if (isMinibatch != null) list.addAll(isMinibatch.collectLeaves());
-        if (lockGammaBeta != null) list.addAll(lockGammaBeta.collectLeaves());
-        if (gamma != null) list.addAll(gamma.collectLeaves());
-        if (beta != null) list.addAll(beta.collectLeaves());
-        return list;
-    }
-
 
     @Override
     public BatchNormalization getValue(double[] parameterValues) {
@@ -62,12 +47,18 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
 
     protected void setLayerOptionsBuilder(BatchNormalization.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
-        if (decay != null) builder.decay(decay.getValue(values));
-        if (eps != null) builder.eps(eps.getValue(values));
-        if (isMinibatch != null) builder.minibatch(isMinibatch.getValue(values));
-        if (lockGammaBeta != null) builder.lockGammaBeta(lockGammaBeta.getValue(values));
-        if (gamma != null) builder.gamma(gamma.getValue(values));
-        if (beta != null) builder.beta(beta.getValue(values));
+        if (decay != null)
+            builder.decay(decay.getValue(values));
+        if (eps != null)
+            builder.eps(eps.getValue(values));
+        if (isMinibatch != null)
+            builder.minibatch(isMinibatch.getValue(values));
+        if (lockGammaBeta != null)
+            builder.lockGammaBeta(lockGammaBeta.getValue(values));
+        if (gamma != null)
+            builder.gamma(gamma.getValue(values));
+        if (beta != null)
+            builder.beta(beta.getValue(values));
     }
 
     @Override
@@ -79,12 +70,18 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
     public String toString(String delim) {
         StringBuilder sb = new StringBuilder();
         sb.append("BatchNormalizationSpace(").append(super.toString(delim));
-        if(decay != null) sb.append("decay: ").append(decay).append(delim);
-        if(eps != null) sb.append("eps: ").append(eps).append(delim);
-        if(isMinibatch != null) sb.append("isMinibatch: ").append(isMinibatch).append(delim);
-        if(lockGammaBeta != null) sb.append("lockGammaBeta: ").append(lockGammaBeta).append(delim);
-        if(gamma != null) sb.append("gamma: ").append(gamma).append(delim);
-        if(beta != null) sb.append("beta: ").append(beta).append(delim);
+        if (decay != null)
+            sb.append("decay: ").append(decay).append(delim);
+        if (eps != null)
+            sb.append("eps: ").append(eps).append(delim);
+        if (isMinibatch != null)
+            sb.append("isMinibatch: ").append(isMinibatch).append(delim);
+        if (lockGammaBeta != null)
+            sb.append("lockGammaBeta: ").append(lockGammaBeta).append(delim);
+        if (gamma != null)
+            sb.append("gamma: ").append(gamma).append(delim);
+        if (beta != null)
+            sb.append("beta: ").append(beta).append(delim);
         sb.append(")");
         return sb.toString();
     }

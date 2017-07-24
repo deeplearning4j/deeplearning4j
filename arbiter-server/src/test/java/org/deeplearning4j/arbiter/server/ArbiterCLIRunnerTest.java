@@ -1,7 +1,6 @@
 package org.deeplearning4j.arbiter.server;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
@@ -10,16 +9,14 @@ import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
-import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
+import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
-import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
-import org.deeplearning4j.arbiter.scoring.multilayer.TestSetLossScoreFunction;
-import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
+import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -61,8 +58,8 @@ public class ArbiterCLIRunnerTest {
         Map<String,Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,MnistDataSetIteratorFactory.class.getCanonicalName());
 
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls,commands);
-        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls,commands);
+        DataProvider dataProvider = new DataSetIteratorFactoryProvider();
 
 
 //        String modelSavePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),"ArbiterDL4JTest/");
@@ -71,16 +68,16 @@ public class ArbiterCLIRunnerTest {
         if(!dir.exists())
             dir.mkdirs();
         String configPath = System.getProperty("java.io.tmpdir") + File.separator + UUID.randomUUID().toString() + ".json";
-        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation>()
+        OptimizationConfiguration configuration
+                = new OptimizationConfiguration.Builder()
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(dataProvider)
-                .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelSavePath))
+                .modelSaver(new FileModelSaver(modelSavePath))
                 .scoreFunction(new TestSetLossScoreFunction())
                 .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
                         new MaxCandidatesCondition(100))
                 .build();
-        assertEquals(configuration,OptimizationConfiguration.fromJson(configuration.toJson(),DL4JConfiguration.class,MultiLayerNetwork.class,Object.class,Evaluation.class));
+        assertEquals(configuration,OptimizationConfiguration.fromJson(configuration.toJson()));
 
         FileUtils.writeStringToFile(new File(configPath),configuration.toJson());
         System.out.println(configuration.toJson());

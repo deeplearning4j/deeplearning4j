@@ -23,9 +23,13 @@ import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,13 +41,29 @@ import java.util.Map;
  */
 @NoArgsConstructor
 @AllArgsConstructor
-public class ClassificationEvaluator implements ModelEvaluator<MultiLayerNetwork, Object, Evaluation> {
-    private Map<String,Object> params = null;
+public class ClassificationEvaluator implements ModelEvaluator {
+    private Map<String, Object> params = null;
 
 
     @Override
-    public Evaluation evaluateModel(MultiLayerNetwork model, DataProvider<Object> dataProvider) {
-        DataSetIterator iterator = ScoreUtil.getIterator(dataProvider.testData(params));
-        return ScoreUtil.getEvaluation(model,iterator);
+    public Evaluation evaluateModel(Object model, DataProvider dataProvider) {
+
+        if (model instanceof MultiLayerNetwork) {
+            DataSetIterator iterator = ScoreUtil.getIterator(dataProvider.testData(params));
+            return ScoreUtil.getEvaluation((MultiLayerNetwork) model, iterator);
+        } else {
+            DataSetIterator iterator = ScoreUtil.getIterator(dataProvider.testData(params));
+            return ScoreUtil.getEvaluation((ComputationGraph) model, iterator);
+        }
+    }
+
+    @Override
+    public List<Class<?>> getSupportedModelTypes() {
+        return Arrays.<Class<?>>asList(MultiLayerNetwork.class, ComputationGraph.class);
+    }
+
+    @Override
+    public List<Class<?>> getSupportedDataTypes() {
+        return Arrays.<Class<?>>asList(DataSetIterator.class, MultiDataSetIterator.class);
     }
 }

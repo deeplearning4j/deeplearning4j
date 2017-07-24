@@ -90,7 +90,8 @@ public class DegenerateIntegerDistribution implements IntegerDistribution {
     @Override
     public int[] sample(int sampleSize) {
         int[] out = new int[sampleSize];
-        for (int i = 0; i < out.length; i++) out[i] = value;
+        for (int i = 0; i < out.length; i++)
+            out[i] = value;
         return out;
     }
 }

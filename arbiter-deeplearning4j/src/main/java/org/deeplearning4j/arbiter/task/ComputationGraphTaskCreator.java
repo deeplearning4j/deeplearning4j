@@ -18,142 +18,142 @@
 package org.deeplearning4j.arbiter.task;
 
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.deeplearning4j.arbiter.GraphConfiguration;
-import org.deeplearning4j.arbiter.listener.UIGraphStatusReportingListener;
+import org.deeplearning4j.arbiter.listener.DL4JArbiterStatusReportingListener;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.TaskCreator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
-import org.deeplearning4j.arbiter.optimize.runner.Status;
-import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
+import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingGraphTrainer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.ui.components.text.ComponentText;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
  * Task creator for ComputationGraph
  *
- * @param <A> Additional evaluation type
  * @author Alex Black
  */
 @AllArgsConstructor
-public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfiguration, ComputationGraph, Object, A> {
+@NoArgsConstructor
+public class ComputationGraphTaskCreator implements TaskCreator {
 
-    private ModelEvaluator<ComputationGraph, Object, A> modelEvaluator;
+    private ModelEvaluator modelEvaluator;
 
     @Override
-    public Callable<OptimizationResult<GraphConfiguration, ComputationGraph, A>> create(
-            Candidate<GraphConfiguration> candidate, DataProvider<Object> dataProvider,
-            ScoreFunction<ComputationGraph, Object> scoreFunction,
-            UICandidateStatusListener statusListener) {
+    public Callable<OptimizationResult> create(Candidate candidate, DataProvider dataProvider,
+                    ScoreFunction scoreFunction, List<StatusListener> statusListener) {
 
-        return new GraphLearningTask<>(candidate, dataProvider, scoreFunction, modelEvaluator, statusListener);
+        return new GraphLearningTask(candidate, dataProvider, scoreFunction, modelEvaluator, statusListener);
     }
 
 
-    private static class GraphLearningTask<A> implements Callable<OptimizationResult<GraphConfiguration, ComputationGraph, A>> {
+    private static class GraphLearningTask implements Callable<OptimizationResult> {
 
-        private Candidate<GraphConfiguration> candidate;
-        private DataProvider<Object> dataProvider;
-        private ScoreFunction<ComputationGraph, Object> scoreFunction;
-        private ModelEvaluator<ComputationGraph, Object, A> modelEvaluator;
+        private Candidate candidate;
+        private DataProvider dataProvider;
+        private ScoreFunction scoreFunction;
+        private ModelEvaluator modelEvaluator;
+        private List<StatusListener> listeners;
 
-        private UIGraphStatusReportingListener dl4jListener;
+        private long startTime;
 
-        public GraphLearningTask(Candidate<GraphConfiguration> candidate, DataProvider<Object> dataProvider,
-                                 ScoreFunction<ComputationGraph, Object> scoreFunction,
-                                 ModelEvaluator<ComputationGraph, Object, A> modelEvaluator,
-                                 UICandidateStatusListener listener) {
+        public GraphLearningTask(Candidate candidate, DataProvider dataProvider, ScoreFunction scoreFunction,
+                        ModelEvaluator modelEvaluator, List<StatusListener> listeners) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
-
-            dl4jListener = new UIGraphStatusReportingListener(listener);
+            this.listeners = listeners;
         }
 
 
         @Override
-        public OptimizationResult<GraphConfiguration, ComputationGraph, A> call() throws Exception {
+        public OptimizationResult call() throws Exception {
+
+            try {
+                return callHelper();
+            } catch (Exception e) {
+                String stackTrace = ExceptionUtils.getStackTrace(e);
+
+                CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null, startTime,
+                                null, null, candidate.getFlatParameters(), stackTrace);
+                return new OptimizationResult(candidate, null, null, candidate.getIndex(), null, ci);
+            }
+
+        }
+
+        private OptimizationResult callHelper() throws Exception {
+            startTime = System.currentTimeMillis();
+            CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null, startTime, null,
+                            null, candidate.getFlatParameters(), null);
+
             //Create network
-            ComputationGraph net = new ComputationGraph(candidate.getValue().getConfiguration());
+            ComputationGraph net = new ComputationGraph(((GraphConfiguration) candidate.getValue()).getConfiguration());
             net.init();
-            net.setListeners(dl4jListener);
+
+            if (listeners != null) {
+                net.setListeners(new DL4JArbiterStatusReportingListener(listeners, ci));
+            }
 
             //Early stopping or fixed number of epochs:
-            DataSetIterator dataSetIterator = ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
+            DataSetIterator dataSetIterator =
+                            ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
 
 
-            EarlyStoppingConfiguration<ComputationGraph> esConfig = candidate.getValue().getEarlyStoppingConfiguration();
+            EarlyStoppingConfiguration<ComputationGraph> esConfig =
+                            ((GraphConfiguration) candidate.getValue()).getEarlyStoppingConfiguration();
             EarlyStoppingResult<ComputationGraph> esResult = null;
             if (esConfig != null) {
-                EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConfig, net, dataSetIterator, dl4jListener);
-                try {
-                    esResult = trainer.fit();
-                    net = esResult.getBestModel();  //Can return null if failed OR if
-                } catch (Exception e) {
-                    dl4jListener.postReport(Status.Failed, null,
-                            new ComponentText("Unexpected exception during model training\n", null),
-                            new ComponentText(ExceptionUtils.getStackTrace(e), null));
-                    throw e;
-                }
+                EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConfig, net, dataSetIterator, null); //dl4jListener);
+                esResult = trainer.fit();
+                net = esResult.getBestModel(); //Can return null if failed OR if
 
                 switch (esResult.getTerminationReason()) {
                     case Error:
-                        dl4jListener.postReport(Status.Failed, esResult);
+                        ci.setCandidateStatus(CandidateStatus.Failed);
+                        ci.setExceptionStackTrace(esResult.getTerminationDetails());
                         break;
                     case IterationTerminationCondition:
                     case EpochTerminationCondition:
-                        dl4jListener.postReport(Status.Complete, esResult);
+                        ci.setCandidateStatus(CandidateStatus.Complete);
                         break;
                 }
 
             } else {
                 //Fixed number of epochs
-                int nEpochs = candidate.getValue().getNumEpochs();
+                int nEpochs = ((GraphConfiguration) candidate.getValue()).getNumEpochs();
                 for (int i = 0; i < nEpochs; i++) {
                     net.fit(dataSetIterator);
-                    dataSetIterator.reset();
                 }
-                //Do a final status update
-                dl4jListener.postReport(Status.Complete, null);
+                ci.setCandidateStatus(CandidateStatus.Complete);
             }
 
-            A additionalEvaluation = null;
+            Object additionalEvaluation = null;
             if (esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error) {
-                try {
-                    additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
-                } catch (Exception e) {
-                    dl4jListener.postReport(Status.Failed, esResult,
-                            new ComponentText("Failed during additional evaluation stage\n", null),
-                            new ComponentText(ExceptionUtils.getStackTrace(e), null));
-                }
+                additionalEvaluation =
+                                (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
             }
 
             Double score = null;
-            if (net == null) {
-                dl4jListener.postReport(Status.Complete, esResult,
-                        new ComponentText("No best model available; cannot calculate model score", null));
-            } else {
-                try {
-                    score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
-                } catch (Exception e) {
-                    dl4jListener.postReport(Status.Failed, esResult,
-                            new ComponentText("Failed during score calculation stage\n", null),
-                            new ComponentText(ExceptionUtils.getStackTrace(e), null));
-                }
+            if (net != null) {
+                score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
+                ci.setScore(score);
             }
 
-            return new OptimizationResult<>(candidate, net, score, candidate.getIndex(), additionalEvaluation);
+            return new OptimizationResult(candidate, net, score, candidate.getIndex(), additionalEvaluation, ci);
         }
     }
 }

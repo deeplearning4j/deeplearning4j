@@ -37,7 +37,7 @@ public class OutputLayerSpace extends BaseOutputLayerSpace<OutputLayer> {
     private OutputLayerSpace(Builder builder) {
         super(builder);
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override

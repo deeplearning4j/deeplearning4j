@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.optimize.parameter.discrete;
 
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.util.ObjectUtils;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
@@ -34,6 +35,7 @@ import java.util.*;
 @JsonIgnoreProperties("index")
 @EqualsAndHashCode
 public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
+
     @JsonSerialize
     private List<P> values;
     private int index = -1;
@@ -56,12 +58,13 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
         if (index == -1) {
             throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
         }
-        if(values == null)
+        if (values == null)
             throw new IllegalStateException("Values are null.");
         //Map a value in range [0,1] to one of the list of values
         //First value: [0,width], second: (width,2*width], third: (3*width,4*width] etc
         int size = values.size();
-        if (size == 1) return values.get(0);
+        if (size == 1)
+            return values.get(0);
         double width = 1.0 / size;
         int val = (int) (input[index] / width);
         return values.get(Math.min(val, size - 1));
@@ -75,6 +78,11 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
     @Override
     public List<ParameterSpace> collectLeaves() {
         return Collections.singletonList((ParameterSpace) this);
+    }
+
+    @Override
+    public Map<String, ParameterSpace> getNestedSpaces() {
+        return Collections.emptyMap();
     }
 
     @Override
@@ -96,9 +104,12 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
         sb.append("DiscreteParameterSpace(");
         int n = values.size();
         for (int i = 0; i < n; i++) {
-            sb.append(values.get(i));
+            P value = values.get(i);
+            sb.append(ObjectUtils.valueToString(value));
             sb.append((i == n - 1 ? ")" : ","));
         }
         return sb.toString();
     }
+
+
 }

@@ -19,31 +19,28 @@ package org.deeplearning4j.arbiter.optimize.api;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
-import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
+import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
  * The TaskCreator is used to take a candidate configuration, data provider and score function, and create something
  * that can be executed as a Callable
  *
- * @param <C> Type of the candidate configuration
- * @param <M> Type of the learned models
- * @param <D> Type of data used to train models
- * @param <A> Type of any additional evaluation
  * @author Alex Black
  */
-public interface TaskCreator<C, M, D, A> {
+public interface TaskCreator {
 
     /**
      * Generate a callable that can be executed to conduct the training of this model (given the model configuration)
      *
-     * @param candidate      Candidate (model) configuration to be trained
-     * @param dataProvider   DataProvider, for the data
-     * @param scoreFunction  Score function to be used to evaluate the model
-     * @param statusListener Status listener, that can be used to provide status updates to the UI, as the task executes
+     * @param candidate       Candidate (model) configuration to be trained
+     * @param dataProvider    DataProvider, for the data
+     * @param scoreFunction   Score function to be used to evaluate the model
+     * @param statusListeners Status listeners, that can be used for callbacks (to UI, for example)
      * @return A callable that returns an OptimizationResult, once optimization is complete
      */
-    Callable<OptimizationResult<C, M, A>> create(Candidate<C> candidate, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction,
-                                                 UICandidateStatusListener statusListener);
+    Callable<OptimizationResult> create(Candidate candidate, DataProvider dataProvider, ScoreFunction scoreFunction,
+                    List<StatusListener> statusListeners);
 }

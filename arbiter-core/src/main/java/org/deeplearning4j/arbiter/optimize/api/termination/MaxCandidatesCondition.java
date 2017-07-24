@@ -32,7 +32,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 @Data
 public class MaxCandidatesCondition implements TerminationCondition {
     @JsonProperty
-    private  int maxCandidates;
+    private int maxCandidates;
 
     @Override
     public void initialize(IOptimizationRunner optimizationRunner) {

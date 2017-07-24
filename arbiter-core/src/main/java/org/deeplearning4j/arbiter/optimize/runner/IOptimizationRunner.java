@@ -19,12 +19,13 @@ package org.deeplearning4j.arbiter.optimize.runner;
 
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
-import org.deeplearning4j.arbiter.optimize.runner.listener.runner.OptimizationRunnerStatusListener;
+import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.List;
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
-public interface IOptimizationRunner<C,M,A> {
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+public interface IOptimizationRunner {
 
     void execute();
 
@@ -47,16 +48,16 @@ public interface IOptimizationRunner<C,M,A> {
     /** Index of the best scoring candidate, or -1 if no candidate has scored yet*/
     int bestScoreCandidateIndex();
 
-    List<ResultReference<C,M,A>> getResults();
+    List<ResultReference> getResults();
 
-    OptimizationConfiguration<C,M,?,A> getConfiguration();
+    OptimizationConfiguration getConfiguration();
 
-    void addListeners(OptimizationRunnerStatusListener... listeners);
+    void addListeners(StatusListener... listeners);
 
-    void removeListeners(OptimizationRunnerStatusListener... listeners);
+    void removeListeners(StatusListener... listeners);
 
     void removeAllListeners();
 
-    List<CandidateStatus> getCandidateStatus();
+    List<CandidateInfo> getCandidateStatus();
 
 }

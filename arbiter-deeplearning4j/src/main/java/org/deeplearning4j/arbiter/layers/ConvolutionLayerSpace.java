@@ -27,8 +27,6 @@ import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 
-import java.util.List;
-
 /**
  * Layer space for convolutional layers
  *
@@ -50,17 +48,7 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
         this.padding = builder.padding;
         this.convolutionMode = builder.convolutionMode;
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
-    }
-
-    @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (kernelSize != null) list.addAll(kernelSize.collectLeaves());
-        if (stride != null) list.addAll(stride.collectLeaves());
-        if (padding != null) list.addAll(padding.collectLeaves());
-        if (convolutionMode != null) list.addAll(convolutionMode.collectLeaves());
-        return list;
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override
@@ -72,10 +60,14 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
 
     protected void setLayerOptionsBuilder(ConvolutionLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
-        if (kernelSize != null) builder.kernelSize(kernelSize.getValue(values));
-        if (stride != null) builder.stride(stride.getValue(values));
-        if (padding != null) builder.padding(padding.getValue(values));
-        if (convolutionMode != null) builder.convolutionMode(convolutionMode.getValue(values));
+        if (kernelSize != null)
+            builder.kernelSize(kernelSize.getValue(values));
+        if (stride != null)
+            builder.stride(stride.getValue(values));
+        if (padding != null)
+            builder.padding(padding.getValue(values));
+        if (convolutionMode != null)
+            builder.convolutionMode(convolutionMode.getValue(values));
     }
 
     @Override
@@ -86,10 +78,14 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
     @Override
     public String toString(String delim) {
         StringBuilder sb = new StringBuilder("ConvolutionLayerSpace(");
-        if (kernelSize != null) sb.append("kernelSize: ").append(kernelSize).append(delim);
-        if (stride != null) sb.append("stride: ").append(stride).append(delim);
-        if (padding != null) sb.append("padding: ").append(padding).append(delim);
-        if (convolutionMode != null) sb.append("convolutionMode: ").append(convolutionMode).append(delim);
+        if (kernelSize != null)
+            sb.append("kernelSize: ").append(kernelSize).append(delim);
+        if (stride != null)
+            sb.append("stride: ").append(stride).append(delim);
+        if (padding != null)
+            sb.append("padding: ").append(padding).append(delim);
+        if (convolutionMode != null)
+            sb.append("convolutionMode: ").append(convolutionMode).append(delim);
         sb.append(super.toString(delim)).append(")");
         return sb.toString();
     }
@@ -128,11 +124,11 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
             return this;
         }
 
-        public Builder convolutionMode(ConvolutionMode convolutionMode){
+        public Builder convolutionMode(ConvolutionMode convolutionMode) {
             return convolutionMode(new FixedValue<>(convolutionMode));
         }
 
-        public Builder convolutionMode(ParameterSpace<ConvolutionMode> convolutionMode){
+        public Builder convolutionMode(ParameterSpace<ConvolutionMode> convolutionMode) {
             this.convolutionMode = convolutionMode;
             return this;
         }

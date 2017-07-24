@@ -33,9 +33,9 @@ public class ScoreUtil {
      * @return the datasetiterator from the given objects
      */
     public static MultiDataSetIterator getMultiIterator(Object o) {
-        if(o instanceof MultiDataSetIterator)
+        if (o instanceof MultiDataSetIterator)
             return (MultiDataSetIterator) o;
-        else if(o instanceof MultiDataSetIteratorFactory) {
+        else if (o instanceof MultiDataSetIteratorFactory) {
             MultiDataSetIteratorFactory factory = (MultiDataSetIteratorFactory) o;
             return factory.create();
         }
@@ -53,9 +53,9 @@ public class ScoreUtil {
      * @return the datasetiterator from the given objects
      */
     public static DataSetIterator getIterator(Object o) {
-        if(o instanceof DataSetIterator)
+        if (o instanceof DataSetIterator)
             return (DataSetIterator) o;
-        else if(o instanceof DataSetIteratorFactory) {
+        else if (o instanceof DataSetIteratorFactory) {
             DataSetIteratorFactory factory = (DataSetIteratorFactory) o;
             return factory.create();
         }
@@ -81,10 +81,11 @@ public class ScoreUtil {
      * @return the evaluation object with accumulated statistics
      * for the current test data
      */
-    public static  Evaluation getEvaluation(ComputationGraph model, MultiDataSetIterator testData) {
+    public static Evaluation getEvaluation(ComputationGraph model, MultiDataSetIterator testData) {
         if (model.getNumOutputArrays() != 1)
-            throw new IllegalStateException("GraphSetSetAccuracyScoreFunction cannot be " +
-                    "applied to ComputationGraphs with more than one output. NumOutputs = " + model.getNumOutputArrays());
+            throw new IllegalStateException("GraphSetSetAccuracyScoreFunction cannot be "
+                            + "applied to ComputationGraphs with more than one output. NumOutputs = "
+                            + model.getNumOutputArrays());
 
         return model.evaluate(testData);
     }
@@ -98,10 +99,11 @@ public class ScoreUtil {
      * @return the evaluation object with accumulated statistics
      * for the current test data
      */
-    public static  Evaluation getEvaluation(ComputationGraph model, DataSetIterator testData) {
+    public static Evaluation getEvaluation(ComputationGraph model, DataSetIterator testData) {
         if (model.getNumOutputArrays() != 1)
-            throw new IllegalStateException("GraphSetSetAccuracyScoreFunctionDataSet cannot be " +
-                    "applied to ComputationGraphs with more than one output. NumOutputs = " + model.getNumOutputArrays());
+            throw new IllegalStateException("GraphSetSetAccuracyScoreFunctionDataSet cannot be "
+                            + "applied to ComputationGraphs with more than one output. NumOutputs = "
+                            + model.getNumOutputArrays());
 
         return model.evaluate(testData);
     }
@@ -116,7 +118,7 @@ public class ScoreUtil {
      *                for the whole batch or not
      * @return the score for the given test set
      */
-    public static double score(ComputationGraph model,MultiDataSetIterator testData,boolean average) {
+    public static double score(ComputationGraph model, MultiDataSetIterator testData, boolean average) {
         //TODO: do this properly taking into account division by N, L1/L2 etc
         double sumScore = 0.0;
         int totalExamples = 0;
@@ -127,7 +129,8 @@ public class ScoreUtil {
             totalExamples += numExamples;
         }
 
-        if (!average) return sumScore;
+        if (!average)
+            return sumScore;
         return sumScore / totalExamples;
     }
 
@@ -139,7 +142,7 @@ public class ScoreUtil {
      *                for the whole batch or not
      * @return the score for the given test set
      */
-    public static double score(ComputationGraph model,DataSetIterator testData,boolean average) {
+    public static double score(ComputationGraph model, DataSetIterator testData, boolean average) {
         //TODO: do this properly taking into account division by N, L1/L2 etc
         double sumScore = 0.0;
         int totalExamples = 0;
@@ -151,7 +154,8 @@ public class ScoreUtil {
             totalExamples += numExamples;
         }
 
-        if (!average) return sumScore;
+        if (!average)
+            return sumScore;
         return sumScore / totalExamples;
     }
 
@@ -163,11 +167,12 @@ public class ScoreUtil {
      * @param regressionValue
      * @return
      */
-    public static double score(ComputationGraph model, MultiDataSetIterator testSet,RegressionValue regressionValue) {
+    public static double score(ComputationGraph model, MultiDataSetIterator testSet, RegressionValue regressionValue) {
         int nOutputs = model.getNumOutputArrays();
 
         RegressionEvaluation[] evaluations = new RegressionEvaluation[nOutputs];
-        for (int i = 0; i < evaluations.length; i++) evaluations[i] = new RegressionEvaluation();
+        for (int i = 0; i < evaluations.length; i++)
+            evaluations[i] = new RegressionEvaluation();
 
         while (testSet.hasNext()) {
             MultiDataSet next = testSet.next();
@@ -208,7 +213,8 @@ public class ScoreUtil {
             totalColumns += nColumns;
             sum += getScoreFromRegressionEval(evaluations[i], regressionValue);
         }
-        if (regressionValue == RegressionValue.CorrCoeff) sum /= totalColumns;
+        if (regressionValue == RegressionValue.CorrCoeff)
+            sum /= totalColumns;
 
         return sum;
     }
@@ -222,7 +228,7 @@ public class ScoreUtil {
      * @param regressionValue  the regression type to use
      * @return
      */
-    public static double score(ComputationGraph model,DataSetIterator testSet,RegressionValue regressionValue) {
+    public static double score(ComputationGraph model, DataSetIterator testSet, RegressionValue regressionValue) {
         RegressionEvaluation evaluation = model.evaluateRegression(testSet);
         return getScoreFromRegressionEval(evaluation, regressionValue);
     }
@@ -236,7 +242,7 @@ public class ScoreUtil {
      * @param average whether to average the score or not
      * @return the score for the given test data given the model
      */
-    public static double score(MultiLayerNetwork model, DataSetIterator testData,boolean average) {
+    public static double score(MultiLayerNetwork model, DataSetIterator testData, boolean average) {
         //TODO: do this properly taking into account division by N, L1/L2 etc
         double sumScore = 0.0;
         int totalExamples = 0;
@@ -248,7 +254,8 @@ public class ScoreUtil {
             totalExamples += numExamples;
         }
 
-        if (!average) return sumScore;
+        if (!average)
+            return sumScore;
         return sumScore / totalExamples;
     }
 
@@ -266,24 +273,29 @@ public class ScoreUtil {
     }
 
 
-    private static double getScoreFromRegressionEval(RegressionEvaluation eval, RegressionValue regressionValue){
+    public static double getScoreFromRegressionEval(RegressionEvaluation eval, RegressionValue regressionValue) {
         double sum = 0.0;
         int nColumns = eval.numColumns();
         switch (regressionValue) {
             case MSE:
-                for (int i = 0; i < nColumns; i++) sum += eval.meanSquaredError(i);
+                for (int i = 0; i < nColumns; i++)
+                    sum += eval.meanSquaredError(i);
                 break;
             case MAE:
-                for (int i = 0; i < nColumns; i++) sum += eval.meanAbsoluteError(i);
+                for (int i = 0; i < nColumns; i++)
+                    sum += eval.meanAbsoluteError(i);
                 break;
             case RMSE:
-                for (int i = 0; i < nColumns; i++) sum += eval.rootMeanSquaredError(i);
+                for (int i = 0; i < nColumns; i++)
+                    sum += eval.rootMeanSquaredError(i);
                 break;
             case RSE:
-                for (int i = 0; i < nColumns; i++) sum += eval.relativeSquaredError(i);
+                for (int i = 0; i < nColumns; i++)
+                    sum += eval.relativeSquaredError(i);
                 break;
             case CorrCoeff:
-                for (int i = 0; i < nColumns; i++) sum += eval.correlationR2(i);
+                for (int i = 0; i < nColumns; i++)
+                    sum += eval.correlationR2(i);
                 sum /= nColumns;
                 break;
         }

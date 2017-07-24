@@ -18,7 +18,7 @@ import java.util.Map;
  * @author Adam Gibson
  */
 @Data
-public class DataSetIteratorFactoryProvider implements DataProvider<Object> {
+public class DataSetIteratorFactoryProvider implements DataProvider {
 
     public final static String FACTORY_KEY = "org.deeplearning4j.arbiter.data.data.factory";
 
@@ -48,14 +48,23 @@ public class DataSetIteratorFactoryProvider implements DataProvider<Object> {
         return create(dataParameters);
     }
 
-    private DataSetIteratorFactory create(Map<String,Object> dataParameters) {
-        if(dataParameters == null)
-            throw new IllegalArgumentException("Data parameters is null. Please specify a class name to create a dataset iterator.");
-        if(!dataParameters.containsKey(FACTORY_KEY))
-            throw new IllegalArgumentException("No data set iterator factory class found. Please specify a class name with key " + FACTORY_KEY);
+    @Override
+    public Class<?> getDataType() {
+        return DataSetIteratorFactory.class;
+    }
+
+    private DataSetIteratorFactory create(Map<String, Object> dataParameters) {
+        if (dataParameters == null)
+            throw new IllegalArgumentException(
+                            "Data parameters is null. Please specify a class name to create a dataset iterator.");
+        if (!dataParameters.containsKey(FACTORY_KEY))
+            throw new IllegalArgumentException(
+                            "No data set iterator factory class found. Please specify a class name with key "
+                                            + FACTORY_KEY);
         String value = dataParameters.get(FACTORY_KEY).toString();
         try {
-            Class<? extends  DataSetIteratorFactory> clazz = (Class<? extends DataSetIteratorFactory>) Class.forName(value);
+            Class<? extends DataSetIteratorFactory> clazz =
+                            (Class<? extends DataSetIteratorFactory>) Class.forName(value);
             return clazz.newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);

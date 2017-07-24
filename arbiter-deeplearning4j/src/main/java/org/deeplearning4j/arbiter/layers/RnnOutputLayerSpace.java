@@ -35,7 +35,7 @@ public class RnnOutputLayerSpace extends BaseOutputLayerSpace<RnnOutputLayer> {
     private RnnOutputLayerSpace(Builder builder) {
         super(builder);
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override

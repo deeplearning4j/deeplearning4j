@@ -30,6 +30,7 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * ContinuousParametSpace is a {@code ParameterSpace<Double>} that (optionally) takes an Apache Commons
@@ -69,7 +70,7 @@ public class ContinuousParameterSpace implements ParameterSpace<Double> {
 
     @Override
     public Double getValue(double[] input) {
-        if (index == -1){
+        if (index == -1) {
             throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
         }
         return distribution.inverseCumulativeProbability(input[index]);
@@ -86,13 +87,18 @@ public class ContinuousParameterSpace implements ParameterSpace<Double> {
     }
 
     @Override
+    public Map<String, ParameterSpace> getNestedSpaces() {
+        return Collections.emptyMap();
+    }
+
+    @Override
     public boolean isLeaf() {
         return true;
     }
 
     @Override
     public void setIndices(int... indices) {
-        if (indices == null || indices.length != 1){
+        if (indices == null || indices.length != 1) {
             throw new IllegalArgumentException("Invalid index");
         }
         this.index = indices[0];
@@ -102,19 +108,24 @@ public class ContinuousParameterSpace implements ParameterSpace<Double> {
     @Override
     public String toString() {
         if (distribution instanceof UniformRealDistribution) {
-            return "ContinuousParameterSpace(min=" + distribution.getSupportLowerBound() + ",max=" + distribution.getSupportUpperBound() + ")";
+            return "ContinuousParameterSpace(min=" + distribution.getSupportLowerBound() + ",max="
+                            + distribution.getSupportUpperBound() + ")";
         } else {
             return "ContinuousParameterSpace(" + distribution + ")";
         }
     }
 
     public boolean equals(Object o) {
-        if (o == this) return true;
-        if (!(o instanceof ContinuousParameterSpace)) return false;
-        final ContinuousParameterSpace other = (ContinuousParameterSpace) o;
-        if (distribution == null ? other.distribution != null : !DistributionUtils.distributionsEqual(distribution, other.distribution))
+        if (o == this)
+            return true;
+        if (!(o instanceof ContinuousParameterSpace))
             return false;
-        if (this.index != other.index) return false;
+        final ContinuousParameterSpace other = (ContinuousParameterSpace) o;
+        if (distribution == null ? other.distribution != null
+                        : !DistributionUtils.distributionsEqual(distribution, other.distribution))
+            return false;
+        if (this.index != other.index)
+            return false;
         return true;
     }
 

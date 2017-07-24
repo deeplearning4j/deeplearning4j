@@ -5,8 +5,6 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
-import org.deeplearning4j.arbiter.DL4JConfiguration;
-import org.deeplearning4j.arbiter.GraphConfiguration;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
@@ -15,16 +13,12 @@ import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
-import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
-import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
+import org.deeplearning4j.arbiter.optimize.generator.GridSearchCandidateGenerator;
+import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
-import org.deeplearning4j.arbiter.saver.local.graph.LocalComputationGraphSaver;
-import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
+import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.RegressionValue;
 import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
-import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -105,31 +99,31 @@ public class ArbiterCliGenerator {
         }
 
 
-        DataProvider<Object> dataProvider = new DataSetIteratorFactoryProvider();
+        DataProvider dataProvider = new DataSetIteratorFactoryProvider();
         Map<String,Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,dataSetIteratorClass);
 
 
         if(neuralNetType.equals(MULTI_LAYER)) {
             MultiLayerSpace multiLayerSpace = loadMultiLayer();
-            CandidateGenerator<DL4JConfiguration> candidateGenerator = null;
+            CandidateGenerator candidateGenerator = null;
             if(candidateType.equals(GRID_SEARCH_CANDIDATE)) {
-                candidateGenerator = new RandomSearchGenerator<>(multiLayerSpace,commands);
+                candidateGenerator = new RandomSearchGenerator(multiLayerSpace,commands);
 
 
 
             }
             else if(candidateType.equals(RANDOM_CANDIDATE)) {
-                candidateGenerator = new RandomSearchGenerator<>(multiLayerSpace,commands);
+                candidateGenerator = new RandomSearchGenerator(multiLayerSpace,commands);
 
             }
 
             if(problemType.equals(CLASSIFICIATION)) {
-                OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation> configuration
-                        = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation>()
+                OptimizationConfiguration configuration
+                        = new OptimizationConfiguration.Builder()
                         .candidateGenerator(candidateGenerator)
                         .dataProvider(dataProvider)
-                        .modelSaver(new LocalMultiLayerNetworkSaver<Evaluation>(modelOutputPath))
+                        .modelSaver(new FileModelSaver(modelOutputPath))
                         .scoreFunction(scoreFunctionMultiLayerNetwork())
                         .terminationConditions(getConditions())
                         .build();
@@ -137,11 +131,11 @@ public class ArbiterCliGenerator {
 
             }
             else if(problemType.equals(REGRESSION)) {
-                OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,Object,Double> configuration
-                        = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,Object,Double>()
+                OptimizationConfiguration configuration
+                        = new OptimizationConfiguration.Builder()
                         .candidateGenerator(candidateGenerator)
                         .dataProvider(dataProvider)
-                        .modelSaver(new LocalMultiLayerNetworkSaver<Double>(modelOutputPath))
+                        .modelSaver(new FileModelSaver(modelOutputPath))
                         .scoreFunction(scoreFunctionMultiLayerNetwork())
                         .terminationConditions(getConditions())
                         .build();
@@ -153,23 +147,23 @@ public class ArbiterCliGenerator {
         }
         else if(neuralNetType.equals(COMP_GRAPH)) {
             ComputationGraphSpace computationGraphSpace = loadCompGraph();
-            CandidateGenerator<GraphConfiguration> candidateGenerator = null;
+            CandidateGenerator candidateGenerator = null;
             if(candidateType.equals(GRID_SEARCH_CANDIDATE)) {
-                candidateGenerator = new RandomSearchGenerator<>(computationGraphSpace,commands);
+                candidateGenerator = new RandomSearchGenerator(computationGraphSpace,commands);
 
             }
             else if(candidateType.equals(RANDOM_CANDIDATE)) {
-                candidateGenerator = new RandomSearchGenerator<>(computationGraphSpace,commands);
+                candidateGenerator = new RandomSearchGenerator(computationGraphSpace,commands);
 
             }
 
 
             if(problemType.equals(CLASSIFICIATION)) {
-                OptimizationConfiguration<GraphConfiguration,ComputationGraph,Object,Evaluation> configuration
-                        = new OptimizationConfiguration.Builder<GraphConfiguration,ComputationGraph,Object,Evaluation>()
+                OptimizationConfiguration configuration
+                        = new OptimizationConfiguration.Builder()
                         .candidateGenerator(candidateGenerator)
                         .dataProvider(dataProvider)
-                        .modelSaver(new LocalComputationGraphSaver<Evaluation>(modelOutputPath))
+                        .modelSaver(new FileModelSaver(modelOutputPath))
                         .scoreFunction(scoreFunctionCompGraph())
                         .terminationConditions(getConditions())
                         .build();
@@ -177,11 +171,11 @@ public class ArbiterCliGenerator {
                 FileUtils.writeStringToFile(new File(configSavePath),configuration.toJson());
             }
             else {
-                OptimizationConfiguration<GraphConfiguration,ComputationGraph,Object,Double> configuration
-                        = new OptimizationConfiguration.Builder<GraphConfiguration,ComputationGraph,Object,Double>()
+                OptimizationConfiguration configuration
+                        = new OptimizationConfiguration.Builder()
                         .candidateGenerator(candidateGenerator)
                         .dataProvider(dataProvider)
-                        .modelSaver(new LocalComputationGraphSaver<Double>(modelOutputPath))
+                        .modelSaver(new FileModelSaver(modelOutputPath))
                         .scoreFunction(scoreFunctionCompGraph())
                         .terminationConditions(getConditions())
                         .build();
@@ -224,28 +218,28 @@ public class ArbiterCliGenerator {
         else throw new IllegalArgumentException("Illegal mode " + gridSearchOrder);
     }
 
-    private  ScoreFunction<ComputationGraph,Object> scoreFunctionCompGraph() {
+    private  ScoreFunction scoreFunctionCompGraph() {
         if(problemType.equals(CLASSIFICIATION)) {
             switch(score) {
-                case ACCURACY: return ScoreFunctions.testSetAccuracyGraphDataSet();
-                case F1: return ScoreFunctions.testSetF1GraphDataSet();
-                case F1_MULTI : return ScoreFunctions.testSetF1Graph();
-                case ACCURACY_MULTI: return ScoreFunctions.testSetAccuracyGraph();
+                case ACCURACY: return ScoreFunctions.testSetAccuracy();
+                case F1: return ScoreFunctions.testSetF1();
+                case F1_MULTI : return ScoreFunctions.testSetF1();
+                case ACCURACY_MULTI: return ScoreFunctions.testSetAccuracy();
 
                 default: throw new IllegalArgumentException("Score " + score + " not valid for type " + problemType);
             }
         }
         else if(problemType.equals(REGRESSION)) {
             switch(score) {
-                case REGRESSION_SCORE: return ScoreFunctions.testSetRegressionGraphDataSet(RegressionValue.valueOf(score));
-                case REGRESSION_SCORE_MULTI: return ScoreFunctions.testSetRegressionGraph(RegressionValue.valueOf(score));
+                case REGRESSION_SCORE: return ScoreFunctions.testSetRegression(RegressionValue.valueOf(score));
+                case REGRESSION_SCORE_MULTI: return ScoreFunctions.testSetRegression(RegressionValue.valueOf(score));
                 default: throw new IllegalArgumentException("Score " + score + " not valid for type " + problemType);
             }
         }
         throw new IllegalStateException("Illegal problem type " + problemType);
     }
 
-    private  ScoreFunction<MultiLayerNetwork,Object> scoreFunctionMultiLayerNetwork() {
+    private  ScoreFunction scoreFunctionMultiLayerNetwork() {
         if(problemType.equals(CLASSIFICIATION)) {
             switch(score) {
                 case ACCURACY: return ScoreFunctions.testSetAccuracy();

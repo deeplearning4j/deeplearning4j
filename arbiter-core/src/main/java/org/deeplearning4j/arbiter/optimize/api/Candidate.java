@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.optimize.api;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -27,23 +28,17 @@ import java.util.Map;
  * Also includes a map for data parameters, to configure things like data preprocessing, etc.
  */
 @Data
+@AllArgsConstructor
 public class Candidate<C> implements Serializable {
 
     private C value;
     private int index;
     private double[] flatParameters;
     private Map<String, Object> dataParameters;
+    private Exception exception;
 
     public Candidate(C value, int index, double[] flatParameters) {
-        this(value, index, flatParameters, null);
+        this(value, index, flatParameters, null, null);
     }
-
-    public Candidate(C value, int index, double[] flatParameters, Map<String, Object> dataParameters) {
-        this.value = value;
-        this.index = index;
-        this.flatParameters = flatParameters;
-        this.dataParameters = dataParameters;
-    }
-
 
 }

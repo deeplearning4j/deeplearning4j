@@ -27,8 +27,6 @@ import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.util.List;
-
 /**
  * Layer space for autoencoder layers
  */
@@ -45,7 +43,7 @@ public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEnc
         super(builder);
         this.corruptionLevel = builder.corruptionLevel;
         this.sparsity = builder.sparsity;
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override
@@ -55,18 +53,12 @@ public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEnc
         return b.build();
     }
 
-    @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (corruptionLevel != null) list.addAll(corruptionLevel.collectLeaves());
-        if (sparsity != null) list.addAll(sparsity.collectLeaves());
-        return list;
-    }
-
     protected void setLayerOptionsBuilder(AutoEncoder.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
-        if (corruptionLevel != null) builder.corruptionLevel(corruptionLevel.getValue(values));
-        if (sparsity != null) builder.sparsity(sparsity.getValue(values));
+        if (corruptionLevel != null)
+            builder.corruptionLevel(corruptionLevel.getValue(values));
+        if (sparsity != null)
+            builder.sparsity(sparsity.getValue(values));
     }
 
     @Override
@@ -77,8 +69,10 @@ public class AutoEncoderLayerSpace extends BasePretrainNetworkLayerSpace<AutoEnc
     @Override
     public String toString(String delim) {
         StringBuilder sb = new StringBuilder("AutoEncoderLayerSpace(");
-        if (corruptionLevel != null) sb.append("corruptionLevel: ").append(corruptionLevel).append(delim);
-        if (sparsity != null) sb.append("sparsity: ").append(sparsity).append(delim);
+        if (corruptionLevel != null)
+            sb.append("corruptionLevel: ").append(corruptionLevel).append(delim);
+        if (sparsity != null)
+            sb.append("sparsity: ").append(sparsity).append(delim);
         sb.append(super.toString(delim)).append(")");
         return sb.toString();
     }

@@ -28,9 +28,9 @@ import java.io.IOException;
  * So instead: return a reference to the saved result. Idea is that the result may be saved to disk or a database,
  * and we can easily load it back into memory (if/when required) using the getResult() method
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
-public interface ResultReference<T, M, A> {
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+public interface ResultReference {
 
-    OptimizationResult<T, M, A> getResult() throws IOException;
+    OptimizationResult getResult() throws IOException;
 
 }

@@ -26,8 +26,6 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 
-import java.util.List;
-
 /**
  * Layer hyperparameter configuration space for subsampling layers
  *
@@ -50,17 +48,7 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
         this.stride = builder.stride;
         this.padding = builder.padding;
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
-    }
-
-    @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (poolingType != null) list.addAll(poolingType.collectLeaves());
-        if (kernelSize != null) list.addAll(kernelSize.collectLeaves());
-        if (stride != null) list.addAll(stride.collectLeaves());
-        if (padding != null) list.addAll(padding.collectLeaves());
-        return list;
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override
@@ -72,10 +60,14 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
 
     protected void setLayerOptionsBuilder(SubsamplingLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
-        if (poolingType != null) builder.poolingType(poolingType.getValue(values));
-        if (kernelSize != null) builder.kernelSize(kernelSize.getValue(values));
-        if (stride != null) builder.stride(stride.getValue(values));
-        if (padding != null) builder.padding(padding.getValue(values));
+        if (poolingType != null)
+            builder.poolingType(poolingType.getValue(values));
+        if (kernelSize != null)
+            builder.kernelSize(kernelSize.getValue(values));
+        if (stride != null)
+            builder.stride(stride.getValue(values));
+        if (padding != null)
+            builder.padding(padding.getValue(values));
     }
 
     @Override
@@ -86,10 +78,14 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
     @Override
     public String toString(String delim) {
         StringBuilder sb = new StringBuilder("SubsamplingLayerSpace(");
-        if (poolingType != null) sb.append("poolingType: ").append(poolingType).append(delim);
-        if (kernelSize != null) sb.append("kernelSize: ").append(kernelSize).append(delim);
-        if (stride != null) sb.append("stride: ").append(stride).append(delim);
-        if (padding != null) sb.append("padding: ").append(padding).append(delim);
+        if (poolingType != null)
+            sb.append("poolingType: ").append(poolingType).append(delim);
+        if (kernelSize != null)
+            sb.append("kernelSize: ").append(kernelSize).append(delim);
+        if (stride != null)
+            sb.append("stride: ").append(stride).append(delim);
+        if (padding != null)
+            sb.append("padding: ").append(padding).append(delim);
         sb.append(super.toString(delim)).append(")");
         return sb.toString();
     }

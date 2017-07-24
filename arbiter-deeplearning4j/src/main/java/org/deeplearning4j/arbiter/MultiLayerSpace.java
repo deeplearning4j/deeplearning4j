@@ -1,9 +1,7 @@
 package org.deeplearning4j.arbiter;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
@@ -27,8 +25,6 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
-    @JsonProperty
-    protected List<LayerConf> layerSpaces = new ArrayList<>();
     @JsonProperty
     protected ParameterSpace<InputType> inputType;
     @JsonProperty
@@ -57,12 +53,13 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         List<ParameterSpace> allLeaves = collectLeaves();
         List<ParameterSpace> list = LeafUtils.getUniqueObjects(allLeaves);
 
-        for (ParameterSpace ps : list) numParameters += ps.numParameters();
+        for (ParameterSpace ps : list)
+            numParameters += ps.numParameters();
 
 
     }
 
-    protected MultiLayerSpace(){
+    protected MultiLayerSpace() {
         //Default constructor for Jackson json/yaml serialization
     }
 
@@ -91,13 +88,20 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
             listBuilder.layer(i, layers.get(i));
         }
 
-        if (backprop != null) listBuilder.backprop(backprop.getValue(values));
-        if (pretrain != null) listBuilder.pretrain(pretrain.getValue(values));
-        if (backpropType != null) listBuilder.backpropType(backpropType.getValue(values));
-        if (tbpttFwdLength != null) listBuilder.tBPTTForwardLength(tbpttFwdLength.getValue(values));
-        if (tbpttBwdLength != null) listBuilder.tBPTTBackwardLength(tbpttBwdLength.getValue(values));
-        if (inputType != null) listBuilder.setInputType(inputType.getValue(values));
-        if (inputPreProcessors != null) listBuilder.setInputPreProcessors(inputPreProcessors.getValue(values));
+        if (backprop != null)
+            listBuilder.backprop(backprop.getValue(values));
+        if (pretrain != null)
+            listBuilder.pretrain(pretrain.getValue(values));
+        if (backpropType != null)
+            listBuilder.backpropType(backpropType.getValue(values));
+        if (tbpttFwdLength != null)
+            listBuilder.tBPTTForwardLength(tbpttFwdLength.getValue(values));
+        if (tbpttBwdLength != null)
+            listBuilder.tBPTTBackwardLength(tbpttBwdLength.getValue(values));
+        if (inputType != null)
+            listBuilder.setInputType(inputType.getValue(values));
+        if (inputPreProcessors != null)
+            listBuilder.setInputPreProcessors(inputPreProcessors.getValue(values));
 
         MultiLayerConfiguration configuration = listBuilder.build();
         return new DL4JConfiguration(configuration, earlyStoppingConfiguration, numEpochs);
@@ -115,8 +119,10 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
             list.addAll(lc.numLayers.collectLeaves());
             list.addAll(lc.layerSpace.collectLeaves());
         }
-        if (inputType != null) list.addAll(inputType.collectLeaves());
-        if (inputPreProcessors != null) list.addAll(inputPreProcessors.collectLeaves());
+        if (inputType != null)
+            list.addAll(inputType.collectLeaves());
+        if (inputPreProcessors != null)
+            list.addAll(inputPreProcessors.collectLeaves());
         return list;
     }
 
@@ -129,12 +135,14 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         for (LayerConf conf : layerSpaces) {
 
             sb.append("Layer config ").append(i++).append(": (Number layers:").append(conf.numLayers)
-                    .append(", duplicate: ").append(conf.duplicateConfig).append("), ")
-                    .append(conf.layerSpace.toString()).append("\n");
+                            .append(", duplicate: ").append(conf.duplicateConfig).append("), ")
+                            .append(conf.layerSpace.toString()).append("\n");
         }
 
-        if (inputType != null) sb.append("inputType: ").append(inputType).append("\n");
-        if (inputPreProcessors != null) sb.append("inputPreProcessors: ").append(inputPreProcessors).append("\n");
+        if (inputType != null)
+            sb.append("inputType: ").append(inputType).append("\n");
+        if (inputPreProcessors != null)
+            sb.append("inputPreProcessors: ").append(inputPreProcessors).append("\n");
 
         if (earlyStoppingConfiguration != null) {
             sb.append("Early stopping configuration:").append(earlyStoppingConfiguration.toString()).append("\n");
@@ -145,16 +153,8 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         return sb.toString();
     }
 
-    public LayerSpace<?> getLayerSpace(int layerNumber){
+    public LayerSpace<?> getLayerSpace(int layerNumber) {
         return layerSpaces.get(layerNumber).getLayerSpace();
-    }
-
-
-    @AllArgsConstructor @NoArgsConstructor @Data    //No-arg for Jackson JSON serialization
-    protected static class LayerConf {
-        protected LayerSpace<?> layerSpace;
-        protected ParameterSpace<Integer> numLayers;
-        protected boolean duplicateConfig;
     }
 
     public static class Builder extends BaseNetworkSpace.Builder<Builder> {
@@ -187,9 +187,10 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
          * @param duplicateConfig       Only used if more than 1 layer can be generated. If true: generate N identical (stacked) layers.
          *                              If false: generate N independent layers
          */
-        public Builder addLayer(LayerSpace<? extends Layer> layerSpace,
-                                ParameterSpace<Integer> numLayersDistribution, boolean duplicateConfig) {
-            layerSpaces.add(new LayerConf(layerSpace, numLayersDistribution, duplicateConfig));
+        public Builder addLayer(LayerSpace<? extends Layer> layerSpace, ParameterSpace<Integer> numLayersDistribution,
+                        boolean duplicateConfig) {
+            String layerName = "layer_" + layerSpaces.size();
+            layerSpaces.add(new LayerConf(layerSpace, layerName, null, numLayersDistribution, duplicateConfig));
             return this;
         }
 
@@ -197,7 +198,8 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
          * Early stopping configuration (optional). Note if both EarlyStoppingConfiguration and number of epochs is
          * present, early stopping will be used in preference.
          */
-        public Builder earlyStoppingConfiguration(EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration) {
+        public Builder earlyStoppingConfiguration(
+                        EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfiguration) {
             this.earlyStoppingConfiguration = earlyStoppingConfiguration;
             return this;
         }
@@ -205,14 +207,14 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         /**
          * @param inputPreProcessors Input preprocessors to set for the model
          */
-        public Builder setInputPreProcessors(Map<Integer, InputPreProcessor> inputPreProcessors){
+        public Builder setInputPreProcessors(Map<Integer, InputPreProcessor> inputPreProcessors) {
             return setInputPreProcessors(new FixedValue<>(inputPreProcessors));
         }
 
         /**
          * @param inputPreProcessors Input preprocessors to set for the model
          */
-        public Builder setInputPreProcessors(ParameterSpace<Map<Integer, InputPreProcessor>> inputPreProcessors){
+        public Builder setInputPreProcessors(ParameterSpace<Map<Integer, InputPreProcessor>> inputPreProcessors) {
             this.inputPreProcessors = inputPreProcessors;
             return this;
         }
@@ -223,7 +225,7 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         }
     }
 
-    public static MultiLayerSpace fromJson(String json){
+    public static MultiLayerSpace fromJson(String json) {
         try {
             return JsonMapper.getMapper().readValue(json, MultiLayerSpace.class);
         } catch (IOException e) {
@@ -231,7 +233,7 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         }
     }
 
-    public static MultiLayerSpace fromYaml(String yaml){
+    public static MultiLayerSpace fromYaml(String yaml) {
         try {
             return YamlMapper.getMapper().readValue(yaml, MultiLayerSpace.class);
         } catch (IOException e) {

@@ -18,7 +18,6 @@
 package org.deeplearning4j.arbiter.optimize.api.data;
 
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -26,15 +25,10 @@ import java.util.Map;
 
 /**
  * DataProvider interface abstracts out the providing of data
- *
- * @param <D> Type of the data to be used when learning
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use= JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type(value = DataSetIteratorFactoryProvider.class, name = "DataSetIteratorFactoryProvider")
-})
-public interface DataProvider<D> extends Serializable {
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+public interface DataProvider extends Serializable {
 
     /**
      * Get training data given some parameters for the data.
@@ -44,7 +38,7 @@ public interface DataProvider<D> extends Serializable {
      * @param dataParameters Parameters for data. May be null or empty for default data
      * @return training data
      */
-    D trainData(Map<String, Object> dataParameters);
+    Object trainData(Map<String, Object> dataParameters);
 
     /**
      * Get training data given some parameters for the data. Data parameters map is used to specify things like batch
@@ -53,6 +47,7 @@ public interface DataProvider<D> extends Serializable {
      * @param dataParameters Parameters for data. May be null or empty for default data
      * @return training data
      */
-    D testData(Map<String, Object> dataParameters);
+    Object testData(Map<String, Object> dataParameters);
 
+    Class<?> getDataType();
 }

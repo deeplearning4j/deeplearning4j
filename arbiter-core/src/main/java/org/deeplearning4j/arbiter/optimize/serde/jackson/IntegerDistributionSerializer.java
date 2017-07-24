@@ -14,38 +14,39 @@ import java.io.IOException;
  */
 public class IntegerDistributionSerializer extends JsonSerializer<IntegerDistribution> {
     @Override
-    public void serialize(IntegerDistribution d, JsonGenerator j, SerializerProvider serializerProvider) throws IOException {
+    public void serialize(IntegerDistribution d, JsonGenerator j, SerializerProvider serializerProvider)
+                    throws IOException {
         Class<?> c = d.getClass();
         String s = c.getSimpleName();
 
         j.writeStartObject();
         j.writeStringField("distribution", s);
 
-        if(c == BinomialDistribution.class){
-            BinomialDistribution bd = (BinomialDistribution)d;
+        if (c == BinomialDistribution.class) {
+            BinomialDistribution bd = (BinomialDistribution) d;
             j.writeNumberField("trials", bd.getNumberOfTrials());
             j.writeNumberField("p", bd.getProbabilityOfSuccess());
-        } else if( c == GeometricDistribution.class){
-            GeometricDistribution gd = (GeometricDistribution)d;
+        } else if (c == GeometricDistribution.class) {
+            GeometricDistribution gd = (GeometricDistribution) d;
             j.writeNumberField("p", gd.getProbabilityOfSuccess());
-        } else if( c == HypergeometricDistribution.class ){
-            HypergeometricDistribution hd = (HypergeometricDistribution)d;
+        } else if (c == HypergeometricDistribution.class) {
+            HypergeometricDistribution hd = (HypergeometricDistribution) d;
             j.writeNumberField("populationSize", hd.getPopulationSize());
             j.writeNumberField("numberOfSuccesses", hd.getNumberOfSuccesses());
             j.writeNumberField("sampleSize", hd.getSampleSize());
-        } else if( c == PascalDistribution.class ){
-            PascalDistribution pd = (PascalDistribution)d;
+        } else if (c == PascalDistribution.class) {
+            PascalDistribution pd = (PascalDistribution) d;
             j.writeNumberField("r", pd.getNumberOfSuccesses());
             j.writeNumberField("p", pd.getProbabilityOfSuccess());
-        } else if( c == PoissonDistribution.class ){
-            PoissonDistribution pd = (PoissonDistribution)d;
+        } else if (c == PoissonDistribution.class) {
+            PoissonDistribution pd = (PoissonDistribution) d;
             j.writeNumberField("p", pd.getMean());
-        } else if( c == UniformIntegerDistribution.class ){
-            UniformIntegerDistribution ud = (UniformIntegerDistribution)d;
+        } else if (c == UniformIntegerDistribution.class) {
+            UniformIntegerDistribution ud = (UniformIntegerDistribution) d;
             j.writeNumberField("lower", ud.getSupportLowerBound());
             j.writeNumberField("upper", ud.getSupportUpperBound());
-        } else if( c == ZipfDistribution.class ){
-            ZipfDistribution zd = (ZipfDistribution)d;
+        } else if (c == ZipfDistribution.class) {
+            ZipfDistribution zd = (ZipfDistribution) d;
             j.writeNumberField("numElements", zd.getNumberOfElements());
             j.writeNumberField("exponent", zd.getExponent());
         } else {

@@ -26,8 +26,6 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 
-import java.util.List;
-
 /**
  * Layer space for LSTM layers
  *
@@ -44,7 +42,7 @@ public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
 
@@ -57,14 +55,8 @@ public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
 
     protected void setLayerOptionsBuilder(GravesLSTM.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
-        if (forgetGateBiasInit != null) builder.forgetGateBiasInit(forgetGateBiasInit.getValue(values));
-    }
-
-    @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (forgetGateBiasInit != null) list.addAll(forgetGateBiasInit.collectLeaves());
-        return list;
+        if (forgetGateBiasInit != null)
+            builder.forgetGateBiasInit(forgetGateBiasInit.getValue(values));
     }
 
     @Override
@@ -75,7 +67,8 @@ public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
     @Override
     public String toString(String delim) {
         StringBuilder sb = new StringBuilder("GravesLSTMLayerSpace(");
-        if (forgetGateBiasInit != null) sb.append("forgetGateBiasInit: ").append(forgetGateBiasInit).append(delim);
+        if (forgetGateBiasInit != null)
+            sb.append("forgetGateBiasInit: ").append(forgetGateBiasInit).append(delim);
         sb.append(super.toString(delim)).append(")");
         return sb.toString();
     }

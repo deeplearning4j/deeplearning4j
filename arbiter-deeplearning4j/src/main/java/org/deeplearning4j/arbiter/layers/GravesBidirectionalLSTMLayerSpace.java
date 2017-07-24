@@ -44,7 +44,8 @@ public class GravesBidirectionalLSTMLayerSpace extends FeedForwardLayerSpace<Gra
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        List<ParameterSpace> l = collectLeaves();
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
 
@@ -57,14 +58,8 @@ public class GravesBidirectionalLSTMLayerSpace extends FeedForwardLayerSpace<Gra
 
     protected void setLayerOptionsBuilder(GravesBidirectionalLSTM.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
-        if (forgetGateBiasInit != null) builder.forgetGateBiasInit(forgetGateBiasInit.getValue(values));
-    }
-
-    @Override
-    public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = super.collectLeaves();
-        if (forgetGateBiasInit != null) list.addAll(forgetGateBiasInit.collectLeaves());
-        return list;
+        if (forgetGateBiasInit != null)
+            builder.forgetGateBiasInit(forgetGateBiasInit.getValue(values));
     }
 
     @Override
@@ -75,7 +70,8 @@ public class GravesBidirectionalLSTMLayerSpace extends FeedForwardLayerSpace<Gra
     @Override
     public String toString(String delim) {
         StringBuilder sb = new StringBuilder("GravesBidirectionalLSTMLayerSpace(");
-        if (forgetGateBiasInit != null) sb.append("forgetGateBiasInit: ").append(forgetGateBiasInit).append(delim);
+        if (forgetGateBiasInit != null)
+            sb.append("forgetGateBiasInit: ").append(forgetGateBiasInit).append(delim);
         sb.append(super.toString(delim)).append(")");
         return sb.toString();
     }

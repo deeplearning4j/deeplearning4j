@@ -6,8 +6,8 @@ import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
-import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
-import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
+import org.deeplearning4j.arbiter.optimize.generator.GridSearchCandidateGenerator;
+import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
@@ -56,15 +56,15 @@ public class TestJson {
         l.add(new FixedValue<>(1.0));
         l.add(new FixedValue<>(1));
         l.add(new FixedValue<>("string"));
-        l.add(new ContinuousParameterSpace(-1,1));
-        l.add(new ContinuousParameterSpace(new LogNormalDistribution(1,1)));
-        l.add(new ContinuousParameterSpace(new NormalDistribution(2,0.01)));
-        l.add(new DiscreteParameterSpace<>(1,5,7));
-        l.add(new DiscreteParameterSpace<>("first","second","third"));
-        l.add(new IntegerParameterSpace(0,10));
-        l.add(new IntegerParameterSpace(new UniformIntegerDistribution(0,50)));
+        l.add(new ContinuousParameterSpace(-1, 1));
+        l.add(new ContinuousParameterSpace(new LogNormalDistribution(1, 1)));
+        l.add(new ContinuousParameterSpace(new NormalDistribution(2, 0.01)));
+        l.add(new DiscreteParameterSpace<>(1, 5, 7));
+        l.add(new DiscreteParameterSpace<>("first", "second", "third"));
+        l.add(new IntegerParameterSpace(0, 10));
+        l.add(new IntegerParameterSpace(new UniformIntegerDistribution(0, 50)));
 
-        for(ParameterSpace<?> ps : l){
+        for (ParameterSpace<?> ps : l) {
             String strJson = jsonMapper.writeValueAsString(ps);
             String strYaml = yamlMapper.writeValueAsString(ps);
 
@@ -78,20 +78,22 @@ public class TestJson {
 
     @Test
     public void testCandidateGeneratorJson() throws Exception {
-        Map<String,Object> commands = new HashMap<>();
-        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,new HashMap<>());
+        Map<String, Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, new HashMap<>());
 
-        List<CandidateGenerator<?>> l = new ArrayList<>();
-        l.add(new GridSearchCandidateGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5), 10, GridSearchCandidateGenerator.Mode.Sequential,commands));
-        l.add(new GridSearchCandidateGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5), 10, GridSearchCandidateGenerator.Mode.RandomOrder,commands));
-        l.add(new RandomSearchGenerator<>(new DiscreteParameterSpace<>(0,1,2,3,4,5),commands));
+        List<CandidateGenerator> l = new ArrayList<>();
+        l.add(new GridSearchCandidateGenerator(new DiscreteParameterSpace<>(0, 1, 2, 3, 4, 5), 10,
+                        GridSearchCandidateGenerator.Mode.Sequential, commands));
+        l.add(new GridSearchCandidateGenerator(new DiscreteParameterSpace<>(0, 1, 2, 3, 4, 5), 10,
+                        GridSearchCandidateGenerator.Mode.RandomOrder, commands));
+        l.add(new RandomSearchGenerator(new DiscreteParameterSpace<>(0, 1, 2, 3, 4, 5), commands));
 
-        for(CandidateGenerator<?> cg : l){
+        for (CandidateGenerator cg : l) {
             String strJson = jsonMapper.writeValueAsString(cg);
             String strYaml = yamlMapper.writeValueAsString(cg);
 
-            CandidateGenerator<?> fromJson = jsonMapper.readValue(strJson, CandidateGenerator.class);
-            CandidateGenerator<?> fromYaml = yamlMapper.readValue(strYaml, CandidateGenerator.class);
+            CandidateGenerator fromJson = jsonMapper.readValue(strJson, CandidateGenerator.class);
+            CandidateGenerator fromYaml = yamlMapper.readValue(strYaml, CandidateGenerator.class);
 
             assertEquals(cg, fromJson);
             assertEquals(cg, fromYaml);

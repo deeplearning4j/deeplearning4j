@@ -38,7 +38,7 @@ public class EmbeddingLayerSpace extends FeedForwardLayerSpace<EmbeddingLayer> {
     private EmbeddingLayerSpace(Builder builder) {
         super(builder);
 
-        this.numParameters = LeafUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUniqueParameters(collectLeaves());
     }
 
     @Override
