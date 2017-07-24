@@ -458,9 +458,9 @@ public class SparseNDArrayCOOTest {
         // => shape 1 x 1 x 3 x 1
 
         System.out.println("\nget( specified(1), specified(0), new axis)");
-//        v = arr.get(new SpecifiedIndex(1), NDArrayIndex.newAxis());
-//        System.out.println(v.shapeInfoDataBuffer());
-//        System.out.println(v.toString());
+        v = arr.get(new SpecifiedIndex(0), NDArrayIndex.newAxis());
+        System.out.println(v.shapeInfoDataBuffer());
+        System.out.println(v.toString());
         // => crash
 
 //        System.out.println("\nget( new axis, point(0), new axis, point(0))");
@@ -483,5 +483,42 @@ public class SparseNDArrayCOOTest {
  */       // => crash
 
 
+    }
+
+
+    @Test
+    public void testDenseNewAxisWithSpecifiedIdx(){
+        INDArray arr = Nd4j.rand(new int[]{4, 2, 3});
+        INDArray v = arr.get(new SpecifiedIndex(0), NDArrayIndex.newAxis());
+        System.out.println(v.shapeInfoDataBuffer());
+        System.out.println(v.toString());
+        // null pointer exception in shapeoffsetresolution.exec
+    }
+    @Test
+    public void testDenseNewAxisWithSpecifiedIdx2() {
+        INDArray arr = Nd4j.rand(new int[]{4, 2, 3});
+        INDArray v = arr.get(NDArrayIndex.newAxis(), new SpecifiedIndex(0, 1), NDArrayIndex.all());
+        System.out.println(v.shapeInfoDataBuffer());
+        System.out.println(v.toString());
+        // null pointer exception in shapeoffsetresolution.exec
+    }
+    @Test
+    public void testDenseNewAxisWithSpecifiedIdx3() {
+        INDArray arr = Nd4j.rand(new int[]{4, 2, 3});
+        INDArray  v = arr.get(
+                NDArrayIndex.point(0),
+                NDArrayIndex.all(),
+                NDArrayIndex.newAxis());
+        System.out.println(v.shapeInfoDataBuffer());
+        System.out.println(v.toString());
+        // IndexOutOfBoundsException: Index: 2, Size: 1
+        // in shapeoffsetresolution.exec
+    }
+
+    @Test
+    public void testDenseWithNewAxis(){
+        INDArray arr = Nd4j.rand(new int[]{4, 2, 3});
+        INDArray view = arr.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.point(1));
+        System.out.println(view);
     }
 }
