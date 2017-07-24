@@ -23,10 +23,7 @@ import org.datavec.api.transform.ndarray.NDArrayScalarOpTransform;
 import org.datavec.api.transform.sequence.ReduceSequenceTransform;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
-import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
-import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
-import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
-import org.datavec.api.transform.transform.categorical.StringToCategoricalTransform;
+import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
@@ -34,6 +31,7 @@ import org.datavec.api.transform.transform.doubletransform.*;
 import org.datavec.api.transform.transform.integer.*;
 import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
 import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
+import org.datavec.api.transform.transform.nlp.TextToCharacterIndexTransform;
 import org.datavec.api.transform.transform.parse.ParseDoubleTransform;
 import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
 import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
@@ -115,6 +113,8 @@ import java.util.List;
                 @JsonSubTypes.Type(value = ConcatenateStringColumns.class, name = "ConcatenateStringColumns"),
                 @JsonSubTypes.Type(value = StringListToCountsNDArrayTransform.class, name = "StringListToCountsNDArrayTransform"),
                 @JsonSubTypes.Type(value = StringListToIndicesNDArrayTransform.class, name = "StringListToIndicesNDArrayTransform"),
+                @JsonSubTypes.Type(value = PivotTransform.class, name = "PivotTransform"),
+                @JsonSubTypes.Type(value = TextToCharacterIndexTransform.class, name = "TextToCharacterIndexTransform")
 })
 public interface Transform extends Serializable, ColumnOp {
 

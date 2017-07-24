@@ -42,6 +42,7 @@ import org.datavec.api.transform.transform.string.StringListToCategoricalSetTran
 import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.comparator.LongWritableComparator;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
@@ -142,6 +143,7 @@ public class TestJsonYaml {
                                         .filter(new SequenceLengthCondition(ConditionOp.LessThan, 1))
                                         .addConstantColumn("testColSeq", ColumnType.Integer, new DoubleWritable(0))
                                         .offsetSequence(Collections.singletonList("testColSeq"), 1, SequenceOffsetTransform.OperationType.InPlace)
+                                        .addConstantColumn("someTextCol", ColumnType.String, new Text("some values"))
                                         .build();
 
         String asJson = tp.toJson();

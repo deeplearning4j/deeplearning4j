@@ -40,6 +40,7 @@ import org.datavec.api.transform.transform.doubletransform.*;
 import org.datavec.api.transform.transform.integer.*;
 import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
 import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
+import org.datavec.api.transform.transform.nlp.TextToCharacterIndexTransform;
 import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
 import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
 import org.datavec.api.transform.transform.sequence.SequenceOffsetTransform;
@@ -1415,4 +1416,36 @@ public class TestTransforms {
         Assert.assertEquals(t, transform2);
     }
 
+
+    @Test
+    public void testTextToCharacterIndexTransform(){
+
+        Schema s = new Schema.Builder().addColumnString("col").addColumnDouble("d").build();
+
+        List<List<Writable>> inSeq = Arrays.asList(
+                Arrays.<Writable>asList(new Text("text"), new DoubleWritable(1.0)),
+                Arrays.<Writable>asList(new Text("ab"), new DoubleWritable(2.0)));
+
+        Map<Character,Integer> map = new HashMap<>();
+        map.put('a', 0);
+        map.put('b', 1);
+        map.put('e', 2);
+        map.put('t', 3);
+        map.put('x', 4);
+
+        List<List<Writable>> exp = Arrays.asList(
+                Arrays.<Writable>asList(new IntWritable(3), new DoubleWritable(1.0)),
+                Arrays.<Writable>asList(new IntWritable(2), new DoubleWritable(1.0)),
+                Arrays.<Writable>asList(new IntWritable(4), new DoubleWritable(1.0)),
+                Arrays.<Writable>asList(new IntWritable(3), new DoubleWritable(1.0)),
+                Arrays.<Writable>asList(new IntWritable(0), new DoubleWritable(2.0)),
+                Arrays.<Writable>asList(new IntWritable(1), new DoubleWritable(2.0)));
+
+        Transform t = new TextToCharacterIndexTransform("col", "newName", map, false);
+        t.setInputSchema(s);
+
+        List<List<Writable>> out = t.mapSequence(inSeq);
+
+        assertEquals(exp, out);
+    }
 }
