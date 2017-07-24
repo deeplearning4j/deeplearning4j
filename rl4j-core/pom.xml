@@ -45,8 +45,18 @@
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>opencv</artifactId>
+            <version>${opencv.version}-${javacpp-presets.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>opencv-platform</artifactId>
             <version>${opencv.version}-${javacpp-presets.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>ffmpeg</artifactId>
+            <version>${ffmpeg.version}-${javacpp-presets.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>

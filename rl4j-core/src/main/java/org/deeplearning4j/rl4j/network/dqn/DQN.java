@@ -3,11 +3,14 @@ package org.deeplearning4j.rl4j.network.dqn;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.
@@ -43,7 +46,9 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
     }
 
     public NN clone() {
-        return (NN)new DQN(mln.clone());
+        NN nn = (NN)new DQN(mln.clone());
+        nn.mln.setListeners(mln.getListeners());
+        return nn;
     }
 
     public void copy(NN from) {
@@ -54,6 +59,14 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
         mln.setInput(input);
         mln.setLabels(labels);
         mln.computeGradientAndScore();
+        Collection<IterationListener> iterationListeners = mln.getListeners();
+        if (iterationListeners != null && iterationListeners.size() > 0) {
+            for (IterationListener l : iterationListeners) {
+                if (l instanceof TrainingListener) {
+                    ((TrainingListener) l).onGradientCalculation(mln);
+                }
+            }
+        }
         //System.out.println("SCORE: " + mln.score());
         return new Gradient[] {mln.gradient()};
     }
@@ -64,9 +77,16 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
 
     public void applyGradient(Gradient[] gradient, int batchSize) {
         MultiLayerConfiguration mlnConf = mln.getLayerWiseConfigurations();
-        mln.getUpdater().update(mln, gradient[0], mlnConf.getIterationCount(), batchSize);
+        int iterationCount = mlnConf.getIterationCount();
+        mln.getUpdater().update(mln, gradient[0], iterationCount, batchSize);
         mln.params().subi(gradient[0].gradient());
-        mlnConf.setIterationCount(mlnConf.getIterationCount() + 1);
+        Collection<IterationListener> iterationListeners = mln.getListeners();
+        if (iterationListeners != null && iterationListeners.size() > 0) {
+            for (IterationListener listener : iterationListeners) {
+                listener.iterationDone(mln, iterationCount);
+            }
+        }
+        mlnConf.setIterationCount(iterationCount + 1);
     }
 
     public double getLatestScore() {

@@ -3,11 +3,14 @@ package org.deeplearning4j.rl4j.network.ac;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/23/16.
@@ -41,7 +44,10 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
     }
 
     public NN clone() {
-        return (NN)new ActorCriticSeparate(valueNet.clone(), policyNet.clone());
+        NN nn = (NN)new ActorCriticSeparate(valueNet.clone(), policyNet.clone());
+        nn.valueNet.setListeners(valueNet.getListeners());
+        nn.policyNet.setListeners(policyNet.getListeners());
+        return nn;
     }
 
     public void copy(NN from) {
@@ -53,23 +59,54 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
         valueNet.setInput(input);
         valueNet.setLabels(labels[0]);
         valueNet.computeGradientAndScore();
+        Collection<IterationListener> valueIterationListeners = valueNet.getListeners();
+        if (valueIterationListeners != null && valueIterationListeners.size() > 0) {
+            for (IterationListener l : valueIterationListeners) {
+                if (l instanceof TrainingListener) {
+                    ((TrainingListener) l).onGradientCalculation(valueNet);
+                }
+            }
+        }
+
         policyNet.setInput(input);
         policyNet.setLabels(labels[1]);
         policyNet.computeGradientAndScore();
+        Collection<IterationListener> policyIterationListeners = policyNet.getListeners();
+        if (policyIterationListeners != null && policyIterationListeners.size() > 0) {
+            for (IterationListener l : policyIterationListeners) {
+                if (l instanceof TrainingListener) {
+                    ((TrainingListener) l).onGradientCalculation(policyNet);
+                }
+            }
+        }
         return new Gradient[] {valueNet.gradient(), policyNet.gradient()};
     }
 
 
     public void applyGradient(Gradient[] gradient, int batchSize) {
         MultiLayerConfiguration valueConf = valueNet.getLayerWiseConfigurations();
-        valueNet.getUpdater().update(valueNet, gradient[0], valueConf.getIterationCount(), batchSize);
+        int valueIterationCount = valueConf.getIterationCount();
+        valueNet.getUpdater().update(valueNet, gradient[0], valueIterationCount, batchSize);
         valueNet.params().subi(gradient[0].gradient());
-        valueConf.setIterationCount(valueConf.getIterationCount() + 1);
+        Collection<IterationListener> valueIterationListeners = valueNet.getListeners();
+        if (valueIterationListeners != null && valueIterationListeners.size() > 0) {
+            for (IterationListener listener : valueIterationListeners) {
+                listener.iterationDone(valueNet, valueIterationCount);
+            }
+        }
+        valueConf.setIterationCount(valueIterationCount + 1);
 
         MultiLayerConfiguration policyConf = policyNet.getLayerWiseConfigurations();
-        policyNet.getUpdater().update(policyNet, gradient[1], policyConf.getIterationCount(), batchSize);
+        int policyIterationCount = policyConf.getIterationCount();
+        policyNet.getUpdater().update(policyNet, gradient[1], policyIterationCount, batchSize);
         policyNet.params().subi(gradient[1].gradient());
-        policyConf.setIterationCount(policyConf.getIterationCount() + 1);
+        Collection<IterationListener> policyIterationListeners = policyNet.getListeners();
+        if (policyIterationListeners != null && policyIterationListeners.size() > 0) {
+            for (IterationListener listener : policyIterationListeners) {
+                listener.iterationDone(policyNet, policyIterationCount);
+            }
+        }
+        policyConf.setIterationCount(policyIterationCount + 1);
     }
 
     public double getLatestScore() {

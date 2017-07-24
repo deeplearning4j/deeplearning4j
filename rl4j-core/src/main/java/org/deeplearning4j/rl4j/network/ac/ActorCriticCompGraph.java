@@ -3,11 +3,14 @@ package org.deeplearning4j.rl4j.network.ac;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.
@@ -37,7 +40,9 @@ public class ActorCriticCompGraph<NN extends ActorCriticCompGraph> implements IA
     }
 
     public NN clone() {
-        return (NN)new ActorCriticCompGraph(cg.clone());
+        NN nn = (NN)new ActorCriticCompGraph(cg.clone());
+        nn.cg.setListeners(cg.getListeners());
+        return nn;
     }
 
     public void copy(NN from) {
@@ -48,15 +53,30 @@ public class ActorCriticCompGraph<NN extends ActorCriticCompGraph> implements IA
         cg.setInput(0, input);
         cg.setLabels(labels);
         cg.computeGradientAndScore();
+        Collection<IterationListener> iterationListeners = cg.getListeners();
+        if (iterationListeners != null && iterationListeners.size() > 0) {
+            for (IterationListener l : iterationListeners) {
+                if (l instanceof TrainingListener) {
+                    ((TrainingListener) l).onGradientCalculation(cg);
+                }
+            }
+        }
         return new Gradient[] {cg.gradient()};
     }
 
 
     public void applyGradient(Gradient[] gradient, int batchSize) {
         ComputationGraphConfiguration cgConf = cg.getConfiguration();
-        cg.getUpdater().update(gradient[0], cgConf.getIterationCount(), batchSize);
+        int iterationCount = cgConf.getIterationCount();
+        cg.getUpdater().update(gradient[0], iterationCount, batchSize);
         cg.params().subi(gradient[0].gradient());
-        cgConf.setIterationCount(cgConf.getIterationCount() + 1);
+        Collection<IterationListener> iterationListeners = cg.getListeners();
+        if (iterationListeners != null && iterationListeners.size() > 0) {
+            for (IterationListener listener : iterationListeners) {
+                listener.iterationDone(cg, iterationCount);
+            }
+        }
+        cgConf.setIterationCount(iterationCount + 1);
     }
 
     public double getLatestScore() {

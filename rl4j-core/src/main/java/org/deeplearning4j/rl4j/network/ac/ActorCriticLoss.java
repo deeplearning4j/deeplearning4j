@@ -73,4 +73,9 @@ public class ActorCriticLoss implements ILossFunction {
     public String toString() {
         return "ActorCriticLoss()";
     }
+
+    @Override
+    public String name() {
+        return toString();
+    }
 }
