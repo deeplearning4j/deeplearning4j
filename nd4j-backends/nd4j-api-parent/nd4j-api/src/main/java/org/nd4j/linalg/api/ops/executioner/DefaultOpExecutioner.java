@@ -592,4 +592,25 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public INDArray thresholdDecode(INDArray encoded, INDArray target) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
+
+    @Override
+    public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public INDArray bitmapEncode(INDArray indArray, double threshold) {
+        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(indArray.length() / 16 + 5);
+
+        INDArray ret = Nd4j.createArrayFromShapeBuffer(buffer, indArray.shapeInfoDataBuffer());
+
+        bitmapEncode(indArray, ret, threshold);
+
+        return ret;
+    }
+
+    @Override
+    public INDArray bitmapDecode(INDArray encoded, INDArray target) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }
