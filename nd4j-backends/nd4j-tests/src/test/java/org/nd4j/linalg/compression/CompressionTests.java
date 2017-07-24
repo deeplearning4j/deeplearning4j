@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -33,6 +34,19 @@ public class CompressionTests extends BaseNd4jTest {
 
     public CompressionTests(Nd4jBackend backend) {
         super(backend);
+    }
+
+    @Test
+    public void testCompressionView() {
+        BasicNDArrayCompressor compressor = BasicNDArrayCompressor.getInstance().setDefaultCompression("UINT8");
+
+        INDArray compressed = compressor.compress( Nd4j.create( 1, 1, 1 ) );
+        INDArray reshaped = compressed.reshape( 1, 1, 1, 1 );
+
+        // After a reshape, "reshaped" is no longer marked as compressed, but the underlying data buffer is of type compressed
+        // Because of that mismatch, this will fail with an illegal state exception:
+        Convolution.im2col( reshaped, new int[] {1,1}, new int[] {1,1}, new int[] {1,1} );
+
     }
 
 
