@@ -60,6 +60,10 @@ public class CudaPointer extends Pointer {
         return new FloatPointer(this);
     }
 
+    public LongPointer asLongPointer() {
+        return new LongPointer(this);
+    }
+
     public DoublePointer asDoublePointer() {
         return new DoublePointer(this);
     }

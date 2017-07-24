@@ -39,7 +39,7 @@ import java.util.Collection;
 public interface DataBuffer extends Serializable {
 
     enum Type {
-        DOUBLE, FLOAT, INT, HALF, COMPRESSED
+        DOUBLE, FLOAT, INT, HALF, COMPRESSED, LONG,
     }
 
     enum TypeEx {
@@ -394,6 +394,13 @@ public interface DataBuffer extends Serializable {
      * @return the element at this index
      */
     double getDouble(long i);
+
+    /**
+     * Get element i in the buffer as long value
+     * @param i
+     * @return
+     */
+    long getLong(long i);
 
     /**
      * Get element i in the buffer as a double

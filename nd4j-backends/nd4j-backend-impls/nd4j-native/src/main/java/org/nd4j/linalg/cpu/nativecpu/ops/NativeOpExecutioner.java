@@ -32,6 +32,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jBlas;
@@ -391,9 +392,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             (IntPointer) dimensionAddress, dimension.length,
                             (IntPointer) tadBuffers.getFirst().addressPointer(),
-                            (IntPointer) tadBuffers.getSecond().addressPointer(),
+                            new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
                             (IntPointer) yTadBuffers.getFirst().addressPointer(),
-                            (IntPointer) yTadBuffers.getSecond().addressPointer()
+                            new LongPointerWrapper(yTadBuffers.getSecond().addressPointer())
                             );
                 } else if (ret.isScalar()) {
                     ret.putScalar(0, loop.execReduce3ScalarDouble(dummy, op.opNum(),
@@ -460,9 +461,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             (IntPointer) dimensionAddress, dimension.length,
                             (IntPointer) tadBuffers.getFirst().addressPointer(),
-                            (IntPointer) tadBuffers.getSecond().addressPointer(),
+                            new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
                             (IntPointer) yTadBuffers.getFirst().addressPointer(),
-                            (IntPointer) yTadBuffers.getSecond().addressPointer()
+                            new LongPointerWrapper(yTadBuffers.getSecond().addressPointer())
                     );
                 } else if (ret.isScalar()) {
                     ret.putScalar(0, loop.execReduce3ScalarFloat(dummy, op.opNum(),
