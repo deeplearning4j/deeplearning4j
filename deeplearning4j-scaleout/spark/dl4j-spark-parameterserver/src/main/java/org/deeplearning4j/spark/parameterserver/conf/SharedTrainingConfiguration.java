@@ -31,6 +31,11 @@ public class SharedTrainingConfiguration implements Serializable {
 
     // TODO: decide, if we abstract this one out, or not
     protected double threshold;
+    protected double thresholdStep = 1e-5;
+    protected double minThreshold = 1e-5;
+    protected double stepTrigger;
+    protected int stepDelay;
+    protected int shakeFrequency = 0;
     protected String messageHandlerClass;
 
 
