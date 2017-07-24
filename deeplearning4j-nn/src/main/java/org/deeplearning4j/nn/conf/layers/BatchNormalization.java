@@ -188,7 +188,7 @@ public class BatchNormalization extends FeedForwardLayer {
         int numParams = initializer().numParams(this);
         int updaterStateSize = 0;
 
-        for(String s : BatchNormalizationParamInitializer.keys()){
+        for (String s : BatchNormalizationParamInitializer.keys()) {
             updaterStateSize += getIUpdaterByParam(s).stateSize(nOut);
         }
 
@@ -198,14 +198,14 @@ public class BatchNormalization extends FeedForwardLayer {
         //During training: we calculate mean and variance... result is equal to nOut, and INDEPENDENT of minibatch size
         int trainWorkFixed = 2 * nOut;
         //During backprop: multiple working arrays... output size, 2 * output size (indep. of example size),
-        int trainWorkingSizePerExample = inferenceWorkingSize               //Inference during backprop
-                + (outputType.arrayElementsPerExample() + 2 * nOut);        //Backprop gradient calculation
+        int trainWorkingSizePerExample = inferenceWorkingSize //Inference during backprop
+                        + (outputType.arrayElementsPerExample() + 2 * nOut); //Backprop gradient calculation
 
         return new LayerMemoryReport.Builder(layerName, BatchNormalization.class, inputType, outputType)
-                .standardMemory(numParams, updaterStateSize)
-                .workingMemory(0, 0, trainWorkFixed, trainWorkingSizePerExample)     //No additional memory (beyond activations) for inference
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(numParams, updaterStateSize)
+                        .workingMemory(0, 0, trainWorkFixed, trainWorkingSizePerExample) //No additional memory (beyond activations) for inference
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @Override

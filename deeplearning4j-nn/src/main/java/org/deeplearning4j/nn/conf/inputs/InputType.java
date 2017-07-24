@@ -161,9 +161,9 @@ public abstract class InputType implements Serializable {
 
         @Override
         public int arrayElementsPerExample() {
-            if(timeSeriesLength <= 0){
+            if (timeSeriesLength <= 0) {
                 throw new IllegalStateException("Cannot calculate number of array elements per example: "
-                        + "time series length is not set. Use InputType.recurrent(int size, int timeSeriesLength) instead?");
+                                + "time series length is not set. Use InputType.recurrent(int size, int timeSeriesLength) instead?");
             }
             return timeSeriesLength * size;
         }
@@ -229,11 +229,11 @@ public abstract class InputType implements Serializable {
 
 
 
-    public static InputType inferInputType(INDArray inputArray){
+    public static InputType inferInputType(INDArray inputArray) {
         //Note: ConvolutionalFlat and FeedForward look identical... but either should work OK if using something
         // like FeedForwardToCnnPreProcessor
 
-        switch (inputArray.rank()){
+        switch (inputArray.rank()) {
             case 2:
                 return InputType.feedForward(inputArray.size(1));
             case 3:
@@ -242,13 +242,14 @@ public abstract class InputType implements Serializable {
                 //Order: [minibatch, depth, height, width] -> [h, w, d]
                 return InputType.convolutional(inputArray.size(2), inputArray.size(3), inputArray.size(1));
             default:
-                throw new IllegalArgumentException("Cannot infer input type for array with shape: " + Arrays.toString(inputArray.shape()));
+                throw new IllegalArgumentException(
+                                "Cannot infer input type for array with shape: " + Arrays.toString(inputArray.shape()));
         }
     }
 
-    public static InputType[] inferInputTypes(INDArray... inputArrays){
+    public static InputType[] inferInputTypes(INDArray... inputArrays) {
         InputType[] out = new InputType[inputArrays.length];
-        for( int i=0; i<inputArrays.length; i++ ){
+        for (int i = 0; i < inputArrays.length; i++) {
             out[i] = inferInputType(inputArrays[i]);
         }
 

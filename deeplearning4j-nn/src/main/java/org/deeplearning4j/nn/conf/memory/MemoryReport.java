@@ -103,7 +103,8 @@ public abstract class MemoryReport {
      * @param cacheMode     The CacheMode to use
      * @return The estimated total memory consumption in bytes
      */
-    public long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode, @NonNull CacheMode cacheMode) {
+    public long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode,
+                    @NonNull CacheMode cacheMode) {
         return getTotalMemoryBytes(minibatchSize, memoryUseMode, cacheMode, DataTypeUtil.getDtypeFromContext());
     }
 
@@ -116,8 +117,8 @@ public abstract class MemoryReport {
      * @param dataType      Nd4j datatype
      * @return The estimated total memory consumption in bytes
      */
-    public abstract long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode, @NonNull CacheMode cacheMode,
-                                    @NonNull DataBuffer.Type dataType);
+    public abstract long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode,
+                    @NonNull CacheMode cacheMode, @NonNull DataBuffer.Type dataType);
 
     /**
      * Get the memory estimate (in bytes) for the specified type of memory, using the current ND4J data type
@@ -128,7 +129,8 @@ public abstract class MemoryReport {
      * @param cacheMode     The CacheMode to use
      * @return              Estimated memory use for the given memory type
      */
-    public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode, CacheMode cacheMode) {
+    public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode,
+                    CacheMode cacheMode) {
         return getMemoryBytes(memoryType, minibatchSize, memoryUseMode, cacheMode, DataTypeUtil.getDtypeFromContext());
     }
 
@@ -143,7 +145,7 @@ public abstract class MemoryReport {
      * @return              Estimated memory use for the given memory type
      */
     public abstract long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode,
-                                        CacheMode cacheMode, DataBuffer.Type dataType);
+                    CacheMode cacheMode, DataBuffer.Type dataType);
 
     public abstract String toString();
 
@@ -166,45 +168,45 @@ public abstract class MemoryReport {
      * @param value Value for all keys
      * @return Map
      */
-    public static Map<CacheMode,Long> cacheModeMapFor(long value){
-        if(value == 0){
+    public static Map<CacheMode, Long> cacheModeMapFor(long value) {
+        if (value == 0) {
             return CACHE_MODE_ALL_ZEROS;
         }
-        Map<CacheMode,Long> m = new HashMap<>();
-        for(CacheMode cm : CacheMode.values()){
+        Map<CacheMode, Long> m = new HashMap<>();
+        for (CacheMode cm : CacheMode.values()) {
             m.put(cm, value);
         }
         return m;
     }
 
-    public String toJson(){
-        try{
+    public String toJson() {
+        try {
             return NeuralNetConfiguration.mapper().writeValueAsString(this);
-        }catch (JsonProcessingException e){
+        } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public String toYaml(){
-        try{
+    public String toYaml() {
+        try {
             return NeuralNetConfiguration.mapperYaml().writeValueAsString(this);
-        }catch (JsonProcessingException e){
+        } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static MemoryReport fromJson(String json){
-        try{
+    public static MemoryReport fromJson(String json) {
+        try {
             return NeuralNetConfiguration.mapper().readValue(json, MemoryReport.class);
-        }catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static MemoryReport fromYaml(String yaml){
-        try{
+    public static MemoryReport fromYaml(String yaml) {
+        try {
             return NeuralNetConfiguration.mapperYaml().readValue(yaml, MemoryReport.class);
-        }catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

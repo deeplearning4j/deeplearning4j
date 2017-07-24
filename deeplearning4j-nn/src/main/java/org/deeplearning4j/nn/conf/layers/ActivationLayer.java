@@ -93,12 +93,12 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
         int actElementsPerEx = inputType.arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(layerName, ActivationLayer.class, inputType, inputType)
-                .standardMemory(0, 0)   //No params
-                //During inference: modify input activation in-place
-                //During  backprop: dup the input for later re-use
-                .workingMemory(0, 0, 0, actElementsPerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching
-                .build();
+                        .standardMemory(0, 0) //No params
+                        //During inference: modify input activation in-place
+                        //During  backprop: dup the input for later re-use
+                        .workingMemory(0, 0, 0, actElementsPerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @Override

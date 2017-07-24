@@ -6,6 +6,5 @@ package org.deeplearning4j.nn.conf.memory;
  * @author Alex Black
  */
 public enum MemoryUseMode {
-    INFERENCE,
-    TRAINING
+    INFERENCE, TRAINING
 }

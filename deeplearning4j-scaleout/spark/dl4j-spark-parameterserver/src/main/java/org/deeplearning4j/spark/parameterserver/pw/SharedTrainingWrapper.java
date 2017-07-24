@@ -174,7 +174,7 @@ public class SharedTrainingWrapper {
                 if (model == null)
                     throw new DL4JInvalidConfigException("No model was defined for training");
 
-                MessageHandler handler = new WiredEncodingHandler(trainingConfiguration.getThreshold());
+                MessageHandler handler = new WiredEncodingHandler(trainingConfiguration.getThreshold(), trainingConfiguration.getMinThreshold(), trainingConfiguration.getThresholdStep(), trainingConfiguration.getStepTrigger(), trainingConfiguration.getStepDelay(), trainingConfiguration.getShakeFrequency());
 
                 // this accumulator will provide sharing gradients over network, via WiredEncodedHandler. But we create it only once
                 if (accumulator == null) {
