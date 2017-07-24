@@ -137,7 +137,6 @@
         </extensions>
 
         <plugins>
-
             <!-- Build helper plugin: used to add the multiple independent source directories (Java, Scala, HTML templates) -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -159,6 +158,23 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>${maven-scala-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <scalaVersion>2.11.7</scalaVersion>
+                </configuration>
             </plugin>
 
             <plugin>

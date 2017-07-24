@@ -14,7 +14,8 @@
   ~    limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>arbiter</artifactId>
@@ -238,7 +239,6 @@
         </profile>
 
 
-
         <profile>
             <id>qa</id>
             <build>
@@ -333,7 +333,6 @@
     </scm>
 
 
-
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
@@ -341,7 +340,6 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-
 
 
     <build>
@@ -360,37 +358,38 @@
             </plugin>
 
             <plugin>
-              <groupId>net.revelc.code.formatter</groupId>
-              <artifactId>formatter-maven-plugin</artifactId>
-              <version>2.0.0</version>
-              <configuration>
-                <configFile>${session.executionRootDirectory}/contrib/formatter.xml</configFile>
-                <directories>
-                  <directory>arbiter-deeplearning4j</directory>
-                  <directory>arbiter-core</directory>
-                </directories>
-              </configuration>
+                <groupId>net.revelc.code.formatter</groupId>
+                <artifactId>formatter-maven-plugin</artifactId>
+                <version>2.0.0</version>
+                <configuration>
+                    <configFile>${session.executionRootDirectory}/contrib/formatter.xml</configFile>
+                    <directories>
+                        <directory>arbiter-deeplearning4j</directory>
+                        <directory>arbiter-core</directory>
+                    </directories>
+                </configuration>
             </plugin>
 
             <plugin>
-              <groupId>pl.project13.maven</groupId>
-              <artifactId>git-commit-id-plugin</artifactId>
-              <version>2.2.2</version>
-              <executions>
-                <execution>
-                  <goals>
-                    <goal>revision</goal>
-                  </goals>
-                  <phase>package</phase>
-                </execution>
-              </executions>
-              <configuration>
-                <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
-                <gitDescribe>
-                  <skip>true</skip>
-                </gitDescribe>
-              </configuration>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <version>2.2.2</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties
+                    </generateGitPropertiesFilename>
+                    <gitDescribe>
+                        <skip>true</skip>
+                    </gitDescribe>
+                </configuration>
             </plugin>
 
         </plugins>
@@ -412,7 +411,6 @@
                         </execution>
                     </executions>
                 </plugin>
-
 
 
                 <plugin>
@@ -440,7 +438,7 @@
                     <configuration>
                         <mavenExecutorId>forked-path</mavenExecutorId>
                         <!-- To deploy to an open staging repository: -Darguments=-DstagingRepositoryId=orgdeeplearning4j-xxxx -->
-                        <arguments> -Psonatype-oss-release -DskipTests ${arguments}</arguments>
+                        <arguments>-Psonatype-oss-release -DskipTests ${arguments}</arguments>
                         <localCheckout>true</localCheckout>
                         <pushChanges>false</pushChanges>
                     </configuration>
@@ -470,27 +468,57 @@
                     </configuration>
                 </plugin>
 
-            <plugin>
-              <groupId>org.eclipse.m2e</groupId>
-              <artifactId>lifecycle-mapping</artifactId>
-              <version>1.0.0</version>
-              <configuration>
-                <lifecycleMappingMetadata>
-                  <pluginExecutions>
-                    <pluginExecution>
-                      <pluginExecutionFilter>
-                        <groupId>com.lewisd</groupId>
-                        <artifactId>lint-maven-plugin</artifactId>
-                        <versionRange>[0.0.11,)</versionRange>
-                      </pluginExecutionFilter>
-                      <action>
-                        <ignore/>
-                      </action>
-                    </pluginExecution>
-                  </pluginExecutions>
-                </lifecycleMappingMetadata>
-              </configuration>
-            </plugin>
+                <plugin>
+                    <groupId>net.alchim31.maven</groupId>
+                    <artifactId>scala-maven-plugin</artifactId>
+                    <version>3.2.2</version>
+                    <configuration>
+                        <scalaVersion>2.11.7</scalaVersion>
+                        <args>
+                            <arg>-deprecation</arg>
+                            <arg>-explaintypes</arg>
+                        </args>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>scala-compile-first</id>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>add-source</goal>
+                                <goal>compile</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>scala-test-compile</id>
+                            <phase>process-test-resources</phase>
+                            <goals>
+                                <goal>add-source</goal>
+                                <goal>testCompile</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>com.lewisd</groupId>
+                                        <artifactId>lint-maven-plugin</artifactId>
+                                        <versionRange>[0.0.11,)</versionRange>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore/>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
 
             </plugins>
         </pluginManagement>
