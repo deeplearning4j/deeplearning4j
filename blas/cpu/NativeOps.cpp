@@ -2252,7 +2252,7 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
         Nd4jIndex *tadOffset = (Nd4jIndex *) tadOffsets[f];
 
 
-        const int tadLength = shape::length(tadOnlyShapeInfo[f]);
+        const Nd4jIndex tadLength = shape::length(tadOnlyShapeInfo[f]);
         int tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
         int tadRank = shape::rank(tadOnlyShapeInfo[f]);
         int numTads = shape::length(xShapeInfo[f]) / tadLength;

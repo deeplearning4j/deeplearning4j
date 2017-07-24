@@ -280,7 +280,7 @@ template<typename OpType>
 
 					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 						shape::ind2subC(tadRank, tadShape, i, xCoord);
-						int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+						Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					}
