@@ -592,7 +592,7 @@ public class ShapeOffsetResolution implements Serializable {
             this.offset = 0;
         }
         if (numIntervals > 0 && arr.rank() > 2) {
-            if (encounteredAll && arr.size(0) != 1)
+            if (encounteredAll && arr.size(0) != 1 || indexes[0] instanceof PointIndex)
                 // FIXME: LONG
                 this.offset += ArrayUtil.dotProductLong2(accumOffsets, accumStrides);
             else
