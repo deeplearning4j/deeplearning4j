@@ -381,7 +381,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
     }
 
-    private Map<String,List<String>> verticesOutputTo(){
+    private Map<String, List<String>> verticesOutputTo() {
         Map<String, List<String>> verticesOutputTo = new HashMap<>(); //Key: vertex. Values: vertices that this node is an input for
         for (Map.Entry<String, GraphVertex> entry : vertices.entrySet()) {
             String vertexName = entry.getKey();
@@ -405,7 +405,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         return verticesOutputTo;
     }
 
-    private List<String> topologicalOrdering(){
+    private List<String> topologicalOrdering() {
         //First step: build network in reverse order (i.e., define map of a -> list(b) instead of list(a) -> b)
         Map<String, List<String>> verticesOutputTo = verticesOutputTo();
         LinkedList<String> noIncomingEdges = new LinkedList<>(networkInputs); //Set of all nodes with no incoming edges
@@ -441,8 +441,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 continue;
             if (!set.isEmpty())
                 throw new IllegalStateException(
-                        "Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
-                                + "cycle includes vertex \"" + entry.getKey() + "\")");
+                                "Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
+                                                + "cycle includes vertex \"" + entry.getKey() + "\")");
         }
 
         return topologicalOrdering;
@@ -455,7 +455,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * @param inputTypes Input types for the network
      * @return Memory report for the network
      */
-    public NetworkMemoryReport getMemoryReport(InputType... inputTypes){
+    public NetworkMemoryReport getMemoryReport(InputType... inputTypes) {
 
 
         Map<String, MemoryReport> memoryReportMap = new LinkedHashMap<>();
@@ -490,7 +490,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             }
 
             InputType outputFromVertex =
-                    gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
+                            gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
             vertexOutputs.put(s, outputFromVertex);
 
             MemoryReport mr = gv.getMemoryReport(inputTypeList.toArray(new InputType[inputTypeList.size()]));
@@ -498,7 +498,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             memoryReportMap.put(s, mr);
         }
 
-        return new NetworkMemoryReport(memoryReportMap, ComputationGraphConfiguration.class, "ComputationGraph", inputTypes);
+        return new NetworkMemoryReport(memoryReportMap, ComputationGraphConfiguration.class, "ComputationGraph",
+                        inputTypes);
     }
 
 

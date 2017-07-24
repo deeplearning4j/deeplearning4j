@@ -133,11 +133,11 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         int actElementsPerEx = outputType.arrayElementsPerExample();
         int numParams = initializer().numParams(this);
-        int updaterStateSize = (int)getIUpdater().stateSize(numParams);
+        int updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         int inferenceWorkingMemSizePerEx = 0;
         //Forward pass size through the encoder:
-        for( int i=1; i<encoderLayerSizes.length; i++ ){
+        for (int i = 1; i < encoderLayerSizes.length; i++) {
             inferenceWorkingMemSizePerEx += encoderLayerSizes[i];
         }
 
@@ -146,7 +146,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         int decoderFwdSizeWorking = 4 * nOut;
         //plus, nSamples * decoder size
         //For each decoding: random sample (nOut), z (nOut), activations for each decoder layer
-        decoderFwdSizeWorking += numSamples * ( 2 * nOut + ArrayUtil.sum(getDecoderLayerSizes()));
+        decoderFwdSizeWorking += numSamples * (2 * nOut + ArrayUtil.sum(getDecoderLayerSizes()));
         //Plus, component of score
         decoderFwdSizeWorking += nOut;
 
@@ -156,8 +156,8 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         int trainWorkingMemSize = 2 * (inferenceWorkingMemSizePerEx + decoderFwdSizeWorking);
 
 
-        if(getDropOut() > 0){
-            if(false) {
+        if (getDropOut() > 0) {
+            if (false) {
                 //TODO drop connect
                 //Dup the weights... note that this does NOT depend on the minibatch size...
             } else {
@@ -167,10 +167,10 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         }
 
         return new LayerMemoryReport.Builder(layerName, VariationalAutoencoder.class, inputType, outputType)
-                .standardMemory(numParams, updaterStateSize)
-                .workingMemory(0, inferenceWorkingMemSizePerEx, 0, trainWorkingMemSize)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(numParams, updaterStateSize)
+                        .workingMemory(0, inferenceWorkingMemSizePerEx, 0, trainWorkingMemSize)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     public static class Builder extends BasePretrainNetwork.Builder<Builder> {

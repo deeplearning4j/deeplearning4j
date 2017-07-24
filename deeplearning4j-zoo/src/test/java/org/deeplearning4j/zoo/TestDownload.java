@@ -38,7 +38,7 @@ public class TestDownload {
             ZooModel.ROOT_CACHE_DIR.delete();
 
         // iterate through each available model
-//        Map<ZooType, ZooModel> models = ModelSelector.select(ZooType.CNN, 10);
+        //        Map<ZooType, ZooModel> models = ModelSelector.select(ZooType.CNN, 10);
         Map<ZooType, ZooModel> models = new HashMap<>();
         models.putAll(ModelSelector.select(ZooType.LENET, 10, 12345, 1, WorkspaceMode.SINGLE));
         models.putAll(ModelSelector.select(ZooType.SIMPLECNN, 10, 12345, 1, WorkspaceMode.SINGLE));

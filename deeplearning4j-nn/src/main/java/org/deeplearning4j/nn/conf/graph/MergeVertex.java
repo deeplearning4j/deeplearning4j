@@ -68,7 +68,7 @@ public class MergeVertex extends GraphVertex {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "MergeVertex()";
     }
 
@@ -126,7 +126,7 @@ public class MergeVertex extends GraphVertex {
                 if (type == InputType.Type.FF) {
                     return InputType.feedForward(size);
                 } else {
-                    int tsLength = ((InputType.InputTypeRecurrent)vertexInputs[0]).getTimeSeriesLength();
+                    int tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
                     return InputType.recurrent(size, tsLength);
                 }
             } else {
@@ -134,7 +134,7 @@ public class MergeVertex extends GraphVertex {
                 if (type == InputType.Type.FF) {
                     return InputType.feedForward(-1);
                 } else {
-                    int tsLength = ((InputType.InputTypeRecurrent)vertexInputs[0]).getTimeSeriesLength();
+                    int tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
                     return InputType.recurrent(-1, tsLength);
                 }
             }
@@ -180,10 +180,9 @@ public class MergeVertex extends GraphVertex {
         InputType outputType = getOutputType(-1, inputTypes);
 
         //TODO multiple input types
-        return new LayerMemoryReport.Builder(null, MergeVertex.class, inputTypes[0], outputType )
-                .standardMemory(0, 0)   //No params
-                .workingMemory(0, 0, 0, 0)  //No working memory in addition to activations/epsilons
-                .cacheMemory(0, 0)  //No caching
-                .build();
+        return new LayerMemoryReport.Builder(null, MergeVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, 0, 0, 0) //No working memory in addition to activations/epsilons
+                        .cacheMemory(0, 0) //No caching
+                        .build();
     }
 }

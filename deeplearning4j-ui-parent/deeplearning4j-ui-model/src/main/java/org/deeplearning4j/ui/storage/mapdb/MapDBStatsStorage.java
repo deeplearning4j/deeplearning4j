@@ -94,15 +94,15 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
         String compositeKey = COMPOSITE_KEY_HEADER + sessionID + COMPOSITE_KEY_SEPARATOR + typeID
                         + COMPOSITE_KEY_SEPARATOR + workerID;
 
-        Map<Long,Persistable> updateMap;
+        Map<Long, Persistable> updateMap;
         updateMapLock.lock();
-        try{
+        try {
             //Try again, in case another thread created it before lock was acquired in this thread
             if (updates.containsKey(id)) {
                 return updates.get(id);
             }
             updateMap = db.hashMap(compositeKey).keySerializer(Serializer.LONG)
-                    .valueSerializer(new PersistableSerializer<>()).createOrOpen();
+                            .valueSerializer(new PersistableSerializer<>()).createOrOpen();
             updates.put(id, updateMap);
         } finally {
             updateMapLock.unlock();

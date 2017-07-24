@@ -102,8 +102,8 @@ public class RBM extends BasePretrainNetwork {
         int updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         int trainSizePerEx = 0;
-        if(getDropOut() > 0){
-            if(false) {
+        if (getDropOut() > 0) {
+            if (false) {
                 //TODO drop connect
                 //Dup the weights... note that this does NOT depend on the minibatch size...
             } else {
@@ -117,16 +117,16 @@ public class RBM extends BasePretrainNetwork {
         trainSizePerEx += unsupervisedPerEx;
 
         //RBM layer does not use caching
-        Map<CacheMode,Integer> trainMode = new HashMap<>();
-        for(CacheMode cm : CacheMode.values()){
+        Map<CacheMode, Integer> trainMode = new HashMap<>();
+        for (CacheMode cm : CacheMode.values()) {
             trainMode.put(cm, trainSizePerEx);
         }
 
         return new LayerMemoryReport.Builder(layerName, RBM.class, inputType, outputType)
-                .standardMemory(numParams, updaterStateSize)
-                .workingMemory(0, unsupervisedPerEx, 0, unsupervisedPerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(numParams, updaterStateSize)
+                        .workingMemory(0, unsupervisedPerEx, 0, unsupervisedPerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     public enum VisibleUnit {

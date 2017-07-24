@@ -40,9 +40,9 @@ public class EmbeddingLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer ret =
-                new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer(conf);
+                        new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -71,10 +71,9 @@ public class EmbeddingLayer extends FeedForwardLayer {
         //Training: preout op, the only in-place ops on epsilon (from layer above) + assign ops
 
         return new LayerMemoryReport.Builder(layerName, EmbeddingLayer.class, inputType, outputType)
-                .standardMemory(numParams, updaterStateSize)
-                .workingMemory(0, 0, 0, actElementsPerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(numParams, updaterStateSize).workingMemory(0, 0, 0, actElementsPerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @AllArgsConstructor

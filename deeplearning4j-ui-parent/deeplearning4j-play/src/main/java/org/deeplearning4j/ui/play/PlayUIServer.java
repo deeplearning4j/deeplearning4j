@@ -153,7 +153,6 @@ public class PlayUIServer extends UIServer {
 
 
 
-
         for (UIModule m : uiModules) {
             List<Route> routes = m.getRoutes();
             for (Route r : routes) {
@@ -208,7 +207,7 @@ public class PlayUIServer extends UIServer {
     }
 
     @Override
-    public String getAddress(){
+    public String getAddress() {
         String addr = server.mainAddress().toString();
         if (addr.startsWith("/0:0:0:0:0:0:0:0")) {
             int last = addr.lastIndexOf(':');
@@ -219,17 +218,17 @@ public class PlayUIServer extends UIServer {
         return addr;
     }
 
-    private List<UIModule> modulesViaServiceLoader(){
+    private List<UIModule> modulesViaServiceLoader() {
 
         ServiceLoader<UIModule> sl = ServiceLoader.load(UIModule.class);
         Iterator<UIModule> iter = sl.iterator();
 
-        if(!iter.hasNext()){
+        if (!iter.hasNext()) {
             return Collections.emptyList();
         }
 
         List<UIModule> l = new ArrayList<>();
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             UIModule m = iter.next();
             log.info("Loaded UI module via service loader: {}", m.getClass());
             l.add(m);

@@ -94,7 +94,7 @@ public class StyleText extends Style {
          * In effect, this stops the representation from compressing the whitespace characters, and messing up/removing
          * text that contains newlines, tabs, etc.
          */
-        public Builder whitespacePre(boolean whitespacePre){
+        public Builder whitespacePre(boolean whitespacePre) {
             this.whitespacePre = whitespacePre;
             return this;
         }

@@ -251,7 +251,7 @@ public class SubsamplingLayerTest {
                                         .layer(2, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).build())
                                         .backprop(true).pretrain(false)
-                                .setInputType(InputType.convolutional(imageHeight, imageWidth, nChannels));
+                                        .setInputType(InputType.convolutional(imageHeight, imageWidth, nChannels));
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);

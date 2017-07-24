@@ -26,7 +26,7 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     public static final String GLOBAL_MEAN = "mean";
     public static final String GLOBAL_VAR = "var";
 
-    public static List<String> keys(){
+    public static List<String> keys() {
         return Arrays.asList(GAMMA, BETA, GLOBAL_MEAN, GLOBAL_VAR);
     }
 

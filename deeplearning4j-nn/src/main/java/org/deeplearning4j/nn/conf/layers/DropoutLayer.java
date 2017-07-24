@@ -95,11 +95,10 @@ public class DropoutLayer extends FeedForwardLayer {
         //But: this will be counted in the activations
         //(technically inference memory is over-estimated as a result)
 
-        return new LayerMemoryReport.Builder(layerName, DropoutLayer.class, inputType, inputType)
-                .standardMemory(0, 0)   //No params
-                .workingMemory(0, 0, 0, 0)  //No working mem, other than activations etc
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching
-                .build();
+        return new LayerMemoryReport.Builder(layerName, DropoutLayer.class, inputType, inputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, 0, 0, 0) //No working mem, other than activations etc
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
 

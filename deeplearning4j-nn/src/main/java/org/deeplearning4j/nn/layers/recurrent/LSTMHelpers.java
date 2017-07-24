@@ -687,11 +687,11 @@ public class LSTMHelpers {
         LayerMemoryReport r = getMemoryReport(true, lstmLayer, inputType);
 
         //Double everything for bidirectional
-        Map<CacheMode,Long> fixedTrain = new HashMap<>();
-        Map<CacheMode,Long> varTrain = new HashMap<>();
-        Map<CacheMode,Long> cacheFixed = new HashMap<>();
-        Map<CacheMode,Long> cacheVar = new HashMap<>();
-        for(CacheMode cm : CacheMode.values()){
+        Map<CacheMode, Long> fixedTrain = new HashMap<>();
+        Map<CacheMode, Long> varTrain = new HashMap<>();
+        Map<CacheMode, Long> cacheFixed = new HashMap<>();
+        Map<CacheMode, Long> cacheVar = new HashMap<>();
+        for (CacheMode cm : CacheMode.values()) {
             fixedTrain.put(cm, 2 * r.getWorkingMemoryFixedTrain().get(cm));
             varTrain.put(cm, 2 * r.getWorkingMemoryVariableTrain().get(cm));
             cacheFixed.put(cm, 2 * r.getCacheModeMemFixed().get(cm));
@@ -699,26 +699,27 @@ public class LSTMHelpers {
         }
 
         return new LayerMemoryReport.Builder(r.getLayerName(), r.getClass(), r.getInputType(), r.getOutputType())
-                .standardMemory(2 * r.getParameterSize(), 2 * r.getUpdaterStateSize())
-                .workingMemory(2 * r.getWorkingMemoryFixedInference(), 2 * r.getWorkingMemoryVariableInference(), fixedTrain, varTrain)
-                .cacheMemory(cacheFixed, cacheVar)
-                .build();
+                        .standardMemory(2 * r.getParameterSize(), 2 * r.getUpdaterStateSize())
+                        .workingMemory(2 * r.getWorkingMemoryFixedInference(),
+                                        2 * r.getWorkingMemoryVariableInference(), fixedTrain, varTrain)
+                        .cacheMemory(cacheFixed, cacheVar).build();
     }
 
-    public static LayerMemoryReport getMemoryReport(boolean isGraves, org.deeplearning4j.nn.conf.layers.FeedForwardLayer lstmLayer, InputType inputType ){
+    public static LayerMemoryReport getMemoryReport(boolean isGraves,
+                    org.deeplearning4j.nn.conf.layers.FeedForwardLayer lstmLayer, InputType inputType) {
 
 
-        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent)inputType;
+        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
         int tsLength = itr.getTimeSeriesLength();
 
         InputType outputType = lstmLayer.getOutputType(-1, inputType);
 
         int numParams = lstmLayer.initializer().numParams(lstmLayer);
-        int updaterSize = (int)lstmLayer.getIUpdater().stateSize(numParams);
+        int updaterSize = (int) lstmLayer.getIUpdater().stateSize(numParams);
 
         //Memory use during forward pass:
         //ifogActivations: nTimeSteps * [minibatch,4*layerSize] (not cached during inference fwd pass)
-        int workingMemInferencePerEx = tsLength * 4 * lstmLayer.getNOut();   //Reduced by factor of tsLength if using workspace
+        int workingMemInferencePerEx = tsLength * 4 * lstmLayer.getNOut(); //Reduced by factor of tsLength if using workspace
 
         //For training, we also have
         //nTimeSteps * 5 * [minibatch, nOut] - 4 x gate pre-outs, memory cell state - may be cached
@@ -741,13 +742,13 @@ public class LSTMHelpers {
         //TODO NO WAY TO TAKE LSTM WORKSPACE INTO ACCOUNT HERE :(
 
 
-        Map<CacheMode,Long> trainVariable = new HashMap<>();
-        Map<CacheMode,Long> cacheVariable = new HashMap<>();
-        for(CacheMode cm : CacheMode.values()){
+        Map<CacheMode, Long> trainVariable = new HashMap<>();
+        Map<CacheMode, Long> cacheVariable = new HashMap<>();
+        for (CacheMode cm : CacheMode.values()) {
             long trainWorking;
             long cacheMem;
 
-            if(cm == CacheMode.NONE){
+            if (cm == CacheMode.NONE) {
                 trainWorking = workingMemInferencePerEx + fwdPassPerTimeStepTrainCache + backpropWorkingSpace;
                 cacheMem = 0;
             } else {
@@ -759,10 +760,9 @@ public class LSTMHelpers {
             cacheVariable.put(cm, cacheMem);
         }
 
-        return new LayerMemoryReport.Builder(null, lstmLayer.getClass(), inputType, outputType )
-                .standardMemory(numParams, updaterSize)
-                .workingMemory(0, workingMemInferencePerEx, MemoryReport.CACHE_MODE_ALL_ZEROS, trainVariable)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, cacheVariable)
-                .build();
+        return new LayerMemoryReport.Builder(null, lstmLayer.getClass(), inputType, outputType)
+                        .standardMemory(numParams, updaterSize)
+                        .workingMemory(0, workingMemInferencePerEx, MemoryReport.CACHE_MODE_ALL_ZEROS, trainVariable)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, cacheVariable).build();
     }
 }

@@ -77,7 +77,7 @@ public class StackVertex extends GraphVertex {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "StackVertex()";
     }
 
@@ -181,10 +181,8 @@ public class StackVertex extends GraphVertex {
         //No working memory, just output activations
         InputType outputType = getOutputType(-1, inputTypes);
 
-        return new LayerMemoryReport.Builder(null, StackVertex.class, inputTypes[0], outputType )
-                .standardMemory(0, 0)   //No params
-                .workingMemory(0, 0, 0, 0)
-                .cacheMemory(0, 0)  //No caching
-                .build();
+        return new LayerMemoryReport.Builder(null, StackVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, 0, 0, 0).cacheMemory(0, 0) //No caching
+                        .build();
     }
 }
