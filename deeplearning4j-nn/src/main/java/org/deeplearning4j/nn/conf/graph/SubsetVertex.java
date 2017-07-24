@@ -128,10 +128,8 @@ public class SubsetVertex extends GraphVertex {
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         //Get op without dup - no additional memory use
         InputType outputType = getOutputType(-1, inputTypes);
-        return new LayerMemoryReport.Builder(null, SubsetVertex.class, inputTypes[0], outputType )
-                .standardMemory(0, 0)   //No params
-                .workingMemory(0, 0, 0, 0)
-                .cacheMemory(0, 0)  //No caching
-                .build();
+        return new LayerMemoryReport.Builder(null, SubsetVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, 0, 0, 0).cacheMemory(0, 0) //No caching
+                        .build();
     }
 }

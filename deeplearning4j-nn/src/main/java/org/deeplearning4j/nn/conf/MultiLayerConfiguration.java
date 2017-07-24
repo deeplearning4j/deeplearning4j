@@ -314,20 +314,20 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
      * @param inputType Input types for the network
      * @return Memory report for the network
      */
-    public NetworkMemoryReport getMemoryReport(InputType inputType){
+    public NetworkMemoryReport getMemoryReport(InputType inputType) {
 
-        Map<String,MemoryReport> memoryReportMap = new LinkedHashMap<>();
+        Map<String, MemoryReport> memoryReportMap = new LinkedHashMap<>();
         int nLayers = confs.size();
-        for( int i=0; i<nLayers; i++ ){
+        for (int i = 0; i < nLayers; i++) {
             String layerName = confs.get(i).getLayer().getLayerName();
-            if(layerName == null){
+            if (layerName == null) {
                 layerName = String.valueOf(i);
             }
 
             //Pass input type through preprocessor, if necessary
             InputPreProcessor preproc = getInputPreProcess(0);
             //TODO memory requirements for preprocessor
-            if(preproc != null){
+            if (preproc != null) {
                 inputType = preproc.getOutputType(inputType);
             }
 

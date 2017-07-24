@@ -168,10 +168,9 @@ public class PoolHelperVertex extends GraphVertex {
         //It's just a get op on the forward pass... no memory use
         InputType outputType = getOutputType(-1, inputTypes);
 
-        return new LayerMemoryReport.Builder(null, PoolHelperVertex.class, inputTypes[0], outputType )
-                .standardMemory(0, 0)   //No params
-                .workingMemory(0, 0, 0, 0)
-                .cacheMemory(0, 0)  //No caching
-                .build();
+        return new LayerMemoryReport.Builder(null, PoolHelperVertex.class, inputTypes[0], outputType)
+                        .standardMemory(0, 0) //No params
+                        .workingMemory(0, 0, 0, 0).cacheMemory(0, 0) //No caching
+                        .build();
     }
 }

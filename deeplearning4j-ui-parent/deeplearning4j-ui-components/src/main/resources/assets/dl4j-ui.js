@@ -301,27 +301,26 @@ var ChartHistogram = (function (_super) {
 var ChartLine = (function (_super) {
     __extends(ChartLine, _super);
     function ChartLine(jsonStr) {
-        var _this = this;
         _super.call(this, ComponentType.ChartLine, jsonStr);
         this.render = function (appendToObject) {
-            var nSeries = (!_this.xData ? 0 : _this.xData.length);
-            var s = _this.getStyle();
+            var nSeries = (!this.xData ? 0 : this.xData.length);
+            var s = this.getStyle();
             var margin = Style.getMargins(s);
             var xScale = d3.scale.linear().range([0, margin.widthExMargins]);
             var yScale = d3.scale.linear().range([margin.heightExMargins, 0]);
             var xAxis = d3.svg.axis().scale(xScale)
                 .orient("bottom").ticks(5);
-            if (_this.gridVerticalStrokeWidth != null && _this.gridVerticalStrokeWidth > 0) {
+            if (this.gridVerticalStrokeWidth != null && this.gridVerticalStrokeWidth > 0) {
                 xAxis.innerTickSize(-margin.heightExMargins);
             }
             var yAxis = d3.svg.axis().scale(yScale)
                 .orient("left").ticks(5);
-            if (_this.gridHorizontalStrokeWidth != null && _this.gridHorizontalStrokeWidth > 0) {
+            if (this.gridHorizontalStrokeWidth != null && this.gridHorizontalStrokeWidth > 0) {
                 yAxis.innerTickSize(-margin.widthExMargins);
             }
-            if (_this.suppressAxisHorizontal === true)
+            if (this.suppressAxisHorizontal === true)
                 xAxis.tickValues([]);
-            if (_this.suppressAxisVertical === true)
+            if (this.suppressAxisVertical === true)
                 yAxis.tickValues([]);
             var valueline = d3.svg.line()
                 .x(function (d) {
@@ -342,28 +341,28 @@ var ChartLine = (function (_super) {
             var xMax;
             var yMin;
             var yMax;
-            if (_this.setXMin != null)
-                xMin = _this.setXMin;
+            if (this.setXMin != null)
+                xMin = this.setXMin;
             else
-                xMin = (_this.xData ? TSUtils.min(_this.xData) : 0);
-            if (_this.setXMax != null)
-                xMax = _this.setXMax;
+                xMin = (this.xData ? TSUtils.min(this.xData) : 0);
+            if (this.setXMax != null)
+                xMax = this.setXMax;
             else
-                xMax = (_this.xData ? TSUtils.max(_this.xData) : 1);
-            if (_this.setYMin != null)
-                yMin = _this.setYMin;
+                xMax = (this.xData ? TSUtils.max(this.xData) : 1);
+            if (this.setYMin != null)
+                yMin = this.setYMin;
             else
-                yMin = (_this.yData ? TSUtils.min(_this.yData) : 0);
-            if (_this.setYMax != null)
-                yMax = _this.setYMax;
+                yMin = (this.yData ? TSUtils.min(this.yData) : 0);
+            if (this.setYMax != null)
+                yMax = this.setYMax;
             else
-                yMax = (_this.yData ? TSUtils.max(_this.yData) : 1);
+                yMax = (this.yData ? TSUtils.max(this.yData) : 1);
             xScale.domain([xMin, xMax]);
             yScale.domain([yMin, yMax]);
             var defaultColor = d3.scale.category10();
             for (var i = 0; i < nSeries; i++) {
-                var xVals = _this.xData[i];
-                var yVals = _this.yData[i];
+                var xVals = this.xData[i];
+                var yVals = this.yData[i];
                 var data = xVals.map(function (d, i) {
                     return { 'xPos': xVals[i], 'yPos': yVals[i] };
                 });
@@ -380,8 +379,8 @@ var ChartLine = (function (_super) {
                 .style("fill", "none")
                 .call(xAxis);
             xAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
-            if (_this.gridVerticalStrokeWidth != null)
-                xAxisNode.selectAll('.axis line').style({ 'stroke-width': _this.gridVerticalStrokeWidth });
+            if (this.gridVerticalStrokeWidth != null)
+                xAxisNode.selectAll('.axis line').style({ 'stroke-width': this.gridVerticalStrokeWidth });
             var yAxisNode = svg.append("g")
                 .attr("class", "y axis")
                 .style("stroke", "#000")
@@ -389,16 +388,16 @@ var ChartLine = (function (_super) {
                 .style("fill", "none")
                 .call(yAxis);
             yAxisNode.selectAll('text').style("stroke-width", 0).style("fill", "#000000");
-            if (_this.gridHorizontalStrokeWidth != null)
-                yAxisNode.selectAll('.axis line').style({ 'stroke-width': _this.gridHorizontalStrokeWidth });
-            if (_this.seriesNames && _this.showLegend === true) {
+            if (this.gridHorizontalStrokeWidth != null)
+                yAxisNode.selectAll('.axis line').style({ 'stroke-width': this.gridHorizontalStrokeWidth });
+            if (this.seriesNames && this.showLegend === true) {
                 var legendSpace = margin.widthExMargins / i;
                 for (var i = 0; i < nSeries; i++) {
-                    var values = _this.xData[i];
-                    var yValues = _this.yData[i];
+                    var values = this.xData[i];
+                    var yValues = this.yData[i];
                     var lastX = values[values.length - 1];
                     var lastY = yValues[yValues.length - 1];
-                    var toDisplay = _this.seriesNames[i];
+                    var toDisplay = this.seriesNames[i];
                     svg.append("text")
                         .attr("x", (legendSpace / 2) + i * legendSpace)
                         .attr("y", margin.heightExMargins + (margin.bottom / 2) + 5)
@@ -407,11 +406,11 @@ var ChartLine = (function (_super) {
                         .text(toDisplay);
                 }
             }
-            if (_this.title) {
+            if (this.title) {
                 var titleStyle;
-                if (_this.style)
-                    titleStyle = _this.style.getTitleStyle();
-                Chart.appendTitle(svg, _this.title, margin, titleStyle);
+                if (this.style)
+                    titleStyle = this.style.getTitleStyle();
+                Chart.appendTitle(svg, this.title, margin, titleStyle);
             }
         };
         var json = JSON.parse(jsonStr);
@@ -1037,7 +1036,7 @@ var StyleChart = (function (_super) {
         this.getPointSize = function () { return _this.pointSize; };
         this.getSeriesColors = function () { return _this.seriesColors; };
         this.getSeriesColor = function (idx) {
-            if (!_this.seriesColors || idx < 0 || idx > _this.seriesColors.length)
+            if (!this.seriesColors || idx < 0 || idx > this.seriesColors.length)
                 return null;
             return _this.seriesColors[idx];
         };
@@ -1254,27 +1253,30 @@ var StyleTable = (function (_super) {
 var ComponentText = (function (_super) {
     __extends(ComponentText, _super);
     function ComponentText(jsonStr) {
+        var _this = this;
         _super.call(this, ComponentType.ComponentText);
         this.render = function (appendToObject) {
-            var textNode = document.createTextNode(this.text);
-            if (this.style) {
+            var textNode = document.createTextNode(_this.text);
+            if (_this.style) {
                 var newSpan = document.createElement('span');
-                if (this.style.getFont())
-                    newSpan.style.font = this.style.getFont();
-                if (this.style.getFontSize() != null)
-                    newSpan.style.fontSize = this.style.getFontSize() + "pt";
-                if (this.style.getUnderline() != null)
+                if (_this.style.getFont())
+                    newSpan.style.font = _this.style.getFont();
+                if (_this.style.getFontSize() != null)
+                    newSpan.style.fontSize = _this.style.getFontSize() + "pt";
+                if (_this.style.getUnderline() != null)
                     newSpan.style.textDecoration = 'underline';
-                if (this.style.getColor())
-                    newSpan.style.color = this.style.getColor();
-                if (this.style.getMarginTop())
-                    newSpan.style.marginTop = this.style.getMarginTop() + "px";
-                if (this.style.getMarginBottom())
-                    newSpan.style.marginBottom = this.style.getMarginBottom() + "px";
-                if (this.style.getMarginLeft())
-                    newSpan.style.marginLeft = this.style.getMarginLeft() + "px";
-                if (this.style.getMarginRight())
-                    newSpan.style.marginRight = this.style.getMarginRight() + "px";
+                if (_this.style.getColor())
+                    newSpan.style.color = _this.style.getColor();
+                if (_this.style.getMarginTop())
+                    newSpan.style.marginTop = _this.style.getMarginTop() + "px";
+                if (_this.style.getMarginBottom())
+                    newSpan.style.marginBottom = _this.style.getMarginBottom() + "px";
+                if (_this.style.getMarginLeft())
+                    newSpan.style.marginLeft = _this.style.getMarginLeft() + "px";
+                if (_this.style.getMarginRight())
+                    newSpan.style.marginRight = _this.style.getMarginRight() + "px";
+                if (_this.style.getWhitespacePre())
+                    newSpan.style.whiteSpace = 'pre';
                 newSpan.appendChild(textNode);
                 appendToObject.append(newSpan);
             }
@@ -1302,12 +1304,14 @@ var StyleText = (function (_super) {
         this.getFontSize = function () { return _this.fontSize; };
         this.getUnderline = function () { return _this.underline; };
         this.getColor = function () { return _this.color; };
+        this.getWhitespacePre = function () { return _this.whitespacePre; };
         var style = jsonObj['StyleText'];
         if (style) {
             this.font = style['font'];
             this.fontSize = style['fontSize'];
             this.underline = style['underline'];
             this.color = style['color'];
+            this.whitespacePre = style['whitespacePre'];
         }
     }
     return StyleText;

@@ -27,6 +27,7 @@ import org.deeplearning4j.ui.play.staticroutes.Assets;
 import org.deeplearning4j.ui.play.staticroutes.I18NRoute;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
+import org.nd4j.linalg.io.CollectionUtils;
 import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
 import play.Mode;
@@ -130,6 +131,10 @@ public class PlayUIServer extends UIServer {
         remoteReceiverModule = new RemoteReceiverModule();
         uiModules.add(remoteReceiverModule);
 
+        //Check service loader mechanism (Arbiter UI, etc) for modules
+        uiModules.addAll(modulesViaServiceLoader());
+
+
         //Check if custom UI modules are enabled...
         String customModulePropertyStr = System.getProperty(UI_CUSTOM_MODULE_PROPERTY);
         boolean useCustomModules = false;
@@ -145,6 +150,7 @@ public class PlayUIServer extends UIServer {
             List<UIModule> list = getCustomUIModules(excludeClasses);
             uiModules.addAll(list);
         }
+
 
 
         for (UIModule m : uiModules) {
@@ -191,6 +197,17 @@ public class PlayUIServer extends UIServer {
         server = Server.forRouter(router, Mode.DEV, port);
         this.port = port;
 
+        log.info("DL4J UI Server started at {}", getAddress());
+
+        uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
+        uiEventRoutingThread.setDaemon(true);
+        uiEventRoutingThread.start();
+        if (enableRemote)
+            enableRemoteListener();
+    }
+
+    @Override
+    public String getAddress() {
         String addr = server.mainAddress().toString();
         if (addr.startsWith("/0:0:0:0:0:0:0:0")) {
             int last = addr.lastIndexOf(':');
@@ -198,13 +215,26 @@ public class PlayUIServer extends UIServer {
                 addr = "http://localhost:" + addr.substring(last + 1);
             }
         }
-        log.info("UI Server started at {}", addr);
+        return addr;
+    }
 
-        uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
-        uiEventRoutingThread.setDaemon(true);
-        uiEventRoutingThread.start();
-        if (enableRemote)
-            enableRemoteListener();
+    private List<UIModule> modulesViaServiceLoader() {
+
+        ServiceLoader<UIModule> sl = ServiceLoader.load(UIModule.class);
+        Iterator<UIModule> iter = sl.iterator();
+
+        if (!iter.hasNext()) {
+            return Collections.emptyList();
+        }
+
+        List<UIModule> l = new ArrayList<>();
+        while (iter.hasNext()) {
+            UIModule m = iter.next();
+            log.info("Loaded UI module via service loader: {}", m.getClass());
+            l.add(m);
+        }
+
+        return l;
     }
 
 

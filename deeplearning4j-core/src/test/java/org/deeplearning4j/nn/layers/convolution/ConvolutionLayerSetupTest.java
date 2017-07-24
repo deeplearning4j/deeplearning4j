@@ -309,9 +309,7 @@ public class ConvolutionLayerSetupTest {
                         .layer(5, new ActivationLayer.Builder().activation(Activation.RELU).build())
                         .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(10).build())
-                        .backprop(true).pretrain(false)
-                        .setInputType(InputType.convolutional(28, 28, 1))
-                        .build();
+                        .backprop(true).pretrain(false).setInputType(InputType.convolutional(28, 28, 1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
