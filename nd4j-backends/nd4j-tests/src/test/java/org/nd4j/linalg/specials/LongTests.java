@@ -10,6 +10,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -107,13 +108,13 @@ public class LongTests extends BaseNd4jTest {
         double exp = Transforms.manhattanDistance(Nd4j.create(1000).assign(1.0), Nd4j.create(1000).assign(2.0));
 
         INDArray hugeX = Nd4j.create(2200000, 1000).assign(1.0);
-        INDArray hugeY = Nd4j.create(2200000, 1000).assign(2.0);
+        INDArray hugeY = Nd4j.create(1, 1000).assign(2.0);
 
         for (int x = 0; x < hugeX.rows(); x++){
             assertEquals("Failed at row " + x, 1000, hugeX.getRow(x).sumNumber().intValue());
         }
 
-        INDArray result = Transforms.allManhattanDistances(hugeX, hugeY, 1);
+        INDArray result = Nd4j.getExecutioner().exec(new ManhattanDistance(hugeX, hugeY, hugeX.lengthLong()), 1);
         for (int x = 0; x < hugeX.rows(); x++) {
             assertEquals(exp, result.getDouble(x), 1e-5);
         }
