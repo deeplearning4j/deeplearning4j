@@ -5,9 +5,11 @@ import org.apache.commons.compress.utils.IOUtils;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.arbiter.ui.module.ArbiterModule;
 import org.deeplearning4j.ui.stats.impl.java.JavaStatsInitializationReport;
+import scala.annotation.meta.field;
 
 import java.io.*;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 
 /**
@@ -24,6 +26,10 @@ public abstract class BaseJavaPersistable implements Persistable {
     public BaseJavaPersistable(Builder builder){
         this.sessionId = builder.sessionId;
         this.timestamp = builder.timestamp;
+    }
+
+    protected BaseJavaPersistable(){
+        //No-arg costructor for Pesistable encoding/decoding
     }
 
     @Override
@@ -73,15 +79,19 @@ public abstract class BaseJavaPersistable implements Persistable {
 
     @Override
     public void decode(byte[] decode) {
-        JavaStatsInitializationReport r;
+        BaseJavaPersistable r;
         try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(decode))) {
-            r = (JavaStatsInitializationReport) ois.readObject();
+            r = (BaseJavaPersistable) ois.readObject();
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e); //Should never happen
         }
 
         Field[] fields = this.getClass().getDeclaredFields();
         for (Field f : fields) {
+            if(Modifier.isStatic(f.getModifiers())){
+                //Skip static fields
+                continue;
+            }
             f.setAccessible(true);
             try {
                 f.set(this, f.get(r));

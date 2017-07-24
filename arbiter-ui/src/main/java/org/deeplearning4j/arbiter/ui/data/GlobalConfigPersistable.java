@@ -32,6 +32,10 @@ public class GlobalConfigPersistable extends BaseJavaPersistable {
         this.optimizationRunner = builder.optimizationRunner;
     }
 
+    public GlobalConfigPersistable(){
+        //No-arg costructor for Pesistable encoding/decoding
+    }
+
     @Override
     public String getTypeID() {
         return ArbiterModule.ARBITER_UI_TYPE_ID;

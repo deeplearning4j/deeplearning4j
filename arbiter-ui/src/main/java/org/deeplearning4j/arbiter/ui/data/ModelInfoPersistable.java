@@ -52,6 +52,10 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
         this.exceptionStackTrace = builder.exceptionStackTrace;
     }
 
+    public ModelInfoPersistable(){
+        //No-arg costructor for Pesistable encoding/decoding
+    }
+
     @Override
     public String getWorkerID() {
         return workerId;
