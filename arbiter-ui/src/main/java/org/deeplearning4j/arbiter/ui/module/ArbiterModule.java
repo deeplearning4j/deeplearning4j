@@ -129,7 +129,11 @@ public class ArbiterModule implements UIModule {
         Route r7 = new Route("/arbiter/results", HttpMethod.GET, FunctionType.Supplier, this::getSummaryResults);
         Route r8 = new Route("/arbiter/summary", HttpMethod.GET, FunctionType.Supplier, this::getSummaryStatus);
 
-        return Arrays.asList(r1, r3, r4, r5, r6, r7, r8);
+        Route r9a = new Route("/arbiter/sessions/all", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
+        Route r9b = new Route("/arbiter/sessions/current", HttpMethod.GET, FunctionType.Supplier, this::currentSession);
+        Route r9c = new Route("/arbiter/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession);
+
+        return Arrays.asList(r1, r3, r4, r5, r6, r7, r8, r9a, r9b, r9c);
     }
 
     @Override
@@ -172,6 +176,26 @@ public class ArbiterModule implements UIModule {
 
         if (currentSessionID == null)
             getDefaultSession();
+    }
+
+    private Result currentSession() {
+        String sid = currentSessionID == null ? "" : currentSessionID;
+        return ok(asJson(sid)).as(JSON);
+    }
+
+    private Result listSessions() {
+        return Results.ok(asJson(knownSessionIDs.keySet())).as(JSON);
+    }
+
+    private Result setSession(String newSessionID) {
+        log.info("SET TO SESSION: {}", newSessionID);
+
+        if (knownSessionIDs.containsKey(newSessionID)) {
+            currentSessionID = newSessionID;
+            return ok();
+        } else {
+            return Results.badRequest("Unknown session ID: " + newSessionID);
+        }
     }
 
     private void getDefaultSession() {

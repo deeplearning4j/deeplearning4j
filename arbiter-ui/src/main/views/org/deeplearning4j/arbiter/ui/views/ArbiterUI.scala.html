@@ -202,6 +202,46 @@
             var resultsTime = jsonObj['resultsUpdateTime'];
             //console.log("Last update times: " + statusTime + ", " + settingsTime + ", " + resultsTime);
 
+            //Update available sessions:
+//            var currSession;
+//            $.get("/arbiter/sessions/current", function(data){
+//                console.log("GOT CURRENT SESSION: " + data);
+//                currSession = data;
+//            })
+//                    .fail(function(msg){
+//                        console.log("Failed: " + msg);
+//                    });
+
+            var currSession;
+            $.get("/arbiter/sessions/current", function(data){
+                currSession = data; //JSON.stringify(data);
+                console.log("Current: " + currSession);
+            });
+
+            $.get("/arbiter/sessions/all", function(data){
+                var keys = data;    // JSON.stringify(data);
+
+                if(keys.length > 1){
+                    $("#sessionSelectDiv").show();
+
+                    var elem = $("#sessionSelect");
+                    elem.empty();
+
+                    var currSelectedIdx = 0;
+                    for (var i = 0; i < keys.length; i++) {
+                        if(keys[i] == currSession){
+                            currSelectedIdx = i;
+                        }
+                        elem.append("<option value='" + keys[i] + "'>" + keys[i] + "</option>");
+                    }
+
+                    $("#sessionSelect option[value='" + keys[currSelectedIdx] +"']").attr("selected", "selected");
+                    $("#sessionSelectDiv").show();
+                }
+                console.log("Got sessions: " + keys + ", current: " + currSession);
+            });
+
+
             //Check last update times for each part of document, and update as necessary
             //First section: summary status
             if(lastStatusUpdateTime != statusTime){
@@ -434,6 +474,25 @@
         });
     });
 
+    function selectNewSession(){
+        var selector = $("#sessionSelect");
+        var currSelected = selector.val();
+
+        if(currSelected){
+            $.ajax({
+                url: "/arbiter/sessions/set/" + currSelected,
+                async: true,
+                error: function (query, status, error) {
+                    console.log("Error setting session: " + error);
+                },
+                success: function (data) {
+                    //Update UI immediately
+                    doUpdate();
+                }
+            });
+        }
+    }
+
 </script>
 <script>
     $(function () {
@@ -465,9 +524,18 @@
                         <div style="height: 40px;
                             float: left;
                             padding-top: 10px">Deeplearning4J - Arbiter UI</div></td>
+                    <td>
+                        <div id="sessionSelectDiv" style="display:none; float:left; font-size: 10pt; color:black">
+                            <span style="color: white">Session:</span>
+                        <select id="sessionSelect" onchange='selectNewSession()'>
+                            <option>(Session ID)</option>
+                        </select>
+                    </div>
+                    </td>
                 </tr>
             </tbody>
         </table>
+
 
         <div style="width: 1200px;
             margin-left: auto;

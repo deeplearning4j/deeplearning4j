@@ -385,6 +385,91 @@ public class TestBasic {
     }
 
 
+
+    @Test
+    @Ignore
+    public void testBasicMnistMultipleSessions() throws Exception {
+
+        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                .learningRate(new ContinuousParameterSpace(0.0001, 0.2))
+                .l2(new ContinuousParameterSpace(0.0001, 0.05))
+                .dropOut(new ContinuousParameterSpace(0.2, 0.7))
+                .addLayer(
+                        new ConvolutionLayerSpace.Builder().nIn(1)
+                                .nOut(new IntegerParameterSpace(5, 30))
+                                .kernelSize(new DiscreteParameterSpace<>(new int[] {3, 3},
+                                        new int[] {4, 4}, new int[] {5, 5}))
+                                .stride(new DiscreteParameterSpace<>(new int[] {1, 1},
+                                        new int[] {2, 2}))
+                                .activation(new DiscreteParameterSpace<>(Activation.RELU,
+                                        Activation.SOFTPLUS, Activation.LEAKYRELU))
+                                .build())
+                .addLayer(new DenseLayerSpace.Builder().nOut(new IntegerParameterSpace(32, 128))
+                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
+                        .build(), new IntegerParameterSpace(0, 1), true) //0 to 1 layers
+                .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .setInputType(InputType.convolutionalFlat(28, 28, 1))
+                .build();
+        Map<String, Object> commands = new HashMap<>();
+//        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
+
+        //Define configuration:
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
+        DataProvider dataProvider = new MnistDataSetProvider();
+
+
+        String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterUiTestBasicMnist\\").getAbsolutePath();
+
+        File f = new File(modelSavePath);
+        if (f.exists())
+            f.delete();
+        f.mkdir();
+        if (!f.exists())
+            throw new RuntimeException();
+
+        OptimizationConfiguration configuration =
+                new OptimizationConfiguration.Builder()
+                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                        .modelSaver(new FileModelSaver(modelSavePath))
+                        .scoreFunction(new TestSetLossScoreFunction(true))
+                        .terminationConditions(new MaxTimeCondition(1, TimeUnit.MINUTES),
+                                new MaxCandidatesCondition(3))
+                        .build();
+
+        IOptimizationRunner runner =
+                new LocalOptimizationRunner(configuration, new MultiLayerNetworkTaskCreator());
+
+        StatsStorage ss = new InMemoryStatsStorage();
+
+
+        StatusListener sl = new ArbiterStatusListener(ss);
+        runner.addListeners(sl);
+
+        UIServer.getInstance().attach(ss);
+        runner.execute();
+
+
+        candidateGenerator = new RandomSearchGenerator(mls, commands);
+        configuration = new OptimizationConfiguration.Builder()
+                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                        .modelSaver(new FileModelSaver(modelSavePath))
+                        .scoreFunction(new TestSetLossScoreFunction(true))
+                        .terminationConditions(new MaxTimeCondition(1, TimeUnit.MINUTES),
+                                new MaxCandidatesCondition(3))
+                        .build();
+
+        runner = new LocalOptimizationRunner(configuration, new MultiLayerNetworkTaskCreator());
+        sl = new ArbiterStatusListener(ss);
+        runner.addListeners(sl);
+
+        UIServer.getInstance().attach(ss);
+
+        runner.execute();
+
+        Thread.sleep(100000);
+    }
+
     private static class MnistDataSetProvider implements DataProvider {
 
         @Override

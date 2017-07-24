@@ -34,8 +34,8 @@ import java.util.concurrent.TimeUnit;
 @NoArgsConstructor
 @Data
 public class MaxTimeCondition implements TerminationCondition {
-
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("dd-MMM HH:mm ZZ");
+
     private long duration;
     private TimeUnit timeUnit;
     private long startTime;
@@ -72,7 +72,11 @@ public class MaxTimeCondition implements TerminationCondition {
 
     @Override
     public String toString() {
-        return "MaxTimeCondition(" + duration + "," + timeUnit + ",start=\"" + formatter.print(startTime) + "\",end=\""
-                        + formatter.print(endTime) + "\")";
+        if(startTime > 0){
+            return "MaxTimeCondition(" + duration + "," + timeUnit + ",start=\"" + formatter.print(startTime) + "\",end=\""
+                    + formatter.print(endTime) + "\")";
+        } else {
+            return "MaxTimeCondition(" + duration + "," + timeUnit + "\")";
+        }
     }
 }

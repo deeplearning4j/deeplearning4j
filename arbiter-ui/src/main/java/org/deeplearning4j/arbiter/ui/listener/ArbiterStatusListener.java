@@ -194,11 +194,14 @@ public class ArbiterStatusListener implements StatusListener {
 
 
     private GlobalConfigPersistable getNewStatusPersistable(IOptimizationRunner r){
-        if(ocJson == null || this.startTime == 0L){
-            //Want to update config once start time has been set
-            ocJson = JsonMapper.asJson(r.getConfiguration());
-            this.startTime = r.getConfiguration().getExecutionStartTime();
-        }
+//        if(ocJson == null || this.startTime == 0L){
+//            //Want to update config once start time has been set
+//            ocJson = JsonMapper.asJson(r.getConfiguration());
+//            this.startTime = r.getConfiguration().getExecutionStartTime();
+//        }
+        //TODO: cache global config, but we don't want to have outdated info (like uninitialized termination conditions)
+
+        ocJson = JsonMapper.asJson(r.getConfiguration());
 
         GlobalConfigPersistable p = new GlobalConfigPersistable.Builder()
                 .sessionId(sessionId)
