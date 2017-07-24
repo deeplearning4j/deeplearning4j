@@ -1095,7 +1095,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
-         * Once update with given threshold become too sparse, threshold will be decreased by thresholdStep, but now below minimum threshold
+         * Once update with given threshold become too sparse, threshold will be decreased by thresholdStep, but not below minimum threshold
          *
          * Default value: 1e-5
          * @param threshold

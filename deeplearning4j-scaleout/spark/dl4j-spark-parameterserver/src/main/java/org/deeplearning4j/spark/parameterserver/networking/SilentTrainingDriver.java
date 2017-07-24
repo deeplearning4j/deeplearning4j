@@ -9,6 +9,7 @@ import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.spark.parameterserver.networking.messages.SilentUpdatesMessage;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -143,17 +144,20 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
             synchronized (this) {
                 // threshold decoder is inplace & fast
                 int encoding = message.getUpdates().data().getInt(3);
-                if (encoding == 0) {
+                if (encoding == ThresholdCompression.FLEXIBLE_ENCODING) {
                     Nd4j.getExecutioner().thresholdDecode(message.getUpdates(), updates);
                     sparseCounter.incrementAndGet();
-                } else if (encoding == 1) {
+                } else if (encoding == ThresholdCompression.BITMAP_ENCODING) {
                     Nd4j.getExecutioner().bitmapDecode(message.getUpdates(), updates);
                     denseCounter.incrementAndGet();
-                }
+                } else
+                    throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
 
+                /*
                 if ((sparseCounter.get() + denseCounter.get()) % 100 == 0) {
                     log.info("Sparse/Dense ratio: {}", String.format("%.2f", (sparseCounter.get() +1) / (double) (denseCounter.get() + 1)));
                 }
+                */
 
 
                 // this simple flag shows that we have something not applied, will be used at finishTraining() method

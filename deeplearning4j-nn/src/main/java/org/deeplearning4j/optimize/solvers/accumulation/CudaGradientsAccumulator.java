@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.AtomicThrowable;
@@ -248,17 +249,21 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                             INDArray compressed_copy = compressed.unsafeDuplication(true);
 
                             int encoding = compressed.data().getInt(3);
-                            if (encoding == 0)
+                            if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
                                 Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
-                            else
+                            else if (encoding == ThresholdCompression.BITMAP_ENCODING)
                                 Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
+                            else
+                                throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
                         }
                     } else {
                         int encoding = compressed.data().getInt(3);
-                        if (encoding == 0)
+                        if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
                             Nd4j.getExecutioner().thresholdDecode(compressed, updates);
-                        else
+                        else if (encoding == ThresholdCompression.BITMAP_ENCODING)
                             Nd4j.getExecutioner().bitmapDecode(compressed, updates);
+                        else
+                            throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
                     }
                     cnt++;
                     ent++;
@@ -324,17 +329,21 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                                         .getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
                             INDArray compressed_copy = compressed.unsafeDuplication(true);
                             int encoding = compressed.data().getInt(3);
-                            if (encoding == 0)
+                            if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
                                 Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
-                            else
+                            else if (encoding == ThresholdCompression.BITMAP_ENCODING)
                                 Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
+                            else
+                                throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
                         }
                     } else {
                         int encoding = compressed.data().getInt(3);
-                        if (encoding == 0)
+                        if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
                             Nd4j.getExecutioner().thresholdDecode(compressed, updates);
-                        else
+                        else if (encoding == ThresholdCompression.BITMAP_ENCODING)
                             Nd4j.getExecutioner().bitmapDecode(compressed, updates);
+                        else
+                            throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
                     }
                     cnt++;
                     ent++;
