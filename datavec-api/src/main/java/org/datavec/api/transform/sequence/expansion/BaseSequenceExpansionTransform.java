@@ -23,7 +23,6 @@ import lombok.Setter;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.sequence.nlp.TextToIntegerSequenceTransform;
 import org.datavec.api.writable.Writable;
 
 import java.util.*;
@@ -32,7 +31,6 @@ import java.util.*;
  * A base class for sequence expansion operations.
  * The idea: for one or more columns, expand the values to multiple sequence steps; for all other columns, just
  * duplicate the step values when expanding.
- * See {@link TextToIntegerSequenceTransform} for an example of this.
  *
  * @author Alex Black
  */

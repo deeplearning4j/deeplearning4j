@@ -26,14 +26,11 @@ import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.metadata.LongMetaData;
-import org.datavec.api.transform.nlp.impl.DefaultVocabProvider;
-import org.datavec.api.transform.nlp.impl.DefaultVocabulary;
 import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.ReduceSequenceTransform;
-import org.datavec.api.transform.sequence.nlp.TextToIntegerSequenceTransform;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
@@ -1416,52 +1413,5 @@ public class TestTransforms {
         String json = om.writeValueAsString(t);
         Transform transform2 = om.readValue(json, StringListToIndicesNDArrayTransform.class);
         Assert.assertEquals(t, transform2);
-    }
-
-    @Test
-    public void testTextToSequenceExpansionTransform(){
-        List<String> v = Arrays.asList("cat", "dog", "elephant", "fish", "horse", "jaguar");
-
-        Schema s = new Schema.Builder()
-                .addColumnDouble("doublecol")
-                .addColumnString("textcol")
-                .addColumnInteger("intcol")
-                .build();
-
-        String newColName = "idxs";
-
-        Transform t = new TextToIntegerSequenceTransform("textcol", newColName, new DefaultVocabProvider(new DefaultVocabulary(v)));
-        t.setInputSchema(s);
-
-        Schema sOut = t.transform(s);
-
-        assertEquals(3, sOut.numColumns());
-        assertEquals(Arrays.asList(ColumnType.Double, ColumnType.Integer, ColumnType.Integer),sOut.getColumnTypes());
-        assertEquals(Arrays.asList("doublecol", newColName, "intcol"), sOut.getColumnNames());
-
-        List<List<Writable>> seqIn = Collections.singletonList( Arrays.<Writable>asList(new DoubleWritable(1.0),
-                        new Text("a cat, the Dog, and more than one JAGUAR!"), new IntWritable(2)));
-
-        List<List<Writable>> seqOut = t.mapSequence(seqIn);
-
-        List<List<Writable>> expected = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(1.0), new IntWritable(v.indexOf("cat")), new IntWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(1.0), new IntWritable(v.indexOf("dog")), new IntWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(1.0), new IntWritable(v.indexOf("jaguar")), new IntWritable(2)));
-
-        assertEquals(expected, seqOut);
-
-
-        //Test multiple step expansion
-        seqIn = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(1.0), new Text("a cat, the Dog, and more than one JAGUAR!"), new IntWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(3.0), new Text("elephant and fish?"), new IntWritable(4)));
-
-        expected = new ArrayList<>(expected);
-        expected.add(Arrays.<Writable>asList(new DoubleWritable(3.0), new IntWritable(v.indexOf("elephant")), new IntWritable(4)));
-        expected.add(Arrays.<Writable>asList(new DoubleWritable(3.0), new IntWritable(v.indexOf("fish")), new IntWritable(4)));
-
-        seqOut = t.mapSequence(seqIn);
-        assertEquals(expected, seqOut);
     }
 }
