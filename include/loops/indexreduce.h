@@ -302,7 +302,7 @@ template<typename OpType>
 			int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
 			if(xElementWiseStride >= 1) {
-				for(int i = tid;i < n; i += (blockDim.x * gridDim.x)) {
+				for(Nd4jIndex i = tid;i < n; i += (blockDim.x * gridDim.x)) {
 					IndexValue <T> indexVal = {dx[i * xElementWiseStride], i};
 					reduction = OpType::update(reduction, indexVal, extraParams);
 				}
@@ -310,7 +310,7 @@ template<typename OpType>
 				int rank = shape::rank(xShapeInfo);
 				int ind2sub[MAX_RANK];
 #pragma unroll
-				for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
+				for(Nd4jIndex i = tid;i < n; i += blockDim.x * gridDim.x) {
 					shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
 
 					Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
@@ -458,7 +458,7 @@ template<typename OpType>
 								for (Nd4jIndex i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
                                     Nd4jIndex newOffset = (i * info.items);
 									T *chunk = x + newOffset;
-									int itemsToLoop = info.items;
+                                    Nd4jIndex itemsToLoop = info.items;
 									if(newOffset >= length) {
 										break;
 									}
@@ -597,7 +597,7 @@ template<typename OpType>
 
 #pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
 					for(Nd4jIndex i = 0;  i < resultLength; i++) {
-						int baseOffset = tadOffsets[i];
+						Nd4jIndex baseOffset = tadOffsets[i];
 						IndexValue<T> indexValue = OpType::startingIndexValue(&x[baseOffset]);
 
 // FIXME: proper reduction required here
