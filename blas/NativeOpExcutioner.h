@@ -61,7 +61,7 @@ public:
                                 int *dimension,
                                 int dimensionLength,
                                 int *tadShapeInfo,
-                                int *tadOffsets) {
+                                Nd4jIndex *tadOffsets) {
         functions::indexreduce::IndexReduce<T>::exec(opNum,
                                                      x,
                                                      xShapeInfo,
@@ -95,9 +95,9 @@ public:
                               int *dimension,
                               int dimensionLength,
                               int *tadOnlyShapeInfo,
-                              int *tadOffsets,
+                              Nd4jIndex *tadOffsets,
                               int *tadOnlyShapeInfoZ,
-                              int *tadOffsetsZ) {
+                              Nd4jIndex *tadOffsetsZ) {
         functions::broadcast::Broadcast<T>::exec(opNum,
                                                  x,
                                                  xShapeInfo,
@@ -231,7 +231,7 @@ public:
                            int *dimension,
                            int dimensionLength,
                            int *tadShapeInfo,
-                           int *tadOffsets) {
+                           Nd4jIndex *tadOffsets) {
         functions::reduce::ReduceFunction<T>::exec(
                 opNum,
                 x,
@@ -368,9 +368,9 @@ public:
                             int *dimension,
                             int dimensionLength,
                             int *xTadShapeInfo,
-                            int *xOffsets,
+                            Nd4jIndex *xOffsets,
                             int *yTadShapeInfo,
-                            int *yOffsets) {
+                            Nd4jIndex *yOffsets) {
 
         functions::reduce3::Reduce3<T>::execAll(opNum,
                                              x,
@@ -397,7 +397,7 @@ public:
                             T *result,
                             int *resultShapeInfoBuffer,
                             int *dimension,
-                            int dimensionLength, int *tadShapeInfo, int *tadOffsets) {
+                            int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
         functions::reduce3::Reduce3<T>::exec(opNum,
                                              x,
                                              xShapeInfo,
@@ -510,9 +510,9 @@ public:
                            int *dimension,
                            int dimensionLength,
                            int *tadShapeInfo,
-                           int *tadOffsets,
+                           Nd4jIndex *tadOffsets,
                            int *tadShapeInfoZ,
-                           int *tadOffsetsZ) {
+                           Nd4jIndex *tadOffsetsZ) {
         functions::scalar::ScalarTransform<T>::transform(opNum,
                                                          x,
                                                          xShapeInfo,
@@ -649,7 +649,7 @@ public:
                               int *resultShapeInfo,
                               T *extraParams,
                               int *tadShapeInfo,
-                              int *tadOffsets) {
+                              Nd4jIndex *tadOffsets) {
         functions::transform::Transform<T>::exec(opNum,
                                                  dx,
                                                  xShapeInfo,
@@ -679,7 +679,7 @@ public:
                               int *xIndexes,
                               int *resultIndexes,
                               int *tadShapeInfo,
-                              int *tadOffsets) {
+                              Nd4jIndex *tadOffsets) {
         functions::transform::Transform<T>::exec(
                 opNum,
                 dx,
@@ -769,7 +769,7 @@ public:
         sortGeneric<T>(x, xShapeInfo, descending);
     }
 
-    static void execSort(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+    static void execSort(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
         sortTadGeneric<T>(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
     }
 

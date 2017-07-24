@@ -51,7 +51,7 @@ void concatCpuGeneric(
     }
 
 
-    int length = shape::length(resultShapeInfo);
+    Nd4jIndex length = shape::length(resultShapeInfo);
 
 
     if(allC && dimension == 0 && shape::order(resultShapeInfo) == 'c') {
@@ -71,7 +71,7 @@ void concatCpuGeneric(
     int resultStride = shape::elementWiseStride(resultShapeInfo);
     //vector case
     if(shape::isVector(resultShapeInfo)) {
-        int idx = 0;
+        Nd4jIndex idx = 0;
         if(resultStride == 1) {
             for(int i = 0; i < numArrays; i++) {
                 if(shape::isVector(inputShapeInfoPointers[i]) || shape::order(inputShapeInfoPointers[i]) == shape::order(resultShapeInfo)) {
@@ -179,9 +179,9 @@ void concatCpuGeneric(
     resultTad.createOffsets();
     int resultTadEleStride = shape::elementWiseStride(resultTad.tadOnlyShapeInfo);
 
-    int arrOffset = 0;
+    Nd4jIndex arrOffset = 0;
     int tadEleStride = shape::elementWiseStride(resultTad.tadOnlyShapeInfo);
-    for(int i = 0; i < numArrays; i++) {
+    for(Nd4jIndex i = 0; i < numArrays; i++) {
         //tad info for the current array
         shape::TAD arrTad(inputShapeInfoPointers[i],&dimension,1);
         arrTad.createTadOnlyShapeInfo();
@@ -189,8 +189,8 @@ void concatCpuGeneric(
 
         //element wise stride and length for tad of current array
         int arrTadEleStride = shape::elementWiseStride(arrTad.tadOnlyShapeInfo);
-        int arrTadLength = shape::length(arrTad.tadOnlyShapeInfo);
-        for(int j = 0; j < arrTad.numTads; j++) {
+        Nd4jIndex arrTadLength = shape::length(arrTad.tadOnlyShapeInfo);
+        for(Nd4jIndex j = 0; j < arrTad.numTads; j++) {
             T *arrTadData = dataBuffers[i] + arrTad.tadOffsets[j];
             //result tad offset + the current offset for each tad + array offset (matches current array)
             T *currResultTadWithOffset = result  + resultTad.tadOffsets[j];
@@ -202,23 +202,23 @@ void concatCpuGeneric(
             if(arrTadEleStride > 0 && shape::order(resultShapeInfo) == shape::order(arrTad.tadOnlyShapeInfo)) {
                 if(arrTadEleStride == 1 && resultTadEleStride == 1) {
                     //iterate over the specified chunk of the tad
-                    for(int k = 0; k < arrTadLength; k++) {
+                    for(Nd4jIndex k = 0; k < arrTadLength; k++) {
                         currResultTadWithOffset[k] = arrTadData[k];
                     }
 
                 } //element wise stride isn't 1 for both can't use memcpy
                 else if(tadEleStride > 0 && shape::order(resultShapeInfo) == shape::order(arrTad.tadOnlyShapeInfo)) {
-                    for(int k = 0; k < arrTadLength; k++) {
+                    for(Nd4jIndex k = 0; k < arrTadLength; k++) {
                         currResultTadWithOffset[k * tadEleStride] = arrTadData[k * arrTadEleStride];
                     }
                 }
             }
             else {
-                int idx = 0;
+                Nd4jIndex idx = 0;
                 //use element wise stride for result but not this tad
                 if(tadEleStride > 0 && shape::order(resultShapeInfo) == shape::order(arrTad.tadOnlyShapeInfo)) {
                     if(arrTad.wholeThing) {
-                        for(int k = 0; k < shape::length(arrTad.tadOnlyShapeInfo); k++) {
+                        for(Nd4jIndex k = 0; k < shape::length(arrTad.tadOnlyShapeInfo); k++) {
                             currResultTadWithOffset[idx *resultTadEleStride] = arrTadData[k];
 
                         }
@@ -326,9 +326,9 @@ void accumulateGeneric(T **x, T *z, int n, const Nd4jIndex length) {
 #endif
 
 #pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
-    for (int i = 0; i < length; i++) {
+    for (Nd4jIndex i = 0; i < length; i++) {
 
-        for (int ar = 0; ar < n; ar++) {
+        for (Nd4jIndex ar = 0; ar < n; ar++) {
             z[i] += x[ar][i];
         }
     }
@@ -371,9 +371,9 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 #endif
 
 #pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
-    for (int i = 0; i < length; i++) {
+    for (Nd4jIndex i = 0; i < length; i++) {
 
-        for (int ar = 0; ar < n; ar++) {
+        for (Nd4jIndex ar = 0; ar < n; ar++) {
             z[i] += x[ar][i] / n;
         }
     }
@@ -381,7 +381,7 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 
     // instead of doing element-wise propagation, we just issue memcpy to propagate data
 #pragma omp parallel for num_threads(_threads) default(shared) proc_bind(close)
-    for(int ar = 0; ar < n; ar++) {
+    for(Nd4jIndex ar = 0; ar < n; ar++) {
         memcpy(x[ar], z, length * sizeof(T));
     }
 
@@ -403,7 +403,7 @@ int getPosition(int *xShapeInfo, int index) {
         int *xStride = shape::stride(xShapeInfo);
 
         shape::ind2subC(xRank, xShape, index, xCoord);
-        int xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+        Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
 
         return xOffset;
     }
@@ -466,7 +466,7 @@ void quickSort_parallel_internal(T* array, int *xShapeInfo, int left, int right,
 }
 
 template<typename T>
-void quickSort_parallel(T* array, int *xShapeInfo, int lenArray, int numThreads, bool descending){
+void quickSort_parallel(T* array, int *xShapeInfo, Nd4jIndex lenArray, int numThreads, bool descending){
 
     int cutoff = 1000;
 
@@ -506,10 +506,10 @@ void sortGeneric(T *x, int *xShapeInfo, bool descending) {
 }
 
 template<typename T>
-void sortTadGeneric(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+void sortTadGeneric(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
     //quickSort_parallel(x, xShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
-    int xLength = shape::length(xShapeInfo);
-    int xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    Nd4jIndex xLength = shape::length(xShapeInfo);
+    Nd4jIndex xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
     int numTads = xLength / xTadLength;
 
 #pragma omp parallel for
@@ -531,7 +531,7 @@ typedef union
 template<typename T>
 void decodeBitmapGeneric(void *dx, Nd4jIndex N, T *dz) {
     int *x = (int *) dx;
-    int lim = N / 16 + 5;
+    Nd4jIndex lim = N / 16 + 5;
 
     FloatBits2 fb;
     fb.i_ = x[2];
@@ -539,7 +539,7 @@ void decodeBitmapGeneric(void *dx, Nd4jIndex N, T *dz) {
 
 
 #pragma omp parallel for schedule(guided) proc_bind(close)
-    for (int e = 4; e < lim; e++) {
+    for (Nd4jIndex e = 4; e < lim; e++) {
 
         for (int bitId = 0; bitId < 16; bitId++) {
             bool hasBit = (x[e] & 1 << (bitId) ) != 0;
@@ -562,13 +562,13 @@ Nd4jIndex encodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, float threshold) {
     Nd4jIndex retVal = 0L;
 
 #pragma omp parallel for schedule(guided) proc_bind(close) reduction(+:retVal)
-    for (int x = 0; x < N; x += 16) {
+    for (Nd4jIndex x = 0; x < N; x += 16) {
 
         int byte = 0;
         int byteId = x / 16 + 4;
 
         for (int f = 0; f < 16; f++) {
-            int e = x + f;
+            Nd4jIndex e = x + f;
 
             if (e >= N)
                 continue;

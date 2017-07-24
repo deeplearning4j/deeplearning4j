@@ -99,7 +99,7 @@ struct SharedIndexValue<double> {
 			T *reductionBuffer,
 			UnifiedSharedMemory *manager,
 			int *tadShapeInfo,
-			int *tadOffset) {
+			Nd4jIndex *tadOffset) {
                     DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
 		}
 
@@ -173,7 +173,7 @@ template<typename OpType>
 			T *reductionBuffer,
 			UnifiedSharedMemory *manager,
 			int *tadOnlyShapeInfo,
-			int *tadOffsets) {
+			Nd4jIndex *tadOffsets) {
 		/**
 		 * Gpu information for the problem
 		 */
@@ -250,7 +250,7 @@ template<typename OpType>
                 int xCoord[MAX_RANK];
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-					int tadOffsetForBlock = tadOffsets[r];
+					Nd4jIndex tadOffsetForBlock = tadOffsets[r];
 
 					sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
@@ -275,7 +275,7 @@ template<typename OpType>
 
 #pragma unroll
 				for(int i = blockIdx.x; i < numTads; i+= gridDim.x) {
-					int tadOffsetForBlock = tadOffsets[i];
+					Nd4jIndex tadOffsetForBlock = tadOffsets[i];
 
 					sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 #pragma unroll
@@ -298,11 +298,11 @@ template<typename OpType>
 
 		//reduce to 1 result
 		else if (resultScalar) {
-			int n = shape::length(xShapeInfo);
+			Nd4jIndex n = shape::length(xShapeInfo);
 			int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
 			if(xElementWiseStride >= 1) {
-				for(int i = tid;i < n; i += (blockDim.x * gridDim.x)) {
+				for(Nd4jIndex i = tid;i < n; i += (blockDim.x * gridDim.x)) {
 					IndexValue <T> indexVal = {dx[i * xElementWiseStride], i};
 					reduction = OpType::update(reduction, indexVal, extraParams);
 				}
@@ -310,10 +310,10 @@ template<typename OpType>
 				int rank = shape::rank(xShapeInfo);
 				int ind2sub[MAX_RANK];
 #pragma unroll
-				for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
+				for(Nd4jIndex i = tid;i < n; i += blockDim.x * gridDim.x) {
 					shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
 
-					int offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
+					Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
 					IndexValue <T> indexVal = {dx[offset], i};
 					reduction = OpType::update(reduction, indexVal, extraParams);
 				}
@@ -393,7 +393,7 @@ template<typename OpType>
 			T *result,
 			int *resultShapeInfoBuffer,
 			int *dimension,
-			int dimensionLength, int *tadShapeInfo, int *tadOffset) {
+			int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffset) {
                     DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
 		}
 
@@ -411,7 +411,7 @@ template<typename OpType>
 				//T startingVal = OpType::startingValue(x);
 				IndexValue<T> startingIndex = OpType::startingIndexValue(x);
 
-				int length = shape::length(xShapeInfo);
+                Nd4jIndex length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				if(xElementWiseStride < 1) {
                     int *xShape = shape::shapeOf(xShapeInfo);
@@ -456,9 +456,9 @@ template<typename OpType>
 
 
 								for (Nd4jIndex i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
-									int newOffset = (i * info.items);
+                                    Nd4jIndex newOffset = (i * info.items);
 									T *chunk = x + newOffset;
-									int itemsToLoop = info.items;
+                                    Nd4jIndex itemsToLoop = info.items;
 									if(newOffset >= length) {
 										break;
 									}
@@ -515,14 +515,14 @@ template<typename OpType>
 					  T *result,
 					  int *resultShapeInfoBuffer,
 					  int *dimension,
-					  int dimensionLength, int *tadShapeInfo, int *tadOffset) {
+					  int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffset) {
 
 				if(shape::isScalar(resultShapeInfoBuffer)) {
 					result[0] = execScalar<OpType>(x,xShapeInfo,extraParams);
 					return;
 				}
 
-				const int resultLength = shape::length(resultShapeInfoBuffer);
+				const Nd4jIndex resultLength = shape::length(resultShapeInfoBuffer);
 				IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
 
 #pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
@@ -532,7 +532,7 @@ template<typename OpType>
 				}
 
 				int *tadOnlyShapeInfo = tadShapeInfo;
-				int *tadOffsets = tadOffset;
+				Nd4jIndex *tadOffsets = tadOffset;
 				shape::TAD *tad = nullptr;
 
 				if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
@@ -573,7 +573,7 @@ template<typename OpType>
 
 #pragma omp  parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
 					for(Nd4jIndex i = 0; i < resultLength; i++) {
-						int offset = tadOffsets[i];
+                        Nd4jIndex offset = tadOffsets[i];
 
 
                         IndexValue<T> indexValue = OpType::startingIndexValue(&x[offset]);
@@ -597,7 +597,7 @@ template<typename OpType>
 
 #pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
 					for(Nd4jIndex i = 0;  i < resultLength; i++) {
-						int baseOffset = tadOffsets[i];
+						Nd4jIndex baseOffset = tadOffsets[i];
 						IndexValue<T> indexValue = OpType::startingIndexValue(&x[baseOffset]);
 
 // FIXME: proper reduction required here
@@ -647,7 +647,7 @@ __device__ void indexReduceGeneric(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 
 	__shared__ UnifiedSharedMemory *manager;
 
@@ -699,7 +699,7 @@ __global__ void indexReduceDouble(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationBuffer, double *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int postProcessOrNot, int *allocationBuffer, double *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 	indexReduceGeneric<double>(
 			op,
 			dx,
@@ -737,7 +737,7 @@ __global__ void indexReduceFloat(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot,  int *allocationBuffer, float *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int postProcessOrNot,  int *allocationBuffer, float *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 	indexReduceGeneric<float>(
 			op,
 			dx,
@@ -760,7 +760,7 @@ __global__ void indexReduceHalf(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot,  int *allocationBuffer, float16 *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int postProcessOrNot,  int *allocationBuffer, float16 *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 	indexReduceGeneric<float16>(
 			op,
 			dx,

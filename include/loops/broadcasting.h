@@ -63,7 +63,7 @@ namespace functions {
 			T *result,
 			int *resultShapeInfo,
 			int *dimension,
-			int dimensionLength, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ) {
+			int dimensionLength, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *tadOnlyShapeInfoZ, Nd4jIndex *tadOffsetsZ) {
 
 		//decompose in to several sub tads after
 		//moving all dimensions (in sorted order)
@@ -112,8 +112,8 @@ namespace functions {
 		for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 
 
-            __shared__ int tadOffsetForBlock;
-            __shared__ int tadOffsetForBlockZ;
+            __shared__ Nd4jIndex tadOffsetForBlock;
+            __shared__ Nd4jIndex tadOffsetForBlockZ;
             __shared__ T *rR;
             __shared__ T *rX;
             if (threadIdx.x == 0) {
@@ -181,9 +181,9 @@ namespace functions {
                              int *dimension,
                              int dimensionLength,
                              int *tadShapeInfo,
-                             int *tadOffset,
+                             Nd4jIndex *tadOffset,
                              int *tadShapeInfoZ,
-                             int *tadOffsetZ) {
+                             Nd4jIndex *tadOffsetZ) {
                 DISPATCH_BY_OPNUM(exec, PARAMS(x,
                                                xShapeInfo,
                                                y,
@@ -219,9 +219,9 @@ namespace functions {
                              int *dimension,
                              int dimensionLength,
                              int *tadShapeInfo,
-                             int *tadOffset,
+                             Nd4jIndex *tadOffset,
                              int *tadShapeInfoZ,
-                             int *tadOffsetZ) {
+                             Nd4jIndex *tadOffsetZ) {
 
 
                 //decompose in to several sub tads after
@@ -229,7 +229,7 @@ namespace functions {
                 //to the back.
                 //permuted version of the x shape info for setting up the tad problem
                 int *tadShapeShapeInfo = tadShapeInfo;
-                int *tadOffsets = tadOffset;
+                Nd4jIndex *tadOffsets = tadOffset;
                 shape::TAD *tad = nullptr;
 
                 if (tadShapeInfo == nullptr || tadOffsets == nullptr) {
@@ -260,8 +260,9 @@ namespace functions {
 
 #pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
                 for (int i = 0; i < tads; i++) {
-                    int offset = tadOffsets[i];
-                    int offsetZ = tadOffsetZ[i];
+                    Nd4jIndex offset = tadOffsets[i];
+                    Nd4jIndex offsetZ = tadOffsetZ[i];
+//                    printf("Tad: [%i]; Offset: [%lld]; OffsetZ: [%lld];\n", i, offset, offsetZ);
 
 
                     if (tadEWS > 0 && yStride > 0 && zEWS > 0 && dimensionLength == 1) {
@@ -356,7 +357,7 @@ __device__ void broadcastSimpleGeneric(
 		T *result,
 		int *resultShapeInfo,
 		int *dimension,
-		int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ) {
+		int dimensionLength, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *tadOnlyShapeInfoZ, Nd4jIndex *tadOffsetsZ) {
 
 
 	functions::broadcast::Broadcast<T>::template transformCuda<OpClass>(
@@ -376,9 +377,9 @@ __device__ void broadcastSimpleGeneric(
 }
 
 // broadcast kernel call
-DISPATCH_KERNEL_SIMPLE(broadcastSimple_, broadcastSimpleGeneric, float, INPUT(float *x, int *xShapeInfo, float *y, int *yShapeInfo, float *result, int *resultShapeInfo, int *dimension, int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ), PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
-DISPATCH_KERNEL_SIMPLE(broadcastSimple_, broadcastSimpleGeneric, double, INPUT(double *x, int *xShapeInfo, double *y, int *yShapeInfo, double *result, int *resultShapeInfo, int *dimension, int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ), PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
-DISPATCH_KERNEL_SIMPLE(broadcastSimple_, broadcastSimpleGeneric, float16, INPUT(float16 *x, int *xShapeInfo, float16 *y, int *yShapeInfo, float16 *result, int *resultShapeInfo, int *dimension, int dimensionLength, int *tadOnlyShapeInfo, int *tadOffsets, int *tadOnlyShapeInfoZ, int *tadOffsetsZ), PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
+DISPATCH_KERNEL_SIMPLE(broadcastSimple_, broadcastSimpleGeneric, float, INPUT(float *x, int *xShapeInfo, float *y, int *yShapeInfo, float *result, int *resultShapeInfo, int *dimension, int dimensionLength, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *tadOnlyShapeInfoZ, Nd4jIndex *tadOffsetsZ), PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
+DISPATCH_KERNEL_SIMPLE(broadcastSimple_, broadcastSimpleGeneric, double, INPUT(double *x, int *xShapeInfo, double *y, int *yShapeInfo, double *result, int *resultShapeInfo, int *dimension, int dimensionLength, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *tadOnlyShapeInfoZ, Nd4jIndex *tadOffsetsZ), PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
+DISPATCH_KERNEL_SIMPLE(broadcastSimple_, broadcastSimpleGeneric, float16, INPUT(float16 *x, int *xShapeInfo, float16 *y, int *yShapeInfo, float16 *result, int *resultShapeInfo, int *dimension, int dimensionLength, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *tadOnlyShapeInfoZ, Nd4jIndex *tadOffsetsZ), PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
 
 #endif
 
