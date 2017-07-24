@@ -1337,7 +1337,7 @@ namespace shape {
         int tadRank = 0;
         int *tadShape = nullptr;
         int *tadStride = nullptr;
-        int *tadOffsets = nullptr;
+        Nd4jIndex *tadOffsets = nullptr;
         int tadOffsetForBlock = 0;
         int rank = 0;
         int numOnes = 0;
@@ -1742,7 +1742,7 @@ namespace shape {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        INLINEDEF int tadOffset(int index) {
+        INLINEDEF Nd4jIndex tadOffset(int index) {
             if(tadOnlyShapeInfo == nullptr) {
                 this->createTadOnlyShapeInfo();
             }
@@ -1753,7 +1753,7 @@ namespace shape {
             if(dimensionLength > 1) {
                 int *tad2Sub = this->tad2Sub(index,ptrManager);
 
-                int ret = shape::getOffset(0,shape::shapeOf(shapeInfo),shape::stride(shapeInfo),tad2Sub,shape::rank(shapeInfo));
+                Nd4jIndex ret = shape::getOffset(0,shape::shapeOf(shapeInfo),shape::stride(shapeInfo),tad2Sub,shape::rank(shapeInfo));
 
                 if(ret < 0) {
                     if (ptrManager == nullptr)
@@ -1769,7 +1769,7 @@ namespace shape {
             else {
                 int *tad2Sub = this->tad2Sub(index,ptrManager);
 
-                int ret = shape::getOffset(0,shape::shapeOf(shapeInfo),shape::stride(shapeInfo),tad2Sub,shape::rank(shapeInfo));
+                Nd4jIndex ret = shape::getOffset(0,shape::shapeOf(shapeInfo),shape::stride(shapeInfo),tad2Sub,shape::rank(shapeInfo));
 
                 if (ptrManager == nullptr)
                     delete[] tad2Sub;
@@ -1890,7 +1890,7 @@ namespace shape {
         __host__ __device__
 #endif
         void createOffsets() {
-            this->tadOffsets = new int[this->numTads];
+            this->tadOffsets = new Nd4jIndex[this->numTads];
 #pragma omp parallel for schedule(guided) proc_bind(close) default(shared)
             for(int i = 0; i < this->numTads; i++) {
                 this->tadOffsets[i] = this->tadOffset(i);

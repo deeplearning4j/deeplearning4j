@@ -140,7 +140,7 @@ __device__
 
 template<typename T>
 __device__
-void oes_tad(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+void oes_tad(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
     __shared__ int xLength;
     __shared__ int xTadLength;
     __shared__ int numTads;
@@ -274,17 +274,17 @@ extern "C" __global__ void cudaSortHalf(float16 *x, int *xShapeInfo, int window,
     bitonic_arbitrary_step<float16>(x, xShapeInfo, window, length, reverse, descending);
 }
 
-extern "C" __global__ void cudaSortTadFloat(float *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+extern "C" __global__ void cudaSortTadFloat(float *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
     //bitonic_sort_step<float>(x, xShapeInfo, j, k, descending);
     oes_tad<float>(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets,  descending);
 }
 
-extern "C" __global__ void cudaSortTadDouble(double *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+extern "C" __global__ void cudaSortTadDouble(double *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
     //bitonic_sort_step<float>(x, xShapeInfo, j, k, descending);
     oes_tad<double>(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 }
 
-extern "C" __global__ void cudaSortTadHalf(float16 *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+extern "C" __global__ void cudaSortTadHalf(float16 *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
     //bitonic_sort_step<float>(x, xShapeInfo, j, k, descending);
     oes_tad<float16>(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 }

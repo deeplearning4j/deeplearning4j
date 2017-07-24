@@ -163,9 +163,9 @@ template<typename OpType>
                                   int *dimension,
                                   int dimensionLength,
                                   int *tadShapeInfo,
-                                  int *tadOffsets,
+                                  Nd4jIndex *tadOffsets,
                                   int *tadShapeInfoZ,
-                                  int *tadOffsetsZ) {
+                                  Nd4jIndex *tadOffsetsZ) {
 
 
                 if (tadShapeInfoZ == nullptr) {
@@ -293,9 +293,9 @@ template<typename OpType>
                                   int *dimension,
                                   int dimensionLength,
                                   int *tadShapeInfo,
-                                  int *tadOffsets,
+                                  Nd4jIndex *tadOffsets,
                                   int *tadShapeInfoZ,
-                                  int *tadOffsetsZ) {
+                                  Nd4jIndex *tadOffsetsZ) {
 
                 DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS);
             }
@@ -375,9 +375,9 @@ template<typename OpType>
                                   int *dimension,
                                   int dimensionLength,
                                   int *tadShapeInfo,
-                                  int *tadOffsets,
+                                  Nd4jIndex *tadOffsets,
                                   int *tadShapeInfoZ,
-                                  int *tadOffsetsZ) {
+                                  Nd4jIndex *tadOffsetsZ) {
 
 
                 if (tadShapeInfoZ == nullptr) {
@@ -604,9 +604,9 @@ __device__ void scalarAlongDimensionGeneric(T *x,
                                   int *dimension,
                                   int dimensionLength,
                                   int *tadShapeInfo,
-                                  int *tadOffsets,
+                                  Nd4jIndex *tadOffsets,
                                   int *tadShapeInfoZ,
-                                  int *tadOffsetsZ) {
+                                  Nd4jIndex *tadOffsetsZ) {
 
     functions::scalar::ScalarTransform<T>::template transformCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 }
@@ -727,9 +727,9 @@ __device__ void scalarSimpleGeneric(
 
 
 // ScalarOp Along Dimension kernels
-DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float, INPUT(float *x, int *xShapeInfo, float *extraParams, float *z, int *zShapeInfo, float *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, int *tadShapeInfoZ, int *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
-DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, double, INPUT(double *x, int *xShapeInfo, double *extraParams, double *z, int *zShapeInfo, double *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, int *tadShapeInfoZ, int *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
-DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float16, INPUT(float16 *x, int *xShapeInfo, float16 *extraParams, float16 *z, int *zShapeInfo, float16 *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, int *tadShapeInfoZ, int *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float, INPUT(float *x, int *xShapeInfo, float *extraParams, float *z, int *zShapeInfo, float *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *tadShapeInfoZ, Nd4jIndex *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, double, INPUT(double *x, int *xShapeInfo, double *extraParams, double *z, int *zShapeInfo, double *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *tadShapeInfoZ, Nd4jIndex *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
+DISPATCH_KERNEL_SIMPLE(scalarAlongDimension_, scalarAlongDimensionGeneric, float16, INPUT(float16 *x, int *xShapeInfo, float16 *extraParams, float16 *z, int *zShapeInfo, float16 *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *tadShapeInfoZ, Nd4jIndex *tadOffsetsZ), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))
 
 // scalar shape
 DISPATCH_KERNEL_SIMPLE(scalarSimpleShaped_, scalarSimpleGeneric, float, INPUT(float dx, float *dy, int *xShapeInfo, float *params, float *result, int *resultShapeInfo, int *allocationBuffer), PARAMS(dx, dy, xShapeInfo, params, result, resultShapeInfo, allocationBuffer), OPS_A(SCALAR_OPS))

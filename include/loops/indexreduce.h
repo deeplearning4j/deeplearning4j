@@ -99,7 +99,7 @@ struct SharedIndexValue<double> {
 			T *reductionBuffer,
 			UnifiedSharedMemory *manager,
 			int *tadShapeInfo,
-			int *tadOffset) {
+			Nd4jIndex *tadOffset) {
                     DISPATCH_BY_OPNUM(transform, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
 		}
 
@@ -173,7 +173,7 @@ template<typename OpType>
 			T *reductionBuffer,
 			UnifiedSharedMemory *manager,
 			int *tadOnlyShapeInfo,
-			int *tadOffsets) {
+			Nd4jIndex *tadOffsets) {
 		/**
 		 * Gpu information for the problem
 		 */
@@ -393,7 +393,7 @@ template<typename OpType>
 			T *result,
 			int *resultShapeInfoBuffer,
 			int *dimension,
-			int dimensionLength, int *tadShapeInfo, int *tadOffset) {
+			int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffset) {
                     DISPATCH_BY_OPNUM(exec, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
 		}
 
@@ -515,7 +515,7 @@ template<typename OpType>
 					  T *result,
 					  int *resultShapeInfoBuffer,
 					  int *dimension,
-					  int dimensionLength, int *tadShapeInfo, int *tadOffset) {
+					  int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffset) {
 
 				if(shape::isScalar(resultShapeInfoBuffer)) {
 					result[0] = execScalar<OpType>(x,xShapeInfo,extraParams);
@@ -532,7 +532,7 @@ template<typename OpType>
 				}
 
 				int *tadOnlyShapeInfo = tadShapeInfo;
-				int *tadOffsets = tadOffset;
+				Nd4jIndex *tadOffsets = tadOffset;
 				shape::TAD *tad = nullptr;
 
 				if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
@@ -647,7 +647,7 @@ __device__ void indexReduceGeneric(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int postProcessOrNot, int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 
 	__shared__ UnifiedSharedMemory *manager;
 
@@ -699,7 +699,7 @@ __global__ void indexReduceDouble(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationBuffer, double *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int postProcessOrNot, int *allocationBuffer, double *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 	indexReduceGeneric<double>(
 			op,
 			dx,
@@ -737,7 +737,7 @@ __global__ void indexReduceFloat(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot,  int *allocationBuffer, float *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int postProcessOrNot,  int *allocationBuffer, float *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 	indexReduceGeneric<float>(
 			op,
 			dx,
@@ -760,7 +760,7 @@ __global__ void indexReduceHalf(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot,  int *allocationBuffer, float16 *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int postProcessOrNot,  int *allocationBuffer, float16 *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 	indexReduceGeneric<float16>(
 			op,
 			dx,

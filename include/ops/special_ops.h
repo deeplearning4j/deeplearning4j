@@ -142,7 +142,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *tadShapeInfo, int *tadOffsets) {
+			T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
 			int kernelWidth = (int)extraParams[0];
 			int kernelHeight = (int)extraParams[1];
@@ -441,7 +441,7 @@ namespace simdOps {
 				int *xShapeBuffer,
 				T *result,
 				int *resultShapeBuffer,
-				T *extraParams, int *tadShapeInfo, int *tadOffsets) {
+				T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 
 			int length = shape::length(xShapeBuffer);
 			int _threads = 2;
@@ -617,7 +617,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *tadShapeInfo, int *tadOffsets) {
+			T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 			int inOffset = 0;
 			int *inShape = shape::shapeOf(xShapeBuffer);
 			int *inStride = shape::stride(xShapeBuffer);
@@ -941,7 +941,7 @@ namespace simdOps {
 #endif
 
 
-		static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *zShapeBuffer, T *extraParams, int *tadShapeInfo, int *tadOffsets) {
+		static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *zShapeBuffer, T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 			Nd4jIndex xLength = shape::length(xShapeBuffer);
 			int xEWS = shape::elementWiseStride(xShapeBuffer);
             char xOrder = shape::order(xShapeBuffer);
@@ -1110,7 +1110,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *tadShapeInfo, int *tadOffsets) {
+			T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 			if (shape::isMatrix(xShapeBuffer)) {
 				int *shape = shape::shapeOf(xShapeBuffer);
 				//iterate along rows
@@ -1279,7 +1279,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *tadShapeInfo, int *tadOffsets) {
+			T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 
 			if (shape::isMatrix(xShapeBuffer, 2)) {
 				int *shape = shape::shapeOf(xShapeBuffer);
@@ -1451,7 +1451,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *tadShapeInfo, int *tadOffsets) {
+			T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 			if (shape::isMatrix(xShapeBuffer, 2)) {
 				int *shape = shape::shapeOf(xShapeBuffer);
 
@@ -1838,7 +1838,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *tadShapeInfo, int *tadOffsets) {
+			T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 
 			if (extraParams == nullptr || extraParams[0] == 0 ||
 				(extraParams[0] == 1 && extraParams[1] == MAX_DIMENSION)) {

@@ -13,7 +13,7 @@
 
 template <typename T>
 __device__ inline static void metaPredicateReduceGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
-                                                         T *dx, int *xShapeInfo, T *dy, int *yShapeInfo, T *dz, int *zShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, T *reductionBuffer, T *extraA, T *extraB, T scalarA, T scalarB, bool scalarReturned) {
+                                                         T *dx, int *xShapeInfo, T *dy, int *yShapeInfo, T *dz, int *zShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, T *reductionBuffer, T *extraA, T *extraB, T scalarA, T scalarB, bool scalarReturned) {
 
     __shared__ UnifiedSharedMemory *manager;
     __shared__ Nd4jPointer params[2];

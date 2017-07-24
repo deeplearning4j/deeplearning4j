@@ -78,7 +78,7 @@ void   NativeOps::execIndexReduceDouble(Nd4jPointer *extraPointers,int opNum,
                                         int *dimension,
                                         int dimensionLength) {
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
     NativeOpExcutioner<double>::execIndexReduce(opNum,
                                                 x,
                                                 xShapeInfo,
@@ -113,9 +113,9 @@ void   NativeOps::execBroadcastDouble(Nd4jPointer *extraPointers,int opNum,
                                       int *resultShape,
                                       int *dimension, int dimensionLength) {
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[2]);
-    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
+    Nd4jIndex *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
     NativeOpExcutioner<double>::execBroadcast(
             opNum,
             x,
@@ -279,7 +279,7 @@ void   NativeOps::execReduceDouble(Nd4jPointer *extraPointers,int opNum,
                                    int *resultShapeInfo,
                                    int *dimension,int dimensionLength) {
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
     NativeOpExcutioner<double>::execReduce(opNum,
                                            x,
                                            xShapeInfo,
@@ -386,7 +386,7 @@ void   NativeOps::execReduce3Double(Nd4jPointer *extraPointers,int opNum,
     } else {
         // going tad-way
         int *tadShapeInfo = reinterpret_cast<int *> (extraPointers[0]);
-        int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+        Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
 
         NativeOpExcutioner<double>::execReduce3TAD(opNum, x, xShapeInfo, extraParams, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets);
     }
@@ -599,7 +599,7 @@ void   NativeOps::execTransformDouble(
         double *extraParams) {
 
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
 
     NativeOpExcutioner<double>::execTransform(
             opNum,
@@ -685,7 +685,7 @@ void   NativeOps::execIndexReduceFloat(Nd4jPointer *extraPointers, int opNum,
                                        int *resultShapeInfo,
                                        int *dimension, int dimensionLength) {
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
     NativeOpExcutioner<float>::execIndexReduce(opNum,x,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,tadShapeInfo, tadOffsets);
 }
 
@@ -719,9 +719,9 @@ void   NativeOps::execBroadcastFloat(Nd4jPointer *extraPointers,int opNum,
                                      float *result,int *resultShapeInfo,
                                      int *dimension, int dimensionLength) {
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[2]);
-    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
+    Nd4jIndex *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
     NativeOpExcutioner<float>::execBroadcast(opNum,x,xShapeInfo,y,yShapeInfo,result, resultShapeInfo, dimension,dimensionLength,
                                              tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 }
@@ -937,7 +937,7 @@ void   NativeOps::execReduceFloat(
         int *dimension,
         int dimensionLength) {
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
     NativeOpExcutioner<float>::execReduce(
             opNum,
             x,
@@ -1079,7 +1079,7 @@ void   NativeOps::execReduce3Float(Nd4jPointer *extraPointers,int opNum,
     } else {
         // going tad-way
         int *tadShapeInfo = reinterpret_cast<int *> (extraPointers[0]);
-        int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+        Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
 
         NativeOpExcutioner<float>::execReduce3TAD(opNum, x, xShapeInfo, extraParams, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets);
     }
@@ -1435,7 +1435,7 @@ void   NativeOps::execTransformFloat(
         float *extraParams) {
 
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
 
     NativeOpExcutioner<float>::execTransform(
             opNum,
@@ -2005,7 +2005,7 @@ void NativeOps::tadOnlyShapeInfo(int *xShapeInfo, int *dimension, int dimensionL
 
 
     std::memcpy((void *) target, tad->tadOnlyShapeInfo, (tad->tadOnlyShapeInfo[0] * 2 + 4) * sizeof(int));
-    std::memcpy((void *) offsets, tad->tadOffsets, tad->numTads * sizeof(int));
+    std::memcpy((void *) offsets, tad->tadOffsets, tad->numTads * sizeof(Nd4jIndex));
 
     delete tad;
 }
@@ -2028,9 +2028,9 @@ void pullRowsGeneric(T *x,
                      const int n,
                      int *indexes,
                      int *tadShapeInfo,
-                     int *tadOffsets,
+                     Nd4jIndex *tadOffsets,
                      int *zTadShapeInfo,
-                     int *zTadOffsets) {
+                     Nd4jIndex *zTadOffsets) {
     const int xEWS = shape::elementWiseStride(tadShapeInfo);
     const int zEWS = shape::elementWiseStride(zTadShapeInfo);
     const int tadLength = shape::length(tadShapeInfo);
@@ -2081,20 +2081,20 @@ void pullRowsGeneric(T *x,
     }
 }
 
-void NativeOps::pullRowsHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, float16 *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets, int *zTadShapeInfo, int *zTadOffsets) {
+void NativeOps::pullRowsHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, float16 *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *zTadShapeInfo, Nd4jIndex *zTadOffsets) {
     // no-op
 }
 
-void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, float *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets, int *zTadShapeInfo, int *zTadOffsets) {
+void NativeOps::pullRowsFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, float *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *zTadShapeInfo, Nd4jIndex *zTadOffsets) {
     pullRowsGeneric<float>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
 }
 
-void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, double *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, int *tadOffsets, int *zTadShapeInfo, int *zTadOffsets) {
+void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, double *z, int *zShapeInfo, int n, int *indexes, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *zTadShapeInfo, Nd4jIndex *zTadOffsets) {
     pullRowsGeneric<double>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
 }
 
 template<typename T>
-void tearGeneric(T *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+void tearGeneric(T *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 
     const Nd4jIndex tadLength = shape::length(tadShapeInfo);
     int tadEWS = shape::elementWiseStride(tadShapeInfo);
@@ -2139,15 +2139,15 @@ void tearGeneric(T *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, i
     }
 }
 
-void NativeOps::tearDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+void NativeOps::tearDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
     tearGeneric<double>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
 }
 
-void NativeOps::tearFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+void NativeOps::tearFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
     tearGeneric<float>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
 }
 
-void NativeOps::tearHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+void NativeOps::tearHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
     tearGeneric<float16>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
 }
 
@@ -2241,7 +2241,7 @@ void NativeOps::checkP2P() {
 }
 
 template<typename T>
-void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, int *shuffleMap, int **tadOnlyShapeInfo, int **tadOffsets) {
+void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, int *shuffleMap, Nd4jIndex **tadOnlyShapeInfo, int **tadOffsets) {
 
 
 #pragma omp parallel for if (N > 1) default(shared)
@@ -2249,7 +2249,7 @@ void shuffleGeneric(T **dX, int **xShapeInfo, T **dZ, int **zShapeInfo, int N, i
         T *x = (T *) dX[f];
         //T *z = (T *) dZ[f];
 
-        int *tadOffset = (int *) tadOffsets[f];
+        Nd4jIndex *tadOffset = (Nd4jIndex *) tadOffsets[f];
 
 
         const int tadLength = shape::length(tadOnlyShapeInfo[f]);
@@ -2382,7 +2382,7 @@ void NativeOps::execMetaPredicateReduceFloat(Nd4jPointer *extras,
                                              int *dimension,
                                              int dimensionLength,
                                              int *tadShapeInfo,
-                                             int *tadOffsets,
+                                             Nd4jIndex *tadOffsets,
                                              float *extraA,
                                              float *extraB,
                                              float scalarA,
@@ -2438,9 +2438,9 @@ void NativeOps::execScalarFloat(Nd4jPointer *extraPointers,int opNum,
                                 int *dimension,
                                 int dimensionLength) {
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[2]);
-    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
+    Nd4jIndex *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
 
     NativeOpExcutioner<float>::execScalar(
             opNum,
@@ -2468,9 +2468,9 @@ void NativeOps::execScalarDouble(Nd4jPointer *extraPointers,int opNum,
                                  int *dimension,
                                  int dimensionLength) {
     int *tadShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
-    int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+    Nd4jIndex *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
     int *tadShapeInfoZ = reinterpret_cast<int *>(extraPointers[2]);
-    int *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
+    Nd4jIndex *tadOffsetsZ = reinterpret_cast<int *>(extraPointers[3]);
 
     NativeOpExcutioner<double>::execScalar(
             opNum,
@@ -2983,15 +2983,15 @@ void NativeOps::sortHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo
     //NativeOpExcutioner<float16>::execSort(x, xShapeInfo, descending);
 }
 
-void NativeOps::sortTadFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+void NativeOps::sortTadFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
     NativeOpExcutioner<float>::execSort(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 }
 
-void NativeOps::sortTadDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+void NativeOps::sortTadDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
     NativeOpExcutioner<double>::execSort(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 }
 
-void NativeOps::sortTadHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+void NativeOps::sortTadHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
     //NativeOpExcutioner<float16>::execSort(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 }
 

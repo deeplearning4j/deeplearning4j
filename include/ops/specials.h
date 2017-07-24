@@ -506,7 +506,7 @@ void sortGeneric(T *x, int *xShapeInfo, bool descending) {
 }
 
 template<typename T>
-void sortTadGeneric(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+void sortTadGeneric(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
     //quickSort_parallel(x, xShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
     int xLength = shape::length(xShapeInfo);
     int xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);

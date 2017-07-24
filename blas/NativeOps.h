@@ -1873,7 +1873,7 @@ public:
                           int *dimension,
                           int dimensionLength,
                           int *targetBuffer,
-                          int *offsetsBuffer);
+                          Nd4jIndex *offsetsBuffer);
 
     /*
      * PullRow special op
@@ -1901,9 +1901,9 @@ public:
                       int n,
                       int *indexes,
                       int *tadShapeInfo,
-                      int *tadOffsets,
+                      Nd4jIndex *tadOffsets,
                       int *zTadShapeInfo,
-                      int *zTadOffsets);
+                      Nd4jIndex *zTadOffsets);
 
     /**
      *
@@ -1927,9 +1927,9 @@ public:
                        int n,
                        int *indexes,
                        int *tadShapeInfo,
-                       int *tadOffsets,
+                       Nd4jIndex *tadOffsets,
                        int *zTadShapeInfo,
-                       int *zTadOffsets);
+                       Nd4jIndex *zTadOffsets);
 
     /**
      *
@@ -1953,9 +1953,9 @@ public:
                         int n,
                         int *indexes,
                         int *tadShapeInfo,
-                        int *tadOffsets,
+                        Nd4jIndex *tadOffsets,
                         int *zTadShapeInfo,
-                        int *zTadOffsets);
+                        Nd4jIndex *zTadOffsets);
 
     /**
      * Array averaging op
@@ -2788,7 +2788,7 @@ public:
                                       int *dimension,
                                       int dimensionLength,
                                       int *tadShapeInfo,
-                                      int *tadOffsets,
+                                      Nd4jIndex *tadOffsets,
                                       float *extraA,
                                       float *extraB,
                                       float scalarA,
@@ -2856,7 +2856,7 @@ public:
      * @param zShapeInfo
      * @return
      */
-    void tearDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets);
+    void tearDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, Nd4jIndex *tadOffsets);
 
     /**
      * This method takes single N-dimensional tensor, and copies its TADs to target arrays
@@ -2867,7 +2867,7 @@ public:
      * @param zShapeInfo
      * @return
      */
-    void tearFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets);
+    void tearFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, Nd4jIndex *tadOffsets);
 
     /**
      * This method takes single N-dimensional tensor, and copies its TADs to target arrays
@@ -2878,7 +2878,7 @@ public:
      * @param zShapeInfo
      * @return
      */
-    void tearHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets);
+    void tearHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, Nd4jIndex *tadOffsets);
 
 
     Nd4jIndex encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd4jIndex N, int *dz, float threshold);
@@ -2927,11 +2927,11 @@ public:
 
 
 
-    void sortTadFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending);
+    void sortTadFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending);
 
-    void sortTadDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending);
+    void sortTadDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending);
 
-    void sortTadHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending);
+    void sortTadHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending);
 
 
     // special sort impl for sorting out COO indices and values

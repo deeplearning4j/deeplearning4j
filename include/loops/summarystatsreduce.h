@@ -341,7 +341,7 @@ template<typename OpType>
 				T *reductionBuffer,
 				UnifiedSharedMemory *manager,
 				int *tadOnlyShapeInfo,
-				int *tadOffsets) {
+				Nd4jIndex *tadOffsets) {
 
 
 				/**
@@ -604,7 +604,7 @@ template<typename OpType>
 		T *reductionBuffer,
 		UnifiedSharedMemory *manager,
 		int *tadOnlyShapeInfo,
-		int *tadOffsets) {
+		Nd4jIndex *tadOffsets) {
             DISPATCH_BY_OPNUM(transform, PARAMS(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets), SUMMARY_STATS_OPS);
 	}
 #endif
@@ -847,7 +847,7 @@ __device__ void summaryStatsReduceGeneric(
 		T *result,
 		int *resultShapeInfo, int zRank,
 		int *dimension,
-		int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int dimensionLength, int postProcessOrNot,bool biasCorrected, int *allocationBuffer, T *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 
 	__shared__ UnifiedSharedMemory *manager;
 
@@ -899,7 +899,7 @@ __global__ void summaryStatsReduceDouble(
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,
-		bool biasCorrected, int *allocationBuffer, double *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+		bool biasCorrected, int *allocationBuffer, double *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 	summaryStatsReduceGeneric<double>(
 			op,
 			dx,
@@ -936,7 +936,7 @@ __global__ void summaryStatsReduceDouble(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot,bool biasCorrected,int *allocationBuffer, float *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int postProcessOrNot,bool biasCorrected,int *allocationBuffer, float *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 	summaryStatsReduceGeneric<float>(
 			op,
 			dx,
@@ -959,7 +959,7 @@ __global__ void summaryStatsReduceHalf(
 		int *resultShapeInfo, int zRank,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot,bool biasCorrected,int *allocationBuffer, float16 *reductionBuffer, int *tadOnlyShapeInfo, int *tadOffsets) {
+		int postProcessOrNot,bool biasCorrected,int *allocationBuffer, float16 *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 	summaryStatsReduceGeneric<float16>(
 			op,
 			dx,
