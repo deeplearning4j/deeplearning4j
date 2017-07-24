@@ -11,6 +11,8 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Common implementation
@@ -86,17 +88,29 @@ public abstract class BaseJavaPersistable implements Persistable {
             throw new RuntimeException(e); //Should never happen
         }
 
-        Field[] fields = this.getClass().getDeclaredFields();
-        for (Field f : fields) {
-            if(Modifier.isStatic(f.getModifiers())){
-                //Skip static fields
-                continue;
-            }
-            f.setAccessible(true);
-            try {
-                f.set(this, f.get(r));
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e); //Should never happen
+        //Need to manually build and walk the class heirarchy...
+        Class<?> currClass = this.getClass();
+        List<Class<?>> classHeirarchy = new ArrayList<>();
+        while (currClass != Object.class) {
+            classHeirarchy.add(currClass);
+            currClass = currClass.getSuperclass();
+        }
+
+        for (int i = classHeirarchy.size() - 1; i >= 0; i--) {
+            //Use reflection here to avoid a mass of boilerplate code...
+            Field[] allFields = classHeirarchy.get(i).getDeclaredFields();
+
+            for (Field f : allFields) {
+                if (Modifier.isStatic(f.getModifiers())) {
+                    //Skip static fields
+                    continue;
+                }
+                f.setAccessible(true);
+                try {
+                    f.set(this, f.get(r));
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e); //Should never happen
+                }
             }
         }
     }

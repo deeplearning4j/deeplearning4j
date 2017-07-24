@@ -16,7 +16,6 @@ public abstract class AbstractParameterSpace<T> implements ParameterSpace<T> {
         Map<String, ParameterSpace> m = new LinkedHashMap<>();
 
         //Need to manually build and walk the class heirarchy...
-
         Class<?> currClass = this.getClass();
         List<Class<?>> classHeirarchy = new ArrayList<>();
         while (currClass != Object.class) {
