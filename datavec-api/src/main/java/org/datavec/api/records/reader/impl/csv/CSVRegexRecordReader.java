@@ -33,6 +33,8 @@ public class CSVRegexRecordReader extends CSVRecordReader {
 
     protected String[] regexs = null;
     protected Pattern[] patterns = null;
+    protected String delimiter;
+    protected String quote;
 
     /**
      * Skip lines, use delimiter, strip quotes, and parse each column with a regex
@@ -42,7 +44,9 @@ public class CSVRegexRecordReader extends CSVRecordReader {
      * @param regexs the regexs to parse columns with
      */
     public CSVRegexRecordReader(int skipNumLines, String delimiter, String quote, String[] regexs) {
-        super(skipNumLines, delimiter, quote);
+        super(skipNumLines);
+        this.delimiter = delimiter;
+        this.quote = quote;
         this.regexs = regexs;
         if (regexs != null) {
             patterns = new Pattern[regexs.length];

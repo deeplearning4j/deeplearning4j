@@ -18,6 +18,7 @@ package org.datavec.api.transform.transform.integer;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
 import org.datavec.api.writable.Writable;
@@ -27,6 +28,7 @@ import org.datavec.api.writable.Writable;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
+@NoArgsConstructor
 public abstract class BaseIntegerTransform extends BaseColumnTransform {
 
     public BaseIntegerTransform(String column) {

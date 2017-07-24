@@ -46,6 +46,7 @@ import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
 import org.datavec.api.transform.transform.doubletransform.*;
+import org.datavec.api.transform.transform.integer.ConvertToInteger;
 import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
 import org.datavec.api.transform.transform.integer.IntegerToOneHotTransform;
@@ -851,7 +852,8 @@ public class TransformProcess implements Serializable {
         }
 
         /**
-         * Add a new integer column, where the value for that column (for all records) are identical
+         * Add a new integer column, where th
+         * e value for that column (for all records) are identical
          *
          * @param newColumnName Name of the new column
          * @param value         Value of the new column for all records
@@ -878,6 +880,26 @@ public class TransformProcess implements Serializable {
          */
         public Builder convertToString(String inputColumn) {
             return transform(new ConvertToString(inputColumn));
+        }
+
+
+        /**
+         * Convert the specified column to a double.
+         * @param inputColumn the input column to convert
+         * @return builder pattern
+         */
+        public Builder convertToDouble(String inputColumn) {
+            return transform(new ConvertToDouble(inputColumn));
+        }
+
+
+        /**
+         * Convert the specified column to an integer.
+         * @param inputColumn the input column to convert
+         * @return builder pattern
+         */
+        public Builder convertToInteger(String inputColumn) {
+            return transform(new ConvertToInteger(inputColumn));
         }
 
         /**

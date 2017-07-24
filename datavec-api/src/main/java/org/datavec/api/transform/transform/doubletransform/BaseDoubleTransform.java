@@ -18,6 +18,7 @@ package org.datavec.api.transform.transform.doubletransform;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
@@ -28,6 +29,7 @@ import org.datavec.api.writable.Writable;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
+@NoArgsConstructor
 public abstract class BaseDoubleTransform extends BaseColumnTransform {
 
     public BaseDoubleTransform(String column) {

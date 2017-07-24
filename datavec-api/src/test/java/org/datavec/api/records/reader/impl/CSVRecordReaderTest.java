@@ -69,7 +69,7 @@ public class CSVRecordReaderTest {
 
     @Test
     public void testReset() throws Exception {
-        CSVRecordReader rr = new CSVRecordReader(0, ",");
+        CSVRecordReader rr = new CSVRecordReader(0, ',');
         rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
 
         int nResets = 5;
@@ -89,7 +89,7 @@ public class CSVRecordReaderTest {
 
     @Test
     public void testResetWithSkipLines() throws Exception {
-        CSVRecordReader rr = new CSVRecordReader(10, ",");
+        CSVRecordReader rr = new CSVRecordReader(10, ',');
         rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
         int lineCount = 0;
         while (rr.hasNext()) {
@@ -149,7 +149,7 @@ public class CSVRecordReaderTest {
     @Test
     public void testTabsAsSplit1() throws Exception {
 
-        CSVRecordReader reader = new CSVRecordReader(0, "\t");
+        CSVRecordReader reader = new CSVRecordReader(0, '\t');
         reader.initialize(new FileSplit(new ClassPathResource("/tabbed.txt").getFile()));
         while (reader.hasNext()) {
             List<Writable> list = new ArrayList<>(reader.next());
@@ -160,7 +160,7 @@ public class CSVRecordReaderTest {
 
     @Test
     public void testWithQuotes() throws Exception {
-        CSVRecordReader reader = new CSVRecordReader(0, CSVRecordReader.QUOTE_HANDLING_DELIMITER, "\"");
+        CSVRecordReader reader = new CSVRecordReader(0, ',', '\"');
         reader.initialize(new StringSplit("1,0,3,\"Braund, Mr. Owen Harris\",male,\"\"\"\""));
         while (reader.hasNext()) {
             List<Writable> vals = reader.next();
@@ -178,7 +178,7 @@ public class CSVRecordReaderTest {
     @Test
     public void testMeta() throws Exception {
 
-        CSVRecordReader rr = new CSVRecordReader(0, ",");
+        CSVRecordReader rr = new CSVRecordReader(0, ',');
         rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
 
         int lineCount = 0;
@@ -247,7 +247,7 @@ public class CSVRecordReaderTest {
         File tempFile = File.createTempFile("csvSkipLines", ".csv");
         FileUtils.writeLines(tempFile, lines);
 
-        CSVRecordReader rr = new CSVRecordReader(numLines, ",");
+        CSVRecordReader rr = new CSVRecordReader(numLines, ',');
         rr.initialize(new FileSplit(tempFile));
         rr.reset();
         assertTrue(!rr.hasNext());
@@ -266,7 +266,7 @@ public class CSVRecordReaderTest {
         File tempFile = File.createTempFile("csvSkipLines", ".csv");
         FileUtils.writeLines(tempFile, lines);
 
-        CSVRecordReader rr = new CSVRecordReader(numLines - 1, ",");
+        CSVRecordReader rr = new CSVRecordReader(numLines - 1, ',');
         rr.initialize(new FileSplit(tempFile));
         rr.reset();
         assertTrue(rr.hasNext());

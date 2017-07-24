@@ -40,18 +40,15 @@ import java.util.NoSuchElementException;
  * @author Adam Gibson
  */
 public class CSVRecordReader extends LineRecordReader {
-    /** A regex delimiter that can parse quotes (string literals) that may have commas in them: http://stackoverflow.com/a/1757107/523744
-     * Note: This adds considerable overhead compared to the default "," delimiter, and should only be used when necessary.
-     * */
-    public final static String QUOTE_HANDLING_DELIMITER = ",(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
     private boolean skippedLines = false;
     protected int skipNumLines = 0;
-    protected String delimiter = DEFAULT_DELIMITER;
-    protected String quote = null;
-    public final static String DEFAULT_DELIMITER = ",";
+    public final static char DEFAULT_DELIMITER = ',';
+    public final static char DEFAULT_QUOTE = '\"';
     public final static String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
     public final static String DELIMITER = NAME_SPACE + ".delimiter";
     public final static String QUOTE = NAME_SPACE + ".quote";
+
+    private SerializableCSVParser csvParser;
 
     /**
      * Skip first n lines
@@ -66,8 +63,8 @@ public class CSVRecordReader extends LineRecordReader {
      * @param skipNumLines the number of lines to skip
      * @param delimiter the delimiter
      */
-    public CSVRecordReader(int skipNumLines, String delimiter) {
-        this(skipNumLines, delimiter, null);
+    public CSVRecordReader(int skipNumLines, char delimiter) {
+        this(skipNumLines, delimiter, '\"');
     }
 
     /**
@@ -76,10 +73,9 @@ public class CSVRecordReader extends LineRecordReader {
      * @param delimiter the delimiter
      * @param quote the quote to strip
      */
-    public CSVRecordReader(int skipNumLines, String delimiter, String quote) {
+    public CSVRecordReader(int skipNumLines, char delimiter, char quote) {
         this.skipNumLines = skipNumLines;
-        this.delimiter = delimiter;
-        this.quote = quote;
+        this.csvParser = new SerializableCSVParser(delimiter, quote);
     }
 
     public CSVRecordReader() {
@@ -90,8 +86,7 @@ public class CSVRecordReader extends LineRecordReader {
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         super.initialize(conf, split);
         this.skipNumLines = conf.getInt(SKIP_NUM_LINES, this.skipNumLines);
-        this.delimiter = conf.get(DELIMITER, DEFAULT_DELIMITER);
-        this.quote = conf.get(QUOTE, null);
+        this.csvParser = new SerializableCSVParser(conf.getChar(DELIMITER, DEFAULT_DELIMITER), conf.getChar(QUOTE, DEFAULT_QUOTE));
     }
 
     private boolean skipLines() {
@@ -122,13 +117,14 @@ public class CSVRecordReader extends LineRecordReader {
     }
 
     protected List<Writable> parseLine(String line) {
-        String[] split = line.split(delimiter, -1);
+        String[] split;
+        try {
+            split = csvParser.parseLine(line);
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        }
         List<Writable> ret = new ArrayList<>();
         for (String s : split) {
-            if (quote != null && s.startsWith(quote) && s.endsWith(quote)) {
-                int n = quote.length();
-                s = s.substring(n, s.length() - n).replace(quote + quote, quote);
-            }
             ret.add(new Text(s));
         }
         return ret;
