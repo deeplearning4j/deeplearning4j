@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
+import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
@@ -2163,7 +2164,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         encodedBuffer.put(2, Float.floatToIntBits((float) threshold));
         AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickHostWrite();
 
-        encodedBuffer.put(3, 0);
+        encodedBuffer.put(3, ThresholdCompression.FLEXIBLE_ENCODING);
 
 
         int prefixThreads = 512;
@@ -2301,7 +2302,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         buffer.put(2, Float.floatToIntBits((float) threshold));
 
         // format id
-        buffer.put(3, 1);
+        buffer.put(3, ThresholdCompression.BITMAP_ENCODING);
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(indArray);
 

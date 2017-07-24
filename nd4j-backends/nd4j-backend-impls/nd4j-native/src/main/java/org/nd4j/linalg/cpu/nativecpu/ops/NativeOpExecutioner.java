@@ -26,6 +26,7 @@ import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
+import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -1330,7 +1331,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         encodedBuffer.put(2, Float.floatToIntBits((float) threshold));
 
         // format id
-        encodedBuffer.put(3, 0);
+        encodedBuffer.put(3, ThresholdCompression.FLEXIBLE_ENCODING);
 
         CompressionDescriptor descriptor = new CompressionDescriptor();
         descriptor.setCompressedLength(compressedLength * 4); // sizeOf(INT)
@@ -1390,7 +1391,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         buffer.put(2, Float.floatToIntBits((float) threshold));
 
         // format id
-        buffer.put(3, 1);
+        buffer.put(3, ThresholdCompression.BITMAP_ENCODING);
 
         long affected = 0;
 
