@@ -28,6 +28,19 @@ public class IndexingTestsC extends BaseNd4jTest {
 
 
     @Test
+    public void testIndexingWithMmul() {
+        INDArray a = Nd4j.zeros(3,3);
+        a.put(0,0, 1);
+        a.put(1,0, 1);
+        a.put(2,0, 1);
+        INDArray b = Nd4j.rand(1,5);
+        System.out.println(b);
+        INDArray c = a.get(NDArrayIndex.all(),NDArrayIndex.interval(0, 1)).mmul(b);
+        INDArray assertion = a.get(NDArrayIndex.all(),NDArrayIndex.interval(0, 1)).mmul(b);
+        assertEquals(assertion,c);
+    }
+
+    @Test
     public void testPointPointInterval() {
         INDArray wholeArr = Nd4j.linspace(1,36,36).reshape(4,3,3);
         INDArray get = wholeArr.get(point(0), interval(1,3), interval(1,3));
