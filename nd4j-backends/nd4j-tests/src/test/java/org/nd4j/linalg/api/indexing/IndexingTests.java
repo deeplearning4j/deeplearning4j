@@ -34,6 +34,13 @@ public class IndexingTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testNewAxis() {
+        INDArray arr = Nd4j.rand(new int[]{4, 2, 3});
+        INDArray view = arr.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.point(1));
+        System.out.println(view);
+    }
+
+    @Test
     public void testVectorIndexing() {
         INDArray x = Nd4j.linspace(0, 10, 11);
         int[] index = new int[] {5, 8, 9};
