@@ -2985,11 +2985,28 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
 
             if (other.columns() == 1) {
-                Nd4j.getBlasWrapper().level2().gemv(ordering(), BlasBufferUtil.getCharForTranspose(other), 1.0, this,
-                        other, 0.0, gemmResultArr);
+                Nd4j.getBlasWrapper().level2().gemv(
+                        ordering(),
+                        BlasBufferUtil.getCharForTranspose(other),
+                        1.0,
+                        this,
+                        other,
+                        0.0,
+                        gemmResultArr);
             } else {
-                Nd4j.getBlasWrapper().level3().gemm(ordering(), BlasBufferUtil.getCharForTranspose(other),
-                        BlasBufferUtil.getCharForTranspose(gemmResultArr), 1.0, this, other, 0.0,
+                //gemm doesn't support strides so vectors and views
+                //don't work
+                if(isView() && isVector()) {
+                    return dup().mmuli(other,gemmResultArr);
+                }
+
+                Nd4j.getBlasWrapper().level3().gemm(ordering(),
+                        BlasBufferUtil.getCharForTranspose(other),
+                        BlasBufferUtil.getCharForTranspose(gemmResultArr),
+                        1.0,
+                        this,
+                        other,
+                        0.0,
                         gemmResultArr);
             }
 

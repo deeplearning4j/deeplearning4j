@@ -29,14 +29,12 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testIndexingWithMmul() {
-        INDArray a = Nd4j.zeros(3,3);
-        a.put(0,0, 1);
-        a.put(1,0, 1);
-        a.put(2,0, 1);
-        INDArray b = Nd4j.rand(1,5);
+        INDArray a = Nd4j.linspace(1,9,9).reshape(3,3);
+        INDArray b = Nd4j.linspace(1,5,5);
         System.out.println(b);
-        INDArray c = a.get(NDArrayIndex.all(),NDArrayIndex.interval(0, 1)).mmul(b);
-        INDArray assertion = a.get(NDArrayIndex.all(),NDArrayIndex.interval(0, 1)).mmul(b);
+        INDArray view = a.get(NDArrayIndex.all(),NDArrayIndex.interval(0, 1));
+        INDArray c = view.mmul(b);
+        INDArray assertion = a.get(NDArrayIndex.all(),NDArrayIndex.interval(0, 1)).dup().mmul(b);
         assertEquals(assertion,c);
     }
 
