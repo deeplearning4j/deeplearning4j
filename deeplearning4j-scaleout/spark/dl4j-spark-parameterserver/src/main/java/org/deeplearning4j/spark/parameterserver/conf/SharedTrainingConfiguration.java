@@ -33,6 +33,8 @@ public class SharedTrainingConfiguration implements Serializable {
     protected double threshold;
     protected double thresholdStep = 1e-5;
     protected double minThreshold = 1e-5;
+    protected double stepTrigger;
+    protected int stepDelay;
     protected int shakeFrequency = 0;
     protected String messageHandlerClass;
 

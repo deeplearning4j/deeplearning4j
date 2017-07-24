@@ -29,8 +29,9 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public class EncodingHandler implements MessageHandler {
     protected transient GradientsAccumulator accumulator;
-    protected double threshold, minThreshold, thresholdStep;
+    protected double threshold, minThreshold, thresholdStep, stepTrigger;
     protected int shakeFrequency;
+    protected int stepDelay;
     protected Double boundary = null;
     protected NDArrayCompressor compressor;
     protected AtomicInteger atomicBoundary = new AtomicInteger(-1);
@@ -40,25 +41,62 @@ public class EncodingHandler implements MessageHandler {
     protected ThreadLocal<AtomicDouble> currentThreshold = new ThreadLocal<>();
     protected ThreadLocal<AtomicBoolean> bitmapMode = new ThreadLocal<>();
 
+    /**
+     * This method builds new EncodingHandler instance with initial threshold of 1e-3
+     *
+     */
     public EncodingHandler() {
         this(1e-3);
     }
 
+    /**
+     * This method builds new EncodingHandler instance
+     *
+     * @param threshold Initial encoding threshold
+     */
     public EncodingHandler(double threshold) {
         this(threshold, null);
     }
 
+    /**
+     * This method builds new EncodingHandler instance
+     *
+     * @param threshold Initial encoding threshold
+     */
     public EncodingHandler(double threshold, Double boundary) {
-        this(threshold, threshold, 0.0, 0, boundary);
+        this(threshold, threshold, 0.0, 0, 0, 0, boundary);
     }
 
-    public EncodingHandler(double threshold, double minThreshold, double thresholdStep,  int shakeFrequency) {
-        this(threshold, minThreshold, thresholdStep, shakeFrequency, null);
+    /**
+     * This method builds new EncodingHandler instance
+     *
+     * @param threshold Initial encoding threshold
+     * @param minThreshold Minimal encoding threshold (for threshold decay)
+     * @param thresholdStep Decay step for threshold decay
+     * @param stepTrigger Sparse/Dense ratio that will trigger decay step. In range 0..100
+     * @param stepDelay Minimal number of iterations between decay steps
+     * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
+     */
+    public EncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger, int stepDelay, int shakeFrequency) {
+        this(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, null);
     }
 
-    public EncodingHandler(double threshold, double minThreshold, double thresholdStep, int shakeFrequency, Double boundary) {
+    /**
+     * This method builds new EncodingHandler instance
+     *
+     * @param threshold Initial encoding threshold
+     * @param minThreshold Minimal encoding threshold (for threshold decay)
+     * @param thresholdStep Decay step for threshold decay
+     * @param stepTrigger Sparse/Dense ratio that will trigger decay step. In range 0..100
+     * @param stepDelay Minimal number of iterations between decay steps
+     * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
+     * @param boundary
+     */
+    public EncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger, int stepDelay, int shakeFrequency, Double boundary) {
         this.threshold = threshold;
         this.minThreshold = minThreshold;
+        this.stepTrigger = stepTrigger;
+        this.stepDelay = stepDelay;
         this.thresholdStep= thresholdStep;
         this.shakeFrequency = shakeFrequency;
         this.boundary = boundary;
@@ -111,7 +149,7 @@ public class EncodingHandler implements MessageHandler {
 
                 // after encoding is finished, and updates are sparse enough - let's step down a bit
                 // and we don't step down too early, so we wait for 50 iterations at least to step down
-                if (minThreshold <= currentThreshold.get().get() && minThreshold < currentThreshold.get().get() - thresholdStep && iterations.get().get() > lastStep.get().get() + 50 && encodingRatio < 0.05) {
+                if (minThreshold <= currentThreshold.get().get() && minThreshold < currentThreshold.get().get() - thresholdStep && iterations.get().get() > lastStep.get().get() + stepDelay && encodingRatio < stepTrigger) {
                     currentThreshold.get().addAndGet(-thresholdStep);
                     lastStep.set(iterations.get());
                     log.info("Threshold steps down to {}", currentThreshold.get().get());

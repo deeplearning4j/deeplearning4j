@@ -88,6 +88,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     protected double threshold;
     protected double thresholdStep;
     protected double minThreshold;
+    protected double stepTrigger = 0.05;
+    protected int stepDelay = 50;
     protected int shakeFrequency;
 
     protected Repartition repartition;
@@ -111,22 +113,26 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers,
                     RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats,
-                    RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold, double minThreshold, double thresholdStep,
+                    RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold, double minThreshold, double thresholdStep, double stepTrigger, int stepDelay, int shakeFrequency,
                     int batchSizePerWorker, long debugLongerIterations, int numWorkersPerNode) {
         this.voidConfiguration = voidConfiguration;
         this.numWorkers = numWorkers;
+        this.threshold = threshold;
         this.minThreshold = minThreshold;
+        this.thresholdStep = thresholdStep;
+        this.stepTrigger = stepTrigger;
+        this.stepDelay = stepDelay;
         this.rddTrainingApproach = rddTrainingApproach;
         this.repartitionStrategy = repartitionStrategy;
         this.repartition = repartition;
         this.storageLevel = storageLevel;
         this.collectTrainingStats = collectTrainingStats;
-        this.threshold = threshold;
         this.isFirstRun = new AtomicBoolean(false);
         this.batchSizePerWorker = batchSizePerWorker;
         this.rddDataSetNumExamples = batchSizePerWorker;
         this.debugLongerIterations = debugLongerIterations;
         this.numWorkersPerNode = numWorkersPerNode;
+
 
         if (collectTrainingStats)
             stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
@@ -212,7 +218,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                         network.getNetwork().params(), network.getNetwork().getUpdater().getStateViewArray());
 
         SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder().threshold(threshold)
-                        .minThreshold(minThreshold).shakeFrequency(shakeFrequency).thresholdStep(thresholdStep)
+                        .minThreshold(minThreshold).shakeFrequency(shakeFrequency).thresholdStep(thresholdStep).stepTrigger(stepTrigger).stepDelay(stepDelay)
                         .voidConfiguration(voidConfiguration).debugLongerIterations(debugLongerIterations)
                         .numberOfWorkersPerNode(numWorkersPerNode).build();
 
@@ -933,6 +939,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         protected double threshold = 1e-3;
         protected double thresholdStep = 1e-5;
         protected double minThreshold = 1e-5;
+        protected double stepTrigger = 0.05;
+        protected int stepDelay = 50;
         protected int shakeFrequency = 0;
         protected Repartition repartition = Repartition.Always;
         protected RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
@@ -1101,6 +1109,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         /**
          * Step size for threshold decay
          *
+         * Default value: 1e-5
          * @param step
          * @return
          */
@@ -1109,6 +1118,32 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                 throw new DL4JInvalidConfigException("shakeFrequency should be non-negative value");
 
             this.thresholdStep = step;
+            return this;
+        }
+
+        /**
+         * Target sparsity/dense level, when threshold step will happen. i.e. 5 value = 5% of original updates size.
+         *
+         * Default value: 0.05
+         * @param step
+         * @return
+         */
+        public Builder stepTrigger(double step) {
+            if (step < 0.0 || step > 100.0)
+                throw new DL4JInvalidConfigException("stepTrigger value should be in range of 0..100");
+
+            return this;
+        }
+
+        /**
+         * Wait at least X iterations between applying threshold decay
+         *
+         * Default value: 50
+         * @param step
+         * @return
+         */
+        public Builder stepDelay(int step) {
+            this.stepDelay = step;
             return this;
         }
 
@@ -1188,7 +1223,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         public SharedTrainingMaster build() {
             SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach,
-                            storageLevel, true, repartitionStrategy, repartition, threshold, minThreshold, thresholdStep, batchSize,
+                            storageLevel, true, repartitionStrategy, repartition, threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency,
+                    batchSize,
                             debugLongerIterations, numWorkersPerNode);
             if (transport != null)
                 master.transport = this.transport;
