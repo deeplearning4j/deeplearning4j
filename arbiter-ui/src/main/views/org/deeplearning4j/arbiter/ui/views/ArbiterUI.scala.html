@@ -203,15 +203,6 @@
             //console.log("Last update times: " + statusTime + ", " + settingsTime + ", " + resultsTime);
 
             //Update available sessions:
-//            var currSession;
-//            $.get("/arbiter/sessions/current", function(data){
-//                console.log("GOT CURRENT SESSION: " + data);
-//                currSession = data;
-//            })
-//                    .fail(function(msg){
-//                        console.log("Failed: " + msg);
-//                    });
-
             var currSession;
             $.get("/arbiter/sessions/current", function(data){
                 currSession = data; //JSON.stringify(data);
@@ -238,7 +229,7 @@
                     $("#sessionSelect option[value='" + keys[currSelectedIdx] +"']").attr("selected", "selected");
                     $("#sessionSelectDiv").show();
                 }
-                console.log("Got sessions: " + keys + ", current: " + currSession);
+//                console.log("Got sessions: " + keys + ", current: " + currSession);
             });
 
 

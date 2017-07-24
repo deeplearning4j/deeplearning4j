@@ -19,12 +19,12 @@ package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
+import org.deeplearning4j.arbiter.data.MnistDataProvider;
 import org.deeplearning4j.arbiter.layers.*;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
-import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorProvider;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
@@ -65,10 +65,7 @@ import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -350,13 +347,7 @@ public class TestMultiLayerSpace {
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).backprop(true).pretrain(false).build();
 
 
-        DataSetIterator mnistTrain = new ExistingDataSetIterator(
-                        Collections.singletonList(new DataSet(Nd4j.create(1, 1, 28, 28), Nd4j.create(10))));
-
-        DataSetIterator mnistTest = new ExistingDataSetIterator(
-                        Collections.singletonList(new DataSet(Nd4j.create(1, 1, 28, 28), Nd4j.create(10))));
-
-        DataProvider dataProvider = new DataSetIteratorProvider(mnistTrain, mnistTest);
+        DataProvider dataProvider = new TestDataSetProvider();
 
         String baseSaveDirectory = "arbiterExample2/";
         File f = new File(baseSaveDirectory);
@@ -433,5 +424,26 @@ public class TestMultiLayerSpace {
         MultiLayerSpace fromJson = MultiLayerSpace.fromJson(json);
 
         assertEquals(mls, fromJson);
+    }
+
+
+    private static class TestDataSetProvider implements DataProvider {
+
+        @Override
+        public Object trainData(Map<String, Object> dataParameters) {
+            return new ExistingDataSetIterator(
+                    Collections.singletonList(new DataSet(Nd4j.create(1, 1, 28, 28), Nd4j.create(10))));
+        }
+
+        @Override
+        public Object testData(Map<String, Object> dataParameters) {
+            return new ExistingDataSetIterator(
+                    Collections.singletonList(new DataSet(Nd4j.create(1, 1, 28, 28), Nd4j.create(10))));
+        }
+
+        @Override
+        public Class<?> getDataType() {
+            return DataSetIterator.class;
+        }
     }
 }
