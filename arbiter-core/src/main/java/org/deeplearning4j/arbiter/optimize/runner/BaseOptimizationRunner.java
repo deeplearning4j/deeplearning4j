@@ -111,13 +111,8 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
         }
 
         //Queue initial tasks:
-
-
         List<Future<OptimizationResult>> tempList = new ArrayList<>(100);
         while (true) {
-            //            boolean statusChange = false;
-            StatusChangeType sct = null;
-
             //Otherwise: add tasks if required
             Future<OptimizationResult> future = null;
             try {
@@ -212,6 +207,8 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
         } catch (InterruptedException e) {
             throw new RuntimeException("Unexpected InterruptedException thrown for task", e);
         } catch (ExecutionException e) {
+            //Note that most of the time, an OptimizationResult is returned even for an exception
+            //This is just to handle any that are missed there (or, by implementations that don't properly do this)
             log.warn("Task failed", e);
 
             numCandidatesFailed.getAndIncrement();
@@ -222,9 +219,9 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
 
         //Update internal status:
         CandidateInfo status = currentStatus.get(result.getIndex());
-        CandidateInfo newStatus = new CandidateInfo(result.getIndex(), CandidateStatus.Complete, result.getScore(),
-                        status.getCreatedTime(), null, //TODO: how to know when execution actually started?
-                        currentTime, status.getFlatParams(), null);
+        CandidateInfo newStatus = new CandidateInfo(result.getIndex(), result.getCandidateInfo().getCandidateStatus(),
+                result.getScore(), status.getCreatedTime(), result.getCandidateInfo().getStartTime(),
+                currentTime, status.getFlatParams(), result.getCandidateInfo().getExceptionStackTrace());
         currentStatus.put(result.getIndex(), newStatus);
 
         //Listeners:
@@ -232,43 +229,50 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
             listener.onCandidateStatusChange(newStatus, this, result);
         }
 
-        //Report completion to candidate generator
-        config.getCandidateGenerator().reportResults(result);
 
-        Double score = result.getScore();
-        log.info("Completed task {}, score = {}", result.getIndex(), result.getScore());
+        if(result.getCandidateInfo().getCandidateStatus() == CandidateStatus.Failed){
+            log.info("Task {} failed during execution", result.getIndex());
+            numCandidatesFailed.getAndIncrement();
+        } else {
 
-        //TODO handle minimization vs. maximization
-        boolean minimize = config.getScoreFunction().minimize();
-        if (score != null && (bestScore == null
-                        || ((minimize && score < bestScore) || (!minimize && score > bestScore)))) {
-            if (bestScore == null) {
-                log.info("New best score: {} (first completed model)", score);
-            } else {
-                int idx = result.getIndex();
-                int lastBestIdx = bestScoreCandidateIndex.get();
-                log.info("New best score: {}, model {} (prev={}, model {})", score, idx, bestScore, lastBestIdx);
+            //Report completion to candidate generator
+            config.getCandidateGenerator().reportResults(result);
+
+            Double score = result.getScore();
+            log.info("Completed task {}, score = {}", result.getIndex(), result.getScore());
+
+            //TODO handle minimization vs. maximization
+            boolean minimize = config.getScoreFunction().minimize();
+            if (score != null && (bestScore == null
+                    || ((minimize && score < bestScore) || (!minimize && score > bestScore)))) {
+                if (bestScore == null) {
+                    log.info("New best score: {} (first completed model)", score);
+                } else {
+                    int idx = result.getIndex();
+                    int lastBestIdx = bestScoreCandidateIndex.get();
+                    log.info("New best score: {}, model {} (prev={}, model {})", score, idx, bestScore, lastBestIdx);
+                }
+                bestScore = score;
+                bestScoreTime = System.currentTimeMillis();
+                bestScoreCandidateIndex.set(result.getIndex());
             }
-            bestScore = score;
-            bestScoreTime = System.currentTimeMillis();
-            bestScoreCandidateIndex.set(result.getIndex());
-        }
-        numCandidatesCompleted.getAndIncrement();
+            numCandidatesCompleted.getAndIncrement();
 
-        //TODO: In general, we don't want to save EVERY model, only the best ones
-        ResultSaver saver = config.getResultSaver();
-        ResultReference resultReference = null;
-        if (saver != null) {
-            try {
-                resultReference = saver.saveModel(result);
-            } catch (IOException e) {
-                //TODO: Do we want ta warn or fail on IOException?
-                log.warn("Error saving model (id={}): IOException thrown. ", result.getIndex(), e);
+            //TODO: In general, we don't want to save EVERY model, only the best ones
+            ResultSaver saver = config.getResultSaver();
+            ResultReference resultReference = null;
+            if (saver != null) {
+                try {
+                    resultReference = saver.saveModel(result);
+                } catch (IOException e) {
+                    //TODO: Do we want ta warn or fail on IOException?
+                    log.warn("Error saving model (id={}): IOException thrown. ", result.getIndex(), e);
+                }
             }
-        }
 
-        if (resultReference != null)
-            allResults.add(resultReference);
+            if (resultReference != null)
+                allResults.add(resultReference);
+        }
     }
 
     @Override

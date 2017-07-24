@@ -90,6 +90,11 @@ public class ArbiterStatusListener implements StatusListener {
             p.setScore(candidateInfo.getScore());
         }
 
+        if(result != null && p.getExceptionStackTrace() == null && result.getCandidateInfo().getExceptionStackTrace() != null){
+            //Update exceptions that may have occurred since earlier model info instance
+            p.setExceptionStackTrace(result.getCandidateInfo().getExceptionStackTrace());
+        }
+
         p.setStatus(candidateInfo.getCandidateStatus());
 
         statsStorage.putUpdate(p);

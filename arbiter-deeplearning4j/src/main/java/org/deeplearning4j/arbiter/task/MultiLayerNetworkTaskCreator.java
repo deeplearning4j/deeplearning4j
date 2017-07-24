@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.task;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.listener.DL4JArbiterStatusReportingListener;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
@@ -69,6 +70,7 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
         private ModelEvaluator modelEvaluator;
         private List<StatusListener> listeners;
 
+        private long startTime;
 
         public DL4JLearningTask(Candidate candidate, DataProvider dataProvider,
                         ScoreFunction scoreFunction,
@@ -85,6 +87,20 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
         @Override
         public OptimizationResult call() throws Exception {
 
+            try{
+                return callHelper();
+            }catch (Exception e){
+                String stackTrace = ExceptionUtils.getStackTrace(e);
+
+                CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null,
+                        startTime, null, null, candidate.getFlatParameters(), stackTrace);
+                return new OptimizationResult(candidate, null, null, candidate.getIndex(), null, ci);
+            }
+
+        }
+
+        private OptimizationResult callHelper() throws Exception {
+            startTime = System.currentTimeMillis();
             CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null,
                     System.currentTimeMillis(), null, null, candidate.getFlatParameters(), null);
 

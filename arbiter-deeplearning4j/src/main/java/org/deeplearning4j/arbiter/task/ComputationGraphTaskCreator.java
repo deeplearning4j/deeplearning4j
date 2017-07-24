@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.task;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.deeplearning4j.arbiter.GraphConfiguration;
 import org.deeplearning4j.arbiter.listener.DL4JArbiterStatusReportingListener;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
@@ -68,6 +69,8 @@ public class ComputationGraphTaskCreator implements TaskCreator {
         private ModelEvaluator modelEvaluator;
         private List<StatusListener> listeners;
 
+        private long startTime;
+
         public GraphLearningTask(Candidate candidate, DataProvider dataProvider,
                         ScoreFunction scoreFunction,
                         ModelEvaluator modelEvaluator, List<StatusListener> listeners) {
@@ -81,8 +84,23 @@ public class ComputationGraphTaskCreator implements TaskCreator {
 
         @Override
         public OptimizationResult call() throws Exception {
+
+            try{
+                return callHelper();
+            }catch (Exception e){
+                String stackTrace = ExceptionUtils.getStackTrace(e);
+
+                CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null,
+                        startTime, null, null, candidate.getFlatParameters(), stackTrace);
+                return new OptimizationResult(candidate, null, null, candidate.getIndex(), null, ci);
+            }
+
+        }
+
+        private OptimizationResult callHelper() throws Exception {
+            startTime = System.currentTimeMillis();
             CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null,
-                    System.currentTimeMillis(), null, null, candidate.getFlatParameters(), null);
+                    startTime, null, null, candidate.getFlatParameters(), null);
 
             //Create network
             ComputationGraph net = new ComputationGraph(((GraphConfiguration)candidate.getValue()).getConfiguration());
