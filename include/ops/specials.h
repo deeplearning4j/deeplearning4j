@@ -450,6 +450,7 @@ void quickSort_parallel_internal(T* array, int *xShapeInfo, int left, int right,
 
     }
 
+    //
 
     if ( ((right-left)<cutoff) ){
         if (left < j){ quickSort_parallel_internal(array, xShapeInfo, left, j, cutoff, descending); }
@@ -517,6 +518,90 @@ void sortTadGeneric(T *x, int *xShapeInfo, int *dimension, int dimensionLength, 
 
         quickSort_parallel(dx, tadShapeInfo, xTadLength, 1, descending);
     }
+}
+
+//FIXME: get rid of this redefinition
+typedef union
+{
+    float f_;
+    int   i_;
+} FloatBits2;
+
+
+template<typename T>
+void decodeBitmapGeneric(void *dx, Nd4jIndex N, T *dz) {
+    int *x = (int *) dx;
+    int lim = N / 16 + 5;
+
+    FloatBits2 fb;
+    fb.i_ = x[2];
+    float threshold = fb.f_;
+
+
+#pragma omp parallel for schedule(guided) proc_bind(close)
+    for (int e = 4; e < lim; e++) {
+
+        for (int bitId = 0; bitId < 16; bitId++) {
+            bool hasBit = (x[e] & 1 << (bitId) ) != 0;
+            bool hasSign = (x[e] & 1 << (bitId + 16) ) != 0;
+
+            if (hasBit) {
+                if (hasSign)
+                    dz[(e - 4) * 16 + bitId] -= threshold;
+                else
+                    dz[(e - 4) * 16 + bitId] += threshold;
+            } else if (hasSign) {
+                dz[(e - 4) * 16 + bitId] -= threshold / 2;
+            }
+        }
+    }
+}
+
+template<typename T>
+Nd4jIndex encodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, float threshold) {
+    Nd4jIndex retVal = 0L;
+
+#pragma omp parallel for schedule(guided) proc_bind(close) reduction(+:retVal)
+    for (int x = 0; x < N; x += 16) {
+
+        int byte = 0;
+        int byteId = x / 16 + 4;
+
+        for (int f = 0; f < 16; f++) {
+            int e = x + f;
+
+            if (e >= N)
+                continue;
+
+            T val = dx[e];
+            T abs = nd4j::math::nd4j_abs<T>(val);
+
+            int bitId = e % 16;
+
+            if (abs >= threshold) {
+                byte |= 1 << (bitId);
+
+                retVal++;
+
+
+                if (val < 0.0) {
+                    byte |= 1 << (bitId + 16);
+                    dx[e] += threshold;
+                } else {
+                    dx[e] -= threshold;
+                }
+            } else if (abs >= threshold / 2 && val < (T) 0.0f) {
+                byte |= 1 << (bitId + 16);
+                dx[e] += threshold / 2;
+
+                retVal++;
+            }
+        }
+
+        dz[byteId] = byte;
+    }
+
+    return retVal;
 }
 
 #endif //LIBND4J_CONCAT_H
