@@ -36,7 +36,9 @@
 //#include <sys/time.h>
 
 // b40c only available for gcc :(
-#ifdef __GNUC__
+#ifdef  __clang__
+// do nothing
+#elif __GNUC__
 #include <b40c/util/error_utils.cuh>
 #include <b40c/util/multiple_buffering.cuh>
 
@@ -6487,7 +6489,9 @@ void NativeOps::sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo,
         }
     } else {
 
-#ifdef __GNUC__
+#ifdef  __clang__
+        if (1 > 0) {
+#elif __GNUC__
         if ((xLength > 1024 * 1024 * 10) && xEWS == 1) {
             b40c::radix_sort::Enactor enactor;
 
@@ -6554,7 +6558,9 @@ void NativeOps::sortDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInf
             }
         }
     } else {
-#ifdef __GNUC__
+#ifdef  __clang__
+        if (1 > 0) {
+#elif __GNUC__
         if ((xLength > 1024 * 1024 * 10) && xEWS == 1) {
             b40c::radix_sort::Enactor enactor;
 
