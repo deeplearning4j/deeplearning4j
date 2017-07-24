@@ -368,9 +368,9 @@ public:
                             int *dimension,
                             int dimensionLength,
                             int *xTadShapeInfo,
-                            int *xOffsets,
+                            Nd4jIndex *xOffsets,
                             int *yTadShapeInfo,
-                            int *yOffsets) {
+                            Nd4jIndex *yOffsets) {
 
         functions::reduce3::Reduce3<T>::execAll(opNum,
                                              x,

@@ -271,8 +271,8 @@ namespace functions {
 
                 nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
 
-                int elementsPerThread = length / ELEMENT_THRESHOLD;
-                int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+                Nd4jIndex elementsPerThread = length / ELEMENT_THRESHOLD;
+                Nd4jIndex _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
                 if (xEWS >= 1 && zEWS >= 1) {
@@ -380,8 +380,8 @@ namespace functions {
 
                 nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
 
-                int elementsPerThread = length / ELEMENT_THRESHOLD;
-                int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+                Nd4jIndex elementsPerThread = length / ELEMENT_THRESHOLD;
+                Nd4jIndex _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
                 if (ews >= 1) {

@@ -86,7 +86,7 @@ namespace functions {
 				__syncthreads();
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-					int tadOffsetForBlock = tadOffsets[r];
+					Nd4jIndex tadOffsetForBlock = tadOffsets[r];
 					T *rX = dx + tadOffsetForBlock;
 
 					sPartials[threadIdx.x] = OpType::startingValue(rX);
@@ -109,7 +109,7 @@ namespace functions {
 
                         for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 						    shape::ind2subC(tadRank, tadShape, i, xCoord);
-						    int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+						    Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
 						    sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					    }
@@ -171,7 +171,7 @@ template<typename OpType>
 					for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
 						shape::ind2subC(rank, xShape, i, ind2sub);
 
-						int offset = shape::getOffset(0, xShape, xStride, ind2sub, rank);
+						Nd4jIndex offset = shape::getOffset(0, xShape, xStride, ind2sub, rank);
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[offset], extraParams), extraParams);
 					}
 				}
@@ -274,7 +274,7 @@ template<typename OpType>
 				int xCoord[3];
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-					int tadOffsetForBlock = tadOffsets[r];
+					Nd4jIndex tadOffsetForBlock = tadOffsets[r];
 
 					sPartials[threadIdx.x] = OpType::startingValue(dx + tadOffsetForBlock);
 
@@ -331,13 +331,13 @@ template<typename OpType>
 				int xCoord[MAX_RANK];
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-					int tadOffsetForBlock = tadOffsets[r];
+					Nd4jIndex tadOffsetForBlock = tadOffsets[r];
 
 					sPartials[threadIdx.x] = OpType::startingValue(dx + tadOffsetForBlock);
 
 					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 						shape::ind2subC(tadRank, tadShape, i, xCoord);
-						int xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+						Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					}
@@ -572,14 +572,14 @@ template<typename OpType>
 
 #pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
                     for (int i = 0; i < resultLength; i++) {
-                        int offset = tadOffsets[i];
+                        Nd4jIndex offset = tadOffsets[i];
                         int xCoord[MAX_RANK];
 
                         T start = OpType::startingValue(x + offset);
 
                         for (int j = 0; j < tadLength; j++) {
                             shape::ind2subC(tadRank, tadShape, j, xCoord);
-                            int xOffset = shape::getOffset(offset, tadShape, tadStride, xCoord, tadRank);
+                            Nd4jIndex xOffset = shape::getOffset(offset, tadShape, tadStride, xCoord, tadRank);
 
                             start = OpType::update(start, OpType::op(x[xOffset], extraParams), extraParams);
                         }

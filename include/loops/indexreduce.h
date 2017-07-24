@@ -250,7 +250,7 @@ template<typename OpType>
                 int xCoord[MAX_RANK];
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-					int tadOffsetForBlock = tadOffsets[r];
+					Nd4jIndex tadOffsetForBlock = tadOffsets[r];
 
 					sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
@@ -275,7 +275,7 @@ template<typename OpType>
 
 #pragma unroll
 				for(int i = blockIdx.x; i < numTads; i+= gridDim.x) {
-					int tadOffsetForBlock = tadOffsets[i];
+					Nd4jIndex tadOffsetForBlock = tadOffsets[i];
 
 					sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 #pragma unroll
@@ -298,7 +298,7 @@ template<typename OpType>
 
 		//reduce to 1 result
 		else if (resultScalar) {
-			int n = shape::length(xShapeInfo);
+			Nd4jIndex n = shape::length(xShapeInfo);
 			int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
 			if(xElementWiseStride >= 1) {
@@ -313,7 +313,7 @@ template<typename OpType>
 				for(int i = tid;i < n; i += blockDim.x * gridDim.x) {
 					shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
 
-					int offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
+					Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),ind2sub,rank);
 					IndexValue <T> indexVal = {dx[offset], i};
 					reduction = OpType::update(reduction, indexVal, extraParams);
 				}
@@ -411,7 +411,7 @@ template<typename OpType>
 				//T startingVal = OpType::startingValue(x);
 				IndexValue<T> startingIndex = OpType::startingIndexValue(x);
 
-				int length = shape::length(xShapeInfo);
+                Nd4jIndex length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				if(xElementWiseStride < 1) {
                     int *xShape = shape::shapeOf(xShapeInfo);
@@ -456,7 +456,7 @@ template<typename OpType>
 
 
 								for (Nd4jIndex i = omp_get_thread_num(); i < info.chunks; i+= info.threads) {
-									int newOffset = (i * info.items);
+                                    Nd4jIndex newOffset = (i * info.items);
 									T *chunk = x + newOffset;
 									int itemsToLoop = info.items;
 									if(newOffset >= length) {
@@ -522,7 +522,7 @@ template<typename OpType>
 					return;
 				}
 
-				const int resultLength = shape::length(resultShapeInfoBuffer);
+				const Nd4jIndex resultLength = shape::length(resultShapeInfoBuffer);
 				IndexValue<T> *startingIndex = new IndexValue<T>[resultLength];
 
 #pragma omp parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
@@ -573,7 +573,7 @@ template<typename OpType>
 
 #pragma omp  parallel for schedule(guided) if (resultLength > TAD_THRESHOLD) default(shared)
 					for(Nd4jIndex i = 0; i < resultLength; i++) {
-						int offset = tadOffsets[i];
+                        Nd4jIndex offset = tadOffsets[i];
 
 
                         IndexValue<T> indexValue = OpType::startingIndexValue(&x[offset]);

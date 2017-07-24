@@ -828,8 +828,8 @@ template<typename OpType>
                               int *resultShapeInfoBuffer,
                               int *dimension,
                               int dimensionLength,
-                              int *xTadShapeInfo, int *xOffsets,
-                              int *yTadShapeInfo, int *yOffsets) {
+                              int *xTadShapeInfo, Nd4jIndex *xOffsets,
+                              int *yTadShapeInfo, Nd4jIndex *yOffsets) {
                 DISPATCH_BY_OPNUM(execAll, PARAMS(x,
                                                xShapeInfo,
                                                extraParamsVals,
@@ -932,7 +932,7 @@ template<typename OpType>
                     T *result,
                     int *resultShapeInfoBuffer,
                     int *dimension,
-                    int dimensionLength, int *xTadShapeInfo, int *xOffsets, int *yTadShapeInfo, int *yOffsets) {
+                    int dimensionLength, int *xTadShapeInfo, Nd4jIndex *xOffsets, int *yTadShapeInfo, Nd4jIndex *yOffsets) {
 
                 int xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 int yTadLength = shape::tadLength(yShapeInfo, dimension, dimensionLength);
@@ -956,7 +956,7 @@ template<typename OpType>
 
 #pragma  omp parallel for proc_bind(AFFINITY) default(shared) private(xCoord, yCoord)
                 for (int r = 0; r < xTads; r++) {
-                    int xOffset = xOffsets[r];
+                    Nd4jIndex xOffset = xOffsets[r];
 
                     T *lX = x + xOffset;
 

@@ -112,8 +112,8 @@ namespace functions {
 		for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 
 
-            __shared__ int tadOffsetForBlock;
-            __shared__ int tadOffsetForBlockZ;
+            __shared__ Nd4jIndex tadOffsetForBlock;
+            __shared__ Nd4jIndex tadOffsetForBlockZ;
             __shared__ T *rR;
             __shared__ T *rX;
             if (threadIdx.x == 0) {
@@ -260,8 +260,9 @@ namespace functions {
 
 #pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
                 for (int i = 0; i < tads; i++) {
-                    int offset = tadOffsets[i];
-                    int offsetZ = tadOffsetZ[i];
+                    Nd4jIndex offset = tadOffsets[i];
+                    Nd4jIndex offsetZ = tadOffsetZ[i];
+//                    printf("Tad: [%i]; Offset: [%lld]; OffsetZ: [%lld];\n", i, offset, offsetZ);
 
 
                     if (tadEWS > 0 && yStride > 0 && zEWS > 0 && dimensionLength == 1) {

@@ -1111,9 +1111,9 @@ void NativeOps::execReduce3AllDouble(Nd4jPointer *extraPointers,
                           int *dimension,
                           int dimensionLength,
                           int *xTadShapeInfo,
-                          int *xOffsets,
+                          Nd4jIndex *xOffsets,
                           int *yTadShapeInfo,
-                          int *yOffsets) {
+                          Nd4jIndex *yOffsets) {
 
     NativeOpExcutioner<double>::execReduce3All(opNum, x, xInfo, extraParamsVals, y, yInfo, result, resultShapeInfoBuffer, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
 }
@@ -1130,9 +1130,9 @@ void NativeOps::execReduce3AllFloat(Nd4jPointer *extraPointers,
                          int *dimension,
                          int dimensionLength,
                          int *xTadShapeInfo,
-                         int *xOffsets,
+                         Nd4jIndex *xOffsets,
                          int *yTadShapeInfo,
-                         int *yOffsets) {
+                         Nd4jIndex *yOffsets) {
 
     NativeOpExcutioner<float>::execReduce3All(opNum, x, xInfo, extraParamsVals, y, yInfo, result, resultShapeInfoBuffer, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
 }
@@ -1149,9 +1149,9 @@ void NativeOps::execReduce3AllHalf(Nd4jPointer *extraPointers,
                         int *dimension,
                         int dimensionLength,
                         int *xTadShapeInfo,
-                        int *xOffsets,
+                        Nd4jIndex *xOffsets,
                         int *yTadShapeInfo,
-                        int *yOffsets) {
+                        Nd4jIndex *yOffsets) {
 
 #ifndef __ANDROID__
     // TODO: make this work with android-x86 as well
