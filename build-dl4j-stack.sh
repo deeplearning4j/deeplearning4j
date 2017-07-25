@@ -28,14 +28,6 @@ do
 key="$1"
 #Build type (release/debug), packaging type, chip: cpu,gpu,lib type (static/dynamic)
 case $key in
-    -b|--build-type)
-    BUILD="$2"
-    shift # past argument
-    ;;
-    -p|--packaging)
-    PACKAGING="$2"
-    shift # past argument
-    ;;
     -c|--chip)
     CHIP="$2"
     shift # past argument
@@ -122,8 +114,6 @@ else
 fi
 
 # Report argument values
-echo BUILD         = "${BUILD}"
-echo PACKAGING     = "${PACKAGING}"
 echo CHIP          = "${CHIP}"
 echo COMPUTE       = "${COMPUTE}"
 echo NATIVE        = "${NATIVE}"
@@ -131,13 +121,13 @@ echo LIBTYPE       = "${LIBTYPE}"
 echo SCALAV        = "${SCALAV}"
 echo SHALLOW       = "${SHALLOW}"
 echo REPO_STRATEGY = "${REPO_STRATEGY}"
+echo TEST_ND4J     = "${TEST_ND4J}"
+echo TEST_DATAVEC  = "${TEST_DATAVEC}"
+echo TEST_DL4J     = "${TEST_DL4J}"
 echo SKIP_LIBND4J  = "${SKIP_LIBND4J}"
 echo SKIP_ND4J     = "${SKIP_ND4J}"
 echo SKIP_DATAVEC  = "${SKIP_DATAVEC}"
 echo SKIP_DL4J     = "${SKIP_DL4J}"
-echo TEST_ND4J     = "${TEST_ND4J}"
-echo TEST_DATAVEC  = "${TEST_DATAVEC}"
-echo TEST_DL4J     = "${TEST_DL4J}"
 echo MVN_OPTS      = "${MVN_OPTS}"
 
 ###########################
