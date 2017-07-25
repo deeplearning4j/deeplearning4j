@@ -171,17 +171,33 @@ public class ValidateCudnnLSTM {
 
         assertEquals(out1, out2);
 
+        for( int x=0; x<10; x++ ){
+            input = Nd4j.rand(new int[]{minibatch, inputSize, timeSeriesLength});
+            labels = Nd4j.zeros(minibatch, nOut, timeSeriesLength);
+            for (int i = 0; i < minibatch; i++) {
+                for (int j = 0; j < timeSeriesLength; j++) {
+                    labels.putScalar(i, r.nextInt(nOut), j, 1.0);
+                }
+            }
 
-        mln1.setInput(input);
-        mln1.setLabels(labels);
+            mln1.setInput(input);
+            mln1.setLabels(labels);
 
-        mln2.setInput(input);
-        mln2.setLabels(labels);
+            mln2.setInput(input);
+            mln2.setLabels(labels);
 
-        mln1.computeGradientAndScore();
-        mln2.computeGradientAndScore();
+            mln1.computeGradientAndScore();
+            mln2.computeGradientAndScore();
 
-        assertEquals(mln1.getFlattenedGradients(), mln2.getFlattenedGradients());
+            assertEquals(mln1.score(), mln2.score(), 1e-8);
+
+            assertEquals(mln1.getFlattenedGradients(), mln2.getFlattenedGradients());
+
+            mln1.fit(new DataSet(input, labels));
+            mln2.fit(new DataSet(input, labels));
+
+            assertEquals("Iteration: " + x, mln1.params(), mln2.params());
+        }
     }
 
 
@@ -255,6 +271,74 @@ public class ValidateCudnnLSTM {
         assertEquals(mln1.params(), mln2.params());
     }
 
+
+    @Test
+    public void validateImplMultiLayerTBPTT_DEBUG() throws Exception {
+
+        Nd4j.getRandom().setSeed(12345);
+        int minibatch = 2;
+        int inputSize = 2;
+        int lstmLayerSize = 2;
+        int timeSeriesLength = 4;
+        int tbpttLength = 2;
+        int nOut = 2;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(1.0)
+                .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
+                .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                .dist(new NormalDistribution(0, 2)).list()
+                .layer(0, new LSTM.Builder().nIn(inputSize).nOut(lstmLayerSize)
+                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
+                .pretrain(false).backprop(true)
+                .backpropType(BackpropType.TruncatedBPTT)
+                .tBPTTLength(tbpttLength)
+                .build();
+
+        MultiLayerNetwork mln1 = new MultiLayerNetwork(conf.clone());
+        mln1.init();
+
+        MultiLayerNetwork mln2 = new MultiLayerNetwork(conf.clone());
+        mln2.init();
+
+
+//        mln1.getLayer(0).getParam("RW").assign(0);
+//        mln2.getLayer(0).getParam("RW").assign(0);
+
+        assertEquals(mln1.params(), mln2.params());
+
+        Field f = org.deeplearning4j.nn.layers.recurrent.LSTM.class.getDeclaredField("helper");
+        f.setAccessible(true);
+
+        Layer l0 = mln1.getLayer(0);
+        f.set(l0, null);
+        assertNull(f.get(l0));
+
+        l0 = mln2.getLayer(0);
+        assertTrue(f.get(l0) instanceof CudnnLSTMHelper);
+
+        Random r = new Random(12345);
+        for(int x=0; x<1; x++ ){
+            INDArray input = Nd4j.rand(new int[]{minibatch, inputSize, timeSeriesLength});
+            INDArray labels = Nd4j.zeros(minibatch, nOut, timeSeriesLength);
+            for (int i = 0; i < minibatch; i++) {
+                for (int j = 0; j < timeSeriesLength; j++) {
+                    labels.putScalar(i, r.nextInt(nOut), j, 1.0);
+                }
+            }
+
+            DataSet ds = new DataSet(input, labels);
+            System.out.println(" ===== FITTING DEFAULT LSTM NET =====");
+            mln1.fit(ds);
+            System.out.println(" ===== FITTING CUDNN LSTM NET =====");
+            mln2.fit(ds);
+        }
+
+
+        assertEquals(mln1.params(), mln2.params());
+    }
+
     @Test
     public void validateImplMultiLayerRnnTimeStep() throws Exception {
 
@@ -268,6 +352,7 @@ public class ValidateCudnnLSTM {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(1.0)
                 .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
+                .cacheMode(CacheMode.NONE)
                 .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0, 2)).list()
                 .layer(0, new LSTM.Builder().nIn(inputSize).nOut(lstmLayerSize)

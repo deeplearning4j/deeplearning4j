@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.nn.layers.recurrent;
 
+import java.util.Arrays;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
@@ -206,8 +207,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey); //Order: {I,F,O,G}
         INDArray bGradientsOut = gradientViews.get(biasWeightKey);
 
-        INDArray outputActivations = fwdPass.fwdPassOutputAsArrays[0];
-
+        INDArray outputActivations = fwdPass.fwdPassOutput.permute(2,0,1).dup('c'); //.fwdPassOutputAsArrays[0];
         INDArray prevStepMemCellState = fwdPass.prevMemCell.dup('c');
         INDArray prevStepActivations = fwdPass.prevAct.dup('c');
 
@@ -221,8 +221,8 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         Pointer dyData = allocator.getPointer(dy, context);
         Pointer dxData = allocator.getPointer(dx, context);
         Pointer outputActivationsData = allocator.getPointer(outputActivations, context);
-        Pointer memCellStateData = allocator.getPointer(prevStepMemCellState, context);
-        Pointer memCellActivationsData = allocator.getPointer(prevStepActivations, context);
+        Pointer prevMemCellStateData = allocator.getPointer(prevStepMemCellState, context);
+        Pointer prevStepActivationsData = allocator.getPointer(prevStepActivations, context);
         Pointer iwGradientsOutData = allocator.getPointer(iwGradientsOut, context);
         Pointer rwGradientsOutData = allocator.getPointer(rwGradientsOut, context);
         Pointer bGradientsOutData = allocator.getPointer(bGradientsOut, context);
@@ -242,15 +242,15 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
         checkCudnn(cudnnRNNBackwardData(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, yDesc,
                         outputActivationsData, dyDesc, dyData, cudnnContext.dhyDesc, null, cudnnContext.dcyDesc, null,
-                        cudnnContext.wDesc, weightsSpace, cudnnContext.hxDesc, memCellActivationsData,
-                        cudnnContext.cxDesc, memCellStateData, dxDesc, dxData, cudnnContext.dhxDesc, null,
+                        cudnnContext.wDesc, weightsSpace, cudnnContext.hxDesc, prevStepActivationsData,
+                        cudnnContext.cxDesc, prevMemCellStateData, dxDesc, dxData, cudnnContext.dhxDesc, null,
                         cudnnContext.dcxDesc, null, workSpace, workSpace.limit(), reserveSpace, reserveSpace.limit()));
 
         // cudnnRNNBackwardWeights adds to the data in dw.
         checkCuda(cudaMemsetAsync(weightsSpace, 0, weightsSpace.limit(), stream));
 
         checkCudnn(cudnnRNNBackwardWeights(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc,
-                        xData, cudnnContext.hxDesc, memCellActivationsData, yDesc, outputActivationsData, workSpace,
+                        xData, cudnnContext.hxDesc, prevStepActivationsData, yDesc, outputActivationsData, workSpace,
                         workSpace.limit(), cudnnContext.dwDesc, weightsSpace, reserveSpace, reserveSpace.limit()));
 
         int[] dataType = new int[1];
@@ -348,13 +348,6 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         FwdPassReturn toReturn = new FwdPassReturn();
         toReturn.prevAct = prevAct;
         toReturn.prevMemCell = prevMemCell;
-
-//        if (forBackprop) {
-            toReturn.fwdPassOutputAsArrays = new INDArray[] {outputActivations};
-            toReturn.memCellState = new INDArray[] {finalMemCellState};
-            toReturn.lastMemCell = finalMemCellState;
-            toReturn.lastAct = finalStepActivations;
-//        }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -530,12 +523,9 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                         linInputWeights, linRecurrentWeights, linBiases, prevAct, prevMemCell,
                         outputActivations, finalMemCellState, finalStepActivations);
 
-//        if (!forBackprop) {
-            toReturn.fwdPassOutput = outputActivations.permute(1, 2, 0).dup('f');
-            toReturn.lastAct = finalStepActivations.dup('f');
-            toReturn.lastMemCell = finalMemCellState.dup('f');
-//        }
-
+        toReturn.fwdPassOutput = outputActivations.permute(1, 2, 0).dup('f');
+        toReturn.lastAct = finalStepActivations.dup('c');
+        toReturn.lastMemCell = finalMemCellState.dup('c');
         toReturn.prevAct = prevAct.dup('c');
         toReturn.prevMemCell = prevMemCell.dup('c');
         return toReturn;
