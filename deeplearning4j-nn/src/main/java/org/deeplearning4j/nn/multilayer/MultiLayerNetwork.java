@@ -264,9 +264,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         log.info("Starting unsupervised training on layer " + layerIdx);
         while (iter.hasNext()) {
+            DataSet next = iter.next();
+
             try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
                 try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                    DataSet next = iter.next();
                     input = next.getFeatureMatrix();
                     pretrainLayer(layerIdx, input);
                 }
