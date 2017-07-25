@@ -565,6 +565,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             retShape = new int[] {1, 1};
         }
 
+
+        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
+            return op.noOp();
     
         INDArray ret = null;
         if (op.z() == null || op.z() == op.x()) {
