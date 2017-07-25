@@ -21,9 +21,7 @@ package org.nd4j.linalg.jcublas;
 
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.indexer.DoubleRawIndexer;
-import org.bytedeco.javacpp.indexer.FloatRawIndexer;
-import org.bytedeco.javacpp.indexer.IntRawIndexer;
+import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -62,6 +60,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.util.*;
 
 /**
@@ -1424,22 +1425,34 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     public INDArray createFromNpyPointer(Pointer pointer) {
         Pointer dataPointer = nativeOps.dataPointForNumpy(pointer);
         int dataBufferElementSize = nativeOps.elementSizeForNpyArray(pointer);
+
         DataBuffer data = null;
         Pointer shapeBufferPointer = nativeOps.shapeBufferForNumpy(pointer);
         int length = nativeOps.lengthForShapeBufferPointer(shapeBufferPointer);
+        shapeBufferPointer.capacity(4 * length);
+        shapeBufferPointer.limit(4 * length);
+        shapeBufferPointer.position(0);
+
         IntPointer intPointer = new IntPointer(shapeBufferPointer);
-        DataBuffer shapeBuffer = Nd4j.createBuffer(shapeBufferPointer, DataBuffer.Type.INT,length,new IntRawIndexer(intPointer));
+
+        DataBuffer shapeBuffer = Nd4j.createBuffer(shapeBufferPointer, DataBuffer.Type.INT,length, IntIndexer.create(intPointer));
+
+        dataPointer.position(0);
+        dataPointer.limit(dataBufferElementSize * Shape.length(shapeBuffer));
+        dataPointer.capacity(dataBufferElementSize * Shape.length(shapeBuffer));
+
+        // we don't care about pointers here, they will be copied in BaseCudaDataBuffer method, and indexer will be recreated
         if(dataBufferElementSize == (Float.SIZE / 8)) {
             data = Nd4j.createBuffer(dataPointer,
                     DataBuffer.Type.FLOAT,
                     Shape.length(shapeBuffer),
-                    new FloatRawIndexer(new FloatPointer(dataPointer)));
+                    FloatIndexer.create(new FloatPointer(dataPointer)));
         }
         else if(dataBufferElementSize == (Double.SIZE / 8)) {
             data = Nd4j.createBuffer(dataPointer,
                     DataBuffer.Type.DOUBLE,
                     Shape.length(shapeBuffer),
-                    new DoubleRawIndexer(new DoublePointer(dataPointer)));
+                    DoubleIndexer.create(new DoublePointer(dataPointer)));
         }
 
         INDArray ret = Nd4j.create(data,Shape.shape(shapeBuffer),
@@ -1455,8 +1468,26 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public INDArray createFromNpyFile(File file) {
-        Pointer pointer = nativeOps.numpyFromFile(new BytePointer(file.getAbsolutePath().getBytes()));
+        /*Pointer pointer = nativeOps.numpyFromFile(new BytePointer(file.getAbsolutePath().getBytes()));
+        log.info("Pointer here: {}", pointer.address());
         return createFromNpyPointer(pointer);
+
+        */
+
+        byte[] pathBytes = file.getAbsolutePath().getBytes(Charset.forName("UTF-8" ));
+        String otherBytes = new String(pathBytes);
+        System.out.println(otherBytes);
+        ByteBuffer directBuffer = ByteBuffer.allocateDirect(pathBytes.length).order(ByteOrder.nativeOrder());
+        directBuffer.put(pathBytes);
+        directBuffer.rewind();
+        directBuffer.position(0);
+        Pointer pointer = nativeOps.numpyFromFile(new BytePointer(directBuffer));
+        INDArray result = createFromNpyPointer(pointer);
+
+        // releasing original pointer here
+        nativeOps.releaseNumpy(pointer);
+
+        return result;
     }
 
     public INDArray[] tear(INDArray tensor, int... dimensions) {

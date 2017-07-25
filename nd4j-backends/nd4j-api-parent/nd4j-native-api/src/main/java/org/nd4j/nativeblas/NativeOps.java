@@ -1456,6 +1456,15 @@ public abstract class NativeOps extends Pointer {
      */
     public abstract Pointer shapeBufferForNumpy(Pointer npyArray);
 
+    /**
+     * Thie method releases numpy pointer
+     *
+     * PLEASE NOTE: This method should be ONLY used if pointer/numpy array was originated from file
+     *
+     * @param npyArray
+     */
+    public abstract void releaseNumpy(Pointer npyArray);
+
 
     /**
      * Create a numpy array pointer

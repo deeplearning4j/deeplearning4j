@@ -4848,6 +4848,15 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("Nd4jPointer") Pointer numpyFromFile(@StdString String path);
 
     /**
+     * This method releases pointer.
+     *
+     * PLEASE NOTE: This method shouldn't be ever called for anything but numpy arrays created from FILE
+     *
+     * @param npyArray
+     */
+    public native void releaseNumpy(@Cast("Nd4jPointer") Pointer npyArray);
+
+    /**
      * Return the length of a shape buffer
      * based on the pointer
      * @param buffer  the buffer pointer to check

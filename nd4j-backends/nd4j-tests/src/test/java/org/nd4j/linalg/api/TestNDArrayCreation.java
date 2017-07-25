@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.Ignore;
@@ -20,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 30/04/2016.
  */
-@Ignore
+@Slf4j
 public class TestNDArrayCreation extends BaseNd4jTest {
 
 
