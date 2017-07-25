@@ -382,6 +382,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == Type.INT) {
             pointer = new IntPointer(length);
             setIndexer(IntIndexer.create((IntPointer) pointer));
+        } else if (dataType() == Type.LONG) {
+            pointer = new LongPointer(length);
+            setIndexer(LongIndexer.create((LongPointer) pointer));
         }
     }
 
@@ -425,6 +428,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == Type.INT) {
             pointer = new IntPointer(buffer.asIntBuffer());
             setIndexer(IntIndexer.create((IntPointer) pointer));
+        } else if (dataType() == Type.LONG) {
+            pointer = new LongPointer(buffer.asLongBuffer());
+            setIndexer(LongIndexer.create((LongPointer) pointer));
         }
     }
 
@@ -532,6 +538,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
             setIndexer(IntIndexer.create((IntPointer) pointer));
             if (initialize)
                 fillPointerWithZero();
+        } else if (dataType() == Type.LONG) {
+            pointer = new LongPointer(length());
+            setIndexer(LongIndexer.create((LongPointer) pointer));
+
+            if (initialize)
+                fillPointerWithZero();
         }
     }
 
@@ -569,6 +581,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
             //pointer = new IntPointer(length());
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new FloatPointer(length());
             setIndexer(IntIndexer.create((IntPointer) pointer));
+
+        } else if (dataType() == Type.LONG) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            //pointer = new IntPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new FloatPointer(length());
+            setIndexer(LongIndexer.create((LongPointer) pointer));
 
         }
     }
@@ -614,6 +634,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 };
             } else if (dataType() == Type.INT) {
                 return new IntPointer(pointer()) {
+                    {
+                        address = pointer().address() + getElementSize() * offset();
+                    }
+                };
+            } else if (dataType() == Type.LONG) {
+                return new LongPointer(pointer()) {
                     {
                         address = pointer().address() + getElementSize() * offset();
                     }
@@ -894,6 +920,23 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
+    @Override
+    public long getLong(long i) {
+        if (dataType() == Type.FLOAT) {
+            dirty.set(false);
+            return (long) ((FloatIndexer) indexer).get(offset() + i);
+        } else if (dataType() == Type.INT) {
+            dirty.set(false);
+            return (long) ((IntIndexer) indexer).get(offset() + i);
+        } else if (dataType() == Type.DOUBLE){
+            dirty.set(false);
+            return (long) ((DoubleIndexer) indexer).get(offset() + i);
+        } else {
+            dirty.set(false);
+            return ((LongIndexer) indexer).get(offset() + i);
+        }
+    }
+
     /**
      * Special method for
      * @param i
@@ -988,6 +1031,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             } else if (globalType == Type.FLOAT) {
                 pointer = new FloatPointer(length());
                 setIndexer(FloatIndexer.create((FloatPointer) pointer));
+            } else if (globalType == Type.LONG) {
+                pointer = new LongPointer(length());
+                setIndexer(LongIndexer.create((LongPointer) pointer));
             }
         }
     }
@@ -1001,6 +1047,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             put(i, anElement);
         } else if (globalType == Type.DOUBLE) {
             double anElement = element.doubleValue();
+            put(i, anElement);
+        } else if (globalType == Type.LONG) {
+            long anElement = element.longValue();
             put(i, anElement);
         }
     }

@@ -44,6 +44,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -608,7 +609,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     targets,
                     (IntPointer) result[0].shapeInfoDataBuffer().pointer(),
                     (IntPointer) tadBuffers.getFirst().pointer(),
-                    (IntPointer) tadBuffers.getSecond().pointer()
+                    new LongPointerWrapper(tadBuffers.getSecond().pointer())
             );
         } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.tearFloat(null,
@@ -617,7 +618,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     targets,
                     (IntPointer) result[0].shapeInfoDataBuffer().pointer(),
                     (IntPointer) tadBuffers.getFirst().pointer(),
-                    (IntPointer) tadBuffers.getSecond().pointer()
+                    new LongPointerWrapper(tadBuffers.getSecond().pointer())
                     );
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
             throw new UnsupportedOperationException("Half precision isn't supported for CPU backend");
@@ -765,23 +766,23 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     (IntPointer) source.shapeInfoDataBuffer().addressPointer(),
                     (DoublePointer) ret.data().addressPointer(),
                     (IntPointer) ret.shapeInfoDataBuffer().addressPointer(), indexes.length, pIndex,
-                    (IntPointer) hostTadShapeInfo, (IntPointer) hostTadOffsets, (IntPointer) zTadShapeInfo,
-                    (IntPointer) zTadOffsets);
+                    (IntPointer) hostTadShapeInfo, new LongPointerWrapper(hostTadOffsets), (IntPointer) zTadShapeInfo,
+                    new LongPointerWrapper(zTadOffsets));
         } else if (ret.data().dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.pullRowsFloat(dummy, (FloatPointer) source.data().addressPointer(),
                     (IntPointer) source.shapeInfoDataBuffer().addressPointer(),
                     (FloatPointer) ret.data().addressPointer(),
                     (IntPointer) ret.shapeInfoDataBuffer().addressPointer(), indexes.length, pIndex,
-                    (IntPointer) hostTadShapeInfo, (IntPointer) hostTadOffsets, (IntPointer) zTadShapeInfo,
-                    (IntPointer) zTadOffsets);
+                    (IntPointer) hostTadShapeInfo, new LongPointerWrapper(hostTadOffsets), (IntPointer) zTadShapeInfo,
+                    new LongPointerWrapper(zTadOffsets));
 
         } else {
             nativeOps.pullRowsHalf(dummy, (ShortPointer) source.data().addressPointer(),
                     (IntPointer) source.shapeInfoDataBuffer().addressPointer(),
                     (ShortPointer) ret.data().addressPointer(),
                     (IntPointer) ret.shapeInfoDataBuffer().addressPointer(), indexes.length, pIndex,
-                    (IntPointer) hostTadShapeInfo, (IntPointer) hostTadOffsets, (IntPointer) zTadShapeInfo,
-                    (IntPointer) zTadOffsets);
+                    (IntPointer) hostTadShapeInfo, new LongPointerWrapper(hostTadOffsets), (IntPointer) zTadShapeInfo,
+                    new LongPointerWrapper(zTadOffsets));
         }
 
         return ret;
@@ -963,6 +964,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         long[] ptrs = new long[arrays.size()];
 
+
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
 
@@ -978,8 +980,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
             DataBuffer offsets = tadBuffers.getSecond();
 
+            if (offsets.length() != numTads)
+                throw new ND4JIllegalStateException("Can't symmetrically shuffle arrays with non-equal number of TADs");
+
             if (offsets == null)
-                throw new IllegalStateException("Offsets for shuffle can't be null");
+                throw new ND4JIllegalStateException("Offsets for shuffle can't be null");
 
 
             dataPointers.put(i, array.data().addressPointer());
@@ -1259,7 +1264,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     new IntPointer(dimension),
                     dimension.length,
                     (IntPointer) tadBuffers.getFirst().addressPointer(),
-                    (IntPointer) tadBuffers.getSecond().addressPointer(),
+                    new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
                     descending);
         } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().sortTadDouble(null,
@@ -1268,7 +1273,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     new IntPointer(dimension),
                     dimension.length,
                     (IntPointer) tadBuffers.getFirst().addressPointer(),
-                    (IntPointer) tadBuffers.getSecond().addressPointer(),
+                    new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
                     descending);
         } else {
             throw new UnsupportedOperationException("Unknown dataype " + x.data().dataType());

@@ -542,9 +542,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  IntPointer dimension,
                                  int dimensionLength,
                                  IntPointer xTadShapeInfo,
-                                 IntPointer xOffsets,
+                                 @Cast("Nd4jIndex*") LongPointer xOffsets,
                                  IntPointer yTadShapeInfo,
-                                 IntPointer yOffsets);
+                                 @Cast("Nd4jIndex*") LongPointer yOffsets);
     public native void execReduce3AllDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
                                  DoubleBuffer x,
@@ -557,9 +557,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  IntBuffer dimension,
                                  int dimensionLength,
                                  IntBuffer xTadShapeInfo,
-                                 IntBuffer xOffsets,
+                                 @Cast("Nd4jIndex*") LongBuffer xOffsets,
                                  IntBuffer yTadShapeInfo,
-                                 IntBuffer yOffsets);
+                                 @Cast("Nd4jIndex*") LongBuffer yOffsets);
     public native void execReduce3AllDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
                                  double[] x,
@@ -572,9 +572,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int[] dimension,
                                  int dimensionLength,
                                  int[] xTadShapeInfo,
-                                 int[] xOffsets,
+                                 @Cast("Nd4jIndex*") long[] xOffsets,
                                  int[] yTadShapeInfo,
-                                 int[] yOffsets);
+                                 @Cast("Nd4jIndex*") long[] yOffsets);
 
     public native void execReduce3AllFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                   int opNum,
@@ -588,9 +588,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                   IntPointer dimension,
                                   int dimensionLength,
                                   IntPointer xTadShapeInfo,
-                                  IntPointer xOffsets,
+                                 @Cast("Nd4jIndex*") LongPointer xOffsets,
                                   IntPointer yTadShapeInfo,
-                                  IntPointer yOffsets);
+                                 @Cast("Nd4jIndex*") LongPointer yOffsets);
     public native void execReduce3AllFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                   int opNum,
                                   FloatBuffer x,
@@ -603,9 +603,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                   IntBuffer dimension,
                                   int dimensionLength,
                                   IntBuffer xTadShapeInfo,
-                                  IntBuffer xOffsets,
+                                 @Cast("Nd4jIndex*") LongBuffer xOffsets,
                                   IntBuffer yTadShapeInfo,
-                                  IntBuffer yOffsets);
+                                 @Cast("Nd4jIndex*") LongBuffer yOffsets);
     public native void execReduce3AllFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                   int opNum,
                                   float[] x,
@@ -618,9 +618,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                   int[] dimension,
                                   int dimensionLength,
                                   int[] xTadShapeInfo,
-                                  int[] xOffsets,
+                                 @Cast("Nd4jIndex*") long[] xOffsets,
                                   int[] yTadShapeInfo,
-                                  int[] yOffsets);
+                                 @Cast("Nd4jIndex*") long[] yOffsets);
 
     public native void execReduce3AllHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                   int opNum,
@@ -634,9 +634,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                   IntPointer dimension,
                                   int dimensionLength,
                                   IntPointer xTadShapeInfo,
-                                  IntPointer xOffsets,
+                                @Cast("Nd4jIndex*") LongPointer xOffsets,
                                   IntPointer yTadShapeInfo,
-                                  IntPointer yOffsets);
+                                @Cast("Nd4jIndex*") LongPointer yOffsets);
     public native void execReduce3AllHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                   int opNum,
                                   @Cast("float16*") ShortBuffer x,
@@ -649,9 +649,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                   IntBuffer dimension,
                                   int dimensionLength,
                                   IntBuffer xTadShapeInfo,
-                                  IntBuffer xOffsets,
+                                @Cast("Nd4jIndex*") LongBuffer xOffsets,
                                   IntBuffer yTadShapeInfo,
-                                  IntBuffer yOffsets);
+                                @Cast("Nd4jIndex*") LongBuffer yOffsets);
     public native void execReduce3AllHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                   int opNum,
                                   @Cast("float16*") short[] x,
@@ -664,9 +664,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                   int[] dimension,
                                   int dimensionLength,
                                   int[] xTadShapeInfo,
-                                  int[] xOffsets,
+                                @Cast("Nd4jIndex*") long[] xOffsets,
                                   int[] yTadShapeInfo,
-                                  int[] yOffsets);
+                                @Cast("Nd4jIndex*") long[] yOffsets);
 
 
 
@@ -3218,17 +3218,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                               IntPointer dimension,
                               int dimensionLength,
                               IntPointer targetBuffer,
-                              IntPointer offsetsBuffer);
+                              @Cast("Nd4jIndex*") LongPointer offsetsBuffer);
     public native void tadOnlyShapeInfo(IntBuffer xShapeInfo,
                               IntBuffer dimension,
                               int dimensionLength,
                               IntBuffer targetBuffer,
-                              IntBuffer offsetsBuffer);
+                              @Cast("Nd4jIndex*") LongBuffer offsetsBuffer);
     public native void tadOnlyShapeInfo(int[] xShapeInfo,
                               int[] dimension,
                               int dimensionLength,
                               int[] targetBuffer,
-                              int[] offsetsBuffer);
+                              @Cast("Nd4jIndex*") long[] offsetsBuffer);
 
     /*
      * PullRow special op
@@ -3256,9 +3256,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           int n,
                           IntPointer indexes,
                           IntPointer tadShapeInfo,
-                          IntPointer tadOffsets,
+                          @Cast("Nd4jIndex*") LongPointer tadOffsets,
                           IntPointer zTadShapeInfo,
-                          IntPointer zTadOffsets);
+                          @Cast("Nd4jIndex*") LongPointer zTadOffsets);
     public native void pullRowsHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           @Cast("float16*") ShortBuffer x,
                           IntBuffer xShapeInfo,
@@ -3267,9 +3267,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           int n,
                           IntBuffer indexes,
                           IntBuffer tadShapeInfo,
-                          IntBuffer tadOffsets,
+                          @Cast("Nd4jIndex*") LongBuffer tadOffsets,
                           IntBuffer zTadShapeInfo,
-                          IntBuffer zTadOffsets);
+                          @Cast("Nd4jIndex*") LongBuffer zTadOffsets);
     public native void pullRowsHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           @Cast("float16*") short[] x,
                           int[] xShapeInfo,
@@ -3278,9 +3278,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                           int n,
                           int[] indexes,
                           int[] tadShapeInfo,
-                          int[] tadOffsets,
+                          @Cast("Nd4jIndex*") long[] tadOffsets,
                           int[] zTadShapeInfo,
-                          int[] zTadOffsets);
+                          @Cast("Nd4jIndex*") long[] zTadOffsets);
 
     /**
      *
@@ -3304,9 +3304,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                            int n,
                            IntPointer indexes,
                            IntPointer tadShapeInfo,
-                           IntPointer tadOffsets,
+                           @Cast("Nd4jIndex*") LongPointer tadOffsets,
                            IntPointer zTadShapeInfo,
-                           IntPointer zTadOffsets);
+                           @Cast("Nd4jIndex*") LongPointer zTadOffsets);
     public native void pullRowsFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                            FloatBuffer x,
                            IntBuffer xShapeInfo,
@@ -3315,9 +3315,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                            int n,
                            IntBuffer indexes,
                            IntBuffer tadShapeInfo,
-                           IntBuffer tadOffsets,
+                           @Cast("Nd4jIndex*") LongBuffer tadOffsets,
                            IntBuffer zTadShapeInfo,
-                           IntBuffer zTadOffsets);
+                           @Cast("Nd4jIndex*") LongBuffer zTadOffsets);
     public native void pullRowsFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                            float[] x,
                            int[] xShapeInfo,
@@ -3326,9 +3326,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                            int n,
                            int[] indexes,
                            int[] tadShapeInfo,
-                           int[] tadOffsets,
+                           @Cast("Nd4jIndex*") long[] tadOffsets,
                            int[] zTadShapeInfo,
-                           int[] zTadOffsets);
+                           @Cast("Nd4jIndex*") long[] zTadOffsets);
 
     /**
      *
@@ -3352,9 +3352,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                             int n,
                             IntPointer indexes,
                             IntPointer tadShapeInfo,
-                            IntPointer tadOffsets,
+                            @Cast("Nd4jIndex*") LongPointer tadOffsets,
                             IntPointer zTadShapeInfo,
-                            IntPointer zTadOffsets);
+                            @Cast("Nd4jIndex*") LongPointer zTadOffsets);
     public native void pullRowsDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                             DoubleBuffer x,
                             IntBuffer xShapeInfo,
@@ -3363,9 +3363,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                             int n,
                             IntBuffer indexes,
                             IntBuffer tadShapeInfo,
-                            IntBuffer tadOffsets,
+                            @Cast("Nd4jIndex*") LongBuffer tadOffsets,
                             IntBuffer zTadShapeInfo,
-                            IntBuffer zTadOffsets);
+                            @Cast("Nd4jIndex*") LongBuffer zTadOffsets);
     public native void pullRowsDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                             double[] x,
                             int[] xShapeInfo,
@@ -3374,9 +3374,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                             int n,
                             int[] indexes,
                             int[] tadShapeInfo,
-                            int[] tadOffsets,
+                            @Cast("Nd4jIndex*") long[] tadOffsets,
                             int[] zTadShapeInfo,
-                            int[] zTadOffsets);
+                            @Cast("Nd4jIndex*") long[] zTadOffsets);
 
     /**
      * Array averaging op
@@ -4773,7 +4773,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                           IntPointer dimension,
                                           int dimensionLength,
                                           IntPointer tadShapeInfo,
-                                          IntPointer tadOffsets,
+                                          @Cast("Nd4jIndex*") LongPointer tadOffsets,
                                           FloatPointer extraA,
                                           FloatPointer extraB,
                                           float scalarA,
@@ -4793,7 +4793,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                           IntBuffer dimension,
                                           int dimensionLength,
                                           IntBuffer tadShapeInfo,
-                                          IntBuffer tadOffsets,
+                                          @Cast("Nd4jIndex*") LongBuffer tadOffsets,
                                           FloatBuffer extraA,
                                           FloatBuffer extraB,
                                           float scalarA,
@@ -4813,7 +4813,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                           int[] dimension,
                                           int dimensionLength,
                                           int[] tadShapeInfo,
-                                          int[] tadOffsets,
+                                          @Cast("Nd4jIndex*") long[] tadOffsets,
                                           float[] extraA,
                                           float[] extraB,
                                           float scalarA,
@@ -4882,9 +4882,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param zShapeInfo
      * @return
      */
-    public native void tearDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoublePointer x, IntPointer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
-    public native void tearDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoubleBuffer x, IntBuffer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntBuffer zShapeInfo, IntBuffer tadShapeInfo, IntBuffer tadOffsets);
-    public native void tearDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, double[] x, int[] xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, int[] zShapeInfo, int[] tadShapeInfo, int[] tadOffsets);
+    public native void tearDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoublePointer x, IntPointer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, @Cast("Nd4jIndex*") LongPointer tadOffsets);
+    public native void tearDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoubleBuffer x, IntBuffer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntBuffer zShapeInfo, IntBuffer tadShapeInfo, @Cast("Nd4jIndex*") LongBuffer tadOffsets);
+    public native void tearDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, double[] x, int[] xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, int[] zShapeInfo, int[] tadShapeInfo, @Cast("Nd4jIndex*") long[] tadOffsets);
 
     /**
      * This method takes single N-dimensional tensor, and copies its TADs to target arrays
@@ -4895,9 +4895,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param zShapeInfo
      * @return
      */
-    public native void tearFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer x, IntPointer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
-    public native void tearFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer x, IntBuffer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntBuffer zShapeInfo, IntBuffer tadShapeInfo, IntBuffer tadOffsets);
-    public native void tearFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] x, int[] xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, int[] zShapeInfo, int[] tadShapeInfo, int[] tadOffsets);
+    public native void tearFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer x, IntPointer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, @Cast("Nd4jIndex*") LongPointer tadOffsets);
+    public native void tearFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer x, IntBuffer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntBuffer zShapeInfo, IntBuffer tadShapeInfo, @Cast("Nd4jIndex*") LongBuffer tadOffsets);
+    public native void tearFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] x, int[] xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, int[] zShapeInfo, int[] tadShapeInfo, @Cast("Nd4jIndex*") long[] tadOffsets);
 
     /**
      * This method takes single N-dimensional tensor, and copies its TADs to target arrays
@@ -4908,9 +4908,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param zShapeInfo
      * @return
      */
-    public native void tearHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortPointer x, IntPointer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
-    public native void tearHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortBuffer x, IntBuffer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntBuffer zShapeInfo, IntBuffer tadShapeInfo, IntBuffer tadOffsets);
-    public native void tearHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") short[] x, int[] xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, int[] zShapeInfo, int[] tadShapeInfo, int[] tadOffsets);
+    public native void tearHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortPointer x, IntPointer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, @Cast("Nd4jIndex*") LongPointer tadOffsets);
+    public native void tearHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortBuffer x, IntBuffer xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, IntBuffer zShapeInfo, IntBuffer tadShapeInfo, @Cast("Nd4jIndex*") LongBuffer tadOffsets);
+    public native void tearHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") short[] x, int[] xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, int[] zShapeInfo, int[] tadShapeInfo, @Cast("Nd4jIndex*") long[] tadOffsets);
 
 
     public native @Cast("Nd4jIndex") long encodeBitmapFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer dx, @Cast("Nd4jIndex") long N, IntPointer dz, float threshold);
@@ -4997,17 +4997,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 
 
-    public native void sortTadFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer x, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, @Cast("bool") boolean descending);
-    public native void sortTadFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer x, IntBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, IntBuffer tadShapeInfo, IntBuffer tadOffsets, @Cast("bool") boolean descending);
-    public native void sortTadFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] x, int[] xShapeInfo, int[] dimension, int dimensionLength, int[] tadShapeInfo, int[] tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer x, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, @Cast("Nd4jIndex*") LongPointer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer x, IntBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, IntBuffer tadShapeInfo, @Cast("Nd4jIndex*") LongBuffer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] x, int[] xShapeInfo, int[] dimension, int dimensionLength, int[] tadShapeInfo, @Cast("Nd4jIndex*") long[] tadOffsets, @Cast("bool") boolean descending);
 
-    public native void sortTadDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoublePointer x, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, @Cast("bool") boolean descending);
-    public native void sortTadDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoubleBuffer x, IntBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, IntBuffer tadShapeInfo, IntBuffer tadOffsets, @Cast("bool") boolean descending);
-    public native void sortTadDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, double[] x, int[] xShapeInfo, int[] dimension, int dimensionLength, int[] tadShapeInfo, int[] tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoublePointer x, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, @Cast("Nd4jIndex*") LongPointer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoubleBuffer x, IntBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, IntBuffer tadShapeInfo, @Cast("Nd4jIndex*") LongBuffer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, double[] x, int[] xShapeInfo, int[] dimension, int dimensionLength, int[] tadShapeInfo, @Cast("Nd4jIndex*") long[] tadOffsets, @Cast("bool") boolean descending);
 
-    public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortPointer x, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, @Cast("bool") boolean descending);
-    public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortBuffer x, IntBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, IntBuffer tadShapeInfo, IntBuffer tadOffsets, @Cast("bool") boolean descending);
-    public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") short[] x, int[] xShapeInfo, int[] dimension, int dimensionLength, int[] tadShapeInfo, int[] tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortPointer x, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, @Cast("Nd4jIndex*") LongPointer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortBuffer x, IntBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, IntBuffer tadShapeInfo, @Cast("Nd4jIndex*") LongBuffer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") short[] x, int[] xShapeInfo, int[] dimension, int dimensionLength, int[] tadShapeInfo, @Cast("Nd4jIndex*") long[] tadOffsets, @Cast("bool") boolean descending);
 
 
     // special sort impl for sorting out COO indices and values
