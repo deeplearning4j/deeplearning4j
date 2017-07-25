@@ -77,8 +77,8 @@
         <ffmpeg.version>3.2.1</ffmpeg.version>
         <leptonica.version>1.73</leptonica.version>
         <javacpp-presets.version>1.3</javacpp-presets.version>
-        <javacpp.version>1.3.3-SNAPSHOT</javacpp.version>
-        <javacv.version>1.3.3-SNAPSHOT</javacv.version>
+        <javacpp.version>1.3.3</javacpp.version>
+        <javacv.version>1.3.3</javacv.version>
         <geoip2.version>2.8.1</geoip2.version>
         <stream.analytics.version>2.7.0</stream.analytics.version>
         <hadoop.version>2.2.0</hadoop.version>  <!-- Hadoop version used by Spark 1.6.3 and 2.2.1 (and likely others) -->
