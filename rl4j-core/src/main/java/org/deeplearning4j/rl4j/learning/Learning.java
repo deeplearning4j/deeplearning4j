@@ -102,6 +102,17 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
         return nshape;
     }
 
+    public static int[] makeShape(int batch, int[] shape, int length) {
+        int[] nshape = new int[3];
+        nshape[0] = batch;
+        nshape[1] = 1;
+        for (int i = 0; i < shape.length; i++) {
+            nshape[1] *= shape[i];
+        }
+        nshape[2] = length;
+        return nshape;
+    }
+
     protected abstract DataManager getDataManager();
 
     public abstract NN getNeuralNet();
@@ -123,6 +134,7 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
     }
 
     public InitMdp<O> initMdp() {
+        getNeuralNet().reset();
         return initMdp(getMdp(), getHistoryProcessor());
     }
 

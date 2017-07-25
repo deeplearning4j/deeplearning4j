@@ -23,6 +23,10 @@ public class DQNPolicy<O extends Encodable> extends Policy<O, Integer> {
         return new DQNPolicy<O>(DQN.load(path));
     }
 
+    protected IDQN getNeuralNet() {
+        return dqn;
+    }
+
     public Integer nextAction(INDArray input) {
         INDArray output = dqn.output(input);
         return Learning.getMaxAction(output);

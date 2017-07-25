@@ -44,13 +44,17 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
         return new ACPolicy<O>(ActorCriticSeparate.load(pathValue, pathPolicy), rd);
     }
 
+    protected IActorCritic getNeuralNet() {
+        return IActorCritic;
+    }
+
     public Integer nextAction(INDArray input) {
         INDArray output = IActorCritic.outputAll(input)[1];
         if (rd == null) {
             return Learning.getMaxAction(output);
         }
         float rVal = rd.nextFloat();
-        for (int i = 0; i < output.columns(); i++) {
+        for (int i = 0; i < output.length(); i++) {
             //System.out.println(i + " " + rVal + " " + output.getFloat(i));
             if (rVal < output.getFloat(i)) {
                 return i;

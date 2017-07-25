@@ -9,7 +9,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -42,7 +44,8 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
                                         .weightInit(WeightInit.XAVIER)
                                         .regularization(conf.getL2() > 0)
                                         .l2(conf.getL2()).graphBuilder()
-                                        .setInputTypes(InputType.feedForward(numInputs[0])).addInputs("input")
+                                        .setInputTypes(conf.isUseLSTM() ? InputType.recurrent(numInputs[0])
+                                                        : InputType.feedForward(numInputs[0])).addInputs("input")
                                         .addLayer("0", new DenseLayer.Builder().nIn(numInputs[0])
                                                         .nOut(conf.getNumHiddenNodes()).activation(Activation.RELU).build(),
                                                         "input");
@@ -54,12 +57,22 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
         }
 
 
-        confB.addLayer("value",
-                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nOut(1).build(),
-                        (getConf().getNumLayer() - 1) + "");
+        if (conf.isUseLSTM()) {
+            confB.addLayer(getConf().getNumLayer() + "", new LSTM.Builder().activation(Activation.TANH)
+                            .nOut(conf.getNumHiddenNodes()).build(), (getConf().getNumLayer() - 1) + "");
 
-        confB.addLayer("softmax", new OutputLayer.Builder(new ActorCriticLoss()).activation(Activation.SOFTMAX) //fixthat
-                        .nOut(numOutputs).build(), (getConf().getNumLayer() - 1) + "");
+            confB.addLayer("value", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY)
+                            .nOut(1).build(), getConf().getNumLayer() + "");
+
+            confB.addLayer("softmax", new RnnOutputLayer.Builder(new ActorCriticLoss()).activation(Activation.SOFTMAX)
+                            .nOut(numOutputs).build(), getConf().getNumLayer() + "");
+        } else {
+            confB.addLayer("value", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY)
+                            .nOut(1).build(), (getConf().getNumLayer() - 1) + "");
+
+            confB.addLayer("softmax", new OutputLayer.Builder(new ActorCriticLoss()).activation(Activation.SOFTMAX)
+                            .nOut(numOutputs).build(), (getConf().getNumLayer() - 1) + "");
+        }
 
         confB.setOutputs("value", "softmax");
 
@@ -87,7 +100,7 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
         double l2;
         IUpdater updater;
         IterationListener[] listeners;
-
+        boolean useLSTM;
     }
 
 

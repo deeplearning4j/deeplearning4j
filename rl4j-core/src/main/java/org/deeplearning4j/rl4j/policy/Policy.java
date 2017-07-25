@@ -7,6 +7,7 @@ import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.network.NeuralNet;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -19,6 +20,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public abstract class Policy<O extends Encodable, A> {
 
+    protected abstract NeuralNet getNeuralNet();
+
     public abstract A nextAction(INDArray input);
 
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp) {
@@ -26,7 +29,7 @@ public abstract class Policy<O extends Encodable, A> {
     }
 
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
-
+        getNeuralNet().reset();
         Learning.InitMdp<O> initMdp = Learning.initMdp(mdp, hp);
         O obs = initMdp.getLastObs();
 
@@ -60,8 +63,13 @@ public abstract class Policy<O extends Encodable, A> {
                         history = new INDArray[] {input};
                 }
                 INDArray hstack = Transition.concat(history);
-                if (hstack.shape().length > 2)
-                    hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+                if (getNeuralNet().isRecurrent()) {
+                    //flatten everything for the RNN
+                    hstack = hstack.reshape(Learning.makeShape(1, hstack.shape(), 1));
+                } else {
+                    if (hstack.shape().length > 2)
+                        hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+                }
                 action = nextAction(hstack);
             }
             lastAction = action;

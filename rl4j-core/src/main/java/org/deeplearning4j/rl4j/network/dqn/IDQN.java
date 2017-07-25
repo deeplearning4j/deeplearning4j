@@ -14,6 +14,10 @@ import java.io.OutputStream;
  */
 public interface IDQN<NN extends IDQN> extends NeuralNet<NN> {
 
+    boolean isRecurrent();
+
+    void reset();
+
     void fit(INDArray input, INDArray labels);
 
     void fit(INDArray input, INDArray[] labels);

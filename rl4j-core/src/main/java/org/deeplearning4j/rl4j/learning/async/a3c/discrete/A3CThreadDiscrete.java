@@ -16,6 +16,7 @@ import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.util.DataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Random;
 import java.util.Stack;
@@ -64,21 +65,29 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
 
         int size = rewards.size();
 
+        //if recurrent then train as a time serie with a batch size of 1
+        boolean recurrent = getAsyncGlobal().getCurrent().isRecurrent();
+
         int[] shape = getHistoryProcessor() == null ? mdp.getObservationSpace().getShape()
                         : getHistoryProcessor().getConf().getShape();
-        int[] nshape = Learning.makeShape(size, shape);
+        int[] nshape = recurrent ? Learning.makeShape(1, shape, size)
+                        : Learning.makeShape(size, shape);
 
         INDArray input = Nd4j.create(nshape);
-        INDArray targets = Nd4j.create(size, 1);
-        INDArray logSoftmax = Nd4j.zeros(size, mdp.getActionSpace().getSize());
+        INDArray targets = recurrent ? Nd4j.create(1, 1, size) : Nd4j.create(size, 1);
+        INDArray logSoftmax = recurrent ? Nd4j.zeros(1, mdp.getActionSpace().getSize(), size)
+                        : Nd4j.zeros(size, mdp.getActionSpace().getSize());
 
         double r = minTrans.getReward();
         for (int i = size - 1; i >= 0; i--) {
             minTrans = rewards.pop();
 
-
             r = minTrans.getReward() + conf.getGamma() * r;
-            input.putRow(i, minTrans.getObs());
+            if (recurrent) {
+                input.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(i)).assign(minTrans.getObs());
+            } else {
+                input.putRow(i, minTrans.getObs());
+            }
 
             //the critic
             targets.putScalar(i, r);
@@ -86,7 +95,11 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
             //the actor
             double expectedV = minTrans.getOutput()[0].getDouble(0);
             double advantage = r - expectedV;
-            logSoftmax.putScalar(i, minTrans.getAction(), advantage);
+            if (recurrent) {
+                logSoftmax.putScalar(0, minTrans.getAction(), i, advantage);
+            } else {
+                logSoftmax.putScalar(i, minTrans.getAction(), advantage);
+            }
         }
 
         return iac.gradient(input, new INDArray[] {targets, logSoftmax});

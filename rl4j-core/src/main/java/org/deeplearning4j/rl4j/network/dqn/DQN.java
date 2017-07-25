@@ -29,6 +29,14 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
         return new DQN(ModelSerializer.restoreMultiLayerNetwork(path));
     }
 
+    public boolean isRecurrent() {
+        return false;
+    }
+
+    public void reset() {
+        // no recurrent layer
+    }
+
     public void fit(INDArray input, INDArray labels) {
         mln.fit(input, labels);
     }

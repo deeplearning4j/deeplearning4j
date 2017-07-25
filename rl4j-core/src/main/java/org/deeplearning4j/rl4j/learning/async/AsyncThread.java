@@ -70,6 +70,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
         try {
             log.info("ThreadNum-" + threadNumber + " Started!");
+            getCurrent().reset();
             Learning.InitMdp<O> initMdp = Learning.initMdp(getMdp(), historyProcessor);
             O obs = initMdp.getLastObs();
             double rewards = initMdp.getReward();
@@ -91,6 +92,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
                     getDataManager().appendStat(statEntry);
                     log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
 
+                    getCurrent().reset();
                     initMdp = Learning.initMdp(getMdp(), historyProcessor);
                     obs = initMdp.getLastObs();
                     rewards = initMdp.getReward();
@@ -108,6 +110,8 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
             postEpoch();
         }
     }
+
+    protected abstract NN getCurrent();
 
     protected abstract int getThreadNumber();
 

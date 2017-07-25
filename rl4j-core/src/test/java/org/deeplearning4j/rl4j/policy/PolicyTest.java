@@ -38,6 +38,16 @@ public class PolicyTest {
     public static class DummyAC<NN extends DummyAC> implements IActorCritic<NN> {
 
         @Override
+        public boolean isRecurrent() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void reset() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void fit(INDArray input, INDArray[] labels) {
             throw new UnsupportedOperationException();
         }

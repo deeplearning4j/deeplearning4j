@@ -21,6 +21,10 @@ public class BoltzmannQ<O extends Encodable> extends Policy<O, Integer> {
     final private IDQN dqn;
     final private Random rd = new Random(123);
 
+    protected IDQN getNeuralNet() {
+        return dqn;
+    }
+
     public Integer nextAction(INDArray input) {
 
         INDArray output = dqn.output(input);

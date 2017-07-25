@@ -15,6 +15,16 @@ import java.io.OutputStream;
 public interface NeuralNet<NN extends NeuralNet> {
 
     /**
+     * returns true if this is a recurrent network
+     */
+    boolean isRecurrent();
+
+    /**
+     * required for recurrent networks during init
+     */
+    void reset();
+
+    /**
      * @param batch batch to evaluate
      * @return evaluation by the model of the input by all outputs
      */

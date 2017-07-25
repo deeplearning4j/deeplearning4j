@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.learning.async;
 
+import lombok.Getter;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -23,6 +24,7 @@ import java.util.Stack;
 public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends NeuralNet>
                 extends AsyncThread<O, Integer, DiscreteSpace, NN> {
 
+    @Getter
     private NN current;
 
     public AsyncThreadDiscrete(AsyncGlobal<NN> asyncGlobal, int threadNumber) {
@@ -132,9 +134,14 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         //concat the history into a single INDArray input
         INDArray hstack = Transition.concat(history);
 
-        //if input is not 2d, you have to append that the batch is 1 length high
-        if (hstack.shape().length > 2)
-            hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+        if (getCurrent().isRecurrent()) {
+            //flatten everything for the RNN
+            hstack = hstack.reshape(Learning.makeShape(1, hstack.shape(), 1));
+        } else {
+            //if input is not 2d, you have to append that the batch is 1 length high
+            if (hstack.shape().length > 2)
+                hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+        }
 
         return hstack;
     }

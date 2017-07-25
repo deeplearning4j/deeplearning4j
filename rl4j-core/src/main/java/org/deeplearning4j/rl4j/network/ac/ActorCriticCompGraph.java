@@ -1,10 +1,12 @@
 package org.deeplearning4j.rl4j.network.ac;
 
+import lombok.Getter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -20,10 +22,12 @@ import java.util.Collection;
 public class ActorCriticCompGraph<NN extends ActorCriticCompGraph> implements IActorCritic<NN> {
 
     final protected ComputationGraph cg;
-
+    @Getter
+    final protected boolean recurrent;
 
     public ActorCriticCompGraph(ComputationGraph cg) {
         this.cg = cg;
+        this.recurrent = cg.getOutputLayer(0) instanceof RnnOutputLayer;
     }
 
     public static ActorCriticCompGraph load(String path) throws IOException {
@@ -34,9 +38,18 @@ public class ActorCriticCompGraph<NN extends ActorCriticCompGraph> implements IA
         cg.fit(new INDArray[] {input}, labels);
     }
 
+    public void reset() {
+        if (recurrent) {
+            cg.rnnClearPreviousState();
+        }
+    }
 
     public INDArray[] outputAll(INDArray batch) {
-        return cg.output(batch);
+        if (recurrent) {
+            return cg.rnnTimeStep(batch);
+        } else {
+            return cg.output(batch);
+        }
     }
 
     public NN clone() {
@@ -66,6 +79,11 @@ public class ActorCriticCompGraph<NN extends ActorCriticCompGraph> implements IA
 
 
     public void applyGradient(Gradient[] gradient, int batchSize) {
+        if (recurrent) {
+            // assume batch sizes of 1 for recurrent networks,
+            // since we are learning each episode as a time serie
+            batchSize = 1;
+        }
         ComputationGraphConfiguration cgConf = cg.getConfiguration();
         int iterationCount = cgConf.getIterationCount();
         cg.getUpdater().update(gradient[0], iterationCount, batchSize);

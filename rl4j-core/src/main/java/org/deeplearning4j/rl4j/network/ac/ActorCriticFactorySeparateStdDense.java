@@ -9,7 +9,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -51,10 +53,17 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
                             .activation(Activation.RELU).build());
         }
 
-        confB.layer(conf.getNumLayer(), new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY)
-                        .nIn(conf.getNumHiddenNodes()).nOut(1).build());
+        if (conf.isUseLSTM()) {
+            confB.layer(conf.getNumLayer(), new LSTM.Builder().nOut(conf.getNumHiddenNodes()).activation(Activation.TANH).build());
 
+            confB.layer(conf.getNumLayer() + 1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY)
+                            .nIn(conf.getNumHiddenNodes()).nOut(1).build());
+        } else {
+            confB.layer(conf.getNumLayer(), new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY)
+                            .nIn(conf.getNumHiddenNodes()).nOut(1).build());
+        }
 
+        confB.setInputType(conf.isUseLSTM() ? InputType.recurrent(numInputs[0]) : InputType.feedForward(numInputs[0]));
         MultiLayerConfiguration mlnconf2 = confB.pretrain(false).backprop(true).build();
         MultiLayerNetwork model = new MultiLayerNetwork(mlnconf2);
         model.init();
@@ -82,10 +91,17 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
                             .activation(Activation.RELU).build());
         }
 
-        confB2.layer(conf.getNumLayer(), new OutputLayer.Builder(new ActorCriticLoss())
-                        .activation(Activation.SOFTMAX).nIn(conf.getNumHiddenNodes()).nOut(numOutputs).build());
+        if (conf.isUseLSTM()) {
+            confB2.layer(conf.getNumLayer(), new LSTM.Builder().nOut(conf.getNumHiddenNodes()).activation(Activation.TANH).build());
 
+            confB2.layer(conf.getNumLayer() + 1, new RnnOutputLayer.Builder(new ActorCriticLoss())
+                            .activation(Activation.SOFTMAX).nIn(conf.getNumHiddenNodes()).nOut(numOutputs).build());
+        } else {
+            confB2.layer(conf.getNumLayer(), new OutputLayer.Builder(new ActorCriticLoss())
+                            .activation(Activation.SOFTMAX).nIn(conf.getNumHiddenNodes()).nOut(numOutputs).build());
+        }
 
+        confB2.setInputType(conf.isUseLSTM() ? InputType.recurrent(numInputs[0]) : InputType.feedForward(numInputs[0]));
         MultiLayerConfiguration mlnconf = confB2.pretrain(false).backprop(true).build();
         MultiLayerNetwork model2 = new MultiLayerNetwork(mlnconf);
         model2.init();
@@ -110,7 +126,7 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
         double l2;
         IUpdater updater;
         IterationListener[] listeners;
-
+        boolean useLSTM;
     }
 
 

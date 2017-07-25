@@ -1,7 +1,9 @@
 package org.deeplearning4j.rl4j.network.ac;
 
+import lombok.Getter;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -19,16 +21,25 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
 
     final protected MultiLayerNetwork valueNet;
     final protected MultiLayerNetwork policyNet;
-
+    @Getter
+    final protected boolean recurrent;
 
     public ActorCriticSeparate(MultiLayerNetwork valueNet, MultiLayerNetwork policyNet) {
         this.valueNet = valueNet;
         this.policyNet = policyNet;
+        this.recurrent = valueNet.getOutputLayer() instanceof RnnOutputLayer;
     }
 
     public static ActorCriticSeparate load(String pathValue, String pathPolicy) throws IOException {
         return new ActorCriticSeparate(ModelSerializer.restoreMultiLayerNetwork(pathValue),
                                        ModelSerializer.restoreMultiLayerNetwork(pathPolicy));
+    }
+
+    public void reset() {
+        if (recurrent) {
+            valueNet.rnnClearPreviousState();
+            policyNet.rnnClearPreviousState();
+        }
     }
 
     public void fit(INDArray input, INDArray[] labels) {
@@ -40,7 +51,11 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
 
 
     public INDArray[] outputAll(INDArray batch) {
-        return new INDArray[] {valueNet.output(batch), policyNet.output(batch)};
+        if (recurrent) {
+            return new INDArray[] {valueNet.rnnTimeStep(batch), policyNet.rnnTimeStep(batch)};
+        } else {
+            return new INDArray[] {valueNet.output(batch), policyNet.output(batch)};
+        }
     }
 
     public NN clone() {

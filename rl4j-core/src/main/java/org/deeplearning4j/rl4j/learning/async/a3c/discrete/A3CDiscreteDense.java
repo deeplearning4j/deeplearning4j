@@ -35,4 +35,16 @@ public class A3CDiscreteDense<O extends Encodable> extends A3CDiscrete<O> {
         this(mdp, new ActorCriticFactorySeparateStdDense(netConf), conf, dataManager);
     }
 
+    public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactoryCompGraph factory,
+                    A3CConfiguration conf, DataManager dataManager) {
+        this(mdp, factory.buildActorCritic(mdp.getObservationSpace().getShape(), mdp.getActionSpace().getSize()), conf,
+                        dataManager);
+    }
+
+    public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp,
+                    ActorCriticFactoryCompGraphStdDense.Configuration netConf, A3CConfiguration conf,
+                    DataManager dataManager) {
+        this(mdp, new ActorCriticFactoryCompGraphStdDense(netConf), conf, dataManager);
+    }
+
 }

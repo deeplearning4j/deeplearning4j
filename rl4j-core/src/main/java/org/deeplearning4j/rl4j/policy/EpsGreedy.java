@@ -6,6 +6,7 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.learning.StepCountable;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.network.NeuralNet;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -32,6 +33,10 @@ public class EpsGreedy<O extends Encodable, A, AS extends ActionSpace<A>> extend
     final private Random rd;
     final private float minEpsilon;
     final private StepCountable learning;
+
+    protected NeuralNet getNeuralNet() {
+        return policy.getNeuralNet();
+    }
 
     public A nextAction(INDArray input) {
 

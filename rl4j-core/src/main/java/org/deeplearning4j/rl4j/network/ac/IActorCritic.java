@@ -17,6 +17,10 @@ import java.io.OutputStream;
  */
 public interface IActorCritic<NN extends IActorCritic> extends NeuralNet<NN> {
 
+    boolean isRecurrent();
+
+    void reset();
+
     void fit(INDArray input, INDArray[] labels);
 
     //FIRST SHOULD BE VALUE AND SECOND IS SOFTMAX POLICY. DONT MESS THIS UP OR ELSE ASYNC THREAD IS BROKEN (maxQ) !
