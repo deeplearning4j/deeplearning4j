@@ -269,7 +269,7 @@ public class BinarySerde {
         try(FileInputStream os = new FileInputStream(readFrom)) {
             FileChannel channel = os.getChannel();
             // we read shapeinfo up to max_rank value, which is 32
-            ByteBuffer buffer = ByteBuffer.allocateDirect(32 * 2 + 3);
+            ByteBuffer buffer = ByteBuffer.allocateDirect((int) Math.min((32 * 2 + 3) * 4, readFrom.length()));
             channel.read(buffer);
 
             IntBuffer intBuffer = buffer.asIntBuffer();
