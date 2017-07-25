@@ -24,6 +24,8 @@ import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvid
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.generator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.junit.Test;
 
@@ -206,7 +208,10 @@ public class TestGridSearch {
                         }
                     }
 
-                    return new OptimizationResult(c, candidate, score, c.getIndex(), null, null);
+                    CandidateInfo ci = new CandidateInfo(-1, CandidateStatus.Complete, score, System.currentTimeMillis(),
+                            null, null, null, null);
+
+                    return new OptimizationResult(c, candidate, score, c.getIndex(), null, ci);
                 }
             };
         }
