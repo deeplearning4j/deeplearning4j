@@ -190,7 +190,7 @@ TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(int dataSetObje
 <p><h3><a name="memory1">Deeplearning4j（以及ND4J）的内存管理方式</a></h3></p>
 <p>Deeplearning4j建立在数值计算库ND4J的基础之上。DL4J中的神经网络实现是用ND4J中的矩阵和向量化运算构建的。</p>
 <p>ND4J的设计要素之一是利用了堆外内存管理。这意味着ND4J分配给INDArrays的内存不在JVM堆之内（与标准的Java对象不同），而是属于JVM之外的单独的内存池。这种内存管理是用<a href="https://github.com/bytedeco/javacpp" target="_blank">JavaCPP</a>来实现的。</p>
-<p>堆外内存管理有一系列好处。 最主要的是，它让高性能的原生（C++）代码可以被高效地用于数值运算（使用OpenBLAS和英特尔MKL等BLAS库，以及C++库<a href="https://github.com/deeplearning4j/libnd4j" target="_blank">Libnd4j</a>）。堆外内存管理对于用CUDA进行高效的GPU运算也是必需的。如果分配了JVM堆内的内存（与其他JVM BLAS实现相同），就必须首先将数据从JVM复制出来，进行运算，再将结果复制回去——这样会增加每次运算所需的内存和时间开销。相比之下，ND4J在数值运算过程中只需要使用指针传递，完全避免了数据复制的问题。</p>
+<p>堆外内存管理有一系列好处。 最主要的是，它让高性能的本机（C++）代码可以被高效地用于数值运算（使用OpenBLAS和英特尔MKL等BLAS库，以及C++库<a href="https://github.com/deeplearning4j/libnd4j" target="_blank">Libnd4j</a>）。堆外内存管理对于用CUDA进行高效的GPU运算也是必需的。如果分配了JVM堆内的内存（与其他JVM BLAS实现相同），就必须首先将数据从JVM复制出来，进行运算，再将结果复制回去——这样会增加每次运算所需的内存和时间开销。相比之下，ND4J在数值运算过程中只需要使用指针传递，完全避免了数据复制的问题。</p>
 <p>此处的重点在于，堆内（JVM）内存和堆外（ND4J/JavaCPP）内存是两个相互独立的内存池，大小可以分别设置；在默认情况下，JavaCPP允许的堆外内存分配大小等于Runtime.maxMemory()的设置（参见<a href="https://github.com/bytedeco/javacpp/blob/master/src/main/java/org/bytedeco/javacpp/Pointer.java" target="_blank">代码</a>)——这一默认设置与JVM用于配置Java内存的&rsquo;Xmx&rsquo;内存设置大小相等。</p>
 <p>如需手动控制JavaCPP所能分配的堆外内存上限，可以设置<code>org.bytedeco.javacpp.maxbytes</code>系统属性。对于在本地运行的单一JVM，我们会用<code>-Dorg.bytedeco.javacpp.maxbytes=1073741824</code>来将堆外内存分配限制在1GB以内。后面的段落将会介绍如何在YARN上为Spark进行这项配置。</p>
 <br>
