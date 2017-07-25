@@ -4,8 +4,8 @@ layout: cn-default
 ---
 <title>如何在Android应用程序中使用Deeplearning4J</title>
 <meta property="og:title" content="如何在Android应用程序中使用Deeplearning4J" />
-<meta name="description" content="DeepLearning4J（DL4J）是在JVM上运行的一个热门机器学习库。在本教程中，我将向您介绍如何用它在Android应用程序中创建和定型神经网络。"/>
-<meta property="og:description" content="DeepLearning4J（DL4J）是在JVM上运行的一个热门机器学习库。在本教程中，我将向您介绍如何用它在Android应用程序中创建和定型神经网络。"/>
+<meta name="description" content="DeepLearning4J（DL4J）是在JVM上运行的一个热门机器学习库。在本教程中，我将向您介绍如何用它在Android应用程序中创建和训练神经网络。"/>
+<meta property="og:description" content="DeepLearning4J（DL4J）是在JVM上运行的一个热门机器学习库。在本教程中，我将向您介绍如何用它在Android应用程序中创建和训练神经网络。"/>
 <link rel="canonical" href="http://progur.com/2017/01/how-to-use-deeplearning4j-on-android.html" />
 <meta property="og:url" content="http://progur.com/2017/01/how-to-use-deeplearning4j-on-android.html" />
 <meta property="og:site_name" content="Progur!"/>
@@ -20,7 +20,7 @@ layout: cn-default
     "@type": "BlogPosting",
     "headline": "如何在Android应用程序中使用Deeplearning4J",
     "datePublished": "2017-01-14T00:00:00+05:30",
-    "description": "DeepLearning4J（DL4J）是在JVM上运行的一个热门机器学习库。在本教程中，我将向您介绍如何用它在Android应用程序中创建和定型神经网络。",
+    "description": "DeepLearning4J（DL4J）是在JVM上运行的一个热门机器学习库。在本教程中，我将向您介绍如何用它在Android应用程序中创建和训练神经网络。",
     "url": "http://progur.com/2017/01/how-to-use-deeplearning4j-on-android.html"
   }
 </script>
@@ -35,9 +35,9 @@ layout: cn-default
                     <h1 class="post-title">如何在Android应用程序中使用Deeplearning4J</h1>
                     <div class="post-meta">作者：Ashraff Hathibelagal &bull; 2017年1月7日</div><br>
                     <div class="post-actual-content">
-                        <p>一般而言，配有多个GPU的高性能计算机最适合承担神经网络定型的任务。那么，普通的Android手机或平板电脑是否能胜任这项工作呢？这当然是可行的。但是考虑到Android设备的典型配置，运行速度可能会相当缓慢。如果您对此并不在意，请继续阅读。</p>
+                        <p>一般而言，配有多个GPU的高性能计算机最适合承担训练神经网络的任务。那么，普通的Android手机或平板电脑是否能胜任这项工作呢？这当然是可行的。但是考虑到Android设备的典型配置，运行速度可能会相当缓慢。如果您对此并不在意，请继续阅读。</p>
 
-<p>在本教程中，我将向您介绍如何用<a href="https://github.com/deeplearning4j/deeplearning4j" target="_blank" rel="nofollow">Deeplearning4J</a>这一热门的Java深度学习库来在Android设备上创建和定型神经网络。</p>
+<p>在本教程中，我将向您介绍如何用<a href="https://github.com/deeplearning4j/deeplearning4j" target="_blank" rel="nofollow">Deeplearning4J</a>这一热门的Java深度学习库来在Android设备上创建和训练神经网络。</p>
 
 <h3 id="prerequisites">必要条件</h3>
 
@@ -83,7 +83,7 @@ layout: cn-default
 
 <h3 id="starting-an-asynchronous-task">启动一项异步任务</h3>
 
-<p>神经网络的定型需要消耗大量CPU资源，因此最好不要在应用程序的UI线程中运行。我不太确定DL4J是否默认以异步方式定型网络。保险起见，我会先用<code class="highlighter-rouge">AsyncTask</code>类来生成一个独立的线程。</p>
+<p>训练神经网络需要消耗大量CPU资源，因此最好不要在应用程序的UI线程中运行。我不太确定DL4J是否默认以异步方式训练网络。保险起见，我会先用<code class="highlighter-rouge">AsyncTask</code>类来生成一个独立的线程。</p>
 
 <figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">AsyncTask</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">Runnable</span><span class="o">()</span> <span class="o">{</span>
     <span class="nd">@Override</span>
@@ -144,9 +144,9 @@ layout: cn-default
 <figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">MultiLayerNetwork</span> <span class="n">myNetwork</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MultiLayerNetwork</span><span class="o">(</span><span class="n">listBuilder</span><span class="o">.</span><span class="na">build</span><span class="o">());</span>
 <span class="n">myNetwork</span><span class="o">.</span><span class="na">init</span><span class="o">();</span></code></pre></figure>
 
-<h3 id="creating-training-data">创建定型数据</h3>
+<h3 id="creating-training-data">创建训练数据</h3>
 
-<p>为了创建定型数据，我们要用到ND4J提供的<code class="highlighter-rouge">INDArray</code>类。定型数据的形式如下：</p>
+<p>为了创建训练数据，我们要用到ND4J提供的<code class="highlighter-rouge">INDArray</code>类。训练数据的形式如下：</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>输入      预期输出
 ------      ----------------
@@ -157,7 +157,7 @@ layout: cn-default
 </code></pre>
 </div>
 
-<p>您可能已经猜到，我们的神经网络的运作模式将会和异或门一样。定型数据包含四个样例，必须在代码中提及。</p>
+<p>您可能已经猜到，我们的神经网络的运作模式将会和异或门一样。训练数据包含四个样例，必须在代码中提及。</p>
 
 <figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">final</span> <span class="kt">int</span> <span class="n">NUM_SAMPLES</span> <span class="o">=</span> <span class="mi">4</span><span class="o">;</span></code></pre></figure>
 
@@ -168,7 +168,7 @@ layout: cn-default
 
 <p>请注意，输入数组中的列数应等于输入层中的神经元数量。与此类似，输出数组中的列数应等于输出层中的神经元数量。</p>
 
-<p>用定型数据填充这些数组很容易。只需使用<code class="highlighter-rouge">putScalar()</code>方法即可：</p>
+<p>用训练数据填充这些数组很容易。只需使用<code class="highlighter-rouge">putScalar()</code>方法即可：</p>
 
 <figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="c1">// 如输入0,0则显示0</span>
 <span class="n">trainingInputs</span><span class="o">.</span><span class="na">putScalar</span><span class="o">(</span><span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="mi">0</span><span class="o">,</span><span class="mi">0</span><span class="o">},</span> <span class="mi">0</span><span class="o">);</span>
@@ -194,7 +194,7 @@ layout: cn-default
 
 <figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">DataSet</span> <span class="n">myData</span> <span class="o">=</span> <span class="k">new</span> <span class="n">DataSet</span><span class="o">(</span><span class="n">trainingInputs</span><span class="o">,</span> <span class="n">trainingOutputs</span><span class="o">);</span></code></pre></figure>
 
-<p>至此，我们可以调用<code class="highlighter-rouge">fit()</code>方法，将数据集输入神经网络，开始定型。</p>
+<p>至此，我们可以调用<code class="highlighter-rouge">fit()</code>方法，将数据集输入神经网络，开始训练。</p>
 
 <figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">myNetwork</span><span class="o">.</span><span class="na">fit</span><span class="o">(</span><span class="n">myData</span><span class="o">);</span></code></pre></figure>
 
@@ -202,7 +202,7 @@ layout: cn-default
 
 <h3 id="conclusion">总结</h3>
 
-<P>本教程已向您说明，在Android Studio项目中用Deeplearning4J学习库来创建和定型神经网络是非常容易的。但是我要提醒您，在某些情况下，用电池驱动的低性能设备来定型神经网络可能并不是个好主意。</p>
+<P>本教程已向您说明，在Android Studio项目中用Deeplearning4J学习库来创建和训练神经网络是非常容易的。但是我要提醒您，在某些情况下，用电池驱动的低性能设备来训练神经网络可能并不是个好主意。</p>
 
 <p>本文最初由Ashraff Hathibelagal发表于<a href="http://progur.com/2017/01/how-to-use-deeplearning4j-on-android.html" target="_blank" rel="nofollow">Progur</a>。
 
