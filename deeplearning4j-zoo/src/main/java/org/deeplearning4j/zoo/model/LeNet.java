@@ -61,7 +61,7 @@ public class LeNet extends ZooModel {
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.MNIST)
-            return 3337733202L;
+            return 1906861161L;
         else
             return 0L;
     }
