@@ -152,7 +152,7 @@ JAVA_PROJECTS="nd4j datavec deeplearning4j"
 for dirName in $JAVA_PROJECTS; do
     if [ -d "$dirName" ]; then
         pushd "$dirName"
-        mvn dependency:purge-local-repository -DreResolve=false
+        mvn dependency:purge-local-repository -DreResolve=false -DactTransitively=false
         popd
     fi
 done
