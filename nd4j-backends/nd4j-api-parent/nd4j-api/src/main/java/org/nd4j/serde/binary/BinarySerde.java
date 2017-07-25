@@ -1,5 +1,6 @@
 package org.nd4j.serde.binary;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -21,6 +22,7 @@ import java.nio.channels.FileChannel;
 /**
  * Created by agibsonccc on 7/1/17.
  */
+@Slf4j
 public class BinarySerde {
 
 
@@ -265,37 +267,44 @@ public class BinarySerde {
     }
 
 
+    /**
+     * This method returns shape databuffer from saved earlier file
+     *
+     * @param readFrom
+     * @return
+     * @throws IOException
+     */
     public static DataBuffer readShapeFromDisk(File readFrom) throws IOException {
         try(FileInputStream os = new FileInputStream(readFrom)) {
             FileChannel channel = os.getChannel();
             // we read shapeinfo up to max_rank value, which is 32
-            ByteBuffer buffer = ByteBuffer.allocateDirect((int) Math.min((32 * 2 + 3) * 4, readFrom.length()));
+            int len = (int) Math.min((32 * 2 + 3) * 4, readFrom.length());
+            ByteBuffer buffer = ByteBuffer.allocateDirect(len);
             channel.read(buffer);
 
-            IntBuffer intBuffer = buffer.asIntBuffer();
-            int rank = intBuffer.get(0);
-            int result[] = new int[rank * 2 + 3];
+            ByteBuffer byteBuffer =
+                    buffer == null
+                            ? ByteBuffer.allocateDirect(buffer.array().length).put(buffer.array())
+                            .order(ByteOrder.nativeOrder())
+                            : buffer.order(ByteOrder.nativeOrder());
+
+            buffer.position(0);
+            int rank = byteBuffer.getInt();
+
+            int result[] = new int[Shape.shapeInfoLength(rank)];
 
             // filling DataBuffer with shape info
             result[0] = rank;
 
-            // offset is hardcoded to 0 anyway
-            result[result.length - 3] = 0;
+            // skipping two next values (dtype and rank again)
+            byteBuffer.position(12);
 
             // filling shape information
-            for (int e = 0; e < rank; e++) {
-                result[e+1] = intBuffer.get(e+1);
+            for (int e = 1; e < Shape.shapeInfoLength(rank); e++) {
+                result[e] = byteBuffer.getInt();
             }
 
-            // filling stride information
-            for (int e = 0; e < rank; e++) {
-                result[e+1+rank] = intBuffer.get(e+1+rank);
-            }
-
-            // filling EWS and order information
-            result[result.length  - 2 ] = intBuffer.get(result.length - 2);
-            result[result.length  - 1 ] = intBuffer.get(result.length - 1);
-
+            // creating nd4j databuffer now
             DataBuffer dataBuffer = Nd4j.getDataBufferFactory().createInt(result);
             return dataBuffer;
         }
