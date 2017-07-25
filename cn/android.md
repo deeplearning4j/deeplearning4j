@@ -59,7 +59,7 @@ layout: cn-default
 
 </code></pre></figure>
 
-<p>如您所见，DL4J依赖于ND4J（全称为“面向Java的N维数组”）这一可以快速处理N维数组的运算库。ND4J内部依赖一个称为JavaCPP的库，其中包含特定平台的原生代码。因此，您必须加载一个与Android设备的基础系统架构相匹配的ND4J版本。我用的是一台x86设备，所以我的平台是<code class="highlighter-rouge">android-x86</code>。</p>
+<p>如您所见，DL4J依赖于ND4J（全称为“面向Java的N维数组”）这一可以快速处理N维数组的运算库。ND4J内部依赖一个称为JavaCPP的库，其中包含特定平台的本机代码。因此，您必须加载一个与Android设备的基础系统架构相匹配的ND4J版本。我用的是一台x86设备，所以我的平台是<code class="highlighter-rouge">android-x86</code>。</p>
 
 <p>DL4J和ND4J有多个依赖项文件的名字相同。为了避免构建错误，请将以下<code class="highlighter-rouge">exclude</code>参数添加至您的<code class="highlighter-rouge">packagingOptions</code>。</p>
 
