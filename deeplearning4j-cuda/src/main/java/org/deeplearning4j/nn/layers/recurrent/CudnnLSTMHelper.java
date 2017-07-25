@@ -203,25 +203,28 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         INDArray dx = Nd4j.createUninitialized(new int[] {timeSeriesLength, miniBatchSize, prevLayerSize}, 'c');
 
         INDArray iwGradientsOut = gradientViews.get(inputWeightKey);
-        INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey); //Order: {I,F,O,G,FF,OO,GG}
+        INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey); //Order: {I,F,O,G}
         INDArray bGradientsOut = gradientViews.get(biasWeightKey);
 
         INDArray outputActivations = fwdPass.fwdPassOutputAsArrays[0];
-        INDArray memCellState = fwdPass.memCellState[0];
-        INDArray memCellActivations = fwdPass.memCellActivations[0];
+
+        //TODO should be able to pass these in...
+        INDArray prevStepMemCellState = Nd4j.create(input.size(0), input.size(1));  //[minibatch, layerSize]
+        INDArray prevStepActivations = Nd4j.create(prevStepMemCellState.shape());
+
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareActionAllWrite(x, dy, dx, outputActivations,
-                        memCellState, memCellActivations, iwGradientsOut, rwGradientsOut, bGradientsOut);
+                        prevStepMemCellState, prevStepActivations, iwGradientsOut, rwGradientsOut, bGradientsOut);
         Pointer xData = allocator.getPointer(x, context);
         Pointer dyData = allocator.getPointer(dy, context);
         Pointer dxData = allocator.getPointer(dx, context);
         Pointer outputActivationsData = allocator.getPointer(outputActivations, context);
-        Pointer memCellStateData = allocator.getPointer(memCellState, context);
-        Pointer memCellActivationsData = allocator.getPointer(memCellActivations, context);
+        Pointer memCellStateData = allocator.getPointer(prevStepMemCellState, context);
+        Pointer memCellActivationsData = allocator.getPointer(prevStepActivations, context);
         Pointer iwGradientsOutData = allocator.getPointer(iwGradientsOut, context);
         Pointer rwGradientsOutData = allocator.getPointer(rwGradientsOut, context);
         Pointer bGradientsOutData = allocator.getPointer(bGradientsOut, context);
@@ -300,7 +303,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         }
 
         allocator.getFlowController().registerActionAllWrite(context, x, dy, dx, outputActivations,
-                        memCellState, memCellActivations, iwGradientsOut, rwGradientsOut, bGradientsOut);
+                        prevStepMemCellState, prevStepActivations, iwGradientsOut, rwGradientsOut, bGradientsOut);
 
         Gradient retGradient = new DefaultGradient();
         retGradient.gradientForVariable().put(inputWeightKey, iwGradientsOut/*.permute(0, 1, 2).reshape('f', inputLayerSize, hiddenLayerSize * 4)*/);
@@ -339,16 +342,16 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
         INDArray outputActivations = Nd4j.createUninitialized(new int[] {
                         timeSeriesLength, miniBatchSize, hiddenLayerSize * (bidirectional ? 2 : 1)}, 'c');
-        INDArray memCellState = Nd4j.createUninitialized(new int[] {
+        INDArray finalMemCellState = Nd4j.createUninitialized(new int[] {
                         /*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
-        INDArray memCellActivations = Nd4j.createUninitialized(new int[] {
+        INDArray finalStepActivations = Nd4j.createUninitialized(new int[] {
                         /*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
 
         FwdPassReturn toReturn = new FwdPassReturn();
 //        if (forBackprop) {
             toReturn.fwdPassOutputAsArrays = new INDArray[] {outputActivations};
-            toReturn.memCellState = new INDArray[] {memCellState};
-            toReturn.memCellActivations = new INDArray[] {memCellActivations};
+            toReturn.memCellState = new INDArray[] {finalMemCellState};
+            toReturn.lastAct = finalStepActivations;
 //        }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
@@ -445,7 +448,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareActionAllWrite(x,
                         linInputWeights, linRecurrentWeights, linBiases, prevAct, prevMemCell,
-                        outputActivations, memCellState, memCellActivations);
+                        outputActivations, finalMemCellState, finalStepActivations);
         Pointer xData = allocator.getPointer(x, context);
         Pointer linInputWeightsData = allocator.getPointer(linInputWeights, context);
         Pointer linRecurrentWeightsData = allocator.getPointer(linRecurrentWeights, context);
@@ -453,8 +456,8 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         Pointer prevActData = allocator.getPointer(prevAct, context);
         Pointer prevMemCellData = allocator.getPointer(prevMemCell, context);
         Pointer outputActivationsData = allocator.getPointer(outputActivations, context);
-        Pointer memCellStateData = allocator.getPointer(memCellState, context);
-        Pointer memCellActivationsData = allocator.getPointer(memCellActivations, context);
+        Pointer finalMemCellStateData = allocator.getPointer(finalMemCellState, context);
+        Pointer finalTimeStepActivationsData = allocator.getPointer(finalStepActivations, context);
 
         CUstream_st stream = new CUstream_st(context.getOldStream());
         checkCudnn(cudnnSetStream(cudnnContext, stream));
@@ -511,24 +514,24 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         if (training) {
             checkCudnn(cudnnRNNForwardTraining(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc, xData,
                             cudnnContext.hxDesc, prevActData, cudnnContext.cxDesc, prevMemCellData, cudnnContext.wDesc,
-                            weightsSpace, yDesc, outputActivationsData, cudnnContext.hyDesc, memCellActivationsData,
-                            cudnnContext.cyDesc, memCellStateData, workSpace, workSpace.limit(),
+                            weightsSpace, yDesc, outputActivationsData, cudnnContext.hyDesc, finalTimeStepActivationsData,
+                            cudnnContext.cyDesc, finalMemCellStateData, workSpace, workSpace.limit(),
                             reserveSpace, reserveSpace.limit()));
         } else {
             checkCudnn(cudnnRNNForwardInference(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc, xData,
                             cudnnContext.hxDesc, prevActData, cudnnContext.cxDesc, prevMemCellData, cudnnContext.wDesc,
-                            weightsSpace, yDesc, outputActivationsData, cudnnContext.hyDesc, memCellActivationsData,
-                            cudnnContext.cyDesc, memCellStateData, workSpace, workSpace.limit()));
+                            weightsSpace, yDesc, outputActivationsData, cudnnContext.hyDesc, finalTimeStepActivationsData,
+                            cudnnContext.cyDesc, finalMemCellStateData, workSpace, workSpace.limit()));
         }
 
         allocator.getFlowController().registerActionAllWrite(context, x,
                         linInputWeights, linRecurrentWeights, linBiases, prevAct, prevMemCell,
-                        outputActivations, memCellState, memCellActivations);
+                        outputActivations, finalMemCellState, finalStepActivations);
 
 //        if (!forBackprop) {
             toReturn.fwdPassOutput = outputActivations.permute(1, 2, 0).dup('f');
-            toReturn.lastAct = memCellActivations.dup('f');
-            toReturn.lastMemCell = memCellState.dup('f');
+            toReturn.lastAct = finalStepActivations.dup('f');
+            toReturn.lastMemCell = finalMemCellState.dup('f');
 //        }
 
         return toReturn;
