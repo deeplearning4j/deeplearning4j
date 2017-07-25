@@ -46,8 +46,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <nd4j.version>${project.version}</nd4j.version>
         <dl4j.version>${project.version}</dl4j.version>
-        <javacv.version>1.3.3-SNAPSHOT</javacv.version>
-        <javacpp.version>1.3.3-SNAPSHOT</javacpp.version>
+        <javacv.version>1.3.3</javacv.version>
+        <javacpp.version>1.3.3</javacpp.version>
         <javacpp-presets.version>1.3</javacpp-presets.version>
         <opencv.version>3.2.0</opencv.version>
         <ffmpeg.version>3.2.1</ffmpeg.version>
