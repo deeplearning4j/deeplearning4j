@@ -5,6 +5,7 @@ import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.WritableType;
 
 /**
  * Convert any value to an Integer.
@@ -13,31 +14,28 @@ import org.datavec.api.writable.Writable;
  */
 @NoArgsConstructor
 public class ConvertToInteger extends BaseIntegerTransform {
+
+    /**
+     *
+     * @param column Name of the column to convert to an integer
+     */
     public ConvertToInteger(String column) {
         super(column);
     }
 
-    /**
-     * Transform the writable in to a
-     * string
-     *
-     * @param writable the writable to transform
-     * @return the string form of this writable
-     */
     @Override
     public IntWritable map(Writable writable) {
-        return new IntWritable(Integer.parseInt(writable.toString()));
+        if(writable.getType() == WritableType.Int){
+            return (IntWritable)writable;
+        }
+        return new IntWritable(writable.toInt());
     }
 
-    /**
-     * Transform an object
-     * in to another object
-     *
-     * @param input the record to transform
-     * @return the transformed writable
-     */
     @Override
     public Object map(Object input) {
+        if(input instanceof Number){
+            return ((Number) input).intValue();
+        }
         return Integer.parseInt(input.toString());
     }
 
@@ -49,6 +47,6 @@ public class ConvertToInteger extends BaseIntegerTransform {
 
     @Override
     public String toString() {
-        return "ConvertToInteger()";
+        return "ConvertToInteger(columnName=" + columnName + ")";
     }
 }
