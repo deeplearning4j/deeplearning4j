@@ -99,7 +99,7 @@ public class NearestNeighborsServer {
         for (int i = 0; i < pathArr.length; i++) {
             INDArray pointsArr = BinarySerde.readFromDisk(new File(pathArr[i]));
 
-            points.get(NDArrayIndex.interval(lastPosition, pointsArr.rows())).assign(pointsArr);
+            points.get(NDArrayIndex.interval(lastPosition, lastPosition + pointsArr.rows())).assign(pointsArr);
             lastPosition += pointsArr.rows();
         }
 
