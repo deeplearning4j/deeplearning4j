@@ -1175,6 +1175,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         DataBuffer data = null;
         Pointer shapeBufferPointer = nativeOps.shapeBufferForNumpy(pointer);
         int length = nativeOps.lengthForShapeBufferPointer(shapeBufferPointer);
+        log.info("Length: {}", length);
         shapeBufferPointer.capacity(4 * length);
         shapeBufferPointer.limit(4 * length);
         shapeBufferPointer.position(0);
@@ -1192,6 +1193,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         dataPointer.limit(dataBufferElementSize * Shape.length(shapeBuffer));
         dataPointer.capacity(dataBufferElementSize * Shape.length(shapeBuffer));
 
+        log.info("Shape length: {}", Shape.length(shapeBuffer));
 
         if(dataBufferElementSize == (Float.SIZE / 8)) {
             data = Nd4j.createBuffer(dataPointer,
