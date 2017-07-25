@@ -497,8 +497,14 @@ var PAGES = [{
 "tags": ["scala", "spark", "deeplearning4j", "函数", "scalnet", "scala api", "nd4j", "nd4s", "python","强类型"]
 },
 {
-"url": "https://deeplearning4j.org/cn/rpm",
-"title": "Deeplearning4J与RPM",
+"url": "https://deeplearning4j.org/cn/etl-userguide",
+"title": "DL4J：ETL用户指南",
 "description": "用红帽软件包管理器（RPM）安装Deeplearning4J",
 "tags": ["rpm", "deeplearning4j", "redhat", "红帽", "软件包管理器", "nd4j", "jblas", "scala", "spark","dl4j","repo"]
+},
+{
+"url": "https://deeplearning4j.org/cn/rpm",
+"title": "Deeplearning4J与RPM",
+"description": "神经网络需要处理的数据有许多种不同的来源和类型，例如日志文件、文本文档、表格数据、图像、视频等。神经网络数据加工的目标是将各类数据转换为一系列存放于多维数组（Multi-Dimensional Array）中的值",
+"tags": ["记录读取器", "标准化器", "转换", "etl", "datavec", "recordreader", "ImageRecordReader", "channels", "NativeImageLoader","NativeImageLoader","INDarray","javacv","opencv","ffmpeg","CSVSequenceReader","UCISequenceClassificationExample","NumberedFileInputFormat","NativeImageLoader"]
 }];
