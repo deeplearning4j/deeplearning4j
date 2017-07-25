@@ -96,7 +96,7 @@ shift # past argument or value
 done
 
 # default for chip
-if [ -z "$CHIP" ]; then
+if [[ -z "$CHIP" ]]; then
     # test for cuda libraries
     if (ldconfig -p | grep -q libcuda\.so) then
         CHIP="cuda"
@@ -115,7 +115,7 @@ if [ "$SCALAV" == "2.11" ]; then
 fi
 
 # set git cloning to a shallow depth if the option says so
-if [ -z $SHALLOW ]; then
+if [[ -z "$SHALLOW" ]]; then
     GIT_CLONE="git clone"
 else
     GIT_CLONE="git clone --depth 1"
@@ -174,7 +174,7 @@ case $REPO_STRATEGY in
 esac
 
 # removes any existing repositories to ensure a clean build
-if ! [ -z "$DELETE_REPOS" ]; then
+if [[ ! (-z "$DELETE_REPOS") ]]; then
     PROJECTS="libnd4j nd4j datavec deeplearning4j"
     for dirName in $PROJECTS; do
         find . -maxdepth 1 -iname "$dirName" -exec rm -rf "{}" \;
@@ -182,20 +182,20 @@ if ! [ -z "$DELETE_REPOS" ]; then
 fi
 
 # compile libnd4j
-if ! [ -z $SKIP_LIBND4J ]; then
-    if ! [ -z $DELETE_REPOS ] || ! [ -d libnd4j ]; then
+if [[ -z "$SKIP_LIBND4J" ]]; then
+    if [[ ! (-z "$DELETE_REPOS") || ! (-d libnd4j) ]]; then
         checkexit $GIT_CLONE https://github.com/deeplearning4j/libnd4j.git
     fi
     pushd libnd4j
     maybeUpdateRepo
-    if [ -z "$NATIVE" ]; then
+    if [[ -z "$NATIVE" ]]; then
         checkexit bash buildnativeoperations.sh "$@" -a native
     else
         checkexit bash buildnativeoperations.sh "$@"
     fi
 
     if [ "$CHIP" == "cuda" ]; then
-        if [ -z "$COMPUTE" ]; then
+        if [[ -z "$COMPUTE" ]]; then
             checkexit bash buildnativeoperations.sh -c cuda
         else
             checkexit bash buildnativeoperations.sh -c cuda -cc "$COMPUTE"
@@ -207,11 +207,11 @@ if ! [ -z $SKIP_LIBND4J ]; then
 fi
 
 # build and install nd4j to maven locally
-if ! [ -z $SKIP_ND4J ]; then
-    if ! [ -z $DELETE_REPOS ] || ! [ -d nd4j ]; then
+if [[ -z "$SKIP_ND4J" ]]; then
+    if [[ ! (-z "$DELETE_REPOS") || ! (-d nd4j) ]]; then
         checkexit $GIT_CLONE https://github.com/deeplearning4j/nd4j.git
     fi
-    if [ -z "$TEST_ND4J" ]; then
+    if [[ -z "$TEST_ND4J" ]]; then
         ND4J_OPTIONS="-DskipTests"
     else
         ND4J_OPTIONS=""
@@ -227,11 +227,11 @@ if ! [ -z $SKIP_ND4J ]; then
 fi
 
 # build and install datavec
-if ! [ -z $SKIP_DATAVEC ]; then
-    if ! [ -z $DELETE_REPOS ] || ! [ -d datavec ]; then
+if [[ -z "$SKIP_DATAVEC" ]]; then
+    if [[ ! (-z "$DELETE_REPOS") || ! (-d datavec) ]]; then
         checkexit $GIT_CLONE https://github.com/deeplearning4j/datavec.git
     fi
-    if [ -z "$TEST_DATAVEC" ]; then
+    if [[ -z "$TEST_DATAVEC" ]]; then
         DATAVEC_OPTIONS="-DskipTests"
     else
         if [ "$CHIP" == "cuda" ]; then
@@ -251,11 +251,11 @@ if ! [ -z $SKIP_DATAVEC ]; then
 fi
 
 # build and install deeplearning4j
-if ! [ -z $SKIP_DL4J ]; then
-    if ! [ -z $DELETE_REPOS ] || ! [ -d deeplearning4j ]; then
+if [[ -z "$SKIP_DL4J" ]]; then
+    if [[ ! (-z "$DELETE_REPOS") ||  (-d deeplearning4j) ]]; then
         checkexit $GIT_CLONE https://github.com/deeplearning4j/deeplearning4j.git
     fi
-    if [ -z "$TEST_DL4J" ]; then
+    if [[ -z "$TEST_DL4J" ]] ; then
         DL4J_OPTIONS="-DskipTests"
     else
         if [ "$CHIP" == "cuda" ]; then
