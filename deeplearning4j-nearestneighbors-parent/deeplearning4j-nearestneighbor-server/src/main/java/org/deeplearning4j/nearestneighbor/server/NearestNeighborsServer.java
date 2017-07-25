@@ -3,6 +3,7 @@ package org.deeplearning4j.nearestneighbor.server;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
@@ -45,6 +46,7 @@ import static play.mvc.Results.ok;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class NearestNeighborsServer {
     @Parameter(names = {"--ndarrayPath"}, arity = 1, required = true)
     private String ndarrayPath = null;
@@ -80,6 +82,7 @@ public class NearestNeighborsServer {
         int rows = 0;
         int cols = 0;
         for (int i = 0; i < pathArr.length; i++) {
+            log.info("Loading shape {} of {}", i+1, pathArr.length);
             DataBuffer shape = BinarySerde.readShapeFromDisk(new File(pathArr[i]));
             if (Shape.rank(shape) != 2)
                 throw new DL4JInvalidInputException("NearestNeighborsServer assumes 2D chunks");
@@ -97,6 +100,7 @@ public class NearestNeighborsServer {
 
         int lastPosition = 0;
         for (int i = 0; i < pathArr.length; i++) {
+            log.info("Loading chunk {} of {}", i+1, pathArr.length);
             INDArray pointsArr = BinarySerde.readFromDisk(new File(pathArr[i]));
 
             points.get(NDArrayIndex.interval(lastPosition, lastPosition + pointsArr.rows())).assign(pointsArr);
