@@ -2822,6 +2822,15 @@ public:
     Nd4jPointer numpyFromFile(std::string path);
 
     /**
+     * This method releases pointer.
+     *
+     * PLEASE NOTE: This method shouldn't be ever called for anything but numpy arrays created from FILE
+     *
+     * @param npyArray
+     */
+    void releaseNumpy(Nd4jPointer npyArray);
+
+    /**
      * Return the length of a shape buffer
      * based on the pointer
      * @param buffer  the buffer pointer to check
