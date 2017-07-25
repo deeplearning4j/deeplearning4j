@@ -607,7 +607,7 @@ public class ShapeOffsetResolution implements Serializable {
 
         //collapse singular dimensions with specified index
         List<Integer> removeShape = new ArrayList<>();
-        for(int i = 0; i < this.shapes.length; i++) {
+        for(int i = 0; i < Math.min(this.shapes.length,indexes.length); i++) {
             if(this.shapes[i] == 1 && indexes[i] instanceof SpecifiedIndex) {
                 removeShape.add(i);
             }

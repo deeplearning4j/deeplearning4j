@@ -42,6 +42,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
 
 
     @Test
+    @Ignore
     public void testCreateNpy() throws Exception {
         INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("test.npy").getFile());
         assertEquals(2, arrCreate.size(0));
