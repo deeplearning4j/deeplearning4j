@@ -242,7 +242,7 @@ fi
 
 # build and install deeplearning4j
 if [[ -z "$SKIP_DL4J" ]]; then
-    if [[ ! (-z "$DELETE_REPOS") ||  (-d deeplearning4j) ]]; then
+    if [[ ! (-z "$DELETE_REPOS") ||  ! (-d deeplearning4j) ]]; then
         checkexit $GIT_CLONE https://github.com/deeplearning4j/deeplearning4j.git
     fi
     if [[ -z "$TEST_DL4J" ]] ; then
