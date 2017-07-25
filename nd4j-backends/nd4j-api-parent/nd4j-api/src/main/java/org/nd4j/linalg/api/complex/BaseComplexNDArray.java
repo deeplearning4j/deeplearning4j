@@ -280,7 +280,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     public BaseComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, long offset, char ordering) {
         this(shape, stride, offset, ordering);
-        assert data.length <= length;
+        assert data.length <= length();
         for (int i = 0; i < data.length; i++) {
             putScalar(i, data[i]);
         }
@@ -594,9 +594,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray linearViewColumnOrder() {
-        if (length >= Integer.MAX_VALUE)
+        if (length() >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Length can not be >= Integer.MAX_VALUE");
-        return Nd4j.createComplex(data, new int[] {(int) length, 1}, offset());
+        return Nd4j.createComplex(data, new int[] {(int) length(), 1}, offset());
     }
 
     /**
@@ -1059,14 +1059,14 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             IComplexNDArray n = (IComplexNDArray) other;
             IComplexNDArray nLinear = n.linearView();
 
-            for (int i = 0; i < length; i++) {
+            for (int i = 0; i < length(); i++) {
                 IComplexNumber diff = linearView().getComplex(i).sub(nLinear.getComplex(i));
                 double d = diff.absoluteValue().doubleValue();
                 sd += d * d;
             }
             return sd;
         }
-        for (int i = 0; i < length; i++) {
+        for (int i = 0; i < length(); i++) {
             INDArray linear = other.linearView();
             IComplexNumber diff = linearView().getComplex(i).sub(linear.getDouble(i));
             double d = diff.absoluteValue().doubleValue();
@@ -1093,7 +1093,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         if (other instanceof IComplexNDArray) {
             IComplexNDArray n2 = (IComplexNDArray) other;
             IComplexNDArray n2Linear = n2.linearView();
-            for (int i = 0; i < length; i++) {
+            for (int i = 0; i < length(); i++) {
                 IComplexNumber n = getComplex(i).sub(n2Linear.getComplex(i));
                 d += n.absoluteValue().doubleValue();
             }
@@ -1102,7 +1102,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         INDArray linear = other.linearView();
 
-        for (int i = 0; i < length; i++) {
+        for (int i = 0; i < length(); i++) {
             IComplexNumber n = linearView().getComplex(i).sub(linear.getDouble(i));
             d += n.absoluteValue().doubleValue();
         }
@@ -1287,7 +1287,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray put(int[] indexes, double value) {
         //int ix = offset;
-        /* if (indexes.length != shape.length)
+        /* if (indexes.length() != shape.length())
             throw new IllegalArgumentException("Unable to applyTransformToDestination values: number of indices must be equal to the shape");
         
         for (int i = 0; i < shape.length; i++)
@@ -1374,7 +1374,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray conji() {
         IComplexNDArray reshaped = linearView();
         IComplexDouble c = Nd4j.createDouble(0.0, 0);
-        for (int i = 0; i < length; i++) {
+        for (int i = 0; i < length(); i++) {
             IComplexNumber conj = reshaped.getComplex(i, c).conj();
             reshaped.putScalar(i, conj);
 
@@ -1389,7 +1389,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         IComplexDouble c = Nd4j.createDouble(0, 0);
 
         for (int i = 0; i < slices(); i++)
-            for (int j = 0; j < columns; j++)
+            for (int j = 0; j < columns(); j++)
                 result.putScalar(j, i, getComplex(i, j, c).conji());
         return result;
     }
@@ -1813,7 +1813,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     protected IComplexNDArray create(int rows, int length) {
-        return create(new int[] {rows, length});
+        return create(new int[] {rows, length()});
     }
 
 
@@ -1849,7 +1849,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray cumsumi(int dimension) {
         /*if (isVector()) {
             IComplexNumber s = Nd4j.createDouble(0, 0);
-            for (int i = 0; i < length; i++) {
+            for (int i = 0; i < length(); i++) {
                 s.addi(getComplex(i));
                 putScalar(i, s);
             }
@@ -2090,8 +2090,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray putColumn(int column, INDArray toPut) {
-        assert toPut.isVector() && toPut.length() == rows : "Illegal length for row " + toPut.length()
-                        + " should have been " + columns;
+        assert toPut.isVector() && toPut.length() == rows() : "Illegal length for row " + toPut.length()
+                        + " should have been " + columns();
         IComplexNDArray r = getColumn(column);
         if (toPut instanceof IComplexNDArray) {
             IComplexNDArray putComplex = (IComplexNDArray) toPut;
@@ -2600,7 +2600,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         IComplexNumber c = Nd4j.createComplexNumber(0, 0);
         IComplexNumber d = Nd4j.createComplexNumber(0, 0);
 
-        for (int i = 0; i < length; i++)
+        for (int i = 0; i < length(); i++)
             cResultLinear.putScalar(i, linear.getComplex(i, c).divi(cOtherLinear.getComplex(i, d)));
         return cResult;
     }
@@ -2639,7 +2639,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         IComplexNumber c = Nd4j.createComplexNumber(0, 0);
         IComplexNumber d = Nd4j.createComplexNumber(0, 0);
 
-        for (int i = 0; i < length; i++)
+        for (int i = 0; i < length(); i++)
             cResultLinear.putScalar(i, linear.getComplex(i, c).muli(cOtherLinear.getComplex(i, d)));
         return cResult;
     }
@@ -2748,7 +2748,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray rdivi(IComplexNumber n, INDArray result) {
         IComplexNDArray cResult = (IComplexNDArray) result;
         IComplexNDArray cResultLinear = cResult.linearView();
-        for (int i = 0; i < length; i++)
+        for (int i = 0; i < length(); i++)
             cResultLinear.putScalar(i, n.div(getComplex(i)));
         return cResult;
     }
@@ -2764,7 +2764,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         IComplexNDArray cResultLinear = cResult.linearView();
         IComplexNDArray thiLinear = linearView();
 
-        for (int i = 0; i < length; i++)
+        for (int i = 0; i < length(); i++)
             cResultLinear.putScalar(i, n.sub(thiLinear.getComplex(i)));
         return cResult;
     }
@@ -2779,7 +2779,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         IComplexNDArray cResult = (IComplexNDArray) result;
         IComplexNDArray cResultLinear = cResult.linearView();
         IComplexNDArray thisLinear = linearView();
-        for (int i = 0; i < length; i++)
+        for (int i = 0; i < length(); i++)
             cResultLinear.putScalar(i, thisLinear.getComplex(i).div(n));
         return cResult;
     }
@@ -2794,7 +2794,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         IComplexNDArray cResult = (IComplexNDArray) result;
         IComplexNDArray cResultLinear = cResult.linearView();
         IComplexNDArray thiLinear = linearView();
-        for (int i = 0; i < length; i++)
+        for (int i = 0; i < length(); i++)
             cResultLinear.putScalar(i, thiLinear.getComplex(i).mul(n));
         return cResult;
     }
@@ -2810,7 +2810,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         IComplexNDArray cResultLinear = cResult.linearView();
 
         IComplexNDArray linear = linearView();
-        for (int i = 0; i < length; i++)
+        for (int i = 0; i < length(); i++)
             cResultLinear.putScalar(i, linear.getComplex(i).sub(n));
         return cResult;
     }
@@ -3302,7 +3302,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             IComplexNumber c = n.getComplex(0);
             return FastMath.abs(getComplex(0).sub(c).realComponent().doubleValue()) < Nd4j.EPS_THRESHOLD;
         } else if (isVector() && n.isVector()) {
-            for (int i = 0; i < length; i++) {
+            for (int i = 0; i < length(); i++) {
                 IComplexNumber nComplex = n.getComplex(i);
                 IComplexNumber thisComplex = getComplex(i);
                 if (!nComplex.equals(thisComplex))
@@ -3320,7 +3320,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             IComplexNumber c = n.getComplex(0);
             return getComplex(0).sub(c).absoluteValue().doubleValue() < Nd4j.EPS_THRESHOLD;
         } else if (isVector()) {
-            for (int i = 0; i < length; i++) {
+            for (int i = 0; i < length(); i++) {
                 IComplexNumber curr = getComplex(i);
                 IComplexNumber comp = n.getComplex(i);
                 if (!curr.equals(comp))
@@ -3392,9 +3392,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray ravel() {
 
-        if (length >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Length can not be >= Integer.MAX_VALUE");
-        IComplexNDArray ret = Nd4j.createComplex((int) length, ordering());
+        if (length() >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("length() can not be >= Integer.MAX_VALUE");
+        IComplexNDArray ret = Nd4j.createComplex((int) length(), ordering());
         IComplexNDArray linear = linearView();
         for (int i = 0; i < length(); i++) {
             ret.putScalar(i, linear.getComplex(i));
@@ -3416,15 +3416,15 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         } else if (isVector()) {
             StringBuilder sb = new StringBuilder();
             sb.append("[");
-            if (length >= Integer.MAX_VALUE)
-                throw new IllegalArgumentException("Length can not be >= Integer.MAX_VALUE");
-            long numElementsToPrint = Nd4j.MAX_ELEMENTS_PER_SLICE < 0 ? length : Nd4j.MAX_ELEMENTS_PER_SLICE;
-            for (int i = 0; i < length; i++) {
+            if (length() >= Integer.MAX_VALUE)
+                throw new IllegalArgumentException("length() can not be >= Integer.MAX_VALUE");
+            long numElementsToPrint = Nd4j.MAX_ELEMENTS_PER_SLICE < 0 ? length() : Nd4j.MAX_ELEMENTS_PER_SLICE;
+            for (int i = 0; i < length(); i++) {
                 sb.append(getComplex(i));
-                if (i < length - 1)
+                if (i < length() - 1)
                     sb.append(" ,");
                 if (i >= numElementsToPrint) {
-                    long numElementsLeft = length - i;
+                    long numElementsLeft = length() - i;
                     //set towards the end of the buffer
                     if (numElementsLeft > numElementsToPrint) {
                         i += numElementsLeft - numElementsToPrint - 1;
