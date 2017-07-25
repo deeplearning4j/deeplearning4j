@@ -270,6 +270,13 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     }
 
     @Test
+    public void testNd4jSortScalar() {
+        INDArray linspace = Nd4j.linspace(1,8,8);
+        INDArray sorted = Nd4j.sort(linspace,1,false);
+        System.out.println(sorted);
+    }
+
+    @Test
     public void testSwapAxesFortranOrder() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[] {3, 5, 2});
         for (int i = 0; i < n.slices(); i++) {

@@ -266,9 +266,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             retShape = new int[] {1, 1};
         }
 
-        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1)
-            return op.noOp();
-
+      
         /**
          * This is the result array.
          * We create it only if we hadn't provided it before
