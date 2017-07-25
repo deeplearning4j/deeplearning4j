@@ -8,39 +8,37 @@ import org.datavec.api.transform.transform.integer.BaseIntegerTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.WritableType;
 
 /**
- * Convert any value to an Integer.
+ * Convert any value to an Double
  *
  * @author Justin Long (crockpotveggies)
  */
 @NoArgsConstructor
 public class ConvertToDouble extends BaseDoubleTransform {
+
+    /**
+     * @param column Name of the column to convert to a Double column
+     */
     public ConvertToDouble(String column) {
         super(column);
     }
 
-    /**
-     * Transform the writable in to a
-     * string
-     *
-     * @param writable the writable to transform
-     * @return the string form of this writable
-     */
     @Override
     public DoubleWritable map(Writable writable) {
-        return new DoubleWritable(Double.parseDouble(writable.toString()));
+        if(writable.getType() == WritableType.Double){
+            return (DoubleWritable)writable;
+        }
+        return new DoubleWritable(writable.toDouble());
     }
 
-    /**
-     * Transform an object
-     * in to another object
-     *
-     * @param input the record to transform
-     * @return the transformed writable
-     */
+
     @Override
     public Object map(Object input) {
+        if(input instanceof Number){
+            return ((Number) input).doubleValue();
+        }
         return Double.parseDouble(input.toString());
     }
 
@@ -52,6 +50,6 @@ public class ConvertToDouble extends BaseDoubleTransform {
 
     @Override
     public String toString() {
-        return "ConvertToDouble()";
+        return "ConvertToDouble(columnName=" + columnName + ")";
     }
 }

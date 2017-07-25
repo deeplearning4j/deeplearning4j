@@ -68,6 +68,26 @@ public class CSVRecordReader extends LineRecordReader {
     }
 
     /**
+     *
+     * @param skipNumLines Number of lines to skip
+     * @param delimiter    Delimiter to use
+     * @deprecated This constructor is deprecated; use {@link #CSVRecordReader(int, char)} or
+     * {@link #CSVRecordReader(int, char, char)}
+     */
+    @Deprecated
+    public CSVRecordReader(int skipNumLines, String delimiter){
+        this(skipNumLines, stringDelimToChar(delimiter));
+    }
+
+    private static char stringDelimToChar(String delimiter){
+        if(delimiter.length() > 1){
+            throw new UnsupportedOperationException("Multi-character delimiters have been deprecated. For quotes, " +
+                    "use CSVRecordReader(int skipNumLines, char delimiter, char quote)");
+        }
+        return delimiter.charAt(0);
+    }
+
+    /**
      * Skip lines, use delimiter, and strip quotes
      * @param skipNumLines the number of lines to skip
      * @param delimiter the delimiter
