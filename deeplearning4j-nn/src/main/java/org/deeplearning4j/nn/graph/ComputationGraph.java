@@ -1196,6 +1196,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
                 outputSetForInputIdx.add(idx); //input vertex outputs to the current vertex
             }
+
             inputEdges.put(idx, inputSet);
         }
 
