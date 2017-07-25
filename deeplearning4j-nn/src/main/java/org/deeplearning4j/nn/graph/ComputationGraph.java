@@ -102,6 +102,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public final static String workspaceCache = "LOOP_CACHE";
     public final static String workspaceExternal = "LOOP_EXTERNAL";
     public final static String workspaceFeedForward = "LOOP_FF";
+    public final static String workspacePretrain = "LOOP_PTR";
     public final static String workspaceTBPTT = "LOOP_TBPTT";
     public final static String workspaceLSTM = "LOOP_LSTM";
 
