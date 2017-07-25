@@ -21,9 +21,7 @@ package org.nd4j.linalg.jcublas;
 
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.indexer.DoubleRawIndexer;
-import org.bytedeco.javacpp.indexer.FloatRawIndexer;
-import org.bytedeco.javacpp.indexer.IntRawIndexer;
+import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -1437,23 +1435,24 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         IntPointer intPointer = new IntPointer(shapeBufferPointer);
 
-        DataBuffer shapeBuffer = Nd4j.createBuffer(shapeBufferPointer, DataBuffer.Type.INT,length,new IntRawIndexer(intPointer));
+        DataBuffer shapeBuffer = Nd4j.createBuffer(shapeBufferPointer, DataBuffer.Type.INT,length, IntIndexer.create(intPointer));
 
         dataPointer.position(0);
         dataPointer.limit(dataBufferElementSize * Shape.length(shapeBuffer));
         dataPointer.capacity(dataBufferElementSize * Shape.length(shapeBuffer));
 
+        // we don't care about pointers here, they will be copied in BaseCudaDataBuffer method, and indexer will be recreated
         if(dataBufferElementSize == (Float.SIZE / 8)) {
             data = Nd4j.createBuffer(dataPointer,
                     DataBuffer.Type.FLOAT,
                     Shape.length(shapeBuffer),
-                    new FloatRawIndexer(new FloatPointer(dataPointer)));
+                    FloatIndexer.create(new FloatPointer(dataPointer)));
         }
         else if(dataBufferElementSize == (Double.SIZE / 8)) {
             data = Nd4j.createBuffer(dataPointer,
                     DataBuffer.Type.DOUBLE,
                     Shape.length(shapeBuffer),
-                    new DoubleRawIndexer(new DoublePointer(dataPointer)));
+                    DoubleIndexer.create(new DoublePointer(dataPointer)));
         }
 
         INDArray ret = Nd4j.create(data,Shape.shape(shapeBuffer),
@@ -1483,7 +1482,12 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         directBuffer.rewind();
         directBuffer.position(0);
         Pointer pointer = nativeOps.numpyFromFile(new BytePointer(directBuffer));
-        return createFromNpyPointer(pointer);
+        INDArray result = createFromNpyPointer(pointer);
+
+        // releasing original pointer here
+        nativeOps.releaseNumpy(pointer);
+
+        return result;
     }
 
     public INDArray[] tear(INDArray tensor, int... dimensions) {

@@ -102,9 +102,32 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(allocationPoint.getHostPointer(), pointer, length * getElementSize(), CudaConstants.cudaMemcpyHostToHost, context.getSpecialStream());
         NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(allocationPoint.getDevicePointer(), allocationPoint.getHostPointer(), length * getElementSize(), CudaConstants.cudaMemcpyHostToHost, context.getSpecialStream());
 
+        context.getSpecialStream().synchronize();
+
         this.pointer = new CudaPointer(allocationPoint.getHostPointer(), length * getElementSize(), 0);
 
-        context.getSpecialStream().synchronize();
+        switch (dataType()) {
+            case INT: {
+                setIndexer(IntIndexer.create(((CudaPointer) this.pointer).asIntPointer()));
+            }
+            break;
+            case FLOAT: {
+                setIndexer(FloatIndexer.create(((CudaPointer) this.pointer).asFloatPointer()));
+            }
+            break;
+            case DOUBLE: {
+                setIndexer(DoubleIndexer.create(((CudaPointer) this.pointer).asDoublePointer()));
+            }
+            break;
+            case HALF: {
+                setIndexer(ShortIndexer.create(((CudaPointer) this.pointer).asShortPointer()));
+            }
+            break;
+            case LONG: {
+                setIndexer(LongIndexer.create(((CudaPointer) this.pointer).asLongPointer()));
+            }
+            break;
+        }
 
         this.trackingPoint = allocationPoint.getObjectId();
 
