@@ -7,10 +7,14 @@ import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nearestneighbor.model.*;
 import org.jboss.netty.util.internal.ByteBufferUtil;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.serde.base64.Nd4jBase64;
 import org.nd4j.serde.binary.BinarySerde;
 import play.Mode;
@@ -71,10 +75,34 @@ public class NearestNeighborsServer {
         }
 
         String[] pathArr = ndarrayPath.split(",");
-        INDArray[] pointsArr = new INDArray[pathArr.length];
-        for (int i = 0; i < pathArr.length; i++)
-            pointsArr[i] = BinarySerde.readFromDisk(new File(pathArr[i]));
-        final INDArray points = Nd4j.concat(0, pointsArr);
+        //INDArray[] pointsArr = new INDArray[pathArr.length];
+        // first of all we reading shapes of saved eariler files
+        int rows = 0;
+        int cols = 0;
+        for (int i = 0; i < pathArr.length; i++) {
+            DataBuffer shape = BinarySerde.readShapeFromDisk(new File(pathArr[i]));
+            if (Shape.rank(shape) != 2)
+                throw new DL4JInvalidInputException("NearestNeighborsServer assumes 2D chunks");
+
+            rows += Shape.size(shape, 0);
+
+            if (cols == 0)
+                cols = Shape.size(shape, 1);
+            else
+                if (cols != Shape.size(shape, 1))
+                    throw new DL4JInvalidInputException("NearestNeighborsServer requires equal 2D chunks. Got columns mismatch.");
+        }
+
+        final INDArray points = Nd4j.createUninitialized(rows, cols);
+
+        int lastPosition = 0;
+        for (int i = 0; i < pathArr.length; i++) {
+            INDArray pointsArr = BinarySerde.readFromDisk(new File(pathArr[i]));
+
+            points.get(NDArrayIndex.interval(lastPosition, pointsArr.rows())).assign(pointsArr);
+            lastPosition += pointsArr.rows();
+        }
+
         VPTree tree = new VPTree(points, similarityFunction, invert);
 
         RoutingDsl routingDsl = new RoutingDsl();
