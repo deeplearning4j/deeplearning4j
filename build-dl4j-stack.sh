@@ -12,7 +12,7 @@ function checkexit {
 }
 
 function maybeUpdateRepo {
-    if [ $UPDATE_REPOS == "true" ]; then
+    if [ "$UPDATE_REPOS" == "true" ]; then
         # are there uncommited changes in the repo?
         if ! (git diff-index --quiet HEAD --) then
            echo "Some uncommited changes found in this repo! Stashing..."
@@ -173,7 +173,6 @@ case $REPO_STRATEGY in
         ;;
 esac
 
-
 # removes any existing repositories to ensure a clean build
 if ! [ -z "$DELETE_REPOS" ]; then
     PROJECTS="libnd4j nd4j datavec deeplearning4j"
@@ -220,9 +219,9 @@ if ! [ -z $SKIP_ND4J ]; then
     pushd nd4j
     maybeUpdateRepo
     if [ "$CHIP" == "cpu" ]; then
-        checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!nd4j-backends/nd4j-tests' $ND4J_OPTIONS $MVN_OPTS
+        checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!nd4j-backends/nd4j-tests' "$ND4J_OPTIONS" "$MVN_OPTS"
     else
-        checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true $ND4J_OPTIONS $MVN_OPTS
+        checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true "$ND4J_OPTIONS" "$MVN_OPTS"
     fi
     popd
 fi
@@ -244,9 +243,9 @@ if ! [ -z $SKIP_DATAVEC ]; then
     pushd datavec
     maybeUpdateRepo
     if [ "$SCALAV" == "" ]; then
-        checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true $DATAVEC_OPTIONS $MVN_OPTS
+        checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true "$DATAVEC_OPTIONS" "$MVN_OPTS"
     else
-        checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA" $DATAVEC_OPTIONS $MVN_OPTS
+        checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA" "$DATAVEC_OPTIONS" "$MVN_OPTS"
     fi
     popd
 fi
@@ -270,20 +269,20 @@ if ! [ -z $SKIP_DL4J ]; then
     if [ $DELETE_REPOS == "true" ]; then
         # reset the working diectory to the latest version of the tracking branch
         git remote update
-        TRACKING_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name @{u})
-        git reset --hard $TRACKING_BRANCH
+        TRACKING_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}')
+        git reset --hard "$TRACKING_BRANCH"
     fi
     if [ "$SCALAV" == "" ]; then
         if [ "$CHIP" == "cpu" ]; then
-            checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!deeplearning4j-cuda' $DL4J_OPTIONS $MVN_OPTS
+            checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!deeplearning4j-cuda' "$DL4J_OPTIONS" "$MVN_OPTS"
         else
-            checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true $DL4J_OPTIONS $MVN_OPTS
+            checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true "$DL4J_OPTIONS" "$MVN_OPTS"
         fi
     else
         if [ "$CHIP" == "cpu" ]; then
-            checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA"  -pl '!deeplearning4j-cuda' $DL4J_OPTIONS $MVN_OPTS
+            checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA"  -pl '!deeplearning4j-cuda' "$DL4J_OPTIONS" "$MVN_OPTS"
         else
-            checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA" $DL4J_OPTIONS $MVN_OPTS
+            checkexit mvn clean install -Dmaven.javadoc.skip=true -Dscala.binary.version="$SCALAV" -Dscala.version="$SCALA" "$DL4J_OPTIONS" "$MVN_OPTS"
         fi
     fi
     popd
