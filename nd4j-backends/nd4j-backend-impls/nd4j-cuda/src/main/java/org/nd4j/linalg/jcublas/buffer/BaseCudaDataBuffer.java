@@ -279,6 +279,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     protected void setIndexer(Indexer indexer) {
         //TODO: to be abstracted
+        this.indexer = indexer;
     }
 
     /**
@@ -804,7 +805,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             s.readUTF();
             allocationMode = AllocationMode.JAVACPP;
             int locLength = s.readInt();
-            boolean reallocate = locLength != length;
+            boolean reallocate = locLength != length || indexer == null;
             length = locLength;
 
             Type t = Type.valueOf(s.readUTF());

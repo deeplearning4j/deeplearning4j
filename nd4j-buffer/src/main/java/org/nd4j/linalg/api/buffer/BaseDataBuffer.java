@@ -665,7 +665,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
+                    + length() + " where the indices are of length " + data.length);
         for (int i = 0; i < indices.length; i++) {
             put(indices[i], data[i]);
         }
@@ -701,7 +701,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
+                    + length() + " where the indices are of length " + data.length);
         for (int i = 0; i < indices.length; i += inc) {
             put(indices[i], data[i]);
         }
@@ -711,7 +711,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void assign(DataBuffer data) {
         if (data.length() != length())
             throw new IllegalArgumentException("Unable to assign buffer of length " + data.length()
-                            + " to this buffer of length " + length());
+                    + " to this buffer of length " + length());
 
         for (int i = 0; i < data.length(); i++) {
             put(i, data.getDouble(i));
@@ -905,6 +905,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public double getDouble(long i) {
+        if(indexer == null) {
+            throw new IllegalStateException("Indexer must never be null");
+        }
         if (dataType() == Type.FLOAT) {
             dirty.set(false);
             return ((FloatIndexer) indexer).get(offset() + i);
@@ -947,6 +950,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return fromFloat(((HalfIndexer) indexer).get(offset() + i));
     }
 
+    /**
+     *
+     * @param v
+     * @return
+     */
     public static short fromFloat(float v) {
         if (Float.isNaN(v))
             return (short) 0x7fff;
@@ -970,7 +978,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         final int f = Float.floatToIntBits(v);
 
         return (short) (((f >> 16) & 0x8000) | ((((f & 0x7f800000) - 0x38000000) >> 13) & 0x7c00)
-                        | ((f >> 13) & 0x03ff));
+                | ((f >> 13) & 0x03ff));
     }
 
     @Override
@@ -1194,7 +1202,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void assign(long[] offsets, long[] strides, long n, DataBuffer... buffers) {
         if (offsets.length != strides.length || strides.length != buffers.length)
             throw new IllegalArgumentException(
-                            "Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
+                    "Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
         int count = 0;
         for (int i = 0; i < buffers.length; i++) {
             //note here that the final put will take care of the offset
@@ -1294,7 +1302,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 elementSize = 2;
 
             if (currentType != globalType && currentType != Type.HALF && currentType != Type.INT
-                            && !(globalType == Type.DOUBLE)) {
+                    && !(globalType == Type.DOUBLE)) {
                 log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
                 if (globalType == Type.INT)
                     log.warn("Int to float/double widening UNSUPPORTED!!!");
@@ -1396,8 +1404,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             mant &= 0x3ff; // discard subnormal bit
         } // else +/-0 -> +/-0
         return Float.intBitsToFloat( // combine all parts
-                        (hbits & 0x8000) << 16 // sign  << ( 31 - 15 )
-                                        | (exp | mant) << 13); // value << ( 23 - 10 )
+                (hbits & 0x8000) << 16 // sign  << ( 31 - 15 )
+                        | (exp | mant) << 13); // value << ( 23 - 10 )
     }
 
 
@@ -1448,7 +1456,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     @Override
     public Long getTrackingPoint() {
-        return underlyingDataBuffer() == null ? trackingPoint : underlyingDataBuffer().getTrackingPoint();
+        if(underlyingDataBuffer() != this)
+            return underlyingDataBuffer() == null ? trackingPoint : underlyingDataBuffer().getTrackingPoint();
+        return trackingPoint;
     }
 
     /**
