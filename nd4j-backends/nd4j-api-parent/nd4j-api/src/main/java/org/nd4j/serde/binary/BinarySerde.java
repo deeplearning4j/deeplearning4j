@@ -15,6 +15,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 import java.nio.channels.FileChannel;
 
 /**
@@ -260,6 +261,43 @@ public class BinarySerde {
             channel.read(buffer);
             INDArray ret = toArray(buffer);
             return ret;
+        }
+    }
+
+
+    public static DataBuffer readShapeFromDisk(File readFrom) throws IOException {
+        try(FileInputStream os = new FileInputStream(readFrom)) {
+            FileChannel channel = os.getChannel();
+            // we read shapeinfo up to max_rank value, which is 32
+            ByteBuffer buffer = ByteBuffer.allocateDirect(32 * 2 + 3);
+            channel.read(buffer);
+
+            IntBuffer intBuffer = buffer.asIntBuffer();
+            int rank = intBuffer.get(0);
+            int result[] = new int[rank * 2 + 3];
+
+            // filling DataBuffer with shape info
+            result[0] = rank;
+
+            // offset is hardcoded to 0 anyway
+            result[result.length - 3] = 0;
+
+            // filling shape information
+            for (int e = 0; e < rank; e++) {
+                result[e+1] = intBuffer.get(e+1);
+            }
+
+            // filling stride information
+            for (int e = 0; e < rank; e++) {
+                result[e+1+rank] = intBuffer.get(e+1+rank);
+            }
+
+            // filling EWS and order information
+            result[result.length  - 2 ] = intBuffer.get(result.length - 2);
+            result[result.length  - 1 ] = intBuffer.get(result.length - 1);
+
+            DataBuffer dataBuffer = Nd4j.getDataBufferFactory().createInt(result);
+            return dataBuffer;
         }
     }
 
