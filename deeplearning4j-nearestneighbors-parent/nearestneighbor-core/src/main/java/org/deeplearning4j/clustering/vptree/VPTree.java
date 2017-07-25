@@ -110,9 +110,9 @@ public class VPTree {
     public VPTree(List<DataPoint> items, String similarityFunction, boolean parallel, boolean invert) {
         if (this.items == null) {
             this.items = Nd4j.create(items.size(),items.get(0).getPoint().columns());
-            int row = 0;
-            for (DataPoint item : items)
-                this.items.putRow(row++, item.getPoint());
+            for (int i = 0; i < items.size(); i++) {
+                this.items.putRow(i, items.get(i).getPoint());
+            }
         }
 
         itemsList = new ArrayList<>(items.size());
