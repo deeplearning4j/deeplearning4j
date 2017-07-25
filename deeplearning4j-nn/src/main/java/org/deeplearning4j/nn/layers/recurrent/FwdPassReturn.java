@@ -24,9 +24,12 @@ public class FwdPassReturn {
     public INDArray[] fz;
     public INDArray[] oz;
     public INDArray[] gz;
-    //Last 2: needed for rnnTimeStep only
+    //Next 2: needed for rnnTimeStep only
     public INDArray lastAct;
     public INDArray lastMemCell;
+    //Last 2: needed only for CudnnLSTMHelper
+    public INDArray prevAct;
+    public INDArray prevMemCell;
 
     /**
      * This method is OPTIONAL, and written mostly for future use
@@ -91,5 +94,7 @@ public class FwdPassReturn {
 
         if (lastMemCell != null)
             lastMemCell = lastMemCell.leverageTo(id);
+
+        //Don't want to leverage previous activations if present...
     }
 }

@@ -208,10 +208,8 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
         INDArray outputActivations = fwdPass.fwdPassOutputAsArrays[0];
 
-        //TODO should be able to pass these in...
-        INDArray prevStepMemCellState = Nd4j.create(input.size(0), input.size(1));  //[minibatch, layerSize]
-        INDArray prevStepActivations = Nd4j.create(prevStepMemCellState.shape());
-
+        INDArray prevStepMemCellState = fwdPass.prevMemCell.dup('c');
+        INDArray prevStepActivations = fwdPass.prevAct.dup('c');
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -348,9 +346,13 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                         /*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
 
         FwdPassReturn toReturn = new FwdPassReturn();
+        toReturn.prevAct = prevAct;
+        toReturn.prevMemCell = prevMemCell;
+
 //        if (forBackprop) {
             toReturn.fwdPassOutputAsArrays = new INDArray[] {outputActivations};
             toReturn.memCellState = new INDArray[] {finalMemCellState};
+            toReturn.lastMemCell = finalMemCellState;
             toReturn.lastAct = finalStepActivations;
 //        }
 
@@ -534,6 +536,8 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
             toReturn.lastMemCell = finalMemCellState.dup('f');
 //        }
 
+        toReturn.prevAct = prevAct.dup('c');
+        toReturn.prevMemCell = prevMemCell.dup('c');
         return toReturn;
     }
 
