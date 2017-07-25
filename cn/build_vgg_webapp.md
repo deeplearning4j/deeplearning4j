@@ -11,9 +11,9 @@ layout: cn-default
 
 * [VGG-16是什么？](#VGG-16)
 * [将VGG-16用于网页应用](#UsingVGG-16)
-* [加载预定型模型](#LoadingPre-TrainedModels)
+* [加载预训练模型](#LoadingPre-TrainedModels)
 * [为测试配置数据加工管道](#ConfigureDataPipelinesforTesting)
-* [测试预定型模型](#LoadingPre-TrainedModels)
+* [测试预训练模型](#LoadingPre-TrainedModels)
 * [用ModelSerializer保存模型](#SaveModelwithModelSerializer)
 * [构建接受输入图像的网页应用](#BuildWebApptoTakeInputImage)
 * [将网页应用前端与神经网络后端绑定](#TieWebAppFrontEndtoNeuralNetBackend)
@@ -22,7 +22,7 @@ layout: cn-default
 
 ## <a name="VGG-16"> VGG-16是什么？</a>
 
-从2010年开始，[ImageNet](http://image-net.org/)每年都会举办一场[挑战赛](http://www.image-net.org/challenges/LSVRC/)，参赛的研究团队用ImageNet数据集作为定型数据，提出各种图像分类解决方案。ImageNet目前有数百万幅已标记的图像，是全世界最大的高质量图像数据集之一。牛津大学的Visual Geometry Group（视觉几何研究组）在2014年的比赛中取得了优异成绩，他们采用的网络架构有两种：16层卷积神经网络VGG-16和19层卷积神经网络VGG-19。 
+从2010年开始，[ImageNet](http://image-net.org/)每年都会举办一场[挑战赛](http://www.image-net.org/challenges/LSVRC/)，参赛的研究团队用ImageNet数据集作为训练数据，提出各种图像分类解决方案。ImageNet目前有数百万幅已标记的图像，是全世界最大的高质量图像数据集之一。牛津大学的Visual Geometry Group（视觉几何研究组）在2014年的比赛中取得了优异成绩，他们采用的网络架构有两种：16层卷积神经网络VGG-16和19层卷积神经网络VGG-19。 
 
 结果如下：
 
@@ -31,15 +31,15 @@ layout: cn-default
 
 ## <a name="UsingVGG-16"> 将VGG-16用于网页应用</a>
 
-神经网络应用的第一步是定型。在定型过程中，输入数据（此处为图像）进入网络，随后网络的输出或预测结果会与预期结果（即图像的标签）进行比较。每次完成对数据的迭代后，网络的权重会得到调整，以减少预测的误差率——也就是说，权重调整后，网络预测结果与实际图像标签的匹配率可得到改善。（用数百万幅图像对一个大型网络进行定型需要消耗大量计算资源，因此有必要发布此处介绍的预定型网络。）
+神经网络应用的第一步是训练。在训练过程中，输入数据（此处为图像）进入网络，随后网络的输出或预测结果会与预期结果（即图像的标签）进行比较。每次完成对数据的迭代后，网络的权重会得到调整，以减少预测的误差率——也就是说，权重调整后，网络预测结果与实际图像标签的匹配率可得到改善。（用数百万幅图像对一个大型网络进行训练需要消耗大量计算资源，因此有必要发布此处介绍的预训练网络。）
 
-定型完毕后，网络可以用于推断，即对其读取的数据进行预测。推断恰好是一种不需要这么多计算资源的过程。对于VGG-16和其他架构而言，开发者可以下载预定型的模型直接使用，而无需掌握模型调试与定型的必要技能。预定型模型的加载和预测应用相对比较简单，本页将作详细介绍。 
+训练完毕后，网络可以用于推断，即对其读取的数据进行预测。推断恰好是一种不需要这么多计算资源的过程。对于VGG-16和其他架构而言，开发者可以下载预训练的模型直接使用，而无需掌握模型调试与训练的必要技能。预训练模型的加载和预测应用相对比较简单，本页将作详细介绍。 
 
-我们将在另一篇教程中介绍如何加载此类模型并进一步定型。  
+我们将在另一篇教程中介绍如何加载此类模型并进一步训练。  
 
-## <a name="LoadingPre-TrainedModels"> 加载预定型模型</a>
+## <a name="LoadingPre-TrainedModels"> 加载预训练模型</a>
 
-0.9.0版（0.8.1-SNAPSHOT）的Deeplearning4J配有一个全新的原生模型库。您可以阅读[deeplearning4j-zoo](/model-zoo)模块的内容，了解更多关于使用预定型模型的信息。此处我们需要加载一个预定型的VGG-16模型，用经过ImageNet数据集定型后得到的权重来初始化：
+0.9.0版（0.8.1-SNAPSHOT）的Deeplearning4J配有一个全新的原生模型库。您可以阅读[deeplearning4j-zoo](/model-zoo)模块的内容，了解更多关于使用预训练模型的信息。此处我们需要加载一个预训练的VGG-16模型，用经过ImageNet数据集训练后得到的权重来初始化：
 
 ```
 ZooModel zooModel = new VGG16();
@@ -56,11 +56,11 @@ ComputationGraph model = KerasModelImport.importKerasModelAndWeights(modelJsonFi
 
 ```
 
-如果导入的预定型模型*仅用于推断*，那么应当设置`enforceTrainingConfig=false`。目前尚不支持的仅用于定型的模型配置会触发警告消息，但模型导入功能会继续运行。
+如果导入的预训练模型*仅用于推断*，那么应当设置`enforceTrainingConfig=false`。目前尚不支持的仅用于训练的模型配置会触发警告消息，但模型导入功能会继续运行。
 
 ## <a name="ConfigureDataPipelinesforTesting"> 为测试配置数据加工管道</a>
 
-就数据摄取和预处理而言，您可以选择手动流程或者助手功能。VGG-16形式的图像处理助手功能为`TrainedModels.VGG16.getPreProcessor`以及`VGG16ImagePreProcessor()`。（请记住：用于推断的图像的预处理方式必须和定型图像的处理方式相同。） 
+就数据摄取和预处理而言，您可以选择手动流程或者助手功能。VGG-16形式的图像处理助手功能为`TrainedModels.VGG16.getPreProcessor`以及`VGG16ImagePreProcessor()`。（请记住：用于推断的图像的预处理方式必须和训练图像的处理方式相同。） 
 
 ### VGG-16图像预处理管道的步骤
 
@@ -103,7 +103,7 @@ DataNormalization scaler = new VGG16ImagePreProcessor();
 scaler.transform(image);
 ```
 
-## <a name="TestingPre-TrainedModels"> 测试预定型模型</a>
+## <a name="TestingPre-TrainedModels"> 测试预训练模型</a>
 
 网络加载完毕后，您应当验证它能按预期的方式工作。请注意，ImageNet并非为人脸识别而设计，所以最好用大象、狗或者猫的图片来测试。 
 
@@ -248,7 +248,7 @@ public class VGG16SparkJavaWebApp {
         String keyStorePassword = "skymind";
         secure(keyStoreLocation, keyStorePassword, null,null );
 
-        // 加载已定型的模型
+        // 加载已训练的模型
         File locationToSave = new File("vgg16.zip");
         ComputationGraph vgg16 = ModelSerializer.restoreComputationGraph(locationToSave);
 
@@ -332,7 +332,7 @@ Skymind公司养了几只猫，以下是VGG-16对其中之一的照片的预测�
 
 	16.694832%, tabby 7.550286%, tiger_cat 0.065847%, cleaver 0.000000%, cleaver 0.000000%, cleaver
 
-VGG-16对下面这只来自互联网的狗给出了相当准确的预测结果，网络在定型过程中有可能见过这幅图片。
+VGG-16对下面这只来自互联网的狗给出了相当准确的预测结果，网络在训练过程中有可能见过这幅图片。
 
 ![a dog for inference](./../img/dog_320x240.png)
 
