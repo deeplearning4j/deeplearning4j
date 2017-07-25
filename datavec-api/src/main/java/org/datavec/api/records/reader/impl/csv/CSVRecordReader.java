@@ -105,7 +105,7 @@ public class CSVRecordReader extends LineRecordReader {
      * @param quote the quote to strip
      */
     public CSVRecordReader(int skipNumLines, String delimiter, String quote) {
-        this(stringDelimToChar(delimiter), stringDelimToChar(quote));
+        this(skipNumLines, stringDelimToChar(delimiter), stringDelimToChar(quote));
     }
 
     public CSVRecordReader() {
