@@ -179,7 +179,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <p>经常有人问，既然有如此之多的深度学习用户都专注于Python，为什么我们要开发一个面向JVM的开源深度学习项目。的确，Python有着优越的语法要素，可以直接将矩阵相加，而无需像Java那样先创建显式类。Python还有由Theano、NumPy等原生扩展组成的广泛的科学计算环境。</p>
 <p>但JVM及其主要语言Java和Scala仍然具备几项优势。</p>
 <p>首先，多数大型企业和政府机构高度依赖Java或基于JVM的系统。他们已经进行了巨大的投资，而基于JVM的人工智能可以帮助他们充分实现这些投资的价值。在企业界，Java依然是应用范围最广的语言。Java是Hadoop、ElasticSearch、Hive、Lucene和Pig的语言，而它们恰好都是解决机器学习问题的有用工具。Spark和Kafka则是用另一种JVM语言Scala编写的。也就是说，深度学习本可以帮助许多需要解决现实问题的程序员，但他们却被语言屏障阻碍。我们希望提高深度学习对于这一广大群体的可用性，这些新的用户可以将深度学习直接付诸实用。Java是世界上用户规模最大的编程语言，共有1000万名开发者使用Java。</p>
-<p>其次，与Python相比，Java和Scala在速度上具有先天优势。如不考虑依赖用Cython加速的情况，任何用Python写成的代码在根本上速度都相对较慢。不可否认，运算量最大的运算都是用C或C++语言编写的。（此处所说的运算也包括高级机器学习流程中涉及的字符和其他任务。）大多数最初用Python编写的深度学习项目在用于生产时都必须重新编写。Deeplearning4j依靠<a href="https://github.com/bytedeco/javacpp" target="_blank">JavaCPP</a>从Java中调用预编译的原生C++代码，大幅提升定型速度。许多Python程序员选择用Scala实现深度学习，因为他们在进行共享基本代码的合作时更青睐静态类型和函数式编程。</p>
+<p>其次，与Python相比，Java和Scala在速度上具有先天优势。如不考虑依赖用Cython加速的情况，任何用Python写成的代码在根本上速度都相对较慢。不可否认，运算量最大的运算都是用C或C++语言编写的。（此处所说的运算也包括高级机器学习流程中涉及的字符和其他任务。）大多数最初用Python编写的深度学习项目在用于生产时都必须重新编写。Deeplearning4j依靠<a href="https://github.com/bytedeco/javacpp" target="_blank">JavaCPP</a>从Java中调用预编译的本机C++代码，大幅提升定型速度。许多Python程序员选择用Scala实现深度学习，因为他们在进行共享基本代码的合作时更青睐静态类型和函数式编程。</p>
 <p>第三，为了解决Java缺少强大的科学计算库的问题，我们编写了<a href="http://nd4j.org/cn" target="_blank">ND4J</a>。ND4J在分布式CPU或GPU上运行，可以通过Java或Scala的API进行对接。</p>
 <p>最后，Java是一种安全的网络语言，本质上具有跨平台的特点，可在Linux服务器、Windows和OSX桌面、安卓手机上运行，还可通过嵌入式Java在物联网的低内存传感器上运行。Torch和Pylearn2通过C++进行优化，优化和维护因而存在困难，而Java则是&ldquo;一次编写，随处运行&rdquo;的语言，适合需要在多个平台上使用深度学习系统的企业。</p>
 <br />
