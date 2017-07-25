@@ -98,10 +98,9 @@ public class PreprocessorVertex extends GraphVertex {
         //TODO: eventually account for preprocessor memory use
 
         InputType outputType = getOutputType(-1, inputTypes);
-        return new LayerMemoryReport.Builder(null, PreprocessorVertex.class, inputTypes[0], outputType )
-                .standardMemory(0, 0)   //No params
-                .workingMemory(0, 0, 0, 0)
-                .cacheMemory(0, 0)  //No caching
-                .build();
+        return new LayerMemoryReport.Builder(null, PreprocessorVertex.class, inputTypes[0], outputType)
+                        .standardMemory(0, 0) //No params
+                        .workingMemory(0, 0, 0, 0).cacheMemory(0, 0) //No caching
+                        .build();
     }
 }

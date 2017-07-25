@@ -172,17 +172,17 @@ public class GlobalPoolingLayer extends Layer {
         //Here: we'll assume we are doing 'full array' global pooling.
         //For max/avg/sum pooling, no working memory (GlobalPoolingLayer.activateHelperFullArray
         //But for pnorm, we have working memory
-        if(poolingType == PoolingType.PNORM){
+        if (poolingType == PoolingType.PNORM) {
             //Dup the input array once before
             fwdTrainInferenceWorkingPerEx = inputType.arrayElementsPerExample();
         }
 
         return new LayerMemoryReport.Builder(layerName, GlobalPoolingLayer.class, inputType, outputType)
-                .standardMemory(0, 0)   //No params
-                //Train + Inference: no additional working memory (except pnorm) - the reduction is the output activations
-                .workingMemory(0, fwdTrainInferenceWorkingPerEx, 0, fwdTrainInferenceWorkingPerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(0, 0) //No params
+                        //Train + Inference: no additional working memory (except pnorm) - the reduction is the output activations
+                        .workingMemory(0, fwdTrainInferenceWorkingPerEx, 0, fwdTrainInferenceWorkingPerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     public static class Builder extends Layer.Builder<Builder> {

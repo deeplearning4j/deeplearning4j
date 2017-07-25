@@ -190,8 +190,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
         int trainSizeFixed = 0;
         int trainSizeVariable = 0;
-        if(getDropOut() > 0){
-            if(false) {
+        if (getDropOut() > 0) {
+            if (false) {
                 //TODO drop connect
                 //Dup the weights... note that this does NOT depend on the minibatch size...
                 trainSizeVariable += 0; //TODO
@@ -207,10 +207,10 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         trainSizeVariable += outputType.arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(layerName, CenterLossOutputLayer.class, inputType, outputType)
-                .standardMemory(numParams, updaterStateSize)
-                .workingMemory(0, 0, trainSizeFixed, trainSizeVariable)     //No additional memory (beyond activations) for inference
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(numParams, updaterStateSize)
+                        .workingMemory(0, 0, trainSizeFixed, trainSizeVariable) //No additional memory (beyond activations) for inference
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @NoArgsConstructor

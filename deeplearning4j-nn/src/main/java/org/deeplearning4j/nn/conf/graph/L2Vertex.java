@@ -101,10 +101,8 @@ public class L2Vertex extends GraphVertex {
         //output size == input size here
         int trainWorkingSizePerEx = 3 + 2 * inputTypes[0].arrayElementsPerExample();
 
-        return new LayerMemoryReport.Builder(null, L2Vertex.class, inputTypes[0], outputType )
-                .standardMemory(0, 0)   //No params
-                .workingMemory(0, 0, 0, trainWorkingSizePerEx)
-                .cacheMemory(0, 0)  //No caching
-                .build();
+        return new LayerMemoryReport.Builder(null, L2Vertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, 0, 0, trainWorkingSizePerEx).cacheMemory(0, 0) //No caching
+                        .build();
     }
 }

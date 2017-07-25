@@ -34,10 +34,11 @@ public class NetworkMemoryReport extends MemoryReport {
     private final String modelName;
     private final InputType[] networkInputTypes;
 
-    public NetworkMemoryReport(@NonNull @JsonProperty("layerAndVertexReports") Map<String, MemoryReport> layerAndVertexReports,
-                               @NonNull @JsonProperty("modelClass") Class<?> modelClass,
-                               @JsonProperty("modelName") String modelName,
-                               @NonNull @JsonProperty("networkInputTypes") InputType... networkInputTypes) {
+    public NetworkMemoryReport(
+                    @NonNull @JsonProperty("layerAndVertexReports") Map<String, MemoryReport> layerAndVertexReports,
+                    @NonNull @JsonProperty("modelClass") Class<?> modelClass,
+                    @JsonProperty("modelName") String modelName,
+                    @NonNull @JsonProperty("networkInputTypes") InputType... networkInputTypes) {
         this.layerAndVertexReports = layerAndVertexReports;
         this.modelClass = modelClass;
         this.modelName = modelName;
@@ -56,7 +57,8 @@ public class NetworkMemoryReport extends MemoryReport {
     }
 
     @Override
-    public long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode, @NonNull CacheMode cacheMode, @NonNull DataBuffer.Type dataType) {
+    public long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode,
+                    @NonNull CacheMode cacheMode, @NonNull DataBuffer.Type dataType) {
 
         //As per MemoryReport javadoc: we need
         // sum_layers (StdFixed + minibatch * StdVariable) + sum_layers (CacheFixed + minibatch * CacheVariable)
@@ -68,18 +70,20 @@ public class NetworkMemoryReport extends MemoryReport {
         long maxWorkingVariable = 0;
         for (MemoryReport lmr : layerAndVertexReports.values()) {
 
-            for(MemoryType mt : MemoryType.values()){
-                if(mt == MemoryType.WORKING_MEMORY_FIXED || mt == MemoryType.WORKING_MEMORY_VARIABLE){
+            for (MemoryType mt : MemoryType.values()) {
+                if (mt == MemoryType.WORKING_MEMORY_FIXED || mt == MemoryType.WORKING_MEMORY_VARIABLE) {
                     continue;
                 }
                 totalBytes += lmr.getMemoryBytes(mt, minibatchSize, memoryUseMode, cacheMode, dataType);
             }
 
-            long workFixed = lmr.getMemoryBytes(MemoryType.WORKING_MEMORY_FIXED, minibatchSize, memoryUseMode, cacheMode, dataType);
-            long workVar = lmr.getMemoryBytes(MemoryType.WORKING_MEMORY_VARIABLE, minibatchSize, memoryUseMode, cacheMode, dataType);
+            long workFixed = lmr.getMemoryBytes(MemoryType.WORKING_MEMORY_FIXED, minibatchSize, memoryUseMode,
+                            cacheMode, dataType);
+            long workVar = lmr.getMemoryBytes(MemoryType.WORKING_MEMORY_VARIABLE, minibatchSize, memoryUseMode,
+                            cacheMode, dataType);
             long currWorking = workFixed + workVar;
 
-            if(currWorking > maxWorking){
+            if (currWorking > maxWorking) {
                 maxWorking = currWorking;
                 maxWorkingFixed = workFixed;
                 maxWorkingVariable = workVar;
@@ -91,13 +95,13 @@ public class NetworkMemoryReport extends MemoryReport {
 
     @Override
     public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode,
-                               CacheMode cacheMode, DataBuffer.Type dataType) {
+                    CacheMode cacheMode, DataBuffer.Type dataType) {
         long totalBytes = 0;
         for (MemoryReport lmr : layerAndVertexReports.values()) {
 
             long bytes = lmr.getMemoryBytes(memoryType, minibatchSize, memoryUseMode, cacheMode, dataType);
 
-            if(memoryType == MemoryType.WORKING_MEMORY_FIXED|| memoryType == MemoryType.WORKING_MEMORY_VARIABLE){
+            if (memoryType == MemoryType.WORKING_MEMORY_FIXED || memoryType == MemoryType.WORKING_MEMORY_VARIABLE) {
                 totalBytes = Math.max(totalBytes, bytes);
             } else {
                 totalBytes += bytes;
@@ -111,10 +115,12 @@ public class NetworkMemoryReport extends MemoryReport {
     public String toString() {
 
         long fixedMemBytes = getTotalMemoryBytes(0, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT);
-        long perEx = getTotalMemoryBytes(1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT) - fixedMemBytes;
+        long perEx = getTotalMemoryBytes(1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT)
+                        - fixedMemBytes;
 
         long fixedMemBytesTrain = getTotalMemoryBytes(0, MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT);
-        long perExTrain = getTotalMemoryBytes(1, MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT) - fixedMemBytesTrain;
+        long perExTrain = getTotalMemoryBytes(1, MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT)
+                        - fixedMemBytesTrain;
 
         Map<Class<?>, Integer> layerCounts = new LinkedHashMap<>();
         for (MemoryReport mr : layerAndVertexReports.values()) {
@@ -131,17 +137,18 @@ public class NetworkMemoryReport extends MemoryReport {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("----- Network Memory Report -----\n")
-                .append("  Model Class:                        ").append(modelClass.getName()).append("\n")
-                .append("  Model Name:                         ").append(modelName).append("\n")
-                .append("  Network Input:                      ").append(Arrays.toString(networkInputTypes)).append("\n")
-                .append("  # Layers:                           ").append(layerAndVertexReports.size()).append("\n")
-                .append("  Layer Types:                        ").append(sbLayerCounts).append("\n");
+        sb.append("----- Network Memory Report -----\n").append("  Model Class:                        ")
+                        .append(modelClass.getName()).append("\n").append("  Model Name:                         ")
+                        .append(modelName).append("\n").append("  Network Input:                      ")
+                        .append(Arrays.toString(networkInputTypes)).append("\n")
+                        .append("  # Layers:                           ").append(layerAndVertexReports.size())
+                        .append("\n").append("  Layer Types:                        ").append(sbLayerCounts)
+                        .append("\n");
 
         appendFixedPlusVariable(sb, "  Inference Memory (FP32)             ", fixedMemBytes, perEx);
         appendFixedPlusVariable(sb, "  Training Memory (FP32):             ", fixedMemBytesTrain, perExTrain);
 
-                sb.append("  Inference Memory Breakdown (FP32):\n");
+        sb.append("  Inference Memory Breakdown (FP32):\n");
         appendBreakDown(sb, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT);
 
         sb.append("  Training Memory Breakdown (CacheMode = ").append(CacheMode.NONE).append(", FP32):\n");
@@ -151,29 +158,30 @@ public class NetworkMemoryReport extends MemoryReport {
         return sb.toString();
     }
 
-    private void appendBreakDown(StringBuilder sb, MemoryUseMode useMode, CacheMode cacheMode, DataBuffer.Type dataType) {
+    private void appendBreakDown(StringBuilder sb, MemoryUseMode useMode, CacheMode cacheMode,
+                    DataBuffer.Type dataType) {
         for (MemoryType mt : MemoryType.values()) {
-            if(useMode == MemoryUseMode.INFERENCE && !mt.isInference()){
+            if (useMode == MemoryUseMode.INFERENCE && !mt.isInference()) {
                 continue;
             }
 
             long bytesFixed = getMemoryBytes(mt, 0, useMode, cacheMode, dataType);
             long bytesPerEx = getMemoryBytes(mt, 1, useMode, cacheMode, dataType) - bytesFixed;
 
-            if(bytesFixed > 0 || bytesPerEx > 0){
+            if (bytesFixed > 0 || bytesPerEx > 0) {
                 String formatted = String.format("  - %-34s", mt);
                 appendFixedPlusVariable(sb, formatted, bytesFixed, bytesPerEx);
             }
         }
     }
 
-    private void appendFixedPlusVariable(StringBuilder sb, String title, long bytesFixed, long bytesPerEx){
+    private void appendFixedPlusVariable(StringBuilder sb, String title, long bytesFixed, long bytesPerEx) {
         sb.append(title);
-        if(bytesFixed > 0){
+        if (bytesFixed > 0) {
             sb.append(formatBytes(bytesFixed)).append(" bytes");
         }
-        if(bytesPerEx > 0){
-            if(bytesFixed > 0){
+        if (bytesPerEx > 0) {
+            if (bytesFixed > 0) {
                 sb.append(" + ");
             }
             sb.append("nExamples * ").append(formatBytes(bytesPerEx)).append(" bytes");
@@ -181,7 +189,7 @@ public class NetworkMemoryReport extends MemoryReport {
         sb.append("\n");
     }
 
-    private String formatBytes(long bytes){
+    private String formatBytes(long bytes) {
         return BYTES_FORMAT.format(bytes);
     }
 

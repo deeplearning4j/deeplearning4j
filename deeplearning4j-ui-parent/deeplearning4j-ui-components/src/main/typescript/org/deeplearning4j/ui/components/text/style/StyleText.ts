@@ -21,6 +21,7 @@ class StyleText extends Style {
     private fontSize: number;
     private underline: boolean;
     private color: string;
+    private whitespacePre: boolean;
 
     constructor( jsonObj: any){
         super(jsonObj['StyleText']);
@@ -31,6 +32,7 @@ class StyleText extends Style {
             this.fontSize = style['fontSize'];
             this.underline = style['underline'];
             this.color = style['color'];
+            this.whitespacePre = style['whitespacePre'];
         }
     }
 
@@ -38,4 +40,5 @@ class StyleText extends Style {
     getFontSize = () => this.fontSize;
     getUnderline = () => this.underline;
     getColor = () => this.color;
+    getWhitespacePre = () => this.whitespacePre;
 }

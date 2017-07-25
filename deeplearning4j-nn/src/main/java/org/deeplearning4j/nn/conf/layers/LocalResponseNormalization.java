@@ -121,11 +121,10 @@ public class LocalResponseNormalization extends Layer {
         //Forward pass: 3x input size as working memory, in addition to output activations
         //Backward pass: 2x input size as working memory, in addition to epsilons
 
-        return new LayerMemoryReport.Builder(layerName, DenseLayer.class, inputType, inputType)
-                .standardMemory(0, 0)
-                .workingMemory(0, 2 * actElementsPerEx, 0, 3 * actElementsPerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching in DenseLayer
-                .build();
+        return new LayerMemoryReport.Builder(layerName, DenseLayer.class, inputType, inputType).standardMemory(0, 0)
+                        .workingMemory(0, 2 * actElementsPerEx, 0, 3 * actElementsPerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching in DenseLayer
+                        .build();
     }
 
     @AllArgsConstructor

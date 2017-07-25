@@ -84,8 +84,8 @@ public class AutoEncoder extends BasePretrainNetwork {
         int updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         int trainSizePerEx = 0;
-        if(getDropOut() > 0){
-            if(false) {
+        if (getDropOut() > 0) {
+            if (false) {
                 //TODO drop connect
                 //Dup the weights... note that this does NOT depend on the minibatch size...
             } else {
@@ -99,10 +99,9 @@ public class AutoEncoder extends BasePretrainNetwork {
         trainSizePerEx += actElementsPerEx;
 
         return new LayerMemoryReport.Builder(layerName, AutoEncoder.class, inputType, outputType)
-                .standardMemory(numParams, updaterStateSize)
-                .workingMemory(0, 0, 0, trainSizePerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(numParams, updaterStateSize).workingMemory(0, 0, 0, trainSizePerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @AllArgsConstructor

@@ -31,8 +31,8 @@ import static org.junit.Assert.assertEquals;
  */
 public class TestMemoryReports {
 
-    public static List<Pair<? extends Layer,InputType>> getTestLayers(){
-        List<Pair<? extends Layer,InputType>> l = new ArrayList<>();
+    public static List<Pair<? extends Layer, InputType>> getTestLayers() {
+        List<Pair<? extends Layer, InputType>> l = new ArrayList<>();
         l.add(new Pair<>(new ActivationLayer.Builder().activation(Activation.TANH).build(), InputType.feedForward(20)));
         l.add(new Pair<>(new DenseLayer.Builder().nIn(20).nOut(20).build(), InputType.feedForward(20)));
         l.add(new Pair<>(new DropoutLayer.Builder().nIn(20).nOut(20).build(), InputType.feedForward(20)));
@@ -49,43 +49,46 @@ public class TestMemoryReports {
         return l;
     }
 
-    public static List<Pair<? extends GraphVertex, InputType[]>> getTestVertices(){
+    public static List<Pair<? extends GraphVertex, InputType[]>> getTestVertices() {
 
         List<Pair<? extends GraphVertex, InputType[]>> out = new ArrayList<>();
-        out.add(new Pair<>(new ElementWiseVertex(ElementWiseVertex.Op.Add), new InputType[]{InputType.feedForward(10), InputType.feedForward(10)}));
-        out.add(new Pair<>(new ElementWiseVertex(ElementWiseVertex.Op.Add), new InputType[]{InputType.recurrent(10,10), InputType.recurrent(10,10)}));
-        out.add(new Pair<>(new L2NormalizeVertex(), new InputType[]{InputType.feedForward(10)}));
-        out.add(new Pair<>(new L2Vertex(), new InputType[]{InputType.recurrent(10,10), InputType.recurrent(10,10)}));
-        out.add(new Pair<>(new MergeVertex(), new InputType[]{InputType.recurrent(10,10), InputType.recurrent(10,10)}));
-        out.add(new Pair<>(new PreprocessorVertex(new FeedForwardToCnnPreProcessor(1,10,1)), new InputType[]{InputType.convolutional(1,10,1)}));
-        out.add(new Pair<>(new ScaleVertex(1.0), new InputType[]{InputType.recurrent(10,10)}));
-        out.add(new Pair<>(new ShiftVertex(1.0), new InputType[]{InputType.recurrent(10,10)}));
-        out.add(new Pair<>(new StackVertex(), new InputType[]{InputType.recurrent(10,10), InputType.recurrent(10,10)}));
-        out.add(new Pair<>(new UnstackVertex(0,2), new InputType[]{InputType.recurrent(10,10)}));
+        out.add(new Pair<>(new ElementWiseVertex(ElementWiseVertex.Op.Add),
+                        new InputType[] {InputType.feedForward(10), InputType.feedForward(10)}));
+        out.add(new Pair<>(new ElementWiseVertex(ElementWiseVertex.Op.Add),
+                        new InputType[] {InputType.recurrent(10, 10), InputType.recurrent(10, 10)}));
+        out.add(new Pair<>(new L2NormalizeVertex(), new InputType[] {InputType.feedForward(10)}));
+        out.add(new Pair<>(new L2Vertex(), new InputType[] {InputType.recurrent(10, 10), InputType.recurrent(10, 10)}));
+        out.add(new Pair<>(new MergeVertex(),
+                        new InputType[] {InputType.recurrent(10, 10), InputType.recurrent(10, 10)}));
+        out.add(new Pair<>(new PreprocessorVertex(new FeedForwardToCnnPreProcessor(1, 10, 1)),
+                        new InputType[] {InputType.convolutional(1, 10, 1)}));
+        out.add(new Pair<>(new ScaleVertex(1.0), new InputType[] {InputType.recurrent(10, 10)}));
+        out.add(new Pair<>(new ShiftVertex(1.0), new InputType[] {InputType.recurrent(10, 10)}));
+        out.add(new Pair<>(new StackVertex(),
+                        new InputType[] {InputType.recurrent(10, 10), InputType.recurrent(10, 10)}));
+        out.add(new Pair<>(new UnstackVertex(0, 2), new InputType[] {InputType.recurrent(10, 10)}));
 
-        out.add(new Pair<>(new DuplicateToTimeSeriesVertex("0"), new InputType[]{InputType.recurrent(10,10), InputType.feedForward(10)}));
-        out.add(new Pair<>(new LastTimeStepVertex("0"), new InputType[]{InputType.recurrent(10,10)}));
+        out.add(new Pair<>(new DuplicateToTimeSeriesVertex("0"),
+                        new InputType[] {InputType.recurrent(10, 10), InputType.feedForward(10)}));
+        out.add(new Pair<>(new LastTimeStepVertex("0"), new InputType[] {InputType.recurrent(10, 10)}));
 
         return out;
     }
 
     @Test
-    public void testMemoryReportSimple(){
+    public void testMemoryReportSimple() {
 
-        List<Pair<? extends Layer,InputType>> l = getTestLayers();
+        List<Pair<? extends Layer, InputType>> l = getTestLayers();
 
 
-        for(Pair<? extends Layer,InputType> p : l){
+        for (Pair<? extends Layer, InputType> p : l) {
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .list()
-                    .layer(0, p.getFirst().clone())
-                    .layer(1, p.getFirst().clone())
-                    .build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list().layer(0, p.getFirst().clone())
+                            .layer(1, p.getFirst().clone()).build();
 
             MemoryReport mr = conf.getMemoryReport(p.getSecond());
-//            System.out.println(mr.toString());
-//            System.out.println("\n\n");
+            //            System.out.println(mr.toString());
+            //            System.out.println("\n\n");
 
             //Test to/from JSON + YAML
             String json = mr.toJson();
@@ -101,24 +104,20 @@ public class TestMemoryReports {
 
 
     @Test
-    public void testMemoryReportSimpleCG(){
+    public void testMemoryReportSimpleCG() {
 
-        List<Pair<? extends Layer,InputType>> l = getTestLayers();
+        List<Pair<? extends Layer, InputType>> l = getTestLayers();
 
 
-        for(Pair<? extends Layer,InputType> p : l){
+        for (Pair<? extends Layer, InputType> p : l) {
 
-            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .graphBuilder()
-                    .addInputs("in")
-                    .addLayer("0", p.getFirst().clone(), "in")
-                    .addLayer("1", p.getFirst().clone(), "0")
-                    .setOutputs("1")
-                    .build();
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
+                            .addLayer("0", p.getFirst().clone(), "in").addLayer("1", p.getFirst().clone(), "0")
+                            .setOutputs("1").build();
 
             MemoryReport mr = conf.getMemoryReport(p.getSecond());
-//            System.out.println(mr.toString());
-//            System.out.println("\n\n");
+            //            System.out.println(mr.toString());
+            //            System.out.println("\n\n");
 
             //Test to/from JSON + YAML
             String json = mr.toJson();
@@ -133,30 +132,26 @@ public class TestMemoryReports {
     }
 
     @Test
-    public void testMemoryReportsVerticesCG(){
+    public void testMemoryReportsVerticesCG() {
         List<Pair<? extends GraphVertex, InputType[]>> l = getTestVertices();
 
-        for(Pair<? extends GraphVertex,InputType[]> p : l){
+        for (Pair<? extends GraphVertex, InputType[]> p : l) {
             List<String> inputs = new ArrayList<>();
-            for( int i=0; i<p.getSecond().length; i++ ){
+            for (int i = 0; i < p.getSecond().length; i++) {
                 inputs.add(String.valueOf(i));
             }
 
             String[] layerInputs = inputs.toArray(new String[inputs.size()]);
-            if(p.getFirst() instanceof DuplicateToTimeSeriesVertex){
-                layerInputs = new String[]{"1"};
+            if (p.getFirst() instanceof DuplicateToTimeSeriesVertex) {
+                layerInputs = new String[] {"1"};
             }
 
-            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .graphBuilder()
-                    .addInputs(inputs)
-                    .addVertex("gv", p.getFirst(), layerInputs)
-                    .setOutputs("gv")
-                    .build();
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs(inputs)
+                            .addVertex("gv", p.getFirst(), layerInputs).setOutputs("gv").build();
 
             MemoryReport mr = conf.getMemoryReport(p.getSecond());
-//            System.out.println(mr.toString());
-//            System.out.println("\n\n");
+            //            System.out.println(mr.toString());
+            //            System.out.println("\n\n");
 
             //Test to/from JSON + YAML
             String json = mr.toJson();
@@ -172,21 +167,22 @@ public class TestMemoryReports {
 
 
     @Test
-    public void testInferInputType(){
-        List<Pair<INDArray[],InputType[]>> l = new ArrayList<>();
-        l.add(new Pair<>(new INDArray[]{Nd4j.create(10,8)}, new InputType[]{InputType.feedForward(8)}));
-        l.add(new Pair<>(new INDArray[]{Nd4j.create(10,8), Nd4j.create(10,20)},
-                new InputType[]{InputType.feedForward(8), InputType.feedForward(20)}));
-        l.add(new Pair<>(new INDArray[]{Nd4j.create(10,8, 7)}, new InputType[]{InputType.recurrent(8,7)}));
-        l.add(new Pair<>(new INDArray[]{Nd4j.create(10,8, 7), Nd4j.create(10,20, 6)},
-                new InputType[]{InputType.recurrent(8,7), InputType.recurrent(20,6)}));
+    public void testInferInputType() {
+        List<Pair<INDArray[], InputType[]>> l = new ArrayList<>();
+        l.add(new Pair<>(new INDArray[] {Nd4j.create(10, 8)}, new InputType[] {InputType.feedForward(8)}));
+        l.add(new Pair<>(new INDArray[] {Nd4j.create(10, 8), Nd4j.create(10, 20)},
+                        new InputType[] {InputType.feedForward(8), InputType.feedForward(20)}));
+        l.add(new Pair<>(new INDArray[] {Nd4j.create(10, 8, 7)}, new InputType[] {InputType.recurrent(8, 7)}));
+        l.add(new Pair<>(new INDArray[] {Nd4j.create(10, 8, 7), Nd4j.create(10, 20, 6)},
+                        new InputType[] {InputType.recurrent(8, 7), InputType.recurrent(20, 6)}));
 
         //Activations order: [m,d,h,w]
-        l.add(new Pair<>(new INDArray[]{Nd4j.create(10,8, 7, 6)}, new InputType[]{InputType.convolutional(7,6,8)}));
-        l.add(new Pair<>(new INDArray[]{Nd4j.create(10,8, 7, 6), Nd4j.create(10,4,3,2),},
-                new InputType[]{InputType.convolutional(7,6,8), InputType.convolutional(3,2,4)}));
+        l.add(new Pair<>(new INDArray[] {Nd4j.create(10, 8, 7, 6)},
+                        new InputType[] {InputType.convolutional(7, 6, 8)}));
+        l.add(new Pair<>(new INDArray[] {Nd4j.create(10, 8, 7, 6), Nd4j.create(10, 4, 3, 2),},
+                        new InputType[] {InputType.convolutional(7, 6, 8), InputType.convolutional(3, 2, 4)}));
 
-        for(Pair<INDArray[], InputType[]> p : l ){
+        for (Pair<INDArray[], InputType[]> p : l) {
             InputType[] act = InputType.inferInputTypes(p.getFirst());
 
             assertArrayEquals(p.getSecond(), act);
@@ -195,43 +191,48 @@ public class TestMemoryReports {
 
 
     @Test
-    public void validateSimple(){
+    public void validateSimple() {
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(20).build())
-                .layer(1, new DenseLayer.Builder().nIn(20).nOut(27).build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new DenseLayer.Builder().nIn(10).nOut(20).build())
+                        .layer(1, new DenseLayer.Builder().nIn(20).nOut(27).build()).build();
 
         MemoryReport mr = conf.getMemoryReport(InputType.feedForward(10));
 
-        int numParams = (10 * 20 + 20) + (20 * 27 + 27);    //787 -> 3148 bytes
-        int actSize = 20 + 27;  //47 -> 188 bytes
+        int numParams = (10 * 20 + 20) + (20 * 27 + 27); //787 -> 3148 bytes
+        int actSize = 20 + 27; //47 -> 188 bytes
         int total15Minibatch = numParams + 15 * actSize;
 
         //Fixed: should be just params
         long fixedBytes = mr.getTotalMemoryBytes(0, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT);
-        long varBytes = mr.getTotalMemoryBytes(1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT) - fixedBytes;
+        long varBytes = mr.getTotalMemoryBytes(1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT)
+                        - fixedBytes;
 
         assertEquals(numParams * 4, fixedBytes);
-        assertEquals( actSize * 4, varBytes);
+        assertEquals(actSize * 4, varBytes);
 
         long minibatch15 = mr.getTotalMemoryBytes(15, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT);
         assertEquals(total15Minibatch * 4, minibatch15);
 
-//        System.out.println(fixedBytes + "\t" + varBytes);
-//        System.out.println(mr.toString());
+        //        System.out.println(fixedBytes + "\t" + varBytes);
+        //        System.out.println(mr.toString());
 
-        assertEquals(actSize * 4, mr.getMemoryBytes(MemoryType.ACTIVATIONS, 1, MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT ));
-        assertEquals(actSize * 4, mr.getMemoryBytes(MemoryType.ACTIVATIONS, 1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT ));
+        assertEquals(actSize * 4, mr.getMemoryBytes(MemoryType.ACTIVATIONS, 1, MemoryUseMode.TRAINING, CacheMode.NONE,
+                        DataBuffer.Type.FLOAT));
+        assertEquals(actSize * 4, mr.getMemoryBytes(MemoryType.ACTIVATIONS, 1, MemoryUseMode.INFERENCE, CacheMode.NONE,
+                        DataBuffer.Type.FLOAT));
 
         int inputActSize = 10 + 20;
-        assertEquals(inputActSize * 4, mr.getMemoryBytes(MemoryType.ACTIVATION_GRADIENTS, 1, MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT ));
-        assertEquals(0, mr.getMemoryBytes(MemoryType.ACTIVATION_GRADIENTS, 1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT ));
+        assertEquals(inputActSize * 4, mr.getMemoryBytes(MemoryType.ACTIVATION_GRADIENTS, 1, MemoryUseMode.TRAINING,
+                        CacheMode.NONE, DataBuffer.Type.FLOAT));
+        assertEquals(0, mr.getMemoryBytes(MemoryType.ACTIVATION_GRADIENTS, 1, MemoryUseMode.INFERENCE, CacheMode.NONE,
+                        DataBuffer.Type.FLOAT));
 
         //Variable working memory - due to preout during backprop. But not it's the MAX value, as it can be GC'd or workspaced
         int workingMemVariable = 27;
-        assertEquals(workingMemVariable * 4, mr.getMemoryBytes(MemoryType.WORKING_MEMORY_VARIABLE, 1, MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT ));
-        assertEquals(0, mr.getMemoryBytes(MemoryType.WORKING_MEMORY_VARIABLE, 1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT ));
+        assertEquals(workingMemVariable * 4, mr.getMemoryBytes(MemoryType.WORKING_MEMORY_VARIABLE, 1,
+                        MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT));
+        assertEquals(0, mr.getMemoryBytes(MemoryType.WORKING_MEMORY_VARIABLE, 1, MemoryUseMode.INFERENCE,
+                        CacheMode.NONE, DataBuffer.Type.FLOAT));
     }
 }

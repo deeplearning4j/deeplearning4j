@@ -101,12 +101,13 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
         if (vertexInputs.length != 1)
             throw new InvalidInputTypeException("Invalid input type: cannot duplicate more than 1 input");
 
-        int tsLength = 1;   //TODO work this out properly
+        int tsLength = 1; //TODO work this out properly
 
         if (vertexInputs[0].getType() == InputType.Type.FF) {
             return InputType.recurrent(((InputType.InputTypeFeedForward) vertexInputs[0]).getSize(), tsLength);
         } else if (vertexInputs[0].getType() != InputType.Type.CNNFlat) {
-            return InputType.recurrent(((InputType.InputTypeConvolutionalFlat) vertexInputs[0]).getFlattenedSize(), tsLength);
+            return InputType.recurrent(((InputType.InputTypeConvolutionalFlat) vertexInputs[0]).getFlattenedSize(),
+                            tsLength);
         } else {
             throw new InvalidInputTypeException(
                             "Invalid input type: cannot duplicate to time series non feed forward (or CNN flat) input (got: "
@@ -119,10 +120,8 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         //No working memory in addition to output activations
-        return new LayerMemoryReport.Builder(null, DuplicateToTimeSeriesVertex.class, inputTypes[0], getOutputType(-1, inputTypes))
-                .standardMemory(0, 0)
-                .workingMemory(0, 0, 0, 0)
-                .cacheMemory(0, 0)
-                .build();
+        return new LayerMemoryReport.Builder(null, DuplicateToTimeSeriesVertex.class, inputTypes[0],
+                        getOutputType(-1, inputTypes)).standardMemory(0, 0).workingMemory(0, 0, 0, 0).cacheMemory(0, 0)
+                                        .build();
     }
 }

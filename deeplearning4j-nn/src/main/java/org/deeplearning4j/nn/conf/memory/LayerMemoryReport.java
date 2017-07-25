@@ -30,8 +30,8 @@ public class LayerMemoryReport extends MemoryReport {
     //Note that *working* memory may be reduced by caching (which is only used during train mode)
     private long workingMemoryFixedInference;
     private long workingMemoryVariableInference;
-    private Map<CacheMode,Long> workingMemoryFixedTrain;
-    private Map<CacheMode,Long> workingMemoryVariableTrain;
+    private Map<CacheMode, Long> workingMemoryFixedTrain;
+    private Map<CacheMode, Long> workingMemoryVariableTrain;
 
     //Cache memory, by cache mode:
     Map<CacheMode, Long> cacheModeMemFixed;
@@ -66,16 +66,18 @@ public class LayerMemoryReport extends MemoryReport {
     }
 
     @Override
-    public long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode, @NonNull CacheMode cacheMode, @NonNull DataBuffer.Type dataType) {
+    public long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode,
+                    @NonNull CacheMode cacheMode, @NonNull DataBuffer.Type dataType) {
         long total = 0;
-        for(MemoryType mt : MemoryType.values()){
+        for (MemoryType mt : MemoryType.values()) {
             total += getMemoryBytes(mt, minibatchSize, memoryUseMode, cacheMode, dataType);
         }
         return total;
     }
 
     @Override
-    public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode, CacheMode cacheMode, DataBuffer.Type dataType) {
+    public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode,
+                    CacheMode cacheMode, DataBuffer.Type dataType) {
         int bytesPerElement = getBytesPerElement(dataType);
         switch (memoryType) {
             case PARAMETERS:
@@ -148,8 +150,8 @@ public class LayerMemoryReport extends MemoryReport {
         //Note that *working* memory may be reduced by caching (which is only used during train mode)
         private long workingMemoryFixedInference;
         private long workingMemoryVariableInference;
-        private Map<CacheMode,Long> workingMemoryFixedTrain;
-        private Map<CacheMode,Long> workingMemoryVariableTrain;
+        private Map<CacheMode, Long> workingMemoryFixedTrain;
+        private Map<CacheMode, Long> workingMemoryVariableTrain;
 
         //Cache memory, by cache mode:
         Map<CacheMode, Long> cacheModeMemFixed;
@@ -189,8 +191,10 @@ public class LayerMemoryReport extends MemoryReport {
          * @param fixedTrain             Number of elements used for training (independent of minibatch size)
          * @param variableTrainPerEx     Number of elements used for training, for each example
          */
-        public Builder workingMemory(long fixedInference, long variableInferencePerEx, long fixedTrain, long variableTrainPerEx) {
-            return workingMemory(fixedInference, variableInferencePerEx, MemoryReport.cacheModeMapFor(fixedTrain), MemoryReport.cacheModeMapFor(variableTrainPerEx) );
+        public Builder workingMemory(long fixedInference, long variableInferencePerEx, long fixedTrain,
+                        long variableTrainPerEx) {
+            return workingMemory(fixedInference, variableInferencePerEx, MemoryReport.cacheModeMapFor(fixedTrain),
+                            MemoryReport.cacheModeMapFor(variableTrainPerEx));
         }
 
         /**
@@ -205,7 +209,8 @@ public class LayerMemoryReport extends MemoryReport {
          * @param variableTrainPerEx     Number of elements of working memory used for training, for each example, for
          *                               each cache mode
          */
-        public Builder workingMemory(long fixedInference, long variableInferencePerEx, Map<CacheMode, Long> fixedTrain, Map<CacheMode, Long> variableTrainPerEx) {
+        public Builder workingMemory(long fixedInference, long variableInferencePerEx, Map<CacheMode, Long> fixedTrain,
+                        Map<CacheMode, Long> variableTrainPerEx) {
             this.workingMemoryFixedInference = fixedInference;
             this.workingMemoryVariableInference = variableInferencePerEx;
             this.workingMemoryFixedTrain = fixedTrain;
@@ -221,8 +226,9 @@ public class LayerMemoryReport extends MemoryReport {
          * @param cacheModeMemoryFixed         Number of elements of cache memory, independent of the mini batch size
          * @param cacheModeMemoryVariablePerEx Number of elements of cache memory, for each example
          */
-        public Builder cacheMemory(long cacheModeMemoryFixed, long cacheModeMemoryVariablePerEx ){
-            return cacheMemory(MemoryReport.cacheModeMapFor(cacheModeMemoryFixed), MemoryReport.cacheModeMapFor(cacheModeMemoryVariablePerEx));
+        public Builder cacheMemory(long cacheModeMemoryFixed, long cacheModeMemoryVariablePerEx) {
+            return cacheMemory(MemoryReport.cacheModeMapFor(cacheModeMemoryFixed),
+                            MemoryReport.cacheModeMapFor(cacheModeMemoryVariablePerEx));
         }
 
         /**
@@ -231,7 +237,8 @@ public class LayerMemoryReport extends MemoryReport {
          * @param cacheModeMemoryFixed         Number of elements of cache memory, independent of the mini batch size
          * @param cacheModeMemoryVariablePerEx Number of elements of cache memory, for each example
          */
-        public Builder cacheMemory(Map<CacheMode, Long> cacheModeMemoryFixed, Map<CacheMode, Long> cacheModeMemoryVariablePerEx) {
+        public Builder cacheMemory(Map<CacheMode, Long> cacheModeMemoryFixed,
+                        Map<CacheMode, Long> cacheModeMemoryVariablePerEx) {
             this.cacheModeMemFixed = cacheModeMemoryFixed;
             this.cacheModeMemVariablePerEx = cacheModeMemoryVariablePerEx;
             return this;

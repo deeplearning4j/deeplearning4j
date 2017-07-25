@@ -114,10 +114,9 @@ public class L2NormalizeVertex extends GraphVertex {
         //Training working mem: 2 per example + 2x input size + 1 per example (in addition to epsilons)
         int trainModePerEx = 3 + 2 * inputTypes[0].arrayElementsPerExample();
 
-        return new LayerMemoryReport.Builder(null, L2NormalizeVertex.class, inputTypes[0], outputType )
-                .standardMemory(0, 0)   //No params
-                .workingMemory(0, 1, 0, trainModePerEx)
-                .cacheMemory(0, 0)  //No caching
-                .build();
+        return new LayerMemoryReport.Builder(null, L2NormalizeVertex.class, inputTypes[0], outputType)
+                        .standardMemory(0, 0) //No params
+                        .workingMemory(0, 1, 0, trainModePerEx).cacheMemory(0, 0) //No caching
+                        .build();
     }
 }

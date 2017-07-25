@@ -22,7 +22,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
                             + inputType);
         }
 
-        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent)inputType;
+        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
 
         return InputType.recurrent(nOut, itr.getTimeSeriesLength());
     }
