@@ -2908,7 +2908,7 @@ Nd4jPointer NativeOps::shapeBufferForNumpy(Nd4jPointer npyArray) {
  */
 Nd4jPointer NativeOps::dataPointForNumpy(Nd4jPointer npyArray) {
     char *buff = reinterpret_cast<char *>(npyArray);
-    printf("Pointer contents %s\n",buff);
+    //printf("Pointer contents %s\n",buff);
     cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
     cnpy::NpyArray *arrPointer = &arr;
     char *data = arrPointer->data;
@@ -2958,6 +2958,10 @@ int NativeOps::elementSizeForNpyArray(Nd4jPointer npyArray) {
     int size = arrPointer->wordSize;
    // arrPointer->destruct();
     return size;
+}
+
+void NativeOps::releaseNumpy(Nd4jPointer npyArray) {
+    free((void *) npyArray);
 }
 
 /**
