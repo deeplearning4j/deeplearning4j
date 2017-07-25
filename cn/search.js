@@ -489,4 +489,16 @@ var PAGES = [{
 "title": "在Linux上进行安装",
 "description": "示范如何在 Linux 上设置 Deeplearning4j。",
 "tags": ["linux", "入门", "新手", "如何", "开始", "怎样", "java", "intellij", "设置","maven"]
+},
+{
+"url": "https://deeplearning4j.org/cn/scala",
+"title": "Scala、Spark与Deeplearning4j",
+"description": "希望构建深度学习解决方案的Scala程序员可以使用Deeplearning4j的Scala API ScalNet，或者借助Builder模式来使用该Java框架。Skymind的数值运算库ND4J（面向JVM的N维数组）自带名为ND4S的Scala API。",
+"tags": ["scala", "spark", "deeplearning4j", "函数", "scalnet", "scala api", "nd4j", "nd4s", "python","强类型"]
+},
+{
+"url": "https://deeplearning4j.org/cn/rpm",
+"title": "Deeplearning4J与RPM",
+"description": "用红帽软件包管理器（RPM）安装Deeplearning4J",
+"tags": ["rpm", "deeplearning4j", "redhat", "红帽", "软件包管理器", "nd4j", "jblas", "scala", "spark","dl4j","repo"]
 }];
