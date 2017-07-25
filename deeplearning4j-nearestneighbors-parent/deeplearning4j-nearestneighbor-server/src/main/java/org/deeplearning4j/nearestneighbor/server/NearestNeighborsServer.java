@@ -82,8 +82,10 @@ public class NearestNeighborsServer {
         int rows = 0;
         int cols = 0;
         for (int i = 0; i < pathArr.length; i++) {
-            log.info("Loading shape {} of {}", i+1, pathArr.length);
             DataBuffer shape = BinarySerde.readShapeFromDisk(new File(pathArr[i]));
+
+            log.info("Loading shape {} of {}; Shape: [{} x {}]", i+1, pathArr.length, Shape.size(shape, 0), Shape.size(shape, 1));
+
             if (Shape.rank(shape) != 2)
                 throw new DL4JInvalidInputException("NearestNeighborsServer assumes 2D chunks");
 
