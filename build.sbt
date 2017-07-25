@@ -66,6 +66,7 @@ lazy val commonSettings = Seq(
         </developer>
       </developers>
   },
+  useGpg := true,
   credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
   releasePublishArtifactsAction := com.typesafe.sbt.pgp.PgpKeys.publishSigned.value,
   releaseCrossBuild := true,
