@@ -105,6 +105,9 @@ public class NearestNeighborsServer {
 
             points.get(NDArrayIndex.interval(lastPosition, lastPosition + pointsArr.rows())).assign(pointsArr);
             lastPosition += pointsArr.rows();
+
+            // let's ensure we don't bring too much stuff in next loop
+            System.gc();
         }
 
         VPTree tree = new VPTree(points, similarityFunction, invert);
