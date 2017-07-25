@@ -1596,7 +1596,7 @@ public class SameDiff {
 
 
     /**
-     * Creates ane executes a list of operations
+     * Creates and executes a list of operations
      * @return
      */
     public List<Op> exec() {

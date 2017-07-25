@@ -140,7 +140,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             if (bytes % 4 != 0) {
                 bytes += 2;
             }
-        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE || dataBuffer.dataType() == DataBuffer.Type.LONG) {
             // for double data type, we must be assured, that all DOUBLE pointers are starting from even addresses, to avoid banks spills
             long div = bytes / 4;
             if (div % 2 != 0)
@@ -286,12 +286,14 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             // we create new databuffer
             //logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createBufferDetached(array);
-            buffer.setConstant(true);
 
-            // now we move data to constant memory, and keep happy
-            moveToConstantSpace(buffer);
+            if (constantOffsets.get(deviceId).get() + (array.length * 4) < MAX_CONSTANT_LENGTH) {
+                buffer.setConstant(true);
+                // now we move data to constant memory, and keep happy
+                moveToConstantSpace(buffer);
 
-            buffersCache.get(deviceId).put(descriptor, buffer);
+                buffersCache.get(deviceId).put(descriptor, buffer);
+            }
             return buffer;
         } //else logger.info("Reusing constant buffer...");
 
@@ -319,12 +321,14 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             // we create new databuffer
                  //logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createBufferDetached(array);
-            buffer.setConstant(true);
 
-            // now we move data to constant memory, and keep happy
-            moveToConstantSpace(buffer);
+            if (constantOffsets.get(deviceId).get() + (array.length * Nd4j.sizeOfDataType()) < MAX_CONSTANT_LENGTH) {
+                buffer.setConstant(true);
+                // now we move data to constant memory, and keep happy
+                moveToConstantSpace(buffer);
 
-            buffersCache.get(deviceId).put(descriptor, buffer);
+                buffersCache.get(deviceId).put(descriptor, buffer);
+            }
             return buffer;
         } // else logger.info("Reusing constant buffer...");
 
@@ -352,12 +356,14 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             // we create new databuffer
             //logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createBufferDetached(array);
-            buffer.setConstant(true);
 
-            // now we move data to constant memory, and keep happy
-            moveToConstantSpace(buffer);
+            if (constantOffsets.get(deviceId).get() + (array.length * Nd4j.sizeOfDataType()) < MAX_CONSTANT_LENGTH) {
+                buffer.setConstant(true);
+                // now we move data to constant memory, and keep happy
+                moveToConstantSpace(buffer);
 
-            buffersCache.get(deviceId).put(descriptor, buffer);
+                buffersCache.get(deviceId).put(descriptor, buffer);
+            }
             return buffer;
         } //else logger.info("Reusing constant buffer...");
 

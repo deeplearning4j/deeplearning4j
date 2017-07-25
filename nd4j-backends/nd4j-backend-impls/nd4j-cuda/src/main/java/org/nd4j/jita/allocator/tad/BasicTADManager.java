@@ -8,7 +8,10 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
+import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
+import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
@@ -34,19 +37,19 @@ public class BasicTADManager implements TADManager {
 
             // FIXME: this is fast triage, remove it later
             int targetRank = array.rank(); //dimensionLength <= 1 ? 2 : dimensionLength;
-            int offsetLength = 0;
-            int tadLength = 1;
+            long offsetLength = 0;
+            long tadLength = 1;
             for (int i = 0; i < dimensionLength; i++) {
                 tadLength *= array.shape()[dimension[i]];
             }
 
-            offsetLength = array.length() / tadLength;
+            offsetLength = array.lengthLong() / tadLength;
 
             //     logger.info("Original shape info before TAD: {}", array.shapeInfoDataBuffer());
             //    logger.info("dimension: {}, tadLength: {}, offsetLength for TAD: {}", Arrays.toString(dimension),tadLength, offsetLength);
 
             DataBuffer outputBuffer = new CudaIntDataBuffer(targetRank * 2 + 4);
-            DataBuffer offsetsBuffer = new CudaIntDataBuffer(offsetLength);
+            DataBuffer offsetsBuffer = new CudaLongDataBuffer(offsetLength);
 
             DataBuffer dimensionBuffer = AtomicAllocator.getInstance().getConstantBuffer(dimension);
             Pointer dimensionPointer = AtomicAllocator.getInstance().getHostPointer(dimensionBuffer);
@@ -56,7 +59,7 @@ public class BasicTADManager implements TADManager {
             Pointer offsetsPointer = AddressRetriever.retrieveHostPointer(offsetsBuffer);
 
             nativeOps.tadOnlyShapeInfo((IntPointer) xShapeInfo, (IntPointer) dimensionPointer, dimensionLength,
-                            (IntPointer) targetPointer, (IntPointer) offsetsPointer);
+                            (IntPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
 
             AtomicAllocator.getInstance().getAllocationPoint(outputBuffer).tickHostWrite();
             AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickHostWrite();

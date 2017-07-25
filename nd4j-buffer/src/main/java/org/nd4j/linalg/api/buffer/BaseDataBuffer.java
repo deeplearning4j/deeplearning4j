@@ -383,6 +383,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == Type.INT) {
             pointer = new IntPointer(length);
             setIndexer(IntIndexer.create((IntPointer) pointer));
+        } else if (dataType() == Type.LONG) {
+            pointer = new LongPointer(length);
+            setIndexer(LongIndexer.create((LongPointer) pointer));
         }
     }
 
@@ -426,6 +429,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == Type.INT) {
             pointer = new IntPointer(buffer.asIntBuffer());
             setIndexer(IntIndexer.create((IntPointer) pointer));
+        } else if (dataType() == Type.LONG) {
+            pointer = new LongPointer(buffer.asLongBuffer());
+            setIndexer(LongIndexer.create((LongPointer) pointer));
         }
     }
 
@@ -533,6 +539,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
             setIndexer(IntIndexer.create((IntPointer) pointer));
             if (initialize)
                 fillPointerWithZero();
+        } else if (dataType() == Type.LONG) {
+            pointer = new LongPointer(length());
+            setIndexer(LongIndexer.create((LongPointer) pointer));
+
+            if (initialize)
+                fillPointerWithZero();
         }
     }
 
@@ -570,6 +582,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
             //pointer = new IntPointer(length());
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new FloatPointer(length());
             setIndexer(IntIndexer.create((IntPointer) pointer));
+
+        } else if (dataType() == Type.LONG) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            //pointer = new IntPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new FloatPointer(length());
+            setIndexer(LongIndexer.create((LongPointer) pointer));
 
         }
     }
@@ -619,6 +639,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
                         address = pointer().address() + getElementSize() * offset();
                     }
                 };
+            } else if (dataType() == Type.LONG) {
+                return new LongPointer(pointer()) {
+                    {
+                        address = pointer().address() + getElementSize() * offset();
+                    }
+                };
             }
         }
         return pointer();
@@ -640,7 +666,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
+                    + length() + " where the indices are of length " + data.length);
         for (int i = 0; i < indices.length; i++) {
             put(indices[i], data[i]);
         }
@@ -676,7 +702,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
+                    + length() + " where the indices are of length " + data.length);
         for (int i = 0; i < indices.length; i += inc) {
             put(indices[i], data[i]);
         }
@@ -686,7 +712,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void assign(DataBuffer data) {
         if (data.length() != length())
             throw new IllegalArgumentException("Unable to assign buffer of length " + data.length()
-                            + " to this buffer of length " + length());
+                    + " to this buffer of length " + length());
 
         for (int i = 0; i < data.length(); i++) {
             put(i, data.getDouble(i));
@@ -880,6 +906,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public double getDouble(long i) {
+        if(indexer == null) {
+            throw new IllegalStateException("Indexer must never be null");
+        }
         if (dataType() == Type.FLOAT) {
             dirty.set(false);
             return ((FloatIndexer) indexer).get(offset() + i);
@@ -889,6 +918,23 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else {
             dirty.set(false);
             return ((DoubleIndexer) indexer).get(offset() + i);
+        }
+    }
+
+    @Override
+    public long getLong(long i) {
+        if (dataType() == Type.FLOAT) {
+            dirty.set(false);
+            return (long) ((FloatIndexer) indexer).get(offset() + i);
+        } else if (dataType() == Type.INT) {
+            dirty.set(false);
+            return (long) ((IntIndexer) indexer).get(offset() + i);
+        } else if (dataType() == Type.DOUBLE){
+            dirty.set(false);
+            return (long) ((DoubleIndexer) indexer).get(offset() + i);
+        } else {
+            dirty.set(false);
+            return ((LongIndexer) indexer).get(offset() + i);
         }
     }
 
@@ -905,6 +951,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return fromFloat(((HalfIndexer) indexer).get(offset() + i));
     }
 
+    /**
+     *
+     * @param v
+     * @return
+     */
     public static short fromFloat(float v) {
         if (Float.isNaN(v))
             return (short) 0x7fff;
@@ -928,7 +979,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         final int f = Float.floatToIntBits(v);
 
         return (short) (((f >> 16) & 0x8000) | ((((f & 0x7f800000) - 0x38000000) >> 13) & 0x7c00)
-                        | ((f >> 13) & 0x03ff));
+                | ((f >> 13) & 0x03ff));
     }
 
     @Override
@@ -981,6 +1032,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             } else if (globalType == Type.FLOAT) {
                 pointer = new FloatPointer(length());
                 setIndexer(FloatIndexer.create((FloatPointer) pointer));
+            } else if (globalType == Type.LONG) {
+                pointer = new LongPointer(length());
+                setIndexer(LongIndexer.create((LongPointer) pointer));
             }
         }
     }
@@ -994,6 +1048,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             put(i, anElement);
         } else if (globalType == Type.DOUBLE) {
             double anElement = element.doubleValue();
+            put(i, anElement);
+        } else if (globalType == Type.LONG) {
+            long anElement = element.longValue();
             put(i, anElement);
         }
     }
@@ -1153,7 +1210,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void assign(long[] offsets, long[] strides, long n, DataBuffer... buffers) {
         if (offsets.length != strides.length || strides.length != buffers.length)
             throw new IllegalArgumentException(
-                            "Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
+                    "Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
         int count = 0;
         for (int i = 0; i < buffers.length; i++) {
             //note here that the final put will take care of the offset
@@ -1253,7 +1310,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 elementSize = 2;
 
             if (currentType != globalType && currentType != Type.HALF && currentType != Type.INT
-                            && !(globalType == Type.DOUBLE)) {
+                    && !(globalType == Type.DOUBLE)) {
                 log.warn("Loading a data stream with type different from what is set globally. Expect precision loss");
                 if (globalType == Type.INT)
                     log.warn("Int to float/double widening UNSUPPORTED!!!");
@@ -1355,8 +1412,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             mant &= 0x3ff; // discard subnormal bit
         } // else +/-0 -> +/-0
         return Float.intBitsToFloat( // combine all parts
-                        (hbits & 0x8000) << 16 // sign  << ( 31 - 15 )
-                                        | (exp | mant) << 13); // value << ( 23 - 10 )
+                (hbits & 0x8000) << 16 // sign  << ( 31 - 15 )
+                        | (exp | mant) << 13); // value << ( 23 - 10 )
     }
 
 
@@ -1407,7 +1464,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     @Override
     public Long getTrackingPoint() {
-        return underlyingDataBuffer() == null ? trackingPoint : underlyingDataBuffer().getTrackingPoint();
+        if(underlyingDataBuffer() != this)
+            return underlyingDataBuffer() == null ? trackingPoint : underlyingDataBuffer().getTrackingPoint();
+        return trackingPoint;
     }
 
     /**

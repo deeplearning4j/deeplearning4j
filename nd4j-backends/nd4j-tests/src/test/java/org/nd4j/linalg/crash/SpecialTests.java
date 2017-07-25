@@ -8,12 +8,16 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author raver119@gmail.com
@@ -62,6 +66,33 @@ public class SpecialTests extends BaseNd4jTest {
         return Transforms.abs(a_reduced.sub(b_reduced)).div(a_reduced);
     }
 
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testScalarShuffle1() throws Exception {
+        List<DataSet> listData = new ArrayList<>();
+        for(int i = 0; i < 3; i++) {
+            INDArray features = Nd4j.ones(25,25);
+            INDArray label = Nd4j.create(new float[] {1}, new int[]{1});
+            DataSet dataset = new DataSet(features, label);
+            listData.add(dataset);
+        }
+        DataSet data = DataSet.merge(listData);
+        data.shuffle();
+    }
+
+
+    @Test
+    public void testScalarShuffle2() throws Exception {
+        List<DataSet> listData = new ArrayList<>();
+        for(int i = 0; i < 3; i++) {
+            INDArray features = Nd4j.ones(14,25);
+            INDArray label = Nd4j.create(14, 50);
+            DataSet dataset = new DataSet(features, label);
+            listData.add(dataset);
+        }
+        DataSet data = DataSet.merge(listData);
+        data.shuffle();
+    }
 
     @Override
     public char ordering() {

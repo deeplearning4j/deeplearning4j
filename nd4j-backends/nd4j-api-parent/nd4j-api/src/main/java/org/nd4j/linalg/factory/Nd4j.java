@@ -2217,6 +2217,7 @@ public class Nd4j {
      * @param split    the split separator
      * @return the read txt method
      */
+    @Deprecated
     public static void writeNumpy(INDArray write, String filePath, String split) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
         for (int i = 0; i < write.rows(); i++) {

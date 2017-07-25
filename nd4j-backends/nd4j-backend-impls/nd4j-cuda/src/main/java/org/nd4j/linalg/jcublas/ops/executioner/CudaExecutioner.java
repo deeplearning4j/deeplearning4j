@@ -50,6 +50,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jBlas;
@@ -317,9 +318,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             (IntPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
                             (IntPointer) dimensionPointer, dimension.length,
                             (IntPointer) devTadShapeInfo,
-                            (IntPointer) devTadOffsets,
+                            new LongPointerWrapper(devTadOffsets),
                             (IntPointer) yDevTadShapeInfo,
-                            (IntPointer) yDevTadOffsets);
+                            new LongPointerWrapper(yDevTadOffsets));
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 } else if (ret.isScalar()) {
@@ -396,9 +397,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             (IntPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
                             (IntPointer) dimensionPointer, dimension.length,
                             (IntPointer) devTadShapeInfo,
-                            (IntPointer) devTadOffsets,
+                            new LongPointerWrapper(devTadOffsets),
                             (IntPointer) yDevTadShapeInfo,
-                            (IntPointer) yDevTadOffsets);
+                            new LongPointerWrapper(yDevTadOffsets));
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 } else if (ret.isScalar()) {
@@ -475,9 +476,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             (IntPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
                             (IntPointer) dimensionPointer, dimension.length,
                             (IntPointer) devTadShapeInfo,
-                            (IntPointer) devTadOffsets,
+                            new LongPointerWrapper(devTadOffsets),
                             (IntPointer) yDevTadShapeInfo,
-                            (IntPointer) yDevTadOffsets);
+                            new LongPointerWrapper(yDevTadOffsets));
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 } else if (ret.isScalar()) {
@@ -564,9 +565,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             retShape = new int[] {1, 1};
         }
 
-        if (op.x().isVector() && op.x().lengthLong() == ArrayUtil.prodLong(retShape) && ArrayUtil.prodLong(retShape) > 1)
-            return op.noOp();
 
+        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
+            return op.noOp();
+    
         INDArray ret = null;
         if (op.z() == null || op.z() == op.x()) {
             if (op.isComplexAccumulation()) {
