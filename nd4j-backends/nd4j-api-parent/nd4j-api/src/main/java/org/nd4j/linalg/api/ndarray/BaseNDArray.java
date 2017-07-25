@@ -3967,16 +3967,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public int columns() {
         if (isMatrix())
             return size(1);
-        else if (isVector()) {
-            if (isColumnVector())
-                return 1;
-            else if (isRowVector() && rank() > 1)
-                return size(1);
-            else
-                return size(0);
+        else if(Shape.isColumnVectorShape(shape())) {
+            return 1;
         }
+        else if(Shape.isRowVectorShape(shape())) {
+            return length();
+        }
+        throw new IllegalStateException("Rank is " + rank() + " columns() call is not valid");
 
-        throw new IllegalStateException("Unable to get number of of columns for a non 2d matrix");
+
     }
 
     /**
@@ -3990,14 +3989,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public int rows() {
         if (isMatrix())
             return size(0);
-        else if (isVector()) {
-            if (isRowVector())
-                return 1;
-            else
-                return size(0);
+        else if(Shape.isRowVectorShape(shape())) {
+            return 1;
+        }
+        else if(Shape.isColumnVectorShape(shape())) {
+            return length();
         }
 
-        throw new IllegalStateException("Unable to get number of of rows for a non 2d matrix");
+        throw new IllegalStateException("Rank is " + rank() + " rows() call is not valid");
     }
 
 
