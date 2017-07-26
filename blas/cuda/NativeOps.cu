@@ -6206,8 +6206,8 @@ int NativeOps::elementSizeForNpyArray(Nd4jPointer npyArray) {
   * @return the pointer for the given address
   */
 
-Nd4jPointer NativeOps::pointerForAddress(long address) {
-    return reinterpret_cast<Nd4jPointer >(address);
+Nd4jPointer NativeOps::pointerForAddress(Nd4jIndex address) {
+	return reinterpret_cast<Nd4jPointer >(address);
 }
 
 void NativeOps::tearDouble(Nd4jPointer *extras, double *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, Nd4jIndex *tadOffsets) {

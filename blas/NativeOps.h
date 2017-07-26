@@ -2854,7 +2854,7 @@ public:
    * @return the pointer for the given address
    */
 
-    Nd4jPointer pointerForAddress(long address);
+    Nd4jPointer pointerForAddress(Nd4jIndex address);
 
     /**
      * This method takes single N-dimensional tensor, and copies its TADs to target arrays
