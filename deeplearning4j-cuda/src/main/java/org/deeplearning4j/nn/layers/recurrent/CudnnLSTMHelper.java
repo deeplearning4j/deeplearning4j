@@ -211,8 +211,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         INDArray prevStepMemCellState = fwdPass.prevMemCell.dup('c');
         INDArray prevStepActivations = fwdPass.prevAct.dup('c');
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+        Nd4j.getExecutioner().commit();
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareActionAllWrite(x, dy, dx, outputActivations,
@@ -242,16 +241,23 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
         checkCudnn(cudnnRNNBackwardData(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, yDesc,
                         outputActivationsData, dyDesc, dyData, cudnnContext.dhyDesc, null, cudnnContext.dcyDesc, null,
-                        cudnnContext.wDesc, weightsSpace, cudnnContext.hxDesc, prevStepActivationsData,
-                        cudnnContext.cxDesc, prevMemCellStateData, dxDesc, dxData, cudnnContext.dhxDesc, null,
-                        cudnnContext.dcxDesc, null, workSpace, workSpace.limit(), reserveSpace, reserveSpace.limit()));
+                        cudnnContext.wDesc, weightsSpace,
+                        cudnnContext.hxDesc, prevStepActivationsData,   //hx: initial hidden state of RNN
+                        cudnnContext.cxDesc, prevMemCellStateData,      //cx: initial cell state of RNN
+                        dxDesc, dxData,                                 //dx: gradient at input of each time step
+                        cudnnContext.dhxDesc, null,             //dhx: gradient at initial hidden state of RNN
+                        cudnnContext.dcxDesc, null,             //dcx: Gradient at initial cell state
+                        workSpace, workSpace.limit(), reserveSpace, reserveSpace.limit()));
 
         // cudnnRNNBackwardWeights adds to the data in dw.
         checkCuda(cudaMemsetAsync(weightsSpace, 0, weightsSpace.limit(), stream));
 
-        checkCudnn(cudnnRNNBackwardWeights(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc,
-                        xData, cudnnContext.hxDesc, prevStepActivationsData, yDesc, outputActivationsData, workSpace,
-                        workSpace.limit(), cudnnContext.dwDesc, weightsSpace, reserveSpace, reserveSpace.limit()));
+        checkCudnn(cudnnRNNBackwardWeights(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength,
+                        xDesc, xData,       //Input data
+                        cudnnContext.hxDesc, prevStepActivationsData,   //Initial hidden state
+                        yDesc, outputActivationsData,                   //Output data
+                        workSpace, workSpace.limit(),
+                        cudnnContext.dwDesc, weightsSpace, reserveSpace, reserveSpace.limit()));
 
         int[] dataType = new int[1];
         int[] format = new int[1];
@@ -304,9 +310,9 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                         prevStepMemCellState, prevStepActivations, iwGradientsOut, rwGradientsOut, bGradientsOut);
 
         Gradient retGradient = new DefaultGradient();
-        retGradient.gradientForVariable().put(inputWeightKey, iwGradientsOut/*.permute(0, 1, 2).reshape('f', inputLayerSize, hiddenLayerSize * 4)*/);
-        retGradient.gradientForVariable().put(recurrentWeightKey, rwGradientsOut/*.permute(0, 1, 2).reshape('f', hiddenLayerSize, hiddenLayerSize * 4)*/);
-        retGradient.gradientForVariable().put(biasWeightKey, bGradientsOut/*.reshape(1, 4 * hiddenLayerSize)*/);
+        retGradient.gradientForVariable().put(inputWeightKey, iwGradientsOut);
+        retGradient.gradientForVariable().put(recurrentWeightKey, rwGradientsOut);
+        retGradient.gradientForVariable().put(biasWeightKey, bGradientsOut);
 
         INDArray epsilonNext = dx.permute(1, 2, 0).dup('f'); //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
 
@@ -316,7 +322,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
     @Override
     public FwdPassReturn activate(final Layer layer, final NeuralNetConfiguration conf,
                     final IActivation gateActivationFn, //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
-                    final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+                    INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                     final INDArray inputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
                     final INDArray biases, //Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
                     final boolean training, final INDArray prevOutputActivations,
@@ -331,9 +337,9 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         int inputLayerSize = input.size(1);
 
         INDArray x = input.permute(2, 0, 1).dup('c');
-        INDArray linInputWeights = inputWeights;//.reshape('f', inputLayerSize, hiddenLayerSize, 4).permute(0, 1, 2).dup('f');
-        INDArray linRecurrentWeights = recurrentWeights;//.reshape('f', hiddenLayerSize, hiddenLayerSize, 4).permute(0, 1, 2).dup('f');
-        INDArray linBiases = biases;//.reshape(4, hiddenLayerSize);
+        INDArray linInputWeights = inputWeights;
+        INDArray linRecurrentWeights = recurrentWeights;
+        INDArray linBiases = biases;
 
         INDArray prevAct = prevOutputActivations.dup('c');
         INDArray prevMemCell = prevMemCellState.dup('c');
@@ -349,8 +355,9 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         toReturn.prevAct = prevAct;
         toReturn.prevMemCell = prevMemCell;
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+        Nd4j.getExecutioner().commit();
+
+
 
         if (timeSeriesLength > xDesc.capacity()) {
             xDesc.deallocate();
@@ -528,7 +535,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         toReturn.lastMemCell = finalMemCellState.dup('c');
         toReturn.prevAct = prevAct.dup('c');
         toReturn.prevMemCell = prevMemCell.dup('c');
+
         return toReturn;
     }
-
 }

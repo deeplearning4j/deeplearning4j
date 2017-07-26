@@ -279,8 +279,8 @@ public class ValidateCudnnLSTM {
         int minibatch = 2;
         int inputSize = 2;
         int lstmLayerSize = 2;
-        int timeSeriesLength = 4;
-        int tbpttLength = 2;
+        int timeSeriesLength = 2;
+        int tbpttLength = 1;
         int nOut = 2;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(1.0)

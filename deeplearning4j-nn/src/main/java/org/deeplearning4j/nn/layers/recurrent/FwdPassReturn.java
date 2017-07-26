@@ -27,7 +27,7 @@ public class FwdPassReturn {
     //Next 2: needed for rnnTimeStep only
     public INDArray lastAct;
     public INDArray lastMemCell;
-    //Last 2: needed only for CudnnLSTMHelper
+    //Last 2: needed only for TBPTT
     public INDArray prevAct;
     public INDArray prevMemCell;
 
@@ -95,6 +95,7 @@ public class FwdPassReturn {
         if (lastMemCell != null)
             lastMemCell = lastMemCell.leverageTo(id);
 
-        //Don't want to leverage previous activations if present...
+        //Don't want to leverage previous activations if present - assume that has already happened (either passed
+        // externally, or was originally a lastAct/lastMemCell)
     }
 }
