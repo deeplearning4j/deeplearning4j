@@ -1,8 +1,12 @@
 package org.datavec.api.util.jdbc;
 
-import org.datavec.api.writable.*;
-
 import java.sql.Types;
+import org.datavec.api.writable.BooleanWritable;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.FloatWritable;
+import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.Text;
+import org.datavec.api.writable.Writable;
 
 /**
  * Transform jdbc column data into Writable objects
@@ -14,7 +18,7 @@ public class JdbcWritableConverter {
     public static Writable convert(final Object columnValue, final int columnType) {
         switch (columnType) {
             case Types.BOOLEAN:
-                return new BooleanWritable((boolean)columnValue);
+                return new BooleanWritable((boolean) columnValue);
 
             case Types.DATE:
             case Types.TIME:
@@ -33,7 +37,7 @@ public class JdbcWritableConverter {
             case Types.REAL:
                 return new FloatWritable((float) columnValue);
 
-                case Types.DOUBLE:
+            case Types.DOUBLE:
                 return new DoubleWritable((double) columnValue);
 
             case Types.INTEGER:
@@ -48,6 +52,6 @@ public class JdbcWritableConverter {
         }
     }
 
-
-    private JdbcWritableConverter() {}
+    private JdbcWritableConverter() {
+    }
 }

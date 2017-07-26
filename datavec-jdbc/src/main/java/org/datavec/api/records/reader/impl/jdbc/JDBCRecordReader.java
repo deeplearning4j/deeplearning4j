@@ -1,5 +1,16 @@
 package org.datavec.api.records.reader.impl.jdbc;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import javax.sql.DataSource;
 import lombok.Setter;
 import org.apache.commons.dbutils.ResultSetIterator;
 import org.datavec.api.conf.Configuration;
@@ -9,14 +20,6 @@ import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.util.jdbc.JdbcWritableConverter;
 import org.datavec.api.writable.Writable;
-
-import javax.sql.DataSource;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Iterate on rows from a JDBC datasource and return corresponding records
@@ -67,7 +70,7 @@ public class JDBCRecordReader extends BaseRecordReader {
                         columnValue = ((String) columnValue).trim();
                     }
                     // Note, getColumnType first argument is column number starting from 1
-                    Writable writable = JdbcWritableConverter.convert(columnValue, meta.getColumnType(i+1));
+                    Writable writable = JdbcWritableConverter.convert(columnValue, meta.getColumnType(i + 1));
                     ret.add(writable);
                 } catch (SQLException e) {
                     throw new RuntimeException("Error reading database metadata");

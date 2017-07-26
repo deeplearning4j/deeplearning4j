@@ -1,5 +1,13 @@
 package org.datavec.api.records.reader.impl;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+import java.net.URI;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.derby.jdbc.EmbeddedDataSource;
 import org.datavec.api.records.reader.impl.jdbc.JDBCRecordReader;
 import org.datavec.api.split.CollectionInputSplit;
@@ -8,15 +16,6 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.net.URI;
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 public class JDBCRecordReaderTest {
 
@@ -41,7 +40,7 @@ public class JDBCRecordReaderTest {
         // FIXME should implement a new input split ?
         reader.initialize(new CollectionInputSplit(Collections.<URI>emptyList()));
         List<List<Writable>> records = new ArrayList<>();
-        while(reader.hasNext()) {
+        while (reader.hasNext()) {
             List<Writable> values = reader.next();
             records.add(values);
         }
