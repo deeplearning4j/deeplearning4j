@@ -28,11 +28,13 @@ import java.io.Serializable;
  */
 @Data
 public class HeapObject implements Serializable, Comparable<HeapObject> {
+    private int index;
     private INDArray point;
     private double distance;
 
 
-    public HeapObject(INDArray point, double distance) {
+    public HeapObject(int index, INDArray point, double distance) {
+        this.index = index;
         this.point = point;
         this.distance = distance;
     }
@@ -58,7 +60,7 @@ public class HeapObject implements Serializable, Comparable<HeapObject> {
     public int hashCode() {
         int result;
         long temp;
-        result = point.hashCode();
+        result = index;
         temp = Double.doubleToLongBits(distance);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         return result;

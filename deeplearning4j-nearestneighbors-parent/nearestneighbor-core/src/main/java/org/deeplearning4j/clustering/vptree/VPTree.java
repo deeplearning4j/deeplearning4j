@@ -289,33 +289,37 @@ public class VPTree {
 
     protected class NodeBuilder implements Callable<Node> {
         protected List<INDArray> list;
-        public NodeBuilder(List<INDArray> list) {
+        protected List<Integer> indices;
+        public NodeBuilder(List<INDArray> list, List<Integer> indices) {
             this.list = list;
+            this.indices = indices;
         }
 
         @Override
         public Node call() throws Exception {
-            return buildFromPoints(list);
+            return buildFromPoints(list, indices);
         }
     }
 
-    private Node buildFromPoints(List<INDArray> list) {
+    private Node buildFromPoints(List<INDArray> points, List<Integer> indices) {
         Node ret = new Node(0, 0);
 
 
         // nothing to sort here
-        if (list.size() == 1) {
-            ret.point = list.get(0);
+        if (points.size() == 1) {
+            ret.point = points.get(0);
+            ret.index = indices.get(0);
             return ret;
         }
 
         // opening workspace, and creating it if that's the first call
         MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "VPTREE_WORSKPACE");
 
-        INDArray items = Nd4j.vstack(list);
+        INDArray items = Nd4j.vstack(points);
         int randomPoint = MathUtils.randomNumberBetween(0, items.rows() - 1, Nd4j.getRandom());
-        INDArray basePoint = list.get(randomPoint);//items.getRow(randomPoint);
+        INDArray basePoint = points.get(randomPoint);//items.getRow(randomPoint);
         ret.point = basePoint;
+        ret.index = indices.get(randomPoint);
         INDArray distancesArr = Nd4j.create(items.rows(), 1);
 
         calcDistancesRelativeTo(items, basePoint, distancesArr);
@@ -323,32 +327,38 @@ public class VPTree {
         double medianDistance = distancesArr.medianNumber().doubleValue();
 
         List<INDArray> leftPoints = new ArrayList<>();
+        List<Integer> leftIndices = new ArrayList<>();
         List<INDArray> rightPoints = new ArrayList<>();
+        List<Integer> rightIndices = new ArrayList<>();
 
         for (int i = 0; i < distancesArr.length(); i++) {
             if (i == randomPoint)
                 continue;
 
             if (distancesArr.getDouble(i) < medianDistance) {
-                leftPoints.add(list.get(i));
+                leftPoints.add(points.get(i));
+                leftIndices.add(indices.get(i));
             } else {
-                rightPoints.add(list.get(i));
+                rightPoints.add(points.get(i));
+                rightIndices.add(indices.get(i));
             }
         }
 
         // closing workspace
         workspace.notifyScopeLeft();
+        //log.info("Thread: {}; Workspace size: {}", Thread.currentThread().getId(), (int) ( workspace.getCurrentSize() / 1024 / 1024));
 
         //log.info("Left size: {}; Right size: {}; Items size: {} ", leftPoints.size(), rightPoints.size(), items.rows());
 
         //Future<Node> futureNode = executorService.submit(new NodeBuilder());
 
         if (leftPoints.size() > 0)
-            ret.futureLeft = executorService.submit(new NodeBuilder(leftPoints)); // = buildFromPoints(leftPoints);
+            ret.futureLeft = executorService.submit(new NodeBuilder(leftPoints, leftIndices)); // = buildFromPoints(leftPoints);
 
         if (rightPoints.size() > 0)
-            ret.futureRight = executorService.submit(new NodeBuilder(rightPoints));
+            ret.futureRight = executorService.submit(new NodeBuilder(rightPoints, rightIndices));
 
+        //System.gc();
         return ret;
     }
 
@@ -376,8 +386,7 @@ public class VPTree {
 
         workspaceConfiguration = WorkspaceConfiguration.builder()
                 .cyclesBeforeInitialization(1)
-                .overallocationLimit(0.1)
-                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .policyAllocation(AllocationPolicy.STRICT)
                 .policyLearning(LearningPolicy.FIRST_LOOP)
                 .policyMirroring(MirroringPolicy.FULL)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
@@ -391,6 +400,7 @@ public class VPTree {
         INDArray basePoint = items.getRow(randomPoint);
         INDArray distancesArr = Nd4j.create(items.rows(), 1);
         ret.point = basePoint;
+        ret.index = randomPoint;
 
         calcDistancesRelativeTo(items, basePoint, distancesArr);
 
@@ -399,7 +409,9 @@ public class VPTree {
         ret.threshold = (float) medianDistance;
 
         List<INDArray> leftPoints = new ArrayList<>();
+        List<Integer> leftIndices = new ArrayList<>();
         List<INDArray> rightPoints = new ArrayList<>();
+        List<Integer> rightIndices = new ArrayList<>();
 
         for (int i = 0; i < distancesArr.length(); i++) {
             if (i == randomPoint)
@@ -407,8 +419,10 @@ public class VPTree {
 
             if (distancesArr.getDouble(i) < medianDistance) {
                 leftPoints.add(items.getRow(i));
+                leftIndices.add(i);
             } else {
                 rightPoints.add(items.getRow(i));
+                rightIndices.add(i);
             }
         }
 
@@ -416,19 +430,26 @@ public class VPTree {
         workspace.notifyScopeLeft();
         workspace.destroyWorkspace(true);
 
+
         //log.info("Left size: {}; Right size: {}; Items size: {} ", leftPoints.size(), rightPoints.size(), items.rows());
 
         if (leftPoints.size() > 0)
-            ret.left = buildFromPoints(leftPoints);
+            ret.left = buildFromPoints(leftPoints, leftIndices);
 
         if (rightPoints.size() > 0)
-            ret.right = buildFromPoints(rightPoints);
+            ret.right = buildFromPoints(rightPoints, rightIndices);
+
+        // destroy once again
+        workspace.destroyWorkspace(true);
 
         if (ret.left != null)
             ret.left.fetchFutures();
 
         if (ret.right != null)
             ret.right.fetchFutures();
+
+        if (executorService != null)
+            executorService.shutdown();
 
         return ret;
 /*
@@ -571,14 +592,13 @@ public class VPTree {
         distances.clear();
 
         PriorityQueue<HeapObject> pq = new PriorityQueue<>();
-        tau = Double.MAX_VALUE;
-        search(root, target, k, pq);
+        search(root, target, k, pq,  Double.MAX_VALUE);
 
 
         while (!pq.isEmpty()) {
             //int idx = pq.peek().getIndex();
             HeapObject ho = pq.peek();
-            results.add(new DataPoint(0, ho.getPoint()));
+            results.add(new DataPoint(ho.getIndex(), ho.getPoint()));
             distances.add(ho.getDistance());
             pq.next();
         }
@@ -597,7 +617,7 @@ public class VPTree {
      * @param k
      * @param pq
      */
-    public void search(Node node, INDArray target, int k, PriorityQueue<HeapObject> pq) {
+    public void search(Node node, INDArray target, int k, PriorityQueue<HeapObject> pq, double tau) {
 
         if (node == null)
             return;
@@ -607,7 +627,7 @@ public class VPTree {
         if (distance < tau) {
             if (pq.size() == k)
                 pq.next();
-            pq.add(new HeapObject(node.point, distance), distance);
+            pq.add(new HeapObject(node.getIndex(), node.point, distance), distance);
             if (pq.size() == k)
                 tau = pq.peek().getDistance();
 
@@ -622,20 +642,20 @@ public class VPTree {
 
         if (distance < node.getThreshold()) {
             if (distance - tau <= node.getThreshold()) { // if there can still be neighbors inside the ball, recursively search left child first
-                search(left, target, k, pq);
+                search(left, target, k, pq, tau);
             }
 
             if (distance + tau >= node.getThreshold()) { // if there can still be neighbors outside the ball, recursively search right child
-                search(right, target, k, pq);
+                search(right, target, k, pq, tau);
             }
 
         } else {
             if (distance + tau >= node.getThreshold()) { // if there can still be neighbors outside the ball, recursively search right child first
-                search(right, target, k, pq);
+                search(right, target, k, pq, tau);
             }
 
             if (distance - tau <= node.getThreshold()) { // if there can still be neighbors inside the ball, recursively search left child
-                search(left, target, k, pq);
+                search(left, target, k, pq, tau);
             }
         }
 
@@ -644,7 +664,7 @@ public class VPTree {
 
     @Data
     public static class Node {
-        //private int index;
+        private int index;
         private float threshold;
         private Node left, right;
         private INDArray point;
@@ -652,7 +672,7 @@ public class VPTree {
         protected Future<Node> futureRight;
 
         public Node(int index, float threshold) {
-            //this.index = index;
+            this.index = index;
             this.threshold = threshold;
         }
 
