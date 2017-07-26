@@ -34,6 +34,7 @@
         <module>datavec-dataframe</module>
         <module>datavec-local</module>
         <module>datavec-spark-inference-parent</module>
+        <module>datavec-jdbc</module>
     </modules>
     <name>DataVec</name>
 
