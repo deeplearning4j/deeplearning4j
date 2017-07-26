@@ -1,24 +1,36 @@
 package org.datavec.api.records.reader.impl.jdbc;
 
+import lombok.Setter;
+import org.apache.commons.dbutils.ResultSetIterator;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.util.jdbc.JdbcWritableConverter;
 import org.datavec.api.writable.Writable;
 
 import javax.sql.DataSource;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.sql.ResultSet;
+import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Iterate on rows from a JDBC datasource and return corresponding records
+ *
+ * @author Adrien Plagnol
+ */
 public class JDBCRecordReader extends BaseRecordReader {
 
-    private DataSource dataSource;
-    private ResultSet resultSet;
-    private String query;
+    private final DataSource dataSource;
+    private final String query;
+    private ResultSetIterator iter;
+    private ResultSetMetaData meta;
+    @Setter
+    private boolean trimStrings = false;
 
     public JDBCRecordReader(DataSource dataSource, String query) {
         this.dataSource = dataSource;
@@ -27,7 +39,15 @@ public class JDBCRecordReader extends BaseRecordReader {
 
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
-
+        try {
+            Connection conn = dataSource.getConnection();
+            Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            ResultSet rs = st.executeQuery(this.query);
+            this.meta = rs.getMetaData();
+            this.iter = new ResultSetIterator(rs);
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not connect to the database", e);
+        }
     }
 
     @Override
@@ -37,12 +57,30 @@ public class JDBCRecordReader extends BaseRecordReader {
 
     @Override
     public List<Writable> next() {
-        return null;
+        List<Writable> ret = new ArrayList<>();
+        if (iter.hasNext()) {
+            Object[] next = iter.next();
+            for (int i = 0; i < next.length; i++) {
+                try {
+                    Object columnValue = next[i];
+                    if (trimStrings && columnValue instanceof String) {
+                        columnValue = ((String) columnValue).trim();
+                    }
+                    // Note, getColumnType first argument is column number starting from 1
+                    Writable writable = JdbcWritableConverter.convert(columnValue, meta.getColumnType(i+1));
+                    ret.add(writable);
+                } catch (SQLException e) {
+                    throw new RuntimeException("Error reading database metadata");
+                }
+            }
+        }
+
+        return ret;
     }
 
     @Override
     public boolean hasNext() {
-        return false;
+        return iter.hasNext();
     }
 
     @Override
