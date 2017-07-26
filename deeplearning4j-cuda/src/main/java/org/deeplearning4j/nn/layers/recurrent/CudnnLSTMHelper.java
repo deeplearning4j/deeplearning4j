@@ -34,6 +34,7 @@ import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
@@ -163,6 +164,13 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
     private DataCache reserveSpace = new DataCache();
     private DataCache weightsSpace = new DataCache();
 
+    private static INDArray toCOrder(INDArray arr){
+        if(arr.isView() || arr.ordering() != 'c' || !Shape.strideDescendingCAscendingF(arr)){
+            arr = arr.dup('c');
+        }
+        return arr;
+    }
+
     @Override
     public boolean checkSupported(IActivation gateActivationFn, IActivation activationFn, boolean hasPeepholeConnections) {
         boolean supported = checkSupported();
@@ -199,17 +207,17 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         boolean is2dInput = epsilon.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
         int timeSeriesLength = (is2dInput ? 1 : epsilon.size(2));
 
-        INDArray x = input.permute(2, 0, 1).dup('c');
-        INDArray dy = epsilon.permute(2, 0, 1).dup('c');
+        INDArray x = toCOrder(input.permute(2, 0, 1));
+        INDArray dy = toCOrder(epsilon.permute(2, 0, 1));
         INDArray dx = Nd4j.createUninitialized(new int[] {timeSeriesLength, miniBatchSize, prevLayerSize}, 'c');
 
         INDArray iwGradientsOut = gradientViews.get(inputWeightKey);
         INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey); //Order: {I,F,O,G}
         INDArray bGradientsOut = gradientViews.get(biasWeightKey);
 
-        INDArray outputActivations = fwdPass.fwdPassOutput.permute(2,0,1).dup('c'); //.fwdPassOutputAsArrays[0];
-        INDArray prevStepMemCellState = fwdPass.prevMemCell.dup('c');
-        INDArray prevStepActivations = fwdPass.prevAct.dup('c');
+        INDArray outputActivations = toCOrder(fwdPass.fwdPassOutput.permute(2,0,1));
+        INDArray prevStepMemCellState = toCOrder(fwdPass.prevMemCell);
+        INDArray prevStepActivations = toCOrder(fwdPass.prevAct);
 
         Nd4j.getExecutioner().commit();
 
@@ -314,7 +322,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         retGradient.gradientForVariable().put(recurrentWeightKey, rwGradientsOut);
         retGradient.gradientForVariable().put(biasWeightKey, bGradientsOut);
 
-        INDArray epsilonNext = dx.permute(1, 2, 0).dup('f'); //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
+        INDArray epsilonNext = dx.permute(1, 2, 0); //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
 
         return new Pair<>(retGradient, epsilonNext);
     }
@@ -336,13 +344,13 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         int miniBatchSize = input.size(0);
         int inputLayerSize = input.size(1);
 
-        INDArray x = input.permute(2, 0, 1).dup('c');
+        INDArray x = toCOrder(input.permute(2, 0, 1));
         INDArray linInputWeights = inputWeights;
         INDArray linRecurrentWeights = recurrentWeights;
         INDArray linBiases = biases;
 
-        INDArray prevAct = prevOutputActivations.dup('c');
-        INDArray prevMemCell = prevMemCellState.dup('c');
+        INDArray prevAct = toCOrder(prevOutputActivations);
+        INDArray prevMemCell = toCOrder(prevMemCellState);
 
         INDArray outputActivations = Nd4j.createUninitialized(new int[] {
                         timeSeriesLength, miniBatchSize, hiddenLayerSize * (bidirectional ? 2 : 1)}, 'c');
@@ -530,11 +538,11 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                         linInputWeights, linRecurrentWeights, linBiases, prevAct, prevMemCell,
                         outputActivations, finalMemCellState, finalStepActivations);
 
-        toReturn.fwdPassOutput = outputActivations.permute(1, 2, 0).dup('f');
-        toReturn.lastAct = finalStepActivations.dup('c');
-        toReturn.lastMemCell = finalMemCellState.dup('c');
-        toReturn.prevAct = prevAct.dup('c');
-        toReturn.prevMemCell = prevMemCell.dup('c');
+        toReturn.fwdPassOutput = outputActivations.permute(1, 2, 0);
+        toReturn.lastAct = finalStepActivations;
+        toReturn.lastMemCell = finalMemCellState;
+        toReturn.prevAct = prevAct;
+        toReturn.prevMemCell = prevMemCell;
 
         return toReturn;
     }
