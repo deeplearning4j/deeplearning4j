@@ -76,7 +76,8 @@ public class LSTMHelpers {
                     final boolean training, final INDArray originalPrevOutputActivations,
                     final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
                     final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
+                    final boolean hasPeepholeConnections,            //True for GravesLSTM, false for LSTM
+                    final LSTMHelper helper,
                     final CacheMode cacheMode // cacheMode for layer calling this helper
     ) {
 
@@ -99,7 +100,6 @@ public class LSTMHelpers {
         } else {
             prevMemCellState = originalPrevMemCellState.dup('f');
         }
-
 
 
         INDArray recurrentWeightsIFOG = recurrentWeights
@@ -186,6 +186,15 @@ public class LSTMHelpers {
         //initialize prevOutputActivations to zeroes
         if (prevOutputActivations == null) {
             prevOutputActivations = Nd4j.zeros(new int[] {miniBatchSize, hiddenLayerSize});
+        }
+
+        if (helper != null) {
+            FwdPassReturn ret = helper.activate(layer, conf, gateActivationFn, input, recurrentWeights, inputWeights,
+                    biases, training, prevOutputActivations, prevMemCellState, forBackprop, forwards, inputWeightKey,
+                    maskArray, hasPeepholeConnections);
+            if (ret != null) {
+                return ret;
+            }
         }
 
         for (int iTimeIndex = 0; iTimeIndex < timeSeriesLength; iTimeIndex++) {
@@ -385,6 +394,9 @@ public class LSTMHelpers {
 
         //toReturn.leverageTo(ComputationGraph.workspaceExternal);
 
+        toReturn.prevAct = originalPrevOutputActivations;
+        toReturn.prevMemCell = originalPrevMemCellState;
+
         return toReturn;
     }
 
@@ -395,7 +407,8 @@ public class LSTMHelpers {
                     final FwdPassReturn fwdPass, final boolean forwards, final String inputWeightKey,
                     final String recurrentWeightKey, final String biasWeightKey,
                     final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections //True for GravesLSTM, false for LSTM
+                    final boolean hasPeepholeConnections,            //True for GravesLSTM, false for LSTM
+                    final LSTMHelper helper
     ) {
 
 
@@ -458,6 +471,16 @@ public class LSTMHelpers {
             rwGradientsGG = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 2));
         }
 
+        if (helper != null) {
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(conf, gateActivationFn, input,
+                    recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength,
+                    fwdPass, forwards, inputWeightKey, recurrentWeightKey, biasWeightKey, gradientViews,
+                    maskArray, hasPeepholeConnections);
+            if (ret != null) {
+                return ret;
+            }
+        }
+
         boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
         IActivation afn = ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getLayer()).getActivationFn();
 
@@ -496,8 +519,8 @@ public class LSTMHelpers {
                 nablaCellState = Nd4j.create(new int[] {miniBatchSize, hiddenLayerSize}, 'f');
             }
 
-            INDArray prevMemCellState = (iTimeIndex == 0 ? null : fwdPass.memCellState[time - inext]);
-            INDArray prevHiddenUnitActivation = (iTimeIndex == 0 ? null : fwdPass.fwdPassOutputAsArrays[time - inext]);
+            INDArray prevMemCellState = (iTimeIndex == 0 ? fwdPass.prevMemCell : fwdPass.memCellState[time - inext]);
+            INDArray prevHiddenUnitActivation = (iTimeIndex == 0 ? fwdPass.prevAct : fwdPass.fwdPassOutputAsArrays[time - inext]);
             INDArray currMemCellState = fwdPass.memCellState[time];
 
 
@@ -546,7 +569,8 @@ public class LSTMHelpers {
             //Forget gate delta:
             INDArray af = fwdPass.fa[time];
             INDArray deltaf = null;
-            if (iTimeIndex > 0) {
+            if (iTimeIndex > 0 || prevMemCellState != null) {   //For time == 0 && no prevMemCellState, equivalent to muli by 0
+                //Note that prevMemCellState may be non-null at t=0 for TBPTT
                 deltaf = deltafNext;
                 if (sigmoidGates) {
                     Nd4j.getExecutioner().exec(new TimesOneMinus(af, deltaf));
@@ -597,7 +621,8 @@ public class LSTMHelpers {
 
             INDArray prevLayerActivationSlice =
                             Shape.toMmulCompatible(is2dInput ? input : input.tensorAlongDimension(time, 1, 0));
-            if (iTimeIndex > 0) {
+            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {      //For time == 0 && no prevMemCellState, equivalent to muli by 0
+                //Note that prevHiddenUnitActivations may be non-null at t=0 for TBPTT
                 //Again, deltaifog_current == deltaifogNext at this point... same array
                 Nd4j.gemm(prevLayerActivationSlice, deltaifogNext, iwGradientsOut, true, false, 1.0, 1.0);
             } else {
@@ -611,8 +636,9 @@ public class LSTMHelpers {
                 Nd4j.gemm(prevLayerActivationSlice, deltaog, iwGradients_og, true, false, 1.0, 1.0);
             }
 
-            if (iTimeIndex > 0) {
-                //If t==0, then prevHiddenUnitActivation==zeros(n^L,n^L), so dL/dW for recurrent weights will end up as 0 anyway
+            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {
+                //If t==0 and prevHiddenUnitActivation==null, equiv. to zeros(n^L,n^L), so dL/dW for recurrent weights
+                // will end up as 0 anyway
                 //At this point: deltaifog and deltaifogNext are the same thing...
                 //So what we are actually doing here is sum of (prevAct^transpose * deltaifog_current)
                 Nd4j.gemm(prevHiddenUnitActivation, deltaifogNext, rwGradientsIFOG, true, false, 1.0, 1.0);
@@ -632,7 +658,8 @@ public class LSTMHelpers {
                 l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwOO, rwGradientsOO); //rwGradients[5].addi(dLdwOO);    //dL/dw_{OOxy}
             }
 
-            if (iTimeIndex > 0) {
+            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {   //For time == 0 && no prevMemCellState, equivalent to muli by 0
+                //Note that prevHiddenUnitActivation may be non-null at t=0 for TBPTT
                 l1BLAS.axpy(4 * hiddenLayerSize, 1.0, deltaifogNext.sum(0), bGradientsOut);
             } else {
                 l1BLAS.axpy(hiddenLayerSize, 1.0, deltai.sum(0), bGradientsOut); //Sneaky way to do bGradients_i += deltai.sum(0)
@@ -646,7 +673,8 @@ public class LSTMHelpers {
             //Calculate epsilonNext - i.e., equiv. to what would be (w^L*(d^(Lt))^T)^T in a normal network
             //But here, need to add 4 weights * deltas for the IFOG gates
             INDArray epsilonNextSlice = epsilonNext.tensorAlongDimension(time, 1, 0); //This slice: f order and contiguous, due to epsilonNext being defined as f order.
-            if (iTimeIndex > 0) {
+            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {
+                //Note that prevHiddenUnitActivation may be non-null at t=0 for TBPTT
                 Nd4j.gemm(deltaifogNext, inputWeights, epsilonNextSlice, false, true, 1.0, 1.0);
             } else {
                 //No contribution from forget gate at t=0
