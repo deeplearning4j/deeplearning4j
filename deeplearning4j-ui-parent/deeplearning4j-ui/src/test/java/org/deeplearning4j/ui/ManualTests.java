@@ -101,6 +101,8 @@ public class ManualTests {
         System.out.println("Saved to " + save.getAbsolutePath());
         save.deleteOnExit();
         b. saveAsFile(labelsList, save.getAbsolutePath());
+        INDArray output = b.getData();
+        System.out.println("Coordinates");
         UIServer server = UIServer.getInstance();
         Thread.sleep(10000000000L);
     }
