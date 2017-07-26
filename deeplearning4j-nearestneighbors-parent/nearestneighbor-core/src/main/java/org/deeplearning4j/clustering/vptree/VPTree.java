@@ -19,6 +19,7 @@
 package org.deeplearning4j.clustering.vptree;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.clustering.berkeley.PriorityQueue;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.HeapItem;
@@ -45,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Adam Gibson
  */
+@Slf4j
 @Builder
 @AllArgsConstructor
 public class VPTree {
@@ -97,7 +99,7 @@ public class VPTree {
         for(int i = 0; i < items.rows(); i++) {
             itemsList.add(items.getRow(i));
         }
-        root = buildFromPoints(0, this.items.rows());
+        root = buildFromPoints(items);
     }
 
     /**
@@ -125,7 +127,7 @@ public class VPTree {
 
         this.invert = invert;
         this.similarityFunction = similarityFunction;
-        root = buildFromPoints(0, items.size());
+        root = buildFromPoints(this.items);
 
     }
 
@@ -150,7 +152,7 @@ public class VPTree {
         }
 
         this.parallel = parallel;
-        root = buildFromPoints(0, this.items.rows());
+        root = buildFromPoints(items);
     }
 
 
@@ -201,7 +203,7 @@ public class VPTree {
      * @param basePoint
      * @param distancesArr
      */
-    public void calcDistancesRelativeTo(INDArray basePoint, INDArray distancesArr) {
+    public void calcDistancesRelativeTo(INDArray items, INDArray basePoint, INDArray distancesArr) {
         switch (similarityFunction) {
             case "euclidean":
                 Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, items.lengthLong()), -1);
@@ -227,6 +229,10 @@ public class VPTree {
         if (invert)
             distancesArr.negi();
 
+    }
+
+    public void calcDistancesRelativeTo(INDArray basePoint, INDArray distancesArr) {
+        calcDistancesRelativeTo(items, basePoint, distancesArr);
     }
 
 
@@ -277,16 +283,55 @@ public class VPTree {
         }
     }
 
-    private Node buildFromPoints(final int lower, final int upper) {
-        if (upper == lower)
-            return null;
-        if (executorService == null && lower == 0 && upper == items.size(0) && parallel)
-            executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(),
+    private Node buildFromPoints(List<INDArray> list) {
+        Node ret = new Node(0, 0);
+        ret.points = list;
+
+        // nothing to sort here
+        if (list.size() == 1)
+            return ret;
+
+        INDArray items = Nd4j.vstack(list);
+        int randomPoint = MathUtils.randomNumberBetween(0, items.rows() - 1, Nd4j.getRandom());
+        INDArray basePoint = items.getRow(randomPoint);
+        INDArray distancesArr = Nd4j.create(items.rows(), 1);
+
+        calcDistancesRelativeTo(items, basePoint, distancesArr);
+
+        double medianDistance = distancesArr.medianNumber().doubleValue();
+
+        List<INDArray> leftPoints = new ArrayList<>();
+        List<INDArray> rightPoints = new ArrayList<>();
+
+
+        for (int i = 0; i < distancesArr.length(); i++) {
+            if (distancesArr.getDouble(i) < medianDistance) {
+                leftPoints.add(items.getRow(i));
+            } else {
+                rightPoints.add(items.getRow(i));
+            }
+        }
+
+        log.info("Left size: {}; Right size: {}; Items size: {} ", leftPoints.size(), rightPoints.size(), items.rows());
+
+        if (leftPoints.size() > 0)
+            ret.left = buildFromPoints(leftPoints);
+
+        if (rightPoints.size() > 0)
+            ret.right = buildFromPoints(rightPoints);
+
+        return ret;
+    }
+
+    private Node buildFromPoints(INDArray items) {
+        if (executorService == null && items == this.items && parallel)
+            executorService = Executors.newFixedThreadPool(4,
                     new ThreadFactory() {
                         @Override
                         public Thread newThread(Runnable r) {
                             Thread t = Executors.defaultThreadFactory().newThread(r);
 
+                            t.setDaemon(true);
                             t.setName("VPTree thread");
 
                             // we don't want threads to be working on different devices
@@ -297,9 +342,38 @@ public class VPTree {
                         }
                     });
 
-        final Node ret = new Node(lower, 0);
+        final Node ret = new Node(0, 0);
         size.incrementAndGet();
 
+        int randomPoint = MathUtils.randomNumberBetween(0, items.rows() - 1, Nd4j.getRandom());
+        INDArray basePoint = items.getRow(randomPoint);
+        INDArray distancesArr = Nd4j.create(items.rows(), 1);
+
+        calcDistancesRelativeTo(items, basePoint, distancesArr);
+
+        double medianDistance = distancesArr.medianNumber().doubleValue();
+
+        List<INDArray> leftPoints = new ArrayList<>();
+        List<INDArray> rightPoints = new ArrayList<>();
+
+        for (int i = 0; i < distancesArr.length(); i++) {
+            if (distancesArr.getDouble(i) < medianDistance) {
+                leftPoints.add(items.getRow(i));
+            } else {
+                rightPoints.add(items.getRow(i));
+            }
+        }
+
+        log.info("Left size: {}; Right size: {}; Items size: {} ", leftPoints.size(), rightPoints.size(), items.rows());
+
+        if (leftPoints.size() > 0)
+            ret.left = buildFromPoints(leftPoints);
+
+        if (rightPoints.size() > 0)
+            ret.right = buildFromPoints(rightPoints);
+
+        return ret;
+/*
         if (upper - lower > 1) {
             int randomPoint = MathUtils.randomNumberBetween(lower, upper - 1, Nd4j.getRandom());
 
@@ -336,14 +410,17 @@ public class VPTree {
                 rightPoints = Nd4j.create(sortedDistances.length(), items.columns());
 
 
-            int leftPointsIndex = 0;
-            int rightPointsIndex = 0;
+
             synchronized (items) {
                 for (int i = 0; i < distancesArr.length(); i++) {
                     if (distancesArr.getDouble(i) < medianDistance) {
-                        leftPoints.putRow(leftPointsIndex++, itemsList.get(i));
+                        int cn =leftPointsIndex++;
+                        log.info("Thread: {}; I: {}; leftPoint Index: {}", Thread.currentThread().getId(), i, cn);
+                        leftPoints.putRow(cn, itemsList.get(i));
                     } else {
-                        rightPoints.putRow(rightPointsIndex++, itemsList.get(i));
+                        int cn =leftPointsIndex++;
+                        log.info("Thread: {}; I: {}; rightPoint Index: {}", Thread.currentThread().getId(), i, cn);
+                        rightPoints.putRow(cn, itemsList.get(i));
                     }
                 }
 
@@ -418,7 +495,7 @@ public class VPTree {
 
 
         return ret;
-
+*/
     }
 
 
@@ -511,6 +588,7 @@ public class VPTree {
         private int index;
         private float threshold;
         private Node left, right;
+        private List<INDArray> points;
 
         public Node(int index, float threshold) {
             this.index = index;
