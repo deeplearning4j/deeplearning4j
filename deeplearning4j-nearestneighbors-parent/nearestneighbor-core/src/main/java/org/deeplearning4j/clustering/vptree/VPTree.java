@@ -94,7 +94,7 @@ public class VPTree {
         this.invert = invert;
         this.items = items;
         itemsList = new ArrayList<>(items.rows());
-        for(int i = 0; i < itemsList.size(); i++) {
+        for(int i = 0; i < items.rows(); i++) {
             itemsList.add(items.getRow(i));
         }
         root = buildFromPoints(0, this.items.rows());
@@ -110,9 +110,11 @@ public class VPTree {
     public VPTree(List<DataPoint> items, String similarityFunction, boolean parallel, boolean invert) {
         if (this.items == null) {
             this.items = Nd4j.create(items.size(),items.get(0).getPoint().columns());
-            for (int i = 0; i < items.size(); i++) {
-                this.items.putRow(i, items.get(i).getPoint());
-            }
+        }
+
+        this.parallel = parallel;
+        for (int i = 0; i < items.size(); i++) {
+            itemsList.add(items.get(i).getPoint());
         }
 
         itemsList = new ArrayList<>(items.size());
@@ -320,8 +322,7 @@ public class VPTree {
 
             sortedDistances.assign(distancesArr);
 
-            int dimToSort = items.isVector() ? 1 : 0;
-            sortedDistances = Nd4j.sort(sortedDistances, dimToSort, true);
+            Nd4j.sort(sortedDistances, 0, false);
 
 
             final double medianDistance = sortedDistances.getDouble(sortedDistances.length() / 2);
