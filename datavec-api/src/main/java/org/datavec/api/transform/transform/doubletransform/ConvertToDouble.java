@@ -3,10 +3,7 @@ package org.datavec.api.transform.transform.doubletransform;
 import lombok.NoArgsConstructor;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
-import org.datavec.api.transform.metadata.IntegerMetaData;
-import org.datavec.api.transform.transform.integer.BaseIntegerTransform;
 import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.WritableType;
 
