@@ -217,7 +217,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         new AllocationShape(length, elementSize, dataType()), initialize);
         this.length = length;
         //allocationPoint.attachBuffer(this);
-        this.elementSize = elementSize;
+        this.elementSize =  (byte) elementSize;
         this.trackingPoint = allocationPoint.getObjectId();
         this.offset = 0;
         this.originalOffset = 0;
@@ -348,7 +348,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.offset = offset;
         this.originalOffset = offset;
         this.trackingPoint = underlyingBuffer.getTrackingPoint();
-        this.elementSize = underlyingBuffer.getElementSize();
+        this.elementSize = (byte) underlyingBuffer.getElementSize();
         this.allocationPoint = ((BaseCudaDataBuffer) underlyingBuffer).allocationPoint;
 
         //        log.info("BCDB create for view: length: ["+ length+"], offset: ["+ offset+"], originalOffset: ["+ underlyingBuffer.originalOffset() +"], elementSize: ["+elementSize+"]");
@@ -625,12 +625,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void removeReferencing(String id) {
-        referencing.remove(id);
+        //referencing.remove(id);
     }
 
     @Override
     public Collection<String> references() {
-        return referencing;
+        //return referencing;
+        return null;
     }
 
     @Override
@@ -641,7 +642,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void addReferencing(String id) {
-        referencing.add(id);
+        //referencing.add(id);
     }
 
     @Override
