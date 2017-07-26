@@ -98,6 +98,19 @@ public class CSVRecordReader extends LineRecordReader {
         this.csvParser = new SerializableCSVParser(delimiter, quote);
     }
 
+    /**
+     * Skip lines, use delimiter, and strip quotes
+     * @param skipNumLines the number of lines to skip
+     * @param delimiter the delimiter
+     * @param quote the quote to strip
+     * @deprecated This constructor is deprecated; use {@link #CSVRecordReader(int, char)} or
+     * {@link #CSVRecordReader(int, char, char)}
+     */
+    @Deprecated
+    public CSVRecordReader(int skipNumLines, String delimiter, String quote) {
+        this(skipNumLines, stringDelimToChar(delimiter), stringDelimToChar(quote));
+    }
+
     public CSVRecordReader() {
         this(0, DEFAULT_DELIMITER);
     }
