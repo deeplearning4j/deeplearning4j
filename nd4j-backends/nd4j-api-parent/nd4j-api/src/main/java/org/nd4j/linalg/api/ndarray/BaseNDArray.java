@@ -813,7 +813,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 dimension[i] += rank();
 
         //dedup
-        dimension = Ints.toArray(new ArrayList<>(new TreeSet<>(Ints.asList(dimension))));
+        if (dimension.length > 1)
+            dimension = Ints.toArray(new ArrayList<>(new TreeSet<>(Ints.asList(dimension))));
 
         if (dimension.length > 1) {
             Arrays.sort(dimension);
