@@ -70,6 +70,20 @@ public class JDBCRecordReaderTest {
         assertTrue(recordListener.invoked());
     }
 
+    @Test
+    public void testReset() throws Exception {
+        JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee");
+        List<List<Writable>> records = new ArrayList<>();
+        records.add(reader.next());
+        reader.reset();
+        records.add(reader.next());
+        reader.close();
+
+        assertEquals(2, records.size());
+        assertEquals(new Text("Bolivian Dark"), records.get(0).get(0));
+        assertEquals(new Text("Bolivian Dark"), records.get(1).get(0));
+    }
+
     private JDBCRecordReader getInitializedReader(String query) throws Exception {
         JDBCRecordReader reader = new JDBCRecordReader(dataSource, query);
         reader.setTrimStrings(true);

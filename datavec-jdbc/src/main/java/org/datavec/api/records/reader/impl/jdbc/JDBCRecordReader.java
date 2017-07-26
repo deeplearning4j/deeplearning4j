@@ -13,13 +13,13 @@ import java.util.List;
 import javax.sql.DataSource;
 import lombok.Setter;
 import org.apache.commons.dbutils.DbUtils;
-import org.apache.commons.dbutils.ResultSetIterator;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.util.jdbc.JdbcWritableConverter;
+import org.datavec.api.util.jdbc.ResettableResultSetIterator;
 import org.datavec.api.writable.Writable;
 
 /**
@@ -33,7 +33,7 @@ public class JDBCRecordReader extends BaseRecordReader {
     private final String query;
     private Connection conn;
     private Statement statement;
-    private ResultSetIterator iter;
+    private ResettableResultSetIterator iter;
     private ResultSetMetaData meta;
     @Setter
     private boolean trimStrings = false;
@@ -51,7 +51,7 @@ public class JDBCRecordReader extends BaseRecordReader {
             statement.closeOnCompletion();
             ResultSet rs = statement.executeQuery(this.query);
             this.meta = rs.getMetaData();
-            this.iter = new ResultSetIterator(rs);
+            this.iter = new ResettableResultSetIterator(rs);
         } catch (SQLException e) {
             closeJdbc();
             throw new RuntimeException("Could not connect to the database", e);
@@ -79,6 +79,7 @@ public class JDBCRecordReader extends BaseRecordReader {
                     Writable writable = JdbcWritableConverter.convert(columnValue, meta.getColumnType(i + 1));
                     ret.add(writable);
                 } catch (SQLException e) {
+                    closeJdbc();
                     throw new RuntimeException("Error reading database metadata");
                 }
             }
@@ -99,6 +100,7 @@ public class JDBCRecordReader extends BaseRecordReader {
 
     @Override
     public void reset() {
+        iter.reset();
     }
 
     @Override
