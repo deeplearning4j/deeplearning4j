@@ -2971,7 +2971,7 @@ void NativeOps::releaseNumpy(Nd4jPointer npyArray) {
   * @return the pointer for the given address
   */
 
-Nd4jPointer NativeOps::pointerForAddress(long address) {
+Nd4jPointer NativeOps::pointerForAddress(Nd4jIndex address) {
     return reinterpret_cast<Nd4jPointer >(address);
 }
 
