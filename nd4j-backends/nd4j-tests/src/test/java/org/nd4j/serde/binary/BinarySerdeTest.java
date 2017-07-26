@@ -13,6 +13,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -73,7 +74,7 @@ public class BinarySerdeTest {
         BinarySerde.writeArrayToDisk(rand,tmpFile);
         DataBuffer buffer = BinarySerde.readShapeFromDisk(tmpFile);
 
-        assertEquals(rand.shapeInfoDataBuffer(), buffer);
+        assertArrayEquals(rand.shapeInfoDataBuffer().asInt(), buffer.asInt());
     }
 
     @Test
