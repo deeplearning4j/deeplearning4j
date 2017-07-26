@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.sql.DataSource;
 import lombok.Setter;
+import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.ResultSetIterator;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
@@ -30,6 +31,8 @@ public class JDBCRecordReader extends BaseRecordReader {
 
     private final DataSource dataSource;
     private final String query;
+    private Connection conn;
+    private Statement statement;
     private ResultSetIterator iter;
     private ResultSetMetaData meta;
     @Setter
@@ -43,12 +46,14 @@ public class JDBCRecordReader extends BaseRecordReader {
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
         try {
-            Connection conn = dataSource.getConnection();
-            Statement st = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            ResultSet rs = st.executeQuery(this.query);
+            conn = dataSource.getConnection();
+            statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            statement.closeOnCompletion();
+            ResultSet rs = statement.executeQuery(this.query);
             this.meta = rs.getMetaData();
             this.iter = new ResultSetIterator(rs);
         } catch (SQLException e) {
+            closeJdbc();
             throw new RuntimeException("Could not connect to the database", e);
         }
     }
@@ -63,6 +68,7 @@ public class JDBCRecordReader extends BaseRecordReader {
         List<Writable> ret = new ArrayList<>();
         if (iter.hasNext()) {
             Object[] next = iter.next();
+            invokeListeners(next);
             for (int i = 0; i < next.length; i++) {
                 try {
                     Object columnValue = next[i];
@@ -93,7 +99,6 @@ public class JDBCRecordReader extends BaseRecordReader {
 
     @Override
     public void reset() {
-
     }
 
     @Override
@@ -118,7 +123,12 @@ public class JDBCRecordReader extends BaseRecordReader {
 
     @Override
     public void close() throws IOException {
+        closeJdbc();
+    }
 
+    private void closeJdbc() {
+        DbUtils.closeQuietly(statement);
+        DbUtils.closeQuietly(conn);
     }
 
     @Override
