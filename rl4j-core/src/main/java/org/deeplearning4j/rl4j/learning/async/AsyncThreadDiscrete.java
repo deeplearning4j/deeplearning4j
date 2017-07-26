@@ -90,9 +90,11 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
                 INDArray[] output = current.outputAll(hstack);
                 rewards.add(new MiniTrans(hstack, action, output, accuReward));
 
-                reward += stepReply.getReward();
                 accuReward = 0;
             }
+
+            reward += stepReply.getReward();
+
             i++;
             lastAction = action;
         }
