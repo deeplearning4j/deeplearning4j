@@ -25,7 +25,7 @@ public class ConstantBuffersCache extends BasicConstantHandler {
             DataBuffer buffer = Nd4j.createBufferDetached(array);
 
             // we always allow int arrays with length < 3. 99.9% it's just dimension array. we don't want to recreate them over and over
-            if (counter.get() < MAX_ENTRIES || array.length < 3) {
+            if (counter.get() < MAX_ENTRIES || array.length < 4) {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
             }
