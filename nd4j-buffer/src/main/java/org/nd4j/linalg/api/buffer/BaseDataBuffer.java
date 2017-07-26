@@ -54,7 +54,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected long underlyingLength;
     protected long offset;
     protected byte elementSize;
-    protected transient ByteBuffer wrappedBuffer;
+    //protected transient ByteBuffer wrappedBuffer;
     protected transient DataBuffer wrappedDataBuffer;
 
     //protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
@@ -193,7 +193,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         pointer = new FloatPointer(data);
         setIndexer(FloatIndexer.create((FloatPointer) pointer));
-        wrappedBuffer = pointer.asByteBuffer();
+        //wrappedBuffer = pointer.asByteBuffer();
 
         length = data.length;
         underlyingLength = data.length;
@@ -281,7 +281,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         pointer = new DoublePointer(data);
         indexer = DoubleIndexer.create((DoublePointer) pointer);
-        wrappedBuffer = pointer.asByteBuffer();
+        //wrappedBuffer = pointer.asByteBuffer();
 
         length = data.length;
         underlyingLength = data.length;
@@ -312,7 +312,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         pointer = new IntPointer(data);
         setIndexer(IntIndexer.create((IntPointer) pointer));
-        wrappedBuffer = pointer.asByteBuffer();
+        //wrappedBuffer = pointer.asByteBuffer();
 
         length = data.length;
         underlyingLength = data.length;
@@ -438,7 +438,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void setNioBuffer() {
         if (elementSize * length >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Unable to create buffer of length " + length);
-        wrappedBuffer = pointer().asByteBuffer();
+        //wrappedBuffer = pointer().asByteBuffer();
 
     }
 
@@ -1096,17 +1096,19 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return pointer() == buffer.pointer();
     }
 
+    protected ByteBuffer wrappedBuffer() {
+        return pointer().asByteBuffer();
+    }
+
     @Override
     public IntBuffer asNioInt() {
         if (offset() >= Integer.MAX_VALUE)
             throw new IllegalStateException("Index out of bounds " + offset());
 
-        if (wrappedBuffer == null) {
-            return pointer().asByteBuffer().asIntBuffer();
-        } else if (offset() == 0) {
-            return wrappedBuffer.asIntBuffer();
+         if (offset() == 0) {
+            return wrappedBuffer().asIntBuffer();
         } else
-            return (IntBuffer) wrappedBuffer.asIntBuffer().position((int) offset());
+            return (IntBuffer) wrappedBuffer().asIntBuffer().position((int) offset());
     }
 
     @Override
@@ -1114,12 +1116,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (offset() >= Integer.MAX_VALUE)
             throw new IllegalStateException("Index out of bounds " + offset());
 
-        if (wrappedBuffer == null) {
-            return pointer().asByteBuffer().asDoubleBuffer();
-        } else if (offset() == 0) {
-            return wrappedBuffer.asDoubleBuffer();
+        if (offset() == 0) {
+            return wrappedBuffer().asDoubleBuffer();
         } else {
-            return (DoubleBuffer) wrappedBuffer.asDoubleBuffer().position((int) (offset()));
+            return (DoubleBuffer) wrappedBuffer().asDoubleBuffer().position((int) (offset()));
         }
     }
 
@@ -1128,23 +1128,17 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (offset() >= Integer.MAX_VALUE)
             throw new IllegalStateException("Index out of bounds " + offset());
 
-        if (wrappedBuffer == null) {
-            return pointer().asByteBuffer().asFloatBuffer();
-        } else if (offset() == 0) {
-            return wrappedBuffer.asFloatBuffer();
+        if (offset() == 0) {
+            return wrappedBuffer().asFloatBuffer();
         } else {
-            return (FloatBuffer) wrappedBuffer.asFloatBuffer().position((int) (offset()));
+            return (FloatBuffer) wrappedBuffer().asFloatBuffer().position((int) (offset()));
         }
 
     }
 
     @Override
     public ByteBuffer asNio() {
-        if (wrappedBuffer == null) {
-            return pointer().asByteBuffer();
-        } else {
-            return wrappedBuffer;
-        }
+        return wrappedBuffer();
     }
 
     @Override
@@ -1304,7 +1298,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if (currentType != Type.COMPRESSED)
                 readContent(s, currentType);
 
-            wrappedBuffer = pointer().asByteBuffer();
+            //wrappedBuffer = pointer().asByteBuffer();
 
         } catch (Exception e) {
             throw new RuntimeException(e);

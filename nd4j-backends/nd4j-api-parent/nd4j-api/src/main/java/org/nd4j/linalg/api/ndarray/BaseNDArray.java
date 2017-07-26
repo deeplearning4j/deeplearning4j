@@ -95,8 +95,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     protected transient volatile DataBuffer shapeInformation;
     protected transient volatile DataBuffer data;
-    protected transient DataBuffer shape;
-    protected transient DataBuffer stride;
+    //protected transient DataBuffer shape;
+    //protected transient DataBuffer stride;
     protected transient boolean compressed = false;
 
     // this field holds jvm copy of shapeInfo
@@ -2518,15 +2518,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     protected DataBuffer shapeOf() {
-        if (shape == null)
-            shape = Shape.shapeOf(shapeInfoDataBuffer());
-        return shape;
+//        if (shape == null)
+//            shape = Shape.shapeOf(shapeInfoDataBuffer());
+//        return shape;
+
+        return Shape.shapeOf(shapeInfoDataBuffer());
     }
 
     protected DataBuffer strideOf() {
-        if (stride == null)
-            stride = Shape.stride(shapeInfoDataBuffer());
-        return stride;
+//        if (stride == null)
+//            stride = Shape.stride(shapeInfoDataBuffer());
+//        return stride;
+        return Shape.stride(shapeInfoDataBuffer());
     }
 
     @Override
@@ -4712,8 +4715,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     this.offset(), -1, newOrder));
         }
 
-        this.shape = null;
-        this.stride = null;
+        //this.shape = null;
+        //this.stride = null;
 
 
         return this;
