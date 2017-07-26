@@ -30,16 +30,20 @@ void concatCpuGeneric(
 
     bool allC = true;
     bool allScalar = true;
+    bool allVectors = true;
 
     //nothing to concat
     if(numArrays == 1)
         return;
+
+    Nd4jIndex zeroLen = shape::length(inputShapeInfoPointers[0]);
 
     //detect whether all arrays are c ordered or not
     //Also detect whether they are all scalars
     for(int i = 0; i < numArrays; i++) {
         allC &= (shape::order(inputShapeInfoPointers[i]) == 'c');
         allScalar &= (shape::isScalar(inputShapeInfoPointers[i]));
+        allVectors &= (shape::isRowVector(inputShapeInfoPointers[i]) && shape::length(inputShapeInfoPointers[i]) == zeroLen);
     }
 
     //we are merging all scalars
@@ -55,13 +59,28 @@ void concatCpuGeneric(
 
 
     if(allC && dimension == 0 && shape::order(resultShapeInfo) == 'c') {
-        int currBuffer = 0;
-        int currBufferOffset = 0;
-        for(int i = 0; i <  length; i++) {
-            result[i] = dataBuffers[currBuffer][currBufferOffset++];
-            if(currBufferOffset >= shape::length(inputShapeInfoPointers[currBuffer])) {
-                currBuffer++;
-                currBufferOffset = 0;
+        if (numArrays >= 8 && allVectors) {
+
+
+#pragma omp parallel for schedule(guided)
+            for (int r = 0; r < numArrays; r++) {
+                T *z = result + (r * zeroLen);
+                T *x = dataBuffers[r];
+
+#pragma omp simd
+                for (Nd4jIndex e = 0; e < zeroLen; e++) {
+                    z[e] = x[e];
+                }
+            }
+        } else {
+            int currBuffer = 0;
+            int currBufferOffset = 0;
+            for (int i = 0; i < length; i++) {
+                result[i] = dataBuffers[currBuffer][currBufferOffset++];
+                if (currBufferOffset >= shape::length(inputShapeInfoPointers[currBuffer])) {
+                    currBuffer++;
+                    currBufferOffset = 0;
+                }
             }
         }
 
