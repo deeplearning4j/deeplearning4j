@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
     private Map<ShapeDescriptor, Pair<DataBuffer, int[]>> shapeCache = new ConcurrentHashMap<>();
     private AtomicInteger counter = new AtomicInteger(0);
-    private static final int MAX_ENTRIES = 100;
+    private static final int MAX_ENTRIES = 1000;
 
     @Override
     public Pair<DataBuffer, int[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order) {

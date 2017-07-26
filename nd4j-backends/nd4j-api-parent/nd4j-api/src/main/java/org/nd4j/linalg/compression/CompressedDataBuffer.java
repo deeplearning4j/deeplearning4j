@@ -31,7 +31,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
         this.compressionDescriptor = descriptor;
         this.pointer = pointer;
         this.length = descriptor.getNumberOfElements();
-        this.elementSize = (int) descriptor.getOriginalElementSize();
+        this.elementSize = (byte) descriptor.getOriginalElementSize();
 
         initTypeAndSize();
     }

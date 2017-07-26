@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ConstantBuffersCache extends BasicConstantHandler {
     protected Map<ArrayDescriptor, DataBuffer> buffersCache = new ConcurrentHashMap<>();
     private AtomicInteger counter = new AtomicInteger(0);
-    private static final int MAX_ENTRIES = 100;
+    private static final int MAX_ENTRIES = 1000;
 
     @Override
     public DataBuffer getConstantBuffer(int[] array) {
@@ -24,7 +24,8 @@ public class ConstantBuffersCache extends BasicConstantHandler {
         if (!buffersCache.containsKey(descriptor)) {
             DataBuffer buffer = Nd4j.createBufferDetached(array);
 
-            if (counter.get() < MAX_ENTRIES) {
+            // we always allow int arrays with length < 3. 99.9% it's just dimension array. we don't want to recreate them over and over
+            if (counter.get() < MAX_ENTRIES || array.length < 4) {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
             }
