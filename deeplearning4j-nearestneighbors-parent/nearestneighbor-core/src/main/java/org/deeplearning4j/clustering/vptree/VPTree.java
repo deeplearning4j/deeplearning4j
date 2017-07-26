@@ -94,7 +94,7 @@ public class VPTree {
         this.invert = invert;
         this.items = items;
         itemsList = new ArrayList<>(items.rows());
-        for(int i = 0; i < itemsList.size(); i++) {
+        for(int i = 0; i < items.rows(); i++) {
             itemsList.add(items.getRow(i));
         }
         root = buildFromPoints(0, this.items.rows());
