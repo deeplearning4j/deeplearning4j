@@ -65,8 +65,10 @@ public class VPTree {
     private boolean invert = false;
     private ExecutorService executorService;
     @Getter
-    private boolean parallel = true;
+    private int workers = 2;
     private AtomicInteger size = new AtomicInteger(0);
+
+    private ThreadLocal<INDArray> scalars = new ThreadLocal<>();
 
     WorkspaceConfiguration workspaceConfiguration;
 
@@ -76,17 +78,17 @@ public class VPTree {
      * @param invert
      */
     public VPTree(INDArray points, boolean invert) {
-        this(points, "euclidean", true, invert);
+        this(points, "euclidean", 2, invert);
     }
 
     /**
      *
      * @param points
      * @param invert
-     * @param parallel
+     * @param workers number of parallel workers for tree building (increases memory requirements!)
      */
-    public VPTree(INDArray points, boolean invert, boolean parallel) {
-        this(points, "euclidean", parallel, invert);
+    public VPTree(INDArray points, boolean invert, int workers) {
+        this(points, "euclidean", workers, invert);
     }
 
     /**
@@ -110,21 +112,23 @@ public class VPTree {
      *
      * @param items the items to use
      * @param similarityFunction the similarity function to use
-     * @param parallel whether the tree is parallel o not
+     * @param workers number of parallel workers for tree building (increases memory requirements!)
      * @param invert whether to invert the metric (different optimization objective)
      */
-    public VPTree(List<DataPoint> items, String similarityFunction, boolean parallel, boolean invert) {
+    public VPTree(List<DataPoint> items, String similarityFunction, int workers, boolean invert) {
         if (this.items == null) {
             this.items = Nd4j.create(items.size(),items.get(0).getPoint().columns());
         }
 
-        this.parallel = parallel;
+        this.workers = workers;
+
+//        this.parallel = parallel;
         for (int i = 0; i < items.size(); i++) {
-            itemsList.add(items.get(i).getPoint());
+            //itemsList.add(items.get(i).getPoint());
+            this.items.putRow(i, items.get(i).getPoint());
         }
 
 //        itemsList = new ArrayList<>(items.size());
-        this.parallel = parallel;
 //        for (int i = 0; i < items.size(); i++) {
 //            itemsList.add(items.get(i).getPoint());
 //        }
@@ -143,10 +147,17 @@ public class VPTree {
      * @param similarityFunction
      */
     public VPTree(INDArray items, String similarityFunction) {
-        this(items, similarityFunction, true, true);
+        this(items, similarityFunction, 2, true);
     }
 
-    public VPTree(INDArray items, String similarityFunction, boolean parallel, boolean invert) {
+    /**
+     *
+     * @param items
+     * @param similarityFunction
+     * @param workers number of parallel workers for tree building (increases memory requirements!)
+     * @param invert
+     */
+    public VPTree(INDArray items, String similarityFunction, int workers, boolean invert) {
         this.similarityFunction = similarityFunction;
         this.invert = invert;
         this.items = items;
@@ -155,7 +166,7 @@ public class VPTree {
 //            itemsList.add(items.getRow(i));
 //        }
 
-        this.parallel = parallel;
+        this.workers = workers;
         root = buildFromPoints(items);
     }
 
@@ -166,7 +177,7 @@ public class VPTree {
      * @param similarityFunction
      */
     public VPTree(List<DataPoint> items, String similarityFunction) {
-        this(items, similarityFunction, true, false);
+        this(items, similarityFunction, 2, false);
     }
 
 
@@ -245,42 +256,27 @@ public class VPTree {
      * @return the distance between the two points
      */
     public float distance(INDArray arr1, INDArray arr2) {
+        if (scalars.get() == null)
+            scalars.set(Nd4j.scalar(0.0));
+
         switch (similarityFunction) {
             case "euclidean":
-                float ret = Nd4j.getExecutioner().execAndReturn(
-                        new EuclideanDistance(arr1, arr2,Nd4j.scalar(0.0),arr1.length())).getFinalResult()
-                        .floatValue();
+                float ret = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get(),arr1.length())).getFinalResult().floatValue();
                 return invert ? -ret : ret;
-
             case "cosinesimilarity":
-                float ret2 = Nd4j.getExecutioner().execAndReturn(new
-                        CosineSimilarity(
-                        arr1,
-                        arr2,
-                        Nd4j.scalar(0.0)
-                        ,arr1.length())).getFinalResult()
-                        .floatValue();
+                float ret2 = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(arr1, arr2, scalars.get(), arr1.length())).getFinalResult().floatValue();
                 return invert ? -ret2 : ret2;
             case "cosinedistance":
-                float ret6 = Nd4j.getExecutioner().execAndReturn(new CosineDistance(arr1, arr2,Nd4j.scalar(0.0)
-                        ,arr1.length())).getFinalResult()
-                        .floatValue();
+                float ret6 = Nd4j.getExecutioner().execAndReturn(new CosineDistance(arr1, arr2, scalars.get(), arr1.length())).getFinalResult().floatValue();
                 return invert ? -ret6 : ret6;
-
             case "manhattan":
-                float ret3 = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(
-                        arr1, arr2
-                        ,Nd4j.scalar(0.0),arr1.length()))
-                        .getFinalResult()
-                        .floatValue();
+                float ret3 = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(arr1, arr2,scalars.get(),arr1.length())).getFinalResult().floatValue();
                 return invert ? -ret3 : ret3;
             case "dot":
                 float dotRet = (float) Nd4j.getBlasWrapper().dot(arr1, arr2);
                 return invert ? -dotRet : dotRet;
             default:
-                float ret4 = Nd4j.getExecutioner().execAndReturn(new
-                        EuclideanDistance(arr1, arr2,Nd4j.scalar(0.0)
-                        ,arr1.length())).getFinalResult()
+                float ret4 = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get(),arr1.length())).getFinalResult()
                         .floatValue();
                 return invert ? -ret4 : ret4;
 
@@ -326,6 +322,8 @@ public class VPTree {
 
         double medianDistance = distancesArr.medianNumber().doubleValue();
 
+        ret.threshold = (float) medianDistance;
+
         List<INDArray> leftPoints = new ArrayList<>();
         List<Integer> leftIndices = new ArrayList<>();
         List<INDArray> rightPoints = new ArrayList<>();
@@ -358,8 +356,8 @@ public class VPTree {
     }
 
     private Node buildFromPoints(INDArray items) {
-        if (executorService == null && items == this.items && parallel)
-            executorService = Executors.newFixedThreadPool( 2, //Runtime.getRuntime().availableProcessors(),
+        if (executorService == null && items == this.items)
+            executorService = Executors.newFixedThreadPool( workers,
                     new ThreadFactory() {
                         @Override
                         public Thread newThread(Runnable r) {
@@ -461,14 +459,12 @@ public class VPTree {
         distances.clear();
 
         PriorityQueue<HeapObject> pq = new PriorityQueue<>();
-        search(root, target, k + 1, pq,  Double.MAX_VALUE);
-
+        search(root, target, k+1, pq,  Double.MAX_VALUE);
 
         if (pq.size() > k)
             pq.next();
 
         while (!pq.isEmpty()) {
-            //int idx = pq.peek().getIndex();
             HeapObject ho = pq.peek();
             results.add(new DataPoint(ho.getIndex(), ho.getPoint()));
             distances.add(ho.getDistance());
@@ -489,21 +485,21 @@ public class VPTree {
      * @param k
      * @param pq
      */
-    public void search(Node node, INDArray target, int k, PriorityQueue<HeapObject> pq, double tau) {
+    public void search(Node node, INDArray target, int k, PriorityQueue<HeapObject> pq, double cTau) {
 
         if (node == null)
             return;
 
-        INDArray get = node.point; //items.getRow(node.getIndex());
+        double tau = cTau;
+
+        INDArray get = node.getPoint(); //items.getRow(node.getIndex());
         double distance = distance(get, target);
         if (distance < tau) {
             if (pq.size() == k)
                 pq.next();
-            pq.add(new HeapObject(node.getIndex(), node.point, distance), distance);
+            pq.add(new HeapObject(node.getIndex(), node.getPoint(), distance), distance);
             if (pq.size() == k)
                 tau = pq.peek().getDistance();
-
-
         }
 
         Node left = node.getLeft();
@@ -513,7 +509,7 @@ public class VPTree {
             return;
 
         if (distance < node.getThreshold()) {
-            if (distance - tau <= node.getThreshold()) { // if there can still be neighbors inside the ball, recursively search left child first
+            if (distance - tau < node.getThreshold()) { // if there can still be neighbors inside the ball, recursively search left child first
                 search(left, target, k, pq, tau);
             }
 
@@ -526,7 +522,7 @@ public class VPTree {
                 search(right, target, k, pq, tau);
             }
 
-            if (distance - tau <= node.getThreshold()) { // if there can still be neighbors inside the ball, recursively search left child
+            if (distance - tau < node.getThreshold()) { // if there can still be neighbors inside the ball, recursively search left child
                 search(left, target, k, pq, tau);
             }
         }

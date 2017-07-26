@@ -20,6 +20,7 @@ package org.deeplearning4j.clustering.vptree;
 
 import org.deeplearning4j.clustering.berkeley.*;
 import org.deeplearning4j.clustering.sptree.DataPoint;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -61,9 +62,9 @@ public class VpTreeNodeTest {
     public void testParallel() {
         Nd4j.getRandom().setSeed(7);
         INDArray randn = Nd4j.rand(1000, 100);
-        VPTree vpTree = new VPTree(randn, false, true);
+        VPTree vpTree = new VPTree(randn, false, 2);
         Nd4j.getRandom().setSeed(7);
-        VPTree vpTreeNoParallel = new VPTree(randn, false, false);
+        VPTree vpTreeNoParallel = new VPTree(randn, false, 1);
         List<DataPoint> results = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
         List<DataPoint> noParallelResults = new ArrayList<>();
@@ -204,7 +205,7 @@ public class VpTreeNodeTest {
                 trueResults.putScalar(j, i, pt);
         }
 
-        VPTree tree = new VPTree(points, "euclidean", false, false);
+        VPTree tree = new VPTree(points, "euclidean", 1, false);
 
         List<DataPoint> results = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
