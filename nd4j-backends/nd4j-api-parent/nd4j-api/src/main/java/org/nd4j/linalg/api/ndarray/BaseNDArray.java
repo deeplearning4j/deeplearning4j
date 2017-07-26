@@ -2007,6 +2007,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double distance2(INDArray other) {
+        Nd4j.getCompressor().autoDecompress(this);
         return Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this, other)).getFinalResult().doubleValue();
     }
 
@@ -2015,6 +2016,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double distance1(INDArray other) {
+        Nd4j.getCompressor().autoDecompress(this);
         return Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(this, other)).getFinalResult().doubleValue();
     }
 
@@ -3588,6 +3590,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray putColumn(int column, INDArray toPut) {
+        Nd4j.getCompressor().autoDecompress(this);
+
         if (isColumnVector() && toPut.isVector()) {
             return assign(toPut);
         }
@@ -3598,6 +3602,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public double getDouble(int i) {
+        Nd4j.getCompressor().autoDecompress(this);
+
         if (i >= length()) {
             throw new IllegalArgumentException("Unable to get linear index >= " + length());
         }
@@ -4069,6 +4075,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray getColumn(int c) {
+        Nd4j.getCompressor().autoDecompress(this);
+
         if (isColumnVector() && c == 0)
             return this;
         else if (isColumnVector() && c > 0)
@@ -4084,6 +4092,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray getRows(int[] rindices) {
+        Nd4j.getCompressor().autoDecompress(this);
+
         if (!isMatrix() && !isVector())
             throw new IllegalArgumentException("Unable to get columns from a non matrix or vector");
         if (isVector())

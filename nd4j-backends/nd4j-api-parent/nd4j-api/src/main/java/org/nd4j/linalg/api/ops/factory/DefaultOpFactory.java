@@ -137,6 +137,7 @@ public class DefaultOpFactory implements OpFactory {
                                     Object[] extraArgs) {
         Accumulation ret = null;
         switch (name) {
+
             case "sum":
                 ret = new Sum(x, y, z,x.length());
                 break;
@@ -270,7 +271,10 @@ public class DefaultOpFactory implements OpFactory {
         TransformOp op = null;
         switch (name) {
             case "relu":
-                op = new RectifedLinear(x, z, 0);
+                op = new RectifedLinear(x, z, x.length(),extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);
+                break;
+            case "step":
+                op = new Step(x,y,z,x.length(),extraArgs == null || extraArgs[0] == null  ? 0.0 : (double) extraArgs[0]);
                 break;
             case "abs":
                 op = new Abs(x, z);
