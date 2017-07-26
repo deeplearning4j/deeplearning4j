@@ -346,11 +346,6 @@ public class VPTree {
 
         // closing workspace
         workspace.notifyScopeLeft();
-        //log.info("Thread: {}; Workspace size: {}", Thread.currentThread().getId(), (int) ( workspace.getCurrentSize() / 1024 / 1024));
-
-        //log.info("Left size: {}; Right size: {}; Items size: {} ", leftPoints.size(), rightPoints.size(), items.rows());
-
-        //Future<Node> futureNode = executorService.submit(new NodeBuilder());
 
         if (leftPoints.size() > 0)
             ret.futureLeft = executorService.submit(new NodeBuilder(leftPoints, leftIndices)); // = buildFromPoints(leftPoints);
@@ -430,9 +425,6 @@ public class VPTree {
         workspace.notifyScopeLeft();
         workspace.destroyWorkspace(true);
 
-
-        //log.info("Left size: {}; Right size: {}; Items size: {} ", leftPoints.size(), rightPoints.size(), items.rows());
-
         if (leftPoints.size() > 0)
             ret.left = buildFromPoints(leftPoints, leftIndices);
 
@@ -452,129 +444,6 @@ public class VPTree {
             executorService.shutdown();
 
         return ret;
-/*
-        if (upper - lower > 1) {
-            int randomPoint = MathUtils.randomNumberBetween(lower, upper - 1, Nd4j.getRandom());
-
-            // Partition around the median distance
-            final int median = (upper + lower) / 2;
-            INDArray distancesArr = null;
-            INDArray sortedDistances = null;
-
-            if (distancesArr == null)
-                distancesArr = Nd4j.create(items.rows(), 1);
-
-            if (sortedDistances == null)
-                sortedDistances = Nd4j.create(items.rows(), 1);
-
-            if(itemsList  == null)
-                itemsList = new ArrayList<>(items.rows());
-            INDArray basePoint = items.getRow(randomPoint);
-            //run a distance compute wrt each row given the base point
-            calcDistancesRelativeTo(basePoint, distancesArr);
-
-            sortedDistances.assign(distancesArr);
-
-            Nd4j.sort(sortedDistances, 0, false);
-
-
-            final double medianDistance = sortedDistances.getDouble(sortedDistances.length() / 2);
-            INDArray leftPoints = null, rightPoints = null;
-
-            //only allocate left/right points once
-            if (leftPoints == null)
-                leftPoints = Nd4j.create(sortedDistances.length(), items.columns());
-
-            if (rightPoints == null)
-                rightPoints = Nd4j.create(sortedDistances.length(), items.columns());
-
-
-
-            synchronized (items) {
-                for (int i = 0; i < distancesArr.length(); i++) {
-                    if (distancesArr.getDouble(i) < medianDistance) {
-                        int cn =leftPointsIndex++;
-                        log.info("Thread: {}; I: {}; leftPoint Index: {}", Thread.currentThread().getId(), i, cn);
-                        leftPoints.putRow(cn, itemsList.get(i));
-                    } else {
-                        int cn =leftPointsIndex++;
-                        log.info("Thread: {}; I: {}; rightPoint Index: {}", Thread.currentThread().getId(), i, cn);
-                        rightPoints.putRow(cn, itemsList.get(i));
-                    }
-                }
-
-                for (int i = 0; i < leftPointsIndex; i++) {
-                    itemsList.set(i,leftPoints.getRow(i));
-                }
-
-                for (int i = 0; i < rightPointsIndex; i++) {
-                    itemsList.set(i + leftPointsIndex,rightPoints.getRow(i));
-                }
-
-                ret.setThreshold(distance(itemsList.get(lower), itemsList.get(median)));
-                ret.setIndex(lower);
-
-            }
-
-            if (parallel && size.get() >= Runtime.getRuntime().availableProcessors()) {
-                Future<?> left = null;
-                Future<?> right = null;
-                if (lower + 1 != median) {
-                    left = executorService.submit(new Runnable() {
-                        @Override
-                        public void run() {
-                            ret.setLeft(buildFromPoints(lower + 1, median));
-                        }
-                    });
-                }
-
-                if (median != upper) {
-                    right = executorService.submit(new Runnable() {
-                        @Override
-                        public void run() {
-                            ret.setRight(buildFromPoints(median, upper));
-                        }
-                    });
-                }
-
-                if (lower == 0 && upper == items.size(0)) {
-                    try {
-                        if (left != null)
-                            left.get();
-
-                        if (right != null)
-                            right.get();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                    if (executorService != null) {
-                        executorService.shutdown();
-                    }
-                }
-
-
-            }
-
-            else {
-                //no parallel (mainly for debugging)
-                if (lower + 1 != median) {
-                    ret.setLeft(buildFromPoints(lower + 1, median));
-
-                }
-
-                if (median != upper) {
-                    ret.setRight(buildFromPoints(median, upper));
-
-                }
-
-            }
-
-        }
-
-
-        return ret;
-*/
     }
 
 
@@ -592,8 +461,11 @@ public class VPTree {
         distances.clear();
 
         PriorityQueue<HeapObject> pq = new PriorityQueue<>();
-        search(root, target, k, pq,  Double.MAX_VALUE);
+        search(root, target, k + 1, pq,  Double.MAX_VALUE);
 
+
+        if (pq.size() > k)
+            pq.next();
 
         while (!pq.isEmpty()) {
             //int idx = pq.peek().getIndex();
