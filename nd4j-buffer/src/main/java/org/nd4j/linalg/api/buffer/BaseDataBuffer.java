@@ -35,10 +35,12 @@ import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Base class for a data buffer
@@ -312,7 +314,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         pointer = new IntPointer(data);
         setIndexer(IntIndexer.create((IntPointer) pointer));
-        //wrappedBuffer = pointer.asByteBuffer();
 
         length = data.length;
         underlyingLength = data.length;
@@ -549,6 +550,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if (initialize)
                 fillPointerWithZero();
         }
+
+        //log.info("Creating new buffer of size: {}; dtype: {}", length, dataType());
     }
 
     protected BaseDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
@@ -582,7 +585,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
             attached = true;
             parentWorkspace = workspace;
 
-            //pointer = new IntPointer(length());
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new FloatPointer(length());
             setIndexer(IntIndexer.create((IntPointer) pointer));
 
@@ -590,7 +592,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
             attached = true;
             parentWorkspace = workspace;
 
-            //pointer = new IntPointer(length());
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new FloatPointer(length());
             setIndexer(LongIndexer.create((LongPointer) pointer));
 
