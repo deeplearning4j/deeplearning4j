@@ -85,7 +85,7 @@ public class ManualTests {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(123);
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).theta(0.5).learningRate(500)
-                .useAdaGrad(false).build();
+                .useAdaGrad(true).build();
 
         org.nd4j.linalg.io.ClassPathResource resource = new org.nd4j.linalg.io.ClassPathResource("/mnist2500_X.txt");
         File f = resource.getTempFileFromArchive();

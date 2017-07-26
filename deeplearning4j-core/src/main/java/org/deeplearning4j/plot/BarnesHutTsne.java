@@ -514,14 +514,18 @@ public class BarnesHutTsne implements Model {
         INDArray gradChange = gains.mul(yGrads);
 
         if (useAdaGrad) {
-            if (adaGrad == null)
-                adaGrad = new AdaGrad();
+            if (adaGrad == null) {
+                adaGrad = new AdaGrad(gradient.shape(),learningRate);
+                adaGrad.setStateViewArray(Nd4j.zeros(gradient.shape()).reshape(1,gradChange.length()),gradChange.shape(),gradient.ordering(),true);
+            }
+
             gradChange = adaGrad.getGradient(gradChange, 0);
 
         }
 
-        else
+        else {
             gradChange.muli(learningRate);
+        }
 
         yIncs.muli(momentum).subi(gradChange);
         Y.addi(yIncs);
