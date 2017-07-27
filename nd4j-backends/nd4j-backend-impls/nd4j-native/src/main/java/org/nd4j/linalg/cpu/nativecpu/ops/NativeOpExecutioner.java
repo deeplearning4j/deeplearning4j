@@ -552,14 +552,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (FloatPointer) op.z().data().addressPointer(),
                             (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             (FloatPointer) op.y().data().addressPointer(), (FloatPointer) getPointerForExtraArgs(op),
-                            new IntPointer(dimension), dimension.length);
+                            (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(), dimension.length);
         } else if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             loop.execScalarDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
                             (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                             (DoublePointer) op.z().data().addressPointer(),
                             (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             (DoublePointer) op.y().data().addressPointer(), (DoublePointer) getPointerForExtraArgs(op),
-                            new IntPointer(dimension), dimension.length);
+                            (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(), dimension.length);
         }
     }
 

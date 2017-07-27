@@ -35,6 +35,8 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
                                         super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
                         shapeCache.put(descriptor, buffer);
 
+                        bytes.addAndGet(buffer.getFirst().length() * 4 * 2);
+
                         return buffer;
                     } else
                         return shapeCache.get(descriptor);

@@ -5,10 +5,13 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * @author raver119@gmail.com
  */
 public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
+    protected AtomicLong bytes = new AtomicLong(0);
     /**
      * This method creates shapeInformation buffer, based on shape being passed in
      *
@@ -44,5 +47,10 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
         DataBuffer buffer = Shape.createShapeInformation(shape, stride, offset, elementWiseStride, order);
         buffer.setConstant(true);
         return Pair.create(buffer, buffer.asInt());
+    }
+
+    @Override
+    public long getCachedBytes() {
+        return bytes.get();
     }
 }

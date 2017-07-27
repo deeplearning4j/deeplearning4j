@@ -102,6 +102,7 @@ public class DeviceTADManager extends BasicTADManager {
             // so, at this point we have buffer valid on host side.
             // And we just need to replace DevicePointer with constant pointer
             tadCache.get(deviceId).put(descriptor, buffers);
+            bytes.addAndGet((buffers.getFirst().length() * 4) + (buffers.getSecond().length() * 8));
             log.trace("Using TAD from cache...");
         }
 

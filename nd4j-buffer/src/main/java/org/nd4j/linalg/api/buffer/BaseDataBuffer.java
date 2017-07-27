@@ -317,6 +317,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         length = data.length;
         underlyingLength = data.length;
+
+        log.info("Creating new buffer of size: {}; dtype: {}; B", data.length, dataType());
     }
 
     /**
@@ -387,6 +389,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             pointer = new LongPointer(length);
             setIndexer(LongIndexer.create((LongPointer) pointer));
         }
+
+        log.info("Creating new buffer of size: {}; dtype: {}; C", length, dataType());
     }
 
     /**
@@ -433,6 +437,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             pointer = new LongPointer(buffer.asLongBuffer());
             setIndexer(LongIndexer.create((LongPointer) pointer));
         }
+
+        log.info("Creating new buffer of size: {}; dtype: {}; D", length, dataType());
     }
 
     //sets the nio wrapped buffer (allows to be overridden for other use cases like cuda)
@@ -551,7 +557,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 fillPointerWithZero();
         }
 
-        //log.info("Creating new buffer of size: {}; dtype: {}", length, dataType());
+        log.info("Creating new buffer of size: {}; dtype: {}; A", length, dataType());
     }
 
     protected BaseDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {

@@ -32,4 +32,10 @@ public interface ShapeInfoProvider {
      * This method forces cache purge, if cache is available for specific implementation
      */
     void purgeCache();
+
+    /**
+     * This method returns memory used for cache, in bytes
+     * @return
+     */
+    long getCachedBytes();
 }
