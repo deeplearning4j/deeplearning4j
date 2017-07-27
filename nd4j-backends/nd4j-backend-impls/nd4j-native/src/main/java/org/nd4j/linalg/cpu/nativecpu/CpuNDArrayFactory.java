@@ -838,7 +838,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         if (arrays.length == 1)
             return target.assign(arrays[0]);
 
-        long len = target != null ? target.lengthLong() : arrays[0].length();
+        long len = target.lengthLong();
 
         PointerPointer dataPointers = new PointerPointer(arrays.length);
 
@@ -855,13 +855,14 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         }
 
         if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
-            nativeOps.averageDouble(null, dataPointers, target == null ? null : (DoublePointer) target.data().addressPointer(), arrays.length,
+            nativeOps.averageDouble(null, dataPointers, (DoublePointer) target.data().addressPointer(), arrays.length,
                     len, true);
         } else if (target.data().dataType() == DataBuffer.Type.FLOAT) {
-            nativeOps.averageFloat(null, dataPointers, target == null ? null : (FloatPointer) target.data().addressPointer(), arrays.length,
+            nativeOps.averageFloat(null, dataPointers, (FloatPointer) target.data().addressPointer(), arrays.length,
                     len, true);
         } else {
-            nativeOps.averageHalf(null, dataPointers, target == null ? null :  (ShortPointer) target.data().addressPointer(), arrays.length, len, true);
+            nativeOps.averageHalf(null, dataPointers, (ShortPointer) target.data().addressPointer(), arrays.length, len,
+                    true);
         }
 
         return target;
