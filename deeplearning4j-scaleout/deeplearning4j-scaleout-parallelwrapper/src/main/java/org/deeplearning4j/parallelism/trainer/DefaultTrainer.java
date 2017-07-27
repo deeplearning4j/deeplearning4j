@@ -261,14 +261,13 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                     // we replicate original model params & updater state, just in case it's pre-trained model
                     synchronized (originalModel) {
-                        replicatedModel.setParams(originalModel.params());
+                        replicatedModel.setParams(originalModel.params().unsafeDuplication(true));
 
                         Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
                         Updater updaterOrigina = ((MultiLayerNetwork) originalModel).getUpdater();
 
                         if (updaterOrigina != null && updaterOrigina.getStateViewArray() != null)
-                            updaterReplica.setStateViewArray((MultiLayerNetwork) replicatedModel,
-                                            updaterOrigina.getStateViewArray().dup(), false);
+                            updaterReplica.setStateViewArray((MultiLayerNetwork) replicatedModel, updaterOrigina.getStateViewArray().unsafeDuplication(true), false);
 
                         Nd4j.getExecutioner().commit();
                     }
@@ -291,13 +290,13 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                     // we replicate original model params & updater state, just in case it's pre-trained model
                     synchronized (originalModel) {
-                        replicatedModel.setParams(originalModel.params());
+                        replicatedModel.setParams(originalModel.params().unsafeDuplication(true));
 
                         ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
                         ComputationGraphUpdater updaterOrigina = ((ComputationGraph) originalModel).getUpdater();
 
                         if (updaterOrigina != null && updaterOrigina.getStateViewArray() != null)
-                            updaterReplica.setStateViewArray(updaterOrigina.getStateViewArray().dup());
+                            updaterReplica.setStateViewArray(updaterOrigina.getStateViewArray().unsafeDuplication(true));
 
                         Nd4j.getExecutioner().commit();
                     }
