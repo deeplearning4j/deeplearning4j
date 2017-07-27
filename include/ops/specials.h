@@ -193,32 +193,32 @@ void concatCpuGeneric(
 
 
     //tad shape information for result
-    shape::TAD resultTad(resultShapeInfo,&dimension,1);
-    resultTad.createTadOnlyShapeInfo();
-    resultTad.createOffsets();
-    int resultTadEleStride = shape::elementWiseStride(resultTad.tadOnlyShapeInfo);
+    shape::TAD *resultTad = new shape::TAD(resultShapeInfo,&dimension,1);
+    resultTad->createTadOnlyShapeInfo();
+    resultTad->createOffsets();
+    int resultTadEleStride = shape::elementWiseStride(resultTad->tadOnlyShapeInfo);
 
     Nd4jIndex arrOffset = 0;
-    int tadEleStride = shape::elementWiseStride(resultTad.tadOnlyShapeInfo);
+    int tadEleStride = shape::elementWiseStride(resultTad->tadOnlyShapeInfo);
     for(Nd4jIndex i = 0; i < numArrays; i++) {
         //tad info for the current array
-        shape::TAD arrTad(inputShapeInfoPointers[i],&dimension,1);
-        arrTad.createTadOnlyShapeInfo();
-        arrTad.createOffsets();
+        shape::TAD *arrTad = new shape::TAD(inputShapeInfoPointers[i],&dimension,1);
+        arrTad->createTadOnlyShapeInfo();
+        arrTad->createOffsets();
 
         //element wise stride and length for tad of current array
-        int arrTadEleStride = shape::elementWiseStride(arrTad.tadOnlyShapeInfo);
-        Nd4jIndex arrTadLength = shape::length(arrTad.tadOnlyShapeInfo);
-        for(Nd4jIndex j = 0; j < arrTad.numTads; j++) {
-            T *arrTadData = dataBuffers[i] + arrTad.tadOffsets[j];
+        int arrTadEleStride = shape::elementWiseStride(arrTad->tadOnlyShapeInfo);
+        Nd4jIndex arrTadLength = shape::length(arrTad->tadOnlyShapeInfo);
+        for(Nd4jIndex j = 0; j < arrTad->numTads; j++) {
+            T *arrTadData = dataBuffers[i] + arrTad->tadOffsets[j];
             //result tad offset + the current offset for each tad + array offset (matches current array)
-            T *currResultTadWithOffset = result  + resultTad.tadOffsets[j];
+            T *currResultTadWithOffset = result  + resultTad->tadOffsets[j];
             //ensure we start at the proper index, we need to move the starting index forward relative to the desired array offset
-            int* sub = shape::ind2subC(shape::rank(resultTad.tadOnlyShapeInfo),shape::shapeOf(resultTad.tadOnlyShapeInfo),arrOffset);
-            Nd4jIndex baseOffset = shape::getOffset(0,shape::shapeOf(resultTad.tadOnlyShapeInfo),shape::stride(resultTad.tadOnlyShapeInfo),sub,shape::rank(resultTad.tadOnlyShapeInfo));
+            int* sub = shape::ind2subC(shape::rank(resultTad->tadOnlyShapeInfo),shape::shapeOf(resultTad->tadOnlyShapeInfo),arrOffset);
+            Nd4jIndex baseOffset = shape::getOffset(0,shape::shapeOf(resultTad->tadOnlyShapeInfo),shape::stride(resultTad->tadOnlyShapeInfo),sub,shape::rank(resultTad->tadOnlyShapeInfo));
             delete[] sub;
             currResultTadWithOffset += baseOffset;
-            if(arrTadEleStride > 0 && shape::order(resultShapeInfo) == shape::order(arrTad.tadOnlyShapeInfo)) {
+            if(arrTadEleStride > 0 && shape::order(resultShapeInfo) == shape::order(arrTad->tadOnlyShapeInfo)) {
                 if(arrTadEleStride == 1 && resultTadEleStride == 1) {
                     //iterate over the specified chunk of the tad
                     for(Nd4jIndex k = 0; k < arrTadLength; k++) {
@@ -226,7 +226,7 @@ void concatCpuGeneric(
                     }
 
                 } //element wise stride isn't 1 for both can't use memcpy
-                else if(tadEleStride > 0 && shape::order(resultShapeInfo) == shape::order(arrTad.tadOnlyShapeInfo)) {
+                else if(tadEleStride > 0 && shape::order(resultShapeInfo) == shape::order(arrTad->tadOnlyShapeInfo)) {
                     for(Nd4jIndex k = 0; k < arrTadLength; k++) {
                         currResultTadWithOffset[k * tadEleStride] = arrTadData[k * arrTadEleStride];
                     }
@@ -235,9 +235,9 @@ void concatCpuGeneric(
             else {
                 Nd4jIndex idx = 0;
                 //use element wise stride for result but not this tad
-                if(tadEleStride > 0 && shape::order(resultShapeInfo) == shape::order(arrTad.tadOnlyShapeInfo)) {
-                    if(arrTad.wholeThing) {
-                        for(Nd4jIndex k = 0; k < shape::length(arrTad.tadOnlyShapeInfo); k++) {
+                if(tadEleStride > 0 && shape::order(resultShapeInfo) == shape::order(arrTad->tadOnlyShapeInfo)) {
+                    if(arrTad->wholeThing) {
+                        for(Nd4jIndex k = 0; k < shape::length(arrTad->tadOnlyShapeInfo); k++) {
                             currResultTadWithOffset[idx *resultTadEleStride] = arrTadData[k];
 
                         }
@@ -246,17 +246,17 @@ void concatCpuGeneric(
                         int shapeIter[MAX_RANK];
                         int coord[MAX_RANK];
                         int dim;
-                        int rankIter = shape::rank(arrTad.tadOnlyShapeInfo);
+                        int rankIter = shape::rank(arrTad->tadOnlyShapeInfo);
                         int xStridesIter[MAX_RANK];
                         if (PrepareOneRawArrayIter<T>(rankIter,
-                                                      shape::shapeOf(arrTad.tadOnlyShapeInfo),
+                                                      shape::shapeOf(arrTad->tadOnlyShapeInfo),
                                                       arrTadData,
-                                                      shape::stride(arrTad.tadOnlyShapeInfo),
+                                                      shape::stride(arrTad->tadOnlyShapeInfo),
                                                       &rankIter,
                                                       shapeIter,
                                                       &arrTadData,
                                                       xStridesIter) >= 0) {
-                            ND4J_RAW_ITER_START(dim, shape::rank(arrTad.tadOnlyShapeInfo), coord, shapeIter); {
+                            ND4J_RAW_ITER_START(dim, shape::rank(arrTad->tadOnlyShapeInfo), coord, shapeIter); {
                                 /* Process the innermost dimension */
                                 currResultTadWithOffset[idx *resultTadEleStride] = arrTadData[0];
                             }
@@ -284,10 +284,10 @@ void concatCpuGeneric(
                     int dim;
                     int xStridesIter[MAX_RANK];
                     int resultStridesIter[MAX_RANK];
-                    int *xShape = shape::shapeOf(arrTad.tadOnlyShapeInfo);
-                    int *xStride = shape::stride(arrTad.tadOnlyShapeInfo);
-                    int *resultStride = shape::stride(resultTad.tadOnlyShapeInfo);
-                    int rank = shape::rank(arrTad.tadOnlyShapeInfo);
+                    int *xShape = shape::shapeOf(arrTad->tadOnlyShapeInfo);
+                    int *xStride = shape::stride(arrTad->tadOnlyShapeInfo);
+                    int *resultStride = shape::stride(resultTad->tadOnlyShapeInfo);
+                    int rank = shape::rank(arrTad->tadOnlyShapeInfo);
                     if (PrepareTwoRawArrayIter<T>(rank,
                                                   xShape,
                                                   arrTadData,
@@ -316,11 +316,12 @@ void concatCpuGeneric(
                     }
                 }
             }
-
         }
 
-        arrOffset += shape::length(arrTad.tadOnlyShapeInfo);
+        arrOffset += shape::length(arrTad->tadOnlyShapeInfo);
+        delete arrTad;
     }
+    delete resultTad;
 
 }
 

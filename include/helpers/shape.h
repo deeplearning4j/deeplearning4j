@@ -100,11 +100,12 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
     INLINEDEF void traceNew(int id) {
-      //  printf("new happened: [%i]\n", id);
+        //printf("new happened: [%i]\n", id);
     }
 #else
     INLINEDEF void traceNew(int id) {
-        //no-op
+        //printf("new happened: [%i]\n", id);
+        //fflush(stdout);
     }
 #endif
 
@@ -1488,7 +1489,6 @@ namespace shape {
                     else {
                         printf("Unable to prepare array\n");
                     }
-
                 }
             }
 
@@ -1521,6 +1521,10 @@ namespace shape {
 #endif
         void createTadOnlyShapeInfo() {
             this->tadOnlyShapeInfo = this->shapeInfoOnlyShapeAndStride();
+
+            if (this->tadShape != nullptr)
+                delete[] this->tadShape;
+
             this->tadShape = shape::shapeOf(this->tadOnlyShapeInfo);
             this->tadStride = shape::stride(this->tadOnlyShapeInfo);
             /* if(tadIndex > 0) {
@@ -2915,6 +2919,7 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         shapeInfo->order = 'f';
         shapeInfo->elementWiseStride = elementWiseStride;
         int *shapeInfoBuffer = shape::toShapeBuffer(shapeInfo);
+        delete[] stride;
         delete shapeInfo;
         return shapeInfoBuffer;
     }
@@ -4721,6 +4726,8 @@ __device__ int tadOffset(int *xInfo, int offset) {
         shapeInformation2->order = 97;
         int *ret = shape::toShapeBuffer(shapeInformation2);
         delete shapeInformation2;
+        delete[] shape;
+        delete[] stride;
         return ret;
     }
 
