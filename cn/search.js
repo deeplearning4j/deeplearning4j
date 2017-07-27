@@ -515,6 +515,12 @@ var PAGES = [{
 "tags": ["单层网络", "定型", "学习速率", "动量", "dropout", "l2", "learning", "rate", "momentum","神经网络","regulatization","single","weight","precise","entropy","bias","noise","噪音"]
 },
 {
+"url": "https://deeplearning4j.org/cn/android",
+"title": "如何在Android应用程序中使用Deeplearning4J	",
+"description": "在本教程中，我将向您介绍如何用Deeplearning4J这一热门的Java深度学习库来在Android设备上创建和训练神经网络。",
+"tags": ["android", "安卓", "gpu", "android studio", "build.gradle", "android-x86", "defaultConfig", "AsyncTask", "移动","神经网络","NeuralNetConfiguration","INDArray","putScalar","Ashraff","Progur"]
+},
+{
 "url": "https://deeplearning4j.org/cn/reinforcementlearning",
 "title": "强化学习基础教程",
 "description": "神经网络由于近期在计算机视觉、机器翻译和时间序列预测等多个领域中取得的进展而声名远扬，但强化学习或许才是神经网络真正的“杀手级”应用。",
