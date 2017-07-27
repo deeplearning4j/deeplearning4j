@@ -4120,6 +4120,46 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testAveraging2() {
+
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(100).assign((double) i));
+        }
+
+        Nd4j.averageAndPropagate(null, arrays);
+
+        INDArray result = arrays.get(0);
+
+        assertEquals(4.5, result.meanNumber().doubleValue(), 0.01);
+
+        for (int i = 0; i < 10; i++) {
+            assertEquals("Failed on iteration " + i, result, arrays.get(i));
+        }
+    }
+
+    @Test
+    public void testAveraging3() {
+        Nd4j.getAffinityManager().allowCrossDeviceAccess(false);
+
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(100).assign((double) i));
+        }
+
+        Nd4j.averageAndPropagate(null, arrays);
+
+        INDArray result = arrays.get(0);
+
+        assertEquals(4.5, result.meanNumber().doubleValue(), 0.01);
+
+        for (int i = 0; i < 10; i++) {
+            assertEquals("Failed on iteration " + i, result, arrays.get(i));
+        }
+    }
+
     @Test
     public void testZ1() throws Exception {
         INDArray matrix = Nd4j.create(10, 10).assign(1.0);
