@@ -507,4 +507,10 @@ var PAGES = [{
 "title": "Deeplearning4J与RPM",
 "description": "神经网络需要处理的数据有许多种不同的来源和类型，例如日志文件、文本文档、表格数据、图像、视频等。神经网络数据加工的目标是将各类数据转换为一系列存放于多维数组（Multi-Dimensional Array）中的值",
 "tags": ["记录读取器", "标准化器", "转换", "etl", "datavec", "recordreader", "ImageRecordReader", "channels", "NativeImageLoader","NativeImageLoader","INDarray","javacv","opencv","ffmpeg","CSVSequenceReader","UCISequenceClassificationExample","NumberedFileInputFormat","NativeImageLoader"]
+},
+{
+"url": "https://deeplearning4j.org/cn/singlelayernetwork",
+"title": "单层神经网络",
+"description": "深度学习中的单层神经网络是一种由一个可见的输入层和一个隐藏的输出层组成的网络。",
+"tags": ["单层网络", "定型", "学习速率", "动量", "dropout", "l2", "learning", "rate", "momentum","神经网络","regulatization","single","weight","precise","entropy","bias","noise","噪音"]
 }];
