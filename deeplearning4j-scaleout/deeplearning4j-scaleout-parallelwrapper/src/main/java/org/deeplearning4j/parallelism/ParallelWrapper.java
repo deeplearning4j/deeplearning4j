@@ -419,13 +419,6 @@ public class ParallelWrapper implements AutoCloseable {
                     if (statsStorage == null && rl.getStorageRouter() == null) {
                         log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}",
                                         l);
-                    } else if (rl.getStorageRouter() != null && !(rl.getStorageRouter() instanceof Serializable)) {
-                        //Spark would throw a (probably cryptic) serialization exception later anyway...
-                        throw new IllegalStateException(
-                                        "RoutingIterationListener provided with non-serializable storage router "
-                                                        + "\nRoutingIterationListener class: " + rl.getClass().getName()
-                                                        + "\nStatsStorageRouter class: "
-                                                        + rl.getStorageRouter().getClass().getName());
                     }
                 }
             }
@@ -844,6 +837,19 @@ public class ParallelWrapper implements AutoCloseable {
             wrapper.gradientsAccumulator = this.accumulator;
 
             wrapper.init();
+
+            List<IterationListener> modelListeners = null;
+            if(model instanceof MultiLayerNetwork){
+                modelListeners = new ArrayList<>(((MultiLayerNetwork) model).getListeners());
+                model.setListeners(Collections.emptyList());
+            } else if(model instanceof ComputationGraph) {
+                modelListeners = new ArrayList<>(((ComputationGraph) model).getListeners());
+                model.setListeners(Collections.emptyList());
+            }
+
+            if(modelListeners != null && modelListeners.size() > 0){
+                wrapper.setListeners(modelListeners);
+            }
 
             return wrapper;
         }

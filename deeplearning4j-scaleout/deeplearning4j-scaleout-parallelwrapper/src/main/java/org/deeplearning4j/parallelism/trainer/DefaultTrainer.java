@@ -227,14 +227,7 @@ public class DefaultTrainer extends Thread implements Trainer {
      * Good place to configure listeners and all such a things
      */
     protected void postInit() {
-        Collection<IterationListener> oldListeners = null;
-
-        if (originalModel instanceof ComputationGraph) {
-            oldListeners = ((ComputationGraph) originalModel).getListeners();
-        } else if (originalModel instanceof MultiLayerNetwork) {
-            oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
-        }
-        oldListeners = (oldListeners == null ? new ArrayList<>() : new ArrayList<>(oldListeners));
+        Collection<IterationListener> oldListeners = new ArrayList<>();
         Collection<IterationListener> replicatedListeners = new ArrayList<>();
 
         if (parallelWrapper.getListeners() != null) {
@@ -456,7 +449,9 @@ public class DefaultTrainer extends Thread implements Trainer {
                 }
 
             }
-            replicatedListeners.add(l);
+            if (!replicatedListeners.contains((l))) {
+                replicatedListeners.add(l);
+            }
         }
     }
 
