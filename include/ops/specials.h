@@ -369,43 +369,62 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 
     bool tempZ = false;
     if (z == nullptr) {
-        z = new T[length];
-        if (z == nullptr) {
-            printf("Can't allocate temporary array for averaging!\n");
-            return;
+        //code branch for absent Z
+        z = x[0];
+
+#pragma omp simd
+        for (Nd4jIndex i = 0; i < length; i++) {
+            z[i] /= n;
         }
 
-        tempZ = true;
-    }
-
-    // memset before propagation
-    memset(z, 0, length * sizeof(T));
-
-    // aggregation step
 #ifdef _OPENNMP
-    int _threads = omp_get_max_threads(); //nd4j::math::nd4j_min<int>(omp_get_max_threads() / 2, 4);
+        int _threads = omp_get_max_threads(); //nd4j::math::nd4j_min<int>(omp_get_max_threads() / 2, 4);
 #else
-    // we can use whatever we want here, this value won't be used if there's no omp
-    int _threads = 4;
+        // we can use whatever we want here, this value won't be used if there's no omp
+        int _threads = 4;
 #endif
 
 #pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
-    for (Nd4jIndex i = 0; i < length; i++) {
+        for (Nd4jIndex i = 0; i < length; i++) {
 
+            for (Nd4jIndex ar = 1; ar < n; ar++) {
+                z[i] += x[ar][i] / n;
+            }
+        }
+
+        // instead of doing element-wise propagation, we just issue memcpy to propagate data
+#pragma omp parallel for num_threads(_threads) default(shared) proc_bind(close)
+        for (Nd4jIndex ar = 1; ar < n; ar++) {
+            memcpy(x[ar], z, length * sizeof(T));
+        }
+    } else {
+        // code branch for existing Z
+
+        // memset before propagation
+        memset(z, 0, length * sizeof(T));
+
+        // aggregation step
+#ifdef _OPENNMP
+        int _threads = omp_get_max_threads(); //nd4j::math::nd4j_min<int>(omp_get_max_threads() / 2, 4);
+#else
+        // we can use whatever we want here, this value won't be used if there's no omp
+        int _threads = 4;
+#endif
+
+#pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
+        for (Nd4jIndex i = 0; i < length; i++) {
+
+            for (Nd4jIndex ar = 0; ar < n; ar++) {
+                z[i] += x[ar][i] / n;
+            }
+        }
+
+        // instead of doing element-wise propagation, we just issue memcpy to propagate data
+#pragma omp parallel for num_threads(_threads) default(shared) proc_bind(close)
         for (Nd4jIndex ar = 0; ar < n; ar++) {
-            z[i] += x[ar][i] / n;
+            memcpy(x[ar], z, length * sizeof(T));
         }
     }
-
-
-    // instead of doing element-wise propagation, we just issue memcpy to propagate data
-#pragma omp parallel for num_threads(_threads) default(shared) proc_bind(close)
-    for(Nd4jIndex ar = 0; ar < n; ar++) {
-        memcpy(x[ar], z, length * sizeof(T));
-    }
-
-    if (tempZ)
-        delete[] z;
 }
 
 int getPosition(int *xShapeInfo, int index) {
