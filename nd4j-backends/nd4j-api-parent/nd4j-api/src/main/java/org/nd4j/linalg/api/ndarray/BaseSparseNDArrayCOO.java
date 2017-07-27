@@ -529,12 +529,28 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * */
     public int reverseIndexes(int ... indexes){
         int[] idx = translateToPhysical(indexes);
-        for(int i = 0; i< length(); i++){
-            if(Arrays.equals(idx, getUnderlyingIndicesOf(i).asInt())){
-                return i;
-            }
+        return indexesBinarySearch(0, length(), idx);
+    }
+
+    public int indexesBinarySearch(int lowerBound, int upperBound, int[] indexes){
+        int min = lowerBound;
+        int max = upperBound;
+
+        int mid = (max + min)/2;
+        int[] midIdx = getUnderlyingIndicesOf(mid).asInt();
+        if (Arrays.equals(indexes, midIdx)){
+            return mid;
         }
-        return -1;
+        if (ArrayUtil.lessThan(indexes, midIdx)){
+            max = mid;
+        }
+        if (ArrayUtil.greaterThan(indexes, midIdx)){
+            min = mid;
+        }
+        if(min == max){
+            return -1;
+        }
+        return indexesBinarySearch(min, max, indexes);
     }
 
     @Override
@@ -905,7 +921,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
 
     /**
-     * Returns the indices of the element in the given index
+     * Returns the underlying indices of the element of the given index
      * such as there really are in the original ndarray
      *
      * @param i the index of the element
@@ -919,7 +935,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     /**
-     * Returns the indices of the element in the given index
+     * Returns the indices of the element of the given index in the array context
      *
      * @param i the index of the element
      * @return a dataBuffer containing the indices of element

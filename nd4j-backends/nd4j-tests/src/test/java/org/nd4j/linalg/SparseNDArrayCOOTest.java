@@ -15,6 +15,8 @@ import static org.junit.Assert.*;
 @Slf4j
 public class SparseNDArrayCOOTest {
 
+
+
     double[] data = {10,1,2,3,4,5};
     int[] shape = {2,2,2};
     int[][] indices = new int[][]{
@@ -215,6 +217,7 @@ public class SparseNDArrayCOOTest {
                 {2, 0, 1}, {2, 1, 2}, {3, 0, 2}, {3, 1, 0}};
         INDArray array = Nd4j.createSparseCOO(values, indices, shape);
         //TODO FIXME : Issue in shapeOffsetResolution, lower bound is not taken into account
+
         BaseSparseNDArrayCOO newArray = (BaseSparseNDArrayCOO) array.get(
                 NDArrayIndex.interval(1, 4),
                 new SpecifiedIndex(new int[]{0}),
@@ -521,4 +524,30 @@ public class SparseNDArrayCOOTest {
         INDArray view = arr.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.point(1));
         System.out.println(view);
     }
+
+    @Test
+    public void testWithPrependNewAxis(){
+        INDArray arr = Nd4j.rand(new int[]{4, 2, 3});
+        System.out.println(arr.toString());
+        System.out.println(arr.shapeInfoDataBuffer());
+
+        System.out.println("new axis, all, point 1");
+        INDArray v = arr.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.point(1));
+        System.out.println(v.toString());
+        System.out.println(v.shapeInfoDataBuffer());
+    }
+
+    @Test
+    public void binarySearch(){
+        int[] shape = new int[]{4, 2, 3};
+        double[] values = new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
+        int[][] indices  = new int[][]{{0, 0, 2}, {0, 1, 1}, {1,0, 0}, {1, 0, 1}, {1, 1, 2},
+                {2, 0, 1}, {2, 1, 2}, {3, 0, 2}, {3, 1, 0}};
+        BaseSparseNDArrayCOO array = (BaseSparseNDArrayCOO) Nd4j.createSparseCOO(values, indices, shape);
+
+        assertEquals(0, array.reverseIndexes(new int[]{0, 0, 2}));
+        assertEquals(7, array.reverseIndexes(new int[]{3, 0, 2}));
+        assertEquals(8, array.reverseIndexes(new int[]{3, 1, 0}));
+    }
 }
+

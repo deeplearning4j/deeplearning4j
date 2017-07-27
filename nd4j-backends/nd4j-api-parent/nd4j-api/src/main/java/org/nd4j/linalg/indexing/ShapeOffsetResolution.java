@@ -316,7 +316,7 @@ public class    ShapeOffsetResolution implements Serializable {
         int[] shape = arr.shape();
 
         if(arr.isSparse()){
-            resolveFixedDimensions(indexes);
+            resolveFixedDimensionsCOO(indexes);
         }
 
         // Check that given point indexes are not out of bounds
@@ -642,7 +642,7 @@ public class    ShapeOffsetResolution implements Serializable {
 
     }
 
-    public void resolveFixedDimensions(INDArrayIndex... indexes){
+    public void resolveFixedDimensionsCOO(INDArrayIndex... indexes){
 
         fixed = new int[arr.rank()];
 
@@ -669,6 +669,10 @@ public class    ShapeOffsetResolution implements Serializable {
                 //do nothing, skip the index
             }
         }
+    }
+
+    public void resolveSparseOffsetsCOO(){
+
     }
 
     private boolean anyHaveStrideOne(INDArrayIndex... indexes) {

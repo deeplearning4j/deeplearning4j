@@ -17,6 +17,7 @@ import org.nd4j.linalg.api.ndarray.SparseFormat;
 import org.nd4j.linalg.cpu.nativecpu.blas.*;
 import org.nd4j.linalg.factory.BaseSparseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
@@ -458,7 +459,7 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
                     new IntPointer(dimension),
                     dimension.length,
                     (IntPointer) tadBuffers.getFirst().addressPointer(),
-                    (IntPointer) tadBuffers.getSecond().addressPointer(),
+                    new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
                     descending);
         } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().sortTadDouble(null,
@@ -467,7 +468,7 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
                     new IntPointer(dimension),
                     dimension.length,
                     (IntPointer) tadBuffers.getFirst().addressPointer(),
-                    (IntPointer) tadBuffers.getSecond().addressPointer(),
+                    new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
                     descending);
         } else {
             throw new UnsupportedOperationException("Unknown datatype " + x.data().dataType());
