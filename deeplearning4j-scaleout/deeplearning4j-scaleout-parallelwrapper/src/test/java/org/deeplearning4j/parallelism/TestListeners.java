@@ -125,24 +125,27 @@ public class TestListeners {
 
         DataSetIterator iter = new ExistingDataSetIterator(data);
 
+        TestListener.clearCounts();
         wrapper.fit(iter);
 
-        assertEquals(nWorkers + 1, TestListener.instanceCount.get()); //Original instance + 2 clones
         assertEquals(2, TestListener.workerIDs.size());
         assertEquals(1, TestListener.sessionIDs.size());
         assertEquals(2, TestListener.forwardPassCount.get());
+        assertEquals(2, TestListener.backwardPassCount.get());
     }
 
 
     private static class TestListener implements RoutingIterationListener {
 
         private static final AtomicInteger forwardPassCount = new AtomicInteger();
+        private static final AtomicInteger backwardPassCount = new AtomicInteger();
         private static final AtomicInteger instanceCount = new AtomicInteger();
         private static final Set<String> workerIDs = new ConcurrentHashSet<>();
         private static final Set<String> sessionIDs = new ConcurrentHashSet<>();
 
         public static void clearCounts() {
             forwardPassCount.set(0);
+            backwardPassCount.set(0);
             instanceCount.set(0);
             workerIDs.clear();
             sessionIDs.clear();
@@ -172,7 +175,9 @@ public class TestListeners {
         public void onGradientCalculation(Model model) {}
 
         @Override
-        public void onBackwardPass(Model model) {}
+        public void onBackwardPass(Model model) {
+            backwardPassCount.getAndIncrement();
+        }
 
         @Override
         public void setStorageRouter(StatsStorageRouter router) {}

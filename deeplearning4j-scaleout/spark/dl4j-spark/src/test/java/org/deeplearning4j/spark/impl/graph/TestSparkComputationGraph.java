@@ -339,7 +339,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         JavaRDD<MultiDataSet> rdd = sc.parallelize(l);
         rdd = rdd.repartition(20);
 
-        IEvaluation[] es2 = scg.doEvaluationMDS(rdd, 5, new Evaluation(), new ROC());
+        IEvaluation[] es2 = scg.doEvaluationMDS(rdd, 5, new Evaluation(), new ROC(32));
         Evaluation e2 = (Evaluation) es2[0];
         ROC roc2 = (ROC) es2[1];
 
