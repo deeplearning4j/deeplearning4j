@@ -65,7 +65,7 @@ public class VPTree {
     private boolean invert = false;
     private ExecutorService executorService;
     @Getter
-    private int workers = 2;
+    private int workers = 1;
     private AtomicInteger size = new AtomicInteger(0);
 
     private ThreadLocal<INDArray> scalars = new ThreadLocal<>();
@@ -78,7 +78,7 @@ public class VPTree {
      * @param invert
      */
     public VPTree(INDArray points, boolean invert) {
-        this(points, "euclidean", 2, invert);
+        this(points, "euclidean", 1, invert);
     }
 
     /**
@@ -106,6 +106,7 @@ public class VPTree {
 //            itemsList.add(items.getRow(i));
 //        }
         root = buildFromPoints(items);
+        workers = 1;
     }
 
     /**
@@ -147,7 +148,7 @@ public class VPTree {
      * @param similarityFunction
      */
     public VPTree(INDArray items, String similarityFunction) {
-        this(items, similarityFunction, 2, true);
+        this(items, similarityFunction, 1, true);
     }
 
     /**
@@ -177,7 +178,7 @@ public class VPTree {
      * @param similarityFunction
      */
     public VPTree(List<DataPoint> items, String similarityFunction) {
-        this(items, similarityFunction, 2, false);
+        this(items, similarityFunction, 1, false);
     }
 
 
@@ -344,6 +345,7 @@ public class VPTree {
 
         // closing workspace
         workspace.notifyScopeLeft();
+        //log.info("Thread: {}; Workspace size: {} MB; ConstantCache: {}; ShapeCache: {}; TADCache: {}", Thread.currentThread().getId(), (int) (workspace.getCurrentSize() / 1024 / 1024 ), Nd4j.getConstantHandler().getCachedBytes(), Nd4j.getShapeInfoProvider().getCachedBytes(), Nd4j.getExecutioner().getTADManager().getCachedBytes());
 
         if (leftPoints.size() > 0)
             ret.futureLeft = executorService.submit(new NodeBuilder(leftPoints, leftIndices)); // = buildFromPoints(leftPoints);
@@ -356,8 +358,9 @@ public class VPTree {
     }
 
     private Node buildFromPoints(INDArray items) {
-        if (executorService == null && items == this.items)
-            executorService = Executors.newFixedThreadPool( workers,
+        if (executorService == null && items == this.items) {
+
+            executorService = Executors.newFixedThreadPool(workers,
                     new ThreadFactory() {
                         @Override
                         public Thread newThread(Runnable r) {
@@ -373,6 +376,11 @@ public class VPTree {
                             return t;
                         }
                     });
+
+
+            //executorService = new ThreadPoolExecutor(workers, workers, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(32));
+        }
+
 
         final Node ret = new Node(0, 0);
         size.incrementAndGet();
