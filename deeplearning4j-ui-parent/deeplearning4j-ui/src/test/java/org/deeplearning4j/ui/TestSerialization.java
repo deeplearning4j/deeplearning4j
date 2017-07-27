@@ -46,6 +46,7 @@ public class TestSerialization {
                         Arrays.asList(new ScoreIterationListener(1), new HistogramIterationListener(1)), 0, params,
                         true);
         da.setInput(input);
+        da.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
         ModelAndGradient g = new ModelAndGradient(da);
         String json = mapper.writeValueAsString(g);
         ModelAndGradient read = mapper.readValue(json, ModelAndGradient.class);
