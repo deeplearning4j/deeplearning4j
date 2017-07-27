@@ -370,7 +370,6 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
     bool tempZ = false;
     if (z == nullptr) {
         //code branch for absent Z
-
         z = x[0];
 
 #pragma omp simd
@@ -391,6 +390,12 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
             for (Nd4jIndex ar = 1; ar < n; ar++) {
                 z[i] += x[ar][i] / n;
             }
+        }
+
+        // instead of doing element-wise propagation, we just issue memcpy to propagate data
+#pragma omp parallel for num_threads(_threads) default(shared) proc_bind(close)
+        for (Nd4jIndex ar = 1; ar < n; ar++) {
+            memcpy(x[ar], z, length * sizeof(T));
         }
     } else {
         // code branch for existing Z
