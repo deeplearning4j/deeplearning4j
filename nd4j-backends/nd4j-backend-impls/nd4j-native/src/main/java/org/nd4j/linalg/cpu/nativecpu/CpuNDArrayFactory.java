@@ -658,27 +658,30 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
                     throw new IllegalArgumentException(
                             "Illegal concatneation at array " + i + " and shape element " + j);
                 }
+
+
+            //log.info("Shape[{}]: {}", i, Arrays.toString(toConcat[i].shapeInfoDataBuffer().asInt()));
         }
 
         outputShape[dimension] = sumAlongDim;
 
-        PointerPointer dummy = new PointerPointer(new Pointer[] {null});
+        //PointerPointer dummy = new PointerPointer(new Pointer[] {null});
 
         INDArray ret = Nd4j.createUninitialized(outputShape, Nd4j.order());
 
         if (ret.data().dataType() == DataBuffer.Type.DOUBLE) {
-            nativeOps.concatDouble(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+            nativeOps.concatDouble(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     (DoublePointer) ret.data().addressPointer(),
                     (IntPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
         } else if (ret.data().dataType() == DataBuffer.Type.FLOAT) {
-            nativeOps.concatFloat(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+            nativeOps.concatFloat(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     (FloatPointer) ret.data().addressPointer(),
                     (IntPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
 
         } else if (ret.data().dataType() == DataBuffer.Type.HALF) {
-            nativeOps.concatHalf(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+            nativeOps.concatHalf(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     (ShortPointer) ret.data().addressPointer(),
                     (IntPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     new PointerPointer(new Pointer[]{null}), new PointerPointer(new Pointer[]{null}));
@@ -1275,7 +1278,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             NativeOpsHolder.getInstance().getDeviceNativeOps().sortTadFloat(null,
                     (FloatPointer) x.data().addressPointer(),
                     (IntPointer) x.shapeInfoDataBuffer().addressPointer(),
-                    new IntPointer(dimension),
+                    (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(),
                     dimension.length,
                     (IntPointer) tadBuffers.getFirst().addressPointer(),
                     new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
@@ -1284,7 +1287,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             NativeOpsHolder.getInstance().getDeviceNativeOps().sortTadDouble(null,
                     (DoublePointer) x.data().addressPointer(),
                     (IntPointer) x.shapeInfoDataBuffer().addressPointer(),
-                    new IntPointer(dimension),
+                    (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(),
                     dimension.length,
                     (IntPointer) tadBuffers.getFirst().addressPointer(),
                     new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),

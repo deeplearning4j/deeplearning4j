@@ -19,6 +19,7 @@ import org.nd4j.nativeblas.NativeOps;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com
@@ -27,6 +28,7 @@ public class CpuTADManager implements TADManager {
     private Map<TadDescriptor, Pair<DataBuffer, DataBuffer>> cache = new ConcurrentHashMap<>();
     private NativeOps nativeOps;
     private ConstantHandler constantHandler;
+    private AtomicLong bytes = new AtomicLong(0);
     private AtomicInteger counter = new AtomicInteger(0);
     private static final int MAX_ENTRIES = 100;
 
@@ -87,11 +89,18 @@ public class CpuTADManager implements TADManager {
                 if (counter.get() < MAX_ENTRIES) {
                     counter.incrementAndGet();
                     cache.put(descriptor, pair);
+
+                    bytes.addAndGet((outputBuffer.length() * 4) + (offsetsBuffer.length() * 8));
                 }
                 return pair;
             }
 
             return cache.get(descriptor);
         }
+    }
+
+    @Override
+    public long getCachedBytes() {
+        return bytes.get();
     }
 }

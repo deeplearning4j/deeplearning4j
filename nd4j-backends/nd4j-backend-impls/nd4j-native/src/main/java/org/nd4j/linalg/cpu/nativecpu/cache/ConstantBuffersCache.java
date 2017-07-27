@@ -8,6 +8,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com
@@ -15,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ConstantBuffersCache extends BasicConstantHandler {
     protected Map<ArrayDescriptor, DataBuffer> buffersCache = new ConcurrentHashMap<>();
     private AtomicInteger counter = new AtomicInteger(0);
+    private AtomicLong bytes = new AtomicLong(0);
     private static final int MAX_ENTRIES = 1000;
 
     @Override
@@ -28,6 +30,7 @@ public class ConstantBuffersCache extends BasicConstantHandler {
             if (counter.get() < MAX_ENTRIES || array.length < 4) {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
+                bytes.addAndGet(array.length * 4);
             }
             return buffer;
         }
@@ -53,6 +56,8 @@ public class ConstantBuffersCache extends BasicConstantHandler {
             if (counter.get() < MAX_ENTRIES) {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
+
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
             }
             return buffer;
         }
@@ -70,10 +75,17 @@ public class ConstantBuffersCache extends BasicConstantHandler {
             if (counter.get() < MAX_ENTRIES) {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
+
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
             }
             return buffer;
         }
 
         return buffersCache.get(descriptor);
+    }
+
+    @Override
+    public long getCachedBytes() {
+        return bytes.get();
     }
 }

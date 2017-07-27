@@ -42,6 +42,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
     protected Map<Integer, Map<ArrayDescriptor, DataBuffer>> buffersCache = new HashMap<>();
     protected Map<Integer, Pointer> deviceAddresses = new HashMap<>();
+    protected AtomicLong bytes = new AtomicLong(0);
     protected FlowController flowController;
 
     protected static final ConstantProtector protector = ConstantProtector.getInstance();
@@ -293,6 +294,8 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
                 moveToConstantSpace(buffer);
 
                 buffersCache.get(deviceId).put(descriptor, buffer);
+
+                bytes.addAndGet(array.length * 4);
             }
             return buffer;
         } //else logger.info("Reusing constant buffer...");
@@ -328,6 +331,8 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
                 moveToConstantSpace(buffer);
 
                 buffersCache.get(deviceId).put(descriptor, buffer);
+
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
             }
             return buffer;
         } // else logger.info("Reusing constant buffer...");
@@ -363,10 +368,17 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
                 moveToConstantSpace(buffer);
 
                 buffersCache.get(deviceId).put(descriptor, buffer);
+
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
             }
             return buffer;
         } //else logger.info("Reusing constant buffer...");
 
         return buffersCache.get(deviceId).get(descriptor);
+    }
+
+    @Override
+    public long getCachedBytes() {
+        return bytes.get();
     }
 }

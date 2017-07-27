@@ -71,6 +71,8 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
                     //deviceCache.get(deviceId).put(descriptor, buffer);
                     protector.persistDataBuffer(deviceId, descriptor, buffer);
 
+                    bytes.addAndGet(buffer.getFirst().length() * 4 * 2);
+
                     cacheMiss.incrementAndGet();
                 } else {
                     buffer = protector.getDataBuffer(deviceId, descriptor);

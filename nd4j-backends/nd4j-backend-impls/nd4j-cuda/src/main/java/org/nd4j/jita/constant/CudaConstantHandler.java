@@ -52,4 +52,9 @@ public class CudaConstantHandler extends BasicConstantHandler {
     public void purgeConstants() {
         wrappedHandler.purgeConstants();
     }
+
+    @Override
+    public long getCachedBytes() {
+        return wrappedHandler.getCachedBytes();
+    }
 }

@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com
@@ -25,6 +26,7 @@ import java.util.Arrays;
 public class BasicTADManager implements TADManager {
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private static Logger logger = LoggerFactory.getLogger(BasicTADManager.class);
+    protected AtomicLong bytes = new AtomicLong(0);
 
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
@@ -77,5 +79,10 @@ public class BasicTADManager implements TADManager {
     @Override
     public void purgeBuffers() {
         // no-op
+    }
+
+    @Override
+    public long getCachedBytes() {
+        return bytes.get();
     }
 }
