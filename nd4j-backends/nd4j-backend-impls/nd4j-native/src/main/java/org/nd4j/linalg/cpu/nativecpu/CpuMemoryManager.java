@@ -32,7 +32,7 @@ public class CpuMemoryManager extends BasicMemoryManager {
         if (ptr == null || ptr.address() == 0L)
             throw new ND4JIllegalStateException("Failed to allocate [" + bytes + "] bytes");
 
-        log.info("Allocating {} bytes at MemoryManager", bytes);
+        //log.info("Allocating {} bytes at MemoryManager", bytes);
 
 
         if (initialize)

@@ -94,6 +94,38 @@ public class SpecialTests extends BaseNd4jTest {
         data.shuffle();
     }
 
+    @Test
+    public void testVstack2() throws Exception {
+        INDArray matrix = Nd4j.create(10000, 100);
+
+        List<INDArray> views = new ArrayList<>();
+        views.add(matrix.getRow(1));
+        views.add(matrix.getRow(4));
+        views.add(matrix.getRow(7));
+
+        INDArray result = Nd4j.vstack(views);
+    }
+
+    @Test
+    public void testVstack1() throws Exception {
+        INDArray matrix = Nd4j.create(10000, 100);
+
+            List<INDArray> views = new ArrayList<>();
+            for (int i = 0; i < matrix.rows() / 2; i++) {
+                views.add(matrix.getRow(RandomUtils.nextInt(0, matrix.rows())));
+                //views.add(Nd4j.create(1, 10));
+            }
+
+        log.info("Starting...");
+
+        //while (true) {
+        for (int i = 0; i < 1; i++) {
+            INDArray result = Nd4j.vstack(views);
+
+            System.gc();
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';

@@ -4216,7 +4216,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         else if (isRowVector() && r > 0)
             throw new IllegalArgumentException("Illegal index for row");
-        return get(NDArrayIndex.point(r), NDArrayIndex.all());
+        INDArray result = get(NDArrayIndex.point(r), NDArrayIndex.all());
+
+        // FIXME: this is bad
+        if (!this.isView() && this.ordering() == 'c' && result.elementWiseStride() == 1 && result.ordering() != 'c') {
+            ((BaseNDArray) result).setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(result.shape(), result.stride(), 0, 1, 'c'));
+        }
+
+        return result;
     }
 
 
