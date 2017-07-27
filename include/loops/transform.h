@@ -1420,7 +1420,7 @@ __device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jIndex length, b
 
     // each block cycles over it's own part of arrays
     for (int r = blockDim.x * blockIdx.x; r < length; r += blockDim.x * gridDim.x) {
-        shmem[threadIdx.x] = 0.0f;
+        shmem[threadIdx.x] = (T) 0.0f;
 
         Nd4jIndex baseIdx = r;
 
@@ -1433,16 +1433,21 @@ __device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jIndex length, b
                 shmem[threadIdx.x] += cdata[threadIdx.x];
         }
 
+
+        // average data in shared memory
+        if (baseIdx + threadIdx.x < length)
+            shmem[threadIdx.x] /= n;
+
         // div step & write out step
         if (dz != nullptr) {
             T *wdata = dz + baseIdx;
 
             if (baseIdx + threadIdx.x < length) {
-                shmem[threadIdx.x] /= n;
                 wdata[threadIdx.x] = shmem[threadIdx.x];
             }
         }
 
+        // propagate averaged data to all arrays
         if (propagate)
             for (int ar = 0; ar < n; ar++) {
                 T *cdata = (T *) dx[ar];
