@@ -23,6 +23,7 @@ import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -164,8 +165,39 @@ public class VpTreeNodeTest {
         tree.search(Nd4j.create(new double[] {60, 60}), 1, add, distances);
         assertion = add.get(0);
         assertEquals(Nd4j.create(new double[] {60, 60}), assertion.getPoint());
+    }
 
+    @Test (expected = ND4JIllegalStateException.class)
+    public void vpTreeTest2() {
+        List<DataPoint> points = new ArrayList<>();
+        points.add(new DataPoint(0, Nd4j.create(new double[]{55, 55})));
+        points.add(new DataPoint(1, Nd4j.create(new double[]{60, 60})));
+        points.add(new DataPoint(2, Nd4j.create(new double[]{65, 65})));
+        VPTree tree = new VPTree(points, "euclidean");
 
+        tree.search(Nd4j.create(1, 10), 2, new ArrayList<DataPoint>(), new ArrayList<Double>());
+    }
+
+    @Test (expected = ND4JIllegalStateException.class)
+    public void vpTreeTest3() {
+        List<DataPoint> points = new ArrayList<>();
+        points.add(new DataPoint(0, Nd4j.create(new double[]{55, 55})));
+        points.add(new DataPoint(1, Nd4j.create(new double[]{60, 60})));
+        points.add(new DataPoint(2, Nd4j.create(new double[]{65, 65})));
+        VPTree tree = new VPTree(points, "euclidean");
+
+        tree.search(Nd4j.create(2, 10), 2, new ArrayList<DataPoint>(), new ArrayList<Double>());
+    }
+
+    @Test (expected = ND4JIllegalStateException.class)
+    public void vpTreeTest4() {
+        List<DataPoint> points = new ArrayList<>();
+        points.add(new DataPoint(0, Nd4j.create(new double[]{55, 55})));
+        points.add(new DataPoint(1, Nd4j.create(new double[]{60, 60})));
+        points.add(new DataPoint(2, Nd4j.create(new double[]{65, 65})));
+        VPTree tree = new VPTree(points, "euclidean");
+
+        tree.search(Nd4j.create(2, 10, 10), 2, new ArrayList<DataPoint>(), new ArrayList<Double>());
     }
 
     public static INDArray generateNaturalsMatrix(int nrows, int ncols) {
