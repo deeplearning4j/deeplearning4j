@@ -304,6 +304,30 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testGaussianDistribution3() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+
+        INDArray z1 = Nd4j.create(100000);
+        INDArray z2 = Nd4j.create(100000);
+
+        GaussianDistribution op1 = new GaussianDistribution(z1, 1.0, 1.0);
+        Nd4j.getExecutioner().exec(op1, random1);
+
+        GaussianDistribution op2 = new GaussianDistribution(z2, -1.0, 1.0);
+        Nd4j.getExecutioner().exec(op2, random2);
+
+
+        assertEquals(1.0, z1.meanNumber().doubleValue(), 0.01);
+        assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
+
+        assertEquals(-1.0, z2.meanNumber().doubleValue(), 0.01);
+        assertEquals(1.0, z2.stdNumber().doubleValue(), 0.01);
+
+        assertNotEquals(z1, z2);
+    }
+
+    @Test
     public void testStepOver1() throws Exception {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
