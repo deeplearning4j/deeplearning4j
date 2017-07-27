@@ -956,7 +956,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
             Nd4j.getExecutioner().push();
 
-            long len = target.lengthLong();
+            long len = target != null ? target.lengthLong() : arrays[0].lengthLong();
 
             AtomicAllocator allocator = AtomicAllocator.getInstance();
 
@@ -966,7 +966,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     context.getOldStream(), allocator.getDeviceIdPointer(), new CudaPointer(0));
 
 
-            Pointer z = AtomicAllocator.getInstance().getPointer(target, context);
+            Pointer z = target == null ? null : AtomicAllocator.getInstance().getPointer(target, context);
 
             long[] xPointers = new long[arrays.length];
 
@@ -988,12 +988,12 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
             PointerPointer x = new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context));
 
-            if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
-                nativeOps.averageDouble(extras, x, (DoublePointer) z, arrays.length, len, true);
-            } else if (target.data().dataType() == DataBuffer.Type.FLOAT) {
-                nativeOps.averageFloat(extras, x, (FloatPointer) z, arrays.length, len, true);
+            if (arrays[0].data().dataType() == DataBuffer.Type.DOUBLE) {
+                nativeOps.averageDouble(extras, x, target == null ? null : (DoublePointer) z, arrays.length, len, true);
+            } else if (arrays[0].data().dataType() == DataBuffer.Type.FLOAT) {
+                nativeOps.averageFloat(extras, x, target == null ? null : (FloatPointer) z, arrays.length, len, true);
             } else {
-                nativeOps.averageHalf(extras, x, (ShortPointer) z, arrays.length, len, true);
+                nativeOps.averageHalf(extras, x, target == null ? null : (ShortPointer) z, arrays.length, len, true);
             }
 
             allocator.getFlowController().registerAction(context, target, arrays);
@@ -1006,7 +1006,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             /**
              * We expect all operations are complete at this point
              */
-            long len = target.lengthLong();
+            long len = target == null ? arrays[0].lengthLong() : target.lengthLong();
 
             CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
@@ -1026,18 +1026,16 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                 dataPointers.put(i, AtomicAllocator.getInstance().getHostPointer(arrays[i]));
             }
 
-            if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
-                nativeOps.averageDouble(extras, dataPointers, (DoublePointer) AtomicAllocator.getInstance().getHostPointer(target), arrays.length,
-                        len, true);
-            } else if (target.data().dataType() == DataBuffer.Type.FLOAT) {
-                nativeOps.averageFloat(extras, dataPointers, (FloatPointer) AtomicAllocator.getInstance().getHostPointer(target), arrays.length,
-                        len, true);
+            if (arrays[0].data().dataType() == DataBuffer.Type.DOUBLE) {
+                nativeOps.averageDouble(extras, dataPointers, target == null ? null : (DoublePointer) AtomicAllocator.getInstance().getHostPointer(target), arrays.length, len, true);
+            } else if (arrays[0].data().dataType() == DataBuffer.Type.FLOAT) {
+                nativeOps.averageFloat(extras, dataPointers, target == null ? null :  (FloatPointer) AtomicAllocator.getInstance().getHostPointer(target), arrays.length, len, true);
             } else {
-                nativeOps.averageHalf(extras, dataPointers, (ShortPointer) AtomicAllocator.getInstance().getHostPointer(target), arrays.length, len,
-                        true);
+                nativeOps.averageHalf(extras, dataPointers, target == null ? null : (ShortPointer) AtomicAllocator.getInstance().getHostPointer(target), arrays.length, len, true);
             }
 
-            AtomicAllocator.getInstance().getAllocationPoint(target).tickHostWrite();
+            if (target != null)
+                AtomicAllocator.getInstance().getAllocationPoint(target).tickHostWrite();
 
             // TODO: make propagation optional maybe?
             if (true) {
