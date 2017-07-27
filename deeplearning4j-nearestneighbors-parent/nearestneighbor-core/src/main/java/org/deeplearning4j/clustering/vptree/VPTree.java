@@ -34,9 +34,11 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
@@ -461,7 +463,11 @@ public class VPTree {
      * @param results
      * @param distances
      */
-    public void search(INDArray target, int k, List<DataPoint> results, List<Double> distances) {
+    public void search(@NonNull INDArray target, int k, List<DataPoint> results, List<Double> distances) {
+        if (items != null)
+            if (!target.isVector() || target.columns() != items.columns() || target.rows() > 1)
+                throw new ND4JIllegalStateException("Target for search should have shape of [" + 1 + ", "+ items.columns() + "] but got " + Arrays.toString(target.shape()) + " instead");
+
         k = Math.min(k, items.rows());
         results.clear();
         distances.clear();
