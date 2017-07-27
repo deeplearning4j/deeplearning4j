@@ -49,6 +49,7 @@ import java.util.concurrent.locks.LockSupport;
  * Vantage point tree implementation
  *
  * @author Adam Gibson
+ * @author raver119@gmail.com
  */
 @Slf4j
 @Builder
@@ -103,10 +104,6 @@ public class VPTree {
         this.similarityFunction = similarityFunction;
         this.invert = invert;
         this.items = items;
-//        itemsList = new ArrayList<>(items.rows());
-//        for(int i = 0; i < items.rows(); i++) {
-//            itemsList.add(items.getRow(i));
-//        }
         root = buildFromPoints(items);
         workers = 1;
     }
@@ -125,16 +122,10 @@ public class VPTree {
 
         this.workers = workers;
 
-//        this.parallel = parallel;
         for (int i = 0; i < items.size(); i++) {
             //itemsList.add(items.get(i).getPoint());
             this.items.putRow(i, items.get(i).getPoint());
         }
-
-//        itemsList = new ArrayList<>(items.size());
-//        for (int i = 0; i < items.size(); i++) {
-//            itemsList.add(items.get(i).getPoint());
-//        }
 
         this.invert = invert;
         this.similarityFunction = similarityFunction;
@@ -164,10 +155,6 @@ public class VPTree {
         this.similarityFunction = similarityFunction;
         this.invert = invert;
         this.items = items;
-//        itemsList = new ArrayList<>(items.rows());
-//        for (int i = 0; i < items.rows(); i++) {
-//            itemsList.add(items.getRow(i));
-//        }
 
         this.workers = workers;
         root = buildFromPoints(items);
