@@ -513,4 +513,10 @@ var PAGES = [{
 "title": "单层神经网络",
 "description": "深度学习中的单层神经网络是一种由一个可见的输入层和一个隐藏的输出层组成的网络。",
 "tags": ["单层网络", "定型", "学习速率", "动量", "dropout", "l2", "learning", "rate", "momentum","神经网络","regulatization","single","weight","precise","entropy","bias","noise","噪音"]
+},
+{
+"url": "https://deeplearning4j.org/cn/reinforcementlearning",
+"title": "强化学习基础教程",
+"description": "神经网络由于近期在计算机视觉、机器翻译和时间序列预测等多个领域中取得的进展而声名远扬，但强化学习或许才是神经网络真正的“杀手级”应用。",
+"tags": ["强化学习", "reinforcelearning", "神经网络", "rl4j", "doom", "agent", "state", "action", "reward","convolution","q函数","convolutional","卷积","游戏"]
 }];
