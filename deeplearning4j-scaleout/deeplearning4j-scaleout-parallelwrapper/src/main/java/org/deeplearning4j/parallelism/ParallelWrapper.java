@@ -312,7 +312,7 @@ public class ParallelWrapper implements AutoCloseable {
         double score = 0.0;
 
         List<INDArray> params = new ArrayList<>();
-        for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+        for (int cnt = 1; cnt < workers && cnt < locker.get(); cnt++) {
             params.add(zoo[cnt].getModel().params());
             score += zoo[cnt].getModel().score();
         }
