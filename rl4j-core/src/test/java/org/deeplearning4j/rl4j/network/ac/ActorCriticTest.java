@@ -19,10 +19,15 @@ package org.deeplearning4j.rl4j.network.ac;
 
 import java.io.File;
 import java.io.IOException;
+import org.apache.commons.math3.util.Pair;
 import org.junit.Test;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -69,5 +74,40 @@ public class ActorCriticTest {
         ActorCriticCompGraph accg2 = ActorCriticCompGraph.load(file.getAbsolutePath());
 
         assertEquals(accg.cg, accg2.cg);
+    }
+
+    @Test
+    public void testLoss() {
+        ActivationSoftmax activation = new ActivationSoftmax();
+        ActorCriticLoss loss = new ActorCriticLoss();
+        double n = 10;
+        double eps = 1e-5;
+        double maxRelError = 1e-3;
+
+        for (double i = eps; i < n; i++) {
+            for (double j = eps; j < n; j++) {
+                INDArray labels = Nd4j.create(new double[] {i / n, 1 - i / n});
+                INDArray output = Nd4j.create(new double[] {j / n, 1 - j / n});
+                INDArray gradient = loss.computeGradient(labels, output, activation, null);
+
+                output = Nd4j.create(new double[] {j / n, 1 - j / n});
+                double score = loss.computeScore(labels, output, activation, null, false);
+                INDArray output1 = Nd4j.create(new double[] {j / n + eps, 1 - j / n});
+                double score1 = loss.computeScore(labels, output1, activation, null, false);
+                INDArray output2 = Nd4j.create(new double[] {j / n, 1 - j / n + eps});
+                double score2 = loss.computeScore(labels, output2, activation, null, false);
+
+                double gradient1 = (score1 - score) / eps;
+                double gradient2 = (score2 - score) / eps;
+                double error1 = gradient1 - gradient.getDouble(0);
+                double error2 = gradient2 - gradient.getDouble(1);
+                double relError1 = error1 / gradient.getDouble(0);
+                double relError2 = error2 / gradient.getDouble(1);
+                System.out.println(gradient.getDouble(0) + "  " + gradient1 + " " + relError1);
+                System.out.println(gradient.getDouble(1) + "  " + gradient2 + " " + relError2);
+                assertTrue(gradient.getDouble(0) < maxRelError || Math.abs(relError1) < maxRelError);
+                assertTrue(gradient.getDouble(1) < maxRelError || Math.abs(relError2) < maxRelError);
+            }
+        }
     }
 }

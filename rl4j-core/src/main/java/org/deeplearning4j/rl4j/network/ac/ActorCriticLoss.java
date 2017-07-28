@@ -15,7 +15,7 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
  *
  * Custom loss function required for Actor-Critic methods:
  * <pre>
- * L = sum_i advantage_i * log( probability_i )
+ * L = sum_i advantage_i * log( probability_i ) + entropy( probability )
  * </pre>
  * It is very similar to the Multi-Class Cross Entropy loss function.
  *
@@ -26,9 +26,13 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ActorCriticLoss implements ILossFunction {
 
+    public static final double BETA = 0.01;
+
     private INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray output = activationFn.getActivation(preOutput.dup(), true).addi(1e-5);
-        INDArray scoreArr = Transforms.log(output, false).muli(labels);
+        INDArray logOutput = Transforms.log(output, true);
+        INDArray entropy = output.muli(logOutput);
+        INDArray scoreArr = logOutput.muli(labels).subi(entropy.muli(BETA));
 
         if (mask != null) {
             LossUtil.applyMask(scoreArr, mask);
@@ -53,7 +57,9 @@ public class ActorCriticLoss implements ILossFunction {
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray output = activationFn.getActivation(preOutput.dup(), true).addi(1e-5);
-        INDArray dLda = output.rdivi(labels).negi();
+        INDArray logOutput = Transforms.log(output, true);
+        INDArray entropyDev = logOutput.addi(1);
+        INDArray dLda = output.rdivi(labels).subi(entropyDev.muli(BETA)).negi();
         INDArray grad = activationFn.backprop(preOutput, dLda).getFirst();
 
         if (mask != null) {
