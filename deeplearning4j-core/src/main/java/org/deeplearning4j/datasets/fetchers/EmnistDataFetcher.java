@@ -46,37 +46,40 @@ public class EmnistDataFetcher extends MnistDataFetcher {
     protected static final String EMNIST_ROOT = TEMP_ROOT + File.separator + "EMNIST" + File.separator;
 
     protected transient MnistManager man;
+    protected EmnistFetcher fetcher;
     protected boolean binarize = true;
     protected boolean train;
     protected int[] order;
     protected Random rng;
     protected boolean shuffle;
 
-    public EmnistDataFetcher(EmnistDataSetIterator.DataSet dataSet, boolean binarize, boolean train, boolean shuffle, long rngSeed) throws IOException {
-        if (!emnistExists(dataSet)) {
-            new EmnistFetcher(dataSet).downloadAndUntar();
+    public EmnistDataFetcher(EmnistDataSetIterator.Set dataSet, boolean binarize, boolean train, boolean shuffle, long rngSeed) throws IOException {
+        fetcher = new EmnistFetcher(dataSet);
+        if (!emnistExists(fetcher)) {
+            fetcher.downloadAndUntar();
         }
         String images;
         String labels;
         if (train) {
-            images = EMNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped;
-            labels = EMNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped;
+            images = EMNIST_ROOT + fetcher.getTrainingFilesFilename_unzipped();
+            labels = EMNIST_ROOT + fetcher.getTrainingFileLabelsFilename_unzipped();
             totalExamples = EmnistDataSetIterator.numExamplesTrain(dataSet);
         } else {
-            images = EMNIST_ROOT + MnistFetcher.testFilesFilename_unzipped;
-            labels = EMNIST_ROOT + MnistFetcher.testFileLabelsFilename_unzipped;
+            images = EMNIST_ROOT + fetcher.getTestFilesFilename_unzipped();
+            labels = EMNIST_ROOT + fetcher.getTestFileLabelsFilename_unzipped();
             totalExamples = EmnistDataSetIterator.numExamplesTest(dataSet);
         }
 
         try {
             man = new MnistManager(images, labels, train);
         } catch (Exception e) {
+            e.printStackTrace();
             FileUtils.deleteDirectory(new File(EMNIST_ROOT));
-            new MnistFetcher().downloadAndUntar();
+            new EmnistFetcher(dataSet).downloadAndUntar();
             man = new MnistManager(images, labels, train);
         }
 
-        numOutcomes = 10;
+        numOutcomes = EmnistDataSetIterator.numLabels(dataSet);
         this.binarize = binarize;
         cursor = 0;
         inputColumns = man.getImages().getEntryLength();
@@ -90,8 +93,7 @@ public class EmnistDataFetcher extends MnistDataFetcher {
         reset(); //Shuffle order
     }
 
-    private boolean emnistExists(EmnistDataSetIterator.DataSet dataSet) {
-        EmnistFetcher e = new EmnistFetcher(dataSet);
+    private boolean emnistExists(EmnistFetcher e) {
 
         //Check 4 files:
         File f = new File(EMNIST_ROOT, e.getTrainingFilesFilename_unzipped());
@@ -108,67 +110,4 @@ public class EmnistDataFetcher extends MnistDataFetcher {
             return false;
         return true;
     }
-
-    @Override
-    public void fetch(int numExamples) {
-        if (!hasMore()) {
-            throw new IllegalStateException("Unable to getFromOrigin more; there are no more images");
-        }
-
-
-        float[][] featureData = new float[numExamples][0];
-        float[][] labelData = new float[numExamples][0];
-
-        int actualExamples = 0;
-        for (int i = 0; i < numExamples; i++, cursor++) {
-            if (!hasMore())
-                break;
-
-            byte[] img = man.readImageUnsafe(order[cursor]);
-            int label = man.readLabel(order[cursor]);
-
-            float[] featureVec = new float[img.length];
-            featureData[actualExamples] = featureVec;
-            labelData[actualExamples] = new float[10];
-            labelData[actualExamples][label] = 1.0f;
-
-            for (int j = 0; j < img.length; j++) {
-                float v = ((int) img[j]) & 0xFF; //byte is loaded as signed -> convert to unsigned
-                if (binarize) {
-                    if (v > 30.0f)
-                        featureVec[j] = 1.0f;
-                    else
-                        featureVec[j] = 0.0f;
-                } else {
-                    featureVec[j] = v / 255.0f;
-                }
-            }
-
-            actualExamples++;
-        }
-
-        if (actualExamples < numExamples) {
-            featureData = Arrays.copyOfRange(featureData, 0, actualExamples);
-            labelData = Arrays.copyOfRange(labelData, 0, actualExamples);
-        }
-
-        INDArray features = Nd4j.create(featureData);
-        INDArray labels = Nd4j.create(labelData);
-        curr = new DataSet(features, labels);
-    }
-
-    @Override
-    public void reset() {
-        cursor = 0;
-        curr = null;
-        if (shuffle)
-            MathUtils.shuffleArray(order, rng);
-    }
-
-    @Override
-    public DataSet next() {
-        DataSet next = super.next();
-        return next;
-    }
-
 }

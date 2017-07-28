@@ -18,56 +18,50 @@
 
 package org.deeplearning4j.base;
 
-import lombok.Data;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
-import org.deeplearning4j.util.ArchiveUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.net.URL;
+import java.io.File;
 
-@Data
+/**
+ * Downloader for EMNIST dataset
+ *
+ * @author Alex Black
+ */
+@Slf4j
 public class EmnistFetcher extends MnistFetcher {
-    protected static final Logger log = LoggerFactory.getLogger(EmnistFetcher.class);
-
-    protected File BASE_DIR = new File(System.getProperty("user.home"));
     protected static final String LOCAL_DIR_NAME = "EMNIST";
-    protected File FILE_DIR = new File(BASE_DIR, LOCAL_DIR_NAME);
 
-    private File fileDir;
     private static final String baseURL = "http://benchmark.deeplearn.online/emnist/";
 
-    private final EmnistDataSetIterator.DataSet ds;
+    private final EmnistDataSetIterator.Set ds;
 
-    public EmnistFetcher(EmnistDataSetIterator.DataSet ds){
+    public EmnistFetcher(EmnistDataSetIterator.Set ds){
         this.ds = ds;
+        FILE_DIR = new File(BASE_DIR, LOCAL_DIR_NAME);
     }
 
-    private static String getImagesFileName(EmnistDataSetIterator.DataSet ds, boolean train) {
+    private static String getImagesFileName(EmnistDataSetIterator.Set ds, boolean train) {
         return "emnist-" + name(ds) + "-" + (train ? "train" : "test") + "-images-idx3-ubyte.gz";
     }
 
-    private static String getImagesFileNameUnzipped(EmnistDataSetIterator.DataSet ds, boolean train) {
+    private static String getImagesFileNameUnzipped(EmnistDataSetIterator.Set ds, boolean train) {
         return "emnist-" + name(ds) + "-" + (train ? "train" : "test") + "-images-idx3-ubyte";
     }
 
-    private static String getLabelsFileName(EmnistDataSetIterator.DataSet ds, boolean train) {
+    private static String getLabelsFileName(EmnistDataSetIterator.Set ds, boolean train) {
         return "emnist-" + name(ds) + "-" + (train ? "train" : "test") + "-labels-idx1-ubyte.gz";
     }
 
-    private static String getLabelsFileNameUnzipped(EmnistDataSetIterator.DataSet ds, boolean train) {
+    private static String getLabelsFileNameUnzipped(EmnistDataSetIterator.Set ds, boolean train) {
         return "emnist-" + name(ds) + "-" + (train ? "train" : "test") + "-labels-idx1-ubyte";
     }
 
-    private static String getMappingFileName(EmnistDataSetIterator.DataSet ds, boolean train) {
+    private static String getMappingFileName(EmnistDataSetIterator.Set ds, boolean train) {
         return "emnist-" + name(ds) + "-mapping.txt";
     }
 
-    private static String name(EmnistDataSetIterator.DataSet ds){
+    private static String name(EmnistDataSetIterator.Set ds){
         switch (ds){
             case COMPLETE:
                 return "byclass";
@@ -257,5 +251,24 @@ public class EmnistFetcher extends MnistFetcher {
     @Override
     public String getTestFileLabelsFilename_unzipped(){
         return getLabelsFileNameUnzipped(ds, true);
+    }
+
+    public static int numLabels(EmnistDataSetIterator.Set dataSet){
+        switch (dataSet){
+            case COMPLETE:
+                return 62;
+            case MERGE:
+                return 47;
+            case BALANCED:
+                return 47;
+            case LETTERS:
+                return 26;
+            case DIGITS:
+                return 10;
+            case MNIST:
+                return 10;
+            default:
+                throw new UnsupportedOperationException("Unknown Set: " + dataSet);
+        }
     }
 }

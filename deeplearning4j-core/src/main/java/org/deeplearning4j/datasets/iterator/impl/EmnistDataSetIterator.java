@@ -28,7 +28,12 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import java.io.IOException;
 
 /**
- * EMNIST DataSetIterator
+ * EMNIST DataSetIterator<br>
+ * EMNIST is similar to the common MNIST dataset (available via {@link MnistDataSetIterator}), with 6 different splits/
+ * variants:<br>
+ * <ul></ul>
+ * https://www.nist.gov/itl/iad/image-group/emnist-dataset<br>
+ * https://arxiv.org/abs/1702.05373<br>
  *
  * @author Alex Black
  */
@@ -53,7 +58,7 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
     public static final int NUM_MNIST_TEST = 10000;
 
 
-    public enum DataSet {
+    public enum Set {
         COMPLETE,
         MERGE,
         BALANCED,
@@ -67,46 +72,36 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
     @Getter
     protected DataSetPreProcessor preProcessor;
 
-    public EmnistDataSetIterator(int batch, int numExamples) throws IOException {
-        this(DataSet.COMPLETE, batch, numExamples, false);
+    public EmnistDataSetIterator(Set dataSet, int batch, boolean train) throws IOException {
+        this(dataSet, batch, train, System.currentTimeMillis());
     }
 
-    /**Get the specified number of examples for the MNIST training data set.
-     * @param batch the batch size of the examples
-     * @param numExamples the overall number of examples
-     * @param binarize whether to binarize mnist or not
-     * @throws IOException
-     */
-    public EmnistDataSetIterator(DataSet dataSet, int batch, int numExamples, boolean binarize) throws IOException {
-        this(dataSet, batch, numExamples, binarize, true, false, 0);
-    }
-
-    /** Constructor to get the full MNIST data set (either test or train sets) without binarization (i.e., just normalization
-     * into range of 0 to 1), with shuffling based on a random seed.
-     * @param batchSize
-     * @param train
-     * @throws IOException
-     */
-    public EmnistDataSetIterator(DataSet dataSet, int batchSize, boolean train, int seed) throws IOException {
-        this(dataSet, batchSize, (train ? MnistDataFetcher.NUM_EXAMPLES : MnistDataFetcher.NUM_EXAMPLES_TEST), false, train,
-                        true, seed);
+    public EmnistDataSetIterator(Set dataSet, int batchSize, boolean train, long seed) throws IOException {
+        this(dataSet, batchSize,false, train, false, seed);
     }
 
     /**Get the specified number of MNIST examples (test or train set), with optional shuffling and binarization.
      * @param batch Size of each patch
-     * @param numExamples total number of examples to load
      * @param binarize whether to binarize the data or not (if false: normalize in range 0 to 1)
      * @param train Train vs. test set
      * @param shuffle whether to shuffle the examples
      * @param rngSeed random number generator seed to use when shuffling examples
      */
-    public EmnistDataSetIterator(DataSet dataSet, int batch, int numExamples, boolean binarize, boolean train, boolean shuffle,
+    public EmnistDataSetIterator(Set dataSet, int batch, boolean binarize, boolean train, boolean shuffle,
                                  long rngSeed) throws IOException {
-        super(batch, numExamples, new EmnistDataFetcher(dataSet, binarize, train, shuffle, rngSeed));
+        super(batch, numExamples(train, dataSet), new EmnistDataFetcher(dataSet, binarize, train, shuffle, rngSeed));
+    }
+
+    private static int numExamples(boolean train, Set ds){
+        if(train){
+            return numExamplesTrain(ds);
+        } else {
+            return numExamplesTest(ds);
+        }
     }
 
 
-    public static int numExamplesTrain(DataSet dataSet){
+    public static int numExamplesTrain(Set dataSet){
         switch (dataSet){
             case COMPLETE:
                 return NUM_COMPLETE_TRAIN;
@@ -121,11 +116,11 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
             case MNIST:
                 return NUM_MNIST_TRAIN;
             default:
-                throw new UnsupportedOperationException("Unknown DataSet: " + dataSet);
+                throw new UnsupportedOperationException("Unknown Set: " + dataSet);
         }
     }
 
-    public static int numExamplesTest(DataSet dataSet){
+    public static int numExamplesTest(Set dataSet){
         switch (dataSet){
             case COMPLETE:
                 return NUM_COMPLETE_TEST;
@@ -140,11 +135,30 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
             case MNIST:
                 return NUM_MNIST_TEST;
             default:
-                throw new UnsupportedOperationException("Unknown DataSet: " + dataSet);
+                throw new UnsupportedOperationException("Unknown Set: " + dataSet);
         }
     }
 
-    public static int numExamplesTotal(DataSet dataSet){
+    public static int numLabels(Set dataSet){
+        switch (dataSet){
+            case COMPLETE:
+                return 62;
+            case MERGE:
+                return 47;
+            case BALANCED:
+                return 47;
+            case LETTERS:
+                return 26;
+            case DIGITS:
+                return 10;
+            case MNIST:
+                return 10;
+            default:
+                throw new UnsupportedOperationException("Unknown Set: " + dataSet);
+        }
+    }
+
+    public static int numExamplesTotal(Set dataSet){
         return numExamplesTrain(dataSet) + numExamplesTest(dataSet);
     }
 }
