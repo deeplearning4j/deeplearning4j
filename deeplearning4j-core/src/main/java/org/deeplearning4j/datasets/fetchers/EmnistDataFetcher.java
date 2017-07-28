@@ -1,6 +1,6 @@
 /*-
  *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2017 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -20,18 +20,11 @@ package org.deeplearning4j.datasets.fetchers;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.base.EmnistFetcher;
-import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.MnistManager;
-import org.deeplearning4j.util.MathUtils;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Random;
 
 
@@ -42,16 +35,9 @@ import java.util.Random;
  *
  */
 public class EmnistDataFetcher extends MnistDataFetcher {
-    protected static final String TEMP_ROOT = System.getProperty("user.home");
     protected static final String EMNIST_ROOT = TEMP_ROOT + File.separator + "EMNIST" + File.separator;
 
-    protected transient MnistManager man;
     protected EmnistFetcher fetcher;
-    protected boolean binarize = true;
-    protected boolean train;
-    protected int[] order;
-    protected Random rng;
-    protected boolean shuffle;
 
     public EmnistDataFetcher(EmnistDataSetIterator.Set dataSet, boolean binarize, boolean train, boolean shuffle, long rngSeed) throws IOException {
         fetcher = new EmnistFetcher(dataSet);
@@ -71,12 +57,12 @@ public class EmnistDataFetcher extends MnistDataFetcher {
         }
 
         try {
-            man = new MnistManager(images, labels, train);
+            man = new MnistManager(images, labels, totalExamples);
         } catch (Exception e) {
             e.printStackTrace();
             FileUtils.deleteDirectory(new File(EMNIST_ROOT));
             new EmnistFetcher(dataSet).downloadAndUntar();
-            man = new MnistManager(images, labels, train);
+            man = new MnistManager(images, labels, totalExamples);
         }
 
         numOutcomes = EmnistDataSetIterator.numLabels(dataSet);
@@ -94,7 +80,6 @@ public class EmnistDataFetcher extends MnistDataFetcher {
     }
 
     private boolean emnistExists(EmnistFetcher e) {
-
         //Check 4 files:
         File f = new File(EMNIST_ROOT, e.getTrainingFilesFilename_unzipped());
         if (!f.exists())

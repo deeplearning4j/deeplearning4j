@@ -30,9 +30,7 @@ public class TestEmnistDataSetIterator {
 
         int batchSize = 128;
 
-//        for(EmnistDataSetIterator.Set s : EmnistDataSetIterator.Set.values()){
-        for(EmnistDataSetIterator.Set s : new EmnistDataSetIterator.Set[]{
-            EmnistDataSetIterator.Set.MNIST, EmnistDataSetIterator.Set.DIGITS}){
+        for(EmnistDataSetIterator.Set s : EmnistDataSetIterator.Set.values()){
             for(boolean train : new boolean[]{true, false}){
                 log.info("Starting test: {}, {}", s, (train ? "train" : "test"));
                 EmnistDataSetIterator iter = new EmnistDataSetIterator(s, batchSize, train, 12345);
@@ -50,6 +48,15 @@ public class TestEmnistDataSetIterator {
                 assertEquals(expNumExamples, iter.numExamples());
 
                 int numLabels = EmnistDataSetIterator.numLabels(s);
+
+                assertEquals(numLabels, iter.getLabels().size());
+                assertEquals(numLabels, iter.getLabelsArrays().length);
+
+                char[] labelArr = iter.getLabelsArrays();
+                for(char c : labelArr){
+                    boolean isExpected = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+                    assertTrue(isExpected);
+                }
 
                 int totalCount = 0;
                 while(iter.hasNext()){
