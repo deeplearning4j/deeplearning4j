@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.samediff.impl;
 
+import lombok.Getter;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
@@ -20,14 +21,16 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfilerListener {
 
-    private Map<String,INDArray> ops;
+    @Getter
     private Map<INDArray,SDVariable> variables;
+    @Getter
     private SameDiff sameDiff;
+    @Getter
     private AtomicReference<Op> opAtomicReference;
+    @Getter
     private OpExecutioner backendExecutioner = Nd4j.getExecutioner();
 
     public SameDiffOpExecutioner() {
-        ops = new HashMap<>();
         variables = new IdentityHashMap<>();
         sameDiff = SameDiff.create();
         OpProfiler.getInstance().addListener(this);
@@ -39,6 +42,8 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
         }
 
         for(INDArray arr : new INDArray[] {op.x(),op.y(),op.z()}) {
+            if(arr == null)
+                continue;
             if(!variables.containsKey(arr)) {
                 SDVariable sdVariable = sameDiff.var(UUID.randomUUID().toString(),arr);
                 variables.put(arr,sdVariable);
