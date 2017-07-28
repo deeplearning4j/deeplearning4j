@@ -30,10 +30,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
-import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
-import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -225,6 +222,12 @@ public class VPTree {
             case "dot":
                 Nd4j.getExecutioner().exec(new Dot(items, basePoint, distancesArr, items.lengthLong()), -1);
                 break;
+            case "jaccard":
+                Nd4j.getExecutioner().exec(new JaccardDistance(items, basePoint, distancesArr, items.lengthLong()), -1);
+                break;
+            case "hamming":
+                Nd4j.getExecutioner().exec(new HammingDistance(items, basePoint, distancesArr, items.lengthLong()), -1);
+                break;
             default:
                 Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, items.lengthLong()), -1);
                 break;
@@ -250,6 +253,12 @@ public class VPTree {
             scalars.set(Nd4j.scalar(0.0));
 
         switch (similarityFunction) {
+            case "jaccard":
+                float ret7 = Nd4j.getExecutioner().execAndReturn(new JaccardDistance(arr1, arr2, scalars.get(),arr1.length())).getFinalResult().floatValue();
+                return invert ? -ret7 : ret7;
+            case "hamming":
+                float ret8 = Nd4j.getExecutioner().execAndReturn(new HammingDistance(arr1, arr2, scalars.get(),arr1.length())).getFinalResult().floatValue();
+                return invert ? -ret8 : ret8;
             case "euclidean":
                 float ret = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get(),arr1.length())).getFinalResult().floatValue();
                 return invert ? -ret : ret;
