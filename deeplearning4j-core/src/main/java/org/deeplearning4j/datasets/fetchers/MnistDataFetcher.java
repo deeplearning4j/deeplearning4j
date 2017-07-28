@@ -143,7 +143,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
             float[] featureVec = new float[img.length];
             featureData[actualExamples] = featureVec;
-            labelData[actualExamples] = new float[10];
+            labelData[actualExamples] = new float[numOutcomes];
             labelData[actualExamples][label] = 1.0f;
 
             for (int j = 0; j < img.length; j++) {
