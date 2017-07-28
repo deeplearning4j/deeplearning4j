@@ -56,10 +56,12 @@ layout: default
 <span class="n">compile</span> <span class="s1">'org.nd4j:nd4j-native:0.7.2'</span>
 <span class="n">compile</span> <span class="s1">'org.nd4j:nd4j-native:0.7.2:android-x86'</span>
 <span class="n">compile</span> <span class="s1">'org.nd4j:nd4j-native:0.7.2:android-arm'</span>
+<span class="n">compile</span> <span class="s1">'org.bytedeco.javacpp-presets:openblas:0.2.19-1.3:android-x86'</span>
+<span class="n">compile</span> <span class="s1">'org.bytedeco.javacpp-presets:openblas:0.2.19-1.3:android-arm'</span>
 
 </code></pre></figure>
 
-<p>As you can see, DL4J depends on ND4J, short for N-Dimensions for Java, which is a library that offers fast n-dimensional arrays. ND4J internally depends on a library called JavaCPP, which contains platform-specific native code. Therefore, you must load a version of ND4J that matches the architecture of your Android device. Because I own an x86 device, I’m using <code class="highlighter-rouge">android-x86</code> as the platform.</p>
+<p>As you can see, DL4J depends on ND4J, short for N-Dimensions for Java, which is a library that offers fast n-dimensional arrays. ND4J internally depends on a library called OpenBLAS, which contains platform-specific native code. Therefore, you must load a version of OpenBLAS and ND4J that matches the architecture of your Android device. Because I own an x86 device, I’m using <code class="highlighter-rouge">android-x86</code> as the platform.</p>
 
 <p>Dependencies of DL4J and ND4J have several files with identical names. In order to avoid build errors, add the following <code class="highlighter-rouge">exclude</code> parameters to your <code class="highlighter-rouge">packagingOptions</code>.</p>
 
@@ -79,7 +81,7 @@ layout: default
 
 <figure class="highlight"><pre><code class="language-groovy" data-lang="groovy"><span class="n">multiDexEnabled</span> <span class="kc">true</span></code></pre></figure>
 
-<p>And now, press <strong>Sync Now</strong> to update the project.</p>
+<p>And now, press <strong>Sync Now</strong> to update the project. Finally, make sure that your APK doesn't contain both <code class="highlighter-rouge">lib/armeabi</code> and <code class="highlighter-rouge">lib/armeabi-v7a</code> subdirectories. If it does, move all files to one or the other as some Android devices will have problems with both present.</p>
 
 <h3 id="starting-an-asynchronous-task">Starting an Asynchronous Task</h3>
 
