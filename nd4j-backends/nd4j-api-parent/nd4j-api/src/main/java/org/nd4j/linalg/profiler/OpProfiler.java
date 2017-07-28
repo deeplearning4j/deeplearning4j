@@ -102,6 +102,23 @@ public class OpProfiler {
     private String prevOpMatchingInverted = "";
     private long lastZ = 0;
 
+
+    /**
+     * Clear the listener from the profiler
+     * @param listener the listener to clear
+     */
+    public void clearListener(OpProfilerListener listener) {
+        listeners.remove(listener);
+    }
+
+    /**
+     * dd the listener to the profiler
+     * @param listener the listener to add
+     */
+    public void addListener(OpProfilerListener listener) {
+        listeners.add(listener);
+    }
+
     /**
      * This method resets all counters
      */

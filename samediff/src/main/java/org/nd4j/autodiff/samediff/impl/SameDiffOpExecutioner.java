@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.OpProfiler;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -17,7 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  *
  */
-public class SameDiffOpExecutioner implements OpExecutioner {
+public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfilerListener {
 
     private Map<String,INDArray> ops;
     private Map<INDArray,SDVariable> variables;
@@ -29,6 +30,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
         ops = new HashMap<>();
         variables = new IdentityHashMap<>();
         sameDiff = SameDiff.create();
+        OpProfiler.getInstance().addListener(this);
     }
 
     private Op  processOp(Op op) {
@@ -446,5 +448,11 @@ public class SameDiffOpExecutioner implements OpExecutioner {
     @Override
     public INDArray bitmapDecode(INDArray encoded, INDArray target) {
         return backendExecutioner.bitmapDecode(encoded,target);
+    }
+
+    @Override
+    public void invoke(Op op) {
+        processOp(op);
+
     }
 }
