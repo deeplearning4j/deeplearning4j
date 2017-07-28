@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.autodiff.ArrayField;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -21,6 +22,14 @@ public class NDArrayInformation implements Serializable {
     private OpState owner;
     private Number scalarValue;
     private String arrId;
+
+    public static NDArrayInformation newInfo(INDArray arr) {
+        return NDArrayInformation.builder()
+                .shape(arr.shape())
+                .arrId(UUID.randomUUID().toString())
+                .scalarValue(arr.isScalar() ? arr.getDouble(0) : null)
+                .build();
+    }
 
     public String getArrId() {
         if(arrId == null)

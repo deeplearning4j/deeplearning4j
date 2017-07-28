@@ -4880,7 +4880,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
    * @return the pointer for the given address
    */
 
-    public native @Cast("Nd4jPointer") Pointer pointerForAddress(@Cast("Nd4jIndex") long address);
+    public native @Cast("Nd4jPointer") Pointer pointerForAddress(long address);
 
     /**
      * This method takes single N-dimensional tensor, and copies its TADs to target arrays
