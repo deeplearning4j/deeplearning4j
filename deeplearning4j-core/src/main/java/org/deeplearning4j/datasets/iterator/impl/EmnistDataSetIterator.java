@@ -263,4 +263,27 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
         }
         return l;
     }
+
+    /**
+     * Are the labels balanced in the training set (that is: are the number of examples for each label equal?)
+     *
+     * @param dataSet Set to get balanced value for
+     * @return True if balanced dataset, false otherwise
+     */
+    public static boolean isBalanced(Set dataSet){
+        switch (dataSet){
+            case COMPLETE:
+            case MERGE:
+            case LETTERS:
+                //Note: EMNIST docs claims letters is balanced, but this is not possible for training set:
+                // 88800 examples / 26 classes = 3418.46
+                return false;
+            case BALANCED:
+            case DIGITS:
+            case MNIST:
+                return true;
+            default:
+                throw new UnsupportedOperationException("Unknown Set: " + dataSet);
+        }
+    }
 }

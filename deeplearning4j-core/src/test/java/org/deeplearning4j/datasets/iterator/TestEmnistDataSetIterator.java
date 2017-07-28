@@ -1,13 +1,11 @@
 package org.deeplearning4j.datasets.iterator;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.base.EmnistFetcher;
 import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-
-import java.io.File;
+import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.*;
 
@@ -20,18 +18,27 @@ public class TestEmnistDataSetIterator {
     @Test
     public void testEmnistDataSetIterator() throws Exception {
 
-        EmnistFetcher fetcher = new EmnistFetcher(EmnistDataSetIterator.Set.COMPLETE);
-        File baseEmnistDir = fetcher.getFILE_DIR();
-        if(baseEmnistDir.exists()){
-            FileUtils.deleteDirectory(baseEmnistDir);
-        }
-        assertFalse(baseEmnistDir.exists());
+//        EmnistFetcher fetcher = new EmnistFetcher(EmnistDataSetIterator.Set.COMPLETE);
+//        File baseEmnistDir = fetcher.getFILE_DIR();
+//        if(baseEmnistDir.exists()){
+//            FileUtils.deleteDirectory(baseEmnistDir);
+//        }
+//        assertFalse(baseEmnistDir.exists());
 
 
         int batchSize = 128;
 
         for(EmnistDataSetIterator.Set s : EmnistDataSetIterator.Set.values()){
+            boolean isBalanced = EmnistDataSetIterator.isBalanced(s);
+            int numLabels = EmnistDataSetIterator.numLabels(s);
+            INDArray labelCounts = null;
             for(boolean train : new boolean[]{true, false}){
+                if(isBalanced && train){
+                    labelCounts = Nd4j.create(numLabels);
+                } else {
+                    labelCounts = null;
+                }
+
                 log.info("Starting test: {}, {}", s, (train ? "train" : "test"));
                 EmnistDataSetIterator iter = new EmnistDataSetIterator(s, batchSize, train, 12345);
 
@@ -47,7 +54,7 @@ public class TestEmnistDataSetIterator {
 
                 assertEquals(expNumExamples, iter.numExamples());
 
-                int numLabels = EmnistDataSetIterator.numLabels(s);
+
 
                 assertEquals(numLabels, iter.getLabels().size());
                 assertEquals(numLabels, iter.getLabelsArrays().length);
@@ -69,9 +76,23 @@ public class TestEmnistDataSetIterator {
 
                     assertEquals(784, ds.getFeatures().size(1));
                     assertEquals(numLabels, ds.getLabels().size(1));
+
+                    if(isBalanced && train){
+                        labelCounts.addi(ds.getLabels().sum(0));
+                    }
                 }
 
                 assertEquals(expNumExamples, totalCount);
+
+                if(isBalanced && train){
+                    int min = labelCounts.minNumber().intValue();
+                    int max = labelCounts.maxNumber().intValue();
+                    int exp = expNumExamples / numLabels;
+
+                    assertTrue(min > 0);
+                    assertEquals(exp, min);
+                    assertEquals(exp, max);
+                }
             }
         }
     }

@@ -49,6 +49,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
     protected int[] order;
     protected Random rng;
     protected boolean shuffle;
+    protected boolean oneIndexed = false;
 
 
     /**
@@ -129,7 +130,6 @@ public class MnistDataFetcher extends BaseDataFetcher {
             throw new IllegalStateException("Unable to getFromOrigin more; there are no more images");
         }
 
-
         float[][] featureData = new float[numExamples][0];
         float[][] labelData = new float[numExamples][0];
 
@@ -140,6 +140,11 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
             byte[] img = man.readImageUnsafe(order[cursor]);
             int label = man.readLabel(order[cursor]);
+            if(oneIndexed){
+                //For some inexplicable reason, Emnist LETTERS set is indexed 1 to 26 (i.e., 1 to nClasses), while everything else
+                // is indexed (0 to nClasses-1) :/
+                label--;
+            }
 
             float[] featureVec = new float[img.length];
             featureData[actualExamples] = featureVec;

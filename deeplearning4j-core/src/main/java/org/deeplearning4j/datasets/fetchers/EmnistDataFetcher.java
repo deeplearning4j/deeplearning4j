@@ -77,6 +77,15 @@ public class EmnistDataFetcher extends MnistDataFetcher {
             order[i] = i;
         rng = new Random(rngSeed);
         reset(); //Shuffle order
+
+
+        //For some inexplicable reason, EMNIST LETTERS set is indexed 1 to 26 (i.e., 1 to nClasses), while everything else
+        // is indexed (0 to nClasses-1) :/
+        if(dataSet == EmnistDataSetIterator.Set.LETTERS){
+            oneIndexed = true;
+        } else {
+            oneIndexed = false;
+        }
     }
 
     private boolean emnistExists(EmnistFetcher e) {
