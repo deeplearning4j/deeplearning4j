@@ -9,20 +9,39 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cache.TADManager;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ *
+ */
 public class SameDiffOpExecutioner implements OpExecutioner {
     private Map<String,INDArray> ops;
     private Set<INDArray> arrays;
     private SameDiff sameDiff;
     private Map<INDArray,String> arrayToId;
+    private AtomicReference<Op> opAtomicReference;
+    private OpExecutioner backendExecutioner = Nd4j.getExecutioner();
 
     public SameDiffOpExecutioner() {
         ops = new HashMap<>();
         arrayToId = new IdentityHashMap<>();
         arrays = new HashSet<>();
         sameDiff = SameDiff.create();
+    }
+
+    private Op  processOp(Op op) {
+        if(opAtomicReference == null) {
+            opAtomicReference = new AtomicReference<>(op);
+        }
+        for(INDArray arr : new INDArray[] {op.x(),op.y(),op.z()}) {
+            if(!arrayToId.containsKey(arr)) {
+                arrayToId.put(arr,UUID.randomUUID().toString());
+            }
+        }
+        return op;
     }
 
     /**
@@ -32,7 +51,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public String getLastOp() {
-        return null;
+        return opAtomicReference.get().name();
     }
 
     /**
@@ -42,7 +61,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public Op exec(Op op) {
-        return null;
+        return processOp(op);
     }
 
     /**
@@ -52,7 +71,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public void iterateOverAllRows(Op op) {
-
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -62,7 +81,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public void iterateOverAllColumns(Op op) {
-
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -72,7 +91,8 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public INDArray execAndReturn(TransformOp op) {
-        return null;
+        return processOp(op).z();
+
     }
 
     /**
@@ -83,7 +103,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public Accumulation execAndReturn(Accumulation op) {
-        return null;
+        return (Accumulation) processOp(op).z();
     }
 
     /**
@@ -95,7 +115,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public Accumulation execAndReturn(Variance op, boolean biasCorrected) {
-        return null;
+        return (Accumulation) processOp(op);
     }
 
     /**
@@ -106,7 +126,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public IndexAccumulation execAndReturn(IndexAccumulation op) {
-        return null;
+        return (IndexAccumulation) processOp(op);
     }
 
     /**
@@ -117,7 +137,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public INDArray execAndReturn(ScalarOp op) {
-        return null;
+        return processOp(op).z();
     }
 
     /**
@@ -127,7 +147,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public INDArray execAndReturn(BroadcastOp op) {
-        return null;
+        return processOp(op).z();
     }
 
     /**
@@ -138,7 +158,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public Op exec(Op op, int... dimension) {
-        return null;
+        return processOp(op);
     }
 
     /**
@@ -150,7 +170,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public INDArray exec(Accumulation accumulation, int... dimension) {
-        return null;
+        return processOp(accumulation).z();
     }
 
     /**
@@ -162,7 +182,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public INDArray exec(BroadcastOp broadcast, int... dimension) {
-        return null;
+        return processOp(broadcast).z();
     }
 
     /**
@@ -174,7 +194,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public INDArray exec(Variance accumulation, boolean biasCorrected, int... dimension) {
-        return null;
+        return processOp(accumulation).z();
     }
 
     /**
@@ -186,7 +206,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public INDArray exec(IndexAccumulation indexAccum, int... dimension) {
-        return null;
+        return processOp(indexAccum).z();
     }
 
     /**
@@ -198,7 +218,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public INDArray execAndReturn(Op op) {
-        return null;
+        return processOp(op).z();
     }
 
     /**
@@ -209,7 +229,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public ExecutionMode executionMode() {
-        return null;
+        return backendExecutioner.executionMode();
     }
 
     /**
@@ -219,7 +239,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public void setExecutionMode(ExecutionMode executionMode) {
-
+        backendExecutioner.setExecutionMode(executionMode);
     }
 
     /**
@@ -274,7 +294,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public INDArray exec(RandomOp op) {
-        return null;
+        return processOp(op).z();
     }
 
     /**
@@ -285,7 +305,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public INDArray exec(RandomOp op, Random rng) {
-        return null;
+        return processOp(op).z();
     }
 
     /**
@@ -297,7 +317,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public Properties getEnvironmentInformation() {
-        return null;
+        return backendExecutioner.getEnvironmentInformation();
     }
 
     /**
@@ -307,7 +327,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public void setProfilingMode(ProfilingMode mode) {
-
+        backendExecutioner.setProfilingMode(mode);
     }
 
     /**
@@ -317,7 +337,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public ProfilingMode getProfilingMode() {
-        return null;
+        return backendExecutioner.getProfilingMode();
     }
 
     /**
@@ -327,7 +347,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public TADManager getTADManager() {
-        return null;
+        return backendExecutioner.getTADManager();
     }
 
     /**
@@ -335,7 +355,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public void printEnvironmentInformation() {
-
+        backendExecutioner.printEnvironmentInformation();
     }
 
     /**
@@ -343,7 +363,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public void push() {
-
+        backendExecutioner.push();
     }
 
     /**
@@ -351,7 +371,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public void commit() {
-
+        backendExecutioner.commit();
     }
 
     /**
@@ -363,7 +383,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold) {
-        return null;
+        return backendExecutioner.thresholdEncode(input,threshold);
     }
 
     /**
@@ -375,7 +395,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
-        return null;
+        return backendExecutioner.thresholdEncode(input,threshold,boundary);
     }
 
     /**
@@ -387,7 +407,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public INDArray thresholdDecode(INDArray encoded, INDArray target) {
-        return null;
+        return backendExecutioner.thresholdDecode(encoded,target);
     }
 
     /**
@@ -400,16 +420,16 @@ public class SameDiffOpExecutioner implements OpExecutioner {
      */
     @Override
     public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
-        return 0;
+        return backendExecutioner.bitmapEncode(indArray,target,threshold);
     }
 
     @Override
     public INDArray bitmapEncode(INDArray indArray, double threshold) {
-        return null;
+        return backendExecutioner.bitmapEncode(indArray,threshold);
     }
 
     @Override
     public INDArray bitmapDecode(INDArray encoded, INDArray target) {
-        return null;
+        return backendExecutioner.bitmapDecode(encoded,target);
     }
 }

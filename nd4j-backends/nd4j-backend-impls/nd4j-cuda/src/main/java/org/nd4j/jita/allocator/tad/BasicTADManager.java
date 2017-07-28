@@ -30,47 +30,60 @@ public class BasicTADManager implements TADManager {
 
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
-        if (dimension == null || dimension.length == 0 || dimension[0] == Integer.MAX_VALUE) {
-            return new Pair<>(array.shapeInfoDataBuffer(), null);
-        } else {
-            Arrays.sort(dimension);
+        Arrays.sort(dimension);
 
-            int dimensionLength = dimension.length;
+        int dimensionLength = dimension.length;
+        boolean isScalar = dimension == null || dimensionLength == 1 && dimension[0] == Integer.MAX_VALUE;
+        // FIXME: this is fast triage, remove it later
+        int targetRank = isScalar ? 2 : array.rank(); //dimensionLength <= 1 ? 2 : dimensionLength;
+        long offsetLength = 0;
+        long tadLength = 1;
 
-            // FIXME: this is fast triage, remove it later
-            int targetRank = array.rank(); //dimensionLength <= 1 ? 2 : dimensionLength;
-            long offsetLength = 0;
-            long tadLength = 1;
+        if(!isScalar)
             for (int i = 0; i < dimensionLength; i++) {
                 tadLength *= array.shape()[dimension[i]];
             }
 
+        if(!isScalar)
             offsetLength = array.lengthLong() / tadLength;
+        else
+            offsetLength = 1;
+        //     logger.info("Original shape info before TAD: {}", array.shapeInfoDataBuffer());
+        //    logger.info("dimension: {}, tadLength: {}, offsetLength for TAD: {}", Arrays.toString(dimension),tadLength, offsetLength);
 
-            //     logger.info("Original shape info before TAD: {}", array.shapeInfoDataBuffer());
-            //    logger.info("dimension: {}, tadLength: {}, offsetLength for TAD: {}", Arrays.toString(dimension),tadLength, offsetLength);
+        DataBuffer outputBuffer = new CudaIntDataBuffer(targetRank * 2 + 4);
+        DataBuffer offsetsBuffer = new CudaLongDataBuffer(offsetLength);
 
-            DataBuffer outputBuffer = new CudaIntDataBuffer(targetRank * 2 + 4);
-            DataBuffer offsetsBuffer = new CudaLongDataBuffer(offsetLength);
+        DataBuffer dimensionBuffer = AtomicAllocator.getInstance().getConstantBuffer(dimension);
+        Pointer dimensionPointer = AtomicAllocator.getInstance().getHostPointer(dimensionBuffer);
 
-            DataBuffer dimensionBuffer = AtomicAllocator.getInstance().getConstantBuffer(dimension);
-            Pointer dimensionPointer = AtomicAllocator.getInstance().getHostPointer(dimensionBuffer);
-
-            Pointer xShapeInfo = AddressRetriever.retrieveHostPointer(array.shapeInfoDataBuffer());
-            Pointer targetPointer = AddressRetriever.retrieveHostPointer(outputBuffer);
-            Pointer offsetsPointer = AddressRetriever.retrieveHostPointer(offsetsBuffer);
-
+        Pointer xShapeInfo = AddressRetriever.retrieveHostPointer(array.shapeInfoDataBuffer());
+        Pointer targetPointer = AddressRetriever.retrieveHostPointer(outputBuffer);
+        Pointer offsetsPointer = AddressRetriever.retrieveHostPointer(offsetsBuffer);
+        if(!isScalar)
             nativeOps.tadOnlyShapeInfo((IntPointer) xShapeInfo, (IntPointer) dimensionPointer, dimensionLength,
-                            (IntPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
+                    (IntPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
 
-            AtomicAllocator.getInstance().getAllocationPoint(outputBuffer).tickHostWrite();
-            AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickHostWrite();
+        else  {
+            outputBuffer.put(0,2);
+            outputBuffer.put(1,1);
+            outputBuffer.put(2,1);
+            outputBuffer.put(3,1);
+            outputBuffer.put(4,1);
+            outputBuffer.put(5,0);
+            outputBuffer.put(6,0);
+            outputBuffer.put(7,0);
 
-            //   logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
-            // now we need to copy this buffer to either device global memory or device cache
-
-            return new Pair<>(outputBuffer, offsetsBuffer);
         }
+
+        AtomicAllocator.getInstance().getAllocationPoint(outputBuffer).tickHostWrite();
+        AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickHostWrite();
+
+        //   logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
+        // now we need to copy this buffer to either device global memory or device cache
+
+        return new Pair<>(outputBuffer, offsetsBuffer);
+
     }
 
     /**

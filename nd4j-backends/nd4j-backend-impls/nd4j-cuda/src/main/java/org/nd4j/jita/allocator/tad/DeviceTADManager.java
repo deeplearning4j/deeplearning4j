@@ -78,18 +78,18 @@ public class DeviceTADManager extends BasicTADManager {
              *
              * Explanation from: http://cuda-programming.blogspot.jp/2013/01/what-is-constant-memory-in-cuda.html
              * The CUDA language makes available another kind of memory known as constant memory. As the name may indicate, we use constant memory for data that will not change over the course of a kernel execution.
-            
+
              Why Constant Memory?
-            
+
              NVIDIA hardware provides 64KB of constant memory that
              it treats differently than it treats standard global memory. In some situations,
              using constant memory rather than global memory will reduce the required memory bandwidth.
-            
+
              NOTE HERE FOR US: We use 48kb of it using these methods.
-            
+
              Note also that we use the {@link AtomicAllocator} which is the cuda memory manager
              for moving the current host space data buffer to constant memory.
-            
+
              We do this for device access to shape information.
              */
             if (buffers.getFirst() != array.shapeInfoDataBuffer())
@@ -103,7 +103,7 @@ public class DeviceTADManager extends BasicTADManager {
             // so, at this point we have buffer valid on host side.
             // And we just need to replace DevicePointer with constant pointer
             tadCache.get(deviceId).put(descriptor, buffers);
-            bytes.addAndGet((buffers.getFirst() == null ? 0 : buffers.getFirst().length() * 4) + (buffers.getSecond()  == null ? 0 : (buffers.getSecond().length() * 8)));
+            bytes.addAndGet((buffers.getFirst() == null ? 4 : buffers.getFirst().length() * 4) + (buffers.getSecond()  == null ? 8 : (buffers.getSecond().length() * 8)));
             log.trace("Using TAD from cache...");
         }
 
