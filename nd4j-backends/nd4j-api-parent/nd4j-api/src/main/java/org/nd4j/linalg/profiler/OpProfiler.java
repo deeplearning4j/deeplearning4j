@@ -16,7 +16,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.nd4j.linalg.profiler.OpProfiler.PenaltyCause.NONE;
 
 /**
- * This class is suited for execution statistics gathering on Op/Array level: number of sequential ops executed on the same data
+ * This class is suited for execution statistics
+ * gathering on Op/Array level: number of
+ * sequential ops executed on the same data
  *
  * PLEASE NOTE: This isn't thread-safe implementation.
  *
@@ -25,7 +27,12 @@ import static org.nd4j.linalg.profiler.OpProfiler.PenaltyCause.NONE;
 public class OpProfiler {
 
     public enum PenaltyCause {
-        NONE, NON_EWS_ACCESS, STRIDED_ACCESS, MIXED_ORDER, TAD_NON_EWS_ACCESS, TAD_STRIDED_ACCESS,
+        NONE,
+        NON_EWS_ACCESS,
+        STRIDED_ACCESS,
+        MIXED_ORDER,
+        TAD_NON_EWS_ACCESS,
+        TAD_STRIDED_ACCESS,
     }
 
     private static AtomicLong invocationsCount = new AtomicLong(0);
@@ -208,6 +215,11 @@ public class OpProfiler {
     }
 
 
+    /**
+     *
+     * @param op
+     * @param tadBuffers
+     */
     public void processOpCall(Op op, DataBuffer... tadBuffers) {
         processOpCall(op);
 

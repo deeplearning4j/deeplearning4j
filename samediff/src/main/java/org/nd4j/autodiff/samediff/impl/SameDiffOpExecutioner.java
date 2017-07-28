@@ -18,19 +18,16 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  */
 public class SameDiffOpExecutioner implements OpExecutioner {
+
     private Map<String,INDArray> ops;
-    private Set<INDArray> arrays;
+    private Map<INDArray,SDVariable> variables;
     private SameDiff sameDiff;
-    private Map<INDArray,String> arrayToId;
-    private Map<INDArray,Integer> arrayToVertexId;
     private AtomicReference<Op> opAtomicReference;
     private OpExecutioner backendExecutioner = Nd4j.getExecutioner();
 
     public SameDiffOpExecutioner() {
         ops = new HashMap<>();
-        arrayToId = new IdentityHashMap<>();
-        arrayToVertexId = new IdentityHashMap<>();
-        arrays = new HashSet<>();
+        variables = new IdentityHashMap<>();
         sameDiff = SameDiff.create();
     }
 
@@ -38,14 +35,29 @@ public class SameDiffOpExecutioner implements OpExecutioner {
         if(opAtomicReference == null) {
             opAtomicReference = new AtomicReference<>(op);
         }
+
         for(INDArray arr : new INDArray[] {op.x(),op.y(),op.z()}) {
-            if(!arrayToId.containsKey(arr)) {
-                arrayToId.put(arr,UUID.randomUUID().toString());
-                arrayToVertexId.put(arr,arrayToVertexId.size());
+            if(!variables.containsKey(arr)) {
+                SDVariable sdVariable = sameDiff.var(UUID.randomUUID().toString(),arr);
+                variables.put(arr,sdVariable);
             }
         }
+
+        if(op.x() != null && op.y() != null) {
+            SDVariable result = sameDiff.invoke(op, variables.get(op.x()), variables.get(op.y()));
+            variables.put(op.z(),result);
+        }
+        else {
+            SDVariable result = sameDiff.invoke(op, variables.get(op.x()));
+            variables.put(op.z(),result);
+
+        }
+
         return op;
     }
+
+
+
 
     /**
      * This method returns name of the last invoked op
