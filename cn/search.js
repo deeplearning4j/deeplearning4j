@@ -525,4 +525,10 @@ var PAGES = [{
 "title": "强化学习基础教程",
 "description": "神经网络由于近期在计算机视觉、机器翻译和时间序列预测等多个领域中取得的进展而声名远扬，但强化学习或许才是神经网络真正的“杀手级”应用。",
 "tags": ["强化学习", "reinforcelearning", "神经网络", "rl4j", "doom", "agent", "state", "action", "reward","convolution","q函数","convolutional","卷积","游戏"]
+},
+{
+"url": "https://deeplearning4j.org/cn/source",
+"title": "用源代码工作",
+"description": "如果您不打算以提交者（committer）的身份为Deeplearning4j做贡献，或者您不需要最新的Alpha版本，那么我们建议您从Maven中央仓库下载Deeplearning4j最新的稳定发布版本。具体操作与在IntelliJ中将依赖项添加至您的POM.xml一样简单。",
+"tags": ["源代码", "source", "github", "deeplearning4j", "maven", "mac", "window", "贡献", "lombok","dl4j","nd4j","datavec","mvn","git"]
 }];
