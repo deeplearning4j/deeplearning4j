@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.ShapeOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
@@ -31,7 +32,7 @@ import org.nd4j.linalg.util.ComplexUtil;
  *
  * @author Adam Gibson
  */
-public class Permute extends BaseOp {
+public class Permute extends ShapeOp {
 
     public Permute() {}
 

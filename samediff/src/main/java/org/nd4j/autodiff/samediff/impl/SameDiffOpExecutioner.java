@@ -22,12 +22,14 @@ public class SameDiffOpExecutioner implements OpExecutioner {
     private Set<INDArray> arrays;
     private SameDiff sameDiff;
     private Map<INDArray,String> arrayToId;
+    private Map<INDArray,Integer> arrayToVertexId;
     private AtomicReference<Op> opAtomicReference;
     private OpExecutioner backendExecutioner = Nd4j.getExecutioner();
 
     public SameDiffOpExecutioner() {
         ops = new HashMap<>();
         arrayToId = new IdentityHashMap<>();
+        arrayToVertexId = new IdentityHashMap<>();
         arrays = new HashSet<>();
         sameDiff = SameDiff.create();
     }
@@ -39,6 +41,7 @@ public class SameDiffOpExecutioner implements OpExecutioner {
         for(INDArray arr : new INDArray[] {op.x(),op.y(),op.z()}) {
             if(!arrayToId.containsKey(arr)) {
                 arrayToId.put(arr,UUID.randomUUID().toString());
+                arrayToVertexId.put(arr,arrayToVertexId.size());
             }
         }
         return op;
