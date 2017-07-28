@@ -215,9 +215,11 @@ declare class StyleText extends Style {
     private fontSize;
     private underline;
     private color;
+    private whitespacePre;
     constructor(jsonObj: any);
     getFont: () => string;
     getFontSize: () => number;
     getUnderline: () => boolean;
     getColor: () => string;
+    getWhitespacePre: () => boolean;
 }

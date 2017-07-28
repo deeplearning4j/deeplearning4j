@@ -319,7 +319,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             && sequenceLearningAlgorithm.isEarlyTerminationHit()) {
                 break;
             }
-            log.info("Epoch [" + currentEpoch + "] finished; Elements processed so far: [" + wordsCounter.get() + "];  Sequences processed: [" + linesCounter.get() + "]");
+            log.info("Epoch [" + currentEpoch + "] finished; Elements processed so far: [" + wordsCounter.get()
+                            + "];  Sequences processed: [" + linesCounter.get() + "]");
 
             if (eventListeners != null && !eventListeners.isEmpty()) {
                 for (VectorsListener listener : eventListeners) {
@@ -1144,7 +1145,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             }
                         }
                     }
-                   double alpha = 0.025;
+                    double alpha = 0.025;
 
                     if (sequences.isEmpty()) {
                         continue;
@@ -1158,8 +1159,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             Sequence<T> sequence = sequences.get(x);
 
                             //log.info("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);
-                            alpha = Math.max(minLearningRate, learningRate.get() * (1 - (1.0 * this.wordsCounter.get()
-                                            / ((double) this.totalWordsCount) / (numIterations * totalEpochs))));
+                            alpha = Math.max(minLearningRate,
+                                            learningRate.get() * (1 - (1.0 * this.wordsCounter.get()
+                                                            / ((double) this.totalWordsCount) / (numIterations
+                                                                            * totalEpochs))));
 
                             trainSequence(sequence, nextRandom, alpha);
 

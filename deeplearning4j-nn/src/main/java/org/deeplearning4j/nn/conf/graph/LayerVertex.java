@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -124,5 +125,11 @@ public class LayerVertex extends GraphVertex {
             afterPreprocessor = preProcessor.getOutputType(vertexInputs[0]);
 
         return layerConf.getLayer().getOutputType(layerIndex, afterPreprocessor);
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        //TODO preprocessor memory
+        return layerConf.getLayer().getMemoryReport(inputTypes[0]);
     }
 }

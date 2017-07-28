@@ -1,9 +1,11 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -17,13 +19,18 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  *
  * @author Alex Black
  */
-public class ZeroPaddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer> {
+public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer> {
 
     private int[] padding; //[padTop, padBottom, padLeft, padRight]
 
     public ZeroPaddingLayer(NeuralNetConfiguration conf) {
         super(conf);
         this.padding = ((org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer) conf.getLayer()).getPadding();
+    }
+
+    @Override
+    public INDArray preOutput(boolean training) {
+        return activate(training);
     }
 
     @Override
@@ -47,6 +54,11 @@ public class ZeroPaddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         return new Pair<>((Gradient) new DefaultGradient(), epsNext);
     }
 
+    @Override
+    public INDArray activationMean() {
+        throw new UnsupportedOperationException();
+    }
+
 
     @Override
     public INDArray activate(boolean training) {
@@ -62,6 +74,11 @@ public class ZeroPaddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                         NDArrayIndex.interval(padding[2], padding[2] + inShape[3])}, input);
 
         return out;
+    }
+
+    @Override
+    public Layer clone() {
+        return new ZeroPaddingLayer(conf.clone());
     }
 
     @Override

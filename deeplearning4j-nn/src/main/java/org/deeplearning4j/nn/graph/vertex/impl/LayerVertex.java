@@ -84,7 +84,9 @@ public class LayerVertex extends BaseGraphVertex {
     public void setLayerAsFrozen() {
         if (this.layer instanceof FrozenLayer)
             return;
-        this.layer = new FrozenLayer<>(this.layer);
+
+        this.layer = new FrozenLayer(this.layer);
+        this.layer.conf().getLayer().setLayerName(vertexName);
     }
 
     @Override

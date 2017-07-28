@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -318,7 +319,7 @@ public class TestDecayPolicies {
             Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
             layer.setBackpropGradientsViewArray(gradient);
             Updater updater = UpdaterCreator.getUpdater(layer);
-            int stateSize = (int) layer.conf().getLayer().getIUpdater().stateSize(numParams);
+            int stateSize = (int) ((BaseLayer) layer.conf().getLayer()).getIUpdater().stateSize(numParams);
             if (stateSize > 0)
                 updater.setStateViewArray(layer, Nd4j.create(1, stateSize), true);
 
@@ -480,8 +481,8 @@ public class TestDecayPolicies {
             mln.fit(ds);
         mln.computeGradientAndScore();
 
-        double lr0 = mln.getLayer(0).conf().getLayer().getLearningRate();
-        double lr1 = mln.getLayer(1).conf().getLayer().getLearningRate();
+        double lr0 = ((BaseLayer) mln.getLayer(0).conf().getLayer()).getLearningRate();
+        double lr1 = ((BaseLayer) mln.getLayer(1).conf().getLayer()).getLearningRate();
         assertEquals(1.0, lr0, 0.0);
         assertEquals(1.0, lr1, 0.0);
     }
@@ -512,7 +513,7 @@ public class TestDecayPolicies {
         for (int i = 0; i < 2; i++) {
             updater.update(layer, gradientSingle, i, 1);
             mu = testNesterovsComputation(gradientSingle, gradientExpected, lr, mu, momentumAfter, i);
-            assertEquals(mu, layer.conf().getLayer().getMomentum(), 1e-4);
+            assertEquals(mu, ((BaseLayer) layer.conf().getLayer()).getMomentum(), 1e-4);
         }
     }
 
@@ -583,7 +584,7 @@ public class TestDecayPolicies {
         for (int i = 0; i < 2; i++) {
             updater.update(net, gradientMLN, i, 1);
             mu = testNesterovsComputation(gradientMLN, gradientExpected, lr, mu, momentumAfter, i);
-            assertEquals(mu, net.getLayer(1).conf().getLayer().getMomentum(), 1e-4);
+            assertEquals(mu, ((BaseLayer) net.getLayer(1).conf().getLayer()).getMomentum(), 1e-4);
         }
     }
 
@@ -633,7 +634,7 @@ public class TestDecayPolicies {
 
                 // always print the same number (0.1 and 0.9)
                 double lrLastLayer = (net.getLayer(last_layer_index)).conf().getLearningRateByParam("W");
-                double mLastLayer = (net.getLayer(last_layer_index)).conf().getLayer().getMomentum();
+                double mLastLayer = ((BaseLayer) (net.getLayer(last_layer_index)).conf().getLayer()).getMomentum();
 
                 assertEquals(learningRateSchedule.get(count), lrLastLayer, 1e-6);
                 assertEquals(momentumSchedule.get(count), mLastLayer, 1e-6);

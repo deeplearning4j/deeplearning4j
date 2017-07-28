@@ -227,14 +227,7 @@ public class DefaultTrainer extends Thread implements Trainer {
      * Good place to configure listeners and all such a things
      */
     protected void postInit() {
-        Collection<IterationListener> oldListeners = null;
-
-        if (originalModel instanceof ComputationGraph) {
-            oldListeners = ((ComputationGraph) originalModel).getListeners();
-        } else if (originalModel instanceof MultiLayerNetwork) {
-            oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
-        }
-        oldListeners = (oldListeners == null ? new ArrayList<>() : new ArrayList<>(oldListeners));
+        Collection<IterationListener> oldListeners = new ArrayList<>();
         Collection<IterationListener> replicatedListeners = new ArrayList<>();
 
         if (parallelWrapper.getListeners() != null) {
@@ -268,14 +261,13 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                     // we replicate original model params & updater state, just in case it's pre-trained model
                     synchronized (originalModel) {
-                        replicatedModel.setParams(originalModel.params());
+                        replicatedModel.setParams(originalModel.params().unsafeDuplication(true));
 
                         Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
                         Updater updaterOrigina = ((MultiLayerNetwork) originalModel).getUpdater();
 
                         if (updaterOrigina != null && updaterOrigina.getStateViewArray() != null)
-                            updaterReplica.setStateViewArray((MultiLayerNetwork) replicatedModel,
-                                            updaterOrigina.getStateViewArray().dup(), false);
+                            updaterReplica.setStateViewArray((MultiLayerNetwork) replicatedModel, updaterOrigina.getStateViewArray().unsafeDuplication(true), false);
 
                         Nd4j.getExecutioner().commit();
                     }
@@ -298,13 +290,13 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                     // we replicate original model params & updater state, just in case it's pre-trained model
                     synchronized (originalModel) {
-                        replicatedModel.setParams(originalModel.params());
+                        replicatedModel.setParams(originalModel.params().unsafeDuplication(true));
 
                         ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
                         ComputationGraphUpdater updaterOrigina = ((ComputationGraph) originalModel).getUpdater();
 
                         if (updaterOrigina != null && updaterOrigina.getStateViewArray() != null)
-                            updaterReplica.setStateViewArray(updaterOrigina.getStateViewArray().dup());
+                            updaterReplica.setStateViewArray(updaterOrigina.getStateViewArray().unsafeDuplication(true));
 
                         Nd4j.getExecutioner().commit();
                     }
@@ -340,7 +332,7 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
                         if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()
-                                        && iterationsCounter.incrementAndGet() % averagingFrequency == 0
+                                        && ( averagingFrequency == 0 || iterationsCounter.incrementAndGet() % averagingFrequency == 0)
                                         && averagingRequired()) {
                             // we ensure all operations are finished in this training round
                             Nd4j.getExecutioner().commit();
@@ -378,7 +370,7 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
                         if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()
-                                        && iterationsCounter.incrementAndGet() % averagingFrequency == 0
+                                        && (averagingFrequency == 0 ||iterationsCounter.incrementAndGet() % averagingFrequency == 0)
                                         && averagingRequired()) {
                             // we ensure all operations are finished in this training round
                             Nd4j.getExecutioner().commit();
@@ -456,7 +448,9 @@ public class DefaultTrainer extends Thread implements Trainer {
                 }
 
             }
-            replicatedListeners.add(l);
+            if (!replicatedListeners.contains((l))) {
+                replicatedListeners.add(l);
+            }
         }
     }
 

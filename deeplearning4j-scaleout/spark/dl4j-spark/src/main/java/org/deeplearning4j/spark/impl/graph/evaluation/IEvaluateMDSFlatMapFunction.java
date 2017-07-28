@@ -40,10 +40,11 @@ import java.util.Iterator;
  *
  * @author Alex Black
  */
-public class IEvaluateMDSFlatMapFunction<T extends IEvaluation> extends BaseFlatMapFunctionAdaptee<Iterator<MultiDataSet>, T[]> {
+public class IEvaluateMDSFlatMapFunction<T extends IEvaluation>
+                extends BaseFlatMapFunctionAdaptee<Iterator<MultiDataSet>, T[]> {
 
-    public IEvaluateMDSFlatMapFunction(Broadcast<String> json, Broadcast<INDArray> params,
-                    int evalBatchSize, T... evaluations) {
+    public IEvaluateMDSFlatMapFunction(Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize,
+                    T... evaluations) {
         super(new IEvaluateMDSFlatMapFunctionAdapter<>(json, params, evalBatchSize, evaluations));
     }
 }
@@ -57,7 +58,8 @@ public class IEvaluateMDSFlatMapFunction<T extends IEvaluation> extends BaseFlat
  * @author Alex Black
  */
 @Slf4j
-class IEvaluateMDSFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapFunctionAdapter<Iterator<MultiDataSet>, T[]> {
+class IEvaluateMDSFlatMapFunctionAdapter<T extends IEvaluation>
+                implements FlatMapFunctionAdapter<Iterator<MultiDataSet>, T[]> {
 
     protected Broadcast<String> json;
     protected Broadcast<INDArray> params;
@@ -72,7 +74,7 @@ class IEvaluateMDSFlatMapFunctionAdapter<T extends IEvaluation> implements FlatM
      * @param evaluations Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
     public IEvaluateMDSFlatMapFunctionAdapter(Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize,
-                                              T[] evaluations) {
+                    T[] evaluations) {
         this.json = json;
         this.params = params;
         this.evalBatchSize = evalBatchSize;

@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.updater.custom;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -44,18 +45,18 @@ public class TestCustomUpdater {
                         .build();
 
         //First: Check updater config
-        assertTrue(conf1.getConf(0).getLayer().getIUpdater() instanceof CustomIUpdater);
-        assertTrue(conf1.getConf(1).getLayer().getIUpdater() instanceof CustomIUpdater);
-        assertTrue(conf2.getConf(0).getLayer().getIUpdater() instanceof Sgd);
-        assertTrue(conf2.getConf(1).getLayer().getIUpdater() instanceof Sgd);
+        assertTrue(((BaseLayer) conf1.getConf(0).getLayer()).getIUpdater() instanceof CustomIUpdater);
+        assertTrue(((BaseLayer) conf1.getConf(1).getLayer()).getIUpdater() instanceof CustomIUpdater);
+        assertTrue(((BaseLayer) conf2.getConf(0).getLayer()).getIUpdater() instanceof Sgd);
+        assertTrue(((BaseLayer) conf2.getConf(1).getLayer()).getIUpdater() instanceof Sgd);
 
-        CustomIUpdater u0_0 = (CustomIUpdater) conf1.getConf(0).getLayer().getIUpdater();
-        CustomIUpdater u0_1 = (CustomIUpdater) conf1.getConf(1).getLayer().getIUpdater();
+        CustomIUpdater u0_0 = (CustomIUpdater) ((BaseLayer) conf1.getConf(0).getLayer()).getIUpdater();
+        CustomIUpdater u0_1 = (CustomIUpdater) ((BaseLayer) conf1.getConf(1).getLayer()).getIUpdater();
         assertEquals(lr, u0_0.getLearningRate(), 1e-6);
         assertEquals(lr, u0_1.getLearningRate(), 1e-6);
 
-        Sgd u1_0 = (Sgd) conf2.getConf(0).getLayer().getIUpdater();
-        Sgd u1_1 = (Sgd) conf2.getConf(1).getLayer().getIUpdater();
+        Sgd u1_0 = (Sgd) ((BaseLayer) conf2.getConf(0).getLayer()).getIUpdater();
+        Sgd u1_1 = (Sgd) ((BaseLayer) conf2.getConf(1).getLayer()).getIUpdater();
         assertEquals(lr, u1_0.getLearningRate(), 1e-6);
         assertEquals(lr, u1_1.getLearningRate(), 1e-6);
 

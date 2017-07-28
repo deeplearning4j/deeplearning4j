@@ -45,6 +45,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.pow;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
@@ -337,7 +338,12 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
             Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = (int) conf().getLayer().getIUpdater().stateSize(numParams());
+            int updaterStateSize = 0;
+            Map<String, INDArray> paramTable = paramTable();
+            for (Map.Entry<String, INDArray> entry : paramTable.entrySet()) {
+                updaterStateSize += (int) conf().getLayer().getIUpdaterByParam(entry.getKey())
+                                .stateSize(entry.getValue().length());
+            }
             if (updaterStateSize > 0)
                 updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
                                 true);

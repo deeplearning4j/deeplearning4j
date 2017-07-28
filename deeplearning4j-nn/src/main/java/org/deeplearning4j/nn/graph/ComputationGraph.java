@@ -53,6 +53,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
+import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -101,6 +102,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public final static String workspaceCache = "LOOP_CACHE";
     public final static String workspaceExternal = "LOOP_EXTERNAL";
     public final static String workspaceFeedForward = "LOOP_FF";
+    public final static String workspacePretrain = "LOOP_PTR";
     public final static String workspaceTBPTT = "LOOP_TBPTT";
     public final static String workspaceLSTM = "LOOP_LSTM";
 
@@ -206,7 +208,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (mode == null)
             mode = CacheMode.NONE;
 
-        for (Layer layer: layers) {
+        for (Layer layer : layers) {
             layer.setCacheMode(mode);
         }
     }
@@ -380,7 +382,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (initCalled)
             return;
 
-        log.info("Starting ComputationGraph with WorkspaceModes set to [training: {}; inference: {}]",
+        OneTimeLogger.info(log, "Starting ComputationGraph with WorkspaceModes set to [training: {}; inference: {}]",
                         configuration.getTrainingWorkspaceMode(), configuration.getInferenceWorkspaceMode());
 
         if (configuration.getCacheMode() == CacheMode.HOST) {
@@ -444,6 +446,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             initializeParams = true;
         }
 
+        //Set RNG seed, for repeatability between initializations when set
+        if (initializeParams) {
+            Nd4j.getRandom().setSeed(conf().getSeed());
+        }
 
         //Given the topological ordering: work out the subset of the parameters array used for each layer
         // Then extract out for use when initializing the Layers
@@ -604,7 +610,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 numParamsForVertex[i] = 0; //No parameters for input vertices
             }
             Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
-            for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
+            for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap
+                            .entrySet()) {
                 org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
                 numParamsForVertex[i] = n.numParams(true);
                 numParams += numParamsForVertex[i];
@@ -619,7 +626,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 int nParamsThisVertex = numParamsForVertex[vertexIdx];
                 if (nParamsThisVertex != 0) {
                     INDArray gradientView = flattenedGradients.get(NDArrayIndex.point(0),
-                            NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
+                                    NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
                     vertices[vertexIdx].setBackpropGradientsViewArray(gradientView);
                 }
                 i++;
@@ -740,43 +747,74 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             iter.reset();
         }
 
+        MemoryWorkspace workspace =
+                configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                        ComputationGraph.workspaceConfigurationExternal, ComputationGraph.workspaceExternal);
+        MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceConfigurationCache, ComputationGraph.workspaceCache);
+
+        MemoryWorkspace wsFF = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE
+                ? new DummyWorkspace()
+                : configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
+                ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
+                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                workspaceConfigurationFeedForward, workspaceFeedForward);
+
+        MemoryWorkspace wsPTR = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE
+                ? new DummyWorkspace()
+                : configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
+                ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
+                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                workspaceConfigurationFeedForward, workspacePretrain);
+
         while (iter.hasNext()) {
             MultiDataSet multiDataSet = iter.next();
 
-            setInputs(multiDataSet.getFeatures());
+            try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
+                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                    try (MemoryWorkspace wP = wsPTR.notifyScopeEntered()) {
 
-            for (int j = 0; j < fwdPassOrder.length - 1; j++) {
-                GraphVertex current = vertices[fwdPassOrder[j]];
-                if (current.isInputVertex()) {
-                    VertexIndices[] inputsTo = current.getOutputVertices();
-                    INDArray input = inputs[current.getVertexIndex()];
+                        setInputs(multiDataSet.getFeatures());
 
-                    for (VertexIndices v : inputsTo) {
-                        int vIdx = v.getVertexIndex();
-                        int vIdxInputNum = v.getVertexEdgeNumber();
-                        //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-                        vertices[vIdx].setInput(vIdxInputNum, input.dup()); //TODO When to dup?
-                    }
+                        for (int j = 0; j < fwdPassOrder.length - 1; j++) {
+                            try (MemoryWorkspace wF = wsFF.notifyScopeEntered()) {
+                                GraphVertex current = vertices[fwdPassOrder[j]];
+                                if (current.isInputVertex()) {
+                                    VertexIndices[] inputsTo = current.getOutputVertices();
+                                    INDArray input = inputs[current.getVertexIndex()];
 
-                } else {
-                    //Do forward pass:
-                    INDArray out = current.doForward(true);
+                                    for (VertexIndices v : inputsTo) {
+                                        int vIdx = v.getVertexIndex();
+                                        int vIdxInputNum = v.getVertexEdgeNumber();
+                                        //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
+                                        vertices[vIdx].setInput(vIdxInputNum, input.dup().leverageTo(workspacePretrain)); //TODO When to dup?
+                                    }
 
-                    //Now, set the inputs for the next vertices:
-                    VertexIndices[] outputsTo = current.getOutputVertices();
-                    if (outputsTo != null) {
-                        for (VertexIndices v : outputsTo) {
-                            int vIdx = v.getVertexIndex();
-                            int inputNum = v.getVertexEdgeNumber();
-                            //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                            vertices[vIdx].setInput(inputNum, out);
+                                } else {
+                                    //Do forward pass:
+                                    INDArray out = current.doForward(true);
+
+                                    //Now, set the inputs for the next vertices:
+                                    VertexIndices[] outputsTo = current.getOutputVertices();
+                                    if (outputsTo != null) {
+                                        for (VertexIndices v : outputsTo) {
+                                            int vIdx = v.getVertexIndex();
+                                            int inputNum = v.getVertexEdgeNumber();
+                                            //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
+                                            vertices[vIdx].setInput(inputNum, out);
+                                        }
+                                    }
+                                }
+                            }
                         }
+                        //At this point: have done all of the required forward pass stuff. Can now pretrain layer on current input
+
+                        layer.fit(gv.getInputs()[0]);
+                        layer.conf().setPretrain(false);
                     }
                 }
             }
-            //At this point: have done all of the required forward pass stuff. Can now pretrain layer on current input
-            layer.fit(gv.getInputs()[0]);
-            layer.conf().setPretrain(false);
         }
     }
 
@@ -1081,20 +1119,20 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         setLayerMaskArrays(featureMaskArrays, labelMaskArrays);
         update(TaskUtils.buildTask(inputs, labels));
 
+        MemoryWorkspace workspace =
+                configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                        workspaceConfigurationExternal, workspaceExternal);
+        MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
+                workspaceCache);
+
         if (configuration.isPretrain()) {
-            MultiDataSetIterator iter =
-                            new SingletonMultiDataSetIterator(new org.nd4j.linalg.dataset.MultiDataSet(inputs, labels,
-                                            featureMaskArrays, labelMaskArrays));
+            MultiDataSetIterator iter = new SingletonMultiDataSetIterator(new org.nd4j.linalg.dataset.MultiDataSet(inputs, labels, featureMaskArrays, labelMaskArrays));
+
+
             pretrain(iter);
         }
-
-        MemoryWorkspace workspace =
-                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        workspaceConfigurationExternal, workspaceExternal);
-        MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
-                                        workspaceCache);
 
         if (configuration.isBackprop()) {
             if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
@@ -1190,6 +1228,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
                 outputSetForInputIdx.add(idx); //input vertex outputs to the current vertex
             }
+
             inputEdges.put(idx, inputSet);
         }
 

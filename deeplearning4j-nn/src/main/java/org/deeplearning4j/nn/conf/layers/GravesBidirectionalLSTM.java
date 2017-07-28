@@ -22,6 +22,9 @@ import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.layers.recurrent.LSTMHelpers;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.activations.Activation;
@@ -121,6 +124,11 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
             default:
                 throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
         }
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        return LSTMHelpers.getMemoryReport(this, inputType);
     }
 
     @AllArgsConstructor

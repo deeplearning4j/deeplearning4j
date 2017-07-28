@@ -6,9 +6,16 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.graph.ScaleVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
@@ -22,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
@@ -60,7 +68,7 @@ public class LSTMHelpers {
      * Returns FwdPassReturn object with activations/INDArrays. Allows activateHelper to be used for forward pass, backward pass
      * and rnnTimeStep whilst being reasonably efficient for all
      */
-    static public FwdPassReturn activateHelper(final Layer layer, final NeuralNetConfiguration conf,
+    static public FwdPassReturn activateHelper(final BaseLayer layer, final NeuralNetConfiguration conf,
                     final IActivation gateActivationFn, //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
                     final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                     final INDArray originalInputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
@@ -68,7 +76,8 @@ public class LSTMHelpers {
                     final boolean training, final INDArray originalPrevOutputActivations,
                     final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
                     final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
+                    final boolean hasPeepholeConnections,            //True for GravesLSTM, false for LSTM
+                    final LSTMHelper helper,
                     final CacheMode cacheMode // cacheMode for layer calling this helper
     ) {
 
@@ -91,7 +100,6 @@ public class LSTMHelpers {
         } else {
             prevMemCellState = originalPrevMemCellState.dup('f');
         }
-
 
 
         INDArray recurrentWeightsIFOG = recurrentWeights
@@ -127,7 +135,7 @@ public class LSTMHelpers {
 
         //Allocate arrays for activations:
         boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
-        IActivation afn = conf.getLayer().getActivationFn();
+        IActivation afn = layer.layerConf().getActivationFn();
         INDArray outputActivations = null;
 
         FwdPassReturn toReturn = new FwdPassReturn();
@@ -147,8 +155,9 @@ public class LSTMHelpers {
             }
 
             if (cacheMode != CacheMode.NONE) {
-                try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
-                    outputActivations = Nd4j.create(new int[]{miniBatchSize, hiddenLayerSize, timeSeriesLength}, 'f'); //F order to keep time steps together
+                try (MemoryWorkspace ws = Nd4j.getWorkspaceManager()
+                                .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
+                    outputActivations = Nd4j.create(new int[] {miniBatchSize, hiddenLayerSize, timeSeriesLength}, 'f'); //F order to keep time steps together
                     toReturn.fwdPassOutput = outputActivations;
                 }
             }
@@ -179,6 +188,15 @@ public class LSTMHelpers {
             prevOutputActivations = Nd4j.zeros(new int[] {miniBatchSize, hiddenLayerSize});
         }
 
+        if (helper != null) {
+            FwdPassReturn ret = helper.activate(layer, conf, gateActivationFn, input, recurrentWeights, inputWeights,
+                    biases, training, prevOutputActivations, prevMemCellState, forBackprop, forwards, inputWeightKey,
+                    maskArray, hasPeepholeConnections);
+            if (ret != null) {
+                return ret;
+            }
+        }
+
         for (int iTimeIndex = 0; iTimeIndex < timeSeriesLength; iTimeIndex++) {
             int time = iTimeIndex;
 
@@ -192,13 +210,15 @@ public class LSTMHelpers {
 
             // if we're using cache here - let's create ifogActivations within cache workspace, so all views from this array will be valid in cache
             if (cacheMode != CacheMode.NONE)
-                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed();
+                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                .notifyScopeBorrowed();
 
             //Calculate activations for: network input + forget, output, input modulation gates. Next 3 lines are first part of those
             INDArray ifogActivations = miniBatchData.mmul(inputWeights); //Shape: [miniBatch,4*layerSize]
 
             if (cacheMode != CacheMode.NONE)
-                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeLeft();
+                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                .notifyScopeLeft();
 
             Nd4j.gemm(prevOutputActivations, recurrentWeightsIFOG, ifogActivations, false, false, 1.0, 1.0);
             ifogActivations.addiRowVector(biases);
@@ -207,14 +227,16 @@ public class LSTMHelpers {
                             ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(0, hiddenLayerSize));
             if (forBackprop) {
                 if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed();
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                    .notifyScopeBorrowed();
 
                 toReturn.iz[time] = inputActivations.dup('f');
 
                 if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeLeft();
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                    .notifyScopeLeft();
             }
-            conf.getLayer().getActivationFn().getActivation(inputActivations, training);
+            layer.layerConf().getActivationFn().getActivation(inputActivations, training);
             if (forBackprop)
                 toReturn.ia[time] = inputActivations;
 
@@ -227,12 +249,14 @@ public class LSTMHelpers {
             //Above line: treats matrix as a vector. Can only do this because we're sure both pwcelWFF and forgetGateACtivations are f order, offset 0 and have same strides
             if (forBackprop && !sigmoidGates) {
                 if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed();
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                    .notifyScopeBorrowed();
 
                 toReturn.fz[time] = forgetGateActivations.dup('f'); //Forget gate pre-out (z)
 
                 if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeLeft();
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                    .notifyScopeLeft();
             }
             gateActivationFn.getActivation(forgetGateActivations, training);
 
@@ -248,12 +272,14 @@ public class LSTMHelpers {
             }
             if (forBackprop && !sigmoidGates) {
                 if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed();
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                    .notifyScopeBorrowed();
 
                 toReturn.gz[time] = inputModGateActivations.dup('f'); //Input modulation gate pre-out (z)
 
                 if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeLeft();
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                    .notifyScopeLeft();
             }
             gateActivationFn.getActivation(inputModGateActivations, training);
             if (forBackprop)
@@ -264,12 +290,14 @@ public class LSTMHelpers {
             INDArray inputModMulInput;
             if (forBackprop) {
                 if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed();
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                    .notifyScopeBorrowed();
 
                 currentMemoryCellState = prevMemCellState.dup('f').muli(forgetGateActivations);
 
                 if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeLeft();
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                    .notifyScopeLeft();
 
                 // this variable isn't stored in cache
                 inputModMulInput = inputModGateActivations.dup('f').muli(inputActivations);
@@ -287,12 +315,14 @@ public class LSTMHelpers {
             }
             if (forBackprop && !sigmoidGates) {
                 if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed();
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                    .notifyScopeBorrowed();
 
                 toReturn.oz[time] = outputGateActivations.dup('f'); //Output gate activations
 
                 if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeLeft();
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                    .notifyScopeLeft();
             }
             gateActivationFn.getActivation(outputGateActivations, training);
             if (forBackprop)
@@ -301,25 +331,29 @@ public class LSTMHelpers {
 
             ////////////// same as with iFogActivations - if we use cache, let's create this array right there
             if (cacheMode != CacheMode.NONE)
-                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed();
+                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                .notifyScopeBorrowed();
 
             //LSTM unit outputs:
             INDArray currMemoryCellActivation = afn.getActivation(currentMemoryCellState.dup('f'), training);
 
 
             if (cacheMode != CacheMode.NONE)
-                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeLeft();
+                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                .notifyScopeLeft();
             ///////////////////
 
             INDArray currHiddenUnitActivations;
             if (forBackprop) {
                 if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed();
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                    .notifyScopeBorrowed();
 
                 currHiddenUnitActivations = currMemoryCellActivation.dup('f').muli(outputGateActivations); //Expected shape: [m,hiddenLayerSize]
 
                 if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeLeft();
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache)
+                                    .notifyScopeLeft();
             } else {
                 currHiddenUnitActivations = currMemoryCellActivation.muli(outputGateActivations); //Expected shape: [m,hiddenLayerSize]
             }
@@ -360,6 +394,9 @@ public class LSTMHelpers {
 
         //toReturn.leverageTo(ComputationGraph.workspaceExternal);
 
+        toReturn.prevAct = originalPrevOutputActivations;
+        toReturn.prevMemCell = originalPrevMemCellState;
+
         return toReturn;
     }
 
@@ -370,7 +407,8 @@ public class LSTMHelpers {
                     final FwdPassReturn fwdPass, final boolean forwards, final String inputWeightKey,
                     final String recurrentWeightKey, final String biasWeightKey,
                     final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections //True for GravesLSTM, false for LSTM
+                    final boolean hasPeepholeConnections,            //True for GravesLSTM, false for LSTM
+                    final LSTMHelper helper
     ) {
 
 
@@ -433,8 +471,18 @@ public class LSTMHelpers {
             rwGradientsGG = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 2));
         }
 
+        if (helper != null) {
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(conf, gateActivationFn, input,
+                    recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength,
+                    fwdPass, forwards, inputWeightKey, recurrentWeightKey, biasWeightKey, gradientViews,
+                    maskArray, hasPeepholeConnections);
+            if (ret != null) {
+                return ret;
+            }
+        }
+
         boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
-        IActivation afn = conf.getLayer().getActivationFn();
+        IActivation afn = ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getLayer()).getActivationFn();
 
         // we check, if we have defined workspace here. If we don't - we working without workspace, and we're skipping internal LSTM one. Otherwise - we go for it
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace() != null && !Nd4j.getMemoryManager()
@@ -471,8 +519,8 @@ public class LSTMHelpers {
                 nablaCellState = Nd4j.create(new int[] {miniBatchSize, hiddenLayerSize}, 'f');
             }
 
-            INDArray prevMemCellState = (iTimeIndex == 0 ? null : fwdPass.memCellState[time - inext]);
-            INDArray prevHiddenUnitActivation = (iTimeIndex == 0 ? null : fwdPass.fwdPassOutputAsArrays[time - inext]);
+            INDArray prevMemCellState = (iTimeIndex == 0 ? fwdPass.prevMemCell : fwdPass.memCellState[time - inext]);
+            INDArray prevHiddenUnitActivation = (iTimeIndex == 0 ? fwdPass.prevAct : fwdPass.fwdPassOutputAsArrays[time - inext]);
             INDArray currMemCellState = fwdPass.memCellState[time];
 
 
@@ -521,7 +569,8 @@ public class LSTMHelpers {
             //Forget gate delta:
             INDArray af = fwdPass.fa[time];
             INDArray deltaf = null;
-            if (iTimeIndex > 0) {
+            if (iTimeIndex > 0 || prevMemCellState != null) {   //For time == 0 && no prevMemCellState, equivalent to muli by 0
+                //Note that prevMemCellState may be non-null at t=0 for TBPTT
                 deltaf = deltafNext;
                 if (sigmoidGates) {
                     Nd4j.getExecutioner().exec(new TimesOneMinus(af, deltaf));
@@ -572,7 +621,8 @@ public class LSTMHelpers {
 
             INDArray prevLayerActivationSlice =
                             Shape.toMmulCompatible(is2dInput ? input : input.tensorAlongDimension(time, 1, 0));
-            if (iTimeIndex > 0) {
+            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {      //For time == 0 && no prevMemCellState, equivalent to muli by 0
+                //Note that prevHiddenUnitActivations may be non-null at t=0 for TBPTT
                 //Again, deltaifog_current == deltaifogNext at this point... same array
                 Nd4j.gemm(prevLayerActivationSlice, deltaifogNext, iwGradientsOut, true, false, 1.0, 1.0);
             } else {
@@ -586,8 +636,9 @@ public class LSTMHelpers {
                 Nd4j.gemm(prevLayerActivationSlice, deltaog, iwGradients_og, true, false, 1.0, 1.0);
             }
 
-            if (iTimeIndex > 0) {
-                //If t==0, then prevHiddenUnitActivation==zeros(n^L,n^L), so dL/dW for recurrent weights will end up as 0 anyway
+            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {
+                //If t==0 and prevHiddenUnitActivation==null, equiv. to zeros(n^L,n^L), so dL/dW for recurrent weights
+                // will end up as 0 anyway
                 //At this point: deltaifog and deltaifogNext are the same thing...
                 //So what we are actually doing here is sum of (prevAct^transpose * deltaifog_current)
                 Nd4j.gemm(prevHiddenUnitActivation, deltaifogNext, rwGradientsIFOG, true, false, 1.0, 1.0);
@@ -607,7 +658,8 @@ public class LSTMHelpers {
                 l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwOO, rwGradientsOO); //rwGradients[5].addi(dLdwOO);    //dL/dw_{OOxy}
             }
 
-            if (iTimeIndex > 0) {
+            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {   //For time == 0 && no prevMemCellState, equivalent to muli by 0
+                //Note that prevHiddenUnitActivation may be non-null at t=0 for TBPTT
                 l1BLAS.axpy(4 * hiddenLayerSize, 1.0, deltaifogNext.sum(0), bGradientsOut);
             } else {
                 l1BLAS.axpy(hiddenLayerSize, 1.0, deltai.sum(0), bGradientsOut); //Sneaky way to do bGradients_i += deltai.sum(0)
@@ -621,7 +673,8 @@ public class LSTMHelpers {
             //Calculate epsilonNext - i.e., equiv. to what would be (w^L*(d^(Lt))^T)^T in a normal network
             //But here, need to add 4 weights * deltas for the IFOG gates
             INDArray epsilonNextSlice = epsilonNext.tensorAlongDimension(time, 1, 0); //This slice: f order and contiguous, due to epsilonNext being defined as f order.
-            if (iTimeIndex > 0) {
+            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {
+                //Note that prevHiddenUnitActivation may be non-null at t=0 for TBPTT
                 Nd4j.gemm(deltaifogNext, inputWeights, epsilonNextSlice, false, true, 1.0, 1.0);
             } else {
                 //No contribution from forget gate at t=0
@@ -650,5 +703,94 @@ public class LSTMHelpers {
         retGradient.gradientForVariable().put(biasWeightKey, bGradientsOut);
 
         return new Pair<>(retGradient, epsilonNext);
+    }
+
+
+    public static LayerMemoryReport getMemoryReport(AbstractLSTM lstmLayer, InputType inputType) {
+        boolean isGraves = lstmLayer instanceof org.deeplearning4j.nn.conf.layers.GravesLSTM;
+        return getMemoryReport(isGraves, lstmLayer, inputType);
+    }
+
+    public static LayerMemoryReport getMemoryReport(GravesBidirectionalLSTM lstmLayer, InputType inputType) {
+        LayerMemoryReport r = getMemoryReport(true, lstmLayer, inputType);
+
+        //Double everything for bidirectional
+        Map<CacheMode, Long> fixedTrain = new HashMap<>();
+        Map<CacheMode, Long> varTrain = new HashMap<>();
+        Map<CacheMode, Long> cacheFixed = new HashMap<>();
+        Map<CacheMode, Long> cacheVar = new HashMap<>();
+        for (CacheMode cm : CacheMode.values()) {
+            fixedTrain.put(cm, 2 * r.getWorkingMemoryFixedTrain().get(cm));
+            varTrain.put(cm, 2 * r.getWorkingMemoryVariableTrain().get(cm));
+            cacheFixed.put(cm, 2 * r.getCacheModeMemFixed().get(cm));
+            cacheVar.put(cm, 2 * r.getCacheModeMemVariablePerEx().get(cm));
+        }
+
+        return new LayerMemoryReport.Builder(r.getLayerName(), r.getClass(), r.getInputType(), r.getOutputType())
+                        .standardMemory(2 * r.getParameterSize(), 2 * r.getUpdaterStateSize())
+                        .workingMemory(2 * r.getWorkingMemoryFixedInference(),
+                                        2 * r.getWorkingMemoryVariableInference(), fixedTrain, varTrain)
+                        .cacheMemory(cacheFixed, cacheVar).build();
+    }
+
+    public static LayerMemoryReport getMemoryReport(boolean isGraves,
+                    org.deeplearning4j.nn.conf.layers.FeedForwardLayer lstmLayer, InputType inputType) {
+
+
+        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
+        int tsLength = itr.getTimeSeriesLength();
+
+        InputType outputType = lstmLayer.getOutputType(-1, inputType);
+
+        int numParams = lstmLayer.initializer().numParams(lstmLayer);
+        int updaterSize = (int) lstmLayer.getIUpdater().stateSize(numParams);
+
+        //Memory use during forward pass:
+        //ifogActivations: nTimeSteps * [minibatch,4*layerSize] (not cached during inference fwd pass)
+        int workingMemInferencePerEx = tsLength * 4 * lstmLayer.getNOut(); //Reduced by factor of tsLength if using workspace
+
+        //For training, we also have
+        //nTimeSteps * 5 * [minibatch, nOut] - 4 x gate pre-outs, memory cell state - may be cached
+        //nTimeSteps * [minibatch, nOut] - peephole conneciton activations, graves LSTM only - may be cached
+        //Total: 4 + 5 + 1 = 10xnOut per time step (training) or 4x (inference)
+        int fwdPassPerTimeStepTrainCache = tsLength * 6 * lstmLayer.getNOut();
+
+        //During backprop:
+        //2 dups of size [minibatch, nOut] for nablaCellState (1 alloc only for no peephole)
+        //1 [minibatch, nOut] for deltao
+        //2 for memory cell error
+        //1 allocation for input modulation gate
+        //1 for layer input
+        //3 dups [minibatch, nOut] for peephole (Graves only)
+        // 5xnOut (independent of minibatch size) - deltaiFog, peephole etc. Only 2 if no peephole TODO
+        //6 for non-graves, 9 for graves
+
+        int backpropWorkingSpace = (isGraves ? 9 : 6) * tsLength * lstmLayer.getNOut();
+
+        //TODO NO WAY TO TAKE LSTM WORKSPACE INTO ACCOUNT HERE :(
+
+
+        Map<CacheMode, Long> trainVariable = new HashMap<>();
+        Map<CacheMode, Long> cacheVariable = new HashMap<>();
+        for (CacheMode cm : CacheMode.values()) {
+            long trainWorking;
+            long cacheMem;
+
+            if (cm == CacheMode.NONE) {
+                trainWorking = workingMemInferencePerEx + fwdPassPerTimeStepTrainCache + backpropWorkingSpace;
+                cacheMem = 0;
+            } else {
+                trainWorking = workingMemInferencePerEx + backpropWorkingSpace;
+                cacheMem = fwdPassPerTimeStepTrainCache;
+            }
+
+            trainVariable.put(cm, trainWorking);
+            cacheVariable.put(cm, cacheMem);
+        }
+
+        return new LayerMemoryReport.Builder(null, lstmLayer.getClass(), inputType, outputType)
+                        .standardMemory(numParams, updaterSize)
+                        .workingMemory(0, workingMemInferencePerEx, MemoryReport.CACHE_MODE_ALL_ZEROS, trainVariable)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, cacheVariable).build();
     }
 }

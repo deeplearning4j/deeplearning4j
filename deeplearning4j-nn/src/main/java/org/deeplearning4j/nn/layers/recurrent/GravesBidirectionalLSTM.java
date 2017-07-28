@@ -105,7 +105,7 @@ public class GravesBidirectionalLSTM
                         truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS,
-                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, maskArray, true);
+                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, maskArray, true, null);
 
 
 
@@ -118,7 +118,7 @@ public class GravesBidirectionalLSTM
                         truncatedBPTT, tbpttBackwardLength, backPass, false,
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS,
-                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, maskArray, true);
+                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, maskArray, true, null);
 
 
         //merge the gradient, which is key value pair of String,INDArray
@@ -198,21 +198,22 @@ public class GravesBidirectionalLSTM
             cachedPassForward = null;
         } else {
 
-            forwardsEval = LSTMHelpers.activateHelper(this, this.conf,
-                    this.layerConf().getGateActivationFn(), this.input,
-                    getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
-                    getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
-                    getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
-                    forBackprop || ( cacheMode != CacheMode.NONE && training), true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray,
-                    true, forBackprop ? cacheMode : CacheMode.NONE);
+            forwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
+                            this.input, getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
+                            getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
+                            getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
+                            forBackprop || (cacheMode != CacheMode.NONE && training), true,
+                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray, true,
+                            null, forBackprop ? cacheMode : CacheMode.NONE);
 
-            backwardsEval = LSTMHelpers.activateHelper(this, this.conf,
-                    this.layerConf().getGateActivationFn(), this.input,
-                    getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
-                    getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
-                    getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
-                    forBackprop || ( cacheMode != CacheMode.NONE && training), false, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
-                    maskArray, true, forBackprop ? cacheMode : CacheMode.NONE);
+            backwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
+                            this.input,
+                            getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
+                            getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
+                            getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
+                            forBackprop || (cacheMode != CacheMode.NONE && training), false,
+                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray, true,
+                            null, forBackprop ? cacheMode : CacheMode.NONE);
 
             cachedPassForward = forwardsEval;
             cachedPassBackward = backwardsEval;
@@ -223,7 +224,8 @@ public class GravesBidirectionalLSTM
         final INDArray backOutput = backwardsEval.fwdPassOutput;
 
         // if we're on ff pass & cache enabled - we should not modify fwdOutput, and for backprop pass - we don't care
-        final INDArray totalOutput = training && cacheMode != CacheMode.NONE && !forBackprop ? fwdOutput.add(backOutput) : fwdOutput.addi(backOutput);
+        final INDArray totalOutput = training && cacheMode != CacheMode.NONE && !forBackprop ? fwdOutput.add(backOutput)
+                        : fwdOutput.addi(backOutput);
 
         return totalOutput;
     }
@@ -242,7 +244,7 @@ public class GravesBidirectionalLSTM
             FwdPassReturn ret = cachedPassBackward;
             cachedPassBackward = null;
             return ret;
-        }else {
+        } else {
 
             String recurrentKey = GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS;
             String inputKey = GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS;
@@ -255,10 +257,10 @@ public class GravesBidirectionalLSTM
             }
 
             return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
-                    getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training, prevOutputActivations,
-                    prevMemCellState, forBackprop, forwards, inputKey, maskArray, true, forBackprop ? cacheMode : CacheMode.NONE);
+                            getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training,
+                            prevOutputActivations, prevMemCellState, forBackprop, forwards, inputKey, maskArray, true,
+                            null, forBackprop ? cacheMode : CacheMode.NONE);
         }
-
     }
 
     @Override

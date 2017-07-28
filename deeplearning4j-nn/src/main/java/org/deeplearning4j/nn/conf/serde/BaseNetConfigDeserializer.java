@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.serde;
 
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.linalg.learning.config.*;
 import org.nd4j.shade.jackson.core.JsonParser;
@@ -44,42 +45,45 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
         //Here, we manually create the appropriate Updater instances, if the iupdater field is empty
         for (int i = 0; i < layers.length; i++) {
             Layer l = layers[i];
-            if (l == null || l.getIUpdater() != null) {
+            if (l == null || !(l instanceof BaseLayer) || ((BaseLayer) l).getIUpdater() != null) {
                 //OK - no need to manually handle IUpdater instances for this layer
                 continue;
             }
-            Updater u = l.getUpdater();
-            double lr = l.getLearningRate();
-            double eps = l.getEpsilon();
-            double rho = l.getRho();
+
+            BaseLayer bl = (BaseLayer) l;
+
+            Updater u = bl.getUpdater();
+            double lr = bl.getLearningRate();
+            double eps = bl.getEpsilon();
+            double rho = bl.getRho();
 
             switch (u) {
                 case SGD:
-                    l.setIUpdater(new Sgd(lr));
+                    bl.setIUpdater(new Sgd(lr));
                     break;
                 case ADAM:
-                    double meanDecay = l.getAdamMeanDecay();
-                    double varDecay = l.getAdamVarDecay();
-                    l.setIUpdater(Adam.builder().learningRate(lr).beta1(meanDecay).beta2(varDecay).epsilon(eps)
+                    double meanDecay = bl.getAdamMeanDecay();
+                    double varDecay = bl.getAdamVarDecay();
+                    bl.setIUpdater(Adam.builder().learningRate(lr).beta1(meanDecay).beta2(varDecay).epsilon(eps)
                                     .build());
                     break;
                 case ADADELTA:
-                    l.setIUpdater(new AdaDelta(rho, eps));
+                    bl.setIUpdater(new AdaDelta(rho, eps));
                     break;
                 case NESTEROVS:
-                    Map<Integer, Double> momentumSchedule = l.getMomentumSchedule();
-                    double momentum = l.getMomentum();
-                    l.setIUpdater(new Nesterovs(lr, momentum, momentumSchedule));
+                    Map<Integer, Double> momentumSchedule = bl.getMomentumSchedule();
+                    double momentum = bl.getMomentum();
+                    bl.setIUpdater(new Nesterovs(lr, momentum, momentumSchedule));
                     break;
                 case ADAGRAD:
-                    l.setIUpdater(new AdaGrad(lr, eps));
+                    bl.setIUpdater(new AdaGrad(lr, eps));
                     break;
                 case RMSPROP:
-                    double rmsDecay = l.getRmsDecay();
-                    l.setIUpdater(new RmsProp(lr, rmsDecay, eps));
+                    double rmsDecay = bl.getRmsDecay();
+                    bl.setIUpdater(new RmsProp(lr, rmsDecay, eps));
                     break;
                 case NONE:
-                    l.setIUpdater(new NoOp());
+                    bl.setIUpdater(new NoOp());
                     break;
                 case CUSTOM:
                     //No op - shouldn't happen

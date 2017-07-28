@@ -102,7 +102,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         return LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, maskArray, true);
+                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, maskArray, true, null);
     }
 
 
@@ -156,12 +156,14 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         final INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY); //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
         final INDArray biases = getParam(GravesLSTMParamInitializer.BIAS_KEY); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
 
-        FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
-                recurrentWeights, inputWeights, biases, training, prevOutputActivations, prevMemCellState,
-                forBackprop || ( cacheMode != CacheMode.NONE && training), true, GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, true, forBackprop ? cacheMode : CacheMode.NONE);
+        FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
+                        this.input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
+                        prevMemCellState, forBackprop || (cacheMode != CacheMode.NONE && training), true,
+                        GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, true, null,
+                        forBackprop ? cacheMode : CacheMode.NONE);
 
 
-        if (training && cacheMode != CacheMode.NONE) {
+        if (training && cacheMode != CacheMode.NONE ) {
             cachedFwdPass = fwd;
         }
 

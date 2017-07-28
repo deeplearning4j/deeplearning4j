@@ -31,6 +31,13 @@ public abstract class UIServer {
     }
 
     /**
+     * Get the address of the UI
+     *
+     * @return Address of the UI
+     */
+    public abstract String getAddress();
+
+    /**
      * Get the current port for the UI
      */
     public abstract int getPort();
