@@ -24,10 +24,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
-import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
-import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
@@ -61,6 +58,16 @@ public class Transforms {
 
     public static double cosineDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
         return Nd4j.getExecutioner().execAndReturn(new CosineDistance(d1, d2, d1.length())).getFinalResult()
+                .doubleValue();
+    }
+
+    public static double hammingDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
+        return Nd4j.getExecutioner().execAndReturn(new HammingDistance(d1, d2, d1.length())).getFinalResult()
+                .doubleValue();
+    }
+
+    public static double jaccardDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
+        return Nd4j.getExecutioner().execAndReturn(new JaccardDistance(d1, d2, d1.length())).getFinalResult()
                 .doubleValue();
     }
 
