@@ -13,9 +13,11 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.transforms.Log;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.impl.NormalDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -325,6 +327,51 @@ public class RandomTests extends BaseNd4jTest {
         assertEquals(1.0, z2.stdNumber().doubleValue(), 0.01);
 
         assertNotEquals(z1, z2);
+    }
+
+    /**
+     * Uses a test of Gaussianity for testing the values out of GaussianDistribution
+     * See https://en.wikipedia.org/wiki/Anderson%E2%80%93Darling_test
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testAndersonDarling() throws Exception {
+
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        INDArray z1 = Nd4j.create(1000);
+
+        GaussianDistribution op1 = new GaussianDistribution(z1, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op1, random1);
+
+        int n = z1.length();
+        //using this just for the cdf
+        Distribution nd = new NormalDistribution(random1, 0.0, 1.0);
+        Nd4j.sort(z1, true);
+
+        System.out.println("Data for Anderson-Darling: " + z1);
+
+        for (int i = 0; i < n; i++) {
+
+            Double res = nd.cumulativeProbability(z1.getDouble(i));
+            assertTrue (res >= 0.0);
+            assertTrue (res <= 1.0);
+            // avoid overflow when taking log later.
+            if (res == 0) res = 0.0000001;
+            if (res == 1) res = 0.9999999;
+            z1.putScalar(i, res);
+        }
+
+        double A = 0.0;
+        for (int i = 0; i < n; i++) {
+
+            A -= (2*i+1) * (Math.log(z1.getDouble(i)) + Math.log(1-z1.getDouble(n - i - 1)));
+        }
+
+        A = A / n - n;
+        A *= (1 + 4.0/n - 25.0/(n*n));
+
+        assertTrue("Critical (max) value for 1000 points and confidence α = 0.0001 is 1.8692, received: "+ A, A < 1.8692);
     }
 
     @Test
