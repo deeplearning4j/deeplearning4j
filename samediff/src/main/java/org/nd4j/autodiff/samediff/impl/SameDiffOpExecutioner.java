@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.samediff.impl;
 
+import lombok.Getter;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
@@ -10,6 +11,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.OpProfiler;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -17,35 +19,52 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  *
  */
-public class SameDiffOpExecutioner implements OpExecutioner {
-    private Map<String,INDArray> ops;
-    private Set<INDArray> arrays;
+public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfilerListener {
+
+    @Getter
+    private Map<INDArray,SDVariable> variables;
+    @Getter
     private SameDiff sameDiff;
-    private Map<INDArray,String> arrayToId;
-    private Map<INDArray,Integer> arrayToVertexId;
+    @Getter
     private AtomicReference<Op> opAtomicReference;
+    @Getter
     private OpExecutioner backendExecutioner = Nd4j.getExecutioner();
 
     public SameDiffOpExecutioner() {
-        ops = new HashMap<>();
-        arrayToId = new IdentityHashMap<>();
-        arrayToVertexId = new IdentityHashMap<>();
-        arrays = new HashSet<>();
+        variables = new IdentityHashMap<>();
         sameDiff = SameDiff.create();
+        OpProfiler.getInstance().addListener(this);
     }
 
     private Op  processOp(Op op) {
         if(opAtomicReference == null) {
             opAtomicReference = new AtomicReference<>(op);
         }
+
         for(INDArray arr : new INDArray[] {op.x(),op.y(),op.z()}) {
-            if(!arrayToId.containsKey(arr)) {
-                arrayToId.put(arr,UUID.randomUUID().toString());
-                arrayToVertexId.put(arr,arrayToVertexId.size());
+            if(arr == null)
+                continue;
+            if(!variables.containsKey(arr)) {
+                SDVariable sdVariable = sameDiff.var(UUID.randomUUID().toString(),arr);
+                variables.put(arr,sdVariable);
             }
         }
+
+        if(op.x() != null && op.y() != null) {
+            SDVariable result = sameDiff.invoke(op, variables.get(op.x()), variables.get(op.y()));
+            variables.put(op.z(),result);
+        }
+        else {
+            SDVariable result = sameDiff.invoke(op, variables.get(op.x()));
+            variables.put(op.z(),result);
+
+        }
+
         return op;
     }
+
+
+
 
     /**
      * This method returns name of the last invoked op
@@ -434,5 +453,11 @@ public class SameDiffOpExecutioner implements OpExecutioner {
     @Override
     public INDArray bitmapDecode(INDArray encoded, INDArray target) {
         return backendExecutioner.bitmapDecode(encoded,target);
+    }
+
+    @Override
+    public void invoke(Op op) {
+        processOp(op);
+
     }
 }
