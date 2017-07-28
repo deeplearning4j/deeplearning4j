@@ -39,7 +39,9 @@
         (2, simdOps::CosineSimilarity), \
         (3, simdOps::Dot), \
         (4, simdOps::EqualsWithEps) ,\
-        (5, simdOps::CosineDistance)
+        (5, simdOps::CosineDistance) ,\
+        (6, simdOps::JaccardDistance) ,\
+        (7, simdOps::SimpleHammingDistance)
 
 
 namespace functions {
