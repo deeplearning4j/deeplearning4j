@@ -31,7 +31,7 @@ public class BasicTADManager implements TADManager {
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
         if (dimension == null || dimension.length == 0 || dimension[0] == Integer.MAX_VALUE) {
-            return new Pair<DataBuffer, DataBuffer>(array.shapeInfoDataBuffer(), null);
+            return new Pair<>(array.shapeInfoDataBuffer(), null);
         } else {
             Arrays.sort(dimension);
 
@@ -69,7 +69,7 @@ public class BasicTADManager implements TADManager {
             //   logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
             // now we need to copy this buffer to either device global memory or device cache
 
-            return new Pair<DataBuffer, DataBuffer>(outputBuffer, offsetsBuffer);
+            return new Pair<>(outputBuffer, offsetsBuffer);
         }
     }
 

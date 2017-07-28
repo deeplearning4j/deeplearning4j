@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -22,7 +23,7 @@ import java.util.concurrent.Semaphore;
  */
 @Slf4j
 public class DeviceTADManager extends BasicTADManager {
-    protected List<Map<TadDescriptor, Pair<DataBuffer, DataBuffer>>> tadCache = new ArrayList<>();
+    protected List<Map<TadDescriptor, Pair<DataBuffer, DataBuffer>>> tadCache = new CopyOnWriteArrayList<>();
     private Semaphore lock = new Semaphore(1);
 
     public DeviceTADManager() {
@@ -102,7 +103,7 @@ public class DeviceTADManager extends BasicTADManager {
             // so, at this point we have buffer valid on host side.
             // And we just need to replace DevicePointer with constant pointer
             tadCache.get(deviceId).put(descriptor, buffers);
-            bytes.addAndGet((buffers.getFirst().length() * 4) + (buffers.getSecond().length() * 8));
+            bytes.addAndGet((buffers.getFirst() == null ? 0 : buffers.getFirst().length() * 4) + (buffers.getSecond()  == null ? 0 : (buffers.getSecond().length() * 8)));
             log.trace("Using TAD from cache...");
         }
 
