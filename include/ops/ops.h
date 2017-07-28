@@ -59,7 +59,7 @@ namespace functions {
 		template<typename T>
 		struct IndexValue {
 			T value;
-            int index;
+            Nd4jIndex index;
 		};
 	}
 
@@ -1789,6 +1789,116 @@ namespace simdOps {
 
 
     template<typename T>
+    class JaccardDistance {
+    public:
+        static const int extraParamsLen = 2;
+
+        op_def static T *generateExtraParams() {
+            //T *extraParams = new T[2];
+            return nullptr;
+        }
+
+        op_def static void finalizeExtraParams(T *extraParams) {
+            //delete[] extraParams;
+        }
+
+        op_def static T startingValue(T *input) {
+            return (T) 0.0f;
+        }
+
+        op_def static  T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            // num / denom
+            return ((T) 1.0f) - (extraParams[0] / extraParams[1]);
+        }
+
+        op_def static T num(T d1, T d2) {
+            return nd4j::math::nd4j_min<T>(d1, d2);
+        }
+
+        op_def static T denom(T d1, T d2) {
+            return nd4j::math::nd4j_max<T>(d1, d2);
+        }
+
+        op_def static T op(T d1, T d2, T *extraParams) {
+            extraParams[0] += num(d1, d2);
+            extraParams[1] += denom(d1, d2);
+            return (T) 0.0f;
+        }
+
+        op_def static void aggregateExtraParams(T *extraParamsTotal, T *extraParamsLocal) {
+            extraParamsTotal[0] += extraParamsLocal[0];
+            extraParamsTotal[1] += extraParamsLocal[1];
+        }
+
+#ifdef __CUDACC__
+        __device__
+		static inline T opAtomic(T d1, T d2, T *extraParams) {
+			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0],(T) num(d1, d2));
+			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1],(T) denom(d1, d2));
+
+			return (T) 0.0f;
+		}
+#endif
+
+        op_def static  T update(T old, T opOutput, T *extraParams) {
+            return old + opOutput;
+        }
+
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return update(old, opOutput, extraParams);
+        }
+    };
+
+
+    template<typename T>
+    class SimpleHammingDistance {
+    public:
+        static const int extraParamsLen = 0;
+
+        op_def static T *generateExtraParams() {
+            //T *extraParams = new T[2];
+            return nullptr;
+        }
+
+        op_def static void finalizeExtraParams(T *extraParams) {
+            //delete[] extraParams;
+        }
+
+        op_def static T startingValue(T *input) {
+            return (T) 0.0f;
+        }
+
+        op_def static  T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return (T) (reduction / (T) n);
+        }
+
+        op_def static T op(T d1, T d2, T *extraParams) {
+            return (d1 == d2) ? (T) 0.0f :  (T)1.0f;
+        }
+
+        op_def static void aggregateExtraParams(T *extraParamsTotal, T *extraParamsLocal) {
+
+        }
+
+#ifdef __CUDACC__
+        __device__
+		static inline T opAtomic(T d1, T d2, T *extraParams) {
+			return op(d1, d2, extraParams);
+		}
+#endif
+
+        op_def static  T update(T old, T opOutput, T *extraParams) {
+            return old + opOutput;
+        }
+
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return update(old, opOutput, extraParams);
+        }
+    };
+
+    template<typename T>
     class CosineDistance {
     public:
         static const int extraParamsLen = 2;
@@ -2314,8 +2424,9 @@ namespace simdOps {
         static functions::indexreduce::IndexValue<T> update(
 				functions::indexreduce::IndexValue<T> old,
 				functions::indexreduce::IndexValue<T> opOutput, T *extraParams) {
-			if (opOutput.value > old.value)
-				return opOutput;
+			if (opOutput.value > old.value) {
+                return opOutput;
+            }
 #ifdef __CUDACC__
 			// workaround for cuda race condition at merge phase
 			else if (opOutput.value == old.value && opOutput.index < old.index)

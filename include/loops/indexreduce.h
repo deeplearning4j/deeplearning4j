@@ -127,7 +127,7 @@ template<typename OpType>
 				IndexValue<T> curr = sPartials[tid];
 				sPartials[tid - floorPow2] = OpType::update(prev,curr,extraParams);
 			}
-			__syncthreads();
+			//__syncthreads();
 		}
 
 		for (int activeThreads = floorPow2 >> 1;activeThreads; activeThreads >>= 1) {
@@ -192,9 +192,9 @@ template<typename OpType>
 		sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
 		//length for the tad
-		__shared__ volatile int xLength;
+		__shared__ volatile Nd4jIndex xLength;
 
-		__shared__ volatile int resultLength;
+		__shared__ volatile Nd4jIndex resultLength;
 
 
 
@@ -226,7 +226,7 @@ template<typename OpType>
 
 		if (!resultScalar) {
 
-			__shared__ int tadLength;
+			__shared__ Nd4jIndex tadLength;
             __shared__ int tadEWS;
             __shared__ int tadRank;
             __shared__ int numTads;
@@ -273,12 +273,11 @@ template<typename OpType>
 				}
 			} else {
 
-#pragma unroll
 				for(int i = blockIdx.x; i < numTads; i+= gridDim.x) {
 					Nd4jIndex tadOffsetForBlock = tadOffsets[i];
 
 					sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
-#pragma unroll
+
 					for (int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
 						IndexValue<T> comp {dx[tadOffsetForBlock + x * tadEWS], x};
 						sPartials[threadIdx.x] =  OpType::update(sPartials[threadIdx.x], comp, extraParams);
@@ -309,7 +308,7 @@ template<typename OpType>
 			} else {
 				int rank = shape::rank(xShapeInfo);
 				int ind2sub[MAX_RANK];
-#pragma unroll
+
 				for(Nd4jIndex i = tid;i < n; i += blockDim.x * gridDim.x) {
 					shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i,ind2sub);
 
@@ -323,7 +322,7 @@ template<typename OpType>
 			sPartials[threadIdx.x] = reduction;
 			__syncthreads();
 
-			aggregatePartials<OpType>(&sPartials, threadIdx.x, blockDim.x,extraParams);
+			aggregatePartials<OpType>(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, (int) n),extraParams);
 			__syncthreads();
 
 			if (gridDim.x > 1) {
@@ -350,7 +349,7 @@ template<typename OpType>
 					IndexValue<T> *pBuffer = (IndexValue<T> *) reductionBuffer;
 
 
-					sPartials[threadIdx.x] = {0, 0};
+					sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
 					for (Nd4jIndex i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
                         sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], pBuffer[i], extraParams);
