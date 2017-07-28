@@ -42,8 +42,8 @@ layout: default
 **ND4J**
 - Workspaces feature added [Link](TODO EXAMPLE LINK HERE)
 - Native parallel sort was added
-- New ops added: SELU/SELUDerivative, CosineDistance, TAD-based comparisons, percentile/median, Reverse, Tan/TanDerivative, SinH, CosJ, Entropy, ShannonEntropy, LogEntropy, AbsoluteMin/AbsoluteMax/AbsoluteSum, Atan2
-
+- New ops added: SELU/SELUDerivative, TAD-based comparisons, percentile/median, Reverse, Tan/TanDerivative, SinH, CosJ, Entropy, ShannonEntropy, LogEntropy, AbsoluteMin/AbsoluteMax/AbsoluteSum, Atan2
+- New distance functions added: CosineDistance, HammingDistance, JaccardDistance
 
 
 
