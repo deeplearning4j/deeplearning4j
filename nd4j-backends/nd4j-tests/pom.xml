@@ -127,11 +127,6 @@
             <artifactId>nd4j-kafka_${scala.binary.version}</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-cuda-8.0</artifactId>
-            <version>0.8.1-SNAPSHOT</version>
-        </dependency>
     </dependencies>
 
     <reporting>

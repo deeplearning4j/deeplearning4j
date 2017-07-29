@@ -269,14 +269,15 @@ public class SameDiff {
      *
      */
     public void allocate() {
-       workspace = Nd4j.getWorkspaceManager().createNewWorkspace(
-               WorkspaceConfiguration.builder()
-                       .initialSize(memoryForGraph())
-                       .policyAllocation(AllocationPolicy.STRICT)
-                     .policyLearning(LearningPolicy.FIRST_LOOP)
-               .build());
+        if(workspace != null) {
+            workspace.close();
+        }
+        else {
+            initWorkspace();
 
-       Nd4j.getWorkspaceManager().setWorkspaceForCurrentThread(workspace);
+        }
+
+
 
         for (Integer i : graph().getVertices().keySet()) {
             NDArrayInformation info = graph.getInformationFor(i);
@@ -308,6 +309,19 @@ public class SameDiff {
 
     }
 
+
+    public void initWorkspace() {
+        workspace = Nd4j.getWorkspaceManager().createNewWorkspace(
+                WorkspaceConfiguration.builder()
+                        .initialSize(memoryForGraph())
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                        .policyLearning(LearningPolicy.FIRST_LOOP)
+                        .build());
+        Nd4j.getWorkspaceManager().setWorkspaceForCurrentThread(workspace);
+
+
+    }
+
     /**
      * The list of available
      * variables in the graph
@@ -325,11 +339,19 @@ public class SameDiff {
      * @return
      */
     public SDVariable var(String name, INDArray arr) {
+        if(workspace == null)
+            initWorkspace();
+
+        arr = arr.migrate();
+
         NDArrayInformation ndArrayInformation = NDArrayInformation.builder()
-                .shape(arr.shape()).id(name).arrId(UUID.randomUUID().toString())
+                .shape(arr.shape()).id(name)
+                .arrId(UUID.randomUUID().toString())
                 .build();
+
         if(ArrayUtil.prod(arr.shape()) == 1)
             ndArrayInformation.setScalarValue(arr.getDouble(0));
+
         NDArrayVertex ndArrayVertex = new NDArrayVertex(graph.nextVertexId(), ndArrayInformation);
         ArrayField arrayField = new ArrayField(ndArrayVertex,graph);
         SDVariable ret = SDVariable.builder()
@@ -1722,6 +1744,8 @@ public class SameDiff {
                     opExecAction);
             ops.add(op);
         }
+
+
 
         return exec(ops);
     }
