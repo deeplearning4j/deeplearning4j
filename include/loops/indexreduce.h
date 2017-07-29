@@ -127,7 +127,7 @@ template<typename OpType>
 				IndexValue<T> curr = sPartials[tid];
 				sPartials[tid - floorPow2] = OpType::update(prev,curr,extraParams);
 			}
-			//__syncthreads();
+			__syncthreads();
 		}
 
 		for (int activeThreads = floorPow2 >> 1;activeThreads; activeThreads >>= 1) {
