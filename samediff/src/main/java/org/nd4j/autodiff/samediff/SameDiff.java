@@ -14,12 +14,15 @@ import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Method;
@@ -54,6 +57,7 @@ public class SameDiff {
     private Map<String,SDVariable> variableMap;
     private Map<String,INDArray> vertexToArray;
     private Map<Integer,NDArrayInformation> vertexIdxToInfo;
+    private MemoryWorkspace workspace;
 
     private static Map<String,Method> opMethods;
     static {
@@ -250,6 +254,11 @@ public class SameDiff {
      *
      */
     public void allocate() {
+       workspace = Nd4j.getWorkspaceManager().createNewWorkspace(
+               WorkspaceConfiguration.builder()
+               .build());
+       Nd4j.getWorkspaceManager().setWorkspaceForCurrentThread(workspace);
+
         for (Integer i : graph().getVertices().keySet()) {
             NDArrayInformation info = graph.getInformationFor(i);
             if(!variableMap.containsKey(info.getId())) {
