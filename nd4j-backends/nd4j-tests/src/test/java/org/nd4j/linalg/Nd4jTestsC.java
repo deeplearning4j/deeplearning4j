@@ -46,10 +46,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.accum.Norm1;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
-import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
-import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
@@ -4457,6 +4454,71 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray z = Transforms.atan2(x, y);
 
         assertEquals(exp, z);
+    }
+
+
+    @Test
+    public void testJaccardDistance1() throws Exception {
+        INDArray x = Nd4j.create(new double[]{0, 1, 0, 0, 1, 0});
+        INDArray y = Nd4j.create(new double[]{1, 1, 0, 1, 0, 0});
+
+        double val = Transforms.jaccardDistance(x, y);
+
+        assertEquals(0.75, val, 1e-5);
+    }
+
+
+    @Test
+    public void testJaccardDistance2() throws Exception {
+        INDArray x = Nd4j.create(new double[]{0, 1, 0, 0, 1, 1});
+        INDArray y = Nd4j.create(new double[]{1, 1, 0, 1, 0, 0});
+
+        double val = Transforms.jaccardDistance(x, y);
+
+        assertEquals(0.8, val, 1e-5);
+    }
+
+    @Test
+    public void testHammingDistance1() throws Exception {
+        INDArray x = Nd4j.create(new double[]{0, 0, 0, 1, 0, 0});
+        INDArray y = Nd4j.create(new double[]{0, 0, 0, 0, 1, 0});
+
+        double val = Transforms.hammingDistance(x, y);
+
+        assertEquals(2.0 / 6, val, 1e-5);
+    }
+
+
+    @Test
+    public void testHammingDistance2() throws Exception {
+        INDArray x = Nd4j.create(new double[]{0, 0, 0, 1, 0, 0});
+        INDArray y = Nd4j.create(new double[]{0, 1, 0, 0, 1, 0});
+
+        double val = Transforms.hammingDistance(x, y);
+
+        assertEquals(3.0 / 6, val, 1e-5);
+    }
+
+
+    @Test
+    public void testHammingDistance3() throws Exception {
+        INDArray x = Nd4j.create(10, 6);
+        for (int r = 0; r < x.rows(); r++) {
+            x.getRow(r).putScalar(r % x.columns(), 1);
+        }
+
+        INDArray y = Nd4j.create(new double[]{0, 0, 0, 0, 1, 0});
+
+        INDArray res = Nd4j.getExecutioner().exec(new HammingDistance(x, y), 1);
+        assertEquals(10, res.length());
+
+        for (int r = 0; r < x.rows(); r++) {
+            if (r == 4) {
+                assertEquals(0.0, res.getDouble(r), 1e-5);
+            } else {
+                assertEquals(2.0 / 6, res.getDouble(r), 1e-5);
+            }
+        }
     }
 
 

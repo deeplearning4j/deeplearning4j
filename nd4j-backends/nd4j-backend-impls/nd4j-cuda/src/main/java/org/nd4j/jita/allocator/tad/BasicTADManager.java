@@ -30,20 +30,21 @@ public class BasicTADManager implements TADManager {
 
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
-        if(dimension == null)
-            dimension = new int[] {Integer.MAX_VALUE};
-        if(dimension != null)
+        if (dimension != null && dimension.length > 1)
             Arrays.sort(dimension);
 
-        int dimensionLength = dimension.length;
-        boolean isScalar = dimension == null || dimensionLength == 1 && dimension[0] == Integer.MAX_VALUE;
+        if (dimension == null)
+            dimension = new int[] {Integer.MAX_VALUE};
+
+        boolean isScalar = dimension == null || (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE);
+
         // FIXME: this is fast triage, remove it later
         int targetRank = isScalar ? 2 : array.rank(); //dimensionLength <= 1 ? 2 : dimensionLength;
         long offsetLength = 0;
         long tadLength = 1;
 
         if(!isScalar)
-            for (int i = 0; i < dimensionLength; i++) {
+            for (int i = 0; i < dimension.length; i++) {
                 tadLength *= array.shape()[dimension[i]];
             }
 
@@ -57,6 +58,9 @@ public class BasicTADManager implements TADManager {
         DataBuffer outputBuffer = new CudaIntDataBuffer(targetRank * 2 + 4);
         DataBuffer offsetsBuffer = new CudaLongDataBuffer(offsetLength);
 
+        AtomicAllocator.getInstance().getAllocationPoint(outputBuffer).tickHostWrite();
+        AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickHostWrite();
+
         DataBuffer dimensionBuffer = AtomicAllocator.getInstance().getConstantBuffer(dimension);
         Pointer dimensionPointer = AtomicAllocator.getInstance().getHostPointer(dimensionBuffer);
 
@@ -64,7 +68,7 @@ public class BasicTADManager implements TADManager {
         Pointer targetPointer = AddressRetriever.retrieveHostPointer(outputBuffer);
         Pointer offsetsPointer = AddressRetriever.retrieveHostPointer(offsetsBuffer);
         if(!isScalar)
-            nativeOps.tadOnlyShapeInfo((IntPointer) xShapeInfo, (IntPointer) dimensionPointer, dimensionLength,
+            nativeOps.tadOnlyShapeInfo((IntPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length,
                     (IntPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
 
         else  {
@@ -75,7 +79,7 @@ public class BasicTADManager implements TADManager {
             outputBuffer.put(4,1);
             outputBuffer.put(5,0);
             outputBuffer.put(6,0);
-            outputBuffer.put(7,0);
+            outputBuffer.put(7,99);
 
         }
 

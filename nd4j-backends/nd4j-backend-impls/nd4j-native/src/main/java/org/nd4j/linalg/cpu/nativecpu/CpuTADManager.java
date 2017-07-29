@@ -16,6 +16,7 @@ import org.nd4j.linalg.cache.TadDescriptor;
 import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,6 +52,9 @@ public class CpuTADManager implements TADManager {
 
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
+        if (dimension != null && dimension.length > 1)
+            Arrays.sort(dimension);
+
         if (dimension == null || dimension[0] == Integer.MAX_VALUE) {
             return new Pair<>(array.shapeInfoDataBuffer(), null);
         } else {
