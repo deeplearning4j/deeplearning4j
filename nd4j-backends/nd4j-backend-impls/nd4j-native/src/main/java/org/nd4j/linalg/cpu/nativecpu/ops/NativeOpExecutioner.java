@@ -829,6 +829,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             super.exec(op);
 
         } else {
+            if(op.z() == op.x()) {
+                op.setZ(Nd4j.scalar(0.0));
+            }
+
             long st = profilingHookIn(op);
 
             validateDataType(Nd4j.dataType(), op);
@@ -846,6 +850,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 (FloatPointer) getPointerForExtraArgs(op)));
             }
+
+            op.z().assign(op.getFinalResult());
+
             profilingHookOut(op, st);
         }
     }
@@ -862,6 +869,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             validateDataType(Nd4j.dataType(), op);
 
+            if(op.z() == op.x()) {
+                op.setZ(Nd4j.scalar(0.0));
+            }
 
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if (op instanceof Variance) {
@@ -903,6 +913,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     (FloatPointer) getPointerForExtraArgs(op)));
                 }
             }
+
+            op.z().assign(op.getFinalResult());
+
+
             profilingHookOut(op, st);
         }
     }

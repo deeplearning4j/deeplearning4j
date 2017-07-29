@@ -14,12 +14,19 @@ import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Method;
@@ -54,6 +61,7 @@ public class SameDiff {
     private Map<String,SDVariable> variableMap;
     private Map<String,INDArray> vertexToArray;
     private Map<Integer,NDArrayInformation> vertexIdxToInfo;
+    private MemoryWorkspace workspace;
 
     private static Map<String,Method> opMethods;
     static {
@@ -96,6 +104,16 @@ public class SameDiff {
 
         throw new ND4JIllegalStateException("Illegal method name " + op.name());
 
+    }
+
+
+    /**
+     * Returns the number of bytes
+     * for the graph
+     * @return
+     */
+    public long memoryForGraph() {
+        return numElements() * DataTypeUtil.lengthForDtype(Nd4j.dataType());
     }
 
     /**
@@ -243,6 +261,7 @@ public class SameDiff {
         for(SDVariable variable : variables()) {
             ret += ArrayUtil.prod(variable.getShape());
         }
+
         return ret;
     }
 
@@ -250,6 +269,16 @@ public class SameDiff {
      *
      */
     public void allocate() {
+        if(workspace != null) {
+            workspace.close();
+        }
+        else {
+            initWorkspace();
+
+        }
+
+
+
         for (Integer i : graph().getVertices().keySet()) {
             NDArrayInformation info = graph.getInformationFor(i);
             if(!variableMap.containsKey(info.getId())) {
@@ -280,6 +309,19 @@ public class SameDiff {
 
     }
 
+
+    public void initWorkspace() {
+        workspace = Nd4j.getWorkspaceManager().createNewWorkspace(
+                WorkspaceConfiguration.builder()
+                        .initialSize(memoryForGraph())
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                        .policyLearning(LearningPolicy.FIRST_LOOP)
+                        .build());
+        Nd4j.getWorkspaceManager().setWorkspaceForCurrentThread(workspace);
+
+
+    }
+
     /**
      * The list of available
      * variables in the graph
@@ -297,11 +339,19 @@ public class SameDiff {
      * @return
      */
     public SDVariable var(String name, INDArray arr) {
+        if(workspace == null)
+            initWorkspace();
+
+        arr = arr.migrate();
+
         NDArrayInformation ndArrayInformation = NDArrayInformation.builder()
-                .shape(arr.shape()).id(name).arrId(UUID.randomUUID().toString())
+                .shape(arr.shape()).id(name)
+                .arrId(UUID.randomUUID().toString())
                 .build();
+
         if(ArrayUtil.prod(arr.shape()) == 1)
             ndArrayInformation.setScalarValue(arr.getDouble(0));
+
         NDArrayVertex ndArrayVertex = new NDArrayVertex(graph.nextVertexId(), ndArrayInformation);
         ArrayField arrayField = new ArrayField(ndArrayVertex,graph);
         SDVariable ret = SDVariable.builder()
@@ -1694,6 +1744,8 @@ public class SameDiff {
                     opExecAction);
             ops.add(op);
         }
+
+
 
         return exec(ops);
     }

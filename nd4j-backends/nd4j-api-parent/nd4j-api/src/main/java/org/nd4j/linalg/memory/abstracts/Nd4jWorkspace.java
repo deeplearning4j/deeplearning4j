@@ -28,7 +28,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Basic implementation for MemoryWorkspace interface, further extended in corresponding backends
+ * Basic implementation for
+ * MemoryWorkspace interface,
+ * further extended in corresponding backends
  *
  * @author raver119@gmail.com
  */
@@ -186,7 +188,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     /**
      * This method returns current amount of memory allocated for workspace.
      *
-     * PLEASE NOTE: It shows only amount of HOST memory. If current backend assumes DEVICE/HOST memory pair, DEVICE memory will probably have the same size, but won't be accounted in this value.
+     * PLEASE NOTE: It shows only amount of HOST memory.
+     * If current backend assumes DEVICE/HOST memory pair,
+     * DEVICE memory will probably have the same size, but won't be accounted in this value.
      * @return
      */
     public long getCurrentSize() {
@@ -198,7 +202,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         if (currentSize.get() > 0) {
             if (!isOver.get()) {
-                if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0) {
+                if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE &&
+                        workspaceConfiguration.getOverallocationLimit() > 0) {
                     currentSize.addAndGet((long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
                     isOver.set(true);
                 }
@@ -240,7 +245,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // shortcut made to skip workspace
         if (!isUsed.get()) {
             if (disabledCounter.incrementAndGet() % 10 == 0)
-                log.warn("Worskpace was turned off, and wasn't enabled after {} allocations", disabledCounter.get());
+                log.warn("Workspace was turned off, and wasn't enabled after {} allocations", disabledCounter.get());
 
             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
 
@@ -488,7 +493,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
          */
 
         if (!isUsed.get()) {
-            log.warn("Worskpace was turned off, and wasn't ever turned on back again");
+            log.warn("Workspace was turned off, and wasn't ever turned on back again");
             isUsed.set(true);
         }
 
@@ -515,7 +520,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 resetPlanned.set(false);
             }
 
-            if ((workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME && workspaceConfiguration.getCyclesBeforeInitialization() == cyclesCount.intValue()) || (workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP && currentSize.get() == 0)) {
+            if ((workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME
+                    && workspaceConfiguration.getCyclesBeforeInitialization() == cyclesCount.intValue())
+                    || (workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP && currentSize.get() == 0)) {
                 //log.info("Initializing on cycle {}", cyclesCount.get());
                 initializeWorkspace();
             } else if (currentSize.get() > 0 && cycleAllocations.get() > 0 && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && workspaceConfiguration.getPolicyReset() != ResetPolicy.ENDOFBUFFER_REACHED) {

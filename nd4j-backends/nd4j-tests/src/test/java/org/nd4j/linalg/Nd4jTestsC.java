@@ -41,7 +41,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.accum.Norm1;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
@@ -58,13 +58,11 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -92,7 +90,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     public Nd4jTestsC(Nd4jBackend backend) {
         super(backend);
-        this.initialType = Nd4j.dataType();
+          this.initialType = Nd4j.dataType();
     }
 
 
@@ -3567,29 +3565,32 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testIMaxIAMax() {
-        INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
 
-        double imax = Nd4j.getExecutioner().execAndReturn(new IMax(arr.dup())).getFinalResult();
-        double iamax = Nd4j.getExecutioner().execAndReturn(new IAMax(arr.dup())).getFinalResult();
+        INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
+        IMax iMax = new IMax(arr.dup());
+        IAMax iaMax = new IAMax(arr.dup());
+        double imax = Nd4j.getExecutioner().execAndReturn(iMax).getFinalResult();
+        double iamax = Nd4j.getExecutioner().execAndReturn(iaMax).getFinalResult();
         System.out.println("IMAX: " + imax);
         System.out.println("IAMAX: " + iamax);
-
-        assertEquals(3, imax, 0.0);
         assertEquals(1, iamax, 0.0);
+        assertEquals(3, imax, 0.0);
     }
 
 
     @Test
     public void testIMinIAMin() {
         INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
-
-        double imin = Nd4j.getExecutioner().execAndReturn(new IMin(arr.dup())).getFinalResult();
-        double iamin = Nd4j.getExecutioner().execAndReturn(new IAMin(arr.dup())).getFinalResult();
+        INDArray abs = Transforms.abs(arr);
+        IAMin iaMin = new IAMin(abs);
+        IMin iMin = new IMin(arr.dup());
+        double imin = Nd4j.getExecutioner().execAndReturn(iMin).getFinalResult();
+        double iamin = Nd4j.getExecutioner().execAndReturn(iaMin).getFinalResult();
         System.out.println("IMin: " + imin);
         System.out.println("IAMin: " + iamin);
-
-        assertEquals(1, imin, 0.0);
-        assertEquals(3, iamin, 0.0);
+        assertEquals(3, iamin, 1e-12);
+        assertEquals(1, imin, 1e-12);
     }
 
 
