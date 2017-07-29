@@ -64,6 +64,10 @@ import java.util.*;
 public class CpuNDArrayFactory extends BaseNDArrayFactory {
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
+    protected ThreadLocal<PointerPointer> extrazA = new ThreadLocal<>();
+    protected ThreadLocal<PointerPointer> extrazB = new ThreadLocal<>();
+    protected ThreadLocal<Integer> extrazSize = new ThreadLocal<>();
+
     public CpuNDArrayFactory() {}
 
     static {
@@ -638,8 +642,16 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     public INDArray concat(int dimension, INDArray... toConcat) {
         if (toConcat.length == 1)
             return toConcat[0];
-        PointerPointer shapeInfoPointers = new PointerPointer(toConcat.length);
-        PointerPointer dataPointers = new PointerPointer(toConcat.length);
+
+        // if reusable var wasn't created for this thread, or is smaller then needed - set it to new value
+        if (extrazA.get() == null || extrazB.get() == null || extrazSize.get() == null || extrazSize.get() < toConcat.length) {
+            extrazA.set(new PointerPointer(toConcat.length));
+            extrazB.set(new PointerPointer(toConcat.length));
+            extrazSize.set(toConcat.length);
+        }
+
+        PointerPointer shapeInfoPointers = extrazA.get();
+        PointerPointer dataPointers = extrazB.get();
 
         int sumAlongDim = 0;
 
