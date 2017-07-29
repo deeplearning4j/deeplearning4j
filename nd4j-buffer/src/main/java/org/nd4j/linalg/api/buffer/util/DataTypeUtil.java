@@ -16,6 +16,28 @@ public class DataTypeUtil {
     private volatile transient static DataBuffer.Type dtype;
     private static final ReadWriteLock lock = new ReentrantReadWriteLock();
 
+
+    /**
+     * Returns the length for the given data type
+     * @param type
+     * @return
+     */
+    public static int lengthForDtype(DataBuffer.Type type) {
+        switch (type) {
+            case DOUBLE: return 8;
+            case FLOAT: return 4;
+            case INT: return 4;
+            case HALF: return 2;
+            case LONG: return 8;
+            case COMPRESSED:
+            default:
+                throw new IllegalArgumentException("Illegal type for length");
+
+        }
+
+
+    }
+
     /**
      * Get the allocation mode from the context
      * @return

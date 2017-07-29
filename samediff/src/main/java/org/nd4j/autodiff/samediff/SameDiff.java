@@ -14,8 +14,12 @@ import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
@@ -100,6 +104,16 @@ public class SameDiff {
 
         throw new ND4JIllegalStateException("Illegal method name " + op.name());
 
+    }
+
+
+    /**
+     * Returns the number of bytes
+     * for the graph
+     * @return
+     */
+    public long memoryForGraph() {
+        return numElements() * DataTypeUtil.lengthForDtype(Nd4j.dataType());
     }
 
     /**
@@ -247,6 +261,7 @@ public class SameDiff {
         for(SDVariable variable : variables()) {
             ret += ArrayUtil.prod(variable.getShape());
         }
+
         return ret;
     }
 
@@ -256,7 +271,11 @@ public class SameDiff {
     public void allocate() {
        workspace = Nd4j.getWorkspaceManager().createNewWorkspace(
                WorkspaceConfiguration.builder()
+                       .initialSize(memoryForGraph())
+                       .policyAllocation(AllocationPolicy.STRICT)
+                     .policyLearning(LearningPolicy.FIRST_LOOP)
                .build());
+
        Nd4j.getWorkspaceManager().setWorkspaceForCurrentThread(workspace);
 
         for (Integer i : graph().getVertices().keySet()) {
