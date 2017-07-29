@@ -316,15 +316,16 @@ public class RandomTests extends BaseNd4jTest {
         GaussianDistribution op1 = new GaussianDistribution(z1, 1.0, 1.0);
         Nd4j.getExecutioner().exec(op1, random1);
 
-        GaussianDistribution op2 = new GaussianDistribution(z2, -1.0, 1.0);
+        GaussianDistribution op2 = new GaussianDistribution(z2, -1.0, 2.0);
         Nd4j.getExecutioner().exec(op2, random2);
 
 
         assertEquals(1.0, z1.meanNumber().doubleValue(), 0.01);
         assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
 
+        // check variance
         assertEquals(-1.0, z2.meanNumber().doubleValue(), 0.01);
-        assertEquals(1.0, z2.stdNumber().doubleValue(), 0.01);
+        assertEquals(4.0, z2.varNumber().doubleValue(), 0.01);
 
         assertNotEquals(z1, z2);
     }
