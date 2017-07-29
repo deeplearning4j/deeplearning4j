@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.convolution.Col2Im;
 import org.nd4j.linalg.api.ops.impl.transforms.convolution.Im2col;
+import org.nd4j.linalg.api.ops.impl.transforms.convolution.Pooling2D;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,6 +132,12 @@ public class Convolution {
                     INDArray out) {
         Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, isSameMode, out);
         return Nd4j.getExecutioner().exec(im2col).z();
+    }
+
+    public static INDArray pooling2D(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, Pooling2D.Pooling2DType type,
+                                  INDArray out) {
+        Pooling2D pooling = new Pooling2D(img, kh, kw, sy, sx, ph, pw, isSameMode, type, out);
+        return Nd4j.getExecutioner().exec(pooling).z();
     }
 
     /**
