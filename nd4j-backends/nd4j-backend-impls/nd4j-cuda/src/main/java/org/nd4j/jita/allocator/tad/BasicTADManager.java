@@ -30,7 +30,10 @@ public class BasicTADManager implements TADManager {
 
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
-        Arrays.sort(dimension);
+        if(dimension == null)
+            dimension = new int[] {Integer.MAX_VALUE};
+        if(dimension != null)
+            Arrays.sort(dimension);
 
         int dimensionLength = dimension.length;
         boolean isScalar = dimension == null || dimensionLength == 1 && dimension[0] == Integer.MAX_VALUE;
