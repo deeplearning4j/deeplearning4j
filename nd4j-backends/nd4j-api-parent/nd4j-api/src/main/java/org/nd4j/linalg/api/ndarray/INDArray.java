@@ -2515,7 +2515,8 @@ public interface INDArray extends Serializable {
     boolean isInScope();
 
     /**
-     * This metod detaches INDArray from Workspace, returning copy. Basically it's dup() into new memory chunk.
+     * This method detaches INDArray from Workspace, returning copy.
+     * Basically it's dup() into new memory chunk.
      *
      * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
      *
@@ -2526,8 +2527,10 @@ public interface INDArray extends Serializable {
     /**
      * This method detaches INDArray from current Workspace, and attaches it to Workspace above, if any.
      *
-     * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
-     * PLEASE NOTE: If current Workspace is the top-tier one, effect will be equal to detach() call - detached copy will be returned
+     * PLEASE NOTE: If this INDArray instance is
+     * NOT attached - it will be returned unmodified.
+     * PLEASE NOTE: If current Workspace is the top-tier one,
+     * effect will be equal to detach() call - detached copy will be returned
      *
      * @return
      */

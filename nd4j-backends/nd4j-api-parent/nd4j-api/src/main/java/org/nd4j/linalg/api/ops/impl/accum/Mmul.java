@@ -194,6 +194,9 @@ public class Mmul extends BaseAccumulation {
 
     @Override
     public void exec() {
-        this.z = x.mmul(y);
+        if(this.z != null)
+            x.mmul(y,z);
+        else
+            this.z = x.mmul(y);
     }
 }

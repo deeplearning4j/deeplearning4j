@@ -128,7 +128,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     }
 
     /**
-     * This method destorys all workspaces allocated in current thread
+     * This method destroys all workspaces allocated in current thread
      */
     @Override
     public void destroyAllWorkspacesForCurrentThread() {

@@ -294,6 +294,31 @@ public class SameDiffTests {
         GradCheckUtil.checkGradients(negSum,w,1e-3,1e-3,true,inputMap);
     }
 
+
+
+    @Test
+    public void testResultPropagation() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray inputs = Nd4j.create(new double[][]{
+                {0.52, 1.12,  0.77},
+                {0.88, -1.08, 0.15},
+                {0.52, 0.06, -1.30},
+                {0.74, -2.49, 1.39}
+        });
+
+
+        INDArray weights = Nd4j.randn(3,1);
+
+        SDVariable x = sameDiff.var("x",inputs);
+        SDVariable w = sameDiff.var("w",weights);
+        SDVariable preOutput = sameDiff.mmul(0,x,w);
+
+        SDVariable outputs = sameDiff.sigmoid(preOutput);
+        List<Op> ops = sameDiff.exec();
+        assertTrue(ops.get(0).z() == ops.get(1).x());
+
+    }
+
     @Test
     public void testLogisticRegression() throws Exception {
         SameDiff sameDiff = SameDiff.create();
@@ -341,7 +366,7 @@ public class SameDiffTests {
         System.out.println(sameDiff.graph().numVertices() + " and " + sameDiff.graph().getEdges().size());
         ops = sameDiff.exec();
         for(int i = 0; i < 10; i++) {
-            INDArray output =  weights;
+            INDArray output =  w.getArr();
             INDArray score = sameDiff.execAndEndResult(ops);
             System .out.println("Update " + output + " with score " + score);
         }
