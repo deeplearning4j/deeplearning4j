@@ -84,20 +84,24 @@ public class SameDiff {
 
         //map new vertex ids and create new vertices
         for(int i = 0; i < graph().numVertices(); i++) {
+            int nextVertexId = sameDiff.graph.nextVertexId();
             Vertex<NDArrayInformation> info = new Vertex<>(
-                    sameDiff.graph().nextVertexId(),
-                    cloner.deepClone(graph.getVertex(i).getValue()));
-            thisVertexIdToNew.put(graph.getVertex(i).vertexID(),sameDiff.graph().nextVertexId());
+                    nextVertexId,
+                    cloner.deepClone(graph.getVertex(i + 1).getValue()));
+            thisVertexIdToNew.put(graph.getVertex(i + 1).vertexID(),nextVertexId);
             sameDiff.graph().addVertex(info);
-            sameDiff.vertexIdxToInfo.put(thisVertexIdToNew.get(i),info.getValue());
+        }
+
+        for(Map.Entry<Integer,NDArrayInformation> informationEntry : vertexIdxToInfo.entrySet()) {
+            sameDiff.vertexIdxToInfo.put(thisVertexIdToNew.get(informationEntry.getKey()),informationEntry.getValue());
         }
 
 
         for(int i = 0; i < graph().getEdges().size(); i++) {
-            List<Edge<OpState>> edgesForVertex = graph.getEdges().get(i);
-            List<Edge<OpState>> incomingEdgesForVertex = graph.getIncomingEdges().get(i);
+            List<Edge<OpState>> edgesForVertex = graph.getEdges().get(i + 1);
+            List<Edge<OpState>> incomingEdgesForVertex = graph.getIncomingEdges().get(i + 1);
             //map to new vertex
-            int newVertexMap = thisVertexIdToNew.get(i);
+            int newVertexMap = thisVertexIdToNew.get(i + 1);
             List<Edge<OpState>> edgesForNewVertex = new ArrayList<>();
             sameDiff.graph().getEdges().put(newVertexMap,edgesForNewVertex);
             for(Edge<OpState> edge : edgesForVertex) {
@@ -108,24 +112,31 @@ public class SameDiff {
                 edgesForNewVertex.add(newEdge);
             }
 
-            List<Edge<OpState>> newIncomingEdges = new ArrayList<>();
-            sameDiff.graph().getIncomingEdges().put(i,newIncomingEdges);
-            for(Edge<OpState> edge : incomingEdgesForVertex) {
-                Edge<OpState> newEdge = new Edge<>(
-                        thisVertexIdToNew.get(edge.getFrom()),
-                        thisVertexIdToNew.get(edge.getTo()),
-                        cloner.deepClone(edge.getValue()),true);
-                edgesForNewVertex.add(newEdge);
+            if(incomingEdgesForVertex != null) {
+                List<Edge<OpState>> newIncomingEdges = new ArrayList<>();
+                sameDiff.graph().getIncomingEdges().put(i + 1,newIncomingEdges);
+                for(Edge<OpState> edge : incomingEdgesForVertex) {
+                    Edge<OpState> newEdge = new Edge<>(
+                            thisVertexIdToNew.get(edge.getFrom()),
+                            thisVertexIdToNew.get(edge.getTo()),
+                            cloner.deepClone(edge.getValue()),true);
+                    edgesForNewVertex.add(newEdge);
+                }
             }
 
-            for(SDVariable variable : variables()) {
-                sameDiff.addVariable(variable);
-            }
+
 
 
 
         }
 
+
+        //copy over variables
+        for(SDVariable variable : variables()) {
+            sameDiff.addVariable(variable);
+        }
+
+        sameDiff.vertexToArray.putAll(vertexToArray);
         return sameDiff.variables().get(sameDiff.variables().size() - 1);
 
     }
