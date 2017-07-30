@@ -336,8 +336,15 @@ public class SameDiffTests {
         sameDiffOuter.defineFunction("loss", new SameDiff.SameDiffFunctionDefinition() {
             @Override
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                sameDiffOuter.invokeFunctionOn("logisticPredictions",sameDiff);
-                return null;
+                SDVariable outputs = sameDiffOuter.invokeFunctionOn("logisticPredictions",sameDiff);
+                SDVariable y = sameDiff.var("y",inputs.get("y"));
+                SDVariable outputTimesY = outputs.mul(y);
+                SDVariable oneMinusOutput = outputs.rsub(sameDiff.scalar("one",1.0));
+                SDVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(sameDiff.scalar("onetwo",1.0))));
+                SDVariable logProbs = sameDiff.log(probs);
+                SDVariable sum = sameDiff.sum(logProbs,Integer.MAX_VALUE);
+                SDVariable negSum = sameDiff.neg(sum);
+                return negSum;
             }
         });
 
