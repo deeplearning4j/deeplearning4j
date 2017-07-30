@@ -128,6 +128,11 @@ public class SDVariable  implements Serializable {
     }
 
 
+    /**
+     *
+     * @param sameDiffVariable
+     * @return
+     */
     public SDVariable rsub(SDVariable sameDiffVariable) {
         assertShapeEquals(sameDiffVariable);
 
@@ -138,6 +143,11 @@ public class SDVariable  implements Serializable {
                 .build();
     }
 
+    /**
+     *
+     * @param sameDiffVariable
+     * @return
+     */
     public SDVariable rdiv(SDVariable sameDiffVariable) {
         assertShapeEquals(sameDiffVariable);
 
@@ -279,7 +289,9 @@ public class SDVariable  implements Serializable {
     }
 
 
-    private DifferentialFunction<ArrayField> getFunction(SDVariable variable) {
+    public static DifferentialFunction<ArrayField> getFunction(SDVariable variable) {
+        if(variable == null)
+            throw new IllegalArgumentException("Unable to get function for null variable");
         return variable.getDifferentialFunction() != null ? variable.getDifferentialFunction() : variable.getArrayField();
     }
 

@@ -23,6 +23,15 @@ public class NDArrayInformation implements Serializable {
     private Number scalarValue;
     private String arrId;
 
+    /**
+     * Create appropriate
+     * {@link NDArrayInformation}
+     * given the ndarray
+     * including the shape
+     * and a new id
+     * @param arr the input array
+     * @return
+     */
     public static NDArrayInformation newInfo(INDArray arr) {
         return NDArrayInformation.builder()
                 .shape(arr.shape())
