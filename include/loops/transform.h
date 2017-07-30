@@ -100,7 +100,8 @@
         (66,simdOps::TanDerivative) ,\
         (67,simdOps::SELU) ,\
         (68,simdOps::SELUDerivative) ,\
-        (70,simdOps::Reverse)
+        (70,simdOps::Reverse) ,\
+        (71,simdOps::Pooling2D)
 
 
 
@@ -156,10 +157,10 @@ static __inline__ __device__ void transformCuda(
 			T *params,
 			T *result,
 			int *resultShapeInfo,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 
 		if(OpType::requiresSpecial) {
-			OpType::execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params, allocationPointer, reductionPointer, manager);
+			OpType::execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
 			return;
 		} else {
 
@@ -255,8 +256,8 @@ template<typename OpType>
 			int *resultShapeInfo,
 			int *allocationPointer,
 			T *reductionPointer,
-			UnifiedSharedMemory *manager) {
-                                DISPATCH_BY_OPNUM(transformCuda, PARAMS(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager), TRANSFORM_OPS);
+			UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
+                                DISPATCH_BY_OPNUM(transformCuda, PARAMS(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
 	}
 
 
@@ -561,7 +562,7 @@ __device__ void transformSimpleGeneric(
 		T *dy,
 		int *xShapeInfo, int xRank,
 		T *params,
-		T *result,int *resultShapeInfo, int zRank, int *allocationPointer, T *reductionPointer) {
+		T *result,int *resultShapeInfo, int zRank, int *allocationPointer, T *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 
 	__shared__ UnifiedSharedMemory *manager;
 
@@ -581,7 +582,7 @@ __device__ void transformSimpleGeneric(
 	    resultShapeInfo,
 	    allocationPointer,
 	    reductionPointer,
-	    manager);
+	    manager, tadShapeInfo, tadOffsets);
 }
 
 
@@ -616,7 +617,7 @@ __device__ void transformGenericIndexes(
 	}
 	__syncthreads();
 
-
+/*
 	functions::transform::Transform<T>::transformCuda(
 	        opNum,
 	        dy,
@@ -627,6 +628,7 @@ __device__ void transformGenericIndexes(
 	        allocationPointer,
 	        reductionPointer,
 	        manager);
+	        */
 }
 
 
@@ -1635,9 +1637,9 @@ DISPATCH_KERNEL_SIMPLE(transformStrided_, transformSimpleGeneric, double, INPUT(
 DISPATCH_KERNEL_SIMPLE(transformStrided_, transformSimpleGeneric, float16, INPUT(Nd4jIndex n, float16 *x, int xStride, float16 *extraParams, float16 *z, int zStride, int *allocationPointer, float16 *reductionPointer), PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
 // transform shaped
-DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, float, INPUT(float *x, int *xShape, int xRank, float *extraParams, float *z, int *zShape, int zRank, int *allocationPointer, float *reductionPointer), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
-DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, double, INPUT(double *x, int *xShape, int xRank, double *extraParams, double *z, int *zShape, int zRank, int *allocationPointer, double *reductionPointer), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
-DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, float16, INPUT(float16 *x, int *xShape, int xRank, float16 *extraParams, float16 *z, int *zShape, int zRank, int *allocationPointer, float16 *reductionPointer), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, float, INPUT(float *x, int *xShape, int xRank, float *extraParams, float *z, int *zShape, int zRank, int *allocationPointer, float *reductionPointer,  int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
+DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, double, INPUT(double *x, int *xShape, int xRank, double *extraParams, double *z, int *zShape, int zRank, int *allocationPointer, double *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
+DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, float16, INPUT(float16 *x, int *xShape, int xRank, float16 *extraParams, float16 *z, int *zShape, int zRank, int *allocationPointer, float16 *reductionPointer,  int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
 
 #endif
 

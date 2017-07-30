@@ -20,7 +20,7 @@
 #ifdef __CUDACC__
 #define meta_def __noinline__ __device__
 #include <helpers/sharedmem.h>
-#define no_op_exec_special_cuda static __device__ void execSpecialCuda(T *dx,int *xShapeBuffer,T *result,int *resultShapeBuffer,T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {}
+#define no_op_exec_special_cuda static __device__ void execSpecialCuda(T *dx,int *xShapeBuffer,T *result,int *resultShapeBuffer,T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {}
 #else
 // hacky fix for isnan/being being out of scope
 #define isnan std::isnan

@@ -25,6 +25,331 @@ namespace functions {
 namespace simdOps {
 
 	template<typename T>
+	class Pooling2D {
+	public:
+		static const bool requiresSpecial = true;
+#ifdef __CUDACC__
+		inline __host__ __device__
+#elif defined(__GNUC__)
+
+#endif
+		static int outSize(int size, int k, int s, int p, bool coverAll) {
+			if (coverAll)
+				return (size + p * 2 - k + s - 1) / s + 1;
+			else
+				return (size + p * 2 - k) / s + 1;
+		}
+
+#ifdef __CUDACC__
+		/**
+		* Based on:  https://github.com/pjreddie/darknet/blob/master/src/im2col_kernels.cu
+		*/
+
+		static inline __device__ void execSpecialCuda(
+			T *dx,
+			int *xShapeBuffer,
+			T *result,
+			int *resultShapeBuffer,
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
+			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
+
+		    int kernelWidth = (int)extraParams[0];
+			int kernelHeight = (int)extraParams[1];
+			int strideX = (int)extraParams[2];
+			int strideY = (int)extraParams[3];
+			int padWidth = (int)extraParams[4];
+			int padHeight = (int)extraParams[5];
+			int poolingMode = (int)extraParams[7];
+			int kSize = kernelWidth * kernelHeight;
+
+            T extraParam0 = extraParams[8];
+
+			int *inShape = shape::shapeOf(xShapeBuffer);
+			int *inStride = shape::stride(xShapeBuffer);
+
+            // we expect tadShape field to be used here
+            int *im2colShape = tadShapeInfo;
+
+			int samples = inShape[0];
+			int depth = inShape[1];
+			int height = inShape[2];
+			int width = inShape[3];
+
+
+			int strideex = inStride[0];
+			int stridech = inStride[1];
+			int strideh = inStride[2];
+			int stridew = inStride[3];
+
+            int *outShape = shape::shapeOf(im2colShape);
+            char resultOrder = shape::order(im2colShape);
+            int *outStride = shape::stride(im2colShape);
+
+			int height_col = outShape[4];
+			int width_col = outShape[5];
+
+			int n = samples * depth * height_col * width_col;
+
+            T res;
+            T val;
+
+			int index = blockIdx.x * blockDim.x + threadIdx.x;
+			for (; index < n; index += blockDim.x*gridDim.x) {
+				int h_index = index / width_col;
+				int h_col = h_index % height_col;
+				int w_col = index % width_col;
+
+				int c_im = h_index / height_col;
+				int c_col = c_im * kSize;
+
+				int depth_im = c_im % depth;
+				int num_im = c_im / depth;
+				int h_offset = h_col * strideY - padHeight;
+				int w_offset = w_col * strideX - padWidth;
+
+				T* data_col_ptr = result;
+
+				int i_c = (c_col * height_col + h_col) * width_col + w_col;
+				data_col_ptr += (c_col * height_col + h_col) * width_col + w_col;
+
+				T* data_im_ptr = dx;
+
+                res = poolingMode == 0 ? (T) -MAX_FLOAT : (T) 0.0f;
+
+				data_im_ptr += num_im * strideex + depth_im * stridech + h_offset * strideh + w_offset*stridew;
+
+				for (int i = 0; i < kernelHeight; ++i) {
+					for (int j = 0; j < kernelWidth; ++j) {
+						int h_im = h_offset + i;
+						int w_im = w_offset + j;
+						int i_f = 0;
+						int i_c_temp = i_c;
+						for (int dim = 5; dim >= 0; dim--)
+						{
+							i_f += (i_c_temp % outShape[dim])  * outStride[dim];
+							i_c_temp = i_c_temp / outShape[dim];
+						}
+
+
+                        if (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width)
+                            val = data_im_ptr[i * strideh + j * stridew];
+                        else
+                            val = (T) 0.0f;
+
+                        //kernel[i * kernelHeight + j] = val;
+                        // max
+                        if (poolingMode == 0) {
+                            if (res < val)
+                                res = val;
+                        // avg
+                        } else if (poolingMode == 1) {
+                            res += val;
+
+                        // phorm
+                        } else if (poolingMode == 2) {
+                            res += nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_abs<T>(val), extraParam0);
+                        }
+
+						//result[i_f] = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
+						data_col_ptr += height_col * width_col;
+						i_c += height_col * width_col;
+					}
+				}
+
+				// avg final step
+                if (poolingMode == 1) {
+                    res /= kSize;
+
+                // pnorm final step
+                } else if (poolingMode == 2) {
+                    res = nd4j::math::nd4j_pow<T>(res, (T) 1.0f /  extraParam0);
+                }
+
+                result[index] = res;
+			}
+		}
+#endif
+
+
+		static void execSpecial(
+				T *dx,
+				int *xShapeBuffer,
+				T *result,
+				int *resultShapeBuffer,
+				T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
+
+
+			int kernelWidth = (int)extraParams[0];
+			int kernelHeight = (int)extraParams[1];
+			int strideX = (int)extraParams[2];
+			int strideY = (int)extraParams[3];
+			int padWidth = (int)extraParams[4];
+			int padHeight = (int)extraParams[5];
+			int poolingMode = (int)extraParams[7];
+			int kSize = kernelWidth * kernelHeight;
+
+            T extraParam0 = extraParams[8];
+
+			int *inShape = shape::shapeOf(xShapeBuffer);
+			int *inStride = shape::stride(xShapeBuffer);
+
+            // we expect tadShape field to be used here
+            int *im2colShape = tadShapeInfo;
+
+			int samples = inShape[0];
+			int depth = inShape[1];
+			int height = inShape[2];
+			int width = inShape[3];
+
+
+			int strideex = inStride[0];
+			int stridech = inStride[1];
+			int strideh = inStride[2];
+			int stridew = inStride[3];
+
+            int *outShape = shape::shapeOf(im2colShape);
+            char resultOrder = shape::order(im2colShape);
+            int *outStride = shape::stride(im2colShape);
+
+			int height_col = outShape[4];
+			int width_col = outShape[5];
+
+			int n = samples * depth * height_col * width_col;
+
+			int _threads = omp_get_max_threads();
+			int span = (n / _threads) + 1;
+
+
+#pragma omp parallel num_threads(_threads) proc_bind(close)
+            {
+				int tid = omp_get_thread_num();
+				int start = span * tid;
+				int end = span * (tid + 1);
+				if (end > n) end = n;
+                T res;
+
+                for (int index = start; index < end; index++) {
+                    int h_index = index / width_col;
+                    int h_col = h_index % height_col;
+                    int w_col = index % width_col;
+
+                    int c_im = h_index / height_col;
+                    int c_col = c_im * kSize;
+
+                    int depth_im = c_im % depth;
+                    int num_im = c_im / depth;
+                    int h_offset = h_col * strideY - padHeight;
+                    int w_offset = w_col * strideX - padWidth;
+
+                    T *data_col_ptr = result;
+
+                    int i_c = (c_col * height_col + h_col) * width_col + w_col;
+                    data_col_ptr += (c_col * height_col + h_col) * width_col + w_col;
+
+                    T *data_im_ptr = dx;
+
+                    data_im_ptr += num_im * strideex + depth_im * stridech + h_offset * strideh + w_offset * stridew;
+                    res = poolingMode == 0 ? (T) -MAX_FLOAT : (T) 0.0f;
+
+                    for (int i = 0; i < kernelHeight; ++i) {
+                        for (int j = 0; j < kernelWidth; ++j) {
+                            int h_im = h_offset + i;
+                            int w_im = w_offset + j;
+                            int i_f = 0;
+                            int i_c_temp = i_c;
+                            for (int dim = 5; dim >= 0; dim--) {
+                                i_f += (i_c_temp % outShape[dim]) * outStride[dim];
+                                i_c_temp = i_c_temp / outShape[dim];
+                            }
+
+                            T val;
+                            if (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width)
+                                val = data_im_ptr[i * strideh + j * stridew];
+                            else
+                                val = (T) 0.0f;
+
+                            //kernel[i * kernelHeight + j] = val;
+                            // max
+                            if (poolingMode == 0) {
+                                if (res < val)
+                                    res = val;
+                            // avg
+                            } else if (poolingMode == 1) {
+                                res += val;
+
+                            // phorm
+                            } else if (poolingMode == 2) {
+                                res += nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_abs<T>(val), extraParam0);
+                            }
+
+                            //result[i_f] = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
+                            data_col_ptr += height_col * width_col;
+                            i_c += height_col * width_col;
+                        }
+                    }
+
+                    // avg final step
+                    if (poolingMode == 1) {
+                        res /= kSize;
+
+                    // pnorm final step
+                    } else if (poolingMode == 2) {
+                        res = nd4j::math::nd4j_pow<T>(res, (T) 1.0f /  extraParam0);
+                    }
+
+                    result[index] = res;
+                }
+            }
+		}
+
+		op_def static T op(T d1, T *params) {
+			return d1;
+		}
+
+
+		/** Calculate buffer offset (like Shape.getOffset) without checking on input for negative indices etc
+		*  normally negative indices are bad, OK here because of other checks on input indices
+		*  Uses unrolled loop specifically for length 4
+		*/
+#ifdef __CUDACC__
+		inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+		static int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
+			int offset = baseOffset;
+			if (shape[0] != 1) offset += indices[0] * stride[0];
+			if (shape[1] != 1) offset += indices[1] * stride[1];
+			if (shape[2] != 1) offset += indices[2] * stride[2];
+			if (shape[3] != 1) offset += indices[3] * stride[3];
+			return offset;
+		}
+
+
+		/**
+		* A version of Shape.getOffset without checking on input for negative indices etc
+		* normally negative indices are bad, OK here because of other checks on input indices
+		* Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
+		*/
+#ifdef __CUDACC__
+		inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+		static int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
+			int offset = baseOffset;
+			if (shape[0] != 1) offset += indices[0] * stride[0];
+			if (shape[1] != 1) offset += indices[1] * stride[1];
+			if (shape[4] != 1) offset += indices[4] * stride[4];
+			if (shape[5] != 1) offset += indices[5] * stride[5];
+			return offset;
+		}
+
+	};
+
+	template<typename T>
 	class Im2col {
 	public:
 		static const bool requiresSpecial = true;
@@ -50,7 +375,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
 			int kernelWidth = (int)extraParams[0];
 			int kernelHeight = (int)extraParams[1];
@@ -177,6 +502,23 @@ namespace simdOps {
 			int tadsPerThread = (exampleTo - exampleFrom) + (depthTo - depthFrom) / 4;
 			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
 			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+
+            int samples = inShape[0];
+            int depth = inShape[1];
+            int height = inShape[2];
+            int width = inShape[3];
+
+            // (height + 2 * padHeight - kernelHeight) / strideX + 1; //
+            // (width + 2 * padWidth - kernelWidth) / strideY + 1; //
+            int height_col = outShape[4];
+            int width_col = outShape[5];
+
+            int n = samples * depth * height_col * width_col;
+
+            int kSize = kernelWidth * kernelHeight;
+//            printf("im2col N: %i; KernelSize: %i\n", n, kSize);
+//            fflush(stdout);
 
 
 #pragma omp parallel for num_threads(num_threads) if (num_threads>1) collapse(2) proc_bind(AFFINITY) default(shared)
@@ -348,7 +690,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 
             int numBins = (int) extraParams[0];
             T min_val = extraParams[1];
@@ -530,7 +872,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 			int *inShape = shape::shapeOf(xShapeBuffer);
 			int *inStride = shape::stride(xShapeBuffer);
 
@@ -807,7 +1149,7 @@ namespace simdOps {
 		static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
-		static inline __device__ void execSpecialCuda(T *dx, int *xShapeBuffer, T *result, int *zShapeBuffer, T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+		static inline __device__ void execSpecialCuda(T *dx, int *xShapeBuffer, T *result, int *zShapeBuffer, T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
             __shared__ Nd4jIndex xLength;
 			__shared__ int xEWS;
             __shared__ char xOrder;
@@ -1061,7 +1403,7 @@ namespace simdOps {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 
 			int *shape = shape::shapeOf(xShapeBuffer);
 			__shared__ T maxResult;
@@ -1093,7 +1435,7 @@ namespace simdOps {
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			functions::transform::Transform<T>::template transformCuda<simdOps::Exp<T>>(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
+			functions::transform::Transform<T>::template transformCuda<simdOps::Exp<T>>(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
 			__syncthreads();
 
 			//take the sum for the exponential
@@ -1230,7 +1572,7 @@ namespace simdOps {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 			int *shape = shape::shapeOf(xShapeBuffer);
 			int *stride = shape::stride(xShapeBuffer);
 			//iterate along rows
@@ -1258,7 +1600,7 @@ namespace simdOps {
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			functions::transform::Transform<T>::template transformCuda<simdOps::Exp<T>>(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
+			functions::transform::Transform<T>::template transformCuda<simdOps::Exp<T>>(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
 			__syncthreads();
 
 			//take the sum for the exponential
@@ -1269,7 +1611,7 @@ namespace simdOps {
 			functions::scalar::ScalarTransform<T>::template transformCuda<simdOps::Divide<T>>(maxResult, result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, manager);
 			__syncthreads();
 
-			functions::transform::Transform<T>::template transformCuda<simdOps::Log<T>>(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
+			functions::transform::Transform<T>::template transformCuda<simdOps::Log<T>>(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
 		}
 #endif
 
@@ -1390,7 +1732,7 @@ namespace simdOps {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 
 
 			int *shape = shape::shapeOf(xShapeBuffer);
@@ -1423,7 +1765,7 @@ namespace simdOps {
 			__syncthreads();
 
 			//after subtracting the row wise maxes take the exp
-			functions::transform::Transform<T>::template transformCuda<simdOps::Exp<T>>(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager);
+			functions::transform::Transform<T>::template transformCuda<simdOps::Exp<T>>(result, resultShapeBuffer, extraParams, result, resultShapeBuffer, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
 			__syncthreads();
 
 			//take the sum for the exponential
@@ -1825,7 +2167,7 @@ namespace simdOps {
 			int *xShapeBuffer,
 			T *result,
 			int *resultShapeBuffer,
-			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+			T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 			// FIXME: MAX_DIMENSION is lower then FP16 frame
 			if (extraParams == nullptr || (int) extraParams[0] == MAX_DIMENSION) {
 				doAllCuda(dx, xShapeBuffer, result, resultShapeBuffer, extraParams, allocationPointer, reductionPointer, manager);

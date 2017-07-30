@@ -19,7 +19,7 @@ if(WIN32)
 endif()
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -Wl,-rpath,$ORIGIN/")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wl,-rpath,$ORIGIN/")
 
 IF(${ARCH} MATCHES "arm*")
     set(ARCH_TUNE "-march=${ARCH}")
