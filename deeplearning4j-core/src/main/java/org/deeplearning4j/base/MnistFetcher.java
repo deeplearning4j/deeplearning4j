@@ -110,8 +110,10 @@ public class MnistFetcher {
         boolean isCorrectFile = f.isFile();
         if (attempt < maxTries && !isCorrectFile) {
             FileUtils.copyURLToFile(url, f);
-            if (!checkMD5OfFile(targetMD5, f))
+            if (!checkMD5OfFile(targetMD5, f)) {
+                f.delete();
                 tryDownloadingAFewTimes(attempt + 1, url, f, targetMD5);
+            }
         } else if (isCorrectFile) {
             // do nothing, file downloaded
         } else {

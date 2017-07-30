@@ -23,11 +23,14 @@ import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.impl.PopularityWalker;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.deeplearning4j.models.sequencevectors.interfaces.SequenceElementFactory;
+import org.deeplearning4j.models.sequencevectors.serialization.AbstractElementFactory;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.GraphTransformer;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
+import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
@@ -186,6 +189,13 @@ public class SequenceVectorsTest {
 
         Collection<String> labels = vectors.wordsNearest("day", 10);
         logger.info("Nearest labels to 'day': " + labels);
+        
+        SequenceElementFactory<VocabWord> factory = new AbstractElementFactory<VocabWord>(VocabWord.class);
+        WordVectorSerializer.writeSequenceVectors(vectors, factory, "seqvec.mod");
+
+        SequenceVectors<VocabWord> model = WordVectorSerializer.readSequenceVectors(factory, new File("seqvec.mod"));
+        sim = model.similarity("day", "night");
+        logger.info("day/night similarity: " + sim);
     }
 
     @Test
