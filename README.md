@@ -19,9 +19,9 @@ Here is a useful blog post I wrote to introduce you to reinforcement learning, D
 
 [Blog post](https://rubenfiszel.github.io/posts/rl4j/2016-08-24-Reinforcement-Learning-and-DQN.html)
 
-[temporary example repo](https://github.com/rubenfiszel/rl4j-examples)
+[Examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/rl4j-examples)
 
-[Cartpole example](https://github.com/rubenfiszel/rl4j-examples/blob/master/src/main/java/org/deeplearning4j/rl4j/Cartpole.java)
+[Cartpole example](https://github.com/deeplearning4j/dl4j-examples/blob/master/rl4j-examples/src/main/java/org/deeplearning4j/examples/rl4j/Cartpole.java)
 
 # Disclaimer
 
