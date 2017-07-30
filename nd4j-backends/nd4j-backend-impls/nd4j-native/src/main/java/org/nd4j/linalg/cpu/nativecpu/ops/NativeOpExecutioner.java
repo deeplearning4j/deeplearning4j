@@ -19,6 +19,7 @@ import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.convolution.Pooling2D;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.ConstantHandler;
@@ -666,6 +667,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             st = profilingHookIn(op, tadBuffers.getFirst());
         } else
             st = profilingHookIn(op);
+
+        // Pooling2D requires additional pointer
+        if (op.opNum() == 71) {
+            dummy.put(0, ((Pooling2D) op).getIm2colShape().addressPointer());
+        }
 
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op.y() != null) {

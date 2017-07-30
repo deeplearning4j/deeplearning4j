@@ -41,6 +41,7 @@ import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
+import org.nd4j.linalg.api.ops.impl.transforms.convolution.Pooling2D;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
@@ -1541,6 +1542,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         dimensionHostPointer, // special pointer for IsMax  // 16
                         retPointer, // special pointer for IsMax // 17
                         new CudaPointer(dimension == null ? 0 : dimension.length));
+
+
+        // Pooling2D requires additional pointer
+        if (op.opNum() == 71) {
+            extraz.get().put(10, ((Pooling2D) op).getIm2colShape().addressPointer());
+        }
 
 
         if (op.y() != null) {
