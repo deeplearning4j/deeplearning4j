@@ -108,7 +108,7 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
     }
 
     public EmnistDataSetIterator(Set dataSet, int batchSize, boolean train, long seed) throws IOException {
-        this(dataSet, batchSize,false, train, false, seed);
+        this(dataSet, batchSize,false, train, true, seed);
     }
 
     /**Get the specified number of MNIST examples (test or train set), with optional shuffling and binarization.
