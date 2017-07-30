@@ -89,6 +89,7 @@ public class SameDiff {
                     cloner.deepClone(graph.getVertex(i).getValue()));
             thisVertexIdToNew.put(graph.getVertex(i).vertexID(),sameDiff.graph().nextVertexId());
             sameDiff.graph().addVertex(info);
+            sameDiff.vertexIdxToInfo.put(thisVertexIdToNew.get(i),info.getValue());
         }
 
 
@@ -102,7 +103,8 @@ public class SameDiff {
             for(Edge<OpState> edge : edgesForVertex) {
                 Edge<OpState> newEdge = new Edge<>(
                         thisVertexIdToNew.get(edge.getFrom()),
-                        thisVertexIdToNew.get(edge.getTo()),cloner.deepClone(edge.getValue()),true);
+                        thisVertexIdToNew.get(edge.getTo()),
+                        cloner.deepClone(edge.getValue()),true);
                 edgesForNewVertex.add(newEdge);
             }
 
@@ -111,7 +113,8 @@ public class SameDiff {
             for(Edge<OpState> edge : incomingEdgesForVertex) {
                 Edge<OpState> newEdge = new Edge<>(
                         thisVertexIdToNew.get(edge.getFrom()),
-                        thisVertexIdToNew.get(edge.getTo()),cloner.deepClone(edge.getValue()),true);
+                        thisVertexIdToNew.get(edge.getTo()),
+                        cloner.deepClone(edge.getValue()),true);
                 edgesForNewVertex.add(newEdge);
             }
 
