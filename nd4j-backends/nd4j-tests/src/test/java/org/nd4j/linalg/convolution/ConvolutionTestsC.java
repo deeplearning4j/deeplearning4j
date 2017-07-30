@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.convolution;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,8 +29,11 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.convolution.Pooling2D;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
 
@@ -38,6 +42,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 9/6/14.
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public class ConvolutionTestsC extends BaseNd4jTest {
 
@@ -179,6 +184,89 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         DataTypeUtil.setDTypeForContext(initialType);
     }
 
+    @Test
+    public void testPooling2D_1() throws Exception {
+        int[] miniBatches = {1, 3, 5};
+        int[] depths = {1, 3, 5};
+        int[] inHeights = {5, 21};
+        int[] inWidths = {5, 21};
+        int[] strideH = {1, 2};
+        int[] strideW = {1, 2};
+        int[] sizeW = {1, 2, 3};
+        int[] sizeH = {1, 2, 3};
+        int[] padH = {0};
+        int[] padW = {0};
+        Pooling2D.Pooling2DType[] types = new Pooling2D.Pooling2DType[]{Pooling2D.Pooling2DType.AVG, Pooling2D.Pooling2DType.MAX, Pooling2D.Pooling2DType.PNORM};
+
+        for (Pooling2D.Pooling2DType type: types) {
+            for (int m : miniBatches) {
+                for (int d : depths) {
+                    for (int h : inHeights) {
+                        for (int w : inWidths) {
+                            for (int sh : strideH) {
+                                for (int sw : strideW) {
+                                    for (int kh : sizeH) {
+                                        for (int kw : sizeW) {
+                                            for (int ph : padH) {
+                                                for (int pw : padW) {
+                                                    INDArray in = Nd4j.rand(new int[]{m, d, h, w});
+
+                                                    int[] outSize = getOutputSize(in, new int[]{kh, kw}, new int[]{sh, sw}, null, true);
+
+
+                                                    INDArray col = Nd4j.createUninitialized(new int[]{m, d, outSize[0], outSize[1], kh, kw}, 'c');
+                                                    INDArray col2 = col.permute(0, 1, 4, 5, 2, 3);
+
+                                                    Convolution.im2col(in, kh, kw, sh, sw, ph, pw, true, col2);
+
+                                                    INDArray col2d = col.reshape('c', m * d * outSize[0] * outSize[1], kh * kw);
+
+                                                    INDArray output = Nd4j.createUninitialized(m * d * outSize[0] * outSize[1]);
+
+                                                    INDArray reduced = null;
+                                                    switch (type) {
+                                                        case PNORM:
+                                                            int pnorm = 3;
+
+                                                            Transforms.abs(col2d, false);
+                                                            Transforms.pow(col2d, pnorm, false);
+                                                            reduced = col2d.sum(1);
+                                                            Transforms.pow(reduced, (1.0 / pnorm), false);
+
+                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw,
+                                                                    true, Pooling2D.Pooling2DType.PNORM, (double) pnorm, outSize[0], outSize[1], output);
+
+                                                            break;
+                                                        case MAX:
+                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw,
+                                                                    true, Pooling2D.Pooling2DType.MAX, 0.0, outSize[0], outSize[1], output);
+
+                                                            reduced = col2d.max(1);
+                                                            break;
+                                                        case AVG:
+
+                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw,
+                                                                    true, Pooling2D.Pooling2DType.AVG, 0.0, outSize[0], outSize[1], output);
+
+                                                            reduced = col2d.mean(1);
+                                                            break;
+                                                    }
+
+
+
+                                                    assertEquals("Failed type: " + type, reduced, output);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     @Test
     public void testMoreIm2Col2() {
@@ -237,6 +325,59 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         INDArray assertcol2im = OldConvolution.col2im(im2col, stride, padding, height, width);
         INDArray col2im = Convolution.col2im(im2col, stride, padding, height, width);
         assertEquals(assertcol2im, col2im);
+    }
+
+    protected static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding, boolean convolutionModeSame) {
+        int inH = inputData.size(2);
+        int inW = inputData.size(3);
+
+        if (convolutionModeSame != true && (kernel[0] <= 0 || kernel[0] > inH + 2 * padding[0])) {
+            throw new ND4JIllegalStateException();
+        }
+
+        if (convolutionModeSame != true && (kernel[1] <= 0 || kernel[1] > inW + 2 * padding[1])) {
+            throw new ND4JIllegalStateException();
+        }
+
+        if (convolutionModeSame != true) {
+            if ((inH - kernel[0] + 2 * padding[0]) % strides[0] != 0) {
+                double d = (inH - kernel[0] + 2 * padding[0]) / ((double) strides[0]) + 1.0;
+                String str = String.format("%.2f", d);
+                int truncated = (int) d;
+                int sameSize = (int) Math.ceil(inH / ((double) strides[0]));
+                throw new ND4JIllegalStateException();
+            }
+
+            if ((inW - kernel[1] + 2 * padding[1]) % strides[1] != 0) {
+                double d = (inW - kernel[1] + 2 * padding[1]) / ((double) strides[1]) + 1.0;
+                String str = String.format("%.2f", d);
+                int truncated = (int) d;
+                int sameSize = (int) Math.ceil(inW / ((double) strides[1]));
+                throw new ND4JIllegalStateException();
+            }
+        } else if (convolutionModeSame) {
+            //'Same' padding mode:
+            //outH = ceil(inHeight / strideH)           decimal division
+            //outW = ceil(inWidth / strideW)            decimal division
+
+            //padHeightSum = ((outH - 1) * strideH + kH - inHeight)
+            //padTop = padHeightSum / 2                 integer division
+            //padBottom = padHeghtSum - padTop
+
+            //padWidthSum = ((outW - 1) * strideW + kW - inWidth)
+            //padLeft = padWidthSum / 2                 integer division
+            //padRight = padWidthSum - padLeft
+
+            int outH = (int) Math.ceil(inH / ((double) strides[0]));
+            int outW = (int) Math.ceil(inW / ((double) strides[1]));
+
+            return new int[] {outH, outW};
+        }
+
+        int hOut = (inH - kernel[0] + 2 * padding[0]) / strides[0] + 1;
+        int wOut = (inW - kernel[1] + 2 * padding[1]) / strides[1] + 1;
+
+        return new int[] {hOut, wOut};
     }
 
     @Override
