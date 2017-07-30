@@ -15,7 +15,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.io.File;
 import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -319,6 +318,31 @@ public class SameDiffTests {
 
     }
 
+
+    @Test
+    public void testFunctionDefinitions() {
+        SameDiff sameDiffOuter = SameDiff.create();
+        sameDiffOuter.defineFunction("logisticPredictions", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable w = sameDiff.var("w",inputs.get("w"));
+                SDVariable preOutput = sameDiff.mmul(0,input,w);
+                SDVariable sigmoid = sameDiff.sigmoid(preOutput);
+                return sigmoid;
+            }
+        });
+
+        sameDiffOuter.defineFunction("loss", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                sameDiffOuter.invokeFunctionOn("logisticPredictions",sameDiff);
+                return null;
+            }
+        });
+
+    }
+
     @Test
     public void testLogisticRegression() throws Exception {
         SameDiff sameDiff = SameDiff.create();
@@ -331,7 +355,7 @@ public class SameDiffTests {
 
         INDArray labels = Nd4j.create(new double[]{1,1,0,0}).reshape(4,1);
 
-        INDArray weights = Nd4j.randn(3,1);
+        INDArray weights = Nd4j.zeros(3,1);
 
         SDVariable x = sameDiff.var("x",inputs);
         SDVariable y = sameDiff.var("y",labels);

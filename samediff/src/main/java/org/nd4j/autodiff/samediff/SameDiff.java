@@ -9,29 +9,23 @@ import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpExecAction;
-import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.graph.api.Vertex;
+import org.nd4j.autodiff.opstate.*;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
-import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * SameDiff is the
@@ -62,8 +56,10 @@ public class SameDiff {
     private Map<String,INDArray> vertexToArray;
     private Map<Integer,NDArrayInformation> vertexIdxToInfo;
     private MemoryWorkspace workspace;
-
+    private Map<String,SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
+    private Map<String,SameDiff> sameDiffFunctionInstances;
     private static Map<String,Method> opMethods;
+
     static {
         opMethods = new HashMap<>();
         Method[] methods = SameDiff.class.getDeclaredMethods();
@@ -74,6 +70,26 @@ public class SameDiff {
         }
     }
 
+
+    /**
+     *
+     * @param sameDiff
+     * @return
+     */
+    public SDVariable invokeGraphOn(SameDiff sameDiff) {
+        OpExecOrder order = graph().getOpOrder();
+        List<OpExecAction> actions = order.getActions();
+        //get final vertex representing the output of the whole graph
+        int outputVertex = actions.get(actions.size()).getOutputId();
+        Vertex<NDArrayInformation> info = graph().getVertex(outputVertex);
+        NDArrayInformation value = info.getValue();
+        SDVariable variable = variableMap.get(value.getId());
+        DifferentialFunction<ArrayField> field = SDVariable.getFunction(variable);
+        graph().setGraphApply(sameDiff.graph());
+        field.getValue(false);
+        graph().setGraphApply(null);
+        return sameDiff.getVariableMap().get(value.getId());
+    }
 
     /**
      * Invoke an op by name
@@ -135,6 +151,8 @@ public class SameDiff {
         variableMap = new HashMap<>();
         vertexToArray = new HashMap<>();
         vertexIdxToInfo = new HashMap<>();
+        sameDiffFunctionDefinitionMap = new HashMap<>();
+        sameDiffFunctionInstances = new HashMap<>();
     }
 
 
@@ -289,8 +307,6 @@ public class SameDiff {
                 variable.setShape(info.getShape());
                 sameDiffVariables.add(variable);
                 variableMap.put(info.getId(),variable);
-
-
             }
 
             /**
@@ -1726,6 +1742,92 @@ public class SameDiff {
             Nd4j.getExecutioner().exec(op);
         }
         return ops;
+    }
+
+
+
+    public interface SameDiffFunctionDefinition {
+
+        /**
+         *
+         * @param inputs
+         * @return
+         */
+        SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs);
+    }
+
+    /**
+     *
+     * @param functionName
+     * @param with
+     */
+
+    public SDVariable invokeFunctionOn(String functionName,SameDiff with) {
+        SameDiff instance = sameDiffFunctionInstances.get(functionName);
+        instance.graph().setGraphApply(with.graph());
+        SDVariable ret = instance.invokeGraphOn(with);
+        instance.graph().setGraphApply(null);
+        return ret;
+    }
+
+    /**
+     *
+     * @param function
+     */
+    public void defineFunction(String function,SameDiffFunctionDefinition functionDefinition) {
+        defineFunction(function,functionDefinition,null);
+    }
+
+    /**
+     *
+     * @param function
+     * @param functionDefinition
+     * @param inputs
+     */
+    public void defineFunction(String function,
+                               SameDiffFunctionDefinition functionDefinition,
+                               Map<String,INDArray> inputs) {
+        SDGraph sdGraph = new SDGraph();
+        this.graph.setGraphApply(sdGraph);
+        functionDefinition.define(this,inputs);
+        this.sameDiffFunctionDefinitionMap.put(function,functionDefinition);
+        SameDiff sub = SameDiff.builder()
+                .arrayFactory(arrayFactory)
+                .graph(sdGraph)
+                .workspace(workspace)
+                .sameDiffFunctionDefinitionMap(new HashMap<>())
+                .arrayFieldDifferentialFunctionFactory(arrayFieldDifferentialFunctionFactory)
+                .sameDiffFunctionDefinitionMap(new HashMap<>())
+                .vertexIdxToInfo(new HashMap<>())
+                .variableMap(new HashMap<>())
+                .vertexToArray(new HashMap<>())
+                .sameDiffFunctionInstances(new HashMap<>())
+                .build();
+        sameDiffFunctionInstances.put(function,sub);
+        this.graph.setGraphApply(null);
+    }
+
+
+    /**
+     * Exec a given function
+     * @param functionName the name of the function
+     *                     to invoke
+     * @return
+     */
+    public List<Op> exec(String functionName) {
+        return sameDiffFunctionInstances.get(functionName).exec();
+    }
+
+    /**
+     * Exec the given function
+     * given the ops
+     * @param functionName the name of the function to
+     *                     exec
+     * @param cachedOps the cached operations
+     * @return
+     */
+    public List<Op> exec(String functionName,List<Op> cachedOps) {
+        return sameDiffFunctionInstances.get(functionName).exec(cachedOps);
     }
 
 
