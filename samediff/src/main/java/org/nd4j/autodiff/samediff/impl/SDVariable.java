@@ -290,6 +290,8 @@ public class SDVariable  implements Serializable {
 
 
     public static DifferentialFunction<ArrayField> getFunction(SDVariable variable) {
+        if(variable == null)
+            throw new IllegalArgumentException("Unable to get function for null variable");
         return variable.getDifferentialFunction() != null ? variable.getDifferentialFunction() : variable.getArrayField();
     }
 

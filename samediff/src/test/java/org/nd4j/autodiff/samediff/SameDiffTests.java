@@ -318,6 +318,42 @@ public class SameDiffTests {
 
     }
 
+    @Test
+    public void testSimpleDefineFunction() {
+        SameDiff sameDiffOuter = SameDiff.create();
+        INDArray inputs = Nd4j.create(new double[][]{
+                {0.52, 1.12,  0.77},
+                {0.88, -1.08, 0.15},
+                {0.52, 0.06, -1.30},
+                {0.74, -2.49, 1.39}
+        });
+
+        INDArray labels = Nd4j.create(new double[]{1,1,0,0}).reshape(4,1);
+
+        INDArray weights = Nd4j.zeros(3,1);
+
+        Map<String,INDArray> inputMap = new HashMap<>();
+        inputMap.put("x",inputs);
+        inputMap.put("w",weights);
+        inputMap.put("y",labels);
+
+
+        sameDiffOuter.defineFunction("logisticPredictions", (sameDiff, inputs1) -> {
+            SDVariable input = sameDiff.var("x", inputs1.get("x"));
+            SDVariable w = sameDiff.var("w", inputs1.get("w"));
+            SDVariable preOutput = sameDiff.mmul(0,input,w);
+            SDVariable sigmoid = sameDiff.sigmoid(preOutput);
+            return sigmoid;
+        },inputMap);
+
+        assertEquals(1,sameDiffOuter.definedFunctionNames().size());
+        sameDiffOuter.graph().getOpOrder();
+        SameDiff inner = SameDiff.create();
+        sameDiffOuter.getSameDiffFunctionInstances().get("logisticPredictions").graph().getOpOrder();
+        SDVariable functionOutput = sameDiffOuter.invokeFunctionOn("logisticPredictions",inner);
+
+    }
+
 
     @Test
     public void testFunctionDefinitions() {

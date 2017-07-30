@@ -9,6 +9,7 @@ import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
+import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.*;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
@@ -77,18 +78,53 @@ public class SameDiff {
      * @return
      */
     public SDVariable invokeGraphOn(SameDiff sameDiff) {
-        OpExecOrder order = graph().getOpOrder();
-        List<OpExecAction> actions = order.getActions();
-        //get final vertex representing the output of the whole graph
-        int outputVertex = actions.get(actions.size()).getOutputId();
-        Vertex<NDArrayInformation> info = graph().getVertex(outputVertex);
-        NDArrayInformation value = info.getValue();
-        SDVariable variable = variableMap.get(value.getId());
-        DifferentialFunction<ArrayField> field = SDVariable.getFunction(variable);
-        graph().setGraphApply(sameDiff.graph());
-        field.getValue(false);
-        graph().setGraphApply(null);
-        return sameDiff.getVariableMap().get(value.getId());
+        //map the new vertices on to the old ones
+        Map<Integer,Integer> thisVertexIdToNew = new HashMap<>();
+        Cloner cloner = new Cloner();
+
+        //map new vertex ids and create new vertices
+        for(int i = 0; i < graph().numVertices(); i++) {
+            Vertex<NDArrayInformation> info = new Vertex<>(
+                    sameDiff.graph().nextVertexId(),
+                    cloner.deepClone(graph.getVertex(i).getValue()));
+            thisVertexIdToNew.put(graph.getVertex(i).vertexID(),sameDiff.graph().nextVertexId());
+            sameDiff.graph().addVertex(info);
+        }
+
+
+        for(int i = 0; i < graph().getEdges().size(); i++) {
+            List<Edge<OpState>> edgesForVertex = graph.getEdges().get(i);
+            List<Edge<OpState>> incomingEdgesForVertex = graph.getIncomingEdges().get(i);
+            //map to new vertex
+            int newVertexMap = thisVertexIdToNew.get(i);
+            List<Edge<OpState>> edgesForNewVertex = new ArrayList<>();
+            sameDiff.graph().getEdges().put(newVertexMap,edgesForNewVertex);
+            for(Edge<OpState> edge : edgesForVertex) {
+                Edge<OpState> newEdge = new Edge<>(
+                        thisVertexIdToNew.get(edge.getFrom()),
+                        thisVertexIdToNew.get(edge.getTo()),cloner.deepClone(edge.getValue()),true);
+                edgesForNewVertex.add(newEdge);
+            }
+
+            List<Edge<OpState>> newIncomingEdges = new ArrayList<>();
+            sameDiff.graph().getIncomingEdges().put(i,newIncomingEdges);
+            for(Edge<OpState> edge : incomingEdgesForVertex) {
+                Edge<OpState> newEdge = new Edge<>(
+                        thisVertexIdToNew.get(edge.getFrom()),
+                        thisVertexIdToNew.get(edge.getTo()),cloner.deepClone(edge.getValue()),true);
+                edgesForNewVertex.add(newEdge);
+            }
+
+            for(SDVariable variable : variables()) {
+                sameDiff.addVariable(variable);
+            }
+
+
+
+        }
+
+        return sameDiff.variables().get(sameDiff.variables().size() - 1);
+
     }
 
     /**
@@ -120,6 +156,15 @@ public class SameDiff {
 
         throw new ND4JIllegalStateException("Illegal method name " + op.name());
 
+    }
+
+
+    /**
+     * The set of defined function names
+     * @return
+     */
+    public Collection<String> definedFunctionNames() {
+        return this.sameDiffFunctionInstances.keySet();
     }
 
 
@@ -296,6 +341,8 @@ public class SameDiff {
         }
 
 
+        if(sameDiffVariables == null)
+            sameDiffVariables = new ArrayList<>();
 
         for (Integer i : graph().getVertices().keySet()) {
             NDArrayInformation info = graph.getInformationFor(i);
@@ -355,6 +402,16 @@ public class SameDiff {
      * @return
      */
     public SDVariable var(String name, INDArray arr) {
+        if(variableMap.containsKey(name))
+            return variableMap.get(name);
+
+
+        if(name == null || name.length() < 1)
+            throw new IllegalArgumentException("Name for variable must be defined");
+
+        if(arr == null)
+            throw new IllegalArgumentException("Array for " + name + " must not be null");
+
         if(workspace == null)
             initWorkspace();
 
@@ -381,6 +438,7 @@ public class SameDiff {
         //this is used later for op creation
         vertexToArray.put(ndArrayInformation.getArrId(),arr);
         vertexIdxToInfo.put(ndArrayVertex.vertexID(),ndArrayInformation);
+        variableMap.put(name,ret);
         return ret;
 
     }
@@ -1593,7 +1651,16 @@ public class SameDiff {
         return ret;
     }
 
-    private void addVariable(SDVariable variable) {
+    /**
+     *
+     * @param variable
+     */
+    public void addVariable(SDVariable variable) {
+        if(sameDiffVariables == null)
+            sameDiffVariables = new ArrayList<>();
+        if(variableMap == null)
+            variableMap = new HashMap<>();
+
         sameDiffVariables.add(variable);
         variableMap.put(variable.getVarName(),variable);
     }
@@ -1764,9 +1831,7 @@ public class SameDiff {
 
     public SDVariable invokeFunctionOn(String functionName,SameDiff with) {
         SameDiff instance = sameDiffFunctionInstances.get(functionName);
-        instance.graph().setGraphApply(with.graph());
         SDVariable ret = instance.invokeGraphOn(with);
-        instance.graph().setGraphApply(null);
         return ret;
     }
 
@@ -1787,24 +1852,19 @@ public class SameDiff {
     public void defineFunction(String function,
                                SameDiffFunctionDefinition functionDefinition,
                                Map<String,INDArray> inputs) {
-        SDGraph sdGraph = new SDGraph();
-        this.graph.setGraphApply(sdGraph);
+        //create subgraph
+        //ensure function is apart of this graph as well
         functionDefinition.define(this,inputs);
+
         this.sameDiffFunctionDefinitionMap.put(function,functionDefinition);
-        SameDiff sub = SameDiff.builder()
-                .arrayFactory(arrayFactory)
-                .graph(sdGraph)
-                .workspace(workspace)
-                .sameDiffFunctionDefinitionMap(new HashMap<>())
-                .arrayFieldDifferentialFunctionFactory(arrayFieldDifferentialFunctionFactory)
-                .sameDiffFunctionDefinitionMap(new HashMap<>())
-                .vertexIdxToInfo(new HashMap<>())
-                .variableMap(new HashMap<>())
-                .vertexToArray(new HashMap<>())
-                .sameDiffFunctionInstances(new HashMap<>())
-                .build();
+
+        SameDiff sub = SameDiff.create();
+        sub.setWorkspace(workspace);
+        //setup subgraph
+        //re execute to populate subgraph
+        functionDefinition.define(sub,inputs);
+
         sameDiffFunctionInstances.put(function,sub);
-        this.graph.setGraphApply(null);
     }
 
 
