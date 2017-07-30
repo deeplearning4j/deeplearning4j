@@ -1497,11 +1497,16 @@ void   NativeOps::execTransformDouble(
 	int *maxShapeBuffer = (int *) maxDimension + 1;
 	double * special = (double *) maxShapeBuffer + (MAX_RANK * 2 + 4);
 
-	/**
-	 * ops between 38 and 41 are special ops:
-	 * SoftMax, LogSoftMax, SoftMaxDerivative, IsMax
-	 * On cuda we execute them as
-	 */
+
+    int *devTadShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
+    Nd4jIndex *devTadOffsets = reinterpret_cast<Nd4jIndex *> (extraPointers[11]);
+
+
+    /**
+     * ops between 38 and 41 are special ops:
+     * SoftMax, LogSoftMax, SoftMaxDerivative, IsMax
+     * On cuda we execute them as
+     */
 	// simple trick to get workaround over reductions into scalar
 	if (opNum >= 38 && opNum <= 41) {
 		if (shape::isVector(hostXShapeInfo) && opNum != 41) {
@@ -1517,7 +1522,7 @@ void   NativeOps::execTransformDouble(
             launchDims.z += (block * sizeof(double) * 4);
 
 			// this macro builds bunch of IF/ELSE selectors for kernel launch
-            DISPATCH_SIMPLE(transformShaped, double, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+            DISPATCH_SIMPLE(transformShaped, double, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer, devTadShapeInfo, devTadOffsets), OPS_A(TRANSFORM_OPS))
 		} else {
 			// going for blockwise specials
 			// we'll do some pointers mangling here, and execute kernels one by one
@@ -1660,14 +1665,14 @@ void   NativeOps::execTransformDouble(
 	} else {
 		// for Im2Col & Col2Im we enforce higher dimensionality
 		// TODO: investigate this on high-end gpus
-        if (opNum == 37 || opNum == 36) {
+        if (opNum == 37 || opNum == 36 || opNum == 71) {
             launchDims.x = 512;
             launchDims.y = 512;
-            launchDims.z += 768;
+            launchDims.z += 512 * sizeof(double);
         } else if (opNum == 70) {
             // we'll be using shared memory to speed up reverse
 
-            launchDims.z += launchDims.y * sizeof(float);
+            launchDims.z += launchDims.y * sizeof(double);
         }
 
 		// Histogram op requires additional memory chunk
@@ -1678,7 +1683,7 @@ void   NativeOps::execTransformDouble(
         }
 
 		// this macro builds bunch of IF/ELSE selectors for kernel launch
-        DISPATCH_SIMPLE(transformShaped, double, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), maskedAllocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+        DISPATCH_SIMPLE(transformShaped, double, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), maskedAllocPointer, reductionPointer, devTadShapeInfo, devTadOffsets), OPS_A(TRANSFORM_OPS))
 
 
         // we need guaranteed sync here, due to temp memory release
@@ -3625,7 +3630,11 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
     int *maskedAllocPointer = allocPointer;
 
-	dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostZShapeInfo, funcAttributes[1]);
+    int *devTadShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
+    Nd4jIndex *devTadOffsets = reinterpret_cast<Nd4jIndex *> (extraPointers[11]);
+
+
+    dim3 launchDims = getFlatLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostZShapeInfo, funcAttributes[1]);
 
 	if (verbose && launchDims.x == 1)
 		printf("AF20 opNum:[%i]\n", opNum);
@@ -3643,7 +3652,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
             launchDims.z += (block * sizeof(float) * 4);
 
 			// this macro builds bunch of IF/ELSE selectors for kernel launch
-            DISPATCH_SIMPLE(transformShaped, float, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+            DISPATCH_SIMPLE(transformShaped, float, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer, devTadShapeInfo, devTadOffsets), OPS_A(TRANSFORM_OPS))
 
 		} else {
 			// going for blockwise specials
@@ -3811,7 +3820,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
         if (opNum == 37 || opNum == 36) {
             launchDims.x = 512;
             launchDims.y = 512;
-            launchDims.z += 384;
+            launchDims.z += 512 * sizeof(float);
         } else if (opNum == 70) {
 			// we'll be using shared memory to speed up reverse
 
@@ -3824,9 +3833,9 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
             cudaMalloc((void **) &maskedAllocPointer, length * launchDims.x * sizeof(float));
         }
 
-        DISPATCH_SIMPLE(transformShaped, float,
+		DISPATCH_SIMPLE(transformShaped, float,
                         PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo,
-                               shape::rank(hostZShapeInfo), maskedAllocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+                               shape::rank(hostZShapeInfo), maskedAllocPointer, reductionPointer, devTadShapeInfo, devTadOffsets), OPS_A(TRANSFORM_OPS))
 
 
         // we need guaranteed sync here, due to temp memory release
@@ -3873,7 +3882,11 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 	if (verbose && launchDims.x == 1)
 		printf("AH20 opNum:[%i]\n", opNum);
 
-	// simple trick to get workaround over reductions into scalar
+    int *devTadShapeInfo = reinterpret_cast<int *> (extraPointers[10]);
+    Nd4jIndex *devTadOffsets = reinterpret_cast<Nd4jIndex *> (extraPointers[11]);
+
+
+    // simple trick to get workaround over reductions into scalar
 	// SoftMax, SoftMaxDerivative, LogSoftMax, IsMax
 	if (opNum >= 38 && opNum <= 41) {
 		if (shape::isVector(hostXShapeInfo) && opNum != 41) {
@@ -3886,7 +3899,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
             launchDims.z += (block * sizeof(float16) * 4);
 
 			// this macro builds bunch of IF/ELSE selectors for kernel launch
-            DISPATCH_SIMPLE(transformShaped, float16, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+            DISPATCH_SIMPLE(transformShaped, float16, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), allocPointer, reductionPointer, devTadShapeInfo, devTadOffsets), OPS_A(TRANSFORM_OPS))
 
 		} else {
 			// going for blockwise specials
@@ -4060,7 +4073,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
         if (opNum == 37 || opNum == 36) {
             launchDims.x = 512;
             launchDims.y = 512;
-            launchDims.z += 384;
+            launchDims.z += 512 * sizeof(float16);
         } else if (opNum == 70) {
             // we'll be using shared memory to speed up reverse
 
@@ -4074,7 +4087,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
         }
 
 		// this macro builds bunch of IF/ELSE selectors for kernel launch
-        DISPATCH_SIMPLE(transformShaped, float16, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), maskedAllocPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+        DISPATCH_SIMPLE(transformShaped, float16, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), maskedAllocPointer, reductionPointer, devTadShapeInfo, devTadOffsets), OPS_A(TRANSFORM_OPS))
 
 
         // we need guaranteed sync here, due to temp memory release
