@@ -6,7 +6,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 #ensure we create lib files
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 
-set(CMAKE_CXX_FLAGS_RELEASE  "-Wall -Ofast -mfpmath=sse -funroll-loops -fschedule-insns --std=c++11 -fassociative-math -funsafe-math-optimizations")
+set(CMAKE_CXX_FLAGS_RELEASE  "-Wall -O2 -mfpmath=sse -funroll-loops -fschedule-insns --std=c++11 -fassociative-math -funsafe-math-optimizations")
 set(CMAKE_CXX_FLAGS_DEBUG "-Wall -g -O0 -std=c++11")
 
 
