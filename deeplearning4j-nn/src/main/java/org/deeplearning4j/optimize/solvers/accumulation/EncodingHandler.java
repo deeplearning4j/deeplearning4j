@@ -139,6 +139,11 @@ public class EncodingHandler implements MessageHandler {
             } else {
                 // otherwise (probably most often - we go for sparse
                 encoded = Nd4j.getExecutioner().thresholdEncode(updates, currentThreshold.get().get(), boundary == null ? null : atomicBoundary.get());
+
+                // updates were TOO sparse, nothing to share here
+                if (encoded == null)
+                    return null;
+
                 double encLen = encoded.data().getInt(0);
                 double encodingRatio = encLen * 100.0 / updates.length();
 
