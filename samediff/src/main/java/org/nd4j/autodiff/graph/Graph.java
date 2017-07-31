@@ -328,7 +328,22 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
             }
         }
+
+
+
         sb.append("\n}");
+
+
+        sb.append("\n Incoming edges {");
+        for (Integer i : incomingEdges.keySet()) {
+            sb.append("\n\t");
+            sb.append(i).append(":");
+            for (Edge<E> e : incomingEdges.get(i)) {
+                sb.append(" ").append(e).append("\n");
+
+            }
+        }
+
         sb.append("\n}");
         return sb.toString();
     }

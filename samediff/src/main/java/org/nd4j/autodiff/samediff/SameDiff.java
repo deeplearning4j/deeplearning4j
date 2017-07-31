@@ -97,30 +97,32 @@ public class SameDiff {
         }
 
 
-        for(int i = 0; i < graph().getEdges().size(); i++) {
+        for(int i = 0; i < graph().numVertices(); i++) {
             List<Edge<OpState>> edgesForVertex = graph.getEdges().get(i + 1);
             List<Edge<OpState>> incomingEdgesForVertex = graph.getIncomingEdges().get(i + 1);
             //map to new vertex
             int newVertexMap = thisVertexIdToNew.get(i + 1);
-            List<Edge<OpState>> edgesForNewVertex = new ArrayList<>();
-            sameDiff.graph().getEdges().put(newVertexMap,edgesForNewVertex);
-            for(Edge<OpState> edge : edgesForVertex) {
-                Edge<OpState> newEdge = new Edge<>(
-                        thisVertexIdToNew.get(edge.getFrom()),
-                        thisVertexIdToNew.get(edge.getTo()),
-                        cloner.deepClone(edge.getValue()),true);
-                edgesForNewVertex.add(newEdge);
+            if(edgesForVertex != null) {
+                List<Edge<OpState>> edgesForNewVertex = new ArrayList<>();
+                sameDiff.graph().getEdges().put(newVertexMap, edgesForNewVertex);
+                for (Edge<OpState> edge : edgesForVertex) {
+                    Edge<OpState> newEdge = new Edge<>(
+                            thisVertexIdToNew.get(edge.getFrom()),
+                            thisVertexIdToNew.get(edge.getTo()),
+                            cloner.deepClone(edge.getValue()), true);
+                    edgesForNewVertex.add(newEdge);
+                }
             }
 
             if(incomingEdgesForVertex != null) {
                 List<Edge<OpState>> newIncomingEdges = new ArrayList<>();
-                sameDiff.graph().getIncomingEdges().put(i + 1,newIncomingEdges);
+                sameDiff.graph().getIncomingEdges().put(newVertexMap,newIncomingEdges);
                 for(Edge<OpState> edge : incomingEdgesForVertex) {
                     Edge<OpState> newEdge = new Edge<>(
                             thisVertexIdToNew.get(edge.getFrom()),
                             thisVertexIdToNew.get(edge.getTo()),
                             cloner.deepClone(edge.getValue()),true);
-                    edgesForNewVertex.add(newEdge);
+                    newIncomingEdges.add(newEdge);
                 }
             }
 
@@ -133,7 +135,9 @@ public class SameDiff {
 
         //copy over variables
         for(SDVariable variable : variables()) {
-            sameDiff.addVariable(variable);
+            SDVariable deepClone = cloner.deepClone(variable);
+            deepClone.setSameDiff(sameDiff);
+            sameDiff.addVariable(deepClone);
         }
 
         sameDiff.vertexToArray.putAll(vertexToArray);
