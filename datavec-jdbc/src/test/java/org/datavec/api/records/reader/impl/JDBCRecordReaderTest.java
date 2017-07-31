@@ -2,6 +2,7 @@ package org.datavec.api.records.reader.impl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.net.URI;
@@ -12,8 +13,10 @@ import java.util.List;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.derby.jdbc.EmbeddedDataSource;
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.Record;
 import org.datavec.api.records.listener.RecordListener;
 import org.datavec.api.records.listener.impl.LogRecordListener;
+import org.datavec.api.records.metadata.RecordMetaDataJdbc;
 import org.datavec.api.records.reader.impl.jdbc.JDBCRecordReader;
 import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.writable.DoubleWritable;
@@ -117,6 +120,20 @@ public class JDBCRecordReaderTest {
     public void testRecordDataInputStreamShouldFail() throws Exception {
         JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee");
         reader.record(null, null);
+    }
+
+    @Test
+    public void testLoadFromMetaData() throws Exception {
+        JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee");
+        RecordMetaDataJdbc rmd = new RecordMetaDataJdbc(new URI(conn.getMetaData().getURL()), "SELECT * FROM Coffee WHERE ProdNum = ?", Collections.singletonList("14-001"), reader.getClass());
+
+        Record res = reader.loadFromMetaData(rmd);
+        assertNotNull(res);
+        assertEquals(new Text("Bolivian Dark"), res.getRecord().get(0));
+        assertEquals(new Text("14-001"), res.getRecord().get(1));
+        assertEquals(new DoubleWritable(8.95), res.getRecord().get(2));
+
+        reader.close();
     }
 
     private JDBCRecordReader getInitializedReader(String query) throws Exception {
