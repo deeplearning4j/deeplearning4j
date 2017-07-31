@@ -27,6 +27,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.aggregates.AggregateDescriptor;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.LongPointerWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,10 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class CudaGridExecutioner extends CudaExecutioner implements GridExecutioner {
     protected enum MetaType {
-        NOT_APPLICABLE, PREDICATE, INVERTED_PREDICATE, POSTULATE,
+        NOT_APPLICABLE,
+        PREDICATE,
+        INVERTED_PREDICATE,
+        POSTULATE
     }
 
     // general queues
@@ -855,7 +859,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                                 (IntPointer) second.getYShapeInfo(), (FloatPointer) second.getZ(),
                                 (IntPointer) second.getZShapeInfo(), (IntPointer) second.getDimensions(),
                                 second.getDimensionsLength(), (IntPointer) second.getTadShape(),
-                                (IntPointer) second.getTadOffsets(), (FloatPointer) first.getExtraArgs(),
+                                new LongPointerWrapper(second.getTadOffsets()), (FloatPointer) first.getExtraArgs(),
                                 (FloatPointer) second.getExtraArgs(), (float) scalarA, 0.0f, false);
             }
         }

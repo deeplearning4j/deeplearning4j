@@ -2,6 +2,7 @@ package org.nd4j.serde.binary;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -12,6 +13,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -62,6 +64,17 @@ public class BinarySerdeTest {
         BinarySerde.writeArrayToDisk(rand,tmpFile);
         INDArray fromDisk = BinarySerde.readFromDisk(tmpFile);
         assertEquals(rand,fromDisk);
+    }
+
+    @Test
+    public void testReadShapeFile() throws Exception {
+        File tmpFile = new File(System.getProperty("java.io.tmpdir"),"ndarraytmp-" + UUID.randomUUID().toString() + " .bin");
+        tmpFile.deleteOnExit();
+        INDArray rand = Nd4j.randn(5,5);
+        BinarySerde.writeArrayToDisk(rand,tmpFile);
+        DataBuffer buffer = BinarySerde.readShapeFromDisk(tmpFile);
+
+        assertArrayEquals(rand.shapeInfoDataBuffer().asInt(), buffer.asInt());
     }
 
     @Test

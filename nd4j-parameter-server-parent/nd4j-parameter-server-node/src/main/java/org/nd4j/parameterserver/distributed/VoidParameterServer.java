@@ -21,6 +21,7 @@ import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
+import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
@@ -330,7 +331,21 @@ public class VoidParameterServer {
 
 
         String sparkIp = System.getenv("SPARK_PUBLIC_DNS");
+
+
+        if (sparkIp == null && voidConfiguration.getNetworkMask() != null) {
+            NetworkOrganizer organizer = new NetworkOrganizer(voidConfiguration.getNetworkMask());
+            sparkIp = organizer.getMatchingAddress();
+        }
+
+        // last resort here...
+        if (sparkIp == null)
+            sparkIp = System.getenv("DL4J_VOID_IP");
+
+
         log.info("Got [{}] as sparkIp", sparkIp);
+        if (sparkIp == null)
+            throw new ND4JIllegalStateException("Can't get IP address for UDP communcation");
 
         // local IP from pair is used for shard only, so we don't care
         return Pair.create(result, sparkIp + ":" + voidConfiguration.getUnicastPort());

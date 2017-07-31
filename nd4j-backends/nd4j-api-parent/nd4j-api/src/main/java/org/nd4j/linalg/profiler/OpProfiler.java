@@ -1,13 +1,15 @@
 package org.nd4j.linalg.profiler;
 
+import lombok.Data;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.profiler.data.StackAggregator;
 import org.nd4j.linalg.profiler.data.StringAggregator;
 import org.nd4j.linalg.profiler.data.StringCounter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,55 +18,81 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.nd4j.linalg.profiler.OpProfiler.PenaltyCause.NONE;
 
 /**
- * This class is suited for execution statistics gathering on Op/Array level: number of sequential ops executed on the same data
+ * This class is suited for execution statistics
+ * gathering on Op/Array level: number of
+ * sequential ops executed on the same data
  *
  * PLEASE NOTE: This isn't thread-safe implementation.
  *
  * @author raver119@gmail.com
  */
+@Slf4j
+@Data
 public class OpProfiler {
 
     public enum PenaltyCause {
-        NONE, NON_EWS_ACCESS, STRIDED_ACCESS, MIXED_ORDER, TAD_NON_EWS_ACCESS, TAD_STRIDED_ACCESS,
+        NONE,
+        NON_EWS_ACCESS,
+        STRIDED_ACCESS,
+        MIXED_ORDER,
+        TAD_NON_EWS_ACCESS,
+        TAD_STRIDED_ACCESS,
     }
 
-    private static AtomicLong invocationsCount = new AtomicLong(0);
+    public  interface OpProfilerListener {
+        void invoke(Op op);
+    }
+
+    private List<OpProfilerListener> listeners = new ArrayList<>();
+
+    private AtomicLong invocationsCount = new AtomicLong(0);
     private static OpProfiler ourInstance = new OpProfiler();
 
 
+    @Getter
+    private StringAggregator classAggergator = new StringAggregator();
+    @Getter
+    private StringAggregator longAggergator = new StringAggregator();
+    @Getter
+    private StringCounter classCounter = new StringCounter();
+    @Getter
+    private StringCounter opCounter = new StringCounter();
+    @Getter
+    private StringCounter classPairsCounter = new StringCounter();
+    @Getter
+    private StringCounter opPairsCounter = new StringCounter();
 
-    private static StringAggregator classAggergator = new StringAggregator();
-    private static StringAggregator longAggergator = new StringAggregator();
-
-    private static StringCounter classCounter = new StringCounter();
-    private static StringCounter opCounter = new StringCounter();
-
-    private static StringCounter classPairsCounter = new StringCounter();
-    private static StringCounter opPairsCounter = new StringCounter();
-
-    private static StringCounter matchingCounter = new StringCounter();
-    private static StringCounter matchingCounterDetailed = new StringCounter();
-    private static StringCounter matchingCounterInverted = new StringCounter();
-
-    private static StringCounter orderCounter = new StringCounter();
-
-    private static StackAggregator methodsAggregator = new StackAggregator();
+    @Getter
+    private StringCounter matchingCounter = new StringCounter();
+    @Getter
+    private StringCounter matchingCounterDetailed = new StringCounter();
+    @Getter
+    private StringCounter matchingCounterInverted = new StringCounter();
+    @Getter
+    private StringCounter orderCounter = new StringCounter();
+    @Getter
+    private StackAggregator methodsAggregator = new StackAggregator();
 
     // this aggregator holds getScalar/putScalar entries
-    private static StackAggregator scalarAggregator = new StackAggregator();
+    @Getter
+    private StackAggregator scalarAggregator = new StackAggregator();
+    @Getter
+    private StackAggregator mixedOrderAggregator = new StackAggregator();
+    @Getter
+    private StackAggregator nonEwsAggregator = new StackAggregator();
+    @Getter
+    private StackAggregator stridedAggregator = new StackAggregator();
+    @Getter
+    private StackAggregator tadStridedAggregator = new StackAggregator();
+    @Getter
+    private StackAggregator tadNonEwsAggregator = new StackAggregator();
+    @Getter
+    private StackAggregator blasAggregator = new StackAggregator();
+    @Getter
+    private StringCounter blasOrderCounter = new StringCounter();
 
-    private static StackAggregator mixedOrderAggregator = new StackAggregator();
-    private static StackAggregator nonEwsAggregator = new StackAggregator();
-    private static StackAggregator stridedAggregator = new StackAggregator();
-    private static StackAggregator tadStridedAggregator = new StackAggregator();
-    private static StackAggregator tadNonEwsAggregator = new StackAggregator();
 
-    private static StackAggregator blasAggregator = new StackAggregator();
-    private static StringCounter blasOrderCounter = new StringCounter();
-
-    private static Logger logger = LoggerFactory.getLogger(OpProfiler.class);
-
-    private static final long THRESHOLD = 100000;
+    private final long THRESHOLD = 100000;
 
     private String prevOpClass = "";
     private String prevOpName = "";
@@ -73,6 +101,23 @@ public class OpProfiler {
     private String prevOpMatchingDetailed = "";
     private String prevOpMatchingInverted = "";
     private long lastZ = 0;
+
+
+    /**
+     * Clear the listener from the profiler
+     * @param listener the listener to clear
+     */
+    public void clearListener(OpProfilerListener listener) {
+        listeners.remove(listener);
+    }
+
+    /**
+     * dd the listener to the profiler
+     * @param listener the listener to add
+     */
+    public void addListener(OpProfilerListener listener) {
+        listeners.add(listener);
+    }
 
     /**
      * This method resets all counters
@@ -102,9 +147,14 @@ public class OpProfiler {
         blasOrderCounter.reset();
 
         orderCounter.reset();
+        listeners.clear();
     }
 
 
+    /**
+     *
+     * @return
+     */
     public static OpProfiler getInstance() {
         return ourInstance;
     }
@@ -205,9 +255,18 @@ public class OpProfiler {
                     break;
             }
         }
+
+        for(OpProfilerListener listener : listeners) {
+            listener.invoke(op);
+        }
     }
 
 
+    /**
+     *
+     * @param op
+     * @param tadBuffers
+     */
     public void processOpCall(Op op, DataBuffer... tadBuffers) {
         processOpCall(op);
 
@@ -291,69 +350,69 @@ public class OpProfiler {
      * This method prints out dashboard state
      */
     public void printOutDashboard() {
-        logger.info("---Total Op Calls: {}", invocationsCount.get());
+        log.info("---Total Op Calls: {}", invocationsCount.get());
         System.out.println();
-        logger.info("--- OpClass calls statistics: ---");
+        log.info("--- OpClass calls statistics: ---");
         System.out.println(classCounter.asString());
         System.out.println();
-        logger.info("--- OpClass pairs statistics: ---");
+        log.info("--- OpClass pairs statistics: ---");
         System.out.println(classPairsCounter.asString());
         System.out.println();
-        logger.info("--- Individual Op calls statistics: ---");
+        log.info("--- Individual Op calls statistics: ---");
         System.out.println(opCounter.asString());
         System.out.println();
-        logger.info("--- Matching Op calls statistics: ---");
+        log.info("--- Matching Op calls statistics: ---");
         System.out.println(matchingCounter.asString());
         System.out.println();
-        logger.info("--- Matching detailed Op calls statistics: ---");
+        log.info("--- Matching detailed Op calls statistics: ---");
         System.out.println(matchingCounterDetailed.asString());
         System.out.println();
-        logger.info("--- Matching inverts Op calls statistics: ---");
+        log.info("--- Matching inverts Op calls statistics: ---");
         System.out.println(matchingCounterInverted.asString());
         System.out.println();
-        logger.info("--- Time for OpClass calls statistics: ---");
+        log.info("--- Time for OpClass calls statistics: ---");
         System.out.println(classAggergator.asString());
         System.out.println();
-        logger.info("--- Time for long Op calls statistics: ---");
+        log.info("--- Time for long Op calls statistics: ---");
         System.out.println(longAggergator.asString());
         System.out.println();
-        logger.info("--- Time spent for Op calls statistics: ---");
+        log.info("--- Time spent for Op calls statistics: ---");
         System.out.println(classAggergator.asPercentageString());
         System.out.println();
-        logger.info("--- Time spent for long Op calls statistics: ---");
+        log.info("--- Time spent for long Op calls statistics: ---");
         System.out.println(longAggergator.asPercentageString());
         System.out.println();
-        logger.info("--- Time spent within methods: ---");
+        log.info("--- Time spent within methods: ---");
         methodsAggregator.renderTree(true);
         System.out.println();
-        logger.info("--- Bad strides stack tree: ---");
+        log.info("--- Bad strides stack tree: ---");
         System.out.println("Unique entries: " + stridedAggregator.getUniqueBranchesNumber());
         stridedAggregator.renderTree();
         System.out.println();
-        logger.info("--- non-EWS access stack tree: ---");
+        log.info("--- non-EWS access stack tree: ---");
         System.out.println("Unique entries: " + nonEwsAggregator.getUniqueBranchesNumber());
         nonEwsAggregator.renderTree();
         System.out.println();
-        logger.info("--- Mixed orders access stack tree: ---");
+        log.info("--- Mixed orders access stack tree: ---");
         System.out.println("Unique entries: " + mixedOrderAggregator.getUniqueBranchesNumber());
         mixedOrderAggregator.renderTree();
         System.out.println();
-        logger.info("--- TAD bad strides stack tree: ---");
+        log.info("--- TAD bad strides stack tree: ---");
         System.out.println("Unique entries: " + tadStridedAggregator.getUniqueBranchesNumber());
         tadStridedAggregator.renderTree();
         System.out.println();
-        logger.info("--- TAD non-EWS access stack tree: ---");
+        log.info("--- TAD non-EWS access stack tree: ---");
         System.out.println("Unique entries: " + tadNonEwsAggregator.getUniqueBranchesNumber());
         tadNonEwsAggregator.renderTree();
         System.out.println();
-        logger.info("--- Scalar access stack tree: ---");
+        log.info("--- Scalar access stack tree: ---");
         System.out.println("Unique entries: " + scalarAggregator.getUniqueBranchesNumber());
         scalarAggregator.renderTree(false);
         System.out.println();
-        logger.info("--- Blas GEMM odrders count: ---");
+        log.info("--- Blas GEMM odrders count: ---");
         System.out.println(blasOrderCounter.asString());
         System.out.println();
-        logger.info("--- BLAS access stack trace: ---");
+        log.info("--- BLAS access stack trace: ---");
         System.out.println("Unique entries: " + blasAggregator.getUniqueBranchesNumber());
         blasAggregator.renderTree(false);
         System.out.println();
@@ -453,7 +512,7 @@ public class OpProfiler {
                     case NONE: {
                         blasAggregator.incrementCount();
                     }
-                        break;
+                    break;
                     case MIXED_ORDER: // we wo nothing for gemm in this case
                     default:
                         break;
@@ -526,7 +585,7 @@ public class OpProfiler {
             int ews = tadBuffer.getInt(length - 2);
 
             if ((ews < 1 || rank > 2 || (rank == 2 && tadBuffer.getInt(1) > 1 && tadBuffer.getInt(2) > 1))
-                            && !causes.contains(PenaltyCause.TAD_NON_EWS_ACCESS))
+                    && !causes.contains(PenaltyCause.TAD_NON_EWS_ACCESS))
                 causes.add(PenaltyCause.TAD_NON_EWS_ACCESS);
             else if (ews > 1 && !causes.contains(PenaltyCause.TAD_STRIDED_ACCESS))
                 causes.add(PenaltyCause.TAD_STRIDED_ACCESS);

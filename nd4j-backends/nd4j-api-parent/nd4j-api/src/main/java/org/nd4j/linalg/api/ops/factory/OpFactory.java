@@ -30,6 +30,16 @@ import org.nd4j.linalg.api.ops.*;
 public interface OpFactory {
 
     /**
+     *
+     *
+     * @param name
+     * @param x
+     * @param z
+     * @return
+     */
+    Op createShape(String name, INDArray x, INDArray z);
+
+    /**
      * Create a loss function with the given inputs and outputs
      * @param name the name of the function
      * @param x the input
@@ -59,6 +69,17 @@ public interface OpFactory {
     Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z);
 
     /**
+     *
+     * @param name
+     * @param x
+     * @param y
+     * @param z
+     * @param extraArgs
+     * @return
+     */
+    Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs);
+
+    /**
      * @param name
      * @param x
      * @param y
@@ -67,11 +88,23 @@ public interface OpFactory {
     Accumulation createAccum(String name, INDArray x, INDArray y);
 
     /**
-     * Index accumulation operation
      *
-     * @param name the name of the function to create
-     * @param x    the input to the function
-     * @return the operation
+     * @param opName
+     * @param x
+     * @param y
+     *@param z
+     * @param extraArgs   @return
+     */
+    IndexAccumulation createIndexAccum(String opName, INDArray x, INDArray y, INDArray z, Object[] extraArgs);
+
+
+
+
+    /**
+     *
+     * @param name
+     * @param x
+     * @return
      */
     IndexAccumulation createIndexAccum(String name, INDArray x);
 
@@ -116,6 +149,71 @@ public interface OpFactory {
      */
     TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z);
 
+
+    /**
+     * @param name
+     * @param x
+     * @param y
+     * @param z
+     * @return-m 'add more scalar ops' -a
+     * git push or
+     */
+    TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z,Object[] extraArgs);
+
+
+
+
+    /**
+     * @param name
+     * @param x
+     * @param y
+     * @param scalar
+     * @return
+     */
+    ScalarOp createScalarTransform(String name, INDArray x, INDArray y, double scalar);
+
+
+    /**
+     * @param name
+     * @param x
+     * @param scalar
+     * @return
+     */
+    ScalarOp createScalarTransform(String name, INDArray x, double scalar);
+
+    /**
+     * @param name
+     * @param x
+     * @param extraArgs
+     * @param scalar
+     * @return
+     */
+    ScalarOp createScalarTransform(String name, INDArray x, Object[] extraArgs, double scalar);
+
+    /**
+     * @param name
+     * @param x
+     * @param y
+     * @param z
+     * @param scalar
+     * @return
+     */
+    ScalarOp createScalarTransform(String name, INDArray x, INDArray y, INDArray z, double scalar);
+
+
+    /**
+     * @param name
+     * @param x
+     * @param y
+     * @param z
+     * @param scalar
+     * @return
+     */
+    ScalarOp createScalarTransform(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs, double scalar);
+
+
+
+
     /** Create a vector operation
      *
      * @param name Name of the vector op
@@ -126,6 +224,18 @@ public interface OpFactory {
      * @return VectorOp
      */
     BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, int... dimension);
+
+    /**
+     *
+     * @param name
+     * @param x
+     * @param y
+     * @param z
+     * @param extraArgs
+     * @param dimension
+     * @return
+     */
+    BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs, int... dimension);
 
     /** Create a vector operation
      *

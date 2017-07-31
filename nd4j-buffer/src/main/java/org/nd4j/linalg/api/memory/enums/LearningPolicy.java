@@ -5,12 +5,15 @@ package org.nd4j.linalg.api.memory.enums;
  */
 public enum LearningPolicy {
     /**
-     * This policy means - we learn during 1 cycle, and allocate workspace memory right after it's done.
+     * This policy means - we learn during 1 cycle,
+     * and allocate workspace memory right after it's done.
      */
     FIRST_LOOP,
 
     /**
-     * This policy means - we learn during multiple cycles, and allocate after WorkspaceConfiguration.cyclesBeforeInitialization or after manual call to MemoryWorkspace.initializeWorkspace
+     * This policy means - we learn during multiple cycles,
+     * and allocate after WorkspaceConfiguration.cyclesBeforeInitialization
+     * or after manual call to MemoryWorkspace.initializeWorkspace
      */
     OVER_TIME,
 

@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -33,6 +34,19 @@ public class CompressionTests extends BaseNd4jTest {
 
     public CompressionTests(Nd4jBackend backend) {
         super(backend);
+    }
+
+    @Test
+    public void testCompressionView() {
+        BasicNDArrayCompressor compressor = BasicNDArrayCompressor.getInstance().setDefaultCompression("UINT8");
+
+        INDArray compressed = compressor.compress( Nd4j.create( 1, 1, 1 ) );
+        INDArray reshaped = compressed.reshape( 1, 1, 1, 1 );
+
+        // After a reshape, "reshaped" is no longer marked as compressed, but the underlying data buffer is of type compressed
+        // Because of that mismatch, this will fail with an illegal state exception:
+        Convolution.im2col( reshaped, new int[] {1,1}, new int[] {1,1}, new int[] {1,1} );
+
     }
 
 
@@ -468,7 +482,7 @@ public class CompressionTests extends BaseNd4jTest {
         //Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
         INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 1.0f, 100);
 
-        assertEquals(103, compressed.data().length());
+        assertEquals(104, compressed.data().length());
 
         assertNotEquals(exp_0, initial);
 
@@ -525,6 +539,141 @@ public class CompressionTests extends BaseNd4jTest {
 
         assertEquals(exp_1, decompressed_copy);
     }
+
+    @Test
+    public void testBitmapEncoding1() throws Exception {
+        INDArray initial = Nd4j.create(new double[]{0.0, 0.0, 1e-3, -1e-3, 0.0, 0.0});
+        INDArray exp_0 = Nd4j.create(6);
+        INDArray exp_1 = initial.dup();
+
+        INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
+
+        log.info("Encoded: {}", Arrays.toString(enc.data().asInt()));
+
+        assertEquals(exp_0, initial);
+        assertEquals(5, enc.data().length());
+
+        log.info("Encoded: {}", Arrays.toString(enc.data().asInt()));
+
+        INDArray target = Nd4j.create(6);
+        Nd4j.getExecutioner().bitmapDecode(enc, target);
+
+        log.info("Target: {}", Arrays.toString(target.data().asFloat()));
+        assertEquals(exp_1, target);
+    }
+
+    @Test
+    public void testBitmapEncoding1_1() throws Exception {
+        INDArray initial = Nd4j.create(15);
+        INDArray exp_0 = Nd4j.create(6);
+        INDArray exp_1 = initial.dup();
+
+        INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
+
+        //assertEquals(exp_0, initial);
+        assertEquals(5, enc.data().length());
+
+        initial = Nd4j.create(31);
+
+        enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
+
+        assertEquals(6, enc.data().length());
+
+        initial = Nd4j.create(32);
+
+        enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
+
+        assertEquals(7, enc.data().length());
+    }
+
+    @Test
+    public void testBitmapEncoding2() throws Exception {
+        INDArray initial = Nd4j.create(40000000);
+        INDArray target = Nd4j.create(initial.length());
+
+        initial.addi(1e-3);
+
+        long time1 = System.currentTimeMillis();
+        INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
+        long time2 = System.currentTimeMillis();
+
+
+        Nd4j.getExecutioner().bitmapDecode(enc, target);
+        long time3 = System.currentTimeMillis();
+
+        log.info("Encode time: {}", time2 - time1);
+        log.info("Decode time: {}", time3 - time2);
+    }
+
+
+    @Test
+    public void testBitmapEncoding3() throws Exception {
+        INDArray initial = Nd4j.create(new double[]{0.0, -6e-4, 1e-3, -1e-3, 0.0, 0.0});
+        INDArray exp_0 = Nd4j.create(new double[]{0.0, -1e-4, 0.0, 0.0, 0.0, 0.0});
+        INDArray exp_1 = Nd4j.create(new double[]{0.0, -5e-4, 1e-3, -1e-3, 0.0, 0.0});
+
+        DataBuffer ib = Nd4j.getDataBufferFactory().createInt(5);
+        INDArray enc = Nd4j.createArrayFromShapeBuffer(ib, initial.shapeInfoDataBuffer());
+
+        long elements = Nd4j.getExecutioner().bitmapEncode(initial, enc, 1e-3);
+        log.info("Encoded: {}", Arrays.toString(enc.data().asInt()));
+        assertArrayEquals(new int[] {6, 6, 981668463, 1, 655372}, enc.data().asInt());
+
+        assertEquals(3, elements);
+
+        assertEquals(exp_0, initial);
+
+        INDArray target = Nd4j.create(6);
+
+        Nd4j.getExecutioner().bitmapDecode(enc, target);
+        log.info("Target: {}", Arrays.toString(target.data().asFloat()));
+        assertEquals(exp_1, target);
+    }
+
+
+
+    @Test
+    public void testBitmapEncoding4() throws Exception {
+        Nd4j.getRandom().setSeed(119);
+        INDArray initial = Nd4j.rand(1, 10000, 0, 1, Nd4j.getRandom());
+        INDArray exp_1 = initial.dup();
+
+        INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-1);
+
+        Nd4j.getExecutioner().bitmapDecode(enc, initial);
+
+        assertEquals(exp_1, initial);
+    }
+
+    @Test
+    public void testBitmapEncoding5() throws Exception {
+        Nd4j.getRandom().setSeed(119);
+        INDArray initial = Nd4j.rand(1, 10000, -1, -0.5, Nd4j.getRandom());
+        INDArray exp_0 = initial.dup().addi(1e-1);
+        INDArray exp_1 = initial.dup();
+
+        INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-1);
+        assertEquals(exp_0, initial);
+
+        Nd4j.getExecutioner().bitmapDecode(enc, initial);
+
+        assertEquals(exp_1, initial);
+    }
+
+    @Test
+    public void testBitmapEncoding6() throws Exception {
+        Nd4j.getRandom().setSeed(119);
+        INDArray initial = Nd4j.rand(1, 100000, -1, 1, Nd4j.getRandom());
+        INDArray exp_1 = initial.dup();
+
+        INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
+        //assertEquals(exp_0, initial);
+
+        Nd4j.getExecutioner().bitmapDecode(enc, initial);
+
+        assertEquals(exp_1, initial);
+    }
+
 
     @Override
     public char ordering() {

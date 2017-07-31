@@ -97,11 +97,11 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaHalfDataBuffer(float[] data, boolean copy, int offset) {
+    public CudaHalfDataBuffer(float[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
-    public CudaHalfDataBuffer(float[] data, boolean copy, int offset, MemoryWorkspace workspace) {
+    public CudaHalfDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
         super(data, copy, offset, workspace);
     }
 
@@ -113,7 +113,7 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaHalfDataBuffer(double[] data, boolean copy, int offset) {
+    public CudaHalfDataBuffer(double[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -125,7 +125,7 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaHalfDataBuffer(int[] data, boolean copy, int offset) {
+    public CudaHalfDataBuffer(int[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -137,7 +137,7 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
         super(buffer, (int) length);
     }
 
-    public CudaHalfDataBuffer(ByteBuffer buffer, long length, int offset) {
+    public CudaHalfDataBuffer(ByteBuffer buffer, long length, long offset) {
         super(buffer, length, offset);
     }
 

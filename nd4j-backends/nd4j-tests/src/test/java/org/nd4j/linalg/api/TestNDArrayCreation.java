@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.Ignore;
@@ -20,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 30/04/2016.
  */
+@Slf4j
 public class TestNDArrayCreation extends BaseNd4jTest {
 
 
@@ -42,6 +44,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
 
 
     @Test
+    @Ignore
     public void testCreateNpy() throws Exception {
         INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("test.npy").getFile());
         assertEquals(2, arrCreate.size(0));

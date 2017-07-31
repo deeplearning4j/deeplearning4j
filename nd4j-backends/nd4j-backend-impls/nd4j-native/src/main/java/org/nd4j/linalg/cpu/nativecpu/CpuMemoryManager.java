@@ -1,10 +1,12 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
@@ -13,6 +15,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class CpuMemoryManager extends BasicMemoryManager {
     /**
      * This method returns
@@ -25,6 +28,12 @@ public class CpuMemoryManager extends BasicMemoryManager {
     @Override
     public Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
         Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
+
+        if (ptr == null || ptr.address() == 0L)
+            throw new ND4JIllegalStateException("Failed to allocate [" + bytes + "] bytes");
+
+        //log.info("Allocating {} bytes at MemoryManager", bytes);
+
 
         if (initialize)
             Pointer.memset(ptr, 0, bytes);

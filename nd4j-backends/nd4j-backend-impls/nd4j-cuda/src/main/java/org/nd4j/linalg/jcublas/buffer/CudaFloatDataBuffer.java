@@ -98,11 +98,11 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(data, copy, workspace);
     }
 
-    public CudaFloatDataBuffer(float[] data, boolean copy, int offset) {
+    public CudaFloatDataBuffer(float[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
-    public CudaFloatDataBuffer(float[] data, boolean copy, int offset, MemoryWorkspace workspace) {
+    public CudaFloatDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
         super(data, copy, offset, workspace);
     }
 
@@ -114,7 +114,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaFloatDataBuffer(double[] data, boolean copy, int offset) {
+    public CudaFloatDataBuffer(double[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -126,7 +126,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaFloatDataBuffer(int[] data, boolean copy, int offset) {
+    public CudaFloatDataBuffer(int[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
 
@@ -138,7 +138,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(buffer, (int) length);
     }
 
-    public CudaFloatDataBuffer(ByteBuffer buffer, long length, int offset) {
+    public CudaFloatDataBuffer(ByteBuffer buffer, long length, long offset) {
         super(buffer, length, offset);
     }
 

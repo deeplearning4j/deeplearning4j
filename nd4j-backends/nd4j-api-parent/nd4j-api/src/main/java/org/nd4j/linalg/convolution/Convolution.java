@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.convolution.Col2Im;
 import org.nd4j.linalg.api.ops.impl.transforms.convolution.Im2col;
+import org.nd4j.linalg.api.ops.impl.transforms.convolution.Pooling2D;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,6 +105,7 @@ public class Convolution {
      * @return
      */
     public static INDArray im2col(INDArray img, int[] kernel, int[] stride, int[] padding) {
+        Nd4j.getCompressor().autoDecompress(img);
         return im2col(img, kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false);
     }
 
@@ -121,6 +123,7 @@ public class Convolution {
      *
      */
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode) {
+        Nd4j.getCompressor().autoDecompress(img);
         Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, isSameMode);
         return Nd4j.getExecutioner().exec(im2col).z();
     }
@@ -129,6 +132,12 @@ public class Convolution {
                     INDArray out) {
         Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, isSameMode, out);
         return Nd4j.getExecutioner().exec(im2col).z();
+    }
+
+    public static INDArray pooling2D(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, Pooling2D.Pooling2DType type, double extra, int virtualHeight, int virtualWidth,
+                                  INDArray out) {
+        Pooling2D pooling = new Pooling2D(img, kh, kw, sy, sx, ph, pw, isSameMode, type, extra, virtualHeight, virtualWidth, out);
+        return Nd4j.getExecutioner().exec(pooling).z();
     }
 
     /**

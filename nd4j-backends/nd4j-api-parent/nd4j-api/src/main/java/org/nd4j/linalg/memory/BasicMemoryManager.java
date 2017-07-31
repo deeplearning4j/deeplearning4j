@@ -42,7 +42,8 @@ public abstract class BasicMemoryManager implements MemoryManager {
 
     /**
      * This method returns
-     * PLEASE NOTE: Cache options depend on specific implementations
+     * PLEASE NOTE: Cache options
+     * depend on specific implementations
      *
      * @param bytes
      * @param kind

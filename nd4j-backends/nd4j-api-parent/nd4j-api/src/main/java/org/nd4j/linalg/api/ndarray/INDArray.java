@@ -152,7 +152,7 @@ public interface INDArray extends Serializable {
      * @param offset the offset to get at
      * @return this
      */
-    double getDoubleUnsafe(int offset);
+    double getDoubleUnsafe(long offset);
 
     /**
      * Insert a scalar
@@ -161,7 +161,7 @@ public interface INDArray extends Serializable {
      * @param value the value to insert
      * @return this
      */
-    INDArray putScalarUnsafe(int offset, double value);
+    INDArray putScalarUnsafe(long offset, double value);
 
     /**
      * Return the major stride for an ndarray
@@ -1796,7 +1796,7 @@ public interface INDArray extends Serializable {
      * @param stride
      * @return
      */
-    INDArray subArray(int[] offsets, int[] shape, int[] stride);
+    INDArray subArray(long[] offsets, int[] shape, int[] stride);
 
     /**
      * Returns the elements at the the specified indices
@@ -1944,14 +1944,14 @@ public interface INDArray extends Serializable {
      *
      * @return the starting offset
      */
-    int offset();
+    long offset();
 
 
     /**
      * Returns the start of where the ndarray is for the original data buffer
      * @return
      */
-    int originalOffset();
+    long originalOffset();
 
 
     /**
@@ -2515,7 +2515,8 @@ public interface INDArray extends Serializable {
     boolean isInScope();
 
     /**
-     * This metod detaches INDArray from Workspace, returning copy. Basically it's dup() into new memory chunk.
+     * This method detaches INDArray from Workspace, returning copy.
+     * Basically it's dup() into new memory chunk.
      *
      * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
      *
@@ -2526,8 +2527,10 @@ public interface INDArray extends Serializable {
     /**
      * This method detaches INDArray from current Workspace, and attaches it to Workspace above, if any.
      *
-     * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
-     * PLEASE NOTE: If current Workspace is the top-tier one, effect will be equal to detach() call - detached copy will be returned
+     * PLEASE NOTE: If this INDArray instance is
+     * NOT attached - it will be returned unmodified.
+     * PLEASE NOTE: If current Workspace is the top-tier one,
+     * effect will be equal to detach() call - detached copy will be returned
      *
      * @return
      */

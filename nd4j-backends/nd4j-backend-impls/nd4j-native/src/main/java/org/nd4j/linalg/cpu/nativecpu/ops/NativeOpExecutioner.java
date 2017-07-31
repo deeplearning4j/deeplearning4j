@@ -19,6 +19,7 @@ import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.convolution.Pooling2D;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.ConstantHandler;
@@ -26,11 +27,13 @@ import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
+import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jBlas;
@@ -229,6 +232,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public INDArray exec(Accumulation op, int... dimension) {
         Arrays.sort(dimension);
 
+
         validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
@@ -263,7 +267,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             retShape = new int[] {1, 1};
         }
 
-        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1)
+
+        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();
 
         /**
@@ -389,9 +394,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             (IntPointer) dimensionAddress, dimension.length,
                             (IntPointer) tadBuffers.getFirst().addressPointer(),
-                            (IntPointer) tadBuffers.getSecond().addressPointer(),
+                            new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
                             (IntPointer) yTadBuffers.getFirst().addressPointer(),
-                            (IntPointer) yTadBuffers.getSecond().addressPointer()
+                            new LongPointerWrapper(yTadBuffers.getSecond().addressPointer())
                             );
                 } else if (ret.isScalar()) {
                     ret.putScalar(0, loop.execReduce3ScalarDouble(dummy, op.opNum(),
@@ -458,9 +463,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             (IntPointer) dimensionAddress, dimension.length,
                             (IntPointer) tadBuffers.getFirst().addressPointer(),
-                            (IntPointer) tadBuffers.getSecond().addressPointer(),
+                            new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
                             (IntPointer) yTadBuffers.getFirst().addressPointer(),
-                            (IntPointer) yTadBuffers.getSecond().addressPointer()
+                            new LongPointerWrapper(yTadBuffers.getSecond().addressPointer())
                     );
                 } else if (ret.isScalar()) {
                     ret.putScalar(0, loop.execReduce3ScalarFloat(dummy, op.opNum(),
@@ -548,14 +553,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (FloatPointer) op.z().data().addressPointer(),
                             (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             (FloatPointer) op.y().data().addressPointer(), (FloatPointer) getPointerForExtraArgs(op),
-                            new IntPointer(dimension), dimension.length);
+                            (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(), dimension.length);
         } else if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             loop.execScalarDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
                             (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                             (DoublePointer) op.z().data().addressPointer(),
                             (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             (DoublePointer) op.y().data().addressPointer(), (DoublePointer) getPointerForExtraArgs(op),
-                            new IntPointer(dimension), dimension.length);
+                            (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(), dimension.length);
         }
     }
 
@@ -567,7 +572,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             validateDataType(Nd4j.dataType(), op);
 
-            if (op.x().length() != op.z().length())
+            if (op.x().lengthLong() != op.z().lengthLong())
                 throw new ND4JIllegalStateException("op.X length should be equal to op.Y length: ["
                                 + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "] != ["
                                 + Arrays.toString(op.z().shapeInfoDataBuffer().asInt()) + "]");
@@ -662,6 +667,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             st = profilingHookIn(op, tadBuffers.getFirst());
         } else
             st = profilingHookIn(op);
+
+        // Pooling2D requires additional pointer
+        if (op.opNum() == 71) {
+            dummy.put(0, ((Pooling2D) op).getIm2colShape().addressPointer());
+        }
 
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op.y() != null) {
@@ -825,6 +835,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             super.exec(op);
 
         } else {
+            if(op.z() == op.x()) {
+                op.setZ(Nd4j.scalar(0.0));
+            }
+
             long st = profilingHookIn(op);
 
             validateDataType(Nd4j.dataType(), op);
@@ -842,6 +856,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 (FloatPointer) getPointerForExtraArgs(op)));
             }
+
+            op.z().assign(op.getFinalResult());
+
             profilingHookOut(op, st);
         }
     }
@@ -849,11 +866,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private void exec(Accumulation op) {
         if (op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
-        } else {
+        }
+        else if(op.isExecSpecial()) {
+            op.exec();
+        }
+        else {
             long st = profilingHookIn(op);
 
             validateDataType(Nd4j.dataType(), op);
 
+            if(op.z() == op.x()) {
+                op.setZ(Nd4j.scalar(0.0));
+            }
 
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if (op instanceof Variance) {
@@ -895,6 +919,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     (FloatPointer) getPointerForExtraArgs(op)));
                 }
             }
+
+            op.z().assign(op.getFinalResult());
+
+
             profilingHookOut(op, st);
         }
     }
@@ -1320,14 +1348,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         DataBuffer buffer = input.data();
 
         long originalLength = buffer.length() * Nd4j.sizeOfDataType(buffer.dataType());
-        int compressedLength = cntAbs + 3;
+        int compressedLength = cntAbs + 4;
         // first 3 elements contain header
 
-        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(3+cntAbs, false) : Nd4j.getDataBufferFactory().createInt(3+cntAbs, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(4+cntAbs, false) : Nd4j.getDataBufferFactory().createInt(4+cntAbs, false, Nd4j.getMemoryManager().getCurrentWorkspace());
 
         encodedBuffer.put(0, cntAbs);
         encodedBuffer.put(1, (int) buffer.length());
         encodedBuffer.put(2, Float.floatToIntBits((float) threshold));
+
+        // format id
+        encodedBuffer.put(3, ThresholdCompression.FLEXIBLE_ENCODING);
 
         CompressionDescriptor descriptor = new CompressionDescriptor();
         descriptor.setCompressedLength(compressedLength * 4); // sizeOf(INT)
@@ -1364,6 +1395,50 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         DataBuffer.TypeEx typeDst = AbstractCompressor.getBufferTypeEx(target.data());
 
         loop.convertTypes(null, DataBuffer.TypeEx.THRESHOLD.ordinal(), buffer.addressPointer(), target.length(), typeDst.ordinal(), target.data().addressPointer());
+
+        return target;
+    }
+
+
+    @Override
+    public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
+        long length = indArray.lengthLong();
+        long tLen = target.data().length();
+
+        if (tLen != (length / 16 + 5))
+            throw new ND4JIllegalStateException("Length of target array should be " + (length / 16 + 5));
+
+        if (target.data().dataType() != DataBuffer.Type.INT)
+            throw new ND4JIllegalStateException("Target array should have INT dataType");
+
+        DataBuffer buffer = target.data();
+
+        buffer.put(0, (int) length);
+        buffer.put(1, (int) length);
+        buffer.put(2, Float.floatToIntBits((float) threshold));
+
+        // format id
+        buffer.put(3, ThresholdCompression.BITMAP_ENCODING);
+
+        long affected = 0;
+
+        if (indArray.data().dataType() == DataBuffer.Type.FLOAT) {
+            affected = loop.encodeBitmapFloat(null, (FloatPointer) indArray.data().addressPointer(), length, (IntPointer) buffer.addressPointer(), (float) threshold);
+        } else if (indArray.data().dataType() == DataBuffer.Type.DOUBLE) {
+            affected = loop.encodeBitmapDouble(null, (DoublePointer) indArray.data().addressPointer(), length, (IntPointer) buffer.addressPointer(), (float) threshold);
+        } else
+            throw new UnsupportedOperationException("HALF precision isn't supported on CPU yet");
+
+        return affected;
+    }
+
+    @Override
+    public INDArray bitmapDecode(INDArray encoded, INDArray target) {
+
+
+        if (target.data().dataType() == DataBuffer.Type.FLOAT) {
+            loop.decodeBitmapFloat(null, encoded.data().addressPointer(), target.length(), (FloatPointer) target.data().addressPointer());
+        }
 
         return target;
     }

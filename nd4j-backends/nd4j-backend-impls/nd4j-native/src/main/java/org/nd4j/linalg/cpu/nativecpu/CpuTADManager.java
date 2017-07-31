@@ -2,19 +2,25 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.NonNull;
 import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
+import org.nd4j.linalg.api.buffer.LongBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.cache.TadDescriptor;
+import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com
@@ -23,6 +29,7 @@ public class CpuTADManager implements TADManager {
     private Map<TadDescriptor, Pair<DataBuffer, DataBuffer>> cache = new ConcurrentHashMap<>();
     private NativeOps nativeOps;
     private ConstantHandler constantHandler;
+    private AtomicLong bytes = new AtomicLong(0);
     private AtomicInteger counter = new AtomicInteger(0);
     private static final int MAX_ENTRIES = 100;
 
@@ -45,6 +52,9 @@ public class CpuTADManager implements TADManager {
 
     @Override
     public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
+        if (dimension != null && dimension.length > 1)
+            Arrays.sort(dimension);
+
         if (dimension == null || dimension[0] == Integer.MAX_VALUE) {
             return new Pair<>(array.shapeInfoDataBuffer(), null);
         } else {
@@ -55,16 +65,16 @@ public class CpuTADManager implements TADManager {
 
                 // FIXME: this is fast triage, remove it later
                 int targetRank = array.rank(); //dimensionLength <= 1 ? 2 : dimensionLength;
-                int offsetLength;
-                int tadLength = 1;
+                long offsetLength;
+                long tadLength = 1;
                 for (int i = 0; i < dimensionLength; i++) {
                     tadLength *= array.shape()[dimension[i]];
                 }
 
-                offsetLength = array.length() / tadLength;
+                offsetLength = array.lengthLong() / tadLength;
 
                 DataBuffer outputBuffer = new IntBuffer(targetRank * 2 + 4);
-                DataBuffer offsetsBuffer = new IntBuffer(offsetLength);
+                DataBuffer offsetsBuffer = new LongBuffer(offsetLength);
 
                 DataBuffer dimensionBuffer = constantHandler.getConstantBuffer(dimension);
                 Pointer dimensionPointer = dimensionBuffer.addressPointer();
@@ -74,7 +84,7 @@ public class CpuTADManager implements TADManager {
                 Pointer offsetsPointer = offsetsBuffer.addressPointer();
 
                 nativeOps.tadOnlyShapeInfo((IntPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length,
-                                (IntPointer) targetPointer, (IntPointer) offsetsPointer);
+                                (IntPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
 
 
                 // If the line below will be uncommented, shapes from JVM will be used on native side
@@ -83,11 +93,18 @@ public class CpuTADManager implements TADManager {
                 if (counter.get() < MAX_ENTRIES) {
                     counter.incrementAndGet();
                     cache.put(descriptor, pair);
+
+                    bytes.addAndGet((outputBuffer.length() * 4) + (offsetsBuffer.length() * 8));
                 }
                 return pair;
             }
 
             return cache.get(descriptor);
         }
+    }
+
+    @Override
+    public long getCachedBytes() {
+        return bytes.get();
     }
 }

@@ -10,7 +10,9 @@ public enum ResetPolicy {
     BLOCK_LEFT,
 
     /**
-     * This policy means - this Workspace instance will be acting as circular buffer, so it'll be reset only after end of workspace buffer is reached.
+     * This policy means - this Workspace instance will be acting as
+     * circular buffer, so it'll be reset only after
+     * end of workspace buffer is reached.
      */
     ENDOFBUFFER_REACHED,
 }

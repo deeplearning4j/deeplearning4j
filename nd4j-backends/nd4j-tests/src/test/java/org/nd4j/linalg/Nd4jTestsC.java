@@ -41,15 +41,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.accum.Norm1;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
-import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
-import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
@@ -66,7 +63,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -94,7 +90,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     public Nd4jTestsC(Nd4jBackend backend) {
         super(backend);
-        this.initialType = Nd4j.dataType();
+          this.initialType = Nd4j.dataType();
     }
 
 
@@ -3065,8 +3061,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
             assertEquals(tFirst0.offset(), t0.getFirstTensorOffset());
             assertEquals(tFirst1.offset(), t1.getFirstTensorOffset());
-            int separation0 = tSecond0.offset() - tFirst0.offset();
-            int separation1 = tSecond1.offset() - tFirst1.offset();
+            long separation0 = tSecond0.offset() - tFirst0.offset();
+            long separation1 = tSecond1.offset() - tFirst1.offset();
             assertEquals(separation0, t0.getTensorStartSeparation());
             assertEquals(separation1, t1.getTensorStartSeparation());
 
@@ -3075,8 +3071,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 assertEquals(tad0.length(), t0.getTensorLength());
                 assertEquals(tad0.elementWiseStride(), t0.getElementWiseStride());
 
-                int offset = tad0.offset();
-                int calcOffset = t0.getFirstTensorOffset() + i * t0.getTensorStartSeparation();
+                long offset = tad0.offset();
+                long calcOffset = t0.getFirstTensorOffset() + i * t0.getTensorStartSeparation();
                 assertEquals(offset, calcOffset);
             }
 
@@ -3085,8 +3081,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 assertEquals(tad1.length(), t1.getTensorLength());
                 assertEquals(tad1.elementWiseStride(), t1.getElementWiseStride());
 
-                int offset = tad1.offset();
-                int calcOffset = t1.getFirstTensorOffset() + i * t1.getTensorStartSeparation();
+                long offset = tad1.offset();
+                long calcOffset = t1.getFirstTensorOffset() + i * t1.getTensorStartSeparation();
                 assertEquals(offset, calcOffset);
             }
         }
@@ -3569,29 +3565,32 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testIMaxIAMax() {
-        INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
 
-        double imax = Nd4j.getExecutioner().execAndReturn(new IMax(arr.dup())).getFinalResult();
-        double iamax = Nd4j.getExecutioner().execAndReturn(new IAMax(arr.dup())).getFinalResult();
+        INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
+        IMax iMax = new IMax(arr.dup());
+        IAMax iaMax = new IAMax(arr.dup());
+        double imax = Nd4j.getExecutioner().execAndReturn(iMax).getFinalResult();
+        double iamax = Nd4j.getExecutioner().execAndReturn(iaMax).getFinalResult();
         System.out.println("IMAX: " + imax);
         System.out.println("IAMAX: " + iamax);
-
-        assertEquals(3, imax, 0.0);
         assertEquals(1, iamax, 0.0);
+        assertEquals(3, imax, 0.0);
     }
 
 
     @Test
     public void testIMinIAMin() {
         INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
-
-        double imin = Nd4j.getExecutioner().execAndReturn(new IMin(arr.dup())).getFinalResult();
-        double iamin = Nd4j.getExecutioner().execAndReturn(new IAMin(arr.dup())).getFinalResult();
+        INDArray abs = Transforms.abs(arr);
+        IAMin iaMin = new IAMin(abs);
+        IMin iMin = new IMin(arr.dup());
+        double imin = Nd4j.getExecutioner().execAndReturn(iMin).getFinalResult();
+        double iamin = Nd4j.getExecutioner().execAndReturn(iaMin).getFinalResult();
         System.out.println("IMin: " + imin);
         System.out.println("IAMin: " + iamin);
-
-        assertEquals(1, imin, 0.0);
-        assertEquals(3, iamin, 0.0);
+        assertEquals(3, iamin, 1e-12);
+        assertEquals(1, imin, 1e-12);
     }
 
 
@@ -4119,6 +4118,46 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testAveraging2() {
+
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(100).assign((double) i));
+        }
+
+        Nd4j.averageAndPropagate(null, arrays);
+
+        INDArray result = arrays.get(0);
+
+        assertEquals(4.5, result.meanNumber().doubleValue(), 0.01);
+
+        for (int i = 0; i < 10; i++) {
+            assertEquals("Failed on iteration " + i, result, arrays.get(i));
+        }
+    }
+
+    @Test
+    public void testAveraging3() {
+        Nd4j.getAffinityManager().allowCrossDeviceAccess(false);
+
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(100).assign((double) i));
+        }
+
+        Nd4j.averageAndPropagate(null, arrays);
+
+        INDArray result = arrays.get(0);
+
+        assertEquals(4.5, result.meanNumber().doubleValue(), 0.01);
+
+        for (int i = 0; i < 10; i++) {
+            assertEquals("Failed on iteration " + i, result, arrays.get(i));
+        }
+    }
+
     @Test
     public void testZ1() throws Exception {
         INDArray matrix = Nd4j.create(10, 10).assign(1.0);
@@ -4415,6 +4454,71 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray z = Transforms.atan2(x, y);
 
         assertEquals(exp, z);
+    }
+
+
+    @Test
+    public void testJaccardDistance1() throws Exception {
+        INDArray x = Nd4j.create(new double[]{0, 1, 0, 0, 1, 0});
+        INDArray y = Nd4j.create(new double[]{1, 1, 0, 1, 0, 0});
+
+        double val = Transforms.jaccardDistance(x, y);
+
+        assertEquals(0.75, val, 1e-5);
+    }
+
+
+    @Test
+    public void testJaccardDistance2() throws Exception {
+        INDArray x = Nd4j.create(new double[]{0, 1, 0, 0, 1, 1});
+        INDArray y = Nd4j.create(new double[]{1, 1, 0, 1, 0, 0});
+
+        double val = Transforms.jaccardDistance(x, y);
+
+        assertEquals(0.8, val, 1e-5);
+    }
+
+    @Test
+    public void testHammingDistance1() throws Exception {
+        INDArray x = Nd4j.create(new double[]{0, 0, 0, 1, 0, 0});
+        INDArray y = Nd4j.create(new double[]{0, 0, 0, 0, 1, 0});
+
+        double val = Transforms.hammingDistance(x, y);
+
+        assertEquals(2.0 / 6, val, 1e-5);
+    }
+
+
+    @Test
+    public void testHammingDistance2() throws Exception {
+        INDArray x = Nd4j.create(new double[]{0, 0, 0, 1, 0, 0});
+        INDArray y = Nd4j.create(new double[]{0, 1, 0, 0, 1, 0});
+
+        double val = Transforms.hammingDistance(x, y);
+
+        assertEquals(3.0 / 6, val, 1e-5);
+    }
+
+
+    @Test
+    public void testHammingDistance3() throws Exception {
+        INDArray x = Nd4j.create(10, 6);
+        for (int r = 0; r < x.rows(); r++) {
+            x.getRow(r).putScalar(r % x.columns(), 1);
+        }
+
+        INDArray y = Nd4j.create(new double[]{0, 0, 0, 0, 1, 0});
+
+        INDArray res = Nd4j.getExecutioner().exec(new HammingDistance(x, y), 1);
+        assertEquals(10, res.length());
+
+        for (int r = 0; r < x.rows(); r++) {
+            if (r == 4) {
+                assertEquals(0.0, res.getDouble(r), 1e-5);
+            } else {
+                assertEquals(2.0 / 6, res.getDouble(r), 1e-5);
+            }
+        }
     }
 
 

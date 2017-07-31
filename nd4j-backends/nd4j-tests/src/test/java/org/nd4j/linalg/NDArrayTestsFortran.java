@@ -270,6 +270,13 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     }
 
     @Test
+    public void testNd4jSortScalar() {
+        INDArray linspace = Nd4j.linspace(1,8,8);
+        INDArray sorted = Nd4j.sort(linspace,1,false);
+        System.out.println(sorted);
+    }
+
+    @Test
     public void testSwapAxesFortranOrder() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[] {3, 5, 2});
         for (int i = 0; i < n.slices(); i++) {
@@ -1148,8 +1155,8 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
             assertEquals(tFirst0.offset(), t0.getFirstTensorOffset());
             assertEquals(tFirst1.offset(), t1.getFirstTensorOffset());
-            int separation0 = tSecond0.offset() - tFirst0.offset();
-            int separation1 = tSecond1.offset() - tFirst1.offset();
+            long separation0 = tSecond0.offset() - tFirst0.offset();
+            long separation1 = tSecond1.offset() - tFirst1.offset();
             assertEquals(separation0, t0.getTensorStartSeparation());
             assertEquals(separation1, t1.getTensorStartSeparation());
 
@@ -1158,8 +1165,8 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
                 assertEquals(tad0.length(), t0.getTensorLength());
                 assertEquals(tad0.elementWiseStride(), t0.getElementWiseStride());
 
-                int offset = tad0.offset();
-                int calcOffset = t0.getFirstTensorOffset() + i * t0.getTensorStartSeparation();
+                long offset = tad0.offset();
+                long calcOffset = t0.getFirstTensorOffset() + i * t0.getTensorStartSeparation();
                 assertEquals(offset, calcOffset);
             }
 
@@ -1168,8 +1175,8 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
                 assertEquals(tad1.length(), t1.getTensorLength());
                 assertEquals(tad1.elementWiseStride(), t1.getElementWiseStride());
 
-                int offset = tad1.offset();
-                int calcOffset = t1.getFirstTensorOffset() + i * t1.getTensorStartSeparation();
+                long offset = tad1.offset();
+                long calcOffset = t1.getFirstTensorOffset() + i * t1.getTensorStartSeparation();
                 assertEquals(offset, calcOffset);
             }
         }

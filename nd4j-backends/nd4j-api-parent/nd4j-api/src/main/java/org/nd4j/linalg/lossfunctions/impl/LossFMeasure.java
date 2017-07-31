@@ -161,6 +161,16 @@ public class LossFMeasure implements ILossFunction {
                 computeGradient(labels, preOutput, activationFn, mask));
     }
 
+    /**
+     * The name of this function
+     *
+     * @return
+     */
+    @Override
+    public String name() {
+        return "floss";
+    }
+
     @Override
     public String toString(){
         return "LossFMeasure(beta=" + beta + ")";
