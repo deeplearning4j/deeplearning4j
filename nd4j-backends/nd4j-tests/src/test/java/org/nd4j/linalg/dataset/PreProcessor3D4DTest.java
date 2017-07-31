@@ -340,7 +340,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             expectedStd = Nd4j.create(new float[] {stdNaturalNums, stdNaturalNums, stdNaturalNums}).reshape(3, 1);
             expectedStd.muliColumnVector(Transforms.abs(featureScale, true));
             //preprocessors use the population std so divides by n not (n-1)
-            expectedStd.muli(Math.sqrt(maxN)).divi(Math.sqrt(maxN));
+            expectedStd = expectedStd.dup().muli(Math.sqrt(maxN)).divi(Math.sqrt(maxN)).transpose();
 
             //min max assumes all scaling values are +ve
             expectedMin = Nd4j.ones(3, 1).muliColumnVector(featureScale);
