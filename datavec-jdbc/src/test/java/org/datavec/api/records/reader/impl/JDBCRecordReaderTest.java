@@ -16,9 +16,9 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.listener.RecordListener;
 import org.datavec.api.records.listener.impl.LogRecordListener;
+import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataJdbc;
 import org.datavec.api.records.reader.impl.jdbc.JDBCRecordReader;
-import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
@@ -136,8 +136,40 @@ public class JDBCRecordReaderTest {
         reader.close();
     }
 
+    @Test
+    public void testNextRecord() throws Exception {
+        JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee");
+        Record r = reader.nextRecord();
+        List<Writable> fields = r.getRecord();
+        RecordMetaData meta = r.getMetaData();
+        assertNotNull(r);
+        assertNotNull(fields);
+        assertNotNull(meta);
+        assertEquals(new Text("Bolivian Dark"), fields.get(0));
+        assertEquals(new Text("14-001"), fields.get(1));
+        assertEquals(new DoubleWritable(8.95), fields.get(2));
+        assertEquals(RecordMetaDataJdbc.class, meta.getClass());
+        reader.close();
+    }
+
+    @Test
+    public void testNextRecordAndRecover() throws Exception {
+        JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee");
+        Record r = reader.nextRecord();
+        List<Writable> fields = r.getRecord();
+        RecordMetaData meta = r.getMetaData();
+        Record recovered = reader.loadFromMetaData(meta);
+        List<Writable> fieldsRecovered = recovered.getRecord();
+        assertEquals(fields.size(), fieldsRecovered.size());
+        for (int i = 0; i < fields.size(); i++) {
+            assertEquals(fields.get(i), fieldsRecovered.get(i));
+        }
+        reader.close();
+    }
+
     private JDBCRecordReader getInitializedReader(String query) throws Exception {
-        JDBCRecordReader reader = new JDBCRecordReader(query, dataSource);
+        int[] indices = {1}; // ProdNum column
+        JDBCRecordReader reader = new JDBCRecordReader(query, dataSource, "SELECT * FROM Coffee WHERE ProdNum = ?", indices);
         reader.setTrimStrings(true);
         reader.initialize(null);
         return reader;

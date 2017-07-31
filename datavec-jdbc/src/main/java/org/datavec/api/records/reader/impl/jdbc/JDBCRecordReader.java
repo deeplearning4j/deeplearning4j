@@ -4,6 +4,7 @@ import com.zaxxer.hikari.util.DriverDataSource;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -37,7 +38,6 @@ import org.datavec.api.writable.Writable;
 public class JDBCRecordReader extends BaseRecordReader {
 
     private final String query;
-    private DataSource dataSource;
     private Connection conn;
     private Statement statement;
     private ResettableResultSetIterator iter;
@@ -45,6 +45,10 @@ public class JDBCRecordReader extends BaseRecordReader {
     private Configuration configuration;
     @Setter
     private boolean trimStrings = false;
+    @Setter
+    private DataSource dataSource;
+    private final String metadataQuery;
+    private final int[] metadataIndices;
 
     public final static String TRIM_STRINGS = NAME_SPACE + ".trimStrings";
     public final static String JDBC_URL = NAME_SPACE + ".jdbcUrl";
@@ -54,11 +58,22 @@ public class JDBCRecordReader extends BaseRecordReader {
 
     public JDBCRecordReader(String query) {
         this.query = query;
+        this.metadataQuery = null;
+        this.metadataIndices = null;
     }
 
     public JDBCRecordReader(String query, DataSource dataSource) {
-        this.dataSource = dataSource;
         this.query = query;
+        this.dataSource = dataSource;
+        this.metadataQuery = null;
+        this.metadataIndices = null;
+    }
+
+    public JDBCRecordReader(String query, DataSource dataSource, String metadataQuery, int[] metadataIndices) {
+        this.query = query;
+        this.dataSource = dataSource;
+        this.metadataQuery = metadataQuery;
+        this.metadataIndices = metadataIndices;
     }
 
     @Override
@@ -73,6 +88,7 @@ public class JDBCRecordReader extends BaseRecordReader {
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         this.setConf(conf);
         this.trimStrings = conf.getBoolean(TRIM_STRINGS, trimStrings);
+
         String jdbcUrl = conf.get(JDBC_URL);
         String driverClassName = conf.get(JDBC_DRIVER_CLASS_NAME);
         // url and driver must be both unset or both present
@@ -142,7 +158,7 @@ public class JDBCRecordReader extends BaseRecordReader {
 
     @Override
     public List<String> getLabels() {
-        return null;
+        throw new UnsupportedOperationException("JDBCRecordReader does not support getLabels yet");
     }
 
     @Override
@@ -157,7 +173,29 @@ public class JDBCRecordReader extends BaseRecordReader {
 
     @Override
     public Record nextRecord() {
-        return null;
+        if (!iter.hasNext()) {
+            throw new NoSuchElementException("No next element found!");
+        }
+
+        Object[] next = iter.next();
+        invokeListeners(next);
+
+        URI location;
+        try {
+            location = new URI(conn.getMetaData().getURL());
+        } catch (SQLException|URISyntaxException e) {
+            throw new IllegalStateException("Could not get sql connection metadata", e);
+        }
+
+        List<Object> params = new ArrayList<>();
+        if (metadataIndices != null) {
+            for (int index : metadataIndices) {
+                params.add(next[index]);
+            }
+        }
+        RecordMetaDataJdbc rmd = new RecordMetaDataJdbc(location, this.metadataQuery, params, getClass());
+
+        return new org.datavec.api.records.impl.Record(toWritable(next), rmd);
     }
 
     @Override
