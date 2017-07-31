@@ -13,11 +13,19 @@ namespace nd4j {
         class INativeLayer {
         protected:
             T *bias;
+            T *biasShapeInfo;
+
             T *params;
+            int *paramsShapeInfo;
 
             T *input;
+            int *inputShapeInfo;
+
             T *mask;
+            int *maskShapeInfo;
+
             T *output;
+            T *outputShapeInfo;
 
             Nd4jIndex allocated;
             Nd4jIndex length;
@@ -29,10 +37,25 @@ namespace nd4j {
              * @param bytes
              * @return
              */
-            T * allocate(long bytes) {
-                // FIXME: i think this method should be backend-specific
-                return nullptr;
-            }
+            virtual T *allocate(long bytes) = 0;
+
+            /**
+             * This method should validate parameters & bias, and return TRUE if everything ok. False otherwise
+             * @return
+             */
+            virtual bool validateParameters() = 0;
+
+            /**
+             * This method should validate input parameters, and return TRUE if everything ok. False otherwise
+             * @return
+             */
+            virtual bool validateInput() = 0;
+
+            /**
+             * This method should valudate output parameters, and return TRUE if everything is ok, FALSE otherwise
+             * @return
+             */
+            virtual bool validateOutput() = 0;
 
         public:
             /**
@@ -49,7 +72,7 @@ namespace nd4j {
              * @return
              */
             long getUsedMemory() {
-                return allocated;
+                return allocated; // usually just 0
             }
 
             /**
@@ -61,8 +84,13 @@ namespace nd4j {
              * @param bias
              * @param biasShapeInfo
              */
-            void setParameters(T *params, int *paramsShapeInfo, T *bias, int *biasShapeInfo) {
-                //
+            bool setParameters(T *params, int *paramsShapeInfo, T *bias, int *biasShapeInfo) {
+                this->params = params;
+                this->paramsShapeInfo = paramsShapeInfo;
+                this->biasShapeInfo = biasShapeInfo;
+                this->bias = bias;
+
+                return validateParameters();
             }
 
             /**
@@ -74,8 +102,13 @@ namespace nd4j {
              * @param mask
              * @param shapeInfo
              */
-            virtual void setInput(T *input, int *inputShapeInfo, T *mask, int *maskShapeInfo) {
-                //
+            bool setInput(T *input, int *inputShapeInfo, T *mask, int *maskShapeInfo) {
+                this->input = input;
+                this->inputShapeInfo = inputShapeInfo;
+                this->mask = mask;
+                this-maskShapeInfo = maskShapeInfo;
+
+                return validateInput();
             }
 
             /**
@@ -83,8 +116,11 @@ namespace nd4j {
              * @param output
              * @param shapeInfo
              */
-            virtual void setOutput(T *output, int *shapeInfo) {
-                //
+            bool setOutput(T *output, int *shapeInfo) {
+                this->output = output;
+                this->outputShapeInfo = shapeInfo;
+
+                return validateOutput();
             }
 
 
