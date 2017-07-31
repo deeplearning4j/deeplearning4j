@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class CudaGradientsAccumulator implements GradientsAccumulator, Registerable {
+public class EncodedGradientsAccumulator implements GradientsAccumulator, Registerable {
     protected ThreadLocal<INDArray> accumulator = new ThreadLocal<>();
 
     protected int parties;
@@ -63,21 +63,21 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                     .overallocationLimit(0.3).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
                     .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
 
-    public CudaGradientsAccumulator(double parties) {
+    public EncodedGradientsAccumulator(double parties) {
         this(Nd4j.getAffinityManager().getNumberOfDevices(), 1e-3);
     }
 
     // TODO: delete this one maybe?
-    public CudaGradientsAccumulator(int parties) {
+    public EncodedGradientsAccumulator(int parties) {
         this(parties, 1e-3);
     }
 
-    public CudaGradientsAccumulator(int parties, double threshold) {
+    public EncodedGradientsAccumulator(int parties, double threshold) {
         this(parties, new EncodingHandler(threshold), 100 * 1024 * 1024L, 10, 1.0);
     }
 
-    protected CudaGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory, int queueSize,
-                    Double boundary) {
+    protected EncodedGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory, int queueSize,
+                                          Double boundary) {
         this.parties = parties;
         this.handler = handler;
         this.initialMemory = initialMemory;
@@ -585,7 +585,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             return this;
         }
 
-        public CudaGradientsAccumulator build() {
+        public EncodedGradientsAccumulator build() {
             if (handler == null) {
                 if (boundary == null)
                     handler = new EncodingHandler(threshold);
@@ -593,8 +593,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                     handler = new EncodingHandler(threshold, boundary);
             }
 
-            CudaGradientsAccumulator accumulator =
-                            new CudaGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary);
+            EncodedGradientsAccumulator accumulator =
+                            new EncodedGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary);
 
             return accumulator;
         }
