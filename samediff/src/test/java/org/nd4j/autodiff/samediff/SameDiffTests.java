@@ -3,6 +3,7 @@ package org.nd4j.autodiff.samediff;
 import org.junit.Test;
 import org.nd4j.autodiff.gradcheck.GradCheckUtil;
 import org.nd4j.autodiff.opstate.OpExecAction;
+import org.nd4j.autodiff.opstate.OpExecOrder;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -17,9 +18,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by agibsonccc on 4/11/17.
@@ -347,11 +346,21 @@ public class SameDiffTests {
         },inputMap);
 
         assertEquals(1,sameDiffOuter.definedFunctionNames().size());
-        sameDiffOuter.graph().getOpOrder();
         SameDiff inner = SameDiff.create();
-        sameDiffOuter.getSameDiffFunctionInstances().get("logisticPredictions").graph().getOpOrder();
         SDVariable functionOutput = sameDiffOuter.invokeFunctionOn("logisticPredictions",inner);
+        int[] outerSort = sameDiffOuter.graph().topologicalSort();
+        int[] innerSort = inner.graph().topologicalSort();
+        assertArrayEquals(outerSort,innerSort);
 
+
+
+        OpExecOrder innerExecOrder = inner.graph().getOpOrder();
+        OpExecOrder order = sameDiffOuter.getSameDiffFunctionInstances().get("logisticPredictions").graph().getOpOrder();
+        assertEquals(order.getActions().size(),innerExecOrder.getActions().size());
+        List<Op> ops = inner.exec();
+        //mmul and sigmoid
+        assertEquals(2,ops.size());
+        System.out.println(ops);
     }
 
 
