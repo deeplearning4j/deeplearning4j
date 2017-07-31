@@ -258,7 +258,7 @@ public class SVMLightRecordReader extends LineRecordReader {
                 for (int i = 0; i < labelTokens.length; i++) {
                     try { // Encode label as integer, if possible
                         labels.add(new IntWritable(Integer.parseInt(labelTokens[i])));
-                    } catch (Exception e) {
+                    } catch (NumberFormatException e) {
                         labels.add(new DoubleWritable(Double.parseDouble(labelTokens[i])));
                     }
                 }
@@ -278,10 +278,13 @@ public class SVMLightRecordReader extends LineRecordReader {
      */
     @Override
     public Record nextRecord() {
+        throw new UnsupportedOperationException("nextRecord has not been implemented for SVMLightRecordReader");
+        /*
         List<Writable> next = next();
         URI uri = (locations == null || locations.length < 1 ? null : locations[splitIndex]);
         RecordMetaData meta = new RecordMetaDataLine(this.lineIndex - 1, uri, SVMLightRecordReader.class); //-1 as line number has been incremented already...
         return new org.datavec.api.records.impl.Record(next, meta);
+        */
     }
 
     @Override
@@ -299,6 +302,7 @@ public class SVMLightRecordReader extends LineRecordReader {
 
     @Override
     protected void onLocationOpen(URI location) {
+        super.onLocationOpen(location);
         recordLookahead = null;
     }
 }
