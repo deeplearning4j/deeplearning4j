@@ -115,6 +115,7 @@ public class MergeVertex extends BaseGraphVertex {
         switch (inputs[0].rank()) {
             case 2:
                 //Standard feedforward inputs...
+                /*
                 out = Nd4j.create(nExamples, nOut);
 
                 for (INDArray activation : inputs) {
@@ -123,9 +124,12 @@ public class MergeVertex extends BaseGraphVertex {
                                     .assign(activation);
                     nOutCumulative += currShape[1];
                 }
+                */
+                out = Nd4j.hstack(inputs);
                 break;
             case 3:
                 //Time series inputs...
+                /*
                 int tsLength = inputs[0].size(2);
                 out = Nd4j.create(nExamples, nOut, tsLength);
 
@@ -135,10 +139,13 @@ public class MergeVertex extends BaseGraphVertex {
                                     NDArrayIndex.all()).assign(activation);
                     nOutCumulative += currShape[1];
                 }
+                */
+                out = Nd4j.hstack(inputs);
 
                 break;
             case 4:
                 fwdPassRank = 4;
+                /*
                 int[] outShape = Arrays.copyOf(inputs[0].shape(), 4);
                 outShape[1] = nOut;
                 out = Nd4j.create(outShape);
@@ -150,6 +157,8 @@ public class MergeVertex extends BaseGraphVertex {
                                     NDArrayIndex.all(), NDArrayIndex.all()).assign(activation);
                     nOutCumulative += activation.size(1);
                 }
+                */
+                out = Nd4j.hstack(inputs);
 
                 break;
             default:
