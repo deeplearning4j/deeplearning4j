@@ -136,7 +136,7 @@ public class JDBCRecordReader extends BaseRecordReader {
 
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) throws IOException {
-        return null;
+        throw new UnsupportedOperationException("JDBCRecordReader does not support reading from a DataInputStream");
     }
 
     @Override

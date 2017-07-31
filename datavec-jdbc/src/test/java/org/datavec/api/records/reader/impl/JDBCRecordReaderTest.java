@@ -112,6 +112,12 @@ public class JDBCRecordReaderTest {
         reader.initialize(conf, null);
     }
 
+    @Test(expected = UnsupportedOperationException.class)
+    public void testRecordDataInputStreamShouldFail() throws Exception {
+        JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee");
+        reader.record(null, null);
+    }
+
     private JDBCRecordReader getInitializedReader(String query) throws Exception {
         JDBCRecordReader reader = new JDBCRecordReader(query, dataSource);
         reader.setTrimStrings(true);
