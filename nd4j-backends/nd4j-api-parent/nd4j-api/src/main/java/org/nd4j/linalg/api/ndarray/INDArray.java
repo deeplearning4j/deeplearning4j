@@ -1248,6 +1248,15 @@ public interface INDArray extends Serializable {
      */
     INDArray addiColumnVector(INDArray columnVector);
 
+
+    /**
+     * In place assignment of a column vector
+     *
+     * @param columnVector the column vector to add
+     * @return the result of the addition
+     */
+    INDArray putiColumnVector(INDArray columnVector);
+
     /**
      * Addition of a column vector (copy)
      *
@@ -1263,6 +1272,14 @@ public interface INDArray extends Serializable {
      * @return the result of the addition
      */
     INDArray addiRowVector(INDArray rowVector);
+
+    /**
+     * in place assignment of row vector
+     *
+     * @param rowVector
+     * @return
+     */
+    INDArray putiRowVector(INDArray rowVector);
 
     /**
      * Addition of a row vector (copy)

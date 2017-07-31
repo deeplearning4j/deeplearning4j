@@ -2237,6 +2237,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 case 'a':
                     addi(columnVector);
                     break;
+                case 'p':
+                    assign(columnVector);
+                    break;
                 case 's':
                     subi(columnVector);
                     break;
@@ -2264,6 +2267,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 switch (operation) {
                     case 'a': {
                         ScalarAdd op = new ScalarAdd(this, columnVector, this, this.length(), 0.0);
+                        op.setDimension(1);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+                    case 'p': {
+                        ScalarSet op = new ScalarSet(this, columnVector, this, this.length(), 0.0);
                         op.setDimension(1);
                         Nd4j.getExecutioner().exec(op);
                         break;
@@ -2357,6 +2366,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 case 'a':
                     addi(rowVector);
                     break;
+                case 'p':
+                    assign(rowVector);
+                    break;
                 case 's':
                     subi(rowVector);
                     break;
@@ -2387,6 +2399,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 switch (operation) {
                     case 'a': {
                         ScalarAdd op = new ScalarAdd(this, rowVector, this, this.length(), 0.0);
+                        op.setDimension(0);
+                        Nd4j.getExecutioner().exec(op);
+                        break;
+                    }
+                    case 'p': {
+                        ScalarSet op = new ScalarSet(this, rowVector, this, this.length(), 0.0);
                         op.setDimension(0);
                         Nd4j.getExecutioner().exec(op);
                         break;
@@ -2737,6 +2755,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return doColumnWise(columnVector, 'a');
     }
 
+    @Override
+    public INDArray putiColumnVector(INDArray columnVector) {
+        return doColumnWise(columnVector, 'p');
+    }
+
     /**
      * In place addition of a column vector
      *
@@ -2757,6 +2780,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray addiRowVector(INDArray rowVector) {
         return doRowWise(rowVector, 'a');
+    }
+
+    @Override
+    public INDArray putiRowVector(INDArray rowVector) {
+        return doRowWise(rowVector, 'p');
     }
 
     /**
