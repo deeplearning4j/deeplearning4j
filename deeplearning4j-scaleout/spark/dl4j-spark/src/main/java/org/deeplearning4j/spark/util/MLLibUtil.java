@@ -86,7 +86,9 @@ public class MLLibUtil {
      * @return an mllib vector
      */
     public static INDArray toMatrix(Matrix arr) {
-        return Nd4j.create(arr.toArray(), new int[] {arr.numRows(), arr.numCols()});
+
+        // we assume that Matrix always has F order
+        return Nd4j.create(arr.toArray(), new int[] {arr.numRows(), arr.numCols()}, 'f');
     }
 
     /**
@@ -109,7 +111,12 @@ public class MLLibUtil {
         if (!arr.isMatrix()) {
             throw new IllegalArgumentException("passed in array must be a matrix");
         }
-        return Matrices.dense(arr.rows(), arr.columns(), arr.data().asDouble());
+
+        // if arr is a view - we have to dup anyway
+        if (arr.isView()) {
+            return Matrices.dense(arr.rows(), arr.columns(), arr.dup('f').data().asDouble());
+        } else // if not a view - we must ensure data is F ordered
+            return Matrices.dense(arr.rows(), arr.columns(), arr.ordering() == 'f' ? arr.data().asDouble() : arr.dup('f').data().asDouble() );
     }
 
     /**
