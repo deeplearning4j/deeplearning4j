@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.derby.jdbc.EmbeddedDataSource;
+import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.listener.RecordListener;
 import org.datavec.api.records.listener.impl.LogRecordListener;
 import org.datavec.api.records.reader.impl.jdbc.JDBCRecordReader;
@@ -27,10 +28,13 @@ public class JDBCRecordReaderTest {
     Connection conn;
     EmbeddedDataSource dataSource;
 
+    private final String dbName = "datavecTests";
+    private final String driverClassName = "org.apache.derby.jdbc.EmbeddedDriver";
+
     @Before
     public void setUp() throws Exception {
         dataSource = new EmbeddedDataSource();
-        dataSource.setDatabaseName("datavecTests");
+        dataSource.setDatabaseName(dbName);
         dataSource.setCreateDatabase("create");
         conn = dataSource.getConnection();
 
@@ -84,11 +88,34 @@ public class JDBCRecordReaderTest {
         assertEquals(new Text("Bolivian Dark"), records.get(1).get(0));
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void testLackingDataSourceShouldFail() throws Exception {
+        JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM Coffee");
+        reader.initialize(null);
+    }
+
+    @Test
+    public void testConfigurationDataSourceInitialization() throws Exception {
+        JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM Coffee");
+        Configuration conf = new Configuration();
+        conf.set(JDBCRecordReader.JDBC_URL, "jdbc:derby:"+dbName+";create=true");
+        conf.set(JDBCRecordReader.JDBC_DRIVER_CLASS_NAME, driverClassName);
+        reader.initialize(conf, null);
+        assertTrue(reader.hasNext());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testInitConfigurationMissingParametersShouldFail() throws Exception {
+        JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM Coffee");
+        Configuration conf = new Configuration();
+        conf.set(JDBCRecordReader.JDBC_URL, "should fail anyway");
+        reader.initialize(conf, null);
+    }
+
     private JDBCRecordReader getInitializedReader(String query) throws Exception {
-        JDBCRecordReader reader = new JDBCRecordReader(dataSource, query);
+        JDBCRecordReader reader = new JDBCRecordReader(query, dataSource);
         reader.setTrimStrings(true);
-        // FIXME should implement a new input split ?
-        reader.initialize(new CollectionInputSplit(Collections.<URI>emptyList()));
+        reader.initialize(null);
         return reader;
     }
 }

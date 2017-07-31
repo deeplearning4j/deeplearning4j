@@ -1,5 +1,6 @@
 package org.datavec.api.records.reader.impl.jdbc;
 
+import com.zaxxer.hikari.util.DriverDataSource;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -10,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import javax.sql.DataSource;
 import lombok.Setter;
 import org.apache.commons.dbutils.DbUtils;
@@ -29,8 +31,8 @@ import org.datavec.api.writable.Writable;
  */
 public class JDBCRecordReader extends BaseRecordReader {
 
-    private final DataSource dataSource;
     private final String query;
+    private DataSource dataSource;
     private Connection conn;
     private Statement statement;
     private ResettableResultSetIterator iter;
@@ -38,17 +40,51 @@ public class JDBCRecordReader extends BaseRecordReader {
     @Setter
     private boolean trimStrings = false;
 
-    public JDBCRecordReader(DataSource dataSource, String query) {
+    public final static String TRIM_STRINGS = NAME_SPACE + ".trimStrings";
+    public final static String JDBC_URL = NAME_SPACE + ".jdbcUrl";
+    public final static String JDBC_DRIVER_CLASS_NAME = NAME_SPACE + ".jdbcDriverClassName";
+    public final static String JDBC_USERNAME = NAME_SPACE + "jdbcUsername" ;
+    public final static String JDBC_PASSWORD = NAME_SPACE + "jdbcPassword";
+
+    public JDBCRecordReader(String query) {
+        this.query = query;
+    }
+
+    public JDBCRecordReader(String query, DataSource dataSource) {
         this.dataSource = dataSource;
         this.query = query;
     }
 
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
+        if (dataSource == null) {
+            throw new IllegalStateException("Cannot initialize : no datasource");
+        }
+        initializeJdbc();
+    }
+
+    @Override
+    public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
+        this.trimStrings = conf.getBoolean(TRIM_STRINGS, trimStrings);
+        String jdbcUrl = conf.get(JDBC_URL);
+        String driverClassName = conf.get(JDBC_DRIVER_CLASS_NAME);
+        // url and driver must be both unset or both present
+        if (jdbcUrl == null ^ driverClassName == null) {
+            throw new IllegalArgumentException("Both jdbc url and driver class name must be provided in order to configure JDBCRecordReader's datasource");
+        }
+        // Both set, initialiaze the datasource
+        else if (jdbcUrl != null) {
+            // FIXME : find a way to include wildcard properties as third argument bellow
+            this.dataSource = new DriverDataSource(jdbcUrl, driverClassName, new Properties(), conf.get("username"), conf.get("password"));
+            this.initializeJdbc();
+        }
+    }
+
+    private void initializeJdbc() {
         try {
-            conn = dataSource.getConnection();
-            statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            statement.closeOnCompletion();
+            this.conn = dataSource.getConnection();
+            this.statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            this.statement.closeOnCompletion();
             ResultSet rs = statement.executeQuery(this.query);
             this.meta = rs.getMetaData();
             this.iter = new ResettableResultSetIterator(rs);
@@ -56,11 +92,6 @@ public class JDBCRecordReader extends BaseRecordReader {
             closeJdbc();
             throw new RuntimeException("Could not connect to the database", e);
         }
-    }
-
-    @Override
-    public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
-
     }
 
     @Override

@@ -11,6 +11,12 @@
 
   <artifactId>datavec-jdbc</artifactId>
 
+  <properties>
+    <dbutils.version>1.6</dbutils.version>
+    <hikaricp.version>2.4.12</hikaricp.version>
+    <derby.version>10.13.1.1</derby.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.datavec</groupId>
@@ -21,13 +27,19 @@
     <dependency>
       <groupId>commons-dbutils</groupId>
       <artifactId>commons-dbutils</artifactId>
-      <version>1.6</version>
+      <version>${dbutils.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP-java7</artifactId>
+      <version>${hikaricp.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.derby</groupId>
       <artifactId>derby</artifactId>
-      <version>10.13.1.1</version>
+      <version>${derby.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
