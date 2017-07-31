@@ -138,6 +138,9 @@ public class VoidConfiguration implements Serializable {
     }
 
     protected void validateNetmask() {
+        if (networkMask == null)
+            return;
+
         // micro-validaiton here
         String[] chunks = networkMask.split("\\.");
         if (chunks.length == 1 || networkMask.isEmpty())
