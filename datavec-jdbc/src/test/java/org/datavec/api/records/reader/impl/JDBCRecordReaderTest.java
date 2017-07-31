@@ -102,6 +102,7 @@ public class JDBCRecordReaderTest {
         conf.set(JDBCRecordReader.JDBC_DRIVER_CLASS_NAME, driverClassName);
         reader.initialize(conf, null);
         assertTrue(reader.hasNext());
+        reader.close();
     }
 
     @Test(expected = IllegalArgumentException.class)

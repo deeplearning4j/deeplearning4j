@@ -37,6 +37,7 @@ public class JDBCRecordReader extends BaseRecordReader {
     private Statement statement;
     private ResettableResultSetIterator iter;
     private ResultSetMetaData meta;
+    private Configuration configuration;
     @Setter
     private boolean trimStrings = false;
 
@@ -65,6 +66,7 @@ public class JDBCRecordReader extends BaseRecordReader {
 
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
+        this.setConf(conf);
         this.trimStrings = conf.getBoolean(TRIM_STRINGS, trimStrings);
         String jdbcUrl = conf.get(JDBC_URL);
         String driverClassName = conf.get(JDBC_DRIVER_CLASS_NAME);
@@ -166,11 +168,11 @@ public class JDBCRecordReader extends BaseRecordReader {
 
     @Override
     public void setConf(Configuration conf) {
-
+        this.configuration = conf;
     }
 
     @Override
     public Configuration getConf() {
-        return null;
+        return this.configuration;
     }
 }
