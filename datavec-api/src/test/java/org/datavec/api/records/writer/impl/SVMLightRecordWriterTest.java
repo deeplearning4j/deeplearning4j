@@ -129,16 +129,16 @@ public class SVMLightRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true);
-        writer.setConf(configWriter);
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
+            writer.setConf(configWriter);
 
-        SVMLightRecordReader rr = new SVMLightRecordReader();
-        rr.initialize(configReader, new FileSplit(inputFile));
-        while (rr.hasNext()) {
-            List<Writable> record = rr.next();
-            writer.write(record);
+            SVMLightRecordReader rr = new SVMLightRecordReader();
+            rr.initialize(configReader, new FileSplit(inputFile));
+            while (rr.hasNext()) {
+                List<Writable> record = rr.next();
+                writer.write(record);
+            }
         }
-        writer.close();
 
         Pattern p = Pattern.compile(String.format("%s:\\d+ ", SVMLightRecordReader.QID_PREFIX));
         List<String> linesOriginal = new ArrayList<>();
@@ -177,13 +177,13 @@ public class SVMLightRecordWriterTest {
 
         String lineOriginal = "13.0,14.0,15.0,4 1:1.0 2:11.0 3:12.0 4:2.0 5:3.0";
 
-        SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true);
-        Configuration configWriter = new Configuration();
-        configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
-        configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 3);
-        writer.setConf(configWriter);
-        writer.write(record);
-        writer.close();
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
+            Configuration configWriter = new Configuration();
+            configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
+            configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 3);
+            writer.setConf(configWriter);
+            writer.write(record);
+        }
 
         String lineNew = FileUtils.readFileToString(tempFile).trim();
         assertEquals(lineOriginal, lineNew);
@@ -212,14 +212,14 @@ public class SVMLightRecordWriterTest {
 
         String lineOriginal = "2,4 1:1.0 2:11.0 3:12.0 4:2.0 5:3.0";
 
-        SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true);
-        Configuration configWriter = new Configuration();
-        configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
-        configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
-        configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 3);
-        writer.setConf(configWriter);
-        writer.write(record);
-        writer.close();
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
+            Configuration configWriter = new Configuration();
+            configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
+            configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
+            configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 3);
+            writer.setConf(configWriter);
+            writer.write(record);
+        }
 
         String lineNew = FileUtils.readFileToString(tempFile).trim();
         assertEquals(lineOriginal, lineNew);
@@ -273,13 +273,14 @@ public class SVMLightRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true);
-        Configuration configWriter = new Configuration();
-        configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
-        configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 1);
-        configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
-        writer.setConf(configWriter);
-        writer.write(record);
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
+            Configuration configWriter = new Configuration();
+            configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
+            configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 1);
+            configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
+            writer.setConf(configWriter);
+            writer.write(record);
+        }
     }
 
     @Test(expected = NumberFormatException.class)
@@ -293,13 +294,14 @@ public class SVMLightRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true);
-        Configuration configWriter = new Configuration();
-        configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
-        configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 1);
-        configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
-        writer.setConf(configWriter);
-        writer.write(record);
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
+            Configuration configWriter = new Configuration();
+            configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
+            configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 1);
+            configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
+            writer.setConf(configWriter);
+            writer.write(record);
+        }
     }
 
     @Test(expected = NumberFormatException.class)
@@ -313,12 +315,13 @@ public class SVMLightRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true);
-        Configuration configWriter = new Configuration();
-        configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
-        configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 1);
-        configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
-        writer.setConf(configWriter);
-        writer.write(record);
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
+            Configuration configWriter = new Configuration();
+            configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
+            configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 1);
+            configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
+            writer.setConf(configWriter);
+            writer.write(record);
+        }
     }
 }

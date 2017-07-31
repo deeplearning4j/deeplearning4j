@@ -131,16 +131,16 @@ public class LibSvmRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true);
-        writer.setConf(configWriter);
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
+            writer.setConf(configWriter);
 
-        LibSvmRecordReader rr = new LibSvmRecordReader();
-        rr.initialize(configReader, new FileSplit(inputFile));
-        while (rr.hasNext()) {
-            List<Writable> record = rr.next();
-            writer.write(record);
+            LibSvmRecordReader rr = new LibSvmRecordReader();
+            rr.initialize(configReader, new FileSplit(inputFile));
+            while (rr.hasNext()) {
+                List<Writable> record = rr.next();
+                writer.write(record);
+            }
         }
-        writer.close();
 
         Pattern p = Pattern.compile(String.format("%s:\\d+ ", LibSvmRecordReader.QID_PREFIX));
         List<String> linesOriginal = new ArrayList<>();
@@ -214,14 +214,14 @@ public class LibSvmRecordWriterTest {
 
         String lineOriginal = "2,4 1:1.0 2:11.0 3:12.0 4:2.0 5:3.0";
 
-        LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true);
-        Configuration configWriter = new Configuration();
-        configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
-        configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
-        configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 3);
-        writer.setConf(configWriter);
-        writer.write(record);
-        writer.close();
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
+            Configuration configWriter = new Configuration();
+            configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
+            configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
+            configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 3);
+            writer.setConf(configWriter);
+            writer.write(record);
+        }
 
         String lineNew = FileUtils.readFileToString(tempFile).trim();
         assertEquals(lineOriginal, lineNew);
@@ -250,15 +250,15 @@ public class LibSvmRecordWriterTest {
 
         String lineOriginal = "1,3 0:1.0 1:11.0 2:12.0 3:2.0 4:3.0";
 
-        LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true);
-        Configuration configWriter = new Configuration();
-        configWriter.setBoolean(LibSvmRecordWriter.ZERO_BASED_INDEXING, true);
-        configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
-        configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
-        configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 3);
-        writer.setConf(configWriter);
-        writer.write(record);
-        writer.close();
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
+            Configuration configWriter = new Configuration();
+            configWriter.setBoolean(LibSvmRecordWriter.ZERO_BASED_INDEXING, true);
+            configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
+            configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
+            configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 3);
+            writer.setConf(configWriter);
+            writer.write(record);
+        }
 
         String lineNew = FileUtils.readFileToString(tempFile).trim();
         assertEquals(lineOriginal, lineNew);
@@ -275,13 +275,14 @@ public class LibSvmRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true);
-        Configuration configWriter = new Configuration();
-        configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
-        configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 1);
-        configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
-        writer.setConf(configWriter);
-        writer.write(record);
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
+            Configuration configWriter = new Configuration();
+            configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
+            configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 1);
+            configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
+            writer.setConf(configWriter);
+            writer.write(record);
+        }
     }
 
     @Test(expected = NumberFormatException.class)
@@ -295,13 +296,14 @@ public class LibSvmRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true);
-        Configuration configWriter = new Configuration();
-        configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
-        configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 1);
-        configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
-        writer.setConf(configWriter);
-        writer.write(record);
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
+            Configuration configWriter = new Configuration();
+            configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
+            configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 1);
+            configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
+            writer.setConf(configWriter);
+            writer.write(record);
+        }
     }
 
     @Test(expected = NumberFormatException.class)
@@ -315,12 +317,13 @@ public class LibSvmRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true);
-        Configuration configWriter = new Configuration();
-        configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
-        configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 1);
-        configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
-        writer.setConf(configWriter);
-        writer.write(record);
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
+            Configuration configWriter = new Configuration();
+            configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN,0);
+            configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN,1);
+            configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL,true);
+            writer.setConf(configWriter);
+            writer.write(record);
+        }
     }
 }
