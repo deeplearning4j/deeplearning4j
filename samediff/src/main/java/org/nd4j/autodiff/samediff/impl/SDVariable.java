@@ -51,6 +51,8 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public NDArrayInformation getInfo() {
+        if(getArrayField() == null)
+            return null;
         return getArrayField().getM_x().getInput();
     }
 

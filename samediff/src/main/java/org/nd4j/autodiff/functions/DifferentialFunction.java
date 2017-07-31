@@ -2,10 +2,7 @@ package org.nd4j.autodiff.functions;
 
 import java.util.List;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
@@ -25,9 +22,13 @@ public abstract class DifferentialFunction<X extends Field<X>>
         implements Field<DifferentialFunction<X>>,
         Differential<X, DifferentialFunction<X>> {
 
+    @Getter
+    @Setter
     protected SDGraph graph;
     @Getter
     protected OpState opState;
+    @Getter
+    @Setter
     protected int vertexId;
     protected Object[] extraArgs;
 

@@ -1,10 +1,7 @@
 package org.nd4j.autodiff;
 
 import com.google.common.base.Preconditions;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import lombok.*;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
@@ -35,8 +32,12 @@ import java.util.UUID;
 @Builder
 @EqualsAndHashCode
 public class ArrayField implements Field<ArrayField> {
+    @Getter
+    @Setter
     private Graph<NDArrayInformation,OpState> ops;
     private NDArrayInformation input;
+    @Getter
+    @Setter
     private NDArrayVertex vertex;
 
     public ArrayField(NDArrayVertex ndArrayVertex,
@@ -778,6 +779,8 @@ public class ArrayField implements Field<ArrayField> {
     private ArrayField addFirstScalarTransformOp(String name,
                                                  ArrayField i_v,
                                                  Object[] extraArgs) {
+        Preconditions.checkState(this.ops == i_v.ops, "If adding a field. Must be apart of the same graph.");
+
         NDArrayInformation ndArrayInformation =  NDArrayInformation.builder()
                 .id(name + "(" + input.getId() + ")").scalarValue(this.getInput().getScalarValue())
                 .arrId(UUID.randomUUID().toString())
@@ -859,6 +862,7 @@ public class ArrayField implements Field<ArrayField> {
                                        int[] dimensions,
                                        int[] resultShape,
                                        Object[] extraArgs) {
+        Preconditions.checkState(this.ops == i_v.ops, "If adding a field. Must be apart of the same graph.");
 
         NDArrayInformation information =   NDArrayInformation.builder()
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
@@ -904,6 +908,9 @@ public class ArrayField implements Field<ArrayField> {
     private ArrayField addPairReduceOp(String name,
                                        ArrayField i_v,
                                        Object[] extraArgs) {
+
+        Preconditions.checkState(this.ops == i_v.ops, "If adding a field. Must be apart of the same graph.");
+
         //result
         NDArrayInformation resultInfo =  NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
@@ -949,6 +956,8 @@ public class ArrayField implements Field<ArrayField> {
             return addFirstScalarTransformOp(name + "_scalar",
                     i_v,extraArgs);
         }
+
+        Preconditions.checkState(this.ops == i_v.ops, "If adding a field. Must be apart of the same graph.");
         //result
         NDArrayInformation resultInfo =  NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
@@ -968,6 +977,10 @@ public class ArrayField implements Field<ArrayField> {
                 .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.TRANSFORM).build();
         xToZ.setResult(resultInfo);
+        if(vertex.vertexID() == newVertex.vertexID())
+            throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
+                    " when next vertex id was " + this.ops.getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
+
         this.ops.addEdge(vertex.vertexID(),
                 newVertex.vertexID(),xToZ,true);
         //map y -> z
@@ -978,6 +991,9 @@ public class ArrayField implements Field<ArrayField> {
                 .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.TRANSFORM).build();
         yToZ.setResult(resultInfo);
+       if(i_v.getVertex().vertexID() == newVertex.vertexID())
+           throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
+                   " when next vertex id was " + this.ops.getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
         this.ops.addEdge(i_v.getVertex().vertexID(),
                 newVertex.vertexID(),yToZ,true);
         resultInfo.setOwner(yToZ);

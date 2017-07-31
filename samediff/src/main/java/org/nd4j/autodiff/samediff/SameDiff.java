@@ -85,9 +85,10 @@ public class SameDiff {
         //map new vertex ids and create new vertices
         for(int i = 0; i < graph().numVertices(); i++) {
             int nextVertexId = sameDiff.graph.nextVertexId();
-            Vertex<NDArrayInformation> info = new Vertex<>(
+            NDArrayInformation clone = cloner.deepClone(graph.getVertex(i + 1).getValue());
+            NDArrayVertex info = new NDArrayVertex(
                     nextVertexId,
-                    cloner.deepClone(graph.getVertex(i + 1).getValue()));
+                    clone);
             thisVertexIdToNew.put(graph.getVertex(i + 1).vertexID(),nextVertexId);
             sameDiff.graph().addVertex(info);
         }
@@ -110,6 +111,7 @@ public class SameDiff {
                             thisVertexIdToNew.get(edge.getFrom()),
                             thisVertexIdToNew.get(edge.getTo()),
                             cloner.deepClone(edge.getValue()), true);
+                    newEdge.getValue().setVertexIds(new String[]{String.valueOf(newEdge.getFrom()),String.valueOf(newEdge.getTo())});
                     edgesForNewVertex.add(newEdge);
                 }
             }
@@ -121,7 +123,8 @@ public class SameDiff {
                     Edge<OpState> newEdge = new Edge<>(
                             thisVertexIdToNew.get(edge.getFrom()),
                             thisVertexIdToNew.get(edge.getTo()),
-                            cloner.deepClone(edge.getValue()),true);
+                            cloner.deepCloneDontCloneInstances(edge.getValue()),true);
+                    newEdge.getValue().setVertexIds(new String[]{String.valueOf(newEdge.getFrom()),String.valueOf(newEdge.getTo())});
                     newIncomingEdges.add(newEdge);
                 }
             }
@@ -135,7 +138,31 @@ public class SameDiff {
 
         //copy over variables
         for(SDVariable variable : variables()) {
-            SDVariable deepClone = cloner.deepClone(variable);
+            SDVariable deepClone = cloner.deepCloneDontCloneInstances(
+                    variable,
+                    variable.getDifferentialFunction(),
+                    variable.getArrayField(),
+                    variable.getArr(),
+                    variable.getSameDiff(),
+                    variable.getInfo(),
+                    variable.getShape());
+            //change the vertex id to the new value
+            //for the graph transition
+            if(variable.getArrayField() != null) {
+                int vertexId = variable.getArrayField().getVertexId();
+                deepClone.getArrayField().setVertexId(vertexId);
+                deepClone.getArrayField().getM_x().setOps(sameDiff.graph());
+                deepClone.getArrayField().setGraph(sameDiff.graph());
+
+            }
+            else if(variable.getDifferentialFunction() != null) {
+                DifferentialFunction<ArrayField> val = deepClone.getDifferentialFunction();
+                int vertexId = val.getVertexId();
+                val.setVertexId(vertexId);
+                val.setGraph(sameDiff.graph());
+
+            }
+
             deepClone.setSameDiff(sameDiff);
             sameDiff.addVariable(deepClone);
         }
@@ -1679,6 +1706,11 @@ public class SameDiff {
         if(variableMap == null)
             variableMap = new HashMap<>();
 
+        if(variable.getArrayField() != null) {
+            variable.getArrayField().setGraph(graph());
+        }
+
+
         sameDiffVariables.add(variable);
         variableMap.put(variable.getVarName(),variable);
     }
@@ -1850,6 +1882,7 @@ public class SameDiff {
     public SDVariable invokeFunctionOn(String functionName,SameDiff with) {
         SameDiff instance = sameDiffFunctionInstances.get(functionName);
         SDVariable ret = instance.invokeGraphOn(with);
+
         return ret;
     }
 
@@ -1872,17 +1905,21 @@ public class SameDiff {
                                Map<String,INDArray> inputs) {
         //create subgraph
         //ensure function is apart of this graph as well
-        functionDefinition.define(this,inputs);
+        if(sameDiffFunctionDefinitionMap.get(function) == null) {
+            functionDefinition.define(this, inputs);
+            this.sameDiffFunctionDefinitionMap.put(function, functionDefinition);
+        }
 
-        this.sameDiffFunctionDefinitionMap.put(function,functionDefinition);
+        if(!sameDiffFunctionInstances.containsKey(function)) {
+            SameDiff sub = SameDiff.create();
+            sub.setWorkspace(workspace);
+            //setup subgraph
+            //re execute to populate subgraph
+            functionDefinition.define(sub,inputs);
 
-        SameDiff sub = SameDiff.create();
-        sub.setWorkspace(workspace);
-        //setup subgraph
-        //re execute to populate subgraph
-        functionDefinition.define(sub,inputs);
+            sameDiffFunctionInstances.put(function,sub);
+        }
 
-        sameDiffFunctionInstances.put(function,sub);
     }
 
 
