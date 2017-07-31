@@ -5154,6 +5154,28 @@ public class Nd4jTestsC extends BaseNd4jTest {
             assertEquals(exp, res.getDouble(i), 1e-5);
     }
 
+    @Test
+    public void testPutiRowVector() throws Exception {
+        INDArray matrix = Nd4j.createUninitialized(10, 10);
+        INDArray exp = Nd4j.create(10,10).assign(1.0);
+        INDArray row = Nd4j.create(10).assign(1.0);
+
+        matrix.putiRowVector(row);
+
+        assertEquals(exp, matrix);
+    }
+
+    @Test
+    public void testPutiColumnsVector() throws Exception {
+        INDArray matrix = Nd4j.createUninitialized(5, 10);
+        INDArray exp = Nd4j.create(5,10).assign(1.0);
+        INDArray row = Nd4j.create(5,1).assign(1.0);
+
+        matrix.putiColumnVector(row);
+
+        assertEquals(exp, matrix);
+    }
+
     @Override
     public char ordering() {
         return 'c';
