@@ -418,7 +418,8 @@ public class SameDiffTests {
                 SDVariable y = sameDiff.var("y",inputs.get("y"));
                 SDVariable outputTimesY = outputs.mul(y);
                 SDVariable oneMinusOutput = outputs.rsub(sameDiff.scalar("one",1.0));
-                SDVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(sameDiff.scalar("onetwo",1.0))));
+                SDVariable oneMinusPredictions = y.rsub(sameDiff.scalar("onetwo",1.0));
+                SDVariable probs = outputTimesY.add(oneMinusOutput.mul(oneMinusPredictions));
                 SDVariable logProbs = sameDiff.log(probs);
                 SDVariable sum = sameDiff.sum(logProbs,Integer.MAX_VALUE);
                 SDVariable negSum = sameDiff.neg(sum);
@@ -438,7 +439,7 @@ public class SameDiffTests {
         },inputs);
 
 
-        SameDiff logisticGraph = sameDiffOuter.getSameDiffFunctionInstances().get("lossGrad");
+        SameDiff logisticGraph = sameDiffOuter.getSameDiffFunctionInstances().get("loss");
         INDArray[] outputs = logisticGraph.eval(inputs);
         System.out.println(outputs);
 
