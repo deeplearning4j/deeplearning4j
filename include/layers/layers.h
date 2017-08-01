@@ -31,6 +31,16 @@ namespace nd4j {
             Nd4jIndex length;
             void *workspace;
 
+
+            bool dropOut = false;
+            bool dropConnect = false;
+
+            // dropout/dropconnect probabilities (if used)
+            T pDropOut, pDropConnect;
+
+            // activation function number (identity as default)
+            int aNum = 0;
+
             /**
              * This method "allocates" memory chunk from workspace
              *
@@ -56,6 +66,15 @@ namespace nd4j {
              * @return
              */
             virtual bool validateOutput() = 0;
+
+
+            /**
+             * DropOut & DropConnect helpers are platform-specific too
+             * @param input
+             * @param shapeInfo
+             */
+            virtual void dropOutHelper(T *input, int *shapeInfo) = 0;
+            virtual void dropConnectHelper(T *input, int *shapeInfo) = 0;
 
         public:
             /**

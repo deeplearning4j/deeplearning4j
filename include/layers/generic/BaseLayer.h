@@ -22,6 +22,18 @@ namespace nd4j {
             }
 
 
+            /*
+             * TODO: we need platform-specific RNG here (!!!)
+             */
+
+            void dropOutHelper(T *input, int *shapeInfo) {
+                // basically we loop over input here, and we're using inverted dropout here
+
+            }
+
+            void dropConnectHelper(T *input, int *shapeInfo) {
+                // and here we just loop over copy of params for dropout. regular dropout is use
+            }
         };
     }
 }

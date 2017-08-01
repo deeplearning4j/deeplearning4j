@@ -6,8 +6,8 @@
 #define PROJECT_ACTIVATIONS_H
 
 #define ACTIVATION_OPS \
-        (0, nd4j::activations::ReLU), \
-        (1, nd4j::activations::Identity)
+        (0, nd4j::activations::Identity) ,\
+        (1, nd4j::activations::ReLU)
 
 
 namespace nd4j {

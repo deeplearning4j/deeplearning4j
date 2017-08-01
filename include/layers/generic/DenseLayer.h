@@ -15,7 +15,17 @@ namespace nd4j {
         class DenseLayer: public BaseLayer<T> {
 
             void feedForward() {
+                // dropout helper call
+                if (dropOut)
+                    dropOutHelper(input, inputShapeInfo);
+
+                // dropconnect helper
+                if (dropConnect)
+                    dropConnectHelper(params, paramshapeInfo);
+
                 // do wxa+b here or something else
+
+                // activation call
             }
 
             void backPropagate() {
