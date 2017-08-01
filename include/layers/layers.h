@@ -11,7 +11,8 @@ namespace nd4j {
 
         template<typename T>
         class INativeLayer {
-        protected:
+
+        public:
             T *bias;
             T *biasShapeInfo;
 
@@ -76,7 +77,6 @@ namespace nd4j {
             virtual void dropOutHelper(T *input, int *shapeInfo) = 0;
             virtual void dropConnectHelper(T *input, int *shapeInfo) = 0;
 
-        public:
             /**
              * this method attaches layer to workspace memory
              * @param memory
@@ -126,7 +126,7 @@ namespace nd4j {
              *
              * @param input
              * @param shapeInfo
-             * @param mask
+             * @param maskinclude_directories(
              * @param shapeInfo
              */
             bool setInput(T *input, int *inputShapeInfo, T *mask, int *maskShapeInfo) {

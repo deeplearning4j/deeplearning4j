@@ -7,6 +7,8 @@
 
 
 #include <layers/layers.h>
+#include <layers/generic/ActivationsExecutioner.h>
+
 
 namespace nd4j {
     namespace layers {
@@ -14,11 +16,11 @@ namespace nd4j {
         template<typename T, typename AF>
         class BaseLayer: public INativeLayer<T> {
 
-        protected:
+        public:
             T *allocate(long bytes) {
-                allocated += bytes;
+                this->allocated += bytes;
 
-                return (T *) (workspace + bytes);
+                return (T *) (this->workspace + bytes);
             }
 
 

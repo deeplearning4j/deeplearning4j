@@ -13,19 +13,24 @@ namespace nd4j {
 
         template<typename T, typename AF>
         class DenseLayer: public BaseLayer<T, AF> {
+        public:
+
+            DenseLayer() {
+                //
+            }
 
             void feedForward() {
                 // dropout helper call
-                if (dropOut)
-                    dropOutHelper(input, inputShapeInfo);
+                if (this->dropOut)
+                    dropOutHelper(this->input, this->inputShapeInfo);
 
                 // dropconnect helper
-                if (dropConnect)
-                    dropConnectHelper(params, paramshapeInfo);
+                if (this->dropConnect)
+                    dropConnectHelper(this->params, this->paramshapeInfo);
 
                 // do wxa+b here or something else
                 // TODO: introduce BLAS right here
-                if (shape::isRowVector(inputShapeInfo)) {
+                if (shape::isRowVector(this->inputShapeInfo)) {
                     // gemv here input * W
                 } else {
                     // gemm here, input * W
@@ -40,6 +45,31 @@ namespace nd4j {
 
                 // activation derivative call
                 ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, this->output, this->inputShapeInfo);
+            }
+
+
+
+             bool validateParameters() {
+                 // to be implemented
+                 return true;
+             }
+
+            /**
+             * This method should validate input parameters, and return TRUE if everything ok. False otherwise
+             * @return
+             */
+            bool validateInput() {
+                // to be implemented
+                return true;
+            }
+
+            /**
+             * This method should valudate output parameters, and return TRUE if everything is ok, FALSE otherwise
+             * @return
+             */
+            bool validateOutput() {
+                // to be implemented
+                return true;
             }
         };
     }

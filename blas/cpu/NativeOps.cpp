@@ -16,6 +16,8 @@
 #include <helpers/helper_ptrmap.h>
 #include <helpers/logger.h>
 
+#include <layers/layers_factory.h>
+
 char *name;
 bool nameSet = false;
 

@@ -11,8 +11,8 @@
 namespace nd4j {
     namespace layers {
 
-        template<typename T>
-        class LSTMLayer: public BaseLayer<T> {
+        template<typename T, typename AF>
+        class LSTMLayer: public BaseLayer<T, AF> {
 
             void feedForward() {
                 // to be implemented

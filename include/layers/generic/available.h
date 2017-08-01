@@ -12,9 +12,9 @@
         (3, nd4j::layers::LSTMLayer)
 
 // here we should build list of includes for this backend AUTOMATICALLY, based on list and naming convention
-#include <./DenseLayer.h>
-#include <./ConvolutionLayer.h>
-#include <./Pooling2DLayer.h>
-#include <./LSTMLayer.h>
+#include "./DenseLayer.h"
+#include "./ConvolutionLayer.h"
+#include "./Pooling2DLayer.h"
+#include "./LSTMLayer.h"
 
 #endif //PROJECT_AVAILABLE_H

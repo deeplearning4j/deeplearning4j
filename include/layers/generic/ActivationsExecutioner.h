@@ -22,7 +22,7 @@ public:
     template<typename Activation>
     static inline void executeFF(T *input, T *output, int *inputShapeInfo) {
         // add special invocation here, like softmax case etc
-        if (Activation::requiresSpecialFF) {
+        if (Activation::requiresSpecialFF()) {
             Activation::ffActivation(input, output, inputShapeInfo);
             return;
         }
@@ -31,14 +31,14 @@ public:
 
 //#pragma omp parallel for
         for (Nd4jIndex e = 0; e < n; e++) {
-           output[e] = ouActivation::ffActivation(input[e]);
+           output[e] = Activation::ffActivation(input[e]);
         }
     }
 
     template<typename Activation>
     static inline void executeBP(T * input, T *epsilon, T *output, int *inputShapeInfo) {
         // add special invocation here, like softmax case etc
-        if (Activation::requiresSpecialBP) {
+        if (Activation::requiresSpecialBP()) {
             Activation::bpActivation(input, epsilon, output, inputShapeInfo);
             return;
         }

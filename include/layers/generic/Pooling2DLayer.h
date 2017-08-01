@@ -11,8 +11,9 @@
 namespace nd4j {
     namespace layers {
 
-        template<typename T>
-        class Pooling2DLayer: public BaseLayer<T> {
+        // FIXME: we don't need activation function here
+        template<typename T, typename AF>
+        class Pooling2DLayer: public BaseLayer<T, AF> {
 
             void feedForward() {
                 // to be implemented
