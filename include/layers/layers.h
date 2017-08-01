@@ -113,6 +113,14 @@ namespace nd4j {
             }
 
             /**
+             * We have some options to be configured in layer: dropout, dropconnect, lr, etc
+             * This method should handle that. Maybe map (key-value), or something like that?
+             */
+            void configureLayer() {
+                // TODO: implementation to be decided
+            }
+
+            /**
              * This method allows to specify input data for layer
              * This output will be either activation of this layer, or error from next layer
              *
