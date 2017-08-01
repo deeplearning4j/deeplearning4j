@@ -86,7 +86,7 @@ public class TestVariableLengthTS {
             Gradient g2 = net.gradient();
 
             //Scores and gradients should be identical for two cases (given mask array)
-            assertEquals(score1, score2, 1e-6;
+            assertEquals(score1, score2, 1e-6);
 
             Map<String, INDArray> g1map = g1.gradientForVariable();
             Map<String, INDArray> g2map = g2.gradientForVariable();

@@ -416,14 +416,14 @@ public class TestOptimizers {
                             .layer(new DenseLayer.Builder().nIn(1).nOut(1).updater(Updater.ADAGRAD).build()).build();
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
-            Model m = new RastriginFunctionModel(100, conf);
+            Model m = new RastriginFunctionModel(10, conf);
             int nParams = m.numParams();
             if (i == 0) {
                 m.computeGradientAndScore();
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
-                opt.getUpdater().setStateViewArray((Layer) m, Nd4j.createUninitialized(new int[] {1, nParams}, 'c'),
+                opt.getUpdater().setStateViewArray((Layer) m, Nd4j.create(new int[] {1, nParams}, 'c'),
                                 true);
                 opt.optimize();
                 m.computeGradientAndScore();
