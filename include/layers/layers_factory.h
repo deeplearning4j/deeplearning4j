@@ -15,6 +15,8 @@
 #include <layers/activations/ops.h>
 
 /////////// here we should have backend-specific includes
+
+// TODO: we want CHIP/ARCH vars being passed from build script here
 #include <layers/generic/available.h>
 
 namespace nd4j {
@@ -27,9 +29,9 @@ namespace nd4j {
 
             // we should give out layer instances depending on layerNum here
             // TODO: we want to pass things like dropout, dropconnect, probabilities, whatever else here
-            static void * getNewLayer(int layerNum) {
+            static INativeLayer<float>* getNewLayerFloat(int layerNum) {
                 // macro required here, based on list of available layers, declared in available.h
-                return (void *) new DenseLayer<float, nd4j::activations::ReLU<float>>();
+                return new DenseLayer<float, nd4j::activations::ReLU<float>>();
             }
         };
     }

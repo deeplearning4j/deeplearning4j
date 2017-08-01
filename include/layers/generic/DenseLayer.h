@@ -48,18 +48,26 @@ namespace nd4j {
             }
 
 
-
+            /**
+             * This method should validate layer parameters & bias, and return TRUE if everything ok. FALSE otherwise
+             *
+             * @return
+             */
              bool validateParameters() {
                  // to be implemented
+
                  return true;
              }
 
             /**
-             * This method should validate input parameters, and return TRUE if everything ok. False otherwise
+             * This method should validate input parameters, and return TRUE if everything ok. FALSE otherwise
              * @return
              */
             bool validateInput() {
-                // to be implemented
+                // we expect input to be either vector or matrix, in both cases - that's rank2
+                if (this->input == nullptr || this->inputShapeInfo == nullptr && shape::rank(this->inputShapeInfo) != 2)
+                    return false;
+
                 return true;
             }
 
@@ -68,7 +76,15 @@ namespace nd4j {
              * @return
              */
             bool validateOutput() {
-                // to be implemented
+                // same as input validation here. we expect rank of output arra
+                if (this->output == nullptr || this->outputShapeInfo == nullptr && shape::rank(this->outputShapeInfo) != 2)
+                    return false;
+
+                // length of output along dimension 1 should match length of parameters, if parameters are set,
+                if (this->bias != nullptr) {
+
+                }
+
                 return true;
             }
         };
