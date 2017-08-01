@@ -2,8 +2,8 @@
 // @author raver119@gmail.com
 //
 
-#ifndef PROJECT_CONVOLUTIONLAYER_H
-#define PROJECT_CONVOLUTIONLAYER_H
+#ifndef PROJECT_LSTMLAYER_H
+#define PROJECT_LSTMLAYER_H
 
 #include <layers/layers.h>
 #include <layers/generic/BaseLayer.h>
@@ -12,7 +12,7 @@ namespace nd4j {
     namespace layers {
 
         template<typename T>
-        class ConvolutionLayer: public BaseLayer<T> {
+        class LSTMLayer: public BaseLayer<T> {
 
             void feedForward() {
                 // to be implemented
@@ -25,4 +25,4 @@ namespace nd4j {
     }
 }
 
-#endif //PROJECT_CONVOLUTIONLAYER_H
+#endif //PROJECT_POOLING2DLAYER_H

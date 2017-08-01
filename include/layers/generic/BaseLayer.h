@@ -11,7 +11,7 @@
 namespace nd4j {
     namespace layers {
 
-        template<typename T>
+        template<typename T, typename AF>
         class BaseLayer: public INativeLayer<T> {
 
         protected:
@@ -29,10 +29,13 @@ namespace nd4j {
             void dropOutHelper(T *input, int *shapeInfo) {
                 // basically we loop over input here, and we're using inverted dropout here
 
+                // we probably should allocate temp array here, and replace input pointer
             }
 
             void dropConnectHelper(T *input, int *shapeInfo) {
                 // and here we just loop over copy of params for dropout. regular dropout is use
+
+                // we probably should allocate temp array here, and replace params pointer
             }
         };
     }

@@ -11,8 +11,8 @@
 namespace nd4j {
     namespace layers {
 
-        template<typename T>
-        class DenseLayer: public BaseLayer<T> {
+        template<typename T, typename AF>
+        class DenseLayer: public BaseLayer<T, AF> {
 
             void feedForward() {
                 // dropout helper call
@@ -24,12 +24,22 @@ namespace nd4j {
                     dropConnectHelper(params, paramshapeInfo);
 
                 // do wxa+b here or something else
+                // TODO: introduce BLAS right here
+                if (shape::isRowVector(inputShapeInfo)) {
+                    // gemv here input * W
+                } else {
+                    // gemm here, input * W
+                }
 
                 // activation call
+                ActivationsExecutioner<T>::template executeFF<AF>(this->input, this->output, this->inputShapeInfo);
             }
 
             void backPropagate() {
                 //
+
+                // activation derivative call
+                ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, this->output, this->inputShapeInfo);
             }
         };
     }

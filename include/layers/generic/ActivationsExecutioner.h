@@ -8,7 +8,7 @@
 #include <layers/activations.h>
 
 template <typename T>
-class GenericActivationsExecutioner: public ActivationsExecutioner {
+class ActivationsExecutioner {
 public:
 
 
@@ -38,7 +38,7 @@ public:
     template<typename Activation>
     static inline void executeBP(T * input, T *epsilon, T *output, int *inputShapeInfo) {
         // add special invocation here, like softmax case etc
-        if (Activation::requiresSpecialFF) {
+        if (Activation::requiresSpecialBP) {
             Activation::bpActivation(input, epsilon, output, inputShapeInfo);
             return;
         }

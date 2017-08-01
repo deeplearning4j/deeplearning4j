@@ -10,21 +10,27 @@
         (1, nd4j::activations::ReLU)
 
 
+        /*
+         * We don't really need this Executioner class, and it will be removed in favor of backend-specific helper.
+         * There's just nothing to override here.
+         */
 namespace nd4j {
     namespace activations {
 
+
         template <typename T>
-        class ActivationsExecutioner {
+        class IActivationsExecutioner {
         public:
+            // DEPRECATED, WILL BE REMOVED
             // add extraParams here probably?
             static inline void executeFF(int aNum, T *input, T *output, int *inputShapeInfo) {
                 // we need to build activations executor here. some macros, anyone?
             }
 
+            // DEPRECATED, WILL BE REMOVED
             // add extraParams here probably?
             static inline void executeBP(int aNum, T *input, T *epsilon, T *output, int *inputShapeInfo) {
                 // we need to build activations executor here. some macros, again? :)
-
             }
 
             /**
