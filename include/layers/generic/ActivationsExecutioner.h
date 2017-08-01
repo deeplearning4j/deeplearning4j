@@ -20,26 +20,34 @@ public:
      * @param inputShapeInfo
      */
     template<typename Activation>
-    static inline void executeFF(T * input, int *inputShapeInfo) {
+    static inline void executeFF(T *input, T *output, int *inputShapeInfo) {
         // add special invocation here, like softmax case etc
+        if (Activation::requiresSpecialFF) {
+            Activation::ffActivation(input, output, inputShapeInfo);
+            return;
+        }
 
         Nd4jIndex n = shape::length(inputShapeInfo);
 
 //#pragma omp parallel for
         for (Nd4jIndex e = 0; e < n; e++) {
-            Activation::ffActivation(input[e]);
+           output[e] = ouActivation::ffActivation(input[e]);
         }
     }
 
     template<typename Activation>
-    static inline void executeBP(T * input, T *epsilon, int *inputShapeInfo) {
+    static inline void executeBP(T * input, T *epsilon, T *output, int *inputShapeInfo) {
         // add special invocation here, like softmax case etc
+        if (Activation::requiresSpecialFF) {
+            Activation::bpActivation(input, epsilon, output, inputShapeInfo);
+            return;
+        }
 
         Nd4jIndex n = shape::length(inputShapeInfo);
 
 //#pragma omp parallel for
         for (Nd4jIndex e = 0; e < n; e++) {
-            Activation::bpActivation(input[e], epsilon[e]);
+            output[e] = Activation::bpActivation(input[e], epsilon[e]);
         }
     }
 };

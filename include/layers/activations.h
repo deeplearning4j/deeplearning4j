@@ -5,40 +5,24 @@
 #ifndef PROJECT_ACTIVATIONS_H
 #define PROJECT_ACTIVATIONS_H
 
+#define ACTIVATION_OPS \
+        (0, nd4j::activations::ReLU), \
+        (1, nd4j::activations::Identity)
+
+
 namespace nd4j {
     namespace activations {
-        template <typename T>
-        class IActivation {
-
-        public:
-            /**
-             * This method applies activation for FF pass
-             *
-             * @param input
-             * @param inputShapeInfo
-             */
-            inline static void ffActivation(T *input, int *inputShapeInfo);
-
-            /**
-             * This method applies activation for BP pass
-             *
-             * @param input
-             * @param inputShapeInfo
-             */
-            inline static void bpActivation(T *input, T *epsilon, int *inputShapeInfo);
-        };
-
 
         template <typename T>
         class ActivationsExecutioner {
         public:
             // add extraParams here probably?
-            static inline void executeFF(int aNum, T *input, int *inputShapeInfo) {
+            static inline void executeFF(int aNum, T *input, T *output, int *inputShapeInfo) {
                 // we need to build activations executor here. some macros, anyone?
             }
 
             // add extraParams here probably?
-            static inline void executeBP(int aNum, T *input, int *inputShapeInfo) {
+            static inline void executeBP(int aNum, T *input, T *epsilon, T *output, int *inputShapeInfo) {
                 // we need to build activations executor here. some macros, again? :)
 
             }
@@ -51,10 +35,14 @@ namespace nd4j {
              * @param inputShapeInfo
              */
             template<typename Activation>
-            static virtual void executeFF(T * input, int *inputShapeInfo) = 0;
+            static void executeFF(T *input, T *output, int *inputShapeInfo) {
+                // platform-specific invocation loop here
+            }
 
             template<typename Activation>
-            static virtual void executeBP(T * input, int *inputShapeInfo) = 0;
+            static void executeBP(T *input, T *epsilon, T *output, int *inputShapeInfo) {
+                // platform-specific invocation loop here
+            };
         };
     }
 }
