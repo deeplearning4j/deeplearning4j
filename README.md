@@ -1,25 +1,25 @@
 # Jumpy
 --------------------------
 
-Jumpy is the python interface for [nd4j](https://nd4j.org)
+Jumpy is the python interface for [nd4j](https://nd4j.org).
 
-Jumpy allows for python to use nd4j via pointers
-(no network communication required like a lot of python libraries)
-
+Jumpy allows for python to use nd4j via pointers (no network communication required like a lot of python libraries).
 
 Jumpy is a thin wrapper around numpy and [jnius](https://github.com/kivy/pyjnius).
 
+To setup jumpy, you need to set a jumpy classpath via the environment variable:
 
-To setup jumpy, you need to set a jumpy classpath via the enviroment variable:
-
+```
 JUMPY_CLASSPATH
-
+```
 
 The JUMPY_CLASSPATH can be set to a list of jar files that contain
 the necessary jar files for running an [nd4j backend](http://nd4j.org/backend.html)
 
 Install:
+```{python}
 pip install jumpy
+```
 
 Setting up the classpath
 --------------------------------------------------
@@ -80,11 +80,11 @@ Paste:
             </plugin>
 ```
 
-in tho the pom.xml. This will make maven build 1 jar you can use with jumpy.
+in the pom.xml. This will make maven build 1 jar you can use with jumpy.
 
 Run:
 ```
-cd nd4j-examples && mvn clean install -DskipTests
+cd dl4j-examples && mvn clean install -DskipTests
 ```
 
 This will give you a jar in the target directory. The target directory should contain a very large jar with -bin in the name.
@@ -97,4 +97,3 @@ export JUMPY_CLASS_PATH=/path/to/jar
 This should allow you to get started with jumpy.
 
 File issues if there are problems.
-
