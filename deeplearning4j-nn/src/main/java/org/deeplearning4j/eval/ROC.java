@@ -352,7 +352,7 @@ public class ROC extends BaseEvaluation<ROC> {
             t.put(new INDArrayIndex[] {NDArrayIndex.interval(1, length + 1), NDArrayIndex.all()}, sorted.getColumn(0));
 
             INDArray linspace = Nd4j.linspace(1, length, length);
-            INDArray precision = cumSumPos.div(linspace);
+            INDArray precision = cumSumPos.div(linspace.reshape(cumSumPos.shape()));
             INDArray prec = Nd4j.create(new int[] {length + 2, 1});
             prec.put(new INDArrayIndex[] {NDArrayIndex.interval(1, length + 1), NDArrayIndex.all()}, precision);
 
