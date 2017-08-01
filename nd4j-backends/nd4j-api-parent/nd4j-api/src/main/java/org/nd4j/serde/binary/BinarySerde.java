@@ -109,6 +109,7 @@ public class BinarySerde {
 
     }
 
+
     /**
      * Convert an ndarray to an unsafe buffer
      * for use by aeron
