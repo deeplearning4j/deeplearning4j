@@ -239,4 +239,13 @@ public class LoneTest extends BaseNd4jTest {
 
         log.info("p50: {}; avg: {};", times.get(times.size() / 2), time);
     }
+
+    @Test(expected = Exception.class)
+    public void checkIllegalElementOps() {
+        INDArray A = Nd4j.linspace(1,20,20).reshape(4,5);
+        INDArray B = A.dup().reshape(2,2,5);
+
+        //multiplication of arrays of different rank should throw exception
+        INDArray C = A.mul(B);
+    }
 }
