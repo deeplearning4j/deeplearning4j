@@ -200,15 +200,15 @@ public class TestSparkComputationGraph extends BaseSparkTest {
                         .setOutputs("1").pretrain(false).backprop(true).build();
 
         Nd4j.getRandom().setSeed(12345);
-        ComputationGraph n1 = new ComputationGraph(conf);
+        ComputationGraph n1 = new ComputationGraph(conf.clone());
         n1.init();
 
         Nd4j.getRandom().setSeed(12345);
-        ComputationGraph n2 = new ComputationGraph(conf);
+        ComputationGraph n2 = new ComputationGraph(conf.clone());
         n2.init();
 
         Nd4j.getRandom().setSeed(12345);
-        ComputationGraph n3 = new ComputationGraph(conf);
+        ComputationGraph n3 = new ComputationGraph(conf.clone());
         n3.init();
 
         SparkComputationGraph sparkNet1 = new SparkComputationGraph(sc, n1,
