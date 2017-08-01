@@ -15,11 +15,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-nd4j-common</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-base64</artifactId>
             <version>${nd4j.version}</version>
