@@ -1080,4 +1080,47 @@ public class MultiLayerTest {
 
         net.computeGradientAndScore();
     }
+
+
+    @Test
+    public void testSetParamTable(){
+
+        Nd4j.getRandom().setSeed(123);
+        MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
+                .seed(123).list()
+                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
+                        .activation(Activation.TANH).build())
+                .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER)
+                        .activation(Activation.TANH).build())
+                .layer(2, new LSTM.Builder().nIn(2).nOut(2).build())
+                .layer(3, new RnnOutputLayer.Builder(
+                        LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER)
+                        .activation(Activation.SOFTMAX).nIn(2).nOut(3).build())
+                .backprop(true).pretrain(false).build();
+
+        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                .seed(987).list()
+                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
+                        .activation(Activation.TANH).build())
+                .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER)
+                        .activation(Activation.TANH).build())
+                .layer(2, new LSTM.Builder().nIn(2).nOut(2).build())
+                .layer(3, new RnnOutputLayer.Builder(
+                        LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER)
+                        .activation(Activation.SOFTMAX).nIn(2).nOut(3).build())
+                .backprop(true).pretrain(false).build();
+
+        MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
+        net1.init();
+
+        MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+        net2.init();
+
+        assertNotEquals(net1.params(), net2.params());
+        assertNotEquals(net1.paramTable(), net2.paramTable());
+
+        net1.setParamTable(net2.paramTable());
+        assertEquals(net1.params(), net2.params());
+        assertEquals(net1.paramTable(), net2.paramTable());
+    }
 }
