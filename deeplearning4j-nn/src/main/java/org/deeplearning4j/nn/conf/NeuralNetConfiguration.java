@@ -33,15 +33,13 @@ import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
-import org.deeplearning4j.nn.updater.UpdaterUtils;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.IUpdater;
-import org.nd4j.linalg.learning.config.Sgd;
+import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.databind.*;
 import org.nd4j.shade.jackson.databind.deser.BeanDeserializerModifier;
@@ -54,8 +52,6 @@ import org.reflections.Reflections;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -1011,6 +1007,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @see Updater
          */
         public Builder updater(Updater updater) {
+            this.updater = updater;
             return updater(updater.getIUpdaterWithDefaultConfig());
         }
 
@@ -1021,6 +1018,16 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param updater Updater to use
          */
         public Builder updater(IUpdater updater) {
+            //Ensure legacy field is set...
+            if(updater instanceof Sgd) this.updater = Updater.SGD;
+            else if(updater instanceof Adam) this.updater = Updater.ADAM;
+            else if(updater instanceof AdaMax) this.updater = Updater.ADAMAX;
+            else if(updater instanceof AdaDelta) this.updater = Updater.ADADELTA;
+            else if(updater instanceof Nesterovs) this.updater = Updater.NESTEROVS;
+            else if(updater instanceof Nadam) this.updater = Updater.NADAM;
+            else if(updater instanceof AdaGrad) this.updater = Updater.ADAGRAD;
+            else if(updater instanceof RmsProp) this.updater = Updater.RMSPROP;
+            else if(updater instanceof NoOp) this.updater = Updater.NONE;
             this.iUpdater = updater;
             return this;
         }
