@@ -41,12 +41,21 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
 
 /**
- * Created by agibsonccc on 1/11/15.
+ * Unit tests for SVMLightRecordReader and SVMLightRecordWriter.
+ * Have been replaced by the SVMLightRecordReaderTest and
+ * SVMLightRecordWriterTest unit tests.
+ *
+ * We're keeping these around for checking backwards compatibility,
+ * but we can get rid of them soon.
+ *
+ * @author Adam Gibson (original)
+ * @author dave@skymind.io
  */
+@Deprecated
 public class SVMRecordWriterTest {
 
     @Test
-    public void testWriter() throws Exception {
+    public void testBasic() throws Exception {
         String tempDir = System.getProperty("java.io.tmpdir");
         InputStream is = new ClassPathResource("iris.dat").getInputStream();
         assumeNotNull(is);
@@ -82,6 +91,7 @@ public class SVMRecordWriterTest {
 
         Configuration conf = new Configuration();
         conf.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
+        conf.setInt(SVMLightRecordReader.NUM_FEATURES, 4);
         RecordReader svmReader = new SVMLightRecordReader();
         InputSplit svmSplit = new FileSplit(out);
         svmReader.initialize(conf, svmSplit);
@@ -108,18 +118,22 @@ public class SVMRecordWriterTest {
     @Test
     public void testReadZeroIndexed() throws Exception {
         Configuration conf = new Configuration();
+        conf.setInt(SVMLightRecordReader.NUM_FEATURES, 5);
         conf.set(FileRecordReader.APPEND_LABEL, "true");
+        conf.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, true);
         RecordReader libSvmRecordReader = new SVMLightRecordReader();
         libSvmRecordReader.initialize(conf, new FileSplit(new ClassPathResource("iris.libsvm").getFile()));
 
         Configuration confZero = new Configuration();
+        confZero.setInt(SVMLightRecordReader.NUM_FEATURES, 4);
         confZero.set(FileRecordReader.APPEND_LABEL, "true");
         confZero.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, true);
         RecordReader libSvmRecordReaderZero = new SVMLightRecordReader();
-        libSvmRecordReaderZero.initialize(conf,
+        libSvmRecordReaderZero.initialize(confZero,
                         new FileSplit(new ClassPathResource("iris_zero_indexed.libsvm").getFile()));
 
         Configuration confNoZero = new Configuration();
+        confNoZero.setInt(SVMLightRecordReader.NUM_FEATURES, 4);
         confNoZero.set(FileRecordReader.APPEND_LABEL, "true");
         confNoZero.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
         RecordReader libSvmRecordReaderNoZero = new SVMLightRecordReader();

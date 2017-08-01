@@ -16,31 +16,34 @@
 
 package org.datavec.api.records.writer.impl.misc;
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.records.writer.impl.LineRecordWriter;
-import org.datavec.api.writable.ArrayWritable;
-import org.datavec.api.writable.Writable;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+
 
 /**
+ * Record writer for libsvm format, which is closely
+ * related to SVMLight format. Similar to scikit-learn
+ * we use a single writer for both formats, so this class
+ * is a subclass of SVMLightRecordWriter.
  *
- * Each line is in the format:
- * label i:value
+ * @see SVMLightRecordWriter
  *
- * where is is the current index and value is a double
- * separated by space
+ * Further details on the format can be found at
+ * - http://svmlight.joachims.org/
+ * - http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel.html
+ * - http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_svmlight_file.html
  *
- * @author Adam Gibson
+ * @author Adam Gibson     (original)
+ * @author dave@skymind.io
  */
-public class LibSvmRecordWriter extends LineRecordWriter {
-
-    public static final String CLASSIFICATION = "libsvm.classification";
-
+@Slf4j
+public class LibSvmRecordWriter extends SVMLightRecordWriter {
+    public LibSvmRecordWriter() {
+        super();
+    }
 
     public LibSvmRecordWriter(File path) throws FileNotFoundException {
         super(path);
@@ -52,58 +55,11 @@ public class LibSvmRecordWriter extends LineRecordWriter {
 
     public LibSvmRecordWriter(Configuration conf) throws FileNotFoundException {
         super(conf);
+        setConf(conf);
     }
-
-    public LibSvmRecordWriter() {}
 
     @Override
-    public void write(List<Writable> record) throws IOException {
-        List<Writable> asList = record instanceof List ? (List<Writable>) record : new ArrayList<>(record);
-        double response = Double.valueOf(asList.get(asList.size() - 1).toString());
-        StringBuilder write = new StringBuilder();
-        boolean classification = conf.getBoolean(CLASSIFICATION, true);
-        if (classification) {
-            write.append((int) response);
-        } else
-            write.append(response);
-        write.append(" ");
-
-        for (int i = 0; i < asList.size() - 1; i++) {
-            //sparse format
-            try {
-                double val = Double.valueOf(asList.get(i).toString());
-                if (val == 0.0)
-                    continue;
-                try {
-                    write.append((i + 1) + ":" + Integer.valueOf(asList.get(i).toString()));
-                } catch (NumberFormatException e) {
-                    write.append((i + 1) + ":" + Double.valueOf(asList.get(i).toString()));
-
-                }
-                if (i < asList.size() - 1)
-                    write.append(" ");
-            } catch (NumberFormatException e) {
-                // This isn't a scalar, so check if we got an array already
-                Writable w = asList.get(i);
-                if (w instanceof ArrayWritable) {
-                    ArrayWritable a = (ArrayWritable) w;
-                    for (long j = 0; j < a.length(); j++) {
-                        double val = a.getDouble(j);
-                        if (val == 0.0)
-                            continue;
-                        write.append((j + 1) + ":" + a.getDouble(j));
-                        if (j < a.length() - 1)
-                            write.append(" ");
-                    }
-                } else {
-                    throw e;
-                }
-            }
-        }
-
-        out.write(write.toString().trim().getBytes());
-        out.write(NEW_LINE.getBytes());
-
+    public void setConf(Configuration conf) {
+        super.setConf(conf);
     }
-
 }
