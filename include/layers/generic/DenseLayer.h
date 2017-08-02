@@ -34,6 +34,11 @@ namespace nd4j {
                     // gemv here input * W
                 } else {
                     // gemm here, input * W
+                    int M, N, K;
+                    int lda, ldb, ldc;
+                    T alpha, beta;
+
+                    nd4j::blas::GEMM<T>::op('f', true, false, M, N, K, alpha, this->input, lda, this->params, ldb, beta, this->output, ldc);
                 }
 
                 // activation call

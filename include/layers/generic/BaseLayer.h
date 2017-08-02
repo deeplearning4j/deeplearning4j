@@ -9,6 +9,8 @@
 #include <layers/layers.h>
 #include <layers/generic/ActivationsExecutioner.h>
 
+// FIXME: we need to use MKL/OpenBLAS/whatever here, but temporary this will work fine
+#include <ops/gemm.h>
 
 namespace nd4j {
     namespace layers {
