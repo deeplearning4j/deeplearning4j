@@ -98,14 +98,8 @@ template<typename T, typename AF> void DenseLayer<T,AF>::feedForward() {
     else {
         // gemm here, input * W
         // these values should be set appropriately
-        int M, N, K;
-        int lda, ldb, ldc;
-        T alpha, beta;
 
-        int numRows = inputShape[0];
-        int numCols = inputShape[1];
-
-        nd4j::blas::GEMM<T>::op('f', true, false, M, N, K, alpha, this->input, lda, this->params, ldb, beta, this->output, ldc);
+        this->gemmHelper(this->input, this->inputShapeInfo, this->params, this->paramsShapeInfo, this->output, this->outputShapeInfo, (T) 1.0f, (T) 0.0f);
 
         // we're rolling through rows here
         int rowLen = this->outputShapeInfo[2];
