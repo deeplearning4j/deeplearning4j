@@ -31,9 +31,31 @@ Another option to keep in mind, that in case of YARN (or any other resource mana
 
 And last-resort option for IP address selection is `DL4J_VOID_IP` environment variable. Set that variable on each node you're running, with local IP address to be used for comms.
 
+### Dependencies
+
+Below you'll find template for the only required dependency:
+
+```
+<dependency>
+    <groupId>org.deeplearning4j</groupId>
+    <artifactId>dl4j-spark-parameterserver_${scala.binary.version}</artifactId>
+    <version>${dl4j.spark.version}</version>
+</dependency>
+```
+
+In example:  
+
+```
+<dependency>
+    <groupId>org.deeplearning4j</groupId>
+    <artifactId>dl4j-spark-parameterserver_2.11</artifactId>
+    <version>0.9.0_spark_2</version>
+</dependency>
+```
+
 ### Example Configuration:
 
-Below is a snippet from an example project taken from [PASTE A LINK HERE]()  
+Below is a snippet from an example project taken from [HERE](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/mlp/MnistMLPDistributedExample.java)  
 
 ```
 SparkConf sparkConf = new SparkConf();
