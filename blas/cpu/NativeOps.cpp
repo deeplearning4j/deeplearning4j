@@ -2889,7 +2889,7 @@ void NativeOps::destroyRandom(Nd4jPointer ptrBuffer) {
 Nd4jPointer NativeOps::shapeBufferForNumpy(Nd4jPointer npyArray) {
     cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
     unsigned int *shape = new unsigned int[arr.shape.size()];
-    for(int i = 0; i < arr.shape.size(); i++) {
+    for(unsigned int i = 0; i < arr.shape.size(); i++) {
         shape[i] = arr.shape[i];
     }
 
@@ -2907,7 +2907,7 @@ Nd4jPointer NativeOps::shapeBufferForNumpy(Nd4jPointer npyArray) {
  * @return
  */
 Nd4jPointer NativeOps::dataPointForNumpy(Nd4jPointer npyArray) {
-    char *buff = reinterpret_cast<char *>(npyArray);
+    //char *buff = reinterpret_cast<char *>(npyArray);
     //printf("Pointer contents %s\n",buff);
     cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
     cnpy::NpyArray *arrPointer = &arr;
@@ -3021,6 +3021,7 @@ Nd4jIndex NativeOps::encodeBitmapDouble(Nd4jPointer *extraPointers, double *dx, 
 
 Nd4jIndex NativeOps::encodeBitmapHalf(Nd4jPointer *extraPointers, float16 *dx, Nd4jIndex N, int *dz, float threshold) {
     //return NativeOpExcutioner<float16>::encodeBitmap(dx, N, dz, threshold);
+    return 0L;
 }
 
 void NativeOps::decodeBitmapFloat(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float *dz) {
