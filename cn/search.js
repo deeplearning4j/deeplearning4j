@@ -531,4 +531,10 @@ var PAGES = [{
 "title": "用源代码工作",
 "description": "如果您不打算以提交者（committer）的身份为Deeplearning4j做贡献，或者您不需要最新的Alpha版本，那么我们建议您从Maven中央仓库下载Deeplearning4j最新的稳定发布版本。具体操作与在IntelliJ中将依赖项添加至您的POM.xml一样简单。",
 "tags": ["源代码", "source", "github", "deeplearning4j", "maven", "mac", "window", "贡献", "lombok","dl4j","nd4j","datavec","mvn","git"]
+},
+{
+"url": "https://deeplearning4j.org/cn/native",
+"title": "Deeplearning4j的本机CPU优化",
+"description": "本页指南将介绍在DL4J和ND4J上调试或提升CPU系统性能的几种方法。",
+"tags": ["cpu", "优化", "openmp", "内核", "超线程", "simd", "jvm", "本机", "并行","gpu","pcie","ram","内存","性能","调试","并行计算","OMP","OMP_NUM_THREADS","NativeOpsHolder","intel", "mkl", "spark","源码","故障排除","后端","回退模式","INDArray","ND4J_FALLBACK"]
 }];
