@@ -88,6 +88,8 @@ template<typename T, typename AF> void DenseLayer<T,AF>::feedForward() {
     if (this->dropConnect)
         dropConnectHelper(this->params, this->paramsShapeInfo);
 
+    int *inputShape = shape::shapeOf(this->inputShapeInfo);
+
     // do wxa+b here or something else
     // TODO: introduce BLAS right here
     if (shape::isRowVector(this->inputShapeInfo)) {
@@ -99,6 +101,9 @@ template<typename T, typename AF> void DenseLayer<T,AF>::feedForward() {
         int M, N, K;
         int lda, ldb, ldc;
         T alpha, beta;
+
+        int numRows = inputShape[0];
+        int numCols = inputShape[1];
 
         nd4j::blas::GEMM<T>::op('f', true, false, M, N, K, alpha, this->input, lda, this->params, ldb, beta, this->output, ldc);
 
