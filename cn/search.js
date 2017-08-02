@@ -536,5 +536,5 @@ var PAGES = [{
 "url": "https://deeplearning4j.org/cn/native",
 "title": "Deeplearning4j的本机CPU优化",
 "description": "本页指南将介绍在DL4J和ND4J上调试或提升CPU系统性能的几种方法。",
-"tags": ["cpu", "优化", "openmp", "内核", "超线程", "simd", "jvm", "本机", "并行","gpu","pcie","ram","内存","性能","调试","并行计算","OMP","OMP_NUM_THREADS","NativeOpsHolder","intel", "mkl", "spark","源码","故障排除","后端","回退模式","INDArray","ND4J_FALLBACK"]
+"tags": ["cpu", "优化", "openmp", "内核", "超线程", "simd", "jvm", "本机", "并行","gpu","pcie","ram","内存","性能","调试","并行计算"，"OMP"，"OMP_NUM_THREADS"，"NativeOpsHolder"，"intel"，"mkl"，"spark"，"源码"，"故障排除"，"后端"，"回退模式"，"INDArray"，"ND4J_FALLBACK"]
 }];
