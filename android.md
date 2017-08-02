@@ -61,6 +61,25 @@ layout: default
 
 </code></pre></figure>
 
+<p>Android Studio 3.0 introduced new Gradle, now annotationProcessors should be defined too
+If you are using it, add following code to gradle dependencies:
+
+<figure class="highlight"><pre><code class="language-groovy" data-lang="groovy"<span class="n">annotationProcessor</span> <span class="s1">'org.projectlombok:lombok:1.16.16'</span></code></pre></figure>
+
+<p>If you have errors like
+<code class="language-groovy"><span class="n">Error:Error converting bytecode to dex:
+Cause: com.android.dex.DexException: Multiple dex files define Ledu/umd/cs/findbugs/annotations/Nullable;</span></code>
+
+Add the following dependency:
+<figure class="highlight"><pre><code class="language-groovy"><span class="n">compile</span> <span class="s1">'com.google.code.findbugs:annotations:3.0.1', { </span>
+  <span class="n">exclude module:</span> <span class="s1">'jsr305'</span>
+  <span class="n">exclude module:</span> <span class="s1">'jcip-annotations'</span>
+}
+</span></code></pre></figure>
+
+<p>If you want to include snapshot version of DL4J/ND4J you should write dependencies like below:
+<figure class="highlight"><pre><code class="language-groovy"><span class="n">compile group: 'org.nd4j', name: 'nd4j-native', version: '0.8.1-SNAPSHOT-android-arm'</span></code></pre></figure> as classifier doesn't work</p>
+  
 <p>As you can see, DL4J depends on ND4J, short for N-Dimensions for Java, which is a library that offers fast n-dimensional arrays. ND4J internally depends on a library called OpenBLAS, which contains platform-specific native code. Therefore, you must load a version of OpenBLAS and ND4J that matches the architecture of your Android device. Because I own an x86 device, I’m using <code class="highlighter-rouge">android-x86</code> as the platform.</p>
 
 <p>Dependencies of DL4J and ND4J have several files with identical names. In order to avoid build errors, add the following <code class="highlighter-rouge">exclude</code> parameters to your <code class="highlighter-rouge">packagingOptions</code>.</p>
@@ -76,6 +95,16 @@ layout: default
     <span class="n">exclude</span> <span class="s1">'META-INF/notice.txt'</span>
     <span class="n">exclude</span> <span class="s1">'META-INF/INDEX.LIST'</span>
 <span class="o">}</span></code></pre></figure>
+
+<p>It is highly possible that you will have errors like:
+<code>Error:Execution failed for task ':app:transformResourcesWithMergeJavaResForDebug'.
+> More than one file was found with OS independent path 'org/bytedeco/javacpp/windows-x86/msvcp120.dll'</code>
+We should exclude them too. In my case:
+<figure class="highlight"><pre><code class="language-groovy" data-lang="groovy"><span class="n">exclude</span> <span class="s1">'org/bytedeco/javacpp/windows-x86/msvcp120.dll'</span>
+<span class="n">exclude</span> <span class="s1">'org/bytedeco/javacpp/windows-x86_64/msvcp120.dll'</span>
+<span class="n">exclude</span> <span class="s1">'org/bytedeco/javacpp/windows-x86/msvcr120.dll'</span>
+<span class="n">exclude</span> <span class="s1">'org/bytedeco/javacpp/windows-x86_64/msvcr120.dll'</span>
+</code></pre></figure>
 
 <p>Furthermore, your compiled code will have well over 65,536 methods. To be able to handle this condition, add the following option in the <code class="highlighter-rouge">defaultConfig</code>:</p>
 
