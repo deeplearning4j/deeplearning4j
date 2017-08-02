@@ -29,13 +29,13 @@ template <typename T> class INativeLayer {
         Nd4jIndex length;               // memory amount which is still available from workspace, (allocated + length) = total size of workspace
         void *workspace;                // if you are going to use additional memory, take it from workspace
         
-        bool dropOut;                   //  = false, corresponds to dropout applying
-        bool dropConnect;               //  = false, ???
+        bool dropOut;                   // corresponds to dropout applying
+        bool dropConnect;               // ???
         
         T pDropOut;                     // dropout probabilities (if used)
         T pDropConnect;                 // dropconnect probabilities (if used)
                 
-        int aNum;                       // = 0, activation function number (identity as default)
+        int aNum;                       // activation function number (identity as default)
 
         // default constructor, sets all pointers to be empty
         INativeLayer();
@@ -49,7 +49,7 @@ template <typename T> class INativeLayer {
         INativeLayer& operator=(const INativeLayer& ) = delete;   
 
         // This method "allocates" memory chunk from workspace
-        virtual T* allocate(long bytes) = 0;
+        virtual T* allocate(long bytes) = 0; 
         
         // This method should validate parameters & bias, and return TRUE if everything ok. False otherwise
         virtual bool validateParameters() = 0;
@@ -138,7 +138,7 @@ template <typename T> class INativeLayer {
         dropOut = false;                   
         dropConnect = false;                       
         pDropOut = 0.;   
-        pDropConnect = 0.                
+        pDropConnect = 0.;              
         aNum = 0;
     }
 
