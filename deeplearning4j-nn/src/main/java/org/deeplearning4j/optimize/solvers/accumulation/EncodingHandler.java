@@ -148,8 +148,16 @@ public class EncodingHandler implements MessageHandler {
                 double encodingRatio = encLen * 100.0 / updates.length();
 
                 // if updates are too dense - we fallback to bitmap encoding
-                if (encLen > (updates.lengthLong() / 16 + 5))
+                if (encLen > (updates.lengthLong() / 16 + 5)) {
                     bitmapMode.get().set(true);
+
+                    DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.lengthLong() / 16 + 5);
+                    encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
+
+                    Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get() / 3);
+
+                    return encoded;
+                }
 
 
                 // after encoding is finished, and updates are sparse enough - let's step down a bit

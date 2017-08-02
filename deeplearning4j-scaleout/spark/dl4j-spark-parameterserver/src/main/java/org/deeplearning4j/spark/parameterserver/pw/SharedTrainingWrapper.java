@@ -175,7 +175,7 @@ public class SharedTrainingWrapper {
                     accumulator = new EncodedGradientsAccumulator.Builder(numWorkers).messageHandler(handler)
                                     .encodingThreshold(trainingConfiguration.getThreshold())
                                     // TODO: make this configurable
-                                    .memoryParameters(200 * 1024 * 1024L, numWorkers * 2).build();
+                                    .memoryParameters(model.params().length() / 16 * numWorkers, numWorkers * 2).build();
 
                     // FIXME: implement support for Custom transport implementation
                     Transport transport =
