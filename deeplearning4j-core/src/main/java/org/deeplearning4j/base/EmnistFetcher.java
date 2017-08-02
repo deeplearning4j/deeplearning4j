@@ -250,7 +250,7 @@ public class EmnistFetcher extends MnistFetcher {
 
     @Override
     public String getTestFileLabelsFilename_unzipped(){
-        return getLabelsFileNameUnzipped(ds, true);
+        return getLabelsFileNameUnzipped(ds, false);
     }
 
     public static int numLabels(EmnistDataSetIterator.Set dataSet){

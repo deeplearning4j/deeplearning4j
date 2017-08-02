@@ -100,40 +100,4 @@ public class TestEmnistDataSetIterator {
             }
         }
     }
-
-    @Test
-    public void testCompare() throws Exception {
-
-        String path1;
-        String path2;
-//        String path1 = "C:\\Users\\Alex\\EMNIST\\emnist-mnist-train-images-idx3-ubyte";
-//        String path2 = "C:\\Users\\Alex\\MNIST\\train-images-idx3-ubyte";
-
-        path1 = "C:\\Temp\\emnist\\emnist\\extracted\\emnist-mnist-train-images-idx3-ubyte";
-        path2 = "C:\\Users\\Alex\\MNIST\\train-images-idx3-ubyte";
-//        assertTrue(FileUtils.contentEquals(new File(path1), new File(path2)));
-
-        path1 = "C:\\Users\\Alex\\EMNIST\\emnist-mnist-train-labels-idx1-ubyte";
-        path2 = "C:\\Users\\Alex\\MNIST\\train-labels-idx1-ubyte";
-//        assertTrue(FileUtils.contentEquals(new File(path1), new File(path2)));
-
-
-        int batchSize = 1;
-
-        for(boolean train : new boolean[]{true, false}) {
-            System.out.println("TRAIN: " + train);
-            EmnistDataSetIterator iter = new EmnistDataSetIterator(EmnistDataSetIterator.Set.MNIST, batchSize, train, 12345);
-            MnistDataSetIterator iter2 = new MnistDataSetIterator(batchSize, train, 12345);
-
-            int count = 0;
-            while (iter.hasNext()) {
-                System.out.println(count++);
-                DataSet ds1 = iter.next();
-                DataSet ds2 = iter2.next();
-
-//                assertEquals(ds1.getFeatures(), ds2.getFeatures());
-                assertEquals(ds1.getLabels(), ds2.getLabels());
-            }
-        }
-    }
 }
