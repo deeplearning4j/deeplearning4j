@@ -701,7 +701,7 @@ namespace nd4j {
 
                 uint64_t s0 = 0;
                 uint64_t s1 = 0;
-                for(int i = 0; i < sizeof JUMP / sizeof *JUMP; i++)
+                for(unsigned int i = 0; i < sizeof JUMP / sizeof *JUMP; i++)
                     for(int b = 0; b < 64; b++) {
                         if (JUMP[i] & 1ULL << b) {
                             s0 ^= state[0];

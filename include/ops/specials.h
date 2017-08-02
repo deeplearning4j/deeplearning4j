@@ -368,7 +368,6 @@ void accumulateGeneric(T **x, T *z, int n, const Nd4jIndex length) {
 template<typename T>
 void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) {
 
-    bool tempZ = false;
     if (z == nullptr) {
         //code branch for absent Z
         z = x[0];

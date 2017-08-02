@@ -1016,12 +1016,9 @@ template<typename OpType>
                     int *dimension,
                     int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 
-                T extraParamsVals[2] = {(T) 0.0, (T) 0.0};
                 T startingVal = OpType::startingValue(x);
 
-                int tadEWS = shape::elementWiseStride(tadShapeInfo);
                 int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                int yEWS = shape::elementWiseStride(yShapeInfo);
                 int tads = shape::length(xShapeInfo) / tadLength;
 
                 int *xShape = shape::shapeOf(tadShapeInfo);

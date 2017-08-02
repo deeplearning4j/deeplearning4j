@@ -675,12 +675,8 @@ void convertFromThreshold(void *dx, Nd4jIndex N, void *dz) {
     T *z = (T *) dz;
     int *x = (int *) dx;
     int limit = x[0];
-    int size = x[1];
     fb.i_ = x[2];
     float threshold = fb.f_;
-
-    // everything is set to 0 now
-    //memset(z, 0, sizeof(T) * size);
 
     // we use 3 as offset, since first 12 bytes are occupied with header
     int flimit = limit + 4;
