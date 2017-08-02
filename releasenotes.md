@@ -98,7 +98,7 @@ layout: default
 - Added CnnSentenceDataSetIterator (for use with ‘CNN for Sentence Classification’ architecture) [Link](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nlp-parent/deeplearning4j-nlp/src/main/java/org/deeplearning4j/iterator/CnnSentenceDataSetIterator.java) [Link2](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/sentenceClassification/CnnSentenceClassificationExample.java)
 - Spark + Kryo: now test serialization + throw exception if misconfigured (instead of logging an error that can be missed)
 - MultiLayerNetwork now adds default layer names if no name is specified
-- DataVec:
+- DataVec: 
     - JSON/YAML support for DataAnalysis, custom Transforms etc
     - ImageRecordReader refactored to reduce garbage collection load (hence improve performance with large training sets)
     - Faster quality analysis.
