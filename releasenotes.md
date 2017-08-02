@@ -17,7 +17,7 @@ layout: default
 **Deeplearning4J**
 
 - Workspaces feature added (faster training performance + less memory) [Link](https://deeplearning4j.org/workspaces)
-- SharedTrainingMaster added for Spark network training (improved performance) [Link 1](https://deeplearning4j.org/distributed), [Link 2](TODO EXAMPLE LINK HERE)
+- SharedTrainingMaster added for Spark network training (improved performance) [Link 1](https://deeplearning4j.org/distributed), [Link 2](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/mlp/MnistMLPDistributedExample.java)
 - ParallelInference added - wrapper that server inference requests using internal batching and queues  [Link](TODO EXAMPLE LINK HERE)
 - ParallelWrapper now able to work with gradients sharing, in addition to existing parameters averaging mode [Link](TODO EXAMPLE LINK HERE)
 - VPTree performance significantly improved
@@ -40,7 +40,7 @@ layout: default
 
 
 **ND4J**
-- Workspaces feature added [Link](TODO EXAMPLE LINK HERE)
+- Workspaces feature added [Link](https://github.com/deeplearning4j/dl4j-examples/blob/master/nd4j-examples/src/main/java/org/nd4j/examples/Nd4jEx15_Workspaces.java)
 - Native parallel sort was added
 - New ops added: SELU/SELUDerivative, TAD-based comparisons, percentile/median, Reverse, Tan/TanDerivative, SinH, CosJ, Entropy, ShannonEntropy, LogEntropy, AbsoluteMin/AbsoluteMax/AbsoluteSum, Atan2
 - New distance functions added: CosineDistance, HammingDistance, JaccardDistance

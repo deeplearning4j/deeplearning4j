@@ -33,7 +33,7 @@ And last-resort option for IP address selection is `DL4J_VOID_IP` environment va
 
 ### Example Configuration:
 
-Below is a snippet from an example project taken from [PASTE A LINK HERE]()  
+Below is a snippet from an example project taken from [HERE](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/mlp/MnistMLPDistributedExample.java)  
 
 ```
 SparkConf sparkConf = new SparkConf();
