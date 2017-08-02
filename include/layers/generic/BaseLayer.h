@@ -13,36 +13,34 @@
 #include <ops/gemm.h>
 
 namespace nd4j {
-    namespace layers {
+namespace layers {
 
-        template<typename T, typename AF>
-        class BaseLayer: public INativeLayer<T> {
+template<typename T, typename AF> class BaseLayer: public INativeLayer<T> {
+    
+    public:        
+        // override virtual method, this method "allocates" memory chunk from workspace
+        T *allocate(long bytes) {
+            this->allocated += bytes;
 
-        public:
-            T *allocate(long bytes) {
-                this->allocated += bytes;
+            return (T *) (this->workspace + bytes);
+        }
 
-                return (T *) (this->workspace + bytes);
-            }
+        // TODO: we need platform-specific RNG here (!!!)
 
+        void dropOutHelper(T *input, int *shapeInfo) {
+            // basically we loop over input here, and we're using inverted dropout here
 
-            /*
-             * TODO: we need platform-specific RNG here (!!!)
-             */
+            // we probably should allocate temp array here, and replace input pointer
+        }
 
-            void dropOutHelper(T *input, int *shapeInfo) {
-                // basically we loop over input here, and we're using inverted dropout here
+        void dropConnectHelper(T *input, int *shapeInfo) {
+            // and here we just loop over copy of params for dropout. regular dropout is use
 
-                // we probably should allocate temp array here, and replace input pointer
-            }
+            // we probably should allocate temp array here, and replace params pointer
+        }
+    };
 
-            void dropConnectHelper(T *input, int *shapeInfo) {
-                // and here we just loop over copy of params for dropout. regular dropout is use
-
-                // we probably should allocate temp array here, and replace params pointer
-            }
-        };
-    }
+}
 }
 
 #endif //PROJECT_BASELAYER_H

@@ -116,32 +116,34 @@ template <typename T> class INativeLayer {
 
         // This method executes back-propagation pass on this layer
         virtual void backPropagate() = 0;
-    };
+};
     
-    /////// implementation part ///////
+/////// implementation part ///////
     
-    // default constructor sets all pointers to be empty
-    template <typename T> INativeLayer<T>::INativeLayer() {
-        params = nullptr;   
-        paramsShapeInfo = nullptr;
-        bias = nullptr;    
-        biasShapeInfo = nullptr;
-        input = nullptr;
-        inputShapeInfo = nullptr;
-        mask = nullptr;
-        maskShapeInfo = nullptr;
-        output = nullptr;
-        outputShapeInfo = nullptr;
-        workspace = nullptr;
-        Nd4jIndex allocated = 0;
-        Nd4jIndex length = 0;
-        dropOut = false;                   
-        dropConnect = false;                       
-        pDropOut = 0.;   
-        pDropConnect = 0.;              
-        aNum = 0;
-    }
+// default constructor sets all pointers to be empty
+template <typename T> INativeLayer<T>::INativeLayer() {
+    params = nullptr;   
+    paramsShapeInfo = nullptr;
+    bias = nullptr;    
+    biasShapeInfo = nullptr;
+    input = nullptr;
+    inputShapeInfo = nullptr;
+    mask = nullptr;
+    maskShapeInfo = nullptr;
+    output = nullptr;
+    outputShapeInfo = nullptr;
+    workspace = nullptr;
+    Nd4jIndex allocated = 0;
+    Nd4jIndex length = 0;
+    dropOut = false;                   
+    dropConnect = false;                       
+    pDropOut = 0.;   
+    pDropConnect = 0.;              
+    aNum = 0;
+}
 
+
+// end of namespace brackets
 }
 }    
 #endif //PROJECT_LAYERS_H
