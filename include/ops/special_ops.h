@@ -208,7 +208,6 @@ namespace simdOps {
 			int stridew = inStride[3];
 
             int *outShape = shape::shapeOf(im2colShape);
-            char resultOrder = shape::order(im2colShape);
             int *outStride = shape::stride(im2colShape);
 
 			int height_col = outShape[4];
@@ -502,24 +501,6 @@ namespace simdOps {
 			int tadsPerThread = (exampleTo - exampleFrom) + (depthTo - depthFrom) / 4;
 			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
 			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-
-
-            int samples = inShape[0];
-            int depth = inShape[1];
-            int height = inShape[2];
-            int width = inShape[3];
-
-            // (height + 2 * padHeight - kernelHeight) / strideX + 1; //
-            // (width + 2 * padWidth - kernelWidth) / strideY + 1; //
-            int height_col = outShape[4];
-            int width_col = outShape[5];
-
-            int n = samples * depth * height_col * width_col;
-
-            int kSize = kernelWidth * kernelHeight;
-//            printf("im2col N: %i; KernelSize: %i\n", n, kSize);
-//            fflush(stdout);
-
 
 #pragma omp parallel for num_threads(num_threads) if (num_threads>1) collapse(2) proc_bind(AFFINITY) default(shared)
 			for (int ex = exampleFrom; ex < exampleTo; ex++) {
