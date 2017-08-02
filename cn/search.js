@@ -516,7 +516,7 @@ var PAGES = [{
 },
 {
 "url": "https://deeplearning4j.org/cn/android",
-"title": "如何在Android应用程序中使用Deeplearning4J	",
+"title": "如何在Android应用程序中使用Deeplearning4J",
 "description": "在本教程中，我将向您介绍如何用Deeplearning4J这一热门的Java深度学习库来在Android设备上创建和训练神经网络。",
 "tags": ["android", "安卓", "gpu", "android studio", "build.gradle", "android-x86", "defaultConfig", "AsyncTask", "移动","神经网络","NeuralNetConfiguration","INDArray","putScalar","Ashraff","Progur"]
 },
@@ -536,5 +536,5 @@ var PAGES = [{
 "url": "https://deeplearning4j.org/cn/native",
 "title": "Deeplearning4j的本机CPU优化",
 "description": "本页指南将介绍在DL4J和ND4J上调试或提升CPU系统性能的几种方法。",
-"tags": ["cpu", "优化", "openmp", "内核", "超线程", "simd", "jvm", "本机", "并行","gpu","pcie","ram","内存","性能","调试"，"并行计算"，"OMP"，"OMP_NUM_THREADS"，"NativeOpsHolder"，"intel"，"mkl"，"spark"，"源码"，"故障排除"，"后端"，"回退模式"，"INDArray"，"ND4J_FALLBACK"]
+"tags": ["cpu", "优化", "openmp", "内核", "超线程", "simd", "jvm", "本机", "并行","gpu","pcie","ram","内存","性能","调试","并行计算"，"OMP"，"OMP_NUM_THREADS"，"NativeOpsHolder"，"intel"，"mkl"，"spark"，"源码"，"故障排除"，"后端"，"回退模式"，"INDArray"，"ND4J_FALLBACK"]
 }];
