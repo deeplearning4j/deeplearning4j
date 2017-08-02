@@ -29,9 +29,14 @@ namespace nd4j {
 
             // we should give out layer instances depending on layerNum here
             // TODO: we want to pass things like dropout, dropconnect, probabilities, whatever else here
-            static INativeLayer<float>* getNewLayerFloat(int layerNum) {
+            static INativeLayer<float>* getNewLayerFloat(int layerNum, int activationNum) {
                 // macro required here, based on list of available layers, declared in available.h
-                return new DenseLayer<float, nd4j::activations::ReLU<float>>();
+                //return new DenseLayer<float, nd4j::activations::ReLU<float>>();
+
+                BUILD_LAYERS_FACTORY(float, OPS_A(NATIVE_LAYERS), OPS_B(ACTIVATIONS))
+
+                // return null here
+                return nullptr;
             }
         };
     }

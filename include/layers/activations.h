@@ -5,7 +5,7 @@
 #ifndef PROJECT_ACTIVATIONS_H
 #define PROJECT_ACTIVATIONS_H
 
-#define ACTIVATION_OPS \
+#define ACTIVATIONS \
         (0, nd4j::activations::Identity) ,\
         (1, nd4j::activations::ReLU)
 
