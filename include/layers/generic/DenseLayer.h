@@ -34,12 +34,27 @@ namespace nd4j {
                     // gemv here input * W
                 } else {
                     // gemm here, input * W
+                    // these values should be set appropriately
                     int M, N, K;
                     int lda, ldb, ldc;
                     T alpha, beta;
 
                     nd4j::blas::GEMM<T>::op('f', true, false, M, N, K, alpha, this->input, lda, this->params, ldb, beta, this->output, ldc);
+
+                    // we're rolling through rows here
+                    int rowLen = this->outputShapeInfo[2];
+//#pragma omp parallel for
+                    for (int r = 0; r < this->outputShapeInfo[1]; r++) {
+                        T *row = this->output + (rowLen * r);
+
+                        // now we're adding bias to each row element
+//#pragma omp simd
+                        for (int e = 0; e < rowLen; e++) {
+                            row[e] += this->bias[e];
+                        }
+                    }
                 }
+
 
                 // activation call
                 ActivationsExecutioner<T>::template executeFF<AF>(this->input, this->output, this->inputShapeInfo);
