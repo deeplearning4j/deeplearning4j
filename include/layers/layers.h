@@ -150,7 +150,7 @@ template <typename T> INativeLayer<T>::INativeLayer() {
 }
 
 
-// perform alpha*A*B + beta*C
+// perform C = alpha*A*B + beta*C
 template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta) {  
     char aOrder = shape::order(aShapeInfo);
     char bOrder = shape::order(bShapeInfo);

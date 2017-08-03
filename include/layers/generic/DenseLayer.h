@@ -33,6 +33,11 @@ template<typename T, typename AF> class DenseLayer: public BaseLayer<T, AF> {
         inline bool validateOutput();
 };
 
+
+
+
+
+
 /////// implementation part ///////    
 
 // default constructor
@@ -44,6 +49,8 @@ template<typename T, typename AF> DenseLayer<T,AF>::DenseLayer() {
 template<typename T, typename AF> void DenseLayer<T,AF>::backPropagate() {
     // activation derivative call
     ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, this->output, this->inputShapeInfo);
+    // this->gemmHelper(this->input, this->inputShapeInfo, this->params, this->paramsShapeInfo, this->output, this->outputShapeInfo, (T) 1.0f, (T) 0.0f);
+     // Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
 }
 
 
@@ -62,6 +69,7 @@ template<typename T, typename AF> bool DenseLayer<T,AF>::validateInput() {
 
     return true;
 }
+
 
 
 // This method should valudate output parameters, and return TRUE if everything is ok, FALSE otherwise

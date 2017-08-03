@@ -27,19 +27,32 @@ template<typename T, typename AF> class BaseLayer: public INativeLayer<T> {
 
         // TODO: we need platform-specific RNG here (!!!)
 
-        void dropOutHelper(T *input, int *shapeInfo) {
-            // basically we loop over input here, and we're using inverted dropout here
+        // basically we loop over input here, and we're using inverted dropout here
+        void dropOutHelper(T *input, int *shapeInfo);
 
-            // we probably should allocate temp array here, and replace input pointer
-        }
-
-        void dropConnectHelper(T *input, int *shapeInfo) {
-            // and here we just loop over copy of params for dropout. regular dropout is use
-
-            // we probably should allocate temp array here, and replace params pointer
-        }
+         // and here we just loop over copy of params for dropout. regular dropout is use
+        void dropConnectHelper(T *input, int *shapeInfo); 
     };
 
+
+/////// inmplementation part ///////
+
+
+template<typename T, typename AF> void BaseLayer<T,AF>::dropOutHelper(T *input, int *shapeInfo) {
+    // basically we loop over input here, and we're using inverted dropout here
+
+    // we probably should allocate temp array here, and replace input pointer
+}
+
+
+template<typename T, typename AF> void BaseLayer<T,AF>::dropConnectHelper(T *input, int *shapeInfo) {
+    // and here we just loop over copy of params for dropout. regular dropout is use
+
+    // we probably should allocate temp array here, and replace params pointer
+}
+
+
+// end of namespace brackets
 }
 }
 
