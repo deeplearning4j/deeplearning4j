@@ -16,6 +16,36 @@ import static org.junit.Assert.*;
 @Slf4j
 public class EncodedGradientsAccumulatorTest {
 
+    /**
+     * This test ensures, that memory amount assigned to buffer is enough for any number of updates
+     * @throws Exception
+     */
+    @Test
+    public void testStore1() throws Exception {
+        int numParams = 100000;
+
+        int workers[] = new int[]{2, 4, 8};
+
+        EncodingHandler handler = new EncodingHandler(1e-3);
+
+
+        for (int numWorkers: workers) {
+            int bufferSize = EncodedGradientsAccumulator.getOptimalBufferSize(numParams, numWorkers, 2);
+            log.info("Workers: {}; Buffer size: {} bytes", numWorkers, bufferSize);
+            EncodedGradientsAccumulator accumulator = new EncodedGradientsAccumulator(numWorkers, handler, bufferSize, 2, null);
+
+            for (int e = 10; e < numParams / 10; e++) {
+                INDArray encoded = handler.encodeUpdates(getGradients(numParams, e, 2e-3));
+                accumulator.receiveUpdate(encoded);
+
+                // just purge updates, like they were consumed
+                for (int i = 0; i < accumulator.messages.size(); i++) {
+                    accumulator.messages.get(i).clear();
+                }
+            }
+        }
+    }
+
 
     /**
      * Here we ensure that no matter how dense/sparse our updates are - we're never going above 1/16 of original elements of gradients array
