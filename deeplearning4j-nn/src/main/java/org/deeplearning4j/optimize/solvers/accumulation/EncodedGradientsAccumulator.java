@@ -139,7 +139,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
      * @return
      */
     public static int getOptimalBufferSize(int paramsLength, int numWorkers, int queueSize) {
-        int bufferSize = ((paramsLength / 16) + 8192 ) * numWorkers * queueSize * 4;
+        // we add 64kb just for future proof volatility
+        int bufferSize = ((paramsLength / 16) + 65536) * numWorkers * queueSize * 4;
         return bufferSize;
     }
 

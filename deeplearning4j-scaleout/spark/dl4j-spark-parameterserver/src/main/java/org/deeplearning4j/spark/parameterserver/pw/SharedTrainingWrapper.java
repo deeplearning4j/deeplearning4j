@@ -181,7 +181,9 @@ public class SharedTrainingWrapper {
                      */
 
                     int queueSize = numWorkers * 2;
-                    int bufferSize = EncodedGradientsAccumulator.getOptimalBufferSize(model, numWorkers, 2);
+
+                    int bufferSize = trainingConfiguration.getBufferSize() > 0 ? trainingConfiguration.getBufferSize() : EncodedGradientsAccumulator.getOptimalBufferSize(model, numWorkers, 2);
+
                     accumulator = new EncodedGradientsAccumulator.Builder(numWorkers).messageHandler(handler)
                                     .encodingThreshold(trainingConfiguration.getThreshold())
                                     .memoryParameters(bufferSize, queueSize).build();
