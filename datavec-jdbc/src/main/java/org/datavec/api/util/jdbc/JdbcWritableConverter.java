@@ -5,6 +5,7 @@ import org.datavec.api.writable.BooleanWritable;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.FloatWritable;
 import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
@@ -43,9 +44,11 @@ public class JdbcWritableConverter {
             case Types.INTEGER:
             case Types.SMALLINT:
             case Types.TINYINT:
-            case Types.BIGINT:
             case Types.BIT:
                 return new IntWritable((int) columnValue);
+
+            case Types.BIGINT:
+                return new LongWritable((long) columnValue);
 
             default:
                 throw new IllegalArgumentException("Column type unknown");
