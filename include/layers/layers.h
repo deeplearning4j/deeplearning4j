@@ -91,8 +91,29 @@ template <typename T> class INativeLayer {
 
         // We have some options to be configured in layer: dropout, dropconnect, lr, etc 
         // This method should handle that. Maybe map (key-value), or something like that?           
-         void configureLayer() { 
-             // TODO: implementation to be decided 
+        bool configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect) {
+            this->pDropOut = pDropOut > (T) 0.0f ? pDropOut : (T) 0.0f;
+            this->pDropConnect = pDropConnect > (T) 0.0f ? pDropConnect : (T) 0.0f;
+
+            this->dropOut = this->pDropOut > (T) 0.0f;
+            this->dropConnect = this->pDropConnect > (T) 0.0f;
+
+            this->input = input;
+            this->output = output;
+            this->inputShapeInfo = inputShapeInfo;
+            this->outputShapeInfo = outputShapeInfo;
+
+            if (!validateInput())
+                return false;
+
+            if (!validateOutput())
+                return false;
+
+            /*
+             * TODO: define ERROR_CODES here, and return them instead of bool
+             */
+
+            return true;
          }          
 
         // This inline method allows to specify input data for layer

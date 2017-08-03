@@ -99,6 +99,16 @@ namespace shape {
 
 #ifdef __CUDACC__
     __host__ __device__
+#endif
+    INLINEDEF bool equalsSoft(int *shapeA, int *shapeB);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF bool equalsStrict(int *shapeA, int *shapeB);
+
+#ifdef __CUDACC__
+    __host__ __device__
     INLINEDEF void traceNew(int id) {
         //printf("new happened: [%i]\n", id);
     }
@@ -4149,6 +4159,54 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 
     INLINEDEF int *ensureVectorShape(int *shape) {
         return ensureVectorShape(shape, 0);
+    }
+
+    /**
+     * This method does STRICT comparison for two shape buffers
+     *
+     * @param shape
+     * @return
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF bool equalsStrict(int *shapeA, int *shapeB) {
+        if (shapeA[0] != shapeB[0])
+            return false;
+
+        // we do full comparison here
+        int length = shapeA[0] * 2 + 4;
+
+        for (int e = 1; e < length; e++)
+            if (shapeA[e] != shapeB[e])
+                return false;
+
+        return true;
+    }
+
+    /**
+     * This method does SOFT comparison for two shape buffers, we compare only rank & shapes
+     *
+     * @param shape
+     * @return
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF bool equalsSoft(int *shapeA, int *shapeB) {
+        if (shapeA[0] != shapeB[0])
+            return false;
+
+        // we compare only shapes, and ignoring stride & ews
+        int length = shapeA[0];
+
+        for (int e = 1; e < length; e++)
+            if (shapeA[e] != shapeB[e])
+                return false;
+
+        return true;
     }
 
 /**
