@@ -99,8 +99,8 @@ public class JDBCRecordReader extends BaseRecordReader {
         // Both set, initialiaze the datasource
         else if (jdbcUrl != null) {
             // FIXME : find a way to include wildcard properties as third argument bellow
-            this.dataSource = new DriverDataSource(jdbcUrl, driverClassName, new Properties(), conf.get("username"),
-                conf.get("password"));
+            this.dataSource = new DriverDataSource(jdbcUrl, driverClassName, new Properties(), conf.get(JDBC_USERNAME),
+                conf.get(JDBC_PASSWORD));
             this.initializeJdbc();
         }
     }
