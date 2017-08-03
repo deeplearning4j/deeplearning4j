@@ -47,16 +47,18 @@ template<typename T, typename AF> DenseLayer<T,AF>::DenseLayer() {
 
 // back propagate
 template<typename T, typename AF> void DenseLayer<T,AF>::backPropagate() {
-    T *delta = AF::bpActivation(this->input, this->epsilon);
-    this->gemmHelper(this->input, this->inputShapeInfo, delta, this->epsilonShapeInfo, this->output, this->outputShapeInfo, (T)1.0f, (T)0.0f);    
+    // activation derivative call
+    ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, this->output, this->inputShapeInfo);
+
+
+
+    //this->gemmHelper(this->input, this->inputShapeInfo, delta, this->epsilonShapeInfo, this->output, this->outputShapeInfo, (T)1.0f, (T)0.0f);
     
     // INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst();
     // how to evaluate delta, what is it ???
     // this->gemmHelper(this->input, this->inputShapeInfo, this->params, this->paramsShapeInfo, this->output, this->outputShapeInfo, (T) 1.0f, (T) 0.0f);
     // Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
-    
-    // activation derivative call
-    ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, this->output, this->inputShapeInfo);
+
 }
 
 

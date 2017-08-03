@@ -25,7 +25,6 @@ template <typename T> class INativeLayer {
         T   *mask;                      // the matrix of zeros and unities, takes into account possible different size of inputs, for outer pixels absent in smaller inputs zeros are set, the rest is unities
         int *maskShapeInfo;             // see _paramsShapeInfo explanation
 
-        T *epsilon;
         T *output;                      // flattened multidimensional matrix of outputs
         int *outputShapeInfo;             // see _paramsShapeInfo explanation
         
