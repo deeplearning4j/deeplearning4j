@@ -91,30 +91,7 @@ template <typename T> class INativeLayer {
 
         // We have some options to be configured in layer: dropout, dropconnect, lr, etc 
         // This method should handle that. Maybe map (key-value), or something like that?           
-        bool configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect) {
-            this->pDropOut = pDropOut > (T) 0.0f ? pDropOut : (T) 0.0f;
-            this->pDropConnect = pDropConnect > (T) 0.0f ? pDropConnect : (T) 0.0f;
-
-            this->dropOut = this->pDropOut > (T) 0.0f;
-            this->dropConnect = this->pDropConnect > (T) 0.0f;
-
-            this->input = input;
-            this->output = output;
-            this->inputShapeInfo = inputShapeInfo;
-            this->outputShapeInfo = outputShapeInfo;
-
-            if (!validateInput())
-                return false;
-
-            if (!validateOutput())
-                return false;
-
-            /*
-             * TODO: define ERROR_CODES here, and return them instead of bool
-             */
-
-            return true;
-         }          
+        bool configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect);
 
         // This inline method allows to specify input data for layer
         // this output will be either activation of this layer, or error from next layer        
@@ -225,7 +202,7 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
         M = cShape[0];
         N = cShape[1];
-        K = aShape[1];
+        K = aShape[1]; 
 
         rOrder = aOrder;
 
@@ -240,6 +217,35 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
     // we'll use platform-specific gemm here eventually. maybe tomorrow.
     nd4j::blas::GEMM<T>::op(rOrder, true, false, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
 }
+
+
+
+// We have some options to be configured in layer: dropout, dropconnect, lr, etc 
+// This method should handle that. Maybe map (key-value), or something like that?           
+template <typename T> bool INativeLayer<T>::configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect) {
+    this->pDropOut = pDropOut > (T) 0.0f ? pDropOut : (T) 0.0f;
+    this->pDropConnect = pDropConnect > (T) 0.0f ? pDropConnect : (T) 0.0f;
+
+    this->dropOut = this->pDropOut > (T) 0.0f;
+    this->dropConnect = this->pDropConnect > (T) 0.0f;
+
+    this->input = input;
+    this->output = output;
+    this->inputShapeInfo = inputShapeInfo;
+    this->outputShapeInfo = outputShapeInfo;
+
+    if (!validateInput())
+        return false;
+
+    if (!validateOutput())
+        return false;
+
+    /*
+     * TODO: define ERROR_CODES here, and return them instead of bool
+     */
+
+    return true;
+}          
 
 
 // end of namespace brackets
