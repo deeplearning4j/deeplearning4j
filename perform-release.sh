@@ -9,6 +9,9 @@ fi
 RELEASE_VERSION=$1
 SNAPSHOT_VERSION=$2
 STAGING_REPOSITORY=$3
+if [[ -z ${SKIP_BUILD:-} ]]; then
+    SKIP_BUILD=0
+fi
 
 echo "Releasing version $RELEASE_VERSION ($SNAPSHOT_VERSION) to repository $STAGING_REPOSITORY"
 echo "========================================================================================"
@@ -28,20 +31,23 @@ for f in $(find . -name 'pom.xml' -not -path '*target*'); do
 done
 mvn versions:set -DallowSnapshots=true -DgenerateBackupPoms=false -DnewVersion=$RELEASE_VERSION
 
-source change-scala-versions.sh 2.10
-source change-cuda-versions.sh 7.5
-mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
-source change-scala-versions.sh 2.11
-source change-cuda-versions.sh 8.0
-mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
-source change-spark-versions.sh 2
-mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY -Dspark.major.version=2
+if [[ "${SKIP_BUILD}" == "0" ]]; then
+    source change-scala-versions.sh 2.10
+    source change-cuda-versions.sh 7.5
+    mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
+    source change-scala-versions.sh 2.11
+    source change-cuda-versions.sh 8.0
+    mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY
+    source change-spark-versions.sh 2
+    mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Psonatype-oss-release -DskipTests -DstagingRepositoryId=$STAGING_REPOSITORY -Dspark.major.version=2
 
-source change-spark-versions.sh 1
-source change-scala-versions.sh 2.11
-source change-cuda-versions.sh 8.0
+    source change-spark-versions.sh 1
+    source change-scala-versions.sh 2.11
+    source change-cuda-versions.sh 8.0
+fi
 git commit -a -m "Update to version $RELEASE_VERSION"
 git tag -a -m "deeplearning4j-$RELEASE_VERSION" "deeplearning4j-$RELEASE_VERSION"
+git tag -a -f -m "deeplearning4j-$RELEASE_VERSION" "latest_release"
 
 sed -i "s/<nd4j.version>.*<\/nd4j.version>/<nd4j.version>$SNAPSHOT_VERSION<\/nd4j.version>/" pom.xml
 sed -i "s/<datavec.version>.*<\/datavec.version>/<datavec.version>$SNAPSHOT_VERSION<\/datavec.version>/" pom.xml
