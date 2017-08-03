@@ -217,7 +217,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         new AllocationShape(length, elementSize, dataType()), initialize);
         this.length = length;
         //allocationPoint.attachBuffer(this);
-        this.elementSize = elementSize;
+        this.elementSize =  (byte) elementSize;
         this.trackingPoint = allocationPoint.getObjectId();
         this.offset = 0;
         this.originalOffset = 0;
@@ -348,7 +348,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.offset = offset;
         this.originalOffset = offset;
         this.trackingPoint = underlyingBuffer.getTrackingPoint();
-        this.elementSize = underlyingBuffer.getElementSize();
+        this.elementSize = (byte) underlyingBuffer.getElementSize();
         this.allocationPoint = ((BaseCudaDataBuffer) underlyingBuffer).allocationPoint;
 
         //        log.info("BCDB create for view: length: ["+ length+"], offset: ["+ offset+"], originalOffset: ["+ underlyingBuffer.originalOffset() +"], elementSize: ["+elementSize+"]");
@@ -625,12 +625,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void removeReferencing(String id) {
-        referencing.remove(id);
+        //referencing.remove(id);
     }
 
     @Override
     public Collection<String> references() {
-        return referencing;
+        //return referencing;
+        return null;
     }
 
     @Override
@@ -641,7 +642,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void addReferencing(String id) {
-        referencing.add(id);
+        //referencing.add(id);
     }
 
     @Override
@@ -1081,6 +1082,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         // we want to be sure this array isn't used anywhere RIGHT AT THIS MOMENT
         Nd4j.getExecutioner().commit();
 
+
             AllocationPoint old = allocationPoint;
             allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), false);
 
@@ -1106,11 +1108,23 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 default:
                     throw new UnsupportedOperationException();
             }
-            allocator.memcpyAsync(this, old.getPointers().getHostPointer(), length * elementSize, 0);
+
+            CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(allocationPoint.getDevicePointer(), 0, length * elementSize, 0, context.getSpecialStream());
+
+            if (old.isActualOnDeviceSide()) {
+                NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(allocationPoint.getDevicePointer(), old.getDevicePointer(), this.length * elementSize, CudaConstants.cudaMemcpyDeviceToDevice, context.getSpecialStream());
+            } else if (old.isActualOnHostSide()) {
+                NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(allocationPoint.getDevicePointer(), old.getHostPointer(), this.length * elementSize, CudaConstants.cudaMemcpyHostToDevice, context.getSpecialStream());
+            }
+
+            context.getSpecialStream().synchronize();
+            allocationPoint.tickDeviceWrite();
             // we're keeping pointer reference for JVM
             pointer.address();
 
-
+            // we need to update length with new value now
+            this.length = length;
         if(isAttached()){
             // do nothing here, that's workspaces
         } else{

@@ -1,8 +1,10 @@
 package org.nd4j.serde.binary;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
@@ -15,11 +17,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Arrays;
 
 /**
  * Created by agibsonccc on 7/1/17.
  */
+@Slf4j
 public class BinarySerde {
 
 
@@ -104,6 +109,7 @@ public class BinarySerde {
 
     }
 
+
     /**
      * Convert an ndarray to an unsafe buffer
      * for use by aeron
@@ -186,6 +192,10 @@ public class BinarySerde {
      * @param rewind whether to rewind the byte buffer or nt
      */
     public static void doByteBufferPutUnCompressed(INDArray arr, ByteBuffer allocated, boolean rewind) {
+        // ensure we send data to host memory
+        Nd4j.getExecutioner().commit();
+        Nd4j.getAffinityManager().ensureLocation(arr, AffinityManager.Location.HOST);
+
         ByteBuffer buffer = arr.data().pointer().asByteBuffer().order(ByteOrder.nativeOrder());
         ByteBuffer shapeBuffer = arr.shapeInfoDataBuffer().pointer().asByteBuffer().order(ByteOrder.nativeOrder());
         //2 four byte ints at the beginning
@@ -260,6 +270,50 @@ public class BinarySerde {
             channel.read(buffer);
             INDArray ret = toArray(buffer);
             return ret;
+        }
+    }
+
+
+    /**
+     * This method returns shape databuffer from saved earlier file
+     *
+     * @param readFrom
+     * @return
+     * @throws IOException
+     */
+    public static DataBuffer readShapeFromDisk(File readFrom) throws IOException {
+        try(FileInputStream os = new FileInputStream(readFrom)) {
+            FileChannel channel = os.getChannel();
+            // we read shapeinfo up to max_rank value, which is 32
+            int len = (int) Math.min((32 * 2 + 3) * 4, readFrom.length());
+            ByteBuffer buffer = ByteBuffer.allocateDirect(len);
+            channel.read(buffer);
+
+            ByteBuffer byteBuffer =
+                    buffer == null
+                            ? ByteBuffer.allocateDirect(buffer.array().length).put(buffer.array())
+                            .order(ByteOrder.nativeOrder())
+                            : buffer.order(ByteOrder.nativeOrder());
+
+            buffer.position(0);
+            int rank = byteBuffer.getInt();
+
+            int result[] = new int[Shape.shapeInfoLength(rank)];
+
+            // filling DataBuffer with shape info
+            result[0] = rank;
+
+            // skipping two next values (dtype and rank again)
+            byteBuffer.position(12);
+
+            // filling shape information
+            for (int e = 1; e < Shape.shapeInfoLength(rank); e++) {
+                result[e] = byteBuffer.getInt();
+            }
+
+            // creating nd4j databuffer now
+            DataBuffer dataBuffer = Nd4j.getDataBufferFactory().createInt(result);
+            return dataBuffer;
         }
     }
 

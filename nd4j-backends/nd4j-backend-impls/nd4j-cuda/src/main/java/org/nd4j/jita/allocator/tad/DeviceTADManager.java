@@ -58,10 +58,12 @@ public class DeviceTADManager extends BasicTADManager {
             so, we check, if we have things cached.
             If we don't - we just create new TAD shape, and push it to constant memory
         */
+        if (dimension != null && dimension.length > 1)
+            Arrays.sort(dimension);
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
 
-        log.trace("Requested TAD for device [{}], dimensions: [{}]", deviceId, Arrays.toString(dimension));
+        //log.info("Requested TAD for device [{}], dimensions: [{}]", deviceId, Arrays.toString(dimension));
 
         //extract the dimensions and shape buffer for comparison
         TadDescriptor descriptor = new TadDescriptor(array, dimension);
@@ -102,6 +104,12 @@ public class DeviceTADManager extends BasicTADManager {
             // so, at this point we have buffer valid on host side.
             // And we just need to replace DevicePointer with constant pointer
             tadCache.get(deviceId).put(descriptor, buffers);
+
+            bytes.addAndGet((buffers.getFirst().length() * 4));
+
+            if (buffers.getSecond() != null)
+                bytes.addAndGet(buffers.getSecond().length() * 8);
+
             log.trace("Using TAD from cache...");
         }
 

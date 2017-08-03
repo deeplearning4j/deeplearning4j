@@ -25,6 +25,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.factory.Nd4j;
@@ -83,7 +85,7 @@ public class DerivativeTests extends BaseNd4jTest {
     @Test
     public void testRectifiedLinearDerivative() {
         assertTrue(Nd4j.getOpFactory().createTransform("relu", Nd4j.ones(1)).derivative() instanceof Step);
-
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         //ReLU:
         //f(x) = max(0,x)
         //Piecewise differentiable; choose f'(0) = 0
@@ -99,7 +101,7 @@ public class DerivativeTests extends BaseNd4jTest {
         }
 
         INDArray zPrime = Nd4j.getExecutioner()
-                        .execAndReturn(Nd4j.getOpFactory().createTransform("relu", z).derivative());
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("relu",z).derivative());
 
         for (int i = 0; i < 100; i++) {
             assertTrue(expOut[i] == zPrime.getDouble(i));

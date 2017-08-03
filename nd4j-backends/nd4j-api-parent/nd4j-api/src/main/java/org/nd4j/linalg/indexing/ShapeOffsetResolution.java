@@ -258,7 +258,7 @@ public class    ShapeOffsetResolution implements Serializable {
         }
 
         //all and newaxis
-        else if (numSpecified < 1 && interval < 1 && newAxis < 1 && pointIndex < 1 && numAll > 0) {
+        else if (numSpecified < 1 && interval < 1 && newAxis > 0  && pointIndex < 1 && numAll > 0) {
             int minDimensions = Math.max(arr.rank(), 2) + newAxis;
             //new axis dimensions + all
             long[] shape = new long[minDimensions];
@@ -297,6 +297,10 @@ public class    ShapeOffsetResolution implements Serializable {
             this.shapes = shape;
             this.strides = stride;
             this.offsets = offsets;
+            for (int i = 0; i < indexes.length; i++) {
+                offset += offsets[i] * (stride[i] / indexes[i].stride());
+            }
+
             return true;
         }
 
@@ -341,6 +345,7 @@ public class    ShapeOffsetResolution implements Serializable {
         int newAxesPrepend = 0;
         //whether we have encountered an all so far
         boolean encounteredAll = false;
+        int lastPrependIndex = -1;
         List<Integer> oneDimensionWithAllEncountered = new ArrayList<>();
 
         //accumulate the results
@@ -370,6 +375,11 @@ public class    ShapeOffsetResolution implements Serializable {
                 encounteredAll = true;
                 if (i < arr.rank() && arr.size(i) == 1)
                     oneDimensionWithAllEncountered.add(i);
+                //different dimension from new axis (look for new axis dimensions
+                //at at the beginning. track when the last new axis is encountered.
+                if(newAxesPrepend > 0 && lastPrependIndex < 0) {
+                    lastPrependIndex = i - 1;
+                }
             }
             //point: do nothing but move the shape counter
             //also move the stride counter
@@ -379,6 +389,11 @@ public class    ShapeOffsetResolution implements Serializable {
                 numPointIndexes++;
                 shapeIndex++;
                 strideIndex++;
+                //different dimension from new axis (look for new axis dimensions
+                //at at the beginning. track when the last new axis is encountered.
+                if(newAxesPrepend > 0 && lastPrependIndex < 0) {
+                    lastPrependIndex = i - 1;
+                }
                 continue;
             }
             //new axes encountered, need to track whether to prepend or
@@ -418,6 +433,14 @@ public class    ShapeOffsetResolution implements Serializable {
 
                 shapeIndex++;
                 strideIndex++;
+
+                //different dimension from new axis (look for new axis dimensions
+                //at at the beginning. track when the last new axis is encountered.
+                if(newAxesPrepend > 0 && lastPrependIndex < 0) {
+                    lastPrependIndex = i - 1;
+                }
+
+
                 continue;
             }
 
@@ -551,6 +574,22 @@ public class    ShapeOffsetResolution implements Serializable {
         }
 
 
+        /**
+         * When new axis and points are both present,
+         * the strides cancel each other out.
+         *
+         * Points should be retained.
+         */
+        if(numPointIndexes > 0 && newAxesPrepend > 0) {
+            for(int i = 0; i < accumStrides.size(); i++) {
+                if(indexes[i] instanceof PointIndex
+                        || indexes[i] instanceof NDArrayIndexAll
+                        || indexes[i] instanceof IntervalIndex
+                        || indexes[i] instanceof SpecifiedIndex) {
+                    accumStrides.set(i, (long) arr.stride(i));
+                }
+            }
+        }
 
         this.strides = Longs.toArray(accumStrides);
         this.offsets = Longs.toArray(accumOffsets);
@@ -581,7 +620,7 @@ public class    ShapeOffsetResolution implements Serializable {
                 //where zero was set and emulate the
                 //same structure in the point strides
                 for (int i = 0; i < accumStrides.size(); i++) {
-                    if (accumStrides.get(i) == 0)
+                    if (accumStrides.get(i) == 0 && !(indexes[i] instanceof NewAxis))
                         pointStrides.set(i, 0L);
                 }
             }

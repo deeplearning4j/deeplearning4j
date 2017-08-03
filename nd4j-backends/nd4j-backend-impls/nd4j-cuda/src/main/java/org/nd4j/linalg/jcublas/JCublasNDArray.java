@@ -305,7 +305,7 @@ public class JCublasNDArray extends BaseNDArray {
 
 
     public JCublasNDArray(JCublasNDArray doubleMatrix) {
-        this(new int[] {doubleMatrix.rows, doubleMatrix.columns});
+        this(new int[] {doubleMatrix.rows(), doubleMatrix.columns()});
         this.data = dup().data();
     }
 

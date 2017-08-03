@@ -22,6 +22,7 @@ package org.nd4j.linalg.ops;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -1033,6 +1034,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
      * @throws Exception
      */
     @Test
+    @Ignore
     public void testTadEws() throws Exception {
         INDArray array = Nd4j.create(32, 5, 10);
         assertEquals(1, array.tensorAlongDimension(0, 1, 2).elementWiseStride());

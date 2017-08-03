@@ -95,7 +95,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
             case FLOAT:
                 return createFloat(buffer.length(), init);
             case DOUBLE:
-                return createHalf(buffer.length(), init);
+                return createDouble(buffer.length(), init);
             case HALF:
                 return createHalf(buffer.length(), init);
             default:
@@ -118,7 +118,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
             case FLOAT:
                 return createFloat(buffer.length(), init, workspace);
             case DOUBLE:
-                return createHalf(buffer.length(), init, workspace);
+                return createDouble(buffer.length(), init, workspace);
             case HALF:
                 return createHalf(buffer.length(), init, workspace);
             default:

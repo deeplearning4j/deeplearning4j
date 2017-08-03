@@ -3,7 +3,7 @@
     <parent>
         <artifactId>nd4j-serde</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.8.1-SNAPSHOT</version>
+        <version>0.9.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -43,4 +43,29 @@
             <artifactId>junit</artifactId>
         </dependency>
     </dependencies>
+
+
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire.version}</version>
+                    <configuration>
+                        <!--
+                         By default: Surefire will set the classpath based on the manifest. Because tests are not included
+                         in the JAR, any tests that rely on class path scanning for resources in the tests directory will not
+                         function correctly without this configuration.
+                         For example, reflection tests for classes defined in the test directory will fail due to the
+                         class not being found on the classpath.
+                         http://maven.apache.org/surefire/maven-surefire-plugin/examples/class-loading.html
+                         -->
+                        <useSystemClassLoader>true</useSystemClassLoader>
+                        <useManifestOnlyJar>false</useManifestOnlyJar>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>

@@ -730,6 +730,91 @@ public class Nd4j {
     }
 
 
+
+    /**
+     * Tensor matrix multiplication.
+     * Both tensors must be the same rank
+     *
+     * @param a the left tensor
+     * @param b the  right tensor
+     * @param result the result array
+     * @param axes the axes for each array to do matrix multiply along
+     * @return
+     */
+    public static INDArray tensorMmul(INDArray a, INDArray b,INDArray result, int[][] axes) {
+        int validationLength = Math.min(axes[0].length, axes[1].length);
+        for (int i = 0; i < validationLength; i++) {
+            if (a.size(axes[0][i]) != b.size(axes[1][i]))
+                throw new IllegalArgumentException("Size of the given axes at each dimension must be the same size.");
+            if (axes[0][i] < 0)
+                axes[0][i] += a.rank();
+            if (axes[1][i] < 0)
+                axes[1][i] += b.rank();
+
+        }
+
+        List<Integer> listA = new ArrayList<>();
+        for (int i = 0; i < a.rank(); i++) {
+            if (!Ints.contains(axes[0], i))
+                listA.add(i);
+        }
+
+        int[] newAxesA = Ints.concat(Ints.toArray(listA), axes[0]);
+
+
+        List<Integer> listB = new ArrayList<>();
+        for (int i = 0; i < b.rank(); i++) {
+            if (!Ints.contains(axes[1], i))
+                listB.add(i);
+        }
+
+        int[] newAxesB = Ints.concat(axes[1], Ints.toArray(listB));
+
+        int n2 = 1;
+        int aLength = Math.min(a.rank(), axes[0].length);
+        for (int i = 0; i < aLength; i++) {
+            n2 *= a.size(axes[0][i]);
+        }
+
+        //if listA and listB are empty these donot initialize.
+        //so initializing with {1} which will then get overriden if not empty
+        int[] newShapeA = {-1, n2};
+        int[] oldShapeA;
+        if (listA.size() == 0) {
+            oldShapeA = new int[] {1};
+        } else {
+            oldShapeA = Ints.toArray(listA);
+            for (int i = 0; i < oldShapeA.length; i++)
+                oldShapeA[i] = a.size(oldShapeA[i]);
+        }
+
+        int n3 = 1;
+        int bNax = Math.min(b.rank(), axes[1].length);
+        for (int i = 0; i < bNax; i++) {
+            n3 *= b.size(axes[1][i]);
+        }
+
+
+        int[] newShapeB = {n3, -1};
+        int[] oldShapeB;
+        if (listB.size() == 0) {
+            oldShapeB = new int[] {1};
+        } else {
+            oldShapeB = Ints.toArray(listB);
+            for (int i = 0; i < oldShapeB.length; i++)
+                oldShapeB[i] = b.size(oldShapeB[i]);
+        }
+
+
+        INDArray at = a.permute(newAxesA).reshape(newShapeA);
+        INDArray bt = b.permute(newAxesB).reshape(newShapeB);
+        INDArray ret = at.mmul(bt,result);
+
+        int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
+        return ret.reshape(aPlusB);
+    }
+
+
     /**
      * Tensor matrix multiplication.
      * Both tensors must be the same rank

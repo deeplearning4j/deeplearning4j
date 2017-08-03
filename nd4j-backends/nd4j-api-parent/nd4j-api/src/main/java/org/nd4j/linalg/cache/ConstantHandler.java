@@ -72,4 +72,11 @@ public interface ConstantHandler {
      * This method removes all cached constants
      */
     void purgeConstants();
+
+    /**
+     * This method returns memory used for cache, in bytes
+     *
+     * @return
+     */
+    long getCachedBytes();
 }

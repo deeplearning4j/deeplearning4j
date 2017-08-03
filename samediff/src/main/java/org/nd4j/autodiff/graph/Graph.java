@@ -6,6 +6,7 @@ import guru.nidi.graphviz.model.Label;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.graph.api.BaseGraph;
 import org.nd4j.autodiff.graph.api.Edge;
@@ -48,6 +49,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     private boolean frozen = false;
     private Map<Integer,List<Edge<E>>> incomingEdges;
     private Graph<V,E> graphApply;
+    @Getter
     private int nextVertexId;
 
     public Graph() {
@@ -169,13 +171,16 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             graphApply.addEdge(edge);
             return;
         }
-        if(edge.getFrom() == edge.getTo())
+
+
+        if(!frozen && edge.getFrom() == edge.getTo())
             throw new IllegalArgumentException("No cycles allowed");
 
         if (edge.getFrom() < 0)
             throw new IllegalArgumentException("Invalid edge: " + edge + ", from/to indexes out of range");
 
         List<Edge<E>> fromList =  edges.get(edge.getFrom());
+
         if(fromList == null) {
             fromList = new ArrayList<>();
             edges.put(edge.getFrom(),fromList);
@@ -328,7 +333,22 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
             }
         }
+
+
+
         sb.append("\n}");
+
+
+        sb.append("\n Incoming edges {");
+        for (Integer i : incomingEdges.keySet()) {
+            sb.append("\n\t");
+            sb.append(i).append(":");
+            for (Edge<E> e : incomingEdges.get(i)) {
+                sb.append(" ").append(e).append("\n");
+
+            }
+        }
+
         sb.append("\n}");
         return sb.toString();
     }

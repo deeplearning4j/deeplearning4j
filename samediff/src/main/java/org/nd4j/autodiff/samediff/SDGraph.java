@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.samediff;
 
 import com.google.common.base.Preconditions;
+import com.rits.cloning.Cloner;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -32,6 +33,7 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         setIncomingEdges(gradGraph.getIncomingEdges());
         setGraphApply(gradGraph.getGraphApply());
     }
+
 
     @Builder
     private SDGraph(boolean allowMultipleEdges,

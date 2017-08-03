@@ -18,4 +18,6 @@ public abstract class BasicConstantHandler implements ConstantHandler {
     public DataBuffer relocateConstantSpace(DataBuffer dataBuffer) {
         return dataBuffer;
     }
+
+
 }

@@ -19,6 +19,7 @@ import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.convolution.Pooling2D;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.ConstantHandler;
@@ -552,14 +553,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (FloatPointer) op.z().data().addressPointer(),
                             (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             (FloatPointer) op.y().data().addressPointer(), (FloatPointer) getPointerForExtraArgs(op),
-                            new IntPointer(dimension), dimension.length);
+                            (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(), dimension.length);
         } else if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             loop.execScalarDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
                             (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                             (DoublePointer) op.z().data().addressPointer(),
                             (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             (DoublePointer) op.y().data().addressPointer(), (DoublePointer) getPointerForExtraArgs(op),
-                            new IntPointer(dimension), dimension.length);
+                            (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(), dimension.length);
         }
     }
 
@@ -666,6 +667,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             st = profilingHookIn(op, tadBuffers.getFirst());
         } else
             st = profilingHookIn(op);
+
+        // Pooling2D requires additional pointer
+        if (op.opNum() == 71) {
+            dummy.put(0, ((Pooling2D) op).getIm2colShape().addressPointer());
+        }
 
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op.y() != null) {
@@ -829,6 +835,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             super.exec(op);
 
         } else {
+            if(op.z() == op.x()) {
+                op.setZ(Nd4j.scalar(0.0));
+            }
+
             long st = profilingHookIn(op);
 
             validateDataType(Nd4j.dataType(), op);
@@ -846,6 +856,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 (FloatPointer) getPointerForExtraArgs(op)));
             }
+
+            op.z().assign(op.getFinalResult());
+
             profilingHookOut(op, st);
         }
     }
@@ -862,6 +875,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             validateDataType(Nd4j.dataType(), op);
 
+            if(op.z() == op.x()) {
+                op.setZ(Nd4j.scalar(0.0));
+            }
 
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if (op instanceof Variance) {
@@ -903,6 +919,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     (FloatPointer) getPointerForExtraArgs(op)));
                 }
             }
+
+            op.z().assign(op.getFinalResult());
+
+
             profilingHookOut(op, st);
         }
     }

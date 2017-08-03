@@ -994,4 +994,14 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     public DataBuffer getIndices() {
         return indices;
     }
+
+    @Override
+    public INDArray putiColumnVector(INDArray columnVector) {
+        return null;
+    }
+
+    @Override
+    public INDArray putiRowVector(INDArray rowVector) {
+        return null;
+    }
 }
