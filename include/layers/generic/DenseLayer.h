@@ -50,7 +50,7 @@ template<typename T, typename AF> void DenseLayer<T,AF>::backPropagate() {
     // activation derivative call
     ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, this->output, this->inputShapeInfo);
     
-    INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst();
+    // INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst();
     // how to evaluate delta, what is it ???
     // this->gemmHelper(this->input, this->inputShapeInfo, this->params, this->paramsShapeInfo, this->output, this->outputShapeInfo, (T) 1.0f, (T) 0.0f);
     // Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
