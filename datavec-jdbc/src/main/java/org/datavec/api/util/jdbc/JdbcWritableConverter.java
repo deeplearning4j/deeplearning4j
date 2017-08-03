@@ -32,12 +32,12 @@ public class JdbcWritableConverter {
             case Types.VARCHAR:
                 return new Text((String) columnValue);
 
-            case Types.DECIMAL:
             case Types.FLOAT:
-            case Types.NUMERIC:
             case Types.REAL:
                 return new FloatWritable((float) columnValue);
 
+            case Types.DECIMAL:
+            case Types.NUMERIC:
             case Types.DOUBLE:
                 return new DoubleWritable((double) columnValue);
 
