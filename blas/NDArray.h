@@ -9,7 +9,7 @@ template <typename T> class NDArray
 
     public:
         // default constructor
-        NDArray(buffer = nullptr, shapeInfo = nullptr);
+        NDArray(T *buffer_ = nullptr, int* shapeInfo_ = nullptr);
 
 };
 
