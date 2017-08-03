@@ -117,74 +117,12 @@ template <typename T> class INativeLayer {
         // This method executes back-propagation pass on this layer
         virtual void backPropagate() = 0;
 
-        void gemvHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta) {
-            // gemv should be used here
-        }
+        // gemv should be used here
+        void gemvHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta);
+        
+        // extracts shapes info and perform gemm 
+        void gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta);
 
-        void gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta) {
-            char aOrder = shape::order(aShapeInfo);
-            char bOrder = shape::order(bShapeInfo);
-            char cOrder = shape::order(cShapeInfo);
-
-            int *aShape = shape::shapeOf(aShapeInfo);
-            int *bShape = shape::shapeOf(bShapeInfo);
-            int *cShape = shape::shapeOf(cShapeInfo);
-
-            char rOrder;
-
-            int M, N, K, lda, ldb, ldc;
-            char transA, transB;
-
-            if (aOrder == bOrder) {
-                rOrder = aOrder;
-
-                if (aOrder == 'c') {
-                    // we might need to transpose matrices, that depends on BLAS implementation though
-                    // todo: we need dup(c/f) helper here
-                }
-
-
-                if (rOrder == 'c') {
-                    M = cShape[1];
-                    N = cShape[0];
-                    K = aShape[1];
-                } else {
-                    M = cShape[0];
-                    N = cShape[1];
-                    K = bShape[1];
-                }
-
-                lda = aShape[0];
-                ldb = bShape[0];
-                ldc = cShape[0];
-
-                transA = 'N';
-                transB = 'N';
-            } else {
-                // TODO: same dup('f) might be needed here, but obviously only one of operands
-                if (aOrder == 'c') {
-                    // dup(F) A here
-                } else {
-                    // dup(F) B here
-                }
-
-                M = cShape[0];
-                N = cShape[1];
-                K = aShape[1];
-
-                rOrder = aOrder;
-
-                lda = aShape[0];
-                ldb = bShape[0];
-                ldc = cShape[0];
-
-                transA = 'N';
-                transB = 'N';
-            }
-
-            // we'll use platform-specific gemm here eventually. maybe tomorrow.
-            nd4j::blas::GEMM<T>::op(rOrder, true, false, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
-        };
 };
     
 /////// implementation part ///////
@@ -209,6 +147,72 @@ template <typename T> INativeLayer<T>::INativeLayer() {
     pDropOut = 0.;   
     pDropConnect = 0.;              
     aNum = 0;
+}
+
+
+// perform C = alpha*A*B + beta*C
+template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta) {  
+    char aOrder = shape::order(aShapeInfo);
+    char bOrder = shape::order(bShapeInfo);
+    char cOrder = shape::order(cShapeInfo);
+
+    int *aShape = shape::shapeOf(aShapeInfo);
+    int *bShape = shape::shapeOf(bShapeInfo);
+    int *cShape = shape::shapeOf(cShapeInfo);
+
+    char rOrder;
+
+    int M, N, K, lda, ldb, ldc;
+    char transA, transB;
+
+    if (aOrder == bOrder) {
+        rOrder = aOrder;
+
+        if (aOrder == 'c') {
+            // we might need to transpose matrices,     
+            // todo: we need dup(c/f) helper here
+        }
+
+        if (rOrder == 'c') {
+            M = cShape[1];
+            N = cShape[0];
+            K = aShape[1];
+        } else {
+            M = cShape[0];
+            N = cShape[1];
+            K = bShape[1];
+        }
+
+        lda = aShape[0];
+        ldb = bShape[0];
+        ldc = cShape[0];
+
+        transA = 'N';
+        transB = 'N';
+    } else {
+        // TODO: same dup('f) might be needed here, but obviously only one of operands
+        if (aOrder == 'c') {
+            // dup(F) A here
+        } else {
+            // dup(F) B here
+        }
+
+        M = cShape[0];
+        N = cShape[1];
+        K = aShape[1];
+
+        rOrder = aOrder;
+
+        lda = aShape[0];
+        ldb = bShape[0];
+        ldc = cShape[0];
+
+        transA = 'N';
+        transB = 'N';
+    }
+
+    // we'll use platform-specific gemm here eventually. maybe tomorrow.
+    nd4j::blas::GEMM<T>::op(rOrder, true, false, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
 }
 
 

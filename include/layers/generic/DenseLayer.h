@@ -33,6 +33,11 @@ template<typename T, typename AF> class DenseLayer: public BaseLayer<T, AF> {
         inline bool validateOutput();
 };
 
+
+
+
+
+
 /////// implementation part ///////    
 
 // default constructor
@@ -44,6 +49,11 @@ template<typename T, typename AF> DenseLayer<T,AF>::DenseLayer() {
 template<typename T, typename AF> void DenseLayer<T,AF>::backPropagate() {
     // activation derivative call
     ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, this->output, this->inputShapeInfo);
+    
+    INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst();
+    // how to evaluate delta, what is it ???
+    // this->gemmHelper(this->input, this->inputShapeInfo, this->params, this->paramsShapeInfo, this->output, this->outputShapeInfo, (T) 1.0f, (T) 0.0f);
+    // Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
 }
 
 
@@ -62,6 +72,7 @@ template<typename T, typename AF> bool DenseLayer<T,AF>::validateInput() {
 
     return true;
 }
+
 
 
 // This method should valudate output parameters, and return TRUE if everything is ok, FALSE otherwise
@@ -87,15 +98,13 @@ template<typename T, typename AF> void DenseLayer<T,AF>::feedForward() {
     // dropconnect helper
     if (this->dropConnect)
         dropConnectHelper(this->params, this->paramsShapeInfo);
-
-    int *inputShape = shape::shapeOf(this->inputShapeInfo);
+    
 
     // do wxa+b here or something else
     // TODO: introduce BLAS right here
     if (shape::isRowVector(this->inputShapeInfo)) {
         // gemv here input * W
-    } 
-    else {
+    } else {
         // gemm here, input * W
         // these values should be set appropriately
 
