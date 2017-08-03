@@ -16,6 +16,7 @@ JUMPY_CLASSPATH
 The JUMPY_CLASSPATH can be set to a list of jar files that contain
 the necessary jar files for running an [nd4j backend](http://nd4j.org/backend.html)
 
+
 Install:
 ```{python}
 pip install jumpy
@@ -34,7 +35,7 @@ git clone https://github.com/deeplearning4j/dl4j-examples
 Modify the versions to include 0.8.1-SNAPSHOT:
 https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml#L21
 
-Change the nd4j backend to be either (nd4j-native or nd4j-cuda-8.0) for cpu and gpu respectively:
+Change the ND4J backend to be either (`nd4j-native` or `nd4j-cuda-8.0`) for CPU and GPU respectively:
 https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml#L14
 
 Paste:
@@ -80,20 +81,20 @@ Paste:
             </plugin>
 ```
 
-in the pom.xml. This will make maven build 1 jar you can use with jumpy.
+in the `pom.xml` file. This will make Maven build one JAR you can use with Jumpy.
 
 Run:
 ```
 cd dl4j-examples && mvn clean install -DskipTests
 ```
 
-This will give you a jar in the target directory. The target directory should contain a very large jar with -bin in the name.
+This will give you a JAR in the target directory. The target directory should contain a very large JAR with -bin in the name.
 
 Finally,  run (not exactly this but close):
 ```
 export JUMPY_CLASS_PATH=/path/to/jar
 ```
 
-This should allow you to get started with jumpy.
+This should allow you to get started with Jumpy.
 
-File issues if there are problems.
+Please file [issues](https://github.com/deeplearning4j/jumpy/issues) to this repo if there are problems.
