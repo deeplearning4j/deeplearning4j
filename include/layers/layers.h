@@ -101,7 +101,7 @@ template <typename T> class INativeLayer {
             this->input = input;
             this->inputShapeInfo = inputShapeInfo;
             this->mask = mask;
-            this-maskShapeInfo = maskShapeInfo;
+            this->maskShapeInfo = maskShapeInfo;
 
             return validateInput();
         }

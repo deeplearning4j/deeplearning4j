@@ -86,7 +86,7 @@ template<typename T, typename AF> bool DenseLayer<T,AF>::validateParameters() {
 // This method should validate input parameters, and return TRUE if everything ok. FALSE otherwise
 template<typename T, typename AF> bool DenseLayer<T,AF>::validateInput() {
     // we expect input to be either vector or matrix, in both cases - that's rank2
-    if (this->input == nullptr || this->inputShapeInfo == nullptr && shape::rank(this->inputShapeInfo) != 2)
+    if (this->input == nullptr || this->inputShapeInfo == nullptr || shape::rank(this->inputShapeInfo) != 2)
         return false;
 
     return true;
@@ -97,7 +97,7 @@ template<typename T, typename AF> bool DenseLayer<T,AF>::validateInput() {
 // This method should valudate output parameters, and return TRUE if everything is ok, FALSE otherwise
 template<typename T, typename AF> bool DenseLayer<T,AF>::validateOutput() {
     // same as input validation here. we expect rank of output arra
-    if (this->output == nullptr || this->outputShapeInfo == nullptr && shape::rank(this->outputShapeInfo) != 2)
+    if (this->output == nullptr || this->outputShapeInfo == nullptr || shape::rank(this->outputShapeInfo) != 2)
         return false;
 
     // length of output along dimension 1 should match length of parameters, if parameters are set,
