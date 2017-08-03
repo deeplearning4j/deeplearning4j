@@ -17,6 +17,7 @@ setup(name='jumpy',
       keywords='numpy jumpy java nd4j deeplearning4j',
       url='https://github.com/deeplearning4j/jumpy',
       license='Apache',
+      setup_requires=['Cython'],
       install_requires=['pyjnius'],
       extras_require={
           'visualize': ['pydot-ng'],
