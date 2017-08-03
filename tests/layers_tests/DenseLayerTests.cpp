@@ -158,3 +158,23 @@ TEST_F(DenseLayerInputTest, ParamsTest3) {
 
     ASSERT_FALSE(result);
 }
+
+TEST_F(DenseLayerInputTest, NDArrayOrder1) {
+    // original part
+    float *c = new float[4] {1, 2, 3, 4};
+    int *cShape = new int[8]{2, 2, 2, 2, 1, 0, 1, 99};
+
+    // expected part
+    float *f = new float[4] {1, 3, 2, 4};
+    int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
+
+    auto *arrayC = new NDArray<float>(c, cShape);
+    auto *arrayF = arrayC->dup('f');
+
+    ASSERT_EQ('c', arrayC->ordering());
+    ASSERT_EQ('f', arrayF->ordering());
+
+    for (int i = 0; i < 4; i++) {
+        ASSERT_EQ(f[i], arrayF->buffer[i]);
+    }
+}
