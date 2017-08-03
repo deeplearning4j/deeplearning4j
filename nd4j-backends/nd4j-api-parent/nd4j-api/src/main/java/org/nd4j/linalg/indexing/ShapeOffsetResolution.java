@@ -266,27 +266,20 @@ public class ShapeOffsetResolution implements Serializable {
             int prependNewAxes = 0;
             boolean allFirst = false;
             int shapeAxis = 0;
-            for (int i = 0; i < indexes.length; i++) {
-                //prepend if all was not first; otherwise its meant
-                //to be targeted for particular dimensions
-                if (indexes[i] instanceof NewAxis) {
-                    if (allFirst) {
-                        shape[i] = 1;
-                        stride[i] = 0;
-                    } else {
-                        prependNewAxes++;
-                    }
+            int allEncountered = 0;
+            for (int i = 0; i < minDimensions; i++) {
+               if(i >= (indexes.length)) {
+                   shape[i] = arr.size(allEncountered);
+                   stride[i] = arr.stride(allEncountered);
+                   allEncountered++;
+               }
+               else if(!(indexes[i] instanceof NewAxis) &&
+                        indexes[i] instanceof NDArrayIndexAll) {
+                   shape[allEncountered] = arr.size(allEncountered);
+                   stride[allEncountered] = arr.stride(allEncountered);
+                   allEncountered++;
+               }
 
-                }
-                //all index
-                else {
-                    if (i == 0)
-                        allFirst = true;
-                    //offset by number of axes to prepend
-                    shape[i] = arr.size(shapeAxis + prependNewAxes);
-                    stride[i] = arr.stride(shapeAxis + prependNewAxes);
-                    shapeAxis++;
-                }
             }
 
 
@@ -570,11 +563,18 @@ public class ShapeOffsetResolution implements Serializable {
          */
         if(numPointIndexes > 0 && newAxesPrepend > 0) {
             for(int i = 0; i < accumStrides.size(); i++) {
-                if(indexes[i] instanceof PointIndex
-                        || indexes[i] instanceof NDArrayIndexAll
-                        || indexes[i] instanceof IntervalIndex
-                        || indexes[i] instanceof SpecifiedIndex) {
+                if(i > 0 &&  indexes[i] instanceof PointIndex) {
                     accumStrides.set(i, (long) arr.stride(i));
+                    accumOffsets.set(i,(long) indexes[i].offset());
+                }
+                else if(indexes[i] instanceof NDArrayIndexAll) {
+                    accumStrides.set(i, (long) arr.stride(i));
+                    accumOffsets.set(i,(long) indexes[i].offset());
+                }
+                else if(lastPrependIndex < 0 && indexes[i] instanceof IntervalIndex && i >= lastPrependIndex) {
+                    accumStrides.set(i, (long) arr.stride(i));
+                    accumOffsets.set(i,(long) indexes[i].offset());
+
                 }
             }
         }
@@ -608,7 +608,7 @@ public class ShapeOffsetResolution implements Serializable {
                 //where zero was set and emulate the
                 //same structure in the point strides
                 for (int i = 0; i < accumStrides.size(); i++) {
-                    if (accumStrides.get(i) == 0 && !(indexes[i] instanceof NewAxis))
+                    if (accumStrides.get(i) == 0 && !(indexes[i] instanceof NewAxis) && lastPrependIndex <= 0)
                         pointStrides.set(i, 0L);
                 }
             }

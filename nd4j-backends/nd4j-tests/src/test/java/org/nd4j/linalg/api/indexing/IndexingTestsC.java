@@ -13,9 +13,7 @@ import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.*;
-import static org.nd4j.linalg.indexing.NDArrayIndex.all;
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
-import static org.nd4j.linalg.indexing.NDArrayIndex.point;
+import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
  * @author Adam Gibson
@@ -29,19 +27,16 @@ public class IndexingTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testAllWithNewAxis() {
-        INDArray arr = Nd4j.linspace(1,24,24).reshape(4,2,3);
-        INDArray get = arr.get(NDArrayIndex.newAxis(), all(), point(1));
-        INDArray assertion = Nd4j.create(new double[][]{
-                {4,5,6},
-                {10,11,12},
-                {16,17,18},
-                {22,23,24}
-        }).reshape(1,4,3);
-        assertEquals(assertion,get);
 
+
+    @Test
+    public void testNewAxis() {
+        INDArray arr = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
+        INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), newAxis(), newAxis());
+        int[] shapeAssertion = {3, 2, 1, 1, 2};
+        assertArrayEquals(shapeAssertion, get.shape());
     }
+
 
     @Test
     public void broadcastBug() throws Exception {
@@ -75,7 +70,7 @@ public class IndexingTestsC extends BaseNd4jTest {
                 {7,8,9},
         }).reshape(1,1,3);
 
-        INDArray get2 = arr.get(NDArrayIndex.point(1),NDArrayIndex.newAxis(),NDArrayIndex.interval(0,1));
+        INDArray get2 = arr.get(NDArrayIndex.point(1), newAxis(),NDArrayIndex.interval(0,1));
         assertEquals(assertion2,get2);
     }
 
@@ -87,8 +82,22 @@ public class IndexingTestsC extends BaseNd4jTest {
                 {10,11,12}
         }).reshape(1,2,3);
 
-        INDArray get2 = arr.get(NDArrayIndex.point(1),NDArrayIndex.newAxis(), all());
+        INDArray get2 = arr.get(NDArrayIndex.point(1), newAxis(), all());
         assertEquals(assertion2,get2);
+    }
+
+    @Test
+    public void testAllWithNewAxis() {
+        INDArray arr = Nd4j.linspace(1,24,24).reshape(4,2,3);
+        INDArray get = arr.get(newAxis(), all(), point(1));
+        INDArray assertion = Nd4j.create(new double[][]{
+                {4,5,6},
+                {10,11,12},
+                {16,17,18},
+                {22,23,24}
+        }).reshape(1,4,3);
+        assertEquals(assertion,get);
+
     }
 
     @Test
