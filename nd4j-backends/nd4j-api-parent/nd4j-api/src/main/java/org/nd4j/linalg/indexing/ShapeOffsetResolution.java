@@ -255,7 +255,7 @@ public class ShapeOffsetResolution implements Serializable {
         }
 
         //all and newaxis
-        else if (numSpecified < 1 && interval < 1 && newAxis < 1 && pointIndex < 1 && numAll > 0) {
+        else if (numSpecified < 1 && interval < 1 && newAxis > 0  && pointIndex < 1 && numAll > 0) {
             int minDimensions = Math.max(arr.rank(), 2) + newAxis;
             //new axis dimensions + all
             long[] shape = new long[minDimensions];
