@@ -6,8 +6,8 @@
 #define PROJECT_OPS_H
 
 
-#define no_special_ff static inline bool requiresSpecialFF() {return false;}; inline static void ffActivation(T *input, int *inputShapeInfo) {};
-#define no_special_bp static inline bool requiresSpecialBP() {return false;}; inline static void bpActivation(T *input, T *epsilon, int *inputShapeInfo) {};
+#define no_special_ff static inline bool requiresSpecialFF() {return false;}; inline static void ffActivation(T *input, T* output, int *inputShapeInfo) {};
+#define no_special_bp static inline bool requiresSpecialBP() {return false;}; inline static void bpActivation(T *input, T* output, T *epsilon, int *inputShapeInfo) {};
 
 #define no_regular_ff static inline bool requiresSpecialFF() {return true;}; inline static T ffActivation(T value) {};
 #define no_regular_bp static inline bool requiresSpecialBP() {return true;}; inline static T bpActivation(T value, T epsilon) {};

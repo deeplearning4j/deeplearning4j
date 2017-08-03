@@ -93,11 +93,11 @@ template<typename T, typename AF> bool DenseLayer<T,AF>::validateOutput() {
 template<typename T, typename AF> void DenseLayer<T,AF>::feedForward() {
     // dropout helper call
     if (this->dropOut)
-        dropOutHelper(this->input, this->inputShapeInfo);
+        this->dropOutHelper(this->input, this->inputShapeInfo);
 
     // dropconnect helper
     if (this->dropConnect)
-        dropConnectHelper(this->params, this->paramsShapeInfo);
+        this->dropConnectHelper(this->params, this->paramsShapeInfo);
     
 
     // do wxa+b here or something else

@@ -21,9 +21,10 @@ template <typename T> class INativeLayer {
         
         T   *mask;                      // the matrix of zeros and unities, takes into account possible different size of inputs, for outer pixels absent in smaller inputs zeros are set, the rest is unities
         int *maskShapeInfo;             // see _paramsShapeInfo explanation
-        
+
+        T *epsilon;
         T *output;                      // flattened multidimensional matrix of outputs
-        T *outputShapeInfo;             // see _paramsShapeInfo explanation
+        int *outputShapeInfo;             // see _paramsShapeInfo explanation
         
         Nd4jIndex allocated;            // memory amount which is already used from workspace, more probably it would be just 0
         Nd4jIndex length;               // memory amount which is still available from workspace, (allocated + length) = total size of workspace
