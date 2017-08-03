@@ -28,6 +28,32 @@ public class IndexingTestsC extends BaseNd4jTest {
 
 
     @Test
+    public void testAllWithNewAxis() {
+        INDArray arr = Nd4j.linspace(1,24,24).reshape(4,2,3);
+        INDArray get = arr.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), point(1));
+        INDArray assertion = Nd4j.create(new double[][]{
+                {4,5,6},
+                {10,11,12},
+                {16,17,18},
+                {22,23,24}
+        }).reshape(1,4,3);
+        assertEquals(assertion,get);
+
+    }
+
+    @Test
+    public void testAllWithNewAxisInMiddle() {
+        INDArray arr = Nd4j.linspace(1,24,24).reshape(4,2,3);
+        INDArray assertion2 = Nd4j.create(new double[][]{
+                {7,8,9},
+                {10,11,12}
+        }).reshape(1,2,3);
+
+        INDArray get2 = arr.get(NDArrayIndex.point(1),NDArrayIndex.newAxis(),NDArrayIndex.all());
+        assertEquals(assertion2,get2);
+    }
+
+    @Test
     public void testIndexingWithMmul() {
         INDArray a = Nd4j.linspace(1,9,9).reshape(3,3);
         INDArray b = Nd4j.linspace(1,5,5);
