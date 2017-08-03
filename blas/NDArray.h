@@ -104,4 +104,4 @@ template <typename T> class NDArray
 
 };
 
-#endif#
+#endif

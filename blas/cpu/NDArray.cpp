@@ -1,5 +1,6 @@
 #include <NDArray.h>
 #include <NativeOpExcutioner.h>
+#include <stdexcept>
 
 template <typename T> NDArray<T>::NDArray(T *buffer_, int* shapeInfo_ ) {
     this->buffer = buffer_;
@@ -32,7 +33,7 @@ template <typename T> NDArray<T>::NDArray(int rows, int columns, char order){
 template <typename T> T NDArray<T>:: getScalar(Nd4jIndex i) {
     // throw something right here
     if (i >= shape::length(this->shapeInfo))
-        return (T) 0.0f;
+        throw std::invalid_argument("Requested index above limit");
 
     return this->buffer[i];
 }
@@ -54,7 +55,7 @@ template <typename T> void NDArray<T>:: putScalar(Nd4jIndex i, T value) {
 template <typename T> T NDArray<T>::getScalar(int i, int k) {
     // throw something here
     if (this->rankOf() != 2)
-        return 0.0f;
+        throw std::invalid_argument("Requested index above limit");
 
     int coords[2] = {i, k};
     Nd4jIndex xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), coords, this->rankOf());
@@ -66,7 +67,7 @@ template <typename T> T NDArray<T>::getScalar(int i, int k) {
 template <typename T> void NDArray<T>::putScalar(int i, int k, T value) {
     // throw something here
     if (this->rankOf() != 2)
-        return;
+        throw std::invalid_argument("Requested index above limit");
 
     int coords[2] = {i, k};
     Nd4jIndex xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), coords, this->rankOf());
@@ -85,7 +86,7 @@ template <typename T> void NDArray<T>::putScalar(int i, int k, T value) {
 template <typename T> T NDArray<T>:: getScalar(int i, int k, int j) {
     // throw something here
     if (this->rankOf() != 3)
-        return 0.0f;
+        throw std::invalid_argument("Requested index above limit");
 
     int coords[3] = {i, k, j};
 
@@ -98,7 +99,7 @@ template <typename T> T NDArray<T>:: getScalar(int i, int k, int j) {
 template <typename T> void NDArray<T>::putScalar(int i, int k, int j, T value) {
     // throw something here
     if (this->rankOf() != 3)
-        return;
+        throw std::invalid_argument("Requested index above limit");
 
     int coords[3] = {i, k, j};
 

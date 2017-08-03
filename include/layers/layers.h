@@ -5,8 +5,6 @@
 #ifndef PROJECT_LAYERS_H
 #define PROJECT_LAYERS_H
 
-#include <NDArray.h>
-
 namespace nd4j {
 namespace layers {
 
@@ -175,7 +173,13 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
     int M, N, K, lda, ldb, ldc;
     char transA, transB;
 
-    T *_A, *_B, *_C;
+    NDArray<T> *_A, *_B, *_C;
+
+    //_C = new NDArray<T>(C, cShapeInfo);
+
+    auto *tA = new NDArray<T>(A, aShapeInfo);
+    auto *tB = new NDArray<T>(B, bShapeInfo);
+    auto *tC = new NDArray<T>(C, cShapeInfo);
 
     if (aOrder == bOrder) {
         rOrder = aOrder;
@@ -205,8 +209,10 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
         // TODO: same dup('f) might be needed here, but obviously only one of operands
         if (aOrder == 'c') {
             // dup(F) A here
+            _A = tA->dup('f');
         } else {
             // dup(F) B here
+            _B = tB->dup('f');
         }
 
         M = cShape[0];
@@ -225,7 +231,15 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
     // we'll use platform-specific gemm here eventually. maybe tomorrow.
     // TODO: put proper _gemm here
-    nd4j::blas::GEMM<T>::op(rOrder, false, false, M, N, K, alpha, _A, lda, _B, ldb, beta, _C, ldc);
+    nd4j::blas::GEMM<T>::op(rOrder, false, false, M, N, K, alpha, _A->buffer, lda, _B->buffer, ldb, beta, _C->buffer, ldc);
+
+    delete tA;
+    delete tB;
+    delete tC;
+
+    delete _A;
+    delete _B;
+    delete _C;
 }
 
 

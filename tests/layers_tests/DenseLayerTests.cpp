@@ -224,5 +224,5 @@ TEST_F(DenseLayerInputTest, SGemmTest1) {
 
     nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
 
-    //layer->gemmHelper(arrayA, arrayB, arrayC, 1.0f, 0.0f);
+    layer->gemmHelper(arrayA, arrayB, arrayC, 1.0f, 0.0f);
 }
