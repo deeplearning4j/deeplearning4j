@@ -14,7 +14,7 @@ template <typename T> class INativeLayer {
         int *paramsShapeInfo;           // defines matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
                 
         T *bias;                        // flattened multidimensional matrix of biases
-        T *biasShapeInfo;               // see _paramsShapeInfo explanation   
+        int *biasShapeInfo;               // see _paramsShapeInfo explanation
         
         T   *input;                     // flattened multidimensional matrix of inputs
         int *inputShapeInfo;            // see _paramsShapeInfo explanation

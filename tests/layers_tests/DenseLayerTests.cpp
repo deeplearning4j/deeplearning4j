@@ -14,6 +14,20 @@ public:
     int outputShape2D[8] = {2, 10, 10, 10, 1, 0, 1, 99};
     int outputShape3D[10] = {3, 10, 10, 10, 100, 10, 1, 0, 1, 99};
 
+
+
+    ////////////////
+    int batchInputShapeGood[8] = {2, 128, 784, 128, 1, 0, 1, 99};
+    int batchOutputShapeGood[8] = {2, 128, 1024, 128, 1, 0, 1, 99};
+    int paramsShapeGood[8] = {2, 784, 1024, 1, 1024, 0, 1, 102};
+    int biasShapeGood[8] = {2, 1, 1024, 1, 1024, 0, 1, 102};
+
+
+    int batchInputShapeBad[8] = {2, 128, 781, 128, 1, 0, 1, 99};
+    int batchOutputShapeBad[8] = {2, 32, 1024, 128, 1, 0, 1, 99};
+    int paramsShapeBad[8] = {2, 783, 1024, 1, 1024, 0, 1, 102};
+    int biasShapeBad[8] = {2, 1, 1025, 1, 1025, 0, 1, 102};
+
 };
 
 TEST_F(DenseLayerInputTest, InputValidationTest1) {
@@ -100,5 +114,47 @@ TEST_F(DenseLayerInputTest, JointConfiguration1) {
 TEST_F(DenseLayerInputTest, ParamsTest1) {
     nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
 
-    z
+    float *stub = new float[10];
+
+
+    bool result = layer->setParameters(stub, paramsShapeGood, stub, biasShapeGood);
+
+    ASSERT_TRUE(result);
+
+    result = layer->configureLayer(stub, batchInputShapeGood, stub, batchOutputShapeGood, 0.0f, 0.0f);
+
+    ASSERT_TRUE(result);
+}
+
+TEST_F(DenseLayerInputTest, ParamsTest2) {
+    nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
+
+    float *stub = new float[10];
+
+
+    bool result = layer->setParameters(stub, paramsShapeBad, stub, biasShapeBad);
+
+    ASSERT_FALSE(result);
+
+    result = layer->configureLayer(stub, inputShape2D, stub, outputShape2D, 0.0f, 0.0f);
+
+    ASSERT_FALSE(result);
+}
+
+TEST_F(DenseLayerInputTest, ParamsTest3) {
+    nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
+
+    float *stub = new float[10];
+
+    bool result = layer->setParameters(stub, paramsShapeGood, stub, biasShapeGood);
+
+    ASSERT_TRUE(result);
+
+    result = layer->configureLayer(stub, batchInputShapeBad, stub, batchOutputShapeGood, 0.0f, 0.0f);
+
+    ASSERT_FALSE(result);
+
+    result = layer->configureLayer(stub, batchInputShapeGood, stub, batchOutputShapeBad, 0.0f, 0.0f);
+
+    ASSERT_FALSE(result);
 }

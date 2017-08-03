@@ -77,8 +77,34 @@ template<typename T, typename AF> void DenseLayer<T,AF>::backPropagate() {
 
 
 // This method should validate layer parameters & bias, and return TRUE if everything ok. FALSE otherwise
-template<typename T, typename AF> bool DenseLayer<T,AF>::validateParameters() {
-    // to be implemented
+template<typename T, typename AF>
+bool DenseLayer<T,AF>::validateParameters() {
+    if (this->paramsShapeInfo == nullptr || this->biasShapeInfo == nullptr || this->params == nullptr || this->bias == nullptr) {
+        printf("Got nulls here\n");
+        return false;
+    }
+
+    int wRank = shape::rank(this->paramsShapeInfo);
+    int bRank = shape::rank(this->biasShapeInfo);
+
+    // rank of params/bias has to be 2 here
+    if (wRank != 2 || bRank != 2) {
+        printf("Non 2\n");
+        return false;
+    }
+
+
+    int *wShape = shape::shapeOf(this->paramsShapeInfo);
+
+    int biasLength = shape::length(this->biasShapeInfo);
+
+    // number of outputs must be equal to biasLength
+    if (wShape[1] != biasLength) {
+        printf("Bias doesn't match: %i vs %i\n", wShape[1], biasLength);
+        return false;
+    }
+
+
     return true;
 }
 
@@ -88,6 +114,28 @@ template<typename T, typename AF> bool DenseLayer<T,AF>::validateInput() {
     // we expect input to be either vector or matrix, in both cases - that's rank2
     if (this->input == nullptr || this->inputShapeInfo == nullptr || shape::rank(this->inputShapeInfo) != 2)
         return false;
+
+    int *iShape = shape::shapeOf(this->inputShapeInfo);
+
+    if (this->params != nullptr) {
+        // check dimensionality
+
+        int *wShape = shape::shapeOf(this->paramsShapeInfo);
+
+        // number of input features should match number of rows in params
+        if (iShape[1] != wShape[0]) {
+            return false;
+        }
+    }
+
+    if (this->output != nullptr) {
+        int *oShape = shape::shapeOf(this->outputShapeInfo);
+
+        // we check for input/output batchSize equality
+        if (oShape[0] != iShape[0])
+            return false;
+    }
+
 
     return true;
 }
@@ -100,9 +148,25 @@ template<typename T, typename AF> bool DenseLayer<T,AF>::validateOutput() {
     if (this->output == nullptr || this->outputShapeInfo == nullptr || shape::rank(this->outputShapeInfo) != 2)
         return false;
 
-    // length of output along dimension 1 should match length of parameters, if parameters are set,
-    if (this->bias != nullptr) {
+    int *oShape = shape::shapeOf(this->outputShapeInfo);
 
+    // length of output along dimension 1 should match length of parameters, if parameters are set,
+    if (this->params != nullptr) {
+        int *wShape = shape::shapeOf(this->paramsShapeInfo);
+
+        // number of output features should match number of rows in params
+        if (oShape[1] != wShape[1]) {
+            return false;
+        }
+    }
+
+
+    if (this->input != nullptr) {
+        int *iShape = shape::shapeOf(this->inputShapeInfo);
+
+        // we check for input/output batchSize equality
+        if (oShape[0] != iShape[0])
+            return false;
     }
 
     return true;
