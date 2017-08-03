@@ -177,4 +177,8 @@ TEST_F(DenseLayerInputTest, NDArrayOrder1) {
     for (int i = 0; i < 4; i++) {
         ASSERT_EQ(f[i], arrayF->buffer[i]);
     }
+
+    for (int i = 0; i < 8; i++) {
+        ASSERT_EQ(fShape[i], arrayF->shapeInfo[i]);
+    }
 }

@@ -50,6 +50,9 @@ template <typename T> NDArray<T>* NDArray<T>::dup(char newOrder) {
         else
             newShapeInfo = shape::shapeBuffer(this->rankOf(), this->shapeOf());
 
+        // FIXME: we know that EWS is always 1 after dup() result
+        newShapeInfo[rankOf() * 2 + 2] = 1;
+
         // now we construct shape info for new order
 
         // now we invoke dup pwt against target buffer
