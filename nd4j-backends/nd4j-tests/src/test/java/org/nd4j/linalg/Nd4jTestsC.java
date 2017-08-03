@@ -2802,13 +2802,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testNewAxis() {
-        INDArray arr = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
-        INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.newAxis(), NDArrayIndex.newAxis());
-        int[] shapeAssertion = {3, 2, 1, 1, 2};
-        assertArrayEquals(shapeAssertion, get.shape());
-    }
 
 
 
