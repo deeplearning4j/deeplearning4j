@@ -165,14 +165,18 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     @Override
     public INDArray assign(final INDArray arr) {
-        if(!isSorted){
-            Nd4j.sparseFactory().sortCooIndices(this);
-            isSorted = true;
-        }
+        sort();
         // TODO - set via native op
         return this;
     }
 
+    public void sort(){
+        if(!isSorted){
+            Nd4j.sparseFactory().sortCooIndices(this);
+            isSorted = true;
+        }
+
+    }
     /**
      * Translate the view index to the corresponding index of the original ndarray
      * @param virtualIndexes the view indexes
@@ -433,10 +437,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     @Override
     public INDArray get(INDArrayIndex... indexes) {
 
-        if(!isSorted){
-            Nd4j.sparseFactory().sortCooIndices(this);
-            isSorted = true;
-        }
+        sort();
 
         if (indexes.length == 1 && indexes[0] instanceof NDArrayIndexAll || (indexes.length == 2 && (isRowVector()
                 && indexes[0] instanceof PointIndex && indexes[0].offset() == 0
@@ -529,6 +530,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * */
     public int reverseIndexes(int ... indexes){
         int[] idx = translateToPhysical(indexes);
+        sort();
         return indexesBinarySearch(0, length(), idx);
     }
 

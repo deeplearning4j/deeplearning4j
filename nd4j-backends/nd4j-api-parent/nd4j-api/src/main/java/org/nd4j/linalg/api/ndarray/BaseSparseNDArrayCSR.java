@@ -356,4 +356,14 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     public int underlyingRank() {
         throw new UnsupportedOperationException("Not a COO array");
     }
+
+    @Override
+    public INDArray putiColumnVector(INDArray columnVector) {
+        return null;
+    }
+
+    @Override
+    public INDArray putiRowVector(INDArray rowVector) {
+        return null;
+    }
 }
