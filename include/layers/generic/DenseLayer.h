@@ -24,13 +24,13 @@ template<typename T, typename AF> class DenseLayer: public BaseLayer<T, AF> {
         void backPropagate();
        
         // This method should validate layer parameters & bias, and return TRUE if everything ok. FALSE otherwise      
-        inline bool validateParameters();
+        inline int validateParameters();
 
         // This method should validate input parameters, and return TRUE if everything ok. FALSE otherwise
-        inline bool validateInput();
+        inline int validateInput();
 
         // This method should valudate output parameters, and return TRUE if everything is ok, FALSE otherwise        
-        inline bool validateOutput();
+        inline int validateOutput();
 };
 
 
@@ -77,10 +77,10 @@ template<typename T, typename AF> void DenseLayer<T,AF>::backPropagate() {
 
 // This method should validate layer parameters & bias, and return TRUE if everything ok. FALSE otherwise
 template<typename T, typename AF>
-bool DenseLayer<T,AF>::validateParameters() {
+int DenseLayer<T,AF>::validateParameters() {
     if (this->paramsShapeInfo == nullptr || this->biasShapeInfo == nullptr || this->params == nullptr || this->bias == nullptr) {
         printf("Got nulls here\n");
-        return false;
+        return ND4J_STATUS_BAD_PARAMS;
     }
 
     int wRank = shape::rank(this->paramsShapeInfo);
@@ -89,7 +89,7 @@ bool DenseLayer<T,AF>::validateParameters() {
     // rank of params/bias has to be 2 here
     if (wRank != 2 || bRank != 2) {
         printf("Non 2\n");
-        return false;
+        return ND4J_STATUS_BAD_RANK;
     }
 
 
@@ -100,19 +100,19 @@ bool DenseLayer<T,AF>::validateParameters() {
     // number of outputs must be equal to biasLength
     if (wShape[1] != biasLength) {
         printf("Bias doesn't match: %i vs %i\n", wShape[1], biasLength);
-        return false;
+        return ND4J_STATUS_BAD_SHAPE;
     }
 
 
-    return true;
+    return ND4J_STATUS_OK;
 }
 
 
 // This method should validate input parameters, and return TRUE if everything ok. FALSE otherwise
-template<typename T, typename AF> bool DenseLayer<T,AF>::validateInput() {
+template<typename T, typename AF> int DenseLayer<T,AF>::validateInput() {
     // we expect input to be either vector or matrix, in both cases - that's rank2
     if (this->input == nullptr || this->inputShapeInfo == nullptr || shape::rank(this->inputShapeInfo) != 2)
-        return false;
+        return ND4J_STATUS_BAD_INPUT;
 
     int *iShape = shape::shapeOf(this->inputShapeInfo);
 
@@ -123,7 +123,7 @@ template<typename T, typename AF> bool DenseLayer<T,AF>::validateInput() {
 
         // number of input features should match number of rows in params
         if (iShape[1] != wShape[0]) {
-            return false;
+            return ND4J_STATUS_BAD_SHAPE;
         }
     }
 
@@ -132,41 +132,18 @@ template<typename T, typename AF> bool DenseLayer<T,AF>::validateInput() {
 
         // we check for input/output batchSize equality
         if (oShape[0] != iShape[0])
-            return false;
+            return ND4J_STATUS_BAD_SHAPE;
     }
 
-    return true;
-}
-
-
-// This method should validate input parameters, and return corresponding codes errors if mistake is present
-template<typename T, typename AF> int DenseLayer<T,AF>::validateInput() {    
-    if (this->input == nullptr)                 return ND4J_STATUS_BAD_INPUT;
-    if (this->inputShapeInfo == nullptr)        return ND4J_STATUS_BAD_SHAPE;
-    // we expect input to be either vector or matrix, in both cases - that's rank2
-    if (shape::rank(this->inputShapeInfo) != 2) return ND4J_STATUS_BAD_RANK;
-    if (this->params == nullptr)                return ND4J_STATUS_BAD_PARAMS;
-    
-    int *iShape = shape::shapeOf(this->inputShapeInfo);
-    int *wShape = shape::shapeOf(this->paramsShapeInfo);
-    // number of input features should match number of rows in params
-    if (iShape[1] != wShape[0]) ND4J_STATUS_BAD_SHAPE;
-    if (this->output == nullptr) return ND4J_STATUS_BAD_OUTPUT;
-    
-    int *oShape = shape::shapeOf(this->outputShapeInfo);
-    // we check for input/output batchSize equality
-    if (oShape[0] != iShape[0])  return ND4J_STATUS_BAD_SHAPE;
-    
-    // when everything is OK
     return ND4J_STATUS_OK;
 }
 
 
 // This method should valudate output parameters, and return TRUE if everything is ok, FALSE otherwise
-template<typename T, typename AF> bool DenseLayer<T,AF>::validateOutput() {
+template<typename T, typename AF> int DenseLayer<T,AF>::validateOutput() {
     // same as input validation here. we expect rank of output arra
     if (this->output == nullptr || this->outputShapeInfo == nullptr || shape::rank(this->outputShapeInfo) != 2)
-        return false;
+        return ND4J_STATUS_BAD_OUTPUT;
 
     int *oShape = shape::shapeOf(this->outputShapeInfo);
 
@@ -176,7 +153,7 @@ template<typename T, typename AF> bool DenseLayer<T,AF>::validateOutput() {
 
         // number of output features should match number of rows in params
         if (oShape[1] != wShape[1]) {
-            return false;
+            return ND4J_STATUS_BAD_SHAPE;
         }
     }
 
@@ -186,10 +163,10 @@ template<typename T, typename AF> bool DenseLayer<T,AF>::validateOutput() {
 
         // we check for input/output batchSize equality
         if (oShape[0] != iShape[0])
-            return false;
+            return ND4J_STATUS_BAD_SHAPE;
     }
 
-    return true;
+    return ND4J_STATUS_OK;
 }
 
 // feed forward

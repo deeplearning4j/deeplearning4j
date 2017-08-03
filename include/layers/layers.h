@@ -4,8 +4,6 @@
 #ifndef PROJECT_LAYERS_H
 #define PROJECT_LAYERS_H
 
-#include <NDArray.h>
-
 // the list of errors codes for layer data
 #define ND4J_STATUS_OK 0
 #define ND4J_STATUS_BAD_INPUT 1
@@ -65,13 +63,13 @@ template <typename T> class INativeLayer {
         virtual T* allocate(long bytes) = 0; 
         
         // This method should validate parameters & bias, and return TRUE if everything ok. False otherwise
-        virtual bool validateParameters() = 0;
+        virtual int validateParameters() = 0;
 
         // This method should validate input parameters, and return corresponding codes errors if mistake is present
         virtual int validateInput() = 0;
 
         // This method should validate output parameters, and return TRUE if everything is ok, FALSE otherwise
-        virtual bool validateOutput() = 0;
+        virtual int validateOutput() = 0;
        
         // DropOut & DropConnect helpers are platform-specific too
         virtual void dropOutHelper(T *input, int *shapeInfo) = 0;
@@ -90,7 +88,7 @@ template <typename T> class INativeLayer {
 
         // This inline method allows to set parameters/biases for current layer
         // this input will be either activation from previous layer, or error coming from next layer
-        bool setParameters(T *params, int *paramsShapeInfo, T *bias, int *biasShapeInfo) {
+        int setParameters(T *params, int *paramsShapeInfo, T *bias, int *biasShapeInfo) {
             this->params = params;
             this->paramsShapeInfo = paramsShapeInfo;
             this->biasShapeInfo = biasShapeInfo;
@@ -101,11 +99,11 @@ template <typename T> class INativeLayer {
 
         // We have some options to be configured in layer: dropout, dropconnect, lr, etc 
         // This method should handle that. Maybe map (key-value), or something like that?           
-        bool configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect);
+        int configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect);
 
         // This inline method allows to specify input data for layer
         // this output will be either activation of this layer, or error from next layer        
-        bool setInput(T *input, int *inputShapeInfo, T *mask, int *maskShapeInfo) {
+        int setInput(T *input, int *inputShapeInfo, T *mask, int *maskShapeInfo) {
             this->input = input;
             this->inputShapeInfo = inputShapeInfo;
             this->mask = mask;
@@ -115,7 +113,7 @@ template <typename T> class INativeLayer {
         }
 
         // This inline method allows to specify output pointer for layer
-        bool setOutput(T *output, int *shapeInfo) {
+        int setOutput(T *output, int *shapeInfo) {
             this->output = output;
             this->outputShapeInfo = shapeInfo;
 
@@ -261,7 +259,7 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
 // We have some options to be configured in layer: dropout, dropconnect, lr, etc 
 // This method should handle that. Maybe map (key-value), or something like that?           
-template <typename T> bool INativeLayer<T>::configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect) {
+template <typename T> int INativeLayer<T>::configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect) {
     this->pDropOut = pDropOut > (T) 0.0f ? pDropOut : (T) 0.0f;
     this->pDropConnect = pDropConnect > (T) 0.0f ? pDropConnect : (T) 0.0f;
 
@@ -273,17 +271,17 @@ template <typename T> bool INativeLayer<T>::configureLayer(T *input, int *inputS
     this->inputShapeInfo = inputShapeInfo;
     this->outputShapeInfo = outputShapeInfo;
 
-    if (!validateInput())
-        return false;
+    if (!validateInput() != 0)
+        return validateInput();
 
-    if (!validateOutput())
-        return false;
+    if (validateOutput() != 0)
+        return validateOutput();
 
     /*
      * TODO: define ERROR_CODES here, and return them instead of bool
      */
 
-    return true;
+    return ND4J_STATUS_OK;
 }          
 
 

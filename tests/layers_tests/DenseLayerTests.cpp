@@ -230,7 +230,7 @@ TEST_F(DenseLayerInputTest, SGemmTest1) {
 
     for (int i = 0; i < arrayB->rows(); i++) {
         for (int k = 0; k < arrayB->columns(); k++) {
-            arrayA->putScalar(i, k, (float) (10.0 + i));
+            arrayB->putScalar(i, k, (float) (10.0 + i));
         }
     }
 
