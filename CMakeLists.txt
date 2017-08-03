@@ -23,6 +23,7 @@ if (NOT DEFINED ENV{CLION_IDE})
     message("NOT CLION")
     include_directories(include/ include/helpers include/loops include/ops include/types include/cnpy)
     add_subdirectory(blas)
+    add_subdirectory(tests)
 endif ()
 
 

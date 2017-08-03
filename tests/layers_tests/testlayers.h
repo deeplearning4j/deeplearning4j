@@ -7,6 +7,7 @@
 
 #include <op_boilerplate.h>
 #include <NativeOps.h>
+#include <cnpy.h>
 #include <helpers/shape.h>
 #include <ops/gemm.h>
 #include <layers/layers_factory.h>
