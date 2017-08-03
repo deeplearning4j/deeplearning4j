@@ -26,6 +26,9 @@ TEST_F(DenseLayerInputTest, InputValidationTest1) {
     bool result = layer->setInput(input, inputShape3D, nullptr, nullptr);
 
     ASSERT_FALSE(result);
+
+    delete layer;
+    delete[] input;
 }
 
 TEST_F(DenseLayerInputTest, InputValidationTest2) {
@@ -37,6 +40,9 @@ TEST_F(DenseLayerInputTest, InputValidationTest2) {
     bool result = layer->setInput(input, inputShape2D, nullptr, nullptr);
 
     ASSERT_TRUE(result);
+
+    delete layer;
+    delete[] input;
 }
 
 TEST_F(DenseLayerInputTest, OutputValidationTest1) {
@@ -48,6 +54,9 @@ TEST_F(DenseLayerInputTest, OutputValidationTest1) {
     bool result = layer->setOutput(output, outputShape2D);
 
     ASSERT_TRUE(result);
+
+    delete layer;
+    delete[] output;
 }
 
 
@@ -60,6 +69,9 @@ TEST_F(DenseLayerInputTest, OutputValidationTest2) {
     bool result = layer->setOutput(output, outputShape3D);
 
     ASSERT_FALSE(result);
+
+    delete layer;
+    delete[] output;
 }
 
 
@@ -80,4 +92,13 @@ TEST_F(DenseLayerInputTest, JointConfiguration1) {
     ASSERT_EQ(0.5f, layer->pDropOut);
 
     ASSERT_EQ(0.1f, layer->pDropConnect);
+
+    delete layer;
+    delete[] output;
+}
+
+TEST_F(DenseLayerInputTest, ParamsTest1) {
+    nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
+
+    z
 }
