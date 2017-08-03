@@ -267,15 +267,17 @@ template <typename T> int INativeLayer<T>::configureLayer(T *input, int *inputSh
     this->dropConnect = this->pDropConnect > (T) 0.0f;
 
     this->input = input;
-    this->output = output;
     this->inputShapeInfo = inputShapeInfo;
+
+    if (validateInput() != ND4J_STATUS_OK)
+        return ND4J_STATUS_BAD_INPUT;
+
+
+    this->output = output;
     this->outputShapeInfo = outputShapeInfo;
 
-    if (!validateInput() != 0)
-        return validateInput();
-
-    if (validateOutput() != 0)
-        return validateOutput();
+    if (validateOutput() != ND4J_STATUS_OK)
+        return ND4J_STATUS_BAD_OUTPUT;
 
     /*
      * TODO: define ERROR_CODES here, and return them instead of bool

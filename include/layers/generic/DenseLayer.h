@@ -111,8 +111,12 @@ int DenseLayer<T,AF>::validateParameters() {
 // This method should validate input parameters, and return TRUE if everything ok. FALSE otherwise
 template<typename T, typename AF> int DenseLayer<T,AF>::validateInput() {
     // we expect input to be either vector or matrix, in both cases - that's rank2
-    if (this->input == nullptr || this->inputShapeInfo == nullptr || shape::rank(this->inputShapeInfo) != 2)
+    if (this->input == nullptr || this->inputShapeInfo == nullptr)
         return ND4J_STATUS_BAD_INPUT;
+
+    if (shape::rank(this->inputShapeInfo) != 2)
+        return ND4J_STATUS_BAD_RANK;
+
 
     int *iShape = shape::shapeOf(this->inputShapeInfo);
 
@@ -142,8 +146,11 @@ template<typename T, typename AF> int DenseLayer<T,AF>::validateInput() {
 // This method should valudate output parameters, and return TRUE if everything is ok, FALSE otherwise
 template<typename T, typename AF> int DenseLayer<T,AF>::validateOutput() {
     // same as input validation here. we expect rank of output arra
-    if (this->output == nullptr || this->outputShapeInfo == nullptr || shape::rank(this->outputShapeInfo) != 2)
+    if (this->output == nullptr || this->outputShapeInfo == nullptr)
         return ND4J_STATUS_BAD_OUTPUT;
+
+    if (shape::rank(this->outputShapeInfo) != 2)
+        return ND4J_STATUS_BAD_RANK;
 
     int *oShape = shape::shapeOf(this->outputShapeInfo);
 

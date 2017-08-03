@@ -37,9 +37,9 @@ TEST_F(DenseLayerInputTest, InputValidationTest1) {
     float *input = new float[1000];
 
 
-    bool result = layer->setInput(input, inputShape3D, nullptr, nullptr);
+    int result = layer->setInput(input, inputShape3D, nullptr, nullptr);
 
-    ASSERT_FALSE(result);
+    ASSERT_EQ(ND4J_STATUS_BAD_RANK, result);
 
     delete layer;
     delete[] input;
@@ -51,9 +51,9 @@ TEST_F(DenseLayerInputTest, InputValidationTest2) {
 
     float *input = new float[100];
 
-    bool result = layer->setInput(input, inputShape2D, nullptr, nullptr);
+    int result = layer->setInput(input, inputShape2D, nullptr, nullptr);
 
-    ASSERT_TRUE(result);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
 
     delete layer;
     delete[] input;
@@ -65,9 +65,9 @@ TEST_F(DenseLayerInputTest, OutputValidationTest1) {
 
     float *output = new float[100];
 
-    bool result = layer->setOutput(output, outputShape2D);
+    int result = layer->setOutput(output, outputShape2D);
 
-    ASSERT_TRUE(result);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
 
     delete layer;
     delete[] output;
@@ -80,9 +80,9 @@ TEST_F(DenseLayerInputTest, OutputValidationTest2) {
 
     float *output = new float[1000];
 
-    bool result = layer->setOutput(output, outputShape3D);
+    int result = layer->setOutput(output, outputShape3D);
 
-    ASSERT_FALSE(result);
+    ASSERT_EQ(ND4J_STATUS_BAD_RANK, result);
 
     delete layer;
     delete[] output;
@@ -95,9 +95,9 @@ TEST_F(DenseLayerInputTest, JointConfiguration1) {
 
     float *output = new float[100];
 
-    bool result = layer->configureLayer(output, inputShape2D, output, outputShape2D, 0.5f, 0.1f);
+    int result = layer->configureLayer(output, inputShape2D, output, outputShape2D, 0.5f, 0.1f);
 
-    ASSERT_TRUE(result);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
 
     ASSERT_TRUE(layer->dropOut);
 
@@ -117,13 +117,13 @@ TEST_F(DenseLayerInputTest, ParamsTest1) {
     float *stub = new float[10];
 
 
-    bool result = layer->setParameters(stub, paramsShapeGood, stub, biasShapeGood);
+    int result = layer->setParameters(stub, paramsShapeGood, stub, biasShapeGood);
 
-    ASSERT_TRUE(result);
+    ASSERT_EQ(ND4J_STATUS_OK,result);
 
     result = layer->configureLayer(stub, batchInputShapeGood, stub, batchOutputShapeGood, 0.0f, 0.0f);
 
-    ASSERT_TRUE(result);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
 }
 
 TEST_F(DenseLayerInputTest, ParamsTest2) {
@@ -132,13 +132,13 @@ TEST_F(DenseLayerInputTest, ParamsTest2) {
     float *stub = new float[10];
 
 
-    bool result = layer->setParameters(stub, paramsShapeBad, stub, biasShapeBad);
+    int result = layer->setParameters(stub, paramsShapeBad, stub, biasShapeBad);
 
-    ASSERT_FALSE(result);
+    ASSERT_EQ(ND4J_STATUS_BAD_SHAPE, result);
 
     result = layer->configureLayer(stub, inputShape2D, stub, outputShape2D, 0.0f, 0.0f);
 
-    ASSERT_FALSE(result);
+    ASSERT_EQ(ND4J_STATUS_BAD_INPUT, result);
 }
 
 TEST_F(DenseLayerInputTest, ParamsTest3) {
@@ -146,17 +146,17 @@ TEST_F(DenseLayerInputTest, ParamsTest3) {
 
     float *stub = new float[10];
 
-    bool result = layer->setParameters(stub, paramsShapeGood, stub, biasShapeGood);
+    int result = layer->setParameters(stub, paramsShapeGood, stub, biasShapeGood);
 
-    ASSERT_TRUE(result);
+    ASSERT_EQ(ND4J_STATUS_OK,result);
 
     result = layer->configureLayer(stub, batchInputShapeBad, stub, batchOutputShapeGood, 0.0f, 0.0f);
 
-    ASSERT_FALSE(result);
+    ASSERT_EQ(ND4J_STATUS_BAD_INPUT, result);
 
     result = layer->configureLayer(stub, batchInputShapeGood, stub, batchOutputShapeBad, 0.0f, 0.0f);
 
-    ASSERT_FALSE(result);
+    ASSERT_EQ(ND4J_STATUS_BAD_OUTPUT, result);
 }
 
 TEST_F(DenseLayerInputTest, NDArrayOrder1) {
