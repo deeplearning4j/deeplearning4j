@@ -277,9 +277,9 @@ public interface INDArray extends Serializable {
     /**
      * Replaces all elements in this ndarray that are matching give condition, with corresponding elements from given array
      *
-     * @param arr
-     * @param condition
-     * @return
+     * @param arr       Source array
+     * @param condition Condition to apply
+     * @return New array with values conditionally replaced
      */
     INDArray replaceWhere(INDArray arr, Condition condition);
 
@@ -296,18 +296,18 @@ public interface INDArray extends Serializable {
     /**
      * Insert a scalar float at the specified index
      *
-     * @param i
-     * @param value
-     * @return
+     * @param i     The index to insert into
+     * @param value Value to insert
+     * @return This array
      */
     INDArray putScalar(int i, float value);
 
     /**
      * Insert a scalar int at the specified index
      *
-     * @param i
-     * @param value
-     * @return
+     * @param i     The index to insert into
+     * @param value Value to insert
+     * @return This array
      */
     INDArray putScalar(int i, int value);
 
@@ -370,18 +370,20 @@ public interface INDArray extends Serializable {
     INDArray lti(Number other);
 
     /**
+     * Put the specified float value at the specified indices in this array
      *
-     * @param indexes
-     * @param value
-     * @return
+     * @param indexes Indices to place the value
+     * @param value   Value to insert
+     * @return This array
      */
     INDArray putScalar(int[] indexes, float value);
 
     /**
+     * Put the specified integer value at the specified indices in this array
      *
-     * @param indexes
-     * @param value
-     * @return
+     * @param indexes Indices to place the value
+     * @param value   Value to insert
+     * @return This array
      */
     INDArray putScalar(int[] indexes, int value);
 
@@ -568,46 +570,47 @@ public interface INDArray extends Serializable {
     /**
      * Returns the ndarray negative (cloned)
      *
-     * @return
+     * @return Array copy with all values negated
      */
     INDArray neg();
 
     /**
      * In place setting of the negative version of this ndarray
      *
-     * @return
+     * @return This array with all values negated
      */
     INDArray negi();
 
     /**
-     * Reverse division
+     * Reverse division with a scalar - i.e., (n / thisArrayValues)
      *
-     * @param n
-     * @return
+     * @param n Value to use for reverse division
+     * @return  Copy of array after applying reverse division
      */
     INDArray rdiv(Number n);
 
     /**
-     * In place reverse division
+     * In place reverse division - i.e., (n / thisArrayValues)
      *
-     * @param n
-     * @return
+     * @param n Value to use for reverse division
+     * @return This array after applying reverse division
      */
     INDArray rdivi(Number n);
 
     /**
-     * Reverse subtraction with duplicates
+     * Reverse subtraction with duplicates - i.e., (n - thisArrayValues)
      *
-     * @param n
-     * @return
+     * @param n Value to use for reverse subtraction
+     * @return Copy of array after reverse subtraction
      */
     INDArray rsub(Number n);
 
 
     /**
+     * Reverse subtraction in place - i.e., (n - thisArrayValues)
      *
-     * @param n
-     * @return
+     * @param n Value to use for reverse subtraction
+     * @return This array after reverse subtraction
      */
     INDArray rsubi(Number n);
 
@@ -615,16 +618,16 @@ public interface INDArray extends Serializable {
     /**
      * Division by a number
      *
-     * @param n
-     * @return
+     * @param n Number to divide values by
+     * @return Copy of array after division
      */
     INDArray div(Number n);
 
     /**
      * In place scalar division
      *
-     * @param n
-     * @return
+     * @param n Number to divide values by
+     * @return This array, after applying division operation
      */
     INDArray divi(Number n);
 
@@ -640,8 +643,8 @@ public interface INDArray extends Serializable {
     /**
      * In place scalar multiplication
      *
-     * @param n
-     * @return
+     * @param n The number to multiply by
+     * @return This array, after applying scaler multiplication
      */
     INDArray muli(Number n);
 
@@ -650,7 +653,7 @@ public interface INDArray extends Serializable {
      * Scalar subtraction (copied)
      *
      * @param n the number to subtract by
-     * @return this ndarray - the given number
+     * @return Copy of this array after applying subtraction operation
      */
     INDArray sub(Number n);
 
@@ -658,8 +661,8 @@ public interface INDArray extends Serializable {
     /**
      * In place scalar subtraction
      *
-     * @param n
-     * @return
+     * @param n Number to subtract
+     * @return This array, after applying subtraction operation
      */
     INDArray subi(Number n);
 
@@ -674,8 +677,8 @@ public interface INDArray extends Serializable {
     /**
      * In place scalar addition
      *
-     * @param n
-     * @return
+     * @param n Number to add
+     * @return This array, after adding value
      */
     INDArray addi(Number n);
 
@@ -684,8 +687,8 @@ public interface INDArray extends Serializable {
      * Reverse division (number / ndarray)
      *
      * @param n      the number to divide by
-     * @param result
-     * @return
+     * @param result Array to place the result in. Must match shape of this array
+     * @return Result array
      */
     INDArray rdiv(Number n, INDArray result);
 
@@ -783,34 +786,34 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * Get a list of specified columns
+     * Get an INDArray comprised of the specified columns only. Copy operation.
      *
-     * @param columns
-     * @return
+     * @param columns Columns to extract out of the current array
+     * @return Array with only the specified columns
      */
     INDArray getColumns(int... columns);
 
     /**
-     * Get a list of rows
+     * Get an INDArray comprised of the specified rows only. Copy operation
      *
-     * @param rows
-     * @return
+     * @param rows Rose to extract from this array
+     * @return Array with only the specified rows
      */
     INDArray getRows(int... rows);
 
     /**
-     * Reverse division
+     * Reverse division, elements wise. i.e., other / this
      *
      * @param other the matrix to divide from
-     * @return
+     * @return Copy of this array after performing element wise reverse division
      */
     INDArray rdiv(INDArray other);
 
     /**
-     * Reverse divsion (in place)
+     * Reverse divsion (in place). i.e., other / this
      *
-     * @param other
-     * @return
+     * @param other The matrix to divide from
+     * @return This array after performing element wise reverse division
      */
     INDArray rdivi(INDArray other);
 
@@ -844,14 +847,18 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * @param other
-     * @return
+     * Element-wise reverse subtraction (copy op). i.e., other - this
+     *
+     * @param other Other array to use in reverse subtraction
+     * @return Copy of this array, after applying reverse subtraction
      */
     INDArray rsub(INDArray other);
 
     /**
-     * @param other
-     * @return
+     * Element-wise reverse subtraction (in the place op) - i.e., other - this
+     *
+     * @param other Other way to use in reverse subtraction operation
+     * @return This array, after applying reverse subtraction
      */
     INDArray rsubi(INDArray other);
 
@@ -865,7 +872,7 @@ public interface INDArray extends Serializable {
     INDArray rsubi(INDArray other, INDArray result);
 
     /**
-     * Set the value of the ndarray to the specified value
+     * Set all entries of the ndarray to the specified value
      *
      * @param value the value to assign
      * @return the ndarray with the values
@@ -914,17 +921,16 @@ public interface INDArray extends Serializable {
      * 1 in the ndarray if the element matches
      * the condition 0 otherwise
      *
-     * @param condition
-     * @return
+     * @param condition Condition to apply
+     * @return Copy of this array with values 0 (condition does not apply), or one (condition applies)
      */
     INDArray cond(Condition condition);
 
     /**
-     * 1 in the ndarray if the element matches
-     * the condition 0 otherwise
+     * In-place: 1 in the ndarray if the element matches the condition 0 otherwise
      *
-     * @param condition
-     * @return
+     * @param condition Condition to apply
+     * @return This array, modified with values 0 (condition does not apply), or one (condition applies)
      */
     INDArray condi(Condition condition);
 
@@ -1274,10 +1280,10 @@ public interface INDArray extends Serializable {
     INDArray addiRowVector(INDArray rowVector);
 
     /**
-     * in place assignment of row vector
+     * in place assignment of row vector, to each row of this array
      *
-     * @param rowVector
-     * @return
+     * @param rowVector Row vector to put
+     * @return This array, after assigning every road to the specified value
      */
     INDArray putiRowVector(INDArray rowVector);
 
@@ -1361,7 +1367,7 @@ public interface INDArray extends Serializable {
     INDArray sub(INDArray other, INDArray result);
 
     /**
-     * copy addition of two NDArrays
+     * Element-wise copy addition of two NDArrays
      *
      * @param other the second ndarray to add
      * @return the result of the addition
@@ -1369,7 +1375,7 @@ public interface INDArray extends Serializable {
     INDArray add(INDArray other);
 
     /**
-     * copy addition of two NDArrays
+     * Element-wise copy addition of two NDArrays
      *
      * @param other  the second ndarray to add
      * @param result the result ndarray
@@ -1433,7 +1439,7 @@ public interface INDArray extends Serializable {
     INDArray muli(INDArray other, INDArray result);
 
     /**
-     * in place subtraction of two NDArrays
+     * in place (element wise) subtraction of two NDArrays
      *
      * @param other the second ndarray to subtract
      * @return the result of the addition
@@ -1441,7 +1447,7 @@ public interface INDArray extends Serializable {
     INDArray subi(INDArray other);
 
     /**
-     * in place subtraction of two NDArrays
+     * in place (element wise) subtraction of two NDArrays
      *
      * @param other  the second ndarray to subtract
      * @param result the result ndarray
@@ -1450,7 +1456,7 @@ public interface INDArray extends Serializable {
     INDArray subi(INDArray other, INDArray result);
 
     /**
-     * in place addition of two NDArrays
+     * in place (element wise) addition of two NDArrays
      *
      * @param other the second ndarray to add
      * @return the result of the addition
@@ -1458,7 +1464,7 @@ public interface INDArray extends Serializable {
     INDArray addi(INDArray other);
 
     /**
-     * in place addition of two NDArrays
+     * in place (element wise) addition of two NDArrays
      *
      * @param other  the second ndarray to add
      * @param result the result ndarray
@@ -1468,16 +1474,17 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * Returns the normmax along the specified dimension
+     * Returns the max norm (aka infinity norm, equal to the maximum absolute value) along the specified dimension(s)
      *
-     * @param dimension the dimension to getScalar the norm1 along
-     * @return the norm1 along the specified dimension
+     * @param dimension the dimension to the max norm along
+     * @return Max norm along the specified dimension
      */
     INDArray normmax(int... dimension);
 
     /**
+     * Return the max norm (aka infinity norm, equal to the maximum absolute value) for the entire array
      *
-     * @return
+     * @return Max norm for the entire array
      */
     Number normmaxNumber();
 
@@ -1488,7 +1495,7 @@ public interface INDArray extends Serializable {
     IComplexNumber normmaxComplex();
 
     /**
-     * Returns the norm2 along the specified dimension
+     * Returns the norm2 (L2 norm, sqrt(sum(x_i^2), also known as Euclidean norm) along the specified dimension(s)
      *
      * @param dimension the dimension to getScalar the norm2 along
      * @return the norm2 along the specified dimension
@@ -1496,8 +1503,9 @@ public interface INDArray extends Serializable {
     INDArray norm2(int... dimension);
 
     /**
+     * Return the norm2 (L2 norm, sqrt(sum(x_i^2), also known as Euclidean norm) for the entire array
      *
-     * @return
+     * @return L2 norm for the array
      */
     Number norm2Number();
 
@@ -1508,7 +1516,8 @@ public interface INDArray extends Serializable {
     IComplexNumber norm2Complex();
 
     /**
-     * Returns the norm1 along the specified dimension
+     * Returns the norm1 (L1 norm, i.e., sum of absolute values; also known as Taxicab or Manhattan norm) along the
+     * specified dimension
      *
      * @param dimension the dimension to getScalar the norm1 along
      * @return the norm1 along the specified dimension
@@ -1516,19 +1525,23 @@ public interface INDArray extends Serializable {
     INDArray norm1(int... dimension);
 
     /**
+     * Calculate and return norm1 (L1 norm, i.e., sum of absolute values; also known as Taxicab or Manhattan norm) for
+     * the entire array
      *
-     * @return
+     * @return Norm 1 for the array
      */
     Number norm1Number();
 
     /**
+     * Calculate and return norm1 (L1 norm, i.e., sum of absolute values; also known as Taxicab or Manhattan norm) for
+     * the entire array
      *
      * @return
      */
     IComplexNumber norm1Complex();
 
     /**
-     * Standard deviation of an ndarray along a dimension
+     * Standard deviation of an INDArray along one or more dimensions
      *
      * @param dimension the dimension to getScalar the std along
      * @return the standard deviation along a particular dimension
@@ -1536,6 +1549,7 @@ public interface INDArray extends Serializable {
     INDArray std(int... dimension);
 
     /**
+     * Calculate the standard deviation for the entire array
      *
      * @return
      */
@@ -1550,8 +1564,10 @@ public interface INDArray extends Serializable {
     INDArray std(boolean biasCorrected, int... dimension);
 
     /**
+     * Calculate the standard deviation for the entire array, specifying whether it is bias corrected or not
      *
-     * @return
+     * @param biasCorrected If true: bias corrected standard deviation. False: not bias corrected
+     * @return Standard dev
      */
     Number stdNumber(boolean biasCorrected);
 
@@ -1570,8 +1586,9 @@ public interface INDArray extends Serializable {
     INDArray prod(int... dimension);
 
     /**
+     * Calculate the product of all values in the array
      *
-     * @return
+     * @return Product of all values in the array
      */
     Number prodNumber();
 
@@ -1639,8 +1656,9 @@ public interface INDArray extends Serializable {
     INDArray var(boolean biasCorrected, int... dimension);
 
     /**
+     * Returns the overall variance of all values in this INDArray
      *
-     * @return
+     * @return variance
      */
     Number varNumber();
 
@@ -1667,14 +1685,14 @@ public interface INDArray extends Serializable {
     INDArray amax(int... dimension);
 
     /**
-     * Returns max value in this INDArray
-     * @return
+     * Returns maximum value in this INDArray
+     * @return maximum value
      */
     Number maxNumber();
 
     /**
-     * Returns absolute max value in this INDArray
-     * @return
+     * Returns maximum (absolute) value in this INDArray
+     * @return Max absolute value
      */
     Number amaxNumber();
 
@@ -1692,17 +1710,23 @@ public interface INDArray extends Serializable {
      */
     INDArray min(int... dimension);
 
+    /**
+     * Returns minimum (absolute) value in this INDArray, along the specified dimensions
+     *
+     * @return Minimum absolute value
+     */
     INDArray amin(int... dimension);
 
     /**
      * Returns min value in this INDArray
-     * @return
+     * @return Minimum value in the array
      */
     Number minNumber();
 
     /**
      * Returns absolute min value in this INDArray
-     * @return
+     *
+     * @return Absolute min value
      */
     Number aminNumber();
 
@@ -1719,8 +1743,8 @@ public interface INDArray extends Serializable {
     /**
      * This method takes boolean condition, and returns number of elements matching this condition
      *
-     * @param condition
-     * @return
+     * @param condition Condition to calculate matches for
+     * @return Number of elements matching condition
      */
     Number scan(Condition condition);
 
@@ -1735,7 +1759,7 @@ public interface INDArray extends Serializable {
 
     /**
      * Sum the entire array
-     * @return
+     * @return Sum of array
      */
     Number sumNumber();
 
@@ -1824,16 +1848,16 @@ public interface INDArray extends Serializable {
     INDArray getScalar(int... indices);
 
     /**
-     *
-     * @param indices
-     * @return
+     * Get an integer value at the specified indices. Result will be cast to an integer, precision loss is possible.
+     * @param indices Indices to get the integer at. Number of indices must match the array rank.
+     * @return Integer value at the specified index
      */
     int getInt(int... indices);
 
     /**
-     *
-     * @param indices
-     * @return
+     * Get a double value at the specified indices.
+     * @param indices Indices to get the double at. Number of indices must match the array rank.
+     * @return Double value at the specified index
      */
     double getDouble(int... indices);
 
@@ -1847,16 +1871,18 @@ public interface INDArray extends Serializable {
 
 
     /**
+     * Get the double value at the specified linear index in the array
      *
-     * @param i
-     * @return
+     * @param i Index
+     * @return Double value at the specified index
      */
     double getDouble(int i);
 
     /**
+     * Get the double value at the specified indices. Can only be used for 2D (rank 2) arrays.
      *
-     * @param i
-     * @param j
+     * @param i Dimension 0 (row) index
+     * @param j Dimension 1 (column) index
      * @return
      */
     double getDouble(int i, int j);
@@ -1925,14 +1951,18 @@ public interface INDArray extends Serializable {
     int slices();
 
     /**
+     * Get the number of trailing ones in the array shape. For example, a rank 3 array with shape [10, 1, 1] would
+     * return 2 for this method
      *
-     * @return
+     * @return Number of trailing ones in shape
      */
     int getTrailingOnes();
 
     /**
+     * Get the number of leading ones in the array shape. For example, a rank 3 array with shape [1, 10, 1] would
+     * return value 1 for this method
      *
-     * @return
+     * @return Number of leading ones in shape
      */
     int getLeadingOnes();
 
@@ -1972,7 +2002,8 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * Reshapes the ndarray (can't change the length of the ndarray)
+     * Reshapes the ndarray (can't change the length of the ndarray). Typically this will be a view, unless reshaping
+     * without copying is impossible.
      *
      * @param newShape the new shape of the ndarray
      * @return the reshaped ndarray
@@ -1981,7 +2012,8 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * Reshapes the ndarray (can't change the length of the ndarray)
+     * Reshapes the ndarray (can't change the length of the ndarray). Typically this will be a view, unless reshaping
+     * without copying is impossible.
      *
      * @param rows    the rows of the matrix
      * @param columns the columns of the matrix
@@ -1991,7 +2023,8 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * Reshapes the ndarray (can't change the length of the ndarray)
+     * Reshapes the ndarray (can't change the length of the ndarray). Typically this will be a view, unless reshaping
+     * without copying is impossible.
      *
      * @param newShape the new shape of the ndarray
      * @return the reshaped ndarray
@@ -2000,7 +2033,8 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * Reshapes the ndarray (can't change the length of the ndarray)
+     * Reshapes the ndarray (can't change the length of the ndarray). Typically this will be a view, unless reshaping
+     * without copying is impossible.
      *
      * @param rows    the rows of the matrix
      * @param columns the columns of the matrix
@@ -2017,7 +2051,7 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * Flip the rows and columns of a matrix
+     * Flip the rows and columns of a matrix, in-place
      *
      * @return the flipped rows and columns of a matrix
      */
@@ -2178,8 +2212,7 @@ public interface INDArray extends Serializable {
     int[] stride();
 
     /**
-     * Return the ordering (fortran or c)
-     * of this ndarray
+     * Return the ordering (fortran or c  'f' and 'c' respectively) of this ndarray
      * @return the ordering of this ndarray
      */
     char ordering();
@@ -2416,14 +2449,25 @@ public interface INDArray extends Serializable {
      * This method checks 2 INDArrays equality with given eps
      *
      * @param o
-     * @param eps
+     * @param eps Epsilon value to use for the quality operation
      * @return
      */
     boolean equalsWithEps(Object o, double eps);
 
+    /**
+     * Perform efficient (but unsafe) duplication. Don't use this method unless you know exactly what you are doing.
+     * Instead, use {@link #dup()}
+     *
+     * @return Unsafe duplicate of array
+     */
     INDArray unsafeDuplication();
 
-
+    /**
+     * Perform efficient (but unsafe) duplication. Don't use this method unless you know exactly what you are doing.
+     * Instead, use {@link #dup()}
+     *
+     * @return Unsafe duplicate of array
+     */
     INDArray unsafeDuplication(boolean blocking);
 
     /**
@@ -2512,14 +2556,14 @@ public interface INDArray extends Serializable {
     /**
      * This method returns index of highest value along specified dimension(s)
      *
-     * @param dimension
-     * @return
+     * @param dimension Dimension along which to perform the argMax operation
+     * @return Array containing indices
      */
     INDArray argMax(int... dimension);
 
     /**
      * This method returns True, if this INDArray instance is attached to some Workspace. False otherwise.
-     * @return
+     * @return True if attached to workspace, false otherwise
      */
     boolean isAttached();
 
@@ -2537,7 +2581,7 @@ public interface INDArray extends Serializable {
      *
      * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
      *
-     * @return
+     * @return The attached copy of array, or original if not in workspace
      */
     INDArray detach();
 
@@ -2556,7 +2600,7 @@ public interface INDArray extends Serializable {
     /**
      * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id
      *
-     * @param id
+     * @param id ID of the workspace to leverage to
      * @return
      */
     INDArray leverageTo(String id);
@@ -2581,21 +2625,21 @@ public interface INDArray extends Serializable {
     /**
      * This method returns median value for this INDArray
      *
-     * @return
+     * @return Median value for array
      */
     Number medianNumber();
 
     /**
      * This method returns median along given dimension(s)
      * @param dimension
-     * @return
+     * @return Median along specified dimensions
      */
     INDArray median(int... dimension);
 
     /**
      * This method returns median along given dimension(s)
      * @param percentile target percentile in range of 0..100
-     * @param dimension
+     * @param dimension  Dimension to calculate percentile for
      * @return
      */
     INDArray percentile(Number percentile, int... dimension);
