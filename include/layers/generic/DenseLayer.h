@@ -87,15 +87,13 @@ template<typename T, typename AF> void DenseLayer<T,AF>::feedForward() {
     // dropconnect helper
     if (this->dropConnect)
         dropConnectHelper(this->params, this->paramsShapeInfo);
-
-    int *inputShape = shape::shapeOf(this->inputShapeInfo);
+    
 
     // do wxa+b here or something else
     // TODO: introduce BLAS right here
     if (shape::isRowVector(this->inputShapeInfo)) {
         // gemv here input * W
-    } 
-    else {
+    } else {
         // gemm here, input * W
         // these values should be set appropriately
 
