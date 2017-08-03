@@ -471,10 +471,8 @@ public class WordVectorSerializer {
      * @param file
      */
     public static void writeParagraphVectors(ParagraphVectors vectors, File file) {
-        try (BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file))) {
+        try (FileOutputStream fos = new FileOutputStream(file); BufferedOutputStream stream = new BufferedOutputStream(fos)) {
             writeParagraphVectors(vectors, stream);
-            stream.flush();
-            stream.close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -495,10 +493,8 @@ public class WordVectorSerializer {
      *
      */
     public static void writeWord2VecModel(Word2Vec vectors, File file) {
-        try (BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file))) {
+        try (FileOutputStream fos = new FileOutputStream(file); BufferedOutputStream stream = new BufferedOutputStream(fos)) {
             writeWord2VecModel(vectors, stream);
-            stream.flush();
-            stream.close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
