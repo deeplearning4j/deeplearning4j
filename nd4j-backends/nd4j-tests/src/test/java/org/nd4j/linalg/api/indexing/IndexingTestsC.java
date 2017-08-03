@@ -10,6 +10,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
@@ -40,6 +41,18 @@ public class IndexingTestsC extends BaseNd4jTest {
         }).reshape(1,4,3);
         assertEquals(assertion,get);
 
+    }
+
+    @Test
+    public void broadcastBug() throws Exception {
+        INDArray a = Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0}, new int[]{2, 2});
+        final INDArray col = a.get(NDArrayIndex.all(), NDArrayIndex.point(0));
+
+        final INDArray aBad = col.broadcast(2, 2);
+        final INDArray aGood = col.dup().broadcast(2, 2);
+        System.out.println(aBad);
+        System.out.println(aGood);
+        assertTrue(Transforms.abs(aGood.sub(aBad).div(aGood)).maxNumber().doubleValue() < 0.01);
     }
 
 
