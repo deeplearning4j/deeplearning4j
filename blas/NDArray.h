@@ -44,6 +44,14 @@ template <typename T> class NDArray
         return shape::length(shapeInfo);
     }
 
+    int rows() {
+        return shapeOf()[0];
+    }
+
+    int columns() {
+        return shapeOf()[1];
+    }
+
     int sizeOfT() {
         return sizeof(T);
     }

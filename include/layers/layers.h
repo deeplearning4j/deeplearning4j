@@ -207,13 +207,18 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
         transB = 'N';
     } else {
         // TODO: same dup('f) might be needed here, but obviously only one of operands
+        printf("Going tRoute here\n");
         if (aOrder == 'c') {
             // dup(F) A here
             _A = tA->dup('f');
+            _B = tB->dup('f');
         } else {
             // dup(F) B here
+            _A = tA->dup('f');
             _B = tB->dup('f');
         }
+
+        _C = tC->dup('f');
 
         M = cShape[0];
         N = cShape[1];

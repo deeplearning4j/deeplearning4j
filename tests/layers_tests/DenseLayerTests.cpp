@@ -222,6 +222,18 @@ TEST_F(DenseLayerInputTest, SGemmTest1) {
     auto *arrayB = new NDArray<float>(5, 3, 'f');
     auto *arrayC = new NDArray<float>(3, 3, 'f');
 
+    for (int i = 0; i < arrayA->rows(); i++) {
+        for (int k = 0; k < arrayA->columns(); k++) {
+            arrayA->putScalar(i, k, (float) i);
+        }
+    }
+
+    for (int i = 0; i < arrayB->rows(); i++) {
+        for (int k = 0; k < arrayB->columns(); k++) {
+            arrayA->putScalar(i, k, (float) (10.0 + i));
+        }
+    }
+
     nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
 
     layer->gemmHelper(arrayA, arrayB, arrayC, 1.0f, 0.0f);
