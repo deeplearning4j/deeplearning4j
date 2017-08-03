@@ -37,7 +37,6 @@ template<typename T, typename AF> class DenseLayer: public BaseLayer<T, AF> {
 
 
 
-
 /////// implementation part ///////    
 
 // default constructor
@@ -136,10 +135,31 @@ template<typename T, typename AF> bool DenseLayer<T,AF>::validateInput() {
             return false;
     }
 
-
     return true;
 }
 
+
+// This method should validate input parameters, and return corresponding codes errors if mistake is present
+template<typename T, typename AF> int DenseLayer<T,AF>::validateInput() {    
+    if (this->input == nullptr)                 return ND4J_STATUS_BAD_INPUT;
+    if (this->inputShapeInfo == nullptr)        return ND4J_STATUS_BAD_SHAPE;
+    // we expect input to be either vector or matrix, in both cases - that's rank2
+    if (shape::rank(this->inputShapeInfo) != 2) return ND4J_STATUS_BAD_RANK;
+    if (this->params == nullptr)                return ND4J_STATUS_BAD_PARAMS;
+    
+    int *iShape = shape::shapeOf(this->inputShapeInfo);
+    int *wShape = shape::shapeOf(this->paramsShapeInfo);
+    // number of input features should match number of rows in params
+    if (iShape[1] != wShape[0]) ND4J_STATUS_BAD_SHAPE;
+    if (this->output == nullptr) return ND4J_STATUS_BAD_OUTPUT;
+    
+    int *oShape = shape::shapeOf(this->outputShapeInfo);
+    // we check for input/output batchSize equality
+    if (oShape[0] != iShape[0])  return ND4J_STATUS_BAD_SHAPE;
+    
+    // when everything is OK
+    return ND4J_STATUS_OK;
+}
 
 
 // This method should valudate output parameters, and return TRUE if everything is ok, FALSE otherwise
