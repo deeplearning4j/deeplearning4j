@@ -12,7 +12,7 @@
   <artifactId>datavec-jdbc</artifactId>
 
   <properties>
-    <dbutils.version>1.6</dbutils.version>
+    <dbutils.version>1.7</dbutils.version>
     <hikaricp.version>2.4.12</hikaricp.version>
     <derby.version>10.13.1.1</derby.version>
   </properties>
