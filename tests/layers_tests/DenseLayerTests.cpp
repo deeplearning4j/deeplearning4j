@@ -170,9 +170,11 @@ TEST_F(DenseLayerInputTest, NDArrayOrder1) {
 
     auto *arrayC = new NDArray<float>(c, cShape);
     auto *arrayF = arrayC->dup('f');
+    auto *arrayC2 = arrayF->dup('c');
 
     ASSERT_EQ('c', arrayC->ordering());
     ASSERT_EQ('f', arrayF->ordering());
+    ASSERT_EQ('c', arrayC2->ordering());
 
     for (int i = 0; i < 4; i++) {
         ASSERT_EQ(f[i], arrayF->buffer[i]);
@@ -181,4 +183,46 @@ TEST_F(DenseLayerInputTest, NDArrayOrder1) {
     for (int i = 0; i < 8; i++) {
         ASSERT_EQ(fShape[i], arrayF->shapeInfo[i]);
     }
+
+    for (int i = 0; i < 4; i++) {
+        ASSERT_EQ(c[i], arrayC2->buffer[i]);
+    }
+
+    for (int i = 0; i < 8; i++) {
+        ASSERT_EQ(cShape[i], arrayC2->shapeInfo[i]);
+    }
+}
+
+TEST_F(DenseLayerInputTest, TestGetScalar1) {
+    float *c = new float[4] {1, 2, 3, 4};
+    int *cShape = new int[8]{2, 2, 2, 2, 1, 0, 1, 99};
+
+    auto *arrayC = new NDArray<float>(c, cShape);
+
+    ASSERT_EQ(3.0f, arrayC->getScalar(1, 0));
+    ASSERT_EQ(4.0f, arrayC->getScalar(1, 1));
+
+    auto *arrayF = arrayC->dup('f');
+
+    ASSERT_EQ(3.0f, arrayF->getScalar(1, 0));
+    ASSERT_EQ(4.0f, arrayF->getScalar(1, 1));
+
+
+    arrayF->putScalar(1, 0, 7.0f);
+    ASSERT_EQ(7.0f, arrayF->getScalar(1, 0));
+
+
+    arrayC->putScalar(1, 1, 9.0f);
+    ASSERT_EQ(9.0f, arrayC->getScalar(1, 1));
+
+}
+
+TEST_F(DenseLayerInputTest, SGemmTest1) {
+    auto *arrayA = new NDArray<float>(3, 5, 'c');
+    auto *arrayB = new NDArray<float>(5, 3, 'f');
+    auto *arrayC = new NDArray<float>(3, 3, 'f');
+
+    nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
+
+    //layer->gemmHelper(arrayA, arrayB, arrayC, 1.0f, 0.0f);
 }

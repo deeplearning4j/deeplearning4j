@@ -5,6 +5,8 @@
 #ifndef PROJECT_LAYERS_H
 #define PROJECT_LAYERS_H
 
+#include <NDArray.h>
+
 namespace nd4j {
 namespace layers {
 
@@ -120,7 +122,9 @@ template <typename T> class INativeLayer {
 
         // gemv should be used here
         void gemvHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta);
-        
+
+        void gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, T alpha, T beta);
+
         // extracts shapes info and perform gemm 
         void gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta);
 
@@ -152,6 +156,9 @@ template <typename T> INativeLayer<T>::INativeLayer() {
     aNum = 0;
 }
 
+template <typename T> void INativeLayer<T>::gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, T alpha, T beta) {
+    gemmHelper(A->buffer, A->shapeInfo, B->buffer, B->shapeInfo, C->buffer, C->shapeInfo, alpha, beta);
+}
 
 // perform C = alpha*A*B + beta*C
 template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta) {  
@@ -167,6 +174,8 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
     int M, N, K, lda, ldb, ldc;
     char transA, transB;
+
+    T *_A, *_B, *_C;
 
     if (aOrder == bOrder) {
         rOrder = aOrder;
@@ -215,7 +224,8 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
     }
 
     // we'll use platform-specific gemm here eventually. maybe tomorrow.
-    nd4j::blas::GEMM<T>::op(rOrder, true, false, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+    // TODO: put proper _gemm here
+    nd4j::blas::GEMM<T>::op(rOrder, false, false, M, N, K, alpha, _A, lda, _B, ldb, beta, _C, ldc);
 }
 
 

@@ -23,6 +23,90 @@ template <typename T> NDArray<T>::NDArray(int rows, int columns, char order){
 }
 
 
+/**
+     * Return value from linear buffer
+     *
+     * @param i
+     * @return
+     */
+template <typename T> T NDArray<T>:: getScalar(Nd4jIndex i) {
+    // throw something right here
+    if (i >= shape::length(this->shapeInfo))
+        return (T) 0.0f;
+
+    return this->buffer[i];
+}
+
+template <typename T> void NDArray<T>:: putScalar(Nd4jIndex i, T value) {
+    // throw something right here
+    if (i >= shape::length(this->shapeInfo))
+        return;
+
+    this->buffer[i] = value;
+}
+
+/**
+ * Returns value from 2D matrix by coordinates
+ * @param i
+ * @param k
+ * @return
+ */
+template <typename T> T NDArray<T>::getScalar(int i, int k) {
+    // throw something here
+    if (this->rankOf() != 2)
+        return 0.0f;
+
+    int coords[2] = {i, k};
+    Nd4jIndex xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), coords, this->rankOf());
+
+    return this->buffer[xOffset];
+
+}
+
+template <typename T> void NDArray<T>::putScalar(int i, int k, T value) {
+    // throw something here
+    if (this->rankOf() != 2)
+        return;
+
+    int coords[2] = {i, k};
+    Nd4jIndex xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), coords, this->rankOf());
+
+    putScalar(xOffset, value);
+}
+
+
+/**
+ * Returns value from 3D tensor by coordinates
+ * @param i
+ * @param k
+ * @param j
+ * @return
+ */
+template <typename T> T NDArray<T>:: getScalar(int i, int k, int j) {
+    // throw something here
+    if (this->rankOf() != 3)
+        return 0.0f;
+
+    int coords[3] = {i, k, j};
+
+    Nd4jIndex xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), coords, this->rankOf());
+
+    return this->buffer[xOffset];
+}
+
+
+template <typename T> void NDArray<T>::putScalar(int i, int k, int j, T value) {
+    // throw something here
+    if (this->rankOf() != 3)
+        return;
+
+    int coords[3] = {i, k, j};
+
+    Nd4jIndex xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), coords, this->rankOf());
+
+    putScalar(xOffset, value);
+}
+
 template <typename T> NDArray<T>* NDArray<T>::dup(char newOrder) {
     if (newOrder == ordering()) {
         // if ordering is the same as original one - we'll just go directly for memcpy, and we won't care about anything else
