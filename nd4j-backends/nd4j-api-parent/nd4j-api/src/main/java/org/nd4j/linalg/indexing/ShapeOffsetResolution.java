@@ -570,7 +570,7 @@ public class ShapeOffsetResolution implements Serializable {
          */
         if(numPointIndexes > 0 && newAxesPrepend > 0) {
             for(int i = 0; i < accumStrides.size(); i++) {
-                if(indexes[i] instanceof PointIndex) {
+                if(indexes[i] instanceof PointIndex || indexes[i] instanceof NDArrayIndexAll) {
                     accumStrides.set(i, (long) arr.stride(i));
                 }
             }
