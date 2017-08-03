@@ -3,6 +3,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.*;
@@ -16,17 +17,11 @@ import static org.junit.Assert.*;
 public class EncodedGradientsAccumulatorTest {
 
 
-    @Test
-    public void testMemoryLimits1() throws Exception {
-        int numParams = 100000;
-
-        EncodedGradientsAccumulator accumulator = new EncodedGradientsAccumulator(2, new EncodingHandler(1e-3), 1000000, 2, null);
-
-
-
-    }
-
-
+    /**
+     * Here we ensure that no matter how dense/sparse our updates are - we're never going above 1/16 of original elements of gradients array
+     *
+     * @throws Exception
+     */
     @Test
     public void testEncodingLimits1() throws Exception {
         int numParams = 100000;
