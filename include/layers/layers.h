@@ -18,6 +18,9 @@ template <typename T> class INativeLayer {
         
         T   *input;                     // flattened multidimensional matrix of inputs
         int *inputShapeInfo;            // see _paramsShapeInfo explanation
+
+        T   *epsilon;                     // flattened multidimensional matrix of inputs
+        int *epsilontShapeInfo;            // see _paramsShapeInfo explanation       
         
         T   *mask;                      // the matrix of zeros and unities, takes into account possible different size of inputs, for outer pixels absent in smaller inputs zeros are set, the rest is unities
         int *maskShapeInfo;             // see _paramsShapeInfo explanation
@@ -136,6 +139,8 @@ template <typename T> INativeLayer<T>::INativeLayer() {
     biasShapeInfo = nullptr;
     input = nullptr;
     inputShapeInfo = nullptr;
+    epsilon = nullptr;
+    epsilontShapeInfo; 
     mask = nullptr;
     maskShapeInfo = nullptr;
     output = nullptr;

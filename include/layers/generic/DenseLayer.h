@@ -47,14 +47,31 @@ template<typename T, typename AF> DenseLayer<T,AF>::DenseLayer() {
 
 // back propagate
 template<typename T, typename AF> void DenseLayer<T,AF>::backPropagate() {
-    // activation derivative call
-    ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, this->output, this->inputShapeInfo);
+    T *delta = AF::bpActivation(this->input, this->epsilon);
+    this->gemmHelper(this->input, this->inputShapeInfo, delta, this->epsilonShapeInfo, this->output, this->outputShapeInfo, (T)1.0f, (T)0.0f);    
     
     // INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst();
     // how to evaluate delta, what is it ???
     // this->gemmHelper(this->input, this->inputShapeInfo, this->params, this->paramsShapeInfo, this->output, this->outputShapeInfo, (T) 1.0f, (T) 0.0f);
     // Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
+    
+    // activation derivative call
+    ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, this->output, this->inputShapeInfo);
 }
+
+
+
+
+
+
+
+  // inline static T bpActivation(T value, T epsilon) {
+                // // FIXME: ultra-bad. should consider conigurable extra params here
+                // T extra[] = {(T) 0.0f};
+                // return simdOps::Step<T>::template op(value, extra) * epsilon;
+
+
+
 
 
 // This method should validate layer parameters & bias, and return TRUE if everything ok. FALSE otherwise
