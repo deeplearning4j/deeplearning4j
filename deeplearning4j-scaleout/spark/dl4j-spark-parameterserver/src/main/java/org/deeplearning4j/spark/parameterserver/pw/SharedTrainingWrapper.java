@@ -172,10 +172,21 @@ public class SharedTrainingWrapper {
 
                 // this accumulator will provide sharing gradients over network, via WiredEncodedHandler. But we create it only once
                 if (accumulator == null) {
+                    /**
+                     *  We know, that updates are guaranteed to have MAX size of params / 16. So, here we go.
+                     *  I.e. for model with 100m params, that's 400m of floats (or 800m of doubles)
+                     *  The worst case for us is bitmap encoding, that takes 2 bits to encode each gradient value
+                     *
+                     *  so, for float in worst case we'll have (100m / 16) int elements. So, our buffer size will be 6.25m * queueSize * 4 bytes per int
+                     */
+
+                    int queueSize = numWorkers * 2;
+
+                    int bufferSize = trainingConfiguration.getBufferSize() > 0 ? trainingConfiguration.getBufferSize() : EncodedGradientsAccumulator.getOptimalBufferSize(model, numWorkers, 2);
+
                     accumulator = new EncodedGradientsAccumulator.Builder(numWorkers).messageHandler(handler)
                                     .encodingThreshold(trainingConfiguration.getThreshold())
-                                    // TODO: make this configurable
-                                    .memoryParameters(200 * 1024 * 1024L, numWorkers * 2).build();
+                                    .memoryParameters(bufferSize, queueSize).build();
 
                     // FIXME: implement support for Custom transport implementation
                     Transport transport =

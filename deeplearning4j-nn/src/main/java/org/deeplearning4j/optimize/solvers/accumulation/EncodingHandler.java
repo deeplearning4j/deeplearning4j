@@ -148,8 +148,17 @@ public class EncodingHandler implements MessageHandler {
                 double encodingRatio = encLen * 100.0 / updates.length();
 
                 // if updates are too dense - we fallback to bitmap encoding
-                if (encLen > (updates.lengthLong() / 16 + 5))
+                if (encLen >= (updates.lengthLong() / 16)) {
+                    log.debug("Going back to bitmapEncoding");
                     bitmapMode.get().set(true);
+
+                    DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.lengthLong() / 16 + 5);
+                    encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
+
+                    Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get());
+
+                    return encoded;
+                }
 
 
                 // after encoding is finished, and updates are sparse enough - let's step down a bit
@@ -157,7 +166,7 @@ public class EncodingHandler implements MessageHandler {
                 if (minThreshold <= currentThreshold.get().get() && minThreshold < currentThreshold.get().get() - thresholdStep && iterations.get().get() > lastStep.get().get() + stepDelay && encodingRatio < stepTrigger) {
                     currentThreshold.get().addAndGet(-thresholdStep);
                     lastStep.set(iterations.get());
-                    log.info("Threshold steps down to {}", currentThreshold.get().get());
+                    log.debug("Threshold steps down to {}", currentThreshold.get().get());
                 }
             }
         } else {
@@ -168,7 +177,7 @@ public class EncodingHandler implements MessageHandler {
 
             if (values < (updates.lengthLong() / 16 + 5) / 2) {
                 bitmapMode.get().set(false);
-                log.info("Switched to threshold encoding");
+                log.debug("Switched to threshold encoding");
             }
         }
 
