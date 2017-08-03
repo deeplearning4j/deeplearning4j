@@ -1,9 +1,19 @@
 //
 // @author raver119@gmail.com
 //
-
 #ifndef PROJECT_LAYERS_H
 #define PROJECT_LAYERS_H
+
+#include <NDArray.h>
+
+// the list of errors codes for layer data
+#define ND4J_STATUS_OK 0
+#define ND4J_STATUS_BAD_INPUT 1
+#define ND4J_STATUS_BAD_SHAPE 2
+#define ND4J_STATUS_BAD_RANK 3
+#define ND4J_STATUS_BAD_PARAMS 4
+#define ND4J_STATUS_BAD_OUTPUT 5
+
 
 namespace nd4j {
 namespace layers {
@@ -57,8 +67,8 @@ template <typename T> class INativeLayer {
         // This method should validate parameters & bias, and return TRUE if everything ok. False otherwise
         virtual bool validateParameters() = 0;
 
-        // This method should validate input parameters, and return TRUE if everything ok. False otherwise
-        virtual bool validateInput() = 0;
+        // This method should validate input parameters, and return corresponding codes errors if mistake is present
+        virtual int validateInput() = 0;
 
         // This method should validate output parameters, and return TRUE if everything is ok, FALSE otherwise
         virtual bool validateOutput() = 0;
@@ -276,3 +286,4 @@ template <typename T> bool INativeLayer<T>::configureLayer(T *input, int *inputS
 }
 }    
 #endif //PROJECT_LAYERS_H
+
