@@ -18,10 +18,10 @@ template<typename T, typename AF> class DenseLayer: public BaseLayer<T, AF> {
         DenseLayer();     
 
         // feed forward
-        void feedForward();
+        int feedForward();
 
         // back propagate
-        void backPropagate();
+        int backPropagate();
        
         // This method should validate layer parameters & bias, and return TRUE if everything ok. FALSE otherwise      
         inline int validateParameters();
@@ -45,7 +45,7 @@ template<typename T, typename AF> DenseLayer<T,AF>::DenseLayer() {
 }     
 
 // back propagate
-template<typename T, typename AF> void DenseLayer<T,AF>::backPropagate() {
+template<typename T, typename AF> int DenseLayer<T,AF>::backPropagate() {
     // activation derivative call
     ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, this->output, this->inputShapeInfo);
 
@@ -57,7 +57,7 @@ template<typename T, typename AF> void DenseLayer<T,AF>::backPropagate() {
     // how to evaluate delta, what is it ???
     // this->gemmHelper(this->input, this->inputShapeInfo, this->params, this->paramsShapeInfo, this->output, this->outputShapeInfo, (T) 1.0f, (T) 0.0f);
     // Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
-
+    return ND4J_STATUS_OK;
 }
 
 
@@ -177,42 +177,48 @@ template<typename T, typename AF> int DenseLayer<T,AF>::validateOutput() {
 }
 
 // feed forward
-template<typename T, typename AF> void DenseLayer<T,AF>::feedForward() {
+template<typename T, typename AF> int DenseLayer<T,AF>::feedForward() {
     // dropout helper call
-    if (this->dropOut)
+    if (this->dropOut) {
+        printf("Going dropout\n");
         this->dropOutHelper(this->input, this->inputShapeInfo);
+    }
 
     // dropconnect helper
-    if (this->dropConnect)
+    if (this->dropConnect) {
+        printf("Going dropconnect\n");
         this->dropConnectHelper(this->params, this->paramsShapeInfo);
+    }
     
 
     // do wxa+b here or something else
     // TODO: introduce BLAS right here
     if (shape::isRowVector(this->inputShapeInfo)) {
         // gemv here input * W
+
+        printf("GEMV path\n");
     } else {
         // gemm here, input * W
         // these values should be set appropriately
+        printf("GEMM path\n");
 
         this->gemmHelper(this->input, this->inputShapeInfo, this->params, this->paramsShapeInfo, this->output, this->outputShapeInfo, (T) 1.0f, (T) 0.0f);
 
         // we're rolling through rows here
-        int rowLen = this->outputShapeInfo[2];
-        //#pragma omp parallel for
-        for (int r = 0; r < this->outputShapeInfo[1]; r++) {
-            T *row = this->output + (rowLen * r);
+        auto *out = new NDArray<T>(this->output, this->outputShapeInfo);
+        auto *b = new NDArray<T>(this->bias, this->biasShapeInfo);
 
-            // now we're adding bias to each row element
-            //#pragma omp simd
-            for (int e = 0; e < rowLen; e++) {
-                row[e] += this->bias[e];
-            }
-        }
+        out->addiRowVector(b);
+
+        // TODO: make these fields NDArrays, to avoid overwrites
+        delete out;
+        delete b;
     }
 
     // activation call
-    ActivationsExecutioner<T>::template executeFF<AF>(this->input, this->output, this->inputShapeInfo);
+    ActivationsExecutioner<T>::template executeFF<AF>(this->output, this->output, this->inputShapeInfo);
+
+    return ND4J_STATUS_OK;
 }
 
 

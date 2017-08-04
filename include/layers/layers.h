@@ -122,10 +122,10 @@ template <typename T> class INativeLayer {
         }
 
         // This method executes feed-forward pass on this layer
-        virtual void feedForward() = 0;
+        virtual int feedForward() = 0;
 
         // This method executes back-propagation pass on this layer
-        virtual void backPropagate() = 0;
+        virtual int backPropagate() = 0;
 
         // gemv should be used here
         void gemvHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta);
@@ -200,7 +200,7 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
     }
 
     if (aOrder == bOrder) {
-
+        printf("Going dRoute here\n");
 
         if (aOrder == 'c') {
             // we might need to transpose matrices,     

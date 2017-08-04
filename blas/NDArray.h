@@ -70,6 +70,19 @@ template <typename T> class NDArray
     void assign(T value);
 
     /**
+     * This method returns sum of all elements of this NDArray
+     * @return
+     */
+    T sumNumber();
+
+    /**
+     * This method returns mean number of this NDArray
+     *
+     * @return
+     */
+    T meanNumber();
+
+    /**
      * This method returns true if two arrays are equal, with custom Eps value, false otherwise
      *
      * @param other
@@ -131,6 +144,9 @@ template <typename T> class NDArray
      * @param i
      */
     void putScalar(int i, int k, int j, T value);
+
+
+    void addiRowVector(NDArray<T> *row);
 
 
     // default destructor

@@ -7,6 +7,9 @@
 class NDArrayTest : public testing::Test {
 public:
     int alpha = 0;
+
+    int *cShape = new int[8]{2, 2, 2, 2, 1, 0, 1, 99};
+    int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
 };
 
 
@@ -25,11 +28,9 @@ TEST_F(NDArrayTest, AssignScalar1) {
 TEST_F(NDArrayTest, NDArrayOrder1) {
     // original part
     float *c = new float[4] {1, 2, 3, 4};
-    int *cShape = new int[8]{2, 2, 2, 2, 1, 0, 1, 99};
 
     // expected part
     float *f = new float[4] {1, 3, 2, 4};
-    int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
 
     auto *arrayC = new NDArray<float>(c, cShape);
     auto *arrayF = arrayC->dup('f');
@@ -118,3 +119,27 @@ TEST_F(NDArrayTest, EqualityTest1) {
     ASSERT_FALSE(arrayE->equalsTo(arrayB, 1e-5));
 }
 
+
+
+TEST_F(NDArrayTest, TestSum1) {
+    float *c = new float[4] {1, 2, 3, 4};
+
+    auto *array = new NDArray<float>(c, cShape);
+
+    ASSERT_EQ(10.0f, array->sumNumber());
+    ASSERT_EQ(2.5f, array->meanNumber());
+}
+
+TEST_F(NDArrayTest, TestAddiRowVector) {
+    float *c = new float[4] {1, 2, 3, 4};
+    float *e = new float[4] {2, 3, 4, 5};
+
+    auto *array = new NDArray<float>(c, cShape);
+    auto *row = new NDArray<float>(2, 'c');
+    auto *exp = new NDArray<float>(e, cShape);
+    row->assign(1.0f);
+
+    array->addiRowVector(row);
+
+    ASSERT_TRUE(exp->equalsTo(array));
+}

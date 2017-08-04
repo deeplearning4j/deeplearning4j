@@ -123,6 +123,14 @@ template <typename T> void NDArray<T>::putScalar(int i, int k, int j, T value) {
     putScalar(xOffset, value);
 }
 
+template <typename T> T NDArray<T>::sumNumber() {
+    return NativeOpExcutioner<T>::execReduceScalar(1, this->buffer, this->shapeInfo, nullptr);
+}
+
+
+template <typename T> T NDArray<T>::meanNumber() {
+    return NativeOpExcutioner<T>::execReduceScalar(0, this->buffer, this->shapeInfo, nullptr);
+}
 
 template <typename T> void NDArray<T>::assign(T value) {
 
@@ -168,6 +176,26 @@ template <typename T> NDArray<T>* NDArray<T>::dup(char newOrder) {
 }
 
 template <typename T>
+void NDArray<T>::addiRowVector(NDArray<T> *row) {
+    if (this->rankOf() != 2)
+        throw std::invalid_argument("addiRowVector can be called only on Matrix");
+
+    if (!shape::isRowVector(row->shapeInfo))
+        throw std::invalid_argument("Argument should be row vector");
+
+    int *dimension = new int[1] {1};
+
+    shape::TAD *tad = new shape::TAD(this->shapeInfo, dimension, 1);
+    tad->createTadOnlyShapeInfo();
+    tad->createOffsets();
+
+    NativeOpExcutioner<T>::execBroadcast(0, this->buffer, this->shapeInfo, row->buffer, row->shapeInfo, this->buffer, this->shapeInfo, dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, tad->tadOnlyShapeInfo, tad->tadOffsets);
+
+    delete[] dimension;
+    delete tad;
+}
+
+template <typename T>
 bool NDArray<T>::equalsTo(NDArray<T> *other, T eps) {
     if (this->lengthOf() != other->lengthOf())
         return false;
@@ -175,8 +203,12 @@ bool NDArray<T>::equalsTo(NDArray<T> *other, T eps) {
     if (!shape::equalsSoft(this->shapeInfo, other->shapeInfo))
         return false;
 
+    T *extras = new T[1] {eps};
+
     // we don't need extraparams for this op
-    T val = NativeOpExcutioner<T>::execReduce3Scalar(4, this->buffer, this->shapeInfo, nullptr, other->buffer, other->shapeInfo);
+    T val = NativeOpExcutioner<T>::execReduce3Scalar(4, this->buffer, this->shapeInfo, extras, other->buffer, other->shapeInfo);
+
+    delete[] extras;
 
     if (val > 0)
         return false;
