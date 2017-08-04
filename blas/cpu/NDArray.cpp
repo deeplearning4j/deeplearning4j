@@ -49,7 +49,7 @@ template <typename T> NDArray<T>::NDArray(int length, char order) {
 }
 
 // default destructor
-template <typename T> ~NDArray<T>::NDArray() {
+template <typename T> NDArray<T>::~NDArray() {
     if (allocated) {
         delete[] buffer;
         delete[] shapeInfo;

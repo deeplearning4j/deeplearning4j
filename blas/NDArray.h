@@ -115,12 +115,7 @@ template <typename T> class NDArray
 
 
     // default destructor
-    ~NDArray() {
-        if (allocated) {
-            delete[] buffer;
-            delete[] shapeInfo;
-        }
-    }
+    ~NDArray();
 
 };
 
