@@ -12,15 +12,10 @@ template <typename T> class NDArray
         T *buffer;                      // pointer on flattened data array in memory
         int *shapeInfo;                 // pointer on array containing shape information about data array
 
-    // default constructor
-        NDArray(T *buffer_ = nullptr, int* shapeInfo_ = nullptr);
+        // default constructor
+        NDArray(T *buffer_ = nullptr, int *shapeInfo_ = nullptr);
 
-        /**
-         * This method creates new 2D NDArray
-         * @param rows
-         * @param columns
-         * @param order
-         */
+        // This constructor creates new 2D NDArray
         NDArray(int rows, int columns, char order);
 
         NDArray(int length, char order);
