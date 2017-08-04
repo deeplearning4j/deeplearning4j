@@ -286,3 +286,83 @@ TEST_F(DenseLayerInputTest, SGemmTest3) {
         ASSERT_EQ(exp[i], arrayC->getScalar(i));
     }
 }
+
+TEST_F(DenseLayerInputTest, DropOutTest1) {
+    Nd4jIndex *buffer = new Nd4jIndex[100000];
+
+    NativeOps nativeOps;
+
+    nd4j::random::RandomBuffer *rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);
+
+
+    nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
+    layer->rng = rng;
+    layer->pDropOut = 0.5f;
+
+    auto *input = new NDArray<float>(5, 5, 'c');
+    input->assign(13.0f);
+
+    auto *exp = input->dup('c');
+
+    // input should be modified inplace here
+    layer->dropOutHelper(input->buffer, input->shapeInfo);
+
+    printf("Original array: ");
+    for (int i = 0; i < exp->lengthOf(); i++) {
+        printf("%f, ", exp->getScalar(i));
+    }
+    printf("\n");
+
+    printf("Modified array: ");
+    for (int i = 0; i < input->lengthOf(); i++) {
+        printf("%f, ", input->getScalar(i));
+    }
+    printf("\n");
+
+    ASSERT_FALSE(input->equalsTo(exp));
+
+    // for dropout inverted all values here should be either 0 (dropped out) or 26.0 (scaled by 2)
+    for (int i = 0; i < input->lengthOf(); i++) {
+        ASSERT_TRUE(input->getScalar(i) == 0.0f || input->getScalar(i) == 26.0f);
+    }
+}
+
+TEST_F(DenseLayerInputTest, DropConnectTest1) {
+    Nd4jIndex *buffer = new Nd4jIndex[100000];
+
+    NativeOps nativeOps;
+
+    nd4j::random::RandomBuffer *rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);
+
+
+    nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
+    layer->rng = rng;
+    layer->pDropConnect = 0.5f;
+
+    auto *input = new NDArray<float>(5, 5, 'c');
+    input->assign(13.0f);
+
+    auto *exp = input->dup('c');
+
+    // input should be modified inplace here
+    layer->dropConnectHelper(input->buffer, input->shapeInfo);
+
+    printf("Original array: ");
+    for (int i = 0; i < exp->lengthOf(); i++) {
+        printf("%f, ", exp->getScalar(i));
+    }
+    printf("\n");
+
+    printf("Modified array: ");
+    for (int i = 0; i < input->lengthOf(); i++) {
+        printf("%f, ", input->getScalar(i));
+    }
+    printf("\n");
+
+    ASSERT_FALSE(input->equalsTo(exp));
+
+    // for dropout inverted all values here should be either 0 (dropped out) or 13.0 (retained value)
+    for (int i = 0; i < input->lengthOf(); i++) {
+        ASSERT_TRUE(input->getScalar(i) == 0.0f || input->getScalar(i) == 13.0f);
+    }
+}

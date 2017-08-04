@@ -81,7 +81,7 @@ TEST_F(NDArrayTest, TestGetScalar1) {
 }
 
 
-TEST_F(DenseLayerInputTest, EqualityTest1) {
+TEST_F(NDArrayTest, EqualityTest1) {
     auto *arrayA = new NDArray<float>(3, 5, 'f');
     auto *arrayB = new NDArray<float>(3, 5, 'f');
     auto *arrayC = new NDArray<float>(3, 5, 'f');
@@ -117,3 +117,4 @@ TEST_F(DenseLayerInputTest, EqualityTest1) {
 
     ASSERT_FALSE(arrayE->equalsTo(arrayB, 1e-5));
 }
+
