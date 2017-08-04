@@ -367,7 +367,9 @@ TEST_F(DenseLayerInputTest, DropConnectTest1) {
     }
 }
 
-
+/**
+ * This test checks F order input, like middle layers have
+ */
 TEST_F(DenseLayerInputTest, FeedForwardTest1) {
 
     auto *weights = new NDArray<double>(784, 1000, 'f');
@@ -381,6 +383,65 @@ TEST_F(DenseLayerInputTest, FeedForwardTest1) {
     ASSERT_NEAR(0.15f, weights->meanNumber(), 1e-5);
 
     auto *input = new NDArray<double>(16, 784, 'f');
+    auto *output = new NDArray<double>(16, 1000, 'f');
+
+    input->assign(0.19f);
+
+
+    auto *exp = new NDArray<double>(16, 1000, 'f');
+    exp->assign(22.474001);
+
+    auto *layer = new nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>>();
+
+    int result = layer->setParameters(weights->buffer, weights->shapeInfo, bias->buffer, bias->shapeInfo);
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    result = layer->configureLayer(input->buffer, input->shapeInfo, output->buffer, output->shapeInfo, 0.0f, 0.0f, nullptr);
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    result = layer->feedForward();
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    printf("Modified array: ");
+    for (int i = 0; i < 30; i++) {
+        printf("%f, ", output->getScalar(i));
+    }
+    printf("\n");
+
+
+    printf("Exp array: ");
+    for (int i = 0; i < 30; i++) {
+        printf("%f, ", exp->getScalar(i));
+    }
+    printf("\n");
+
+
+    auto meanNumber = output->meanNumber();
+
+    printf("Output mean: %f\n", meanNumber);
+
+    ASSERT_TRUE(exp->equalsTo(output));
+}
+
+/**
+ * This test checks C input order, like this is the first layer in network
+ */
+TEST_F(DenseLayerInputTest, FeedForwardTest2) {
+
+    auto *weights = new NDArray<double>(784, 1000, 'f');
+    auto *bias = new NDArray<double>(1, 1000, 'f');
+
+    weights->assign(0.15f);
+    bias->assign(0.13f);
+
+    // we're checking for assign validity
+    ASSERT_NEAR(0.13f, bias->meanNumber(), 1e-5);
+    ASSERT_NEAR(0.15f, weights->meanNumber(), 1e-5);
+
+    auto *input = new NDArray<double>(16, 784, 'c');
     auto *output = new NDArray<double>(16, 1000, 'f');
 
     input->assign(0.19f);
