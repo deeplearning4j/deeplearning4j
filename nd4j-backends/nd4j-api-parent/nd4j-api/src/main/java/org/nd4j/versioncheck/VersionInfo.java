@@ -15,7 +15,7 @@ import java.util.Properties;
 @NoArgsConstructor
 @Data
 @Builder
-public class GitRepositoryState {
+public class VersionInfo {
 
     private static final int SUFFIX_LENGTH = "-git.properties".length();
 
@@ -45,13 +45,13 @@ public class GitRepositoryState {
     private String buildHost;               // =${git.build.host}
     private String buildVersion;             // =${git.build.version}
 
-    public GitRepositoryState(String groupId, String artifactId, String buildVersion){
+    public VersionInfo(String groupId, String artifactId, String buildVersion){
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.buildVersion = buildVersion;
     }
 
-    public GitRepositoryState(String propertiesFilePath) throws IOException {
+    public VersionInfo(String propertiesFilePath) throws IOException {
         //First: parse the properties file path, which is in format <groupid>-<artifactId>-git.properties
         int idxOf = propertiesFilePath.lastIndexOf('/');
         idxOf = Math.max(idxOf, propertiesFilePath.lastIndexOf('\\'));

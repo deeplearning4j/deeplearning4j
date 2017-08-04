@@ -4,16 +4,24 @@ import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 
 /**
- * Created by Alex on 04/08/2017.
+ * A runtime version check utility that does 2 things:<br>
+ * (a) validates the versions of ND4J, DL4J, DataVec, RL4J, Arbiter on the class path, logging a warning if
+ * incompatible versions are found<br>
+ * (b) allows users to get version information for the above projects at runtime.
+ *
+ * @author Alex Black
  */
 @Slf4j
 public class VersionCheck {
 
+    /**
+     * Setting the system property to false will stop ND4J from performing the version check, and logging any
+     * warnings/errors. By default, the version check is unable.
+     */
     public static final String VERSION_CHECK_PROPERTY = "org.nd4j.versioncheck";
 
     private static final String UNKNOWN_VERSION = "(Unknown, pre-0.9.1)";
@@ -34,6 +42,12 @@ public class VersionCheck {
     private static final Set<String> GROUPIDS_TO_CHECK = new HashSet<>(Arrays.asList(
             ND4J_GROUPID, DL4J_GROUPID, DATAVEC_GROUPID));    //NOTE: DL4J_GROUPID also covers Arbiter and RL4J
 
+    /**
+     * Detailed level for logging:
+     * GAV: display group ID, artefact, version
+     * GAVC: display group ID, artefact, version, commit ID
+     * FULL: display group ID, artefact, version, commit ID, build time, branch, commit message
+     */
     public enum Detail {
         GAV,
         GAVC,
@@ -44,6 +58,10 @@ public class VersionCheck {
 
     }
 
+    /**
+     * Perform a check of the versions of ND4J, DL4J, DataVec, RL4J and Arbiter dependencies, logging a warning
+     * if necessary.
+     */
     public static void checkVersions(){
         boolean doCheck = Boolean.parseBoolean(System.getProperty(VERSION_CHECK_PROPERTY, "true"));
 
@@ -51,9 +69,9 @@ public class VersionCheck {
             return;
         }
 
-        List<GitRepositoryState> repos = listGitRepositoryInfo();
+        List<VersionInfo> repos = getVersionInfos();
         Set<String> foundVersions = new HashSet<>();
-        for(GitRepositoryState gpr : repos){
+        for(VersionInfo gpr : repos){
             String g = gpr.getGroupId();
             if(g != null && GROUPIDS_TO_CHECK.contains(g)){
                 foundVersions.add(g);
@@ -88,7 +106,9 @@ public class VersionCheck {
         }
     }
 
-
+    /**
+     * @return A list of the property files containing the build/version info
+     */
     public static List<String> listGitPropertiesFiles() {
         Reflections reflections = new Reflections(new ResourcesScanner());
 
@@ -100,17 +120,20 @@ public class VersionCheck {
         return out;
     }
 
-    public static List<GitRepositoryState> listGitRepositoryInfo() {
+    /**
+     * @return A list containing the information for the discovered dependencies
+     */
+    public static List<VersionInfo> getVersionInfos() {
 
         boolean dl4jFound = false;
         boolean datavecFound = false;
 
-        List<GitRepositoryState> repState = new ArrayList<>();
+        List<VersionInfo> repState = new ArrayList<>();
         for(String s : listGitPropertiesFiles()){
-            GitRepositoryState grs;
+            VersionInfo grs;
 
             try{
-                grs = new GitRepositoryState(s);
+                grs = new VersionInfo(s);
             } catch (Exception e){
                 log.warn("Error reading property files for {}", s);
                 continue;
@@ -129,14 +152,14 @@ public class VersionCheck {
         if(!dl4jFound){
             //See if pre-0.9.1 DL4J is present on classpath;
             if(classExists(DL4J_CLASS)){
-                repState.add(new GitRepositoryState(DL4J_GROUPID, DL4J_ARTIFACT, UNKNOWN_VERSION));
+                repState.add(new VersionInfo(DL4J_GROUPID, DL4J_ARTIFACT, UNKNOWN_VERSION));
             }
         }
 
         if(!datavecFound){
             //See if pre-0.9.1 DataVec is present on classpath
             if(classExists(DATAVEC_CLASS)){
-                repState.add(new GitRepositoryState(DATAVEC_GROUPID, DATAVEC_ARTIFACT, UNKNOWN_VERSION));
+                repState.add(new VersionInfo(DATAVEC_GROUPID, DATAVEC_ARTIFACT, UNKNOWN_VERSION));
             }
         }
 
@@ -166,13 +189,22 @@ public class VersionCheck {
         return false;
     }
 
+    /**
+     * @return A string representation of the version information, with the default (GAV) detail level
+     */
     public static String versionInfoString() {
         return versionInfoString(Detail.GAV);
     }
 
+    /**
+     * Get the version information for dependencies as a string with a specified amount of detail
+     *
+     * @param detail Detail level for the version information. See {@link Detail}
+     * @return
+     */
     public static String versionInfoString(Detail detail) {
         StringBuilder sb = new StringBuilder();
-        for(GitRepositoryState grp : listGitRepositoryInfo()){
+        for(VersionInfo grp : getVersionInfos()){
             sb.append(grp.getGroupId()).append(" : ").append(grp.getArtifactId()).append(" : ").append(grp.getBuildVersion());
             switch (detail){
                 case FULL:
@@ -188,15 +220,22 @@ public class VersionCheck {
         return sb.toString();
     }
 
+    /**
+     * Log of the version information with the default level of detail
+     */
     public static void logVersionInfo(){
         logVersionInfo(Detail.GAV);
     }
 
+    /**
+     * Log the version information with the specified level of detail
+     * @param detail Level of detail for logging
+     */
     public static void logVersionInfo(Detail detail){
 
-        List<GitRepositoryState> info = listGitRepositoryInfo();
+        List<VersionInfo> info = getVersionInfos();
 
-        for(GitRepositoryState grp : info){
+        for(VersionInfo grp : info){
             switch (detail){
                 case GAV:
                     log.info("{} : {} : {}", grp.getGroupId(), grp.getArtifactId(), grp.getBuildVersion());
@@ -213,5 +252,4 @@ public class VersionCheck {
             }
         }
     }
-
 }
