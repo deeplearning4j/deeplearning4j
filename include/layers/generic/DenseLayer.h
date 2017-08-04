@@ -180,13 +180,13 @@ template<typename T, typename AF> int DenseLayer<T,AF>::validateOutput() {
 template<typename T, typename AF> int DenseLayer<T,AF>::feedForward() {
     // dropout helper call
     if (this->dropOut) {
-        printf("Going dropout\n");
+        //printf("Going dropout\n");
         this->dropOutHelper(this->input, this->inputShapeInfo);
     }
 
     // dropconnect helper
     if (this->dropConnect) {
-        printf("Going dropconnect\n");
+        //printf("Going dropconnect\n");
         this->dropConnectHelper(this->params, this->paramsShapeInfo);
     }
     
