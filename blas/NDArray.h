@@ -23,6 +23,8 @@ template <typename T> class NDArray
          */
         NDArray(int rows, int columns, char order);
 
+        NDArray(int length, char order);
+
 
     char ordering() {
         return shape::order(shapeInfo);
@@ -59,6 +61,19 @@ template <typename T> class NDArray
     NDArray<T>* dup(char newOrder);
 
     void assign(NDArray<T> *other);
+
+    /**
+     * This method returns true if two arrays are equal, with custom Eps value, false otherwise
+     *
+     * @param other
+     * @param eps
+     * @return
+     */
+    bool equalsTo(NDArray<T> *other, T eps);
+
+    bool equalsTo(NDArray<T> *other) {
+        return equalsTo(other, (T) 1e-5f);
+    }
 
     /**
      * Return value from linear buffer

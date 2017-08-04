@@ -7,7 +7,7 @@
 
 
 #include <layers/layers.h>
-#include <NativeOpExcutioner.h>
+#include "../../../blas/NativeOpExcutioner.h"
 #include <layers/generic/ActivationsExecutioner.h>
 
 // FIXME: we need to use MKL/OpenBLAS/whatever here, but temporary this will work fine

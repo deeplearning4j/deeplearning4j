@@ -7,10 +7,14 @@ template <typename T> NDArray<T>::NDArray(T *buffer_, int* shapeInfo_ ) {
     this->shapeInfo = shapeInfo_;
 }
 
+
+
 template <typename T> NDArray<T>::NDArray(int rows, int columns, char order){
     allocated = true;
 
     buffer = new T[rows * columns];
+    memset(buffer, 0, rows * columns * sizeOfT());
+
     int *shape = new int[2]{rows, columns};
 
 
@@ -25,6 +29,25 @@ template <typename T> NDArray<T>::NDArray(int rows, int columns, char order){
     delete[] shape;
 }
 
+template <typename T> NDArray<T>::NDArray(int length, char order) {
+    allocated = true;
+
+    buffer = new T[length];
+    memset(buffer, 0, length * sizeOfT());
+
+    int *shape = new int[2]{1, length};
+
+
+    if (order == 'f') {
+        shapeInfo = shape::shapeBufferFortran(2, shape);
+        shapeInfo[7] = 102;
+    } else {
+        shapeInfo = shape::shapeBuffer(2, shape);
+        shapeInfo[7] = 99;
+    }
+
+    delete[] shape;
+}
 
 /**
      * Return value from linear buffer
@@ -145,4 +168,21 @@ template <typename T> NDArray<T>* NDArray<T>::dup(char newOrder) {
         result->assign(this);
 
         return result;
+}
+
+template <typename T>
+bool NDArray<T>::equalsTo(NDArray<T> *other, T eps) {
+    if (this->lengthOf() != other->lengthOf())
+        return false;
+
+    if (!shape::equalsSoft(this->shapeInfo, other->shapeInfo))
+        return false;
+
+    // we don't need extraparams for this op
+    T val = NativeOpExcutioner<T>::execReduce3Scalar(4, this->buffer, this->shapeInfo, nullptr, other->buffer, other->shapeInfo);
+
+    if (val > 0)
+        return false;
+
+    return true;
 }

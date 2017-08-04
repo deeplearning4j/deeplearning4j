@@ -343,3 +343,40 @@ TEST_F(DenseLayerInputTest, SGemmTest3) {
         ASSERT_EQ(exp[i], arrayC->getScalar(i));
     }
 }
+
+TEST_F(DenseLayerInputTest, EqualityTest1) {
+    auto *arrayA = new NDArray<float>(3, 5, 'f');
+    auto *arrayB = new NDArray<float>(3, 5, 'f');
+    auto *arrayC = new NDArray<float>(3, 5, 'f');
+
+    auto *arrayD = new NDArray<float>(2, 4, 'f');
+    auto *arrayE = new NDArray<float>(15, 'f');
+
+    for (int i = 0; i < arrayA->rows(); i++) {
+        for (int k = 0; k < arrayA->columns(); k++) {
+            arrayA->putScalar(i, k, (float) i);
+        }
+    }
+
+    for (int i = 0; i < arrayB->rows(); i++) {
+        for (int k = 0; k < arrayB->columns(); k++) {
+            arrayB->putScalar(i, k, (float) i);
+        }
+    }
+
+    for (int i = 0; i < arrayC->rows(); i++) {
+        for (int k = 0; k < arrayC->columns(); k++) {
+            arrayC->putScalar(i, k, (float) i+1);
+        }
+    }
+
+
+
+    ASSERT_TRUE(arrayA->equalsTo(arrayB, 1e-5));
+
+    ASSERT_FALSE(arrayC->equalsTo(arrayB, 1e-5));
+
+    ASSERT_FALSE(arrayD->equalsTo(arrayB, 1e-5));
+
+    ASSERT_FALSE(arrayE->equalsTo(arrayB, 1e-5));
+}
