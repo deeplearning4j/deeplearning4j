@@ -187,7 +187,7 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
     auto *tA = new NDArray<T>(A, aShapeInfo);
     auto *tB = new NDArray<T>(B, bShapeInfo);
-    auto *tC = new NDArray<T>(C, cShapeInfo);
+    //auto *tC = new NDArray<T>(C, cShapeInfo);
 
     if (aOrder == bOrder) {
         rOrder = aOrder;
@@ -226,7 +226,7 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
             _B = tB->dup('f');
         }
 
-        _C = tC->dup('f');
+       // _C = tC->dup('f');
 
         M = cShape[0];
         N = cShape[1];
@@ -244,15 +244,15 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
     // we'll use platform-specific gemm here eventually. maybe tomorrow.
     // TODO: put proper _gemm here
-    nd4j::blas::GEMM<T>::op(rOrder, false, false, M, N, K, alpha, _A->buffer, lda, _B->buffer, ldb, beta, _C->buffer, ldc);
+    nd4j::blas::GEMM<T>::op(rOrder, false, false, M, N, K, alpha, _A->buffer, lda, _B->buffer, ldb, beta, C, ldc);
 
     delete tA;
     delete tB;
-    delete tC;
+    //delete tC;
 
     delete _A;
     delete _B;
-    delete _C;
+    //delete _C;
 }
 
 
