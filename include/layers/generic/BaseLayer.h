@@ -7,6 +7,7 @@
 
 
 #include <layers/layers.h>
+#include <NativeOpExcutioner.h>
 #include <layers/generic/ActivationsExecutioner.h>
 
 // FIXME: we need to use MKL/OpenBLAS/whatever here, but temporary this will work fine
@@ -41,14 +42,22 @@ template<typename T, typename AF> class BaseLayer: public INativeLayer<T> {
 template<typename T, typename AF> void BaseLayer<T,AF>::dropOutHelper(T *input, int *shapeInfo) {
     // basically we loop over input here, and we're using inverted dropout here
 
-    // we probably should allocate temp array here, and replace input pointer
+    // executing DropOutInverted here
+    T *extras = new T[1] {this->pDropOut};
+    NativeOpExcutioner<T>::execRandom(2, (Nd4jPointer) this->rng, input, shapeInfo, extras);
+
+    delete[] extras;
 }
 
 
 template<typename T, typename AF> void BaseLayer<T,AF>::dropConnectHelper(T *input, int *shapeInfo) {
     // and here we just loop over copy of params for dropout. regular dropout is use
 
-    // we probably should allocate temp array here, and replace params pointer
+    // executing regular DropOut op here for DropConnect
+    T *extras = new T[1] {this->pDropConnect};
+    NativeOpExcutioner<T>::execRandom(1, (Nd4jPointer) this->rng, input, shapeInfo, extras);
+
+    delete[] extras;
 }
 
 

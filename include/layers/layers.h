@@ -11,6 +11,7 @@
 #define ND4J_STATUS_BAD_RANK   3
 #define ND4J_STATUS_BAD_PARAMS 4
 #define ND4J_STATUS_BAD_OUTPUT 5
+#define ND4J_STATUS_BAD_RNG 6
 
 
 namespace nd4j {
@@ -39,15 +40,15 @@ template <typename T> class INativeLayer {
         Nd4jIndex allocated;            // memory amount which is already used from workspace, more probably it would be just 0
         Nd4jIndex length;               // memory amount which is still available from workspace, (allocated + length) = total size of workspace
         void *workspace;                // if you are going to use additional memory, take it from workspace
-        
+
+        nd4j::random::RandomBuffer *rng;    // rng helper
+
         bool dropOut;                   // corresponds to dropout applying
         bool dropConnect;               // ???
         
         T pDropOut;                     // dropout probabilities (if used)
         T pDropConnect;                 // dropconnect probabilities (if used)
                 
-        int aNum;                       // activation function number (identity as default)
-
         // default constructor, sets all pointers to be empty
         INativeLayer();
         
@@ -99,7 +100,7 @@ template <typename T> class INativeLayer {
 
         // We have some options to be configured in layer: dropout, dropconnect, lr, etc 
         // This method should handle that. Maybe map (key-value), or something like that?           
-        int configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect);
+        int configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect, Nd4jPointer rngPointer);
 
         // This inline method allows to specify input data for layer
         // this output will be either activation of this layer, or error from next layer        
@@ -158,8 +159,8 @@ template <typename T> INativeLayer<T>::INativeLayer() {
     dropOut = false;                   
     dropConnect = false;                       
     pDropOut = 0.;   
-    pDropConnect = 0.;              
-    aNum = 0;
+    pDropConnect = 0.;
+    rng = nullptr;
 }
 
 template <typename T> void INativeLayer<T>::gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, T alpha, T beta) {
@@ -279,12 +280,19 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
 // We have some options to be configured in layer: dropout, dropconnect, lr, etc 
 // This method should handle that. Maybe map (key-value), or something like that?           
-template <typename T> int INativeLayer<T>::configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect) {
+template <typename T> int INativeLayer<T>::configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect, Nd4jPointer ptrRng) {
+
+    if (ptrRng != nullptr)
+        this->rng = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRng);
+
     this->pDropOut = pDropOut > (T) 0.0f ? pDropOut : (T) 0.0f;
     this->pDropConnect = pDropConnect > (T) 0.0f ? pDropConnect : (T) 0.0f;
 
     this->dropOut = this->pDropOut > (T) 0.0f;
     this->dropConnect = this->pDropConnect > (T) 0.0f;
+
+    if ((this->dropOut || this->dropConnect) && this->rng == nullptr)
+        return ND4J_STATUS_BAD_RNG;
 
     this->input = input;
     this->inputShapeInfo = inputShapeInfo;
