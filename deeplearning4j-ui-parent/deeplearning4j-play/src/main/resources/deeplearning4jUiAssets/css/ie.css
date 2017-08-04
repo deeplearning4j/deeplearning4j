@@ -1,0 +1,107 @@
+.navbar-inner a i {
+	margin-top: 4px;
+}
+
+.box-header h2 i {
+	margin-top: 1px;
+}
+
+.todo-actions i {
+	margin: 2px 5px 0px 5px;	
+}
+
+.message .header i {
+	margin-top: 3px;
+}
+
+.container-fluid-full {
+	overflow: hidden;
+	position: relative;
+	height: 100%;
+}
+
+#content {
+	width: 85.578%;
+	padding: 28px;
+	margin: 0px 0px;
+	margin-left: 14.422% !important;
+}
+	
+#sidebar-left {
+	background: #3D3D3D;
+	margin-left: 0px !important;
+	position: absolute;
+	height: 100%;
+}
+
+hr {
+	height: 2px;
+	border: none;
+	background: #f9f9f9;
+}
+
+.dark {
+	right: -12px;	
+}
+
+footer {
+	margin: 0px 0px 0px 0px;
+	padding: 10px 20px;
+}
+
+.hideInIE8 {
+	display: none;
+}
+
+.task .time .date {
+	font-size: 14px;
+	margin-bottom: 5px;	
+}
+
+.statbox .footer {
+	background:none;
+	-ms-filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#19FFFFFF,endColorstr=#19FFFFFF);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#19FFFFFF,endColorstr=#19FFFFFF);
+	zoom: 1;
+}
+
+.statbox .footer:hover {
+	background:none;
+	-ms-filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#33FFFFFF,endColorstr=#33FFFFFF);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#33FFFFFF,endColorstr=#33FFFFFF);
+	zoom: 1;
+}
+
+.sidebar-nav > ul > li > ul {
+	background:none;
+	-ms-filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#3F000000,endColorstr=#3F000000);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#3F000000,endColorstr=#3F000000);
+	zoom: 1;
+}
+
+.verticalChart .singleBar .bar .value span{
+	color: #000;
+}
+
+.verticalChart .singleBar .bar {
+	background:none;
+	-ms-filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#33FFFFFF,endColorstr=#33FFFFFF);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#33FFFFFF,endColorstr=#33FFFFFF);
+	zoom: 1;
+}
+
+ul.chat.metro li .message {
+	background:none;
+	-ms-filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#44000000,endColorstr=#44000000);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#44000000,endColorstr=#44000000);
+	zoom: 1;
+	border: 0px;
+}
+
+ul.chat.metro li.left .message .arrow {
+	left: -20px;
+}
+
+ul.chat.metro li.right .message .arrow {
+	right: -20px;
+}

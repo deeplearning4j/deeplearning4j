@@ -1,0 +1,17 @@
+train.model.layerInfoTable.title=레이어 정보
+train.model.activationsChart.title=레이어 액티베이션
+train.model.activationsChart.titleShort=액티베이션
+train.model.lrChart.title=파라미터 Learning Rates
+train.model.paramHistChart.title=레이어 파라미터 히스토그램
+train.model.updateHistChart.title=레이어 업데이트 히스토그램
+train.model.meanmag.btn.ratio=Ratio
+train.model.meanmag.btn.param=Param
+train.model.meanmag.btn.update=Updates
+train.model.layerinfotable.layerName=레이어 이름
+train.model.layerinfotable.layerType=레이어 타입
+train.model.layerinfotable.layerNIn=입력 크기
+train.model.layerinfotable.layerSize=레이어 크기
+train.model.layerinfotable.layerNParams=# 파라미터
+train.model.layerinfotable.layerActivationFn=액티베이션 함수
+train.model.layerinfotable.layerWeightInit=Weight 초기화
+train.model.layerinfotable.layerCnnKernel=커널 크기

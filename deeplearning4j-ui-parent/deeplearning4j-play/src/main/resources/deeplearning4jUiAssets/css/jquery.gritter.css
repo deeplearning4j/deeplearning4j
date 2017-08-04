@@ -1,0 +1,112 @@
+/* the norm */
+#gritter-notice-wrapper {
+	position:fixed;
+	top:20px;
+	right:20px;
+	width:301px;
+	z-index:9999;
+}
+
+#gritter-notice-wrapper.top-left {
+    left: 20px;
+    right: auto;
+}
+
+#gritter-notice-wrapper.bottom-right {
+    top: auto;
+    left: auto;
+    bottom: 20px;
+    right: 20px;
+}
+
+#gritter-notice-wrapper.bottom-left {
+    top: auto;
+    right: auto;
+    bottom: 20px;
+    left: 20px;
+}
+
+.gritter-item-wrapper {
+	position:relative;
+	margin:0 0 10px 0;
+}
+
+.gritter-item {
+	background-color: rgba(0,0,0,0.8);
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#cc000000', endColorstr='#cc000000',GradientType=0 ); /* IE6-8 */
+	color:#fff;
+	padding:15px;
+	font-size: 11px;
+	-webkit-border-radius: 4px !important;
+       -moz-border-radius: 4px !important;
+	        border-radius: 4px !important;
+	-webkit-box-shadow: 0px 1px 1px rgba(0,0,0,0.25);
+       -moz-box-shadow: 0px 1px 1px rgba(0,0,0,0.25);
+	       	box-shadow: 0px 1px 1px rgba(0,0,0,0.25);
+}
+
+.hover .gritter-item {}
+
+.gritter-item p {
+	padding:0;
+	margin:0;
+	word-wrap:break-word;
+}
+
+.gritter-close {
+	display:none;
+	position:absolute;
+	top:5px;
+	right:5px;
+	cursor:pointer;
+	width:12px;
+	height:12px;
+	background: url(../img/close-button-white.png);
+	opacity: .6;
+  
+}
+
+.gritter-title {
+	font-size:14px;
+	font-weight:bold;
+	padding:0 0 7px 0;
+	display:block;
+	text-shadow:1px 1px 0 #000; /* Not supported by IE :( */
+}
+
+.gritter-image {
+	width:48px;
+	height:48px;
+	float:left;
+	margin: -5px 5px 5px -5px;
+}
+
+.gritter-with-image,
+.gritter-without-image {
+	padding:0;
+}
+
+.gritter-with-image {
+	width:220px;
+	float:right;
+}
+
+/* for the light (white) version of the gritter notice */
+.gritter-light .gritter-item {
+	background-color: rgba(255,255,255,0.8);
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ccFFFFFF', endColorstr='#ccFFFFFF',GradientType=0 ); /* IE6-8 */
+    color: #646464 !important;
+	-webkit-box-shadow: 0px 1px 1px rgba(0,0,0,0.25);
+       -moz-box-shadow: 0px 1px 1px rgba(0,0,0,0.25);
+         	box-shadow: 0px 1px 1px rgba(0,0,0,0.25);
+}
+
+.gritter-light .gritter-close {
+	background: url(../img/close-button.png);
+}
+
+
+.gritter-light .gritter-title {
+	color: #646464 !important;
+    text-shadow: none !important;
+}

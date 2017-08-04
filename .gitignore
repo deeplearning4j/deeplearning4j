@@ -1,16 +1,39 @@
+.DS_Store
+pom.xml.releaseBackup 
 target/
+<<<<<<< HEAD
 _site/
 application.home_IS_UNDEFINEiD
 README.md~
 *model.bin*
+=======
+dependency-reduced-pom.xml
+*.ser
+application.home_IS_UNDEFINEiD
+README.md~
+>>>>>>> master
 *.bin
+*.releaseBackup
 *.out
 *~
-.settings/
+.pydevproject
+release.properties
+.idea/
+*.iml
+*.prefs
+*.settings/*
+model-saver-*
+mnist-pretrain-dbn.bin-*
+deeplearning4j-scaleout/deeplearning4j-aws/src/main/java/org/deeplearning4j/aws/ec2/provision/Ec2CommandRunner.java.settings/
 *.log
 .project
 .classpath
+<<<<<<< HEAD
 _site/
 .idea/
 .idea/workspace.xml
 *.iml
+=======
+metastore_db
+*.ipynb*
+>>>>>>> master
