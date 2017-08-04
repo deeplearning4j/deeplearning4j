@@ -32,7 +32,7 @@ public class VersionCheck {
 
     private static final String DATAVEC_GROUPID = "org.datavec";
     private static final String DATAVEC_ARTIFACT = "datavec-api";
-    private static final String DATAVEC_CLASS = "org.datavec.api.versioncheck.DataVecApiVersionInfo";
+    private static final String DATAVEC_CLASS = "org.datavec.api.writable.DoubleWritable";
 
     private static final String ND4J_GROUPID = "org.nd4j";
 
@@ -69,6 +69,20 @@ public class VersionCheck {
             return;
         }
 
+        if(classExists(ND4J_JBLAS_CLASS)){
+            //nd4j-jblas is ancient and incompatible
+            log.error("Found incompatible/obsolete backend and version (nd4j-jblas) on classpath. ND4J is unlikely to"
+                    + " function correctly with nd4j-jblas on the classpath. JVM will now exit.");
+            System.exit(1);
+        }
+
+        if(classExists(CANOVA_CLASS)){
+            //Canova is ancient and likely to pull in incompatible dependencies
+            log.error("Found incompatible/obsolete library Canova on classpath. ND4J is unlikely to"
+                    + " function correctly with this library on the classpath. JVM will now exit.");
+            System.exit(1);
+        }
+
         List<VersionInfo> repos = getVersionInfos();
         Set<String> foundVersions = new HashSet<>();
         for(VersionInfo gpr : repos){
@@ -88,21 +102,6 @@ public class VersionCheck {
             log.warn("Incompatible versions (different version number) of DL4J, ND4J, RL4J, DataVec, Arbiter are unlikely to function correctly");
             log.info("Versions of artifacts found on classpath:");
             logVersionInfo();
-        }
-
-
-        if(classExists(ND4J_JBLAS_CLASS)){
-            //nd4j-jblas is ancient and incompatible
-            log.error("Found incompatible/obsolete backend and version (nd4j-jblas) on classpath. ND4J is unlikely to"
-                    + " function correctly with nd4j-jblas on the classpath. JVM will now exit.");
-            System.exit(1);
-        }
-
-        if(classExists(CANOVA_CLASS)){
-            //Canova is ancient and likely to pull in incompatible dependencies
-            log.error("Found incompatible/obsolete library Canova on classpath. ND4J is unlikely to"
-                    + " function correctly with this library on the classpath. JVM will now exit.");
-            System.exit(1);
         }
     }
 
