@@ -31,7 +31,7 @@ public class NearestNeighbor {
 
             if (add.size() != distances.size()) {
                 throw new IllegalStateException(
-                        String.format("add.size(%d) != distances.size(%d)",
+                        String.format("add.size == %d != %d == distances.size",
                                 add.size(), distances.size()));
             }
 

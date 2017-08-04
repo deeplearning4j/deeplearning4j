@@ -162,7 +162,7 @@ public class NearestNeighborsServer {
 
                 if (results.size() != distances.size()) {
                     return internalServerError(
-                            String.format("results.size(%d) != distances.size(%d)",
+                            String.format("results.size == %d != %d == distances.size",
                                     results.size(), distances.size()));
                 }
 
