@@ -53,15 +53,28 @@ public class JDBCRecordReader extends BaseRecordReader {
     public final static String TRIM_STRINGS = NAME_SPACE + ".trimStrings";
     public final static String JDBC_URL = NAME_SPACE + ".jdbcUrl";
     public final static String JDBC_DRIVER_CLASS_NAME = NAME_SPACE + ".jdbcDriverClassName";
-    public final static String JDBC_USERNAME = NAME_SPACE + "jdbcUsername";
-    public final static String JDBC_PASSWORD = NAME_SPACE + "jdbcPassword";
+    public final static String JDBC_USERNAME = NAME_SPACE + ".jdbcUsername";
+    public final static String JDBC_PASSWORD = NAME_SPACE + ".jdbcPassword";
 
+    /**
+     * Build a new JDBCRecordReader with a given query. After constructing the reader in this way, the initialize method
+     * must be called and provided with configuration values for the datasource initialization.
+     *
+     * @param query Query to execute and on which the reader will iterate.
+     */
     public JDBCRecordReader(String query) {
         this.query = query;
         this.metadataQuery = null;
         this.metadataIndices = null;
     }
 
+    /**
+     * Build a new JDBCRecordReader with a given query. If initialize is called with configuration values set for
+     * datasource initialization, the datasource provided to this constructor will be overriden.
+     *
+     * @param query Query to execute and on which the reader will iterate.
+     * @param dataSource Initialized DataSource to use for iteration
+     */
     public JDBCRecordReader(String query, DataSource dataSource) {
         this.query = query;
         this.dataSource = dataSource;
@@ -69,6 +82,15 @@ public class JDBCRecordReader extends BaseRecordReader {
         this.metadataIndices = null;
     }
 
+    /**
+     * Same as JDBCRecordReader(String query, DataSource dataSource) but also provides a query and column indices to use
+     * for saving metadata (see {@link #loadFromMetaData(RecordMetaData)})
+     *
+     * @param query Query to execute and on which the reader will iterate.
+     * @param dataSource Initialized DataSource to use for iteration.
+     * @param metadataQuery Query to execute when recovering a single record from metadata
+     * @param metadataIndices Column indices of which values will be saved in each record's metadata
+     */
     public JDBCRecordReader(String query, DataSource dataSource, String metadataQuery, int[] metadataIndices) {
         this.query = query;
         this.dataSource = dataSource;
@@ -76,6 +98,11 @@ public class JDBCRecordReader extends BaseRecordReader {
         this.metadataIndices = metadataIndices;
     }
 
+    /**
+     * Initialize all required jdbc elements and make the reader ready for iteration.
+     *
+     * @param split not handled yet, will be discarded
+     */
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
         if (dataSource == null) {
@@ -84,6 +111,22 @@ public class JDBCRecordReader extends BaseRecordReader {
         initializeJdbc();
     }
 
+    /**
+     * Initialize all required jdbc elements and make the reader ready for iteration.
+     *
+     * Possible configuration keys : <br /> - JDBCRecordReader.TRIM_STRINGS : Whether or not read strings should be
+     * trimmed before being returned. False by default <br />- JDBCRecordReader.JDBC_URL : Jdbc url to use for
+     * datastource configuration (see JDBCRecordReaderTest for examples) <br />- JDBCRecordReader.JDBC_DRIVER_CLASS_NAME
+     * : Driver class to use for datasource configuration <br />- JDBCRecordReader.JDBC_USERNAME && JDBC_PASSWORD :
+     * Username and password to use for datasource configuration<br /><br />
+     *
+     * Url and driver class name are not mandatory. If one of them is specified, the other must be specified as well. If
+     * they are set and there already is a DataSource set in the reader, it will be discarded and replaced with the
+     * newly created one.
+     *
+     * @param conf a configuration for initialization
+     * @param split not handled yet, will be discarded
+     */
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         this.setConf(conf);
@@ -98,7 +141,7 @@ public class JDBCRecordReader extends BaseRecordReader {
         }
         // Both set, initialiaze the datasource
         else if (jdbcUrl != null) {
-            // FIXME : find a way to include wildcard properties as third argument bellow
+            // FIXME : find a way to read wildcard properties from conf in order to fill the third argument bellow
             this.dataSource = new DriverDataSource(jdbcUrl, driverClassName, new Properties(), conf.get(JDBC_USERNAME),
                 conf.get(JDBC_PASSWORD));
             this.initializeJdbc();
@@ -171,6 +214,9 @@ public class JDBCRecordReader extends BaseRecordReader {
         throw new UnsupportedOperationException("JDBCRecordReader does not support reading from a DataInputStream");
     }
 
+    /**
+     * Get next record with metadata. See {@link #loadFromMetaData(RecordMetaData)} for details on metadata structure.
+     */
     @Override
     public Record nextRecord() {
         if (!iter.hasNext()) {
@@ -183,7 +229,7 @@ public class JDBCRecordReader extends BaseRecordReader {
         URI location;
         try {
             location = new URI(conn.getMetaData().getURL());
-        } catch (SQLException|URISyntaxException e) {
+        } catch (SQLException | URISyntaxException e) {
             throw new IllegalStateException("Could not get sql connection metadata", e);
         }
 
@@ -198,11 +244,29 @@ public class JDBCRecordReader extends BaseRecordReader {
         return new org.datavec.api.records.impl.Record(toWritable(next), rmd);
     }
 
+    /**
+     * Record metadata for this reader consist in two elements :<br />
+     *
+     * - a parametrized query used to retrieve one item<br />
+     *
+     * - a set a values to use to prepare the statement<br /><br />
+     *
+     * The parametrized query is passed at construction time and it should fit the main record's reader query. For
+     * instance, one could have to following reader query : "SELECT * FROM Items", and a corresponding metadata query
+     * could be "SELECT * FROM Items WHERE id = ?". For each record, the columns indicated in {@link #metadataIndices}
+     * will be stored. For instance, one could set metadataIndices = {0} so the value of the first column of each record
+     * is stored in the metadata.
+     *
+     * @param recordMetaData Metadata for the record that we want to load from
+     */
     @Override
     public Record loadFromMetaData(RecordMetaData recordMetaData) throws IOException {
         return loadFromMetaData(Collections.singletonList(recordMetaData)).get(0);
     }
 
+    /**
+     * @see #loadFromMetaData(RecordMetaData)
+     */
     @Override
     public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         List<Record> ret = new ArrayList<>();
@@ -216,7 +280,8 @@ public class JDBCRecordReader extends BaseRecordReader {
             String request = ((RecordMetaDataJdbc) rmd).getRequest();
 
             try {
-                Object[] item = runner.query(this.conn, request, new ArrayHandler(), ((RecordMetaDataJdbc) rmd).getParams().toArray());
+                Object[] item = runner
+                    .query(this.conn, request, new ArrayHandler(), ((RecordMetaDataJdbc) rmd).getParams().toArray());
                 ret.add(new org.datavec.api.records.impl.Record(toWritable(item), rmd));
             } catch (SQLException e) {
                 throw new IllegalArgumentException("Could not execute statement \"" + request + "\"", e);
@@ -225,6 +290,9 @@ public class JDBCRecordReader extends BaseRecordReader {
         return ret;
     }
 
+    /**
+     * Expected to be called by the user. JDBC connections will not be closed automatically.
+     */
     @Override
     public void close() throws IOException {
         closeJdbc();
