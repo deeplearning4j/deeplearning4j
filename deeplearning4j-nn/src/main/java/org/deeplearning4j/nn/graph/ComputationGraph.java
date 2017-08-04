@@ -130,7 +130,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
                     .policyLearning(LearningPolicy.OVER_TIME).build();
 
-    protected ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();
+    protected transient ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();
 
     /**
      * All GraphVertex objects in the network.
