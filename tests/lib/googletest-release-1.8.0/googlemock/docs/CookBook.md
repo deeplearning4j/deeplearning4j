@@ -18,8 +18,9 @@ You must always put a mock method definition (`MOCK_METHOD*`) in a
 `public:` section of the mock class, regardless of the method being
 mocked being `public`, `protected`, or `private` in the base class.
 This allows `ON_CALL` and `EXPECT_CALL` to reference the mock function
-from outside of the mock class.  (Yes, C++ allows a subclass to change
-the access level of a virtual function in the base class.)  Example:
+from outside of the mock class.  (Yes, C++ allows a subclass to specify
+a different access level than the base class on a virtual function.)
+Example:
 
 ```
 class Foo {
@@ -218,7 +219,7 @@ per-function syntactic overhead will be much lower.
 
 If you are concerned about the performance overhead incurred by
 virtual functions, and profiling confirms your concern, you can
-combine this with the recipe for [mocking non-virtual methods](#Mocking_Nonvirtual_Methods.md).
+combine this with the recipe for [mocking non-virtual methods](#mocking-nonvirtual-methods).
 
 ## The Nice, the Strict, and the Naggy ##
 
@@ -294,7 +295,7 @@ There are some caveats though (I don't like them just as much as the
 next guy, but sadly they are side effects of C++'s limitations):
 
   1. `NiceMock<MockFoo>` and `StrictMock<MockFoo>` only work for mock methods defined using the `MOCK_METHOD*` family of macros **directly** in the `MockFoo` class. If a mock method is defined in a **base class** of `MockFoo`, the "nice" or "strict" modifier may not affect it, depending on the compiler. In particular, nesting `NiceMock` and `StrictMock` (e.g. `NiceMock<StrictMock<MockFoo> >`) is **not** supported.
-  1. The constructors of the base mock (`MockFoo`) cannot have arguments passed by non-const reference, which happens to be banned by the [Google C++ style guide](http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml).
+  1. The constructors of the base mock (`MockFoo`) cannot have arguments passed by non-const reference, which happens to be banned by the [Google C++ style guide](https://google.github.io/styleguide/cppguide.html).
   1. During the constructor or destructor of `MockFoo`, the mock object is _not_ nice or strict.  This may cause surprises if the constructor or destructor calls a mock method on `this` object. (This behavior, however, is consistent with C++'s general rule: if a constructor or destructor calls a virtual method of `this` object, that method is treated as non-virtual.  In other words, to the base class's constructor or destructor, `this` object behaves like an instance of the base class, not the derived class.  This rule is required for safety.  Otherwise a base constructor may use members of a derived class before they are initialized, or a base destructor may use members of a derived class after they have been destroyed.)
 
 Finally, you should be **very cautious** about when to use naggy or strict mocks, as they tend to make tests more brittle and harder to maintain. When you refactor your code without changing its externally visible behavior, ideally you should't need to update any tests. If your code interacts with a naggy mock, however, you may start to get spammed with warnings as the result of your change. Worse, if your code interacts with a strict mock, your tests may start to fail and you'll be forced to fix them. Our general recommendation is to use nice mocks (not yet the default) most of the time, use naggy mocks (the current default) when developing or debugging tests, and use strict mocks only as the last resort.
@@ -905,7 +906,7 @@ Matches(AllOf(Ge(0), Le(100), Ne(50)))
 
 Since matchers are basically predicates that also know how to describe
 themselves, there is a way to take advantage of them in
-[Google Test](../../googletest) assertions. It's
+[Google Test](../../googletest/) assertions. It's
 called `ASSERT_THAT` and `EXPECT_THAT`:
 
 ```
@@ -1029,9 +1030,10 @@ a value that satisfies matcher `m`.
 
 For example:
 
-> | `Field(&Foo::number, Ge(3))` | Matches `x` where `x.number >= 3`. |
+| Expression                   | Description                        |
 |:-----------------------------|:-----------------------------------|
-> | `Property(&Foo::name, StartsWith("John "))` | Matches `x` where `x.name()` starts with `"John "`. |
+| `Field(&Foo::number, Ge(3))` | Matches `x` where `x.number >= 3`. |
+| `Property(&Foo::name, StartsWith("John "))` | Matches `x` where `x.name()` starts with `"John "`. |
 
 Note that in `Property(&Foo::baz, ...)`, method `baz()` must take no
 argument and be declared as `const`.
@@ -1919,9 +1921,9 @@ using ::testing::_;
   // second argument DoThis() receives.
 ```
 
-Arghh, you need to refer to a mock function argument but C++ has no
-lambda (yet), so you have to define your own action. :-( Or do you
-really?
+Arghh, you need to refer to a mock function argument but your version
+of C++ has no lambdas, so you have to define your own action. :-(
+Or do you really?
 
 Well, Google Mock has an action to solve _exactly_ this problem:
 
@@ -2365,7 +2367,7 @@ Now there’s one topic we haven’t covered: how do you set expectations on `Sh
   // When one calls ShareBuzz() on the MockBuzzer like this, the call is
   // forwarded to DoShareBuzz(), which is mocked.  Therefore this statement
   // will trigger the above EXPECT_CALL.
-  mock_buzzer_.ShareBuzz(MakeUnique&lt;Buzz&gt;(AccessLevel::kInternal),
+  mock_buzzer_.ShareBuzz(MakeUnique<Buzz>(AccessLevel::kInternal),
                          ::base::Now());
 ```
 
@@ -2404,7 +2406,7 @@ Now, the mock `DoShareBuzz()` method is free to save the buzz argument for later
 ```
   std::unique_ptr<Buzz> intercepted_buzz;
   EXPECT_CALL(mock_buzzer_, DoShareBuzz(NotNull(), _))
-      .WillOnce(Invoke([&amp;intercepted_buzz](Buzz* buzz, Time timestamp) {
+      .WillOnce(Invoke([&intercepted_buzz](Buzz* buzz, Time timestamp) {
         // Save buzz in intercepted_buzz for analysis later.
         intercepted_buzz.reset(buzz);
         return false;
@@ -2482,12 +2484,12 @@ MockFoo::~MockFoo() {}
 
 ## Forcing a Verification ##
 
-When it's being destoyed, your friendly mock object will automatically
+When it's being destroyed, your friendly mock object will automatically
 verify that all expectations on it have been satisfied, and will
-generate [Google Test](../../googletest) failures
+generate [Google Test](../../googletest/) failures
 if not. This is convenient as it leaves you with one less thing to
 worry about. That is, unless you are not sure if your mock object will
-be destoyed.
+be destroyed.
 
 How could it be that your mock object won't eventually be destroyed?
 Well, it might be created on the heap and owned by the code you are
@@ -2803,7 +2805,7 @@ obvious that the third `EXPECT_CALL` is written wrong. Case solved.
 ## Running Tests in Emacs ##
 
 If you build and run your tests in Emacs, the source file locations of
-Google Mock and [Google Test](../../googletest)
+Google Mock and [Google Test](../../googletest/)
 errors will be highlighted. Just press `<Enter>` on one of them and
 you'll be taken to the offending line. Or, you can just type `C-x ``
 to jump to the next error.
@@ -3347,6 +3349,7 @@ For example, when using an `ACTION` as a stub action for mock function:
 int DoSomething(bool flag, int* ptr);
 ```
 we have:
+
 | **Pre-defined Symbol** | **Is Bound To** |
 |:-----------------------|:----------------|
 | `arg0`                 | the value of `flag` |
@@ -3508,6 +3511,7 @@ is asked to infer the type of `x`?
 If you are writing a function that returns an `ACTION` object, you'll
 need to know its type.  The type depends on the macro used to define
 the action and the parameter types.  The rule is relatively simple:
+
 | **Given Definition** | **Expression** | **Has Type** |
 |:---------------------|:---------------|:-------------|
 | `ACTION(Foo)`        | `Foo()`        | `FooAction`  |
@@ -3515,7 +3519,7 @@ the action and the parameter types.  The rule is relatively simple:
 | `ACTION_P(Bar, param)` | `Bar(int_value)` | `BarActionP<int>` |
 | `ACTION_TEMPLATE(Bar, HAS_m_TEMPLATE_PARAMS(...), AND_1_VALUE_PARAMS(p1))` | `Bar<t1, ..., t_m>(int_value)` | `FooActionP<t1, ..., t_m, int>` |
 | `ACTION_P2(Baz, p1, p2)` | `Baz(bool_value, int_value)` | `BazActionP2<bool, int>` |
-| `ACTION_TEMPLATE(Baz, HAS_m_TEMPLATE_PARAMS(...), AND_2_VALUE_PARAMS(p1, p2))` | `Baz<t1, ..., t_m>(bool_value, int_value)` | `FooActionP2<t1, ..., t_m, bool, int>` |
+| `ACTION_TEMPLATE(Baz, HAS_m_TEMPLATE_PARAMS(...), AND_2_VALUE_PARAMS(p1, p2))`| `Baz<t1, ..., t_m>(bool_value, int_value)` | `FooActionP2<t1, ..., t_m, bool, int>` |
 | ...                  | ...            | ...          |
 
 Note that we have to pick different suffixes (`Action`, `ActionP`,
