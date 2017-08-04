@@ -1,6 +1,7 @@
 package org.nd4j.versioncheck;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -13,6 +14,7 @@ import java.util.Properties;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Builder
 public class GitRepositoryState {
 
     private static final int SUFFIX_LENGTH = "-git.properties".length();
@@ -43,10 +45,16 @@ public class GitRepositoryState {
     private String buildHost;               // =${git.build.host}
     private String buildVersion;             // =${git.build.version}
 
+    public GitRepositoryState(String groupId, String artifactId, String buildVersion){
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.buildVersion = buildVersion;
+    }
+
     public GitRepositoryState(String propertiesFilePath) throws IOException {
         //First: parse the properties file path, which is in format <groupid>-<artifactId>-git.properties
-        int idxOf = propertiesFilePath.indexOf('/');
-        idxOf = Math.max(idxOf, propertiesFilePath.indexOf('\\'));
+        int idxOf = propertiesFilePath.lastIndexOf('/');
+        idxOf = Math.max(idxOf, propertiesFilePath.lastIndexOf('\\'));
         String filename;
         if(idxOf <= 0){
             filename = propertiesFilePath;
