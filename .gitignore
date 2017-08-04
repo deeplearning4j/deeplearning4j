@@ -18,3 +18,4 @@ blasbuild
 testbuild
 .idea/
 libnd4jtests
+runtests
