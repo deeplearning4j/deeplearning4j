@@ -252,3 +252,4 @@ lib/
 nd4j-shade/jackson/dependency-reduced-pom.xml
 !nd4j-backends/nd4j-api-parent/nd4j-api/src/main/resources/bin
 nd4j-backends/nd4j-backend-impls/nd4j-native/src/test/resources/writeNumpy.csv
+*-git.properties
