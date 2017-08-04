@@ -112,7 +112,7 @@ public class FileSplit extends BaseInputSplit {
             }
         } else {
             // Lists one file
-            String toString = rootDir.toURI().toString(); //URI.getPath(), getRawPath() etc don't have file:/ prefix necessary for conversion back to URI
+            String toString = URIUtil.fileToURI(rootDir).toString(); //URI.getPath(), getRawPath() etc don't have file:/ prefix necessary for conversion back to URI
             uriStrings = Collections.singletonList(toString);
             length += rootDir.length();
         }

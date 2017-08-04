@@ -107,7 +107,7 @@ public class RegexRecordReaderTest {
     public void testRegexSequenceRecordReader() throws Exception {
         String regex = "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (\\d+) ([A-Z]+) (.*)";
 
-        String path = new ClassPathResource("/logtestdata/logtestfile0.txt").getFile().getAbsolutePath();
+        String path = new ClassPathResource("/logtestdata/logtestfile0.txt").getFile().toURI().toString();
         path = path.replace("0", "%d");
 
         InputSplit is = new NumberedFileInputSplit(path, 0, 1);
@@ -147,9 +147,8 @@ public class RegexRecordReaderTest {
     public void testRegexSequenceRecordReaderMeta() throws Exception {
         String regex = "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (\\d+) ([A-Z]+) (.*)";
 
-        String path = new ClassPathResource("/logtestdata/logtestfile0.txt").getFile().getAbsolutePath();
+        String path = new ClassPathResource("/logtestdata/logtestfile0.txt").getFile().toURI().toString();
         path = path.replace("0", "%d");
-
         InputSplit is = new NumberedFileInputSplit(path, 0, 1);
 
         SequenceRecordReader rr = new RegexSequenceRecordReader(regex, 1);

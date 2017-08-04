@@ -159,7 +159,7 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
 
     @Override
     public SequenceRecord nextSequence() {
-        File next = iter.next();
+        File next = this.nextFile();
 
         String fileContents;
         try {
