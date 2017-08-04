@@ -74,7 +74,7 @@ public class VersionCheck {
         for(VersionInfo gpr : repos){
             String g = gpr.getGroupId();
             if(g != null && GROUPIDS_TO_CHECK.contains(g)){
-                foundVersions.add(g);
+                foundVersions.add(gpr.getBuildVersion());
             }
         }
 
