@@ -95,7 +95,11 @@ TEST_F(DenseLayerInputTest, JointConfiguration1) {
 
     float *output = new float[100];
 
-    int result = layer->configureLayer(output, inputShape2D, output, outputShape2D, 0.5f, 0.1f);
+    int result = layer->configureLayer(output, inputShape2D, output, outputShape2D, 0.5f, 0.1f, nullptr);
+
+    ASSERT_EQ(ND4J_STATUS_BAD_RNG, result);
+
+    result = layer->configureLayer(output, inputShape2D, output, outputShape2D, 0.5f, 0.1f, output);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
@@ -121,7 +125,7 @@ TEST_F(DenseLayerInputTest, ParamsTest1) {
 
     ASSERT_EQ(ND4J_STATUS_OK,result);
 
-    result = layer->configureLayer(stub, batchInputShapeGood, stub, batchOutputShapeGood, 0.0f, 0.0f);
+    result = layer->configureLayer(stub, batchInputShapeGood, stub, batchOutputShapeGood, 0.0f, 0.0f, nullptr);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 }
@@ -136,7 +140,7 @@ TEST_F(DenseLayerInputTest, ParamsTest2) {
 
     ASSERT_EQ(ND4J_STATUS_BAD_SHAPE, result);
 
-    result = layer->configureLayer(stub, inputShape2D, stub, outputShape2D, 0.0f, 0.0f);
+    result = layer->configureLayer(stub, inputShape2D, stub, outputShape2D, 0.0f, 0.0f, nullptr);
 
     ASSERT_EQ(ND4J_STATUS_BAD_INPUT, result);
 }
@@ -150,11 +154,11 @@ TEST_F(DenseLayerInputTest, ParamsTest3) {
 
     ASSERT_EQ(ND4J_STATUS_OK,result);
 
-    result = layer->configureLayer(stub, batchInputShapeBad, stub, batchOutputShapeGood, 0.0f, 0.0f);
+    result = layer->configureLayer(stub, batchInputShapeBad, stub, batchOutputShapeGood, 0.0f, 0.0f, nullptr);
 
     ASSERT_EQ(ND4J_STATUS_BAD_INPUT, result);
 
-    result = layer->configureLayer(stub, batchInputShapeGood, stub, batchOutputShapeBad, 0.0f, 0.0f);
+    result = layer->configureLayer(stub, batchInputShapeGood, stub, batchOutputShapeBad, 0.0f, 0.0f, nullptr);
 
     ASSERT_EQ(ND4J_STATUS_BAD_OUTPUT, result);
 }
