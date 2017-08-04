@@ -68,5 +68,5 @@ elseif(MSYS)
 endif()
 
 
-add_executable(runtests DenseLayerTests.cpp)
+add_executable(runtests AllTests.cpp)
 target_link_libraries(runtests nd4jcpu  gtest gtest_main)

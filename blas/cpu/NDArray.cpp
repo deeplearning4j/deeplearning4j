@@ -124,6 +124,12 @@ template <typename T> void NDArray<T>::putScalar(int i, int k, int j, T value) {
 }
 
 
+template <typename T> void NDArray<T>::assign(T value) {
+
+    // just fire scalar
+    NativeOpExcutioner<T>::execScalar(13, this->buffer, this->shapeInfo, this->buffer, this->shapeInfo, value, nullptr);
+}
+
 template <typename T> void NDArray<T>::assign(NDArray<T> *other) {
     if (other->lengthOf() != lengthOf())
         throw std::invalid_argument("Lengths of arrays are mismatched");

@@ -55,7 +55,19 @@ template <typename T> class NDArray
 
     NDArray<T>* dup(char newOrder);
 
+    /**
+     * This method assigns values of given NDArray to this one, wrt order
+     *
+     * @param other
+     */
     void assign(NDArray<T> *other);
+
+    /**
+     * This method assigns given value to all elements in this NDArray
+     *
+     * @param value
+     */
+    void assign(T value);
 
     /**
      * This method returns true if two arrays are equal, with custom Eps value, false otherwise
@@ -66,6 +78,13 @@ template <typename T> class NDArray
      */
     bool equalsTo(NDArray<T> *other, T eps);
 
+    /**
+     * This method returns true if two arrays are equal, with default Eps value of 1e-5, false otherwise
+     *
+     * @param other
+     * @param eps
+     * @return
+     */
     bool equalsTo(NDArray<T> *other) {
         return equalsTo(other, (T) 1e-5f);
     }
