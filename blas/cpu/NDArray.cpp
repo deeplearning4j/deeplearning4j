@@ -12,11 +12,13 @@ template <typename T> NDArray<T>::NDArray(int rows, int columns, char order){
 
     buffer = new T[rows * columns];
     int *shape = new int[2]{rows, columns};
-    shapeInfo = shape::shapeBuffer(2, shape);
+
 
     if (order == 'f') {
+        shapeInfo = shape::shapeBufferFortran(2, shape);
         shapeInfo[7] = 102;
     } else {
+        shapeInfo = shape::shapeBuffer(2, shape);
         shapeInfo[7] = 99;
     }
 
@@ -71,7 +73,6 @@ template <typename T> void NDArray<T>::putScalar(int i, int k, T value) {
 
     int coords[2] = {i, k};
     Nd4jIndex xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), coords, this->rankOf());
-
     putScalar(xOffset, value);
 }
 

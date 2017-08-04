@@ -230,11 +230,23 @@ TEST_F(DenseLayerInputTest, SGemmTest1) {
         }
     }
 
+    printf("arrayA: [");
+    for (int i = 0; i < arrayA->lengthOf(); i++) {
+        printf("%f, ", arrayA->getScalar(i));
+    }
+    printf("]\n");
+
     for (int i = 0; i < arrayB->rows(); i++) {
         for (int k = 0; k < arrayB->columns(); k++) {
             arrayB->putScalar(i, k, (float) (10.0 + i));
         }
     }
+
+    printf("arrayB: [");
+    for (int i = 0; i < arrayB->lengthOf(); i++) {
+        printf("%f, ", arrayB->getScalar(i));
+    }
+    printf("]\n");
 
     nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
 

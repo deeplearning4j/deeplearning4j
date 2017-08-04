@@ -79,7 +79,7 @@ template<typename T, typename AF> void DenseLayer<T,AF>::backPropagate() {
 template<typename T, typename AF>
 int DenseLayer<T,AF>::validateParameters() {
     if (this->paramsShapeInfo == nullptr || this->biasShapeInfo == nullptr || this->params == nullptr || this->bias == nullptr) {
-        printf("Got nulls here\n");
+//        printf("Got nulls here\n");
         return ND4J_STATUS_BAD_PARAMS;
     }
 
@@ -88,7 +88,7 @@ int DenseLayer<T,AF>::validateParameters() {
 
     // rank of params/bias has to be 2 here
     if (wRank != 2 || bRank != 2) {
-        printf("Non 2\n");
+//        printf("Non 2\n");
         return ND4J_STATUS_BAD_RANK;
     }
 
@@ -99,7 +99,7 @@ int DenseLayer<T,AF>::validateParameters() {
 
     // number of outputs must be equal to biasLength
     if (wShape[1] != biasLength) {
-        printf("Bias doesn't match: %i vs %i\n", wShape[1], biasLength);
+//        printf("Bias doesn't match: %i vs %i\n", wShape[1], biasLength);
         return ND4J_STATUS_BAD_SHAPE;
     }
 
