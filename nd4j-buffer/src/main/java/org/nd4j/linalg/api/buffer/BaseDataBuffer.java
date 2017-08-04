@@ -1070,6 +1070,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(i >= length){
             length++;
         }
+        if(i == length){
+            length++;
+        }
     }
 
     @Override
@@ -1083,6 +1086,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else {
             ((FloatIndexer) indexer).put(offset() + i, (float) element);
         }
+        if(i == length){
+            length++;
+        }
     }
 
     @Override
@@ -1093,6 +1099,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             ((IntIndexer) indexer).put(offset() + i, element);
         } else {
             ((FloatIndexer) indexer).put(offset() + i, element);
+        }
+        if(i == length){
+            length++;
         }
     }
 

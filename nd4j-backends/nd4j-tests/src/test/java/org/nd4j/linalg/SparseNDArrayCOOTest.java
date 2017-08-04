@@ -216,8 +216,7 @@ public class SparseNDArrayCOOTest {
         int[][] indices  = new int[][]{{0, 0, 2}, {0, 1, 1}, {1,0, 0}, {1, 0, 1}, {1, 1, 2},
                 {2, 0, 1}, {2, 1, 2}, {3, 0, 2}, {3, 1, 0}};
         INDArray array = Nd4j.createSparseCOO(values, indices, shape);
-        //TODO FIXME : Issue in shapeOffsetResolution, lower bound is not taken into account
-
+        
         BaseSparseNDArrayCOO newArray = (BaseSparseNDArrayCOO) array.get(
                 NDArrayIndex.interval(1, 4),
                 new SpecifiedIndex(new int[]{0}),
@@ -226,21 +225,6 @@ public class SparseNDArrayCOOTest {
         assertArrayEquals(new double[]{3, 8}, newArray.getIncludedValues().asDouble(), 1e-1);
         assertArrayEquals(new int[]{0, 0, 2, 1}, newArray.getIncludedIndices().asInt());
     }
-
-    /*
-    @Test
-    public void rdmTestWithDenseArray(){
-        INDArray arr = Nd4j.rand(new int[]{4, 2, 3});
-        System.out.println(arr.toString());
-        INDArray v = arr.get(NDArrayIndex.interval(1, 4), NDArrayIndex.point(1), NDArrayIndex.all());
-        System.out.println("v ");
-        System.out.println(v.toString());
-        INDArray vv = v.get(NDArrayIndex.all(), NDArrayIndex.point(2));
-        System.out.println("vv");
-        System.out.println(vv.toString());
-        System.out.println(vv.shape()[0] + " "+ vv.shape()[1]);
-    }
-    */
 
     @Test
     public void specifiedIndexWithDenseArray(){

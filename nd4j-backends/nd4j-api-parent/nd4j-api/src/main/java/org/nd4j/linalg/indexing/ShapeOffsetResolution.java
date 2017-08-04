@@ -25,7 +25,7 @@ import java.util.List;
  */
 @Slf4j
 @Data
-public class    ShapeOffsetResolution implements Serializable {
+public class ShapeOffsetResolution implements Serializable {
 
     private INDArray arr;
 
