@@ -196,11 +196,11 @@ template<typename T, typename AF> int DenseLayer<T,AF>::feedForward() {
     if (shape::isRowVector(this->inputShapeInfo)) {
         // gemv here input * W
 
-        printf("GEMV path\n");
+        //printf("GEMV path\n");
     } else {
         // gemm here, input * W
         // these values should be set appropriately
-        printf("GEMM path\n");
+        //printf("GEMM path\n");
 
         this->gemmHelper(this->input, this->inputShapeInfo, this->params, this->paramsShapeInfo, this->output, this->outputShapeInfo, (T) 1.0f, (T) 0.0f);
 

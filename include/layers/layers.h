@@ -200,7 +200,7 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
     }
 
     if (aOrder == bOrder) {
-        printf("Going dRoute here\n");
+        //printf("Going dRoute here\n");
 
         if (aOrder == 'c') {
             // we might need to transpose matrices,     
@@ -225,8 +225,7 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
         transA = 'N';
         transB = 'N';
     } else {
-        // TODO: same dup('f) might be needed here, but obviously only one of operands
-        printf("Going tRoute here\n");
+        //printf("Going tRoute here\n");
         if (aOrder == 'c') {
             // dup(F) A here
             _A = tA->dup('f');

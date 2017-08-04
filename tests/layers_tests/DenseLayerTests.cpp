@@ -177,30 +177,31 @@ TEST_F(DenseLayerInputTest, SGemmTest1) {
         }
     }
 
+    /*
     printf("arrayA: [");
     for (int i = 0; i < arrayA->lengthOf(); i++) {
         printf("%f, ", arrayA->getScalar(i));
     }
     printf("]\n");
-
+*/
     for (int i = 0; i < arrayB->rows(); i++) {
         for (int k = 0; k < arrayB->columns(); k++) {
             arrayB->putScalar(i, k, (float) (10.0 + i));
         }
     }
-
+/*
     printf("arrayB: [");
     for (int i = 0; i < arrayB->lengthOf(); i++) {
         printf("%f, ", arrayB->getScalar(i));
     }
     printf("]\n");
-
+*/
     nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
 
     layer->gemmHelper(arrayA, arrayB, arrayC, 1.0f, 0.0f);
 
     for (int i = 0; i < arrayC->lengthOf(); i++) {
-        printf("%f\n", arrayC->getScalar(i));
+//        printf("%f\n", arrayC->getScalar(i));
         ASSERT_EQ(exp[i], arrayC->getScalar(i));
     }
 }
@@ -217,31 +218,33 @@ TEST_F(DenseLayerInputTest, SGemmTest2) {
             arrayA->putScalar(i, k, (float) i);
         }
     }
-
+/*
     printf("arrayA: [");
     for (int i = 0; i < arrayA->lengthOf(); i++) {
         printf("%f, ", arrayA->getScalar(i));
     }
     printf("]\n");
+*/
+
 
     for (int i = 0; i < arrayB->rows(); i++) {
         for (int k = 0; k < arrayB->columns(); k++) {
             arrayB->putScalar(i, k, (float) (10.0 + i));
         }
     }
-
+/*
     printf("arrayB: [");
     for (int i = 0; i < arrayB->lengthOf(); i++) {
         printf("%f, ", arrayB->getScalar(i));
     }
     printf("]\n");
-
+*/
     nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
 
     layer->gemmHelper(arrayA, arrayB, arrayC, 1.0f, 0.0f);
 
     for (int i = 0; i < arrayC->lengthOf(); i++) {
-        printf("%f\n", arrayC->getScalar(i));
+//        printf("%f\n", arrayC->getScalar(i));
         ASSERT_EQ(exp[i], arrayC->getScalar(i));
     }
 }
@@ -258,31 +261,32 @@ TEST_F(DenseLayerInputTest, SGemmTest3) {
             arrayA->putScalar(i, k, (float) i);
         }
     }
-
+/*
     printf("arrayA: [");
     for (int i = 0; i < arrayA->lengthOf(); i++) {
         printf("%f, ", arrayA->getScalar(i));
     }
     printf("]\n");
-
+*/
     for (int i = 0; i < arrayB->rows(); i++) {
         for (int k = 0; k < arrayB->columns(); k++) {
             arrayB->putScalar(i, k, (float) (10.0 + i));
         }
     }
 
+    /*
     printf("arrayB: [");
     for (int i = 0; i < arrayB->lengthOf(); i++) {
         printf("%f, ", arrayB->getScalar(i));
     }
     printf("]\n");
-
+*/
     nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
 
     layer->gemmHelper(arrayA, arrayB, arrayC, 1.0f, 0.0f);
 
     for (int i = 0; i < arrayC->lengthOf(); i++) {
-        printf("%f\n", arrayC->getScalar(i));
+//        printf("%f\n", arrayC->getScalar(i));
         ASSERT_EQ(exp[i], arrayC->getScalar(i));
     }
 }
@@ -306,7 +310,7 @@ TEST_F(DenseLayerInputTest, DropOutTest1) {
 
     // input should be modified inplace here
     layer->dropOutHelper(input->buffer, input->shapeInfo);
-
+/*
     printf("Original array: ");
     for (int i = 0; i < exp->lengthOf(); i++) {
         printf("%f, ", exp->getScalar(i));
@@ -318,7 +322,7 @@ TEST_F(DenseLayerInputTest, DropOutTest1) {
         printf("%f, ", input->getScalar(i));
     }
     printf("\n");
-
+*/
     ASSERT_FALSE(input->equalsTo(exp));
 
     // for dropout inverted all values here should be either 0 (dropped out) or 26.0 (scaled by 2)
@@ -347,6 +351,7 @@ TEST_F(DenseLayerInputTest, DropConnectTest1) {
     // input should be modified inplace here
     layer->dropConnectHelper(input->buffer, input->shapeInfo);
 
+    /*
     printf("Original array: ");
     for (int i = 0; i < exp->lengthOf(); i++) {
         printf("%f, ", exp->getScalar(i));
@@ -358,7 +363,7 @@ TEST_F(DenseLayerInputTest, DropConnectTest1) {
         printf("%f, ", input->getScalar(i));
     }
     printf("\n");
-
+*/
     ASSERT_FALSE(input->equalsTo(exp));
 
     // for dropout inverted all values here should be either 0 (dropped out) or 13.0 (retained value)
@@ -404,7 +409,7 @@ TEST_F(DenseLayerInputTest, FeedForwardTest1) {
     result = layer->feedForward();
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
-
+/*
     printf("Modified array: ");
     for (int i = 0; i < 30; i++) {
         printf("%f, ", output->getScalar(i));
@@ -422,7 +427,7 @@ TEST_F(DenseLayerInputTest, FeedForwardTest1) {
     auto meanNumber = output->meanNumber();
 
     printf("Output mean: %f\n", meanNumber);
-
+*/
     ASSERT_TRUE(exp->equalsTo(output));
 }
 
@@ -463,7 +468,7 @@ TEST_F(DenseLayerInputTest, FeedForwardTest2) {
     result = layer->feedForward();
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
-
+/*
     printf("Modified array: ");
     for (int i = 0; i < 30; i++) {
         printf("%f, ", output->getScalar(i));
@@ -481,6 +486,6 @@ TEST_F(DenseLayerInputTest, FeedForwardTest2) {
     auto meanNumber = output->meanNumber();
 
     printf("Output mean: %f\n", meanNumber);
-
+*/
     ASSERT_TRUE(exp->equalsTo(output));
 }
