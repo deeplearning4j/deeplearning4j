@@ -167,7 +167,10 @@ template <typename T> void INativeLayer<T>::gemmHelper(NDArray<T> *A, NDArray<T>
 }
 
 // perform C = alpha*A*B + beta*C
-template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta) {  
+template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta) {
+            /**
+             * PLEASE NOTE: Return order will be F always
+             */
     char aOrder = shape::order(aShapeInfo);
     char bOrder = shape::order(bShapeInfo);
     char cOrder = shape::order(cShapeInfo);
@@ -187,25 +190,32 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
     auto *tA = new NDArray<T>(A, aShapeInfo);
     auto *tB = new NDArray<T>(B, bShapeInfo);
-    //auto *tC = new NDArray<T>(C, cShapeInfo);
+    auto *tC = new NDArray<T>(C, cShapeInfo);
+
+    if (cOrder != 'f') {
+        _C = tC->dup('f');
+    } else {
+        _C = tC;
+    }
 
     if (aOrder == bOrder) {
-        rOrder = aOrder;
+
 
         if (aOrder == 'c') {
             // we might need to transpose matrices,     
             // todo: we need dup(c/f) helper here
+            _A = tA->dup('f');
+            _B = tB->dup('f');
+        } else {
+            _A = tA;
+            _B = tB;
         }
 
-        if (rOrder == 'c') {
-            M = cShape[1];
-            N = cShape[0];
-            K = aShape[1];
-        } else {
-            M = cShape[0];
-            N = cShape[1];
-            K = bShape[1];
-        }
+        rOrder = 'f';
+
+        M = cShape[0];
+        N = cShape[1];
+        K = aShape[1];
 
         lda = aShape[0];
         ldb = bShape[0];
@@ -219,10 +229,10 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
         if (aOrder == 'c') {
             // dup(F) A here
             _A = tA->dup('f');
-            _B = tB->dup('f');
+            _B = tB;
         } else {
             // dup(F) B here
-            _A = tA->dup('f');
+            _A = tA;
             _B = tB->dup('f');
         }
 
@@ -244,15 +254,25 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
     // we'll use platform-specific gemm here eventually. maybe tomorrow.
     // TODO: put proper _gemm here
-    nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, _A->buffer, lda, _B->buffer, ldb, beta, C, ldc);
+    nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, _A->buffer, lda, _B->buffer, ldb, beta, _C->buffer, ldc);
+
+    if (cOrder != 'f') {
+        tC->assign(_C);
+    }
+
+    if (tA != _A)
+        delete _A;
+
+    if (tB != _B)
+        delete _B;
+
+    if (tC != _C)
+        delete _C;
+
 
     delete tA;
     delete tB;
-    //delete tC;
-
-    delete _A;
-    delete _B;
-    //delete _C;
+    delete tC;
 }
 
 

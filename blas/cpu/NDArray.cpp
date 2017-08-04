@@ -109,22 +109,21 @@ template <typename T> void NDArray<T>::putScalar(int i, int k, int j, T value) {
     putScalar(xOffset, value);
 }
 
-template <typename T> NDArray<T>* NDArray<T>::dup(char newOrder) {
-    if (newOrder == ordering()) {
-        // if ordering is the same as original one - we'll just go directly for memcpy, and we won't care about anything else
-        Nd4jIndex newLength = shape::length(this->shapeInfo);
-        T * newBuffer = new T[newLength];
-        memcpy(newBuffer, this->buffer, newLength * this->sizeOfT());
+template <typename T>
+void NDArray<T>::assign(NDArray<T> *other) {
+    if (other->lengthOf() != this->lengthOf())
+        throw std::invalid_argument("Lengths of arrays are mismatching");
 
-        int shapeLen = this->rankOf() * 2 + 4;
-        int *newShapeInfo = new int[shapeLen];
-        memcpy(newShapeInfo, this->shapeInfo, shapeLen * sizeof(int));
+    if (this->ordering() == other->ordering()) {
 
-        NDArray<T> *result = new NDArray<T>(newBuffer, newShapeInfo);
-        // this value should be set, to avoid memleak
-        result->allocated = true;
-        return result;
+        memcpy(this->buffer, other->buffer, this->lengthOf() * this->sizeOfT());
     } else {
+        // now we invoke dup pwt against target buffer
+        NativeOpExcutioner<T>::execPairwiseTransform(1, this->buffer, this->shapeInfo, other->buffer, other->shapeInfo, this->buffer, this->shapeInfo, nullptr);
+    }
+}
+
+template <typename T> NDArray<T>* NDArray<T>::dup(char newOrder) {
         // op
         Nd4jIndex newLength = shape::length(this->shapeInfo);
         T * newBuffer = new T[newLength];
@@ -139,14 +138,11 @@ template <typename T> NDArray<T>* NDArray<T>::dup(char newOrder) {
         // FIXME: we know that EWS is always 1 after dup() result
         newShapeInfo[rankOf() * 2 + 2] = 1;
 
-        // now we construct shape info for new order
-
-        // now we invoke dup pwt against target buffer
-        NativeOpExcutioner<T>::execPairwiseTransform(1, newBuffer, newShapeInfo, this->buffer, this->shapeInfo, newBuffer, newShapeInfo, nullptr);
-
         NDArray<T> *result = new NDArray<T>(newBuffer, newShapeInfo);
         // this value should be set, to avoid memleak
         result->allocated = true;
+
+        result->assign(this);
+
         return result;
-    }
 }

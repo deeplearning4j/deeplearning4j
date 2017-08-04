@@ -257,3 +257,85 @@ TEST_F(DenseLayerInputTest, SGemmTest1) {
         ASSERT_EQ(exp[i], arrayC->getScalar(i));
     }
 }
+
+TEST_F(DenseLayerInputTest, SGemmTest2) {
+    auto *arrayA = new NDArray<float>(3, 5, 'f');
+    auto *arrayB = new NDArray<float>(5, 3, 'f');
+    auto *arrayC = new NDArray<float>(3, 3, 'f');
+
+    float exp[9] = {0.0f, 60.0f, 120.f, 0.0f, 60.0f, 120.f, 0.0f, 60.0f, 120.f};
+
+    for (int i = 0; i < arrayA->rows(); i++) {
+        for (int k = 0; k < arrayA->columns(); k++) {
+            arrayA->putScalar(i, k, (float) i);
+        }
+    }
+
+    printf("arrayA: [");
+    for (int i = 0; i < arrayA->lengthOf(); i++) {
+        printf("%f, ", arrayA->getScalar(i));
+    }
+    printf("]\n");
+
+    for (int i = 0; i < arrayB->rows(); i++) {
+        for (int k = 0; k < arrayB->columns(); k++) {
+            arrayB->putScalar(i, k, (float) (10.0 + i));
+        }
+    }
+
+    printf("arrayB: [");
+    for (int i = 0; i < arrayB->lengthOf(); i++) {
+        printf("%f, ", arrayB->getScalar(i));
+    }
+    printf("]\n");
+
+    nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
+
+    layer->gemmHelper(arrayA, arrayB, arrayC, 1.0f, 0.0f);
+
+    for (int i = 0; i < arrayC->lengthOf(); i++) {
+        printf("%f\n", arrayC->getScalar(i));
+        ASSERT_EQ(exp[i], arrayC->getScalar(i));
+    }
+}
+
+TEST_F(DenseLayerInputTest, SGemmTest3) {
+    auto *arrayA = new NDArray<float>(3, 5, 'f');
+    auto *arrayB = new NDArray<float>(5, 3, 'f');
+    auto *arrayC = new NDArray<float>(3, 3, 'c');
+
+    float exp[9] = {0.0f, 0.0f, 0.f, 60.0f, 60.0f, 60.f, 120.0f, 120.0f, 120.f};
+
+    for (int i = 0; i < arrayA->rows(); i++) {
+        for (int k = 0; k < arrayA->columns(); k++) {
+            arrayA->putScalar(i, k, (float) i);
+        }
+    }
+
+    printf("arrayA: [");
+    for (int i = 0; i < arrayA->lengthOf(); i++) {
+        printf("%f, ", arrayA->getScalar(i));
+    }
+    printf("]\n");
+
+    for (int i = 0; i < arrayB->rows(); i++) {
+        for (int k = 0; k < arrayB->columns(); k++) {
+            arrayB->putScalar(i, k, (float) (10.0 + i));
+        }
+    }
+
+    printf("arrayB: [");
+    for (int i = 0; i < arrayB->lengthOf(); i++) {
+        printf("%f, ", arrayB->getScalar(i));
+    }
+    printf("]\n");
+
+    nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
+
+    layer->gemmHelper(arrayA, arrayB, arrayC, 1.0f, 0.0f);
+
+    for (int i = 0; i < arrayC->lengthOf(); i++) {
+        printf("%f\n", arrayC->getScalar(i));
+        ASSERT_EQ(exp[i], arrayC->getScalar(i));
+    }
+}

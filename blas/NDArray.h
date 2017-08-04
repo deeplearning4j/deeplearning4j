@@ -58,6 +58,8 @@ template <typename T> class NDArray
 
     NDArray<T>* dup(char newOrder);
 
+    void assign(NDArray<T> *other);
+
     /**
      * Return value from linear buffer
      *
