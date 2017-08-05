@@ -80,9 +80,14 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     }
 
     public void addVertex(Vertex<V> vVertex) {
+
         if(frozen) {
             log.trace("Attempted to add vertex to frozen graph " + vVertex);
             return;
+        }
+
+        if(vertices.get(vVertex.vertexID()) != null) {
+            throw new IllegalArgumentException("Unable to readd vertex. Vertex id must be unique: " + vVertex.getIdx());
         }
         //this is for a temporary substitution of
         // the graph

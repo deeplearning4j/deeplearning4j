@@ -441,8 +441,8 @@ public class SameDiffTests {
                 SDVariable outputs = sameDiffOuter.invokeFunctionOn("logisticPredictions",sameDiff);
                 SDVariable y = sameDiff.var("y",inputs.get("y"));
                 SDVariable outputTimesY = outputs.mul(y);
-                SDVariable oneMinusOutput = outputs.rsub(sameDiff.scalar("one",1.0));
-                SDVariable oneMinusPredictions = y.rsub(sameDiff.scalar("onetwo",1.0));
+                SDVariable oneMinusOutput = outputs.rsub(1.0);
+                SDVariable oneMinusPredictions = y.rsub(1.0);
                 SDVariable probs = outputTimesY.add(oneMinusOutput.mul(oneMinusPredictions));
                 SDVariable logProbs = sameDiff.log(probs);
                 SDVariable sum = sameDiff.sum(logProbs,Integer.MAX_VALUE);
@@ -464,8 +464,7 @@ public class SameDiffTests {
 
 
         SameDiff logisticGraph = sameDiffOuter.getSameDiffFunctionInstances()
-                .get("logisticPredictions");
-        inputs.remove("y");
+                .get("loss");
         INDArray[] outputs = logisticGraph.eval(inputs);
         System.out.println(Arrays.toString(outputs));
 

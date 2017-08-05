@@ -47,7 +47,6 @@ public class ArrayField implements Field<ArrayField> {
         this.input = ndArrayVertex.getValue();
         this.vertex = ndArrayVertex;
         this.ops = ops;
-        ops.addVertex(vertex);
     }
 
     public ArrayField(NDArrayInformation input,Graph<NDArrayInformation,OpState> ops) {
@@ -824,8 +823,10 @@ public class ArrayField implements Field<ArrayField> {
     private ArrayField addScalarTransformOp(String name,
                                             Number scalarValue,
                                             boolean inPlace) {
-        NDArrayInformation result =  NDArrayInformation.builder().scalarValue(scalarValue)
-                .id(name + "(" + input.getId() + ")").arrId(UUID.randomUUID().toString())
+        NDArrayInformation result =  NDArrayInformation.builder()
+                .scalarValue(scalarValue)
+                .id(name + "(" + input.getId() + ")")
+                .arrId(UUID.randomUUID().toString())
                 .shape(input.getShape()).build();
         //result
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(),result);
@@ -837,9 +838,12 @@ public class ArrayField implements Field<ArrayField> {
                 .n(ArrayUtil.prod(input.getShape()))
                 .opName(name).extraArgs(new Object[]{scalarValue,inPlace})
                 .scalarValue(scalarValue)
-                .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                .opType(OpState.OpType.SCALAR_TRANSFORM).result(newVertex.getValue())
-                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                .id(vertex.getValue().getId() + "-> " +
+                        name + " " + newVertex.getValue().getId())
+                .opType(OpState.OpType.SCALAR_TRANSFORM)
+                .result(newVertex.getValue())
+                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),
+                        String.valueOf(newVertex.vertexID())})
                 .build();
         //map x -> z
         this.ops.addEdge(vertex.vertexID(),
