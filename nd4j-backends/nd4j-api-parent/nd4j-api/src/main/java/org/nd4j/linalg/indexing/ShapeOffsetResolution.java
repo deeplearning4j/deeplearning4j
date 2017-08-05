@@ -42,6 +42,11 @@ public class ShapeOffsetResolution implements Serializable {
     }
 
 
+    /**
+     *
+     * @param indexes
+     * @return
+     */
     public boolean tryShortCircuit(INDArrayIndex... indexes) {
         int pointIndex = 0;
         int interval = 0;
@@ -268,17 +273,17 @@ public class ShapeOffsetResolution implements Serializable {
             int shapeAxis = 0;
             int allEncountered = 0;
             for (int i = 0; i < minDimensions; i++) {
-               if(i >= (indexes.length)) {
-                   shape[i] = arr.size(allEncountered);
-                   stride[i] = arr.stride(allEncountered);
-                   allEncountered++;
-               }
-               else if(!(indexes[i] instanceof NewAxis) &&
+                if(i >= (indexes.length)) {
+                    shape[i] = arr.size(allEncountered);
+                    stride[i] = arr.stride(allEncountered);
+                    allEncountered++;
+                }
+                else if(!(indexes[i] instanceof NewAxis) &&
                         indexes[i] instanceof NDArrayIndexAll) {
-                   shape[allEncountered] = arr.size(allEncountered);
-                   stride[allEncountered] = arr.stride(allEncountered);
-                   allEncountered++;
-               }
+                    shape[allEncountered] = arr.size(allEncountered);
+                    stride[allEncountered] = arr.stride(allEncountered);
+                    allEncountered++;
+                }
 
             }
 
@@ -386,13 +391,10 @@ public class ShapeOffsetResolution implements Serializable {
             //to set the new axis in the middle
             else if (idx instanceof NewAxis) {
                 //prepend the new axes at different indexes
-                if (encounteredAll) {
-                    prependNewAxes.add(i);
-                }
-                //prepend to the beginning
-                //rather than a set index
-                else
-                    newAxesPrepend++;
+                accumShape.add(1L);
+                accumOffsets.add(0L);
+                accumStrides.add(0L);
+                prependNewAxes.add(i);
                 continue;
 
             }
@@ -443,6 +445,8 @@ public class ShapeOffsetResolution implements Serializable {
 
         }
 
+
+
         //fill in missing strides and shapes
         while (shapeIndex < shape.length) {
             //scalar, should be 1 x 1 rather than the number of columns in the vector
@@ -473,41 +477,8 @@ public class ShapeOffsetResolution implements Serializable {
         }
 
 
-        //prepend for new axes; do this first before
-        //doing the indexes to prepend to
-        if (newAxesPrepend > 0) {
-            for (int i = 0; i < newAxesPrepend; i++) {
-                accumShape.add(0, 1L);
-                //strides for new axis are 0
-                accumStrides.add(0, 0L);
-                //prepend offset zero to match the stride and shapes
-                accumOffsets.add(0, 0L);
-            }
-        }
 
-        /**
-         * For each dimension
-         * where we want to prepend a dimension
-         * we need to add it at the index such that
-         * we account for the offset of the number of indexes
-         * added up to that point.
-         *
-         * We do this by doing an offset
-         * for each item added "so far"
-         *
-         * Note that we also have an offset of - 1
-         * because we want to prepend to the given index.
-         *
-         * When prepend new axes for in the middle is triggered
-         * i is already > 0
-         */
-        int numAdded = 0;
-        for (int i = 0; i < prependNewAxes.size(); i++) {
-            accumShape.add(prependNewAxes.get(i) - numAdded, 1L);
-            //stride for the new axis is zero
-            accumStrides.add(prependNewAxes.get(i) - numAdded, 0L);
-            numAdded++;
-        }
+
 
         /**
          * Need to post process strides and offsets
@@ -554,30 +525,6 @@ public class ShapeOffsetResolution implements Serializable {
                 accumStrides.add((long) arr.elementStride());
         }
 
-
-        /**
-         * When new axis and points are both present,
-         * the strides cancel each other out.
-         *
-         * Points should be retained.
-         */
-        if(numPointIndexes > 0 && newAxesPrepend > 0) {
-            for(int i = 0; i < accumStrides.size(); i++) {
-                if(i > 0 &&  indexes[i] instanceof PointIndex) {
-                    accumStrides.set(i, (long) arr.stride(i));
-                    accumOffsets.set(i,(long) indexes[i].offset());
-                }
-                else if(indexes[i] instanceof NDArrayIndexAll) {
-                    accumStrides.set(i, (long) arr.stride(i));
-                    accumOffsets.set(i,(long) indexes[i].offset());
-                }
-                else if(lastPrependIndex < 0 && indexes[i] instanceof IntervalIndex && i >= lastPrependIndex) {
-                    accumStrides.set(i, (long) arr.stride(i));
-                    accumOffsets.set(i,(long) indexes[i].offset());
-
-                }
-            }
-        }
 
         this.strides = Longs.toArray(accumStrides);
         this.offsets = Longs.toArray(accumOffsets);
