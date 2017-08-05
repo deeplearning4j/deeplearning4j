@@ -197,12 +197,12 @@
                   <goals>
                     <goal>revision</goal>
                   </goals>
-                  <phase>package</phase>
+                  <phase>generate-resources</phase>
                 </execution>
               </executions>
               <configuration>
                 <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                <generateGitPropertiesFilename>${project.basedir}/src/main/resources/ai/skymind/${project.groupId}-${project.artifactId}-git.properties</generateGitPropertiesFilename>
                 <gitDescribe>
                   <skip>true</skip>
                 </gitDescribe>
