@@ -35,6 +35,8 @@ public class ArrayField implements Field<ArrayField> {
     @Getter
     @Setter
     private Graph<NDArrayInformation,OpState> ops;
+    @Getter
+    @Setter
     private NDArrayInformation input;
     @Getter
     @Setter
@@ -189,6 +191,11 @@ public class ArrayField implements Field<ArrayField> {
     @Override
     public ArrayField rdivi(double v) {
         return addScalarTransformOp(new ScalarReverseDivision().name(),v,true);
+    }
+
+    @Override
+    public ArrayField divi(double v) {
+        return addScalarTransformOp(new ScalarDivision().name(),v,true);
     }
 
     @Override

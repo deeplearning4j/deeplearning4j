@@ -182,25 +182,34 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> addi(double i_v) {
-        Scalar<X> constant = new Scalar<>(graph, i_v, null,true);
+        Scalar<X> constant = new Scalar<>(graph, i_v, (AbstractIdentityFactory<X>) this.graph.getSameDiff().getArrayFactory(),true);
         return constant.add(this);
     }
 
     @Override
     public DifferentialFunction<X> subi(double i_v) {
-        Scalar<X> constant = new Scalar<>(graph, i_v, null,true);
+        Scalar<X> constant = new Scalar<>(graph, i_v, (AbstractIdentityFactory<X> ) this.graph.getSameDiff().getArrayFactory(),true);
         return constant.sub(this);
     }
 
+
+
+    @Override
+    public DifferentialFunction<X> divi(double v) {
+        Scalar<X> constant = new Scalar<>(graph, v, (AbstractIdentityFactory<X> ) this.graph.getSameDiff().getArrayFactory(),true);
+        return this.divi(constant);
+    }
+
+
     @Override
     public DifferentialFunction<X> rsubi(double v) {
-        Scalar<X> constant = new Scalar<>(graph, v, null,true);
+        Scalar<X> constant = new Scalar<>(graph, v, (AbstractIdentityFactory<X> ) this.graph.getSameDiff().getArrayFactory(),true);
         return this.rsub(constant);
     }
 
     @Override
     public DifferentialFunction<X> rdivi(double v) {
-        Scalar<X> constant = new Scalar<>(graph, v, null,true);
+        Scalar<X> constant = new Scalar<>(graph, v, (AbstractIdentityFactory<X> ) this.graph.getSameDiff().getArrayFactory(),true);
         return this.rdiv(constant);
     }
 
@@ -272,25 +281,25 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> add(double i_v) {
-        Scalar<X> constant = new Scalar<>(graph, i_v, null);
+        Scalar<X> constant = new Scalar<>(graph, i_v, (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
         return constant.add(this);
     }
 
     @Override
     public DifferentialFunction<X> sub(double i_v) {
-        Scalar<X> constant = new Scalar<>(graph, i_v, null);
+        Scalar<X> constant = new Scalar<>(graph, i_v, (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
         return constant.sub(this);
     }
 
     @Override
     public DifferentialFunction<X> rsub(double v) {
-        Scalar<X> constant = new Scalar<>(graph, v, null);
+        Scalar<X> constant = new Scalar<>(graph, v, (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
         return this.rsub(constant);
     }
 
     @Override
     public DifferentialFunction<X> rdiv(double v) {
-        Scalar<X> constant = new Scalar<>(graph, v, null);
+        Scalar<X> constant = new Scalar<>(graph, v, (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
         return this.rdiv(constant);
     }
 
@@ -835,6 +844,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
                     ,true);
             newVertex.setOpState(opState2);
             arrInfo.setOwner(opState2);
+
             this.opState = opState;
 
         }

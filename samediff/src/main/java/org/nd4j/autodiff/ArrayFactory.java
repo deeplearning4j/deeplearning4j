@@ -221,7 +221,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     @Override
     public ArrayField scalar(double value) {
         NDArrayInformation information = NDArrayInformation.builder()
-                .arrId(UUID.randomUUID().toString())
+                .arrId(UUID.randomUUID().toString()).scalarValue(value)
                 .id(String.valueOf(value)).owner(null).shape(new int[]{1,1}).build();
         return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }

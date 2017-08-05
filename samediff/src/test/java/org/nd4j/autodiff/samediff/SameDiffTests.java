@@ -396,6 +396,30 @@ public class SameDiffTests {
 
 
     @Test
+    public void testRsubScalar() {
+        SameDiff sameDiff = SameDiff.create();
+        Map<String,INDArray> params = new HashMap<>();
+        INDArray var = Nd4j.valueArrayOf(4,2);
+        params.put("x",var);
+        sameDiff.defineFunction("rsubop", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable ret = input.rsub(1.0);
+                return ret;
+            }
+        },params);
+
+        SameDiff logisticGraph = sameDiff.getSameDiffFunctionInstances().get("rsubop");
+        INDArray[] outputs = logisticGraph.eval(params);
+        assertEquals(Nd4j.ones(4),outputs[0]);
+        System.out.println(Arrays.toString(outputs));
+
+
+
+    }
+
+    @Test
     public void testFunctionDefinitions() {
         SameDiff sameDiffOuter = SameDiff.create();
         Map<String,INDArray> inputs = variablesForInput();
@@ -439,9 +463,11 @@ public class SameDiffTests {
         },inputs);
 
 
-        SameDiff logisticGraph = sameDiffOuter.getSameDiffFunctionInstances().get("loss");
+        SameDiff logisticGraph = sameDiffOuter.getSameDiffFunctionInstances()
+                .get("logisticPredictions");
+        inputs.remove("y");
         INDArray[] outputs = logisticGraph.eval(inputs);
-        System.out.println(outputs);
+        System.out.println(Arrays.toString(outputs));
 
     }
 

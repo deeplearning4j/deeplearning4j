@@ -36,6 +36,7 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
         if(i_v instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) i_v;
             this.vertexId = arrayField.getVertex().vertexID();
+
         }
     }
 
