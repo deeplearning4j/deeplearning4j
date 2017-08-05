@@ -4148,7 +4148,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray get(INDArrayIndex... indexes) {
         Nd4j.getCompressor().autoDecompress(this);
+        if(indexes.length > rank()) {
+            int numNonNewAxis = 0;
+            for(int i = 0; i < indexes.length; i++) {
+                if(!(indexes[i] instanceof NewAxis))
+                    numNonNewAxis++;
+            }
 
+            if(numNonNewAxis > rank()) {
+                throw new IllegalArgumentException("Too many indices for array. Number of indexes must be <= rank()");
+            }
+        }
 
 
         //check for row/column vector and point index being 0
