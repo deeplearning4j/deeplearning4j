@@ -304,10 +304,11 @@ public class PlayUIServer extends UIServer {
         if (!statsStorageInstances.contains(statsStorage))
             return; //No op
         boolean found = false;
-        for (Pair<StatsStorage, StatsStorageListener> p : listeners) {
+        for (Iterator<Pair<StatsStorage, StatsStorageListener>> iterator = listeners.iterator(); iterator.hasNext();) {
+            Pair<StatsStorage, StatsStorageListener> p = iterator.next();
             if (p.getFirst() == statsStorage) { //Same object, not equality
                 statsStorage.deregisterStatsStorageListener(p.getSecond());
-                listeners.remove(p);
+                iterator.remove();
                 found = true;
             }
         }
