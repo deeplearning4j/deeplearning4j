@@ -2061,6 +2061,7 @@ public class WordVectorSerializer {
         for (int x = 0; x < vocabCache.numWords(); x++) {
             T element = vocabCache.elementAtIndex(x);
             String json = factory.serialize(element);
+            INDArray d = Nd4j.create(1);
             double[] vector = lookupTable.vector(element.getLabel()).dup().data().asDouble();
             ElementPair pair = new ElementPair(json, vector);
             writer.println(pair.toEncodedJson());
@@ -2519,12 +2520,8 @@ public class WordVectorSerializer {
 
                 return factory;
 
-            } catch (InstantiationException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
+            } catch (Exception e) {
+                log.error("Can't instantiate saved TokenizerFactory: {}", configuration.getTokenizerFactory());
             }
         }
         return null;
