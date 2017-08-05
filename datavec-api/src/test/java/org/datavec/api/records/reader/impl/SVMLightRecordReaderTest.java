@@ -20,6 +20,7 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.impl.misc.LibSvmRecordReader;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
+import org.datavec.api.records.writer.impl.misc.SVMLightRecordWriter;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.DoubleWritable;
@@ -191,6 +192,14 @@ public class SVMLightRecordReaderTest {
                                     ZERO, ZERO,
                                     LABEL_ONE, LABEL_ONE,
                                     LABEL_ZERO, LABEL_ONE));
+        //  1:1.0
+        correct.put(3, Arrays.asList(new DoubleWritable(1.0), ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                LABEL_ZERO, LABEL_ZERO,
+                LABEL_ZERO, LABEL_ZERO));
 
         SVMLightRecordReader rr = new SVMLightRecordReader();
         Configuration config = new Configuration();
@@ -245,6 +254,7 @@ public class SVMLightRecordReaderTest {
         SVMLightRecordReader rr = new SVMLightRecordReader();
         Configuration config = new Configuration();
         // Zero-based indexing is default
+        config.setBoolean(SVMLightRecordReader.ZERO_BASED_LABEL_INDEXING, true); // NOT STANDARD!
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 11);
         config.setBoolean(SVMLightRecordReader.MULTILABEL, true);
         config.setInt(SVMLightRecordReader.NUM_LABELS, 5);
@@ -330,7 +340,6 @@ public class SVMLightRecordReaderTest {
     public void testZeroIndexLabelWithoutUsingZeroIndexing() throws Exception {
         SVMLightRecordReader rr = new SVMLightRecordReader();
         Configuration config = new Configuration();
-        config.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         config.setBoolean(SVMLightRecordReader.MULTILABEL, true);
         config.setInt(SVMLightRecordReader.NUM_LABELS, 2);

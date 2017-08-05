@@ -66,17 +66,19 @@ public class SVMLightRecordWriter extends FileRecordWriter {
     public static final String FEATURE_FIRST_COLUMN = NAME_SPACE + ".featureStartColumn";
     public static final String FEATURE_LAST_COLUMN = NAME_SPACE + ".featureEndColumn";
     public static final String ZERO_BASED_INDEXING = NAME_SPACE + ".zeroBasedIndexing";
+    public static final String ZERO_BASED_LABEL_INDEXING = NAME_SPACE + ".zeroBasedLabelIndexing";
     public static final String HAS_LABELS = NAME_SPACE + ".hasLabel";
     public static final String MULTILABEL = NAME_SPACE + ".multilabel";
     public static final String LABEL_FIRST_COLUMN = NAME_SPACE + ".labelStartColumn";
     public static final String LABEL_LAST_COLUMN = NAME_SPACE + ".labelEndColumn";
 
     /* Constants. */
-    public static final int UNLABELED = -1;
+    public static final String UNLABELED = "";
 
     protected int featureFirstColumn = 0; // First column with feature
     protected int featureLastColumn = -1; // Last column with feature
     protected boolean zeroBasedIndexing = false; // whether to use zero-based indexing, false is safest
+    protected boolean zeroBasedLabelIndexing = false; // whether to use zero-based label indexing (NONSTANDARD!)
     protected boolean hasLabel = true; // Whether record has label
     protected boolean multilabel = false; // Whether labels are for multilabel binary classification
     protected int labelFirstColumn = -1; // First column with label
@@ -157,7 +159,7 @@ public class SVMLightRecordWriter extends FileRecordWriter {
             // Process labels
             if (hasLabel) {
                 // Track label indeces
-                int labelIndex = zeroBasedIndexing ? 0 : 1;
+                int labelIndex = zeroBasedLabelIndexing ? 0 : 1;
                 for (int i = labelFirstColumn; i <= labelLastColumn; i++) {
                     Writable w = record.get(i);
                     // Handle array-structured Writables, which themselves have multiple columns
@@ -196,12 +198,12 @@ public class SVMLightRecordWriter extends FileRecordWriter {
                         labelIndex++; // Increment label index once per scalar Writable
                     }
                 }
-            } else {
-                // Add "no label" label
+            }
+            if (result.toString() == "") { // Add "unlabeled" label if no labels found
                 result.append(SVMLightRecordReader.LABEL_DELIMITER + UNLABELED);
             }
 
-            // Track label indeces
+            // Track feature indeces
             int featureIndex = zeroBasedIndexing ? 0 : 1;
             for (int i = featureFirstColumn; i <= featureLastColumn; i++) {
                 Writable w = record.get(i);

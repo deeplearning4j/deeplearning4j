@@ -15,6 +15,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -54,6 +55,7 @@ public class SVMLightRecordReader extends LineRecordReader {
     public static final String NAME_SPACE = SVMLightRecordReader.class.getName();
     public static final String NUM_FEATURES = NAME_SPACE + ".numfeatures";
     public static final String ZERO_BASED_INDEXING = NAME_SPACE + ".zeroBasedIndexing";
+    public static final String ZERO_BASED_LABEL_INDEXING = NAME_SPACE + ".zeroBasedLabelIndexing";
     public static final String MULTILABEL = NAME_SPACE + ".multilabel";
     public static final String NUM_LABELS = NAME_SPACE + ".numLabels";
 
@@ -75,6 +77,7 @@ public class SVMLightRecordReader extends LineRecordReader {
     protected boolean zeroBasedIndexing = true; /* whether to use zero-based indexing, true is safest
                                                  * but adds extraneous column if data is not zero indexed
                                                  */
+    protected boolean zeroBasedLabelIndexing = false; // whether to use zero-based label indexing (NONSTANDARD!)
     protected boolean appendLabel = true; // whether to append labels to output
     protected boolean multilabel = false; // whether targets are multilabel
     protected int numLabels = -1; // number of labels (required for multilabel targets)
@@ -117,6 +120,7 @@ public class SVMLightRecordReader extends LineRecordReader {
         appendLabel = conf.getBoolean(APPEND_LABEL, true);
         multilabel = conf.getBoolean(MULTILABEL, false);
         zeroBasedIndexing = conf.getBoolean(ZERO_BASED_INDEXING, true);
+        zeroBasedLabelIndexing = conf.getBoolean(ZERO_BASED_LABEL_INDEXING, false);
         numLabels = conf.getInt(NUM_LABELS, -1);
         if (multilabel && numLabels < 0)
             throw new UnsupportedOperationException("numLabels must be set in confirmation for multilabel problems");
@@ -163,7 +167,9 @@ public class SVMLightRecordReader extends LineRecordReader {
         List<Writable> record = new ArrayList<>();
 
         // Remove trailing comments
-        String[] tokens = line.split(COMMENT_CHAR, 2)[0].trim().split(ALLOWED_DELIMITERS);
+        String commentRegex = ALLOWED_DELIMITERS + "*" + COMMENT_CHAR + ".*$";
+        String[] tokens = line.replaceFirst(commentRegex, "").split(ALLOWED_DELIMITERS);
+        int a = 1;
 
         // Iterate over feature tokens
         for (int i = 1; i < tokens.length; i++) {
@@ -210,45 +216,46 @@ public class SVMLightRecordReader extends LineRecordReader {
 
         // If labels should be appended
         if (appendLabel) {
-            List<Writable> labels = new ArrayList<>();
+            List<Writable> labels = Collections.nCopies(numLabels, LABEL_ZERO);
 
             // Treat labels as indeces for multilabel binary classification
             if (multilabel) {
-                String[] labelTokens = tokens[0].split(LABEL_DELIMITER);
-                for (int i = 0; i < labelTokens.length; i++) {
-                    // Parse label index -- enforce that it's a positive integer
-                    int index = -1;
-                    try {
-                        index = Integer.parseInt(labelTokens[i]);
-                        if (index < 0)
-                            throw new NumberFormatException("");
-                    } catch (NumberFormatException e) {
-                        String msg = String.format("Multilabel index must be positive integer (found %s)", labelTokens[i].toString());
-                        throw new NumberFormatException(msg);
+                if (tokens[0] != "") {
+                    String[] labelTokens = tokens[0].split(LABEL_DELIMITER);
+                    for (int i = 0; i < labelTokens.length; i++) {
+                        // Parse label index -- enforce that it's a positive integer
+                        int index = -1;
+                        try {
+                            index = Integer.parseInt(labelTokens[i]);
+                            if (index < 0)
+                                throw new NumberFormatException("");
+                        } catch (NumberFormatException e) {
+                            String msg = String.format("Multilabel index must be positive integer (found %s)", labelTokens[i].toString());
+                            throw new NumberFormatException(msg);
+                        }
+
+                        // If not using zero-based indexing for labels, shift all indeces to left by one
+                        if (!zeroBasedLabelIndexing) {
+                            if (index == 0)
+                                throw new IndexOutOfBoundsException("Found label with index " + index + " but not using zero-based indexing");
+                            index--;
+                        }
+
+                        // Check whether label index exceeds number of labels
+                        if (numLabels >= 0 && index >= numLabels)
+                            throw new IndexOutOfBoundsException("Found " + (index + 1) + " labels in record, expected " + numLabels);
+
+//                        // Add remaining zero features
+//                        while (labels.size() < index)
+//                            labels.add(LABEL_ZERO);
+
+                        // Add label
+                        labels.set(index, LABEL_ONE);
                     }
-
-                    // If not using zero-based indexing, shift all indeces to left by one
-                    if (!zeroBasedIndexing) {
-                        if (index == 0)
-                            throw new IndexOutOfBoundsException("Found label with index " + index + " but not using zero-based indexing");
-                        index--;
-                    }
-
-                    // Check whether label index exceeds number of labels
-                    if (numLabels >= 0 && index >= numLabels)
-                        throw new IndexOutOfBoundsException("Found " + (index+1) + " labels in record, expected " + numLabels);
-
-                    // Add remaining zero features
-                    while (labels.size() < index)
-                        labels.add(LABEL_ZERO);
-
-                    // Add label
-                    labels.add(LABEL_ONE);
                 }
-
-                // Add remaining zero labels
-                while (labels.size() < numLabels)
-                    labels.add(LABEL_ZERO);
+//                // Add remaining zero labels
+//                while (labels.size() < numLabels)
+//                    labels.add(LABEL_ZERO);
             } else {
                 String[] labelTokens = tokens[0].split(LABEL_DELIMITER);
                 if (numLabels < 0)

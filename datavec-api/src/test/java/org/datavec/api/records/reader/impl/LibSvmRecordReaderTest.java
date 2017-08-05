@@ -18,6 +18,7 @@ package org.datavec.api.records.reader.impl;
 
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.impl.misc.LibSvmRecordReader;
+import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.DoubleWritable;
@@ -248,6 +249,7 @@ public class LibSvmRecordReaderTest {
         LibSvmRecordReader rr = new LibSvmRecordReader();
         Configuration config = new Configuration();
         // Zero-based indexing is default
+        config.setBoolean(SVMLightRecordReader.ZERO_BASED_LABEL_INDEXING, true); // NOT STANDARD!
         config.setBoolean(LibSvmRecordReader.APPEND_LABEL, true);
         config.setInt(LibSvmRecordReader.NUM_FEATURES, 11);
         config.setBoolean(LibSvmRecordReader.MULTILABEL, true);
@@ -338,7 +340,6 @@ public class LibSvmRecordReaderTest {
     public void testZeroIndexLabelWithoutUsingZeroIndexing() throws Exception {
         LibSvmRecordReader rr = new LibSvmRecordReader();
         Configuration config = new Configuration();
-        config.setBoolean(LibSvmRecordReader.ZERO_BASED_INDEXING, false);
         config.setBoolean(LibSvmRecordReader.APPEND_LABEL, true);
         config.setInt(LibSvmRecordReader.NUM_FEATURES, 10);
         config.setBoolean(LibSvmRecordReader.MULTILABEL, true);
