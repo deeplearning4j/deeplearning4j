@@ -616,9 +616,10 @@ public class MathUtils {
 
         }
         //All data sets must be same size
-        for (List<Double> lists : ret) {
+        for (Iterator<Double> iterator = ret.iterator(); iterator().hasNext();) {
+            List<Double> lists = iterator.next();
             if (lists.size() < chunk)
-                ret.remove(lists);
+                iterator.remove();
         }
         return ret;
     }//end partitionVariable
