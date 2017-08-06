@@ -59,6 +59,8 @@ public class SameDiff {
     private MemoryWorkspace workspace;
     private Map<String,SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
     private Map<String,SameDiff> sameDiffFunctionInstances;
+    private static Cloner cloner = new Cloner();
+
     private static Map<String,Method> opMethods;
 
     static {
@@ -80,7 +82,6 @@ public class SameDiff {
     public SDVariable invokeGraphOn(SameDiff sameDiff) {
         //map the new vertices on to the old ones
         Map<Integer,Integer> thisVertexIdToNew = new HashMap<>();
-        Cloner cloner = new Cloner();
 
         //map new vertex ids and create new vertices
         for(int i = 0; i < graph().numVertices(); i++) {
@@ -333,10 +334,6 @@ public class SameDiff {
      * @return
      */
     public INDArray[] eval(Map<String,INDArray> inputs) {
-        for(String s : inputs.keySet()) {
-            if(!variableMap.containsKey(s))
-                throw new IllegalArgumentException("Illegal key for variables " + s);
-        }
 
         SameDiff execPipeline = dup();
 
@@ -471,6 +468,7 @@ public class SameDiff {
             ndArrayInformation.setScalarValue(arr.getDouble(0));
 
         NDArrayVertex ndArrayVertex = new NDArrayVertex(graph.nextVertexId(), ndArrayInformation);
+        graph.addVertex(ndArrayVertex);
         ArrayField arrayField = new ArrayField(ndArrayVertex,graph);
         SDVariable ret = SDVariable.builder()
                 .sameDiff(this).
@@ -1727,9 +1725,24 @@ public class SameDiff {
         return false;
     }
 
+    /**
+     * Get a function instance
+     * given the name
+     * @param functionName the name of the function
+     * @return the same diff function instance
+     * defined for the given name
+     */
+    public SameDiff getFunction(String functionName) {
+        return sameDiffFunctionInstances.get(functionName);
+    }
+
 
     private INDArray getX(OpExecAction opExecAction) {
         INDArray ret =  vertexToArray.get(opExecAction.getInputs()[0].getArrId());
+        if(opExecAction.getOpState().getOpType() ==
+                OpState.OpType.SCALAR_TRANSFORM && ret.isScalar())  {
+            ret =  vertexToArray.get(opExecAction.getOutput().getArrId());
+        }
         return ret;
     }
 

@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff.impl;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.Constant;
@@ -18,6 +19,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -517,6 +519,22 @@ public class SDVariable  implements Serializable {
     }
 
 
+    /**
+     * Evaluate the result of this variable
+     * @return
+     */
+    public INDArray eval() {
+        SameDiff exec = sameDiff.dup();
+        exec.defineFunction("output", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                return SDVariable.this;
+            }
+        });
+
+        SDVariable output = exec.invokeFunctionOn("output",exec);
+        return output.getSameDiff().execAndEndResult();
+    }
 
 
 

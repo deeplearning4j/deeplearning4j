@@ -33,6 +33,11 @@ public abstract class DifferentialFunction<X extends Field<X>>
     protected Object[] extraArgs;
 
 
+    /**
+     *
+     * @param graph
+     * @param extraArgs
+     */
     public DifferentialFunction(SDGraph graph, Object[] extraArgs) {
         this.graph = graph;
         this.extraArgs = extraArgs;

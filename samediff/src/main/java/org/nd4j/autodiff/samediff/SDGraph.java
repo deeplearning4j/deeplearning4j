@@ -111,10 +111,6 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         //iterate over op execution order skipping
         // nodes that are only inputs
         //the goal is to get all of the needed op executions
-        /**
-         * Duplicate nodes or something seem to be popping up here..
-         *
-         */
         for (int i = 0; i < order.length; i++) {
             //skip vertices that are only inputs
             if (getVertexInDegree(order[i]) < 1) {

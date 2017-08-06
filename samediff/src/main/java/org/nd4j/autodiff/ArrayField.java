@@ -49,14 +49,6 @@ public class ArrayField implements Field<ArrayField> {
         this.ops = ops;
     }
 
-    public ArrayField(NDArrayInformation input,Graph<NDArrayInformation,OpState> ops) {
-        this.input = input;
-        this.ops = ops;
-        NDArrayVertex vertex = new NDArrayVertex(ops.nextVertexId(), input);
-        ops.addVertex(vertex);
-        this.vertex = vertex;
-    }
-
 
     @Override
     public ArrayField negate() {

@@ -89,6 +89,11 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         if(vertices.get(vVertex.vertexID()) != null) {
             throw new IllegalArgumentException("Unable to readd vertex. Vertex id must be unique: " + vVertex.getIdx());
         }
+
+        if(vVertex.getIdx() != vertices.size() + 1) {
+            throw new IllegalArgumentException("Unable to add vertex. Contiguous id not found");
+        }
+
         //this is for a temporary substitution of
         // the graph
         if(graphApply != null) {
@@ -314,6 +319,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             if (!duplicate) {
                 list.add(edge);
             }
+
         } else {
             //allow multiple/duplicate edges
             list.add(edge);

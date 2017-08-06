@@ -37,7 +37,7 @@ public class SameDiffTests {
                 {0.74, -2.49, 1.39}
         });
 
-        INDArray labels = Nd4j.create(new double[]{1,1,0,0}).reshape(4,1);
+        INDArray labels = Nd4j.create(new double[]{1,1,0,1}).reshape(4,1);
 
         INDArray weights = Nd4j.zeros(3,1);
 
@@ -48,6 +48,16 @@ public class SameDiffTests {
         return inputMap;
     }
 
+
+    @Test
+    public void testEvalVariable() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray ones = Nd4j.ones(4);
+        INDArray twos = ones.add(ones);
+        SDVariable inputOne = sameDiff.var("inputone",ones);
+        SDVariable inputResult = inputOne.add(inputOne);
+        assertEquals(twos,inputResult.eval());
+    }
 
     @Test
     public void testSigmoid() {
@@ -420,7 +430,43 @@ public class SameDiffTests {
     }
 
     @Test
-    public void testFunctionDefinitions() {
+    public void testFunctionScalarResultPropagation() {
+        SameDiff sameDiffOuter = SameDiff.create();
+        Map<String,INDArray> inputs = variablesForInput();
+
+        sameDiffOuter.defineFunction("logisticPredictions", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable w = sameDiff.var("w",inputs.get("w"));
+                SDVariable preOutput = sameDiff.mmul(0,input,w);
+                SDVariable sigmoid = sameDiff.sigmoid(preOutput);
+                return sigmoid;
+            }
+        },inputs);
+
+        sameDiffOuter.defineFunction("oneminuspredictions", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable y = sameDiff.var("y",inputs.get("y"));
+                SDVariable oneMinusPredictions = y.rsub(1.0);
+                return oneMinusPredictions;
+            }
+        },inputs);
+
+
+        SameDiff logisticGraph = sameDiffOuter.getFunction("oneminuspredictions");
+        INDArray[] outputs = logisticGraph.eval(inputs);
+        INDArray assertion = Nd4j.create(new double[]{0,0,-1,0});
+        assertEquals(assertion,outputs[outputs.length - 1]);
+        System.out.println(Arrays.toString(outputs));
+
+    }
+
+
+
+    @Test
+    public void testLogisticTestOutput() {
         SameDiff sameDiffOuter = SameDiff.create();
         Map<String,INDArray> inputs = variablesForInput();
 
@@ -467,6 +513,7 @@ public class SameDiffTests {
                 .get("loss");
         INDArray[] outputs = logisticGraph.eval(inputs);
         System.out.println(Arrays.toString(outputs));
+
 
     }
 
