@@ -463,7 +463,73 @@ public class SameDiffTests {
 
     }
 
+    @Test
+    public void testTransformPostExecFunction() {
+        SameDiff sameDiffOuter = SameDiff.create();
+        Map<String,INDArray> inputs = variablesForInput();
 
+        sameDiffOuter.defineFunction("logisticPredictions", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable w = sameDiff.var("w",inputs.get("w"));
+                SDVariable preOutput = sameDiff.mmul(0,input,w);
+                SDVariable sigmoid = sameDiff.sigmoid(preOutput);
+                return sigmoid;
+            }
+        },inputs);
+
+        sameDiffOuter.defineFunction("loss", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable outputs = sameDiffOuter.invokeFunctionOn("logisticPredictions",sameDiff);
+                return outputs;
+            }
+        },inputs);
+
+
+        SameDiff logisticGraph = sameDiffOuter.getFunction("loss");
+        assertEquals(2,logisticGraph.graph().getOpOrder().getActions().size());
+
+
+    }
+
+    @Test
+    public void testGraphBuilding() {
+        SameDiff sameDiffOuter = SameDiff.create();
+        Map<String,INDArray> inputs = variablesForInput();
+
+        sameDiffOuter.defineFunction("logisticPredictions", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable w = sameDiff.var("w",inputs.get("w"));
+                SDVariable preOutput = sameDiff.mmul(0,input,w);
+                SDVariable sigmoid = sameDiff.sigmoid(preOutput);
+                return sigmoid;
+            }
+        },inputs);
+
+        sameDiffOuter.defineFunction("loss", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable outputs = sameDiffOuter.invokeFunctionOn("logisticPredictions",sameDiff);
+                SDVariable y = sameDiff.var("y",inputs.get("y"));
+                SDVariable outputTimesY = outputs.mul(y);
+                return outputTimesY;
+            }
+        },inputs);
+
+
+        SameDiff logisticGraph = sameDiffOuter.getFunction("loss");
+        List<String> opNameAssertions = Arrays.asList("mmul","sigmoid","mul");
+        OpExecOrder opExecOrder = logisticGraph.graph().getOpOrder();
+        assertEquals(3,opExecOrder.getActions().size());
+        for(int i = 0; i < 3; i++) {
+            assertEquals(opNameAssertions.get(i),opExecOrder.getActions().get(i).getOpState().getOpName());
+        }
+
+    }
 
     @Test
     public void testLogisticTestOutput() {
@@ -489,7 +555,8 @@ public class SameDiffTests {
                 SDVariable outputTimesY = outputs.mul(y);
                 SDVariable oneMinusOutput = outputs.rsub(1.0);
                 SDVariable oneMinusPredictions = y.rsub(1.0);
-                SDVariable probs = outputTimesY.add(oneMinusOutput.mul(oneMinusPredictions));
+                SDVariable oneMinusMul = oneMinusOutput.mul(oneMinusPredictions);
+                SDVariable probs = outputTimesY.add(oneMinusMul);
                 SDVariable logProbs = sameDiff.log(probs);
                 SDVariable sum = sameDiff.sum(logProbs,Integer.MAX_VALUE);
                 SDVariable negSum = sameDiff.neg(sum);

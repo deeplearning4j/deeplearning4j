@@ -1916,13 +1916,6 @@ public class SameDiff {
     public void defineFunction(String function,
                                SameDiffFunctionDefinition functionDefinition,
                                Map<String,INDArray> inputs) {
-        //create subgraph
-        //ensure function is apart of this graph as well
-        if(sameDiffFunctionDefinitionMap.get(function) == null) {
-            functionDefinition.define(this, inputs);
-            this.sameDiffFunctionDefinitionMap.put(function, functionDefinition);
-        }
-
         if(!sameDiffFunctionInstances.containsKey(function)) {
             SameDiff sub = SameDiff.create();
             sub.setWorkspace(workspace);
