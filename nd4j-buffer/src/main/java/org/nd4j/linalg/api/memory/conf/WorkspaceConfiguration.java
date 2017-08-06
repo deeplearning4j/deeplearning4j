@@ -20,56 +20,45 @@ import java.io.Serializable;
 @AllArgsConstructor
 // TODO: add json mapping here
 public class WorkspaceConfiguration implements Serializable {
-    protected AllocationPolicy policyAllocation;
-    protected SpillPolicy policySpill;
-    protected MirroringPolicy policyMirroring;
-    protected LearningPolicy policyLearning;
-    protected ResetPolicy policyReset;
+    @Builder.Default protected AllocationPolicy policyAllocation = AllocationPolicy.OVERALLOCATE;
+    @Builder.Default protected SpillPolicy policySpill = SpillPolicy.EXTERNAL;
+    @Builder.Default protected MirroringPolicy policyMirroring = MirroringPolicy.FULL;
+    @Builder.Default protected LearningPolicy policyLearning = LearningPolicy.FIRST_LOOP;
+    @Builder.Default protected ResetPolicy policyReset = ResetPolicy.BLOCK_LEFT;
+    @Builder.Default protected LocationPolicy policyLocation = LocationPolicy.RAM;
+
+    /**
+     * Path to file to be memory-mapped
+     */
+    @Builder.Default protected String tempFilePath = null;
 
     /**
      * This variable specifies amount of memory allocated for this workspace during initialization
      */
-    protected long initialSize;
+    @Builder.Default protected long initialSize = 0;
 
     /**
      * This variable specifies minimal workspace size
      */
-    protected long minSize;
+    @Builder.Default protected long minSize = 0;
 
     /**
      * This variable specifies maximal workspace size
      */
-    protected long maxSize;
+    @Builder.Default protected long maxSize = 0;
 
     /**
      * For workspaces with learnable size, this variable defines how many cycles will be spent during learning phase
      */
-    protected int cyclesBeforeInitialization;
+    @Builder.Default protected int cyclesBeforeInitialization = 0;
 
     /**
      * If OVERALLOCATION policy is set, memory will be overallocated in addition to initialSize of learned size
      */
-    protected double overallocationLimit;
+    @Builder.Default protected double overallocationLimit = 0.3;
 
     /**
      * This value is used only for circular workspaces
      */
-    protected int stepsNumber;
-
-    public static class WorkspaceConfigurationBuilder {
-        private AllocationPolicy policyAllocation = AllocationPolicy.OVERALLOCATE;
-        private SpillPolicy policySpill = SpillPolicy.EXTERNAL;
-        private MirroringPolicy policyMirroring = MirroringPolicy.FULL;
-        private LearningPolicy policyLearning = LearningPolicy.FIRST_LOOP;
-        private ResetPolicy policyReset = ResetPolicy.BLOCK_LEFT;
-
-        private long initialSize = 0;
-        private long minSize = 0;
-        private long maxSize = 0;
-
-        protected int cyclesBeforeInitialization = 0;
-
-        private double overallocationLimit = 0.3;
-        private int stepsNumber = 2;
-    }
+    @Builder.Default protected int stepsNumber = 2;
 }

@@ -1566,4 +1566,8 @@ public abstract class NativeOps extends Pointer {
     public abstract void sortCooIndicesDouble(PointerPointer extraPointers, IntPointer indices, DoublePointer values, long length, int rank);
 
     public abstract void sortCooIndicesHalf(PointerPointer extraPointers, IntPointer indices, @Cast("float16*") ShortPointer values, long length, int rank);
+
+    public abstract LongPointer mmapFile(PointerPointer extraPointers, String fileName, long length);
+
+    public abstract void munmapFile(PointerPointer extraPointers, LongPointer ptrMap, long length);
 }
