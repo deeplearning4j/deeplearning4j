@@ -106,7 +106,7 @@ public class SVMLightRecordWriter extends FileRecordWriter {
      */
     @Override
     public void setConf(Configuration conf) {
-        super.setConf(conf); // this is not safe -- overwrites output file path!
+        super.setConf(conf);
         featureFirstColumn = conf.getInt(FEATURE_FIRST_COLUMN, 0);
         hasLabel = conf.getBoolean(HAS_LABELS, true);
         multilabel = conf.getBoolean(MULTILABEL, false);
@@ -114,6 +114,7 @@ public class SVMLightRecordWriter extends FileRecordWriter {
         labelLastColumn = conf.getInt(LABEL_LAST_COLUMN, -1);
         featureLastColumn = conf.getInt(FEATURE_LAST_COLUMN, labelFirstColumn > 0 ? labelFirstColumn-1 : -1);
         zeroBasedIndexing = conf.getBoolean(ZERO_BASED_INDEXING, false);
+        zeroBasedLabelIndexing = conf.getBoolean(ZERO_BASED_LABEL_INDEXING, false);
     }
 
     /**
@@ -199,7 +200,7 @@ public class SVMLightRecordWriter extends FileRecordWriter {
                     }
                 }
             }
-            if (result.toString() == "") { // Add "unlabeled" label if no labels found
+            if (result.toString().equals("")) { // Add "unlabeled" label if no labels found
                 result.append(SVMLightRecordReader.LABEL_DELIMITER + UNLABELED);
             }
 

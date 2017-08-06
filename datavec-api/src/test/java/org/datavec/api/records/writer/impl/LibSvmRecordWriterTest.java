@@ -146,7 +146,12 @@ public class LibSvmRecordWriterTest {
         List<String> linesOriginal = new ArrayList<>();
         for (String line : FileUtils.readLines(inputFile)) {
             if (!line.startsWith(LibSvmRecordReader.COMMENT_CHAR)) {
-                String lineClean = line.split(LibSvmRecordReader.COMMENT_CHAR, 2)[0].trim();
+                String lineClean = line.split(LibSvmRecordReader.COMMENT_CHAR, 2)[0];
+                if (lineClean.startsWith(" ")) {
+                    lineClean = " " + lineClean.trim();
+                } else {
+                    lineClean = lineClean.trim();
+                }
                 Matcher m = p.matcher(lineClean);
                 lineClean = m.replaceAll("");
                 linesOriginal.add(lineClean);
@@ -252,7 +257,8 @@ public class LibSvmRecordWriterTest {
 
         try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
             Configuration configWriter = new Configuration();
-            configWriter.setBoolean(LibSvmRecordWriter.ZERO_BASED_INDEXING, true);
+            configWriter.setBoolean(LibSvmRecordWriter.ZERO_BASED_INDEXING, true); // NOT STANDARD!
+            configWriter.setBoolean(LibSvmRecordWriter.ZERO_BASED_LABEL_INDEXING, true); // NOT STANDARD!
             configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
             configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 3);

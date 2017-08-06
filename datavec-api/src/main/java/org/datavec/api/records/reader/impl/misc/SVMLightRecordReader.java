@@ -164,12 +164,11 @@ public class SVMLightRecordReader extends LineRecordReader {
         if (w == null)
             throw new NoSuchElementException("No next element found!");
         String line = w.toString();
-        List<Writable> record = new ArrayList<>();
+        List<Writable> record = new ArrayList<>(Collections.nCopies(numFeatures, ZERO));
 
         // Remove trailing comments
         String commentRegex = ALLOWED_DELIMITERS + "*" + COMMENT_CHAR + ".*$";
         String[] tokens = line.replaceFirst(commentRegex, "").split(ALLOWED_DELIMITERS);
-        int a = 1;
 
         // Iterate over feature tokens
         for (int i = 1; i < tokens.length; i++) {
@@ -201,26 +200,19 @@ public class SVMLightRecordReader extends LineRecordReader {
                 if (numFeatures >= 0 && index >= numFeatures)
                     throw new IndexOutOfBoundsException("Found " + (index+1) + " features in record, expected " + numFeatures);
 
-                // Add remaining zero features
-                while (record.size() < index)
-                    record.add(ZERO);
-
                 // Add feature
-                record.add(new DoubleWritable(Double.parseDouble(featureTokens[1])));
+                record.set(index, new DoubleWritable(Double.parseDouble(featureTokens[1])));
             }
         }
 
-        // Add remaining zero features
-        while (record.size() < numFeatures)
-            record.add(ZERO);
-
         // If labels should be appended
         if (appendLabel) {
-            List<Writable> labels = Collections.nCopies(numLabels, LABEL_ZERO);
+            List<Writable> labels = new ArrayList<>();
 
             // Treat labels as indeces for multilabel binary classification
             if (multilabel) {
-                if (tokens[0] != "") {
+                labels = new ArrayList<>(Collections.nCopies(numLabels, LABEL_ZERO));
+                if (!tokens[0].equals("")) {
                     String[] labelTokens = tokens[0].split(LABEL_DELIMITER);
                     for (int i = 0; i < labelTokens.length; i++) {
                         // Parse label index -- enforce that it's a positive integer
@@ -245,24 +237,18 @@ public class SVMLightRecordReader extends LineRecordReader {
                         if (numLabels >= 0 && index >= numLabels)
                             throw new IndexOutOfBoundsException("Found " + (index + 1) + " labels in record, expected " + numLabels);
 
-//                        // Add remaining zero features
-//                        while (labels.size() < index)
-//                            labels.add(LABEL_ZERO);
-
                         // Add label
                         labels.set(index, LABEL_ONE);
                     }
                 }
-//                // Add remaining zero labels
-//                while (labels.size() < numLabels)
-//                    labels.add(LABEL_ZERO);
             } else {
                 String[] labelTokens = tokens[0].split(LABEL_DELIMITER);
+                int numLabelsFound = labelTokens[0].equals("") ? 0 : labelTokens.length;
                 if (numLabels < 0)
-                    numLabels = labelTokens.length;
-                if (labelTokens.length != numLabels)
+                    numLabels = numLabelsFound;
+                if (numLabelsFound != numLabels)
                     throw new IndexOutOfBoundsException("Found " + labelTokens.length + " labels in record, expected " + numLabels);
-                for (int i = 0; i < labelTokens.length; i++) {
+                for (int i = 0; i < numLabelsFound; i++) {
                     try { // Encode label as integer, if possible
                         labels.add(new IntWritable(Integer.parseInt(labelTokens[i])));
                     } catch (NumberFormatException e) {
