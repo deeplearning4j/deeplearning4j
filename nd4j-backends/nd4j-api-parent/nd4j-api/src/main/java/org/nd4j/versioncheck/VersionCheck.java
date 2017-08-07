@@ -24,6 +24,11 @@ public class VersionCheck {
      */
     public static final String VERSION_CHECK_PROPERTY = "org.nd4j.versioncheck";
 
+    private static final String SCALA_210_SUFFIX = "_2.10";
+    private static final String SCALA_211_SUFFIX = "_2.11";
+    private static final String SPARK_1_VER_STRING = "spark_1";
+    private static final String SPARK_2_VER_STRING = "spark_2";
+
     private static final String UNKNOWN_VERSION = "(Unknown, pre-0.9.1)";
 
     private static final String DL4J_GROUPID = "org.deeplearning4j";
@@ -44,9 +49,9 @@ public class VersionCheck {
 
     /**
      * Detailed level for logging:
-     * GAV: display group ID, artefact, version
-     * GAVC: display group ID, artefact, version, commit ID
-     * FULL: display group ID, artefact, version, commit ID, build time, branch, commit message
+     * GAV: display group ID, artifact, version
+     * GAVC: display group ID, artifact, version, commit ID
+     * FULL: display group ID, artifact, version, commit ID, build time, branch, commit message
      */
     public enum Detail {
         GAV,
@@ -85,21 +90,73 @@ public class VersionCheck {
 
         List<VersionInfo> repos = getVersionInfos();
         Set<String> foundVersions = new HashSet<>();
-        for(VersionInfo gpr : repos){
-            String g = gpr.getGroupId();
+        for(VersionInfo vi : repos){
+            String g = vi.getGroupId();
             if(g != null && GROUPIDS_TO_CHECK.contains(g)){
-                foundVersions.add(gpr.getBuildVersion());
+                String version = vi.getBuildVersion();
+
+                if(version.contains("_spark_")){
+                    //Normalize spark versions:
+                    // "0.9.1_spark_1" to "0.9.1" and "0.9.1_spark_1-SNAPSHOT" to "0.9.1-SNAPSHOT"
+                    version = version.replaceAll("_spark_1","");
+                    version = version.replaceAll("_spark_2","");
+                }
+
+                foundVersions.add(version);
             }
         }
+
+        boolean logVersions = false;
 
         if(foundVersions.size() > 1){
             log.warn("*** ND4J VERSION CHECK FAILED - INCOMPATIBLE VERSIONS FOUND ***");
             log.warn("Incompatible versions (different version number) of DL4J, ND4J, RL4J, DataVec, Arbiter are unlikely to function correctly");
-            log.info("Versions of artifacts found on classpath:");
-            logVersionInfo();
+            logVersions = true;
         } else if(foundVersions.size() == 1 && foundVersions.contains(UNKNOWN_VERSION)){
             log.warn("*** ND4J VERSION CHECK FAILED - COULD NOT INFER VERSIONS ***");
             log.warn("Incompatible versions (different version number) of DL4J, ND4J, RL4J, DataVec, Arbiter are unlikely to function correctly");
+            logVersions = true;
+        }
+
+
+        //Also: check for mixed scala versions - but only for our dependencies... These are in the artifact ID,
+        // scored like dl4j-spack_2.10 and deeplearning4j-ui_2.11
+        //And check for mixed spark versions (again, just DL4J/DataVec etc dependencies for now)
+        boolean scala210 = false;
+        boolean scala211 = false;
+        boolean spark1 = false;
+        boolean spark2 = false;
+        for(VersionInfo vi : repos){
+            String artifact = vi.getArtifactId();
+            if(!scala210 && artifact.contains(SCALA_210_SUFFIX)){
+                scala210 = true;
+            }
+            if(!scala211 && artifact.contains(SCALA_211_SUFFIX)){
+                scala211 = true;
+            }
+
+            String version = vi.getBuildVersion();
+            if(!spark1 && version.contains(SPARK_1_VER_STRING)){
+                spark1 = true;
+            }
+            if(!spark2 && version.contains(SPARK_2_VER_STRING)){
+                spark2 = true;
+            }
+        }
+
+        if(scala210 && scala211){
+            log.warn("*** ND4J VERSION CHECK FAILED - FOUND BOTH SCALA VERSION 2.10 AND 2.11 ARTIFACTS ***");
+            log.warn("Projects with mixed Scala versions (2.10/2.11) are unlikely to function correctly");
+            logVersions = true;
+        }
+
+        if(spark1 && spark2){
+            log.warn("*** ND4J VERSION CHECK FAILED - FOUND BOTH SPARK VERSION 1 AND 2 ARTIFACTS ***");
+            log.warn("Projects with mixed Spark versions (1 and 2) are unlikely to function correctly");
+            logVersions = true;
+        }
+
+        if(logVersions){
             log.info("Versions of artifacts found on classpath:");
             logVersionInfo();
         }
@@ -199,7 +256,7 @@ public class VersionCheck {
      * Get the version information for dependencies as a string with a specified amount of detail
      *
      * @param detail Detail level for the version information. See {@link Detail}
-     * @return
+     * @return Version information, as a String
      */
     public static String versionInfoString(Detail detail) {
         StringBuilder sb = new StringBuilder();
