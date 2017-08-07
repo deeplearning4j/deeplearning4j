@@ -38,6 +38,7 @@ import play.server.Server;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -69,10 +70,10 @@ public class PlayUIServer extends UIServer {
 
     private Server server;
     private final BlockingQueue<StatsStorageEvent> eventQueue = new LinkedBlockingQueue<>();
-    private List<Pair<StatsStorage, StatsStorageListener>> listeners = new ArrayList<>();
-    private List<StatsStorage> statsStorageInstances = new ArrayList<>();
+    private List<Pair<StatsStorage, StatsStorageListener>> listeners = new CopyOnWriteArrayList<>();
+    private List<StatsStorage> statsStorageInstances = new CopyOnWriteArrayList<>();
 
-    private List<UIModule> uiModules = new ArrayList<>();
+    private List<UIModule> uiModules = new CopyOnWriteArrayList<>();
     private RemoteReceiverModule remoteReceiverModule;
     //typeIDModuleMap: Records which modules are registered for which type IDs
     private Map<String, List<UIModule>> typeIDModuleMap = new ConcurrentHashMap<>();
