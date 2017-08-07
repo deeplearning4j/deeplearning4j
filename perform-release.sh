@@ -9,9 +9,7 @@ fi
 RELEASE_VERSION=$1
 SNAPSHOT_VERSION=$2
 STAGING_REPOSITORY=$3
-if [[ -z ${SKIP_BUILD:-} ]]; then
-    SKIP_BUILD=0
-fi
+SKIP_BUILD=${SKIP_BUILD:-0}
 
 echo "Releasing version $RELEASE_VERSION ($SNAPSHOT_VERSION) to repository $STAGING_REPOSITORY"
 echo "========================================================================================"
