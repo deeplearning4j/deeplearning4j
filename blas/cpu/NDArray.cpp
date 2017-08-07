@@ -28,6 +28,30 @@ template <typename T> NDArray<T>::NDArray(int rows, int columns, char order){
     delete[] shape;
 }
 
+template <typename T> NDArray<T>::NDArray(char order, std::initializer_list<int> shape) {
+    int rank = (int) shape.size();
+
+    if (rank > MAX_RANK)
+        throw std::invalid_argument("Rank of NDArray can't exceed 32");
+
+    int *shapeOf = new int[rank];
+    int cnt = 0;
+
+    for (auto v: shape)
+        shapeOf[cnt++] = v;
+
+    if (order == 'f') {
+        shapeInfo = shape::shapeBufferFortran(rank, shapeOf);
+    } else {
+        shapeInfo = shape::shapeBuffer(rank, shapeOf);
+    }
+
+    this->allocated = true;
+    this->buffer = new T[shape::length(shapeInfo)];
+    memset(this->buffer, 0, sizeOfT() * shape::length(shapeInfo));
+
+    delete[] shapeOf;
+}
 
 template <typename T>
 void NDArray<T>::replacePointers(T* _buffer, int* _shapeInfo, bool releaseExisting) {
@@ -109,7 +133,6 @@ template <typename T> void NDArray<T>::putScalar(int i, int k, T value) {
     putScalar(xOffset, value);
 }
 
-
 // Returns value from 3D tensor by coordinates
 template <typename T> T NDArray<T>:: getScalar(int i, int k, int j) {
     // throw something here
@@ -186,6 +209,34 @@ template <typename T> NDArray<T>* NDArray<T>::dup(char newOrder) {
         result->assign(this);
 
         return result;
+}
+
+template <typename T>
+NDArray<T>* NDArray<T>::transpose() {
+    int *rearrange = new int[this->rankOf()];
+    int cnt = 0;
+    for (int d = this->rankOf() - 1; d >= 0; d--) {
+        rearrange[cnt++] = d;
+    }
+
+    int sLen = this->rankOf() * 2 + 4;
+    int *newShapeBuffer = new int[sLen];
+    memcpy(newShapeBuffer, this->shapeInfo, sizeof(int) * sLen);
+
+    shape::doPermuteShapeBuffer(newShapeBuffer, rearrange);
+
+    // fixme: this is bad
+    newShapeBuffer[sLen - 2] = 1;
+
+    T *newBuffer = new T[this->lengthOf()];
+    memcpy(newBuffer, this->buffer, this->sizeOfT() * this->lengthOf());
+
+    NDArray<T> *result = new NDArray(newBuffer, newShapeBuffer);
+    result->allocated = true;
+
+    delete[] rearrange;
+
+    return result;
 }
 
 template <typename T>

@@ -20,6 +20,8 @@ template <typename T> class NDArray
 
         NDArray(int length, char order);
 
+        NDArray(char order, std::initializer_list<int> shape);
+
 
     /**
      * This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
@@ -140,6 +142,13 @@ template <typename T> class NDArray
      * @return
      */
     T meanNumber();
+
+
+    /**
+     * This method applies transpose to this NDArray and returns new instance of NDArray
+     *
+     */
+    NDArray<T> *transpose();
 
     /**
      * This method returns true if two arrays are equal, with custom Eps value, false otherwise

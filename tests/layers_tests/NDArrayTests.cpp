@@ -143,3 +143,30 @@ TEST_F(NDArrayTest, TestAddiRowVector) {
 
     ASSERT_TRUE(exp->equalsTo(array));
 }
+
+TEST_F(NDArrayTest, Test3D_1) {
+    auto arrayC = new NDArray<double>('c', {2, 5, 10});
+    auto arrayF = new NDArray<double>('f', {2, 5, 10});
+
+    ASSERT_EQ(100, arrayC->lengthOf());
+    ASSERT_EQ(100, arrayF->lengthOf());
+
+    ASSERT_EQ('c', arrayC->ordering());
+    ASSERT_EQ('f', arrayF->ordering());
+}
+
+TEST_F(NDArrayTest, TestTranspose1) {
+    auto *arrayC = new NDArray<double>('c', {2, 5, 10});
+
+    int *expC = new int[10] {3, 2, 5, 10, 50, 10, 1, 0, 1, 99};
+    int *expT = new int[10] {3, 10, 5, 2, 1, 10, 50, 0, 1, 102};
+
+    auto *arrayT = arrayC->transpose();
+
+
+    for (int e = 0; e < arrayC->rankOf() * 2 + 4; e++) {
+        ASSERT_EQ(expC[e], arrayC->shapeInfo[e]);
+        ASSERT_EQ(expT[e], arrayT->shapeInfo[e]);
+    }
+
+}
