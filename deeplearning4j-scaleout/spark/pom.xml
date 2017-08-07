@@ -55,7 +55,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>${maven-build-helper-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>add-source</id>
@@ -72,7 +71,6 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>${maven-scala-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
