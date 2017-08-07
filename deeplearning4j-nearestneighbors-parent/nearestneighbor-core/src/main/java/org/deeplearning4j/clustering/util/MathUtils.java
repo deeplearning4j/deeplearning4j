@@ -27,6 +27,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.clustering.berkeley.Counter;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -616,9 +617,10 @@ public class MathUtils {
 
         }
         //All data sets must be same size
-        for (List<Double> lists : ret) {
+        for (Iterator<Double> iterator = ret.iterator(); iterator().hasNext();) {
+            List<Double> lists = iterator.next();
             if (lists.size() < chunk)
-                ret.remove(lists);
+                iterator.remove();
         }
         return ret;
     }//end partitionVariable
