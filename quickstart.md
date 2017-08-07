@@ -26,6 +26,9 @@ Overview
 Deeplearning4j is a "pick and choose with everything available" framework. That means *everything* is made available for you from the beginning. Deeplearning4j has several sub projects for you to build end to end applications.
 Deeplearning4j is not tensorflow or pytorch. See [our comparison page](https://deeplearning4j.org/compare-dl4j-torch7-pylearn)
 
+
+If you're coming here looking to just deploy models to production, you might like our [model import from keras](http://deeplearning4j.org/keras)
+
 Deeplearning4j has several submodules. This ranges from a visualization UI to distributed training on spark. For an overview of these modules, please look at our [examples](https://github.com/deeplearning4j/dl4j-examples)
 
 To get started on a simple desktop app, you need 2 things. An [nd4j backend](http://nd4j.org/backend.html) and deeplearning4j-core. For more code, see the [simpler examples submodule](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/pom.xml#L64)
@@ -47,6 +50,9 @@ Deeplearning4j has 2 other notable components. [Baked in hyper param search](htt
 and [built in ETL](https://github.com/deeplearning4j/DataVec)
 
 Overall, deep learning4j is meant to be an end to end platform for building real applications. Not just a tensor library with automatic differentiation. If you want that, that's in nd4j and it's called [samediff](https://github.com/deeplearning4j/nd4j/tree/master/samediff)  samediff is still in high alpha yet but if you want to take a crack at contributing please come in to our livechat.
+
+Lastly, if you are benchmarking deeplearnin4j, please consider coming in to our live chat and asking for help. Deeplearning4j has [all the knobs](http://deeplearning4j.org/native)
+but some may not work like you expect the python frameworks to do. Generally you have to build deeplearning4j from source for some applications.
 
 #### A Taste of Code
 
