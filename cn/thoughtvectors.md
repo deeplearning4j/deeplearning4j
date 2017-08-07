@@ -1,66 +1,71 @@
 ---
-title: Thought Vectors, Deep Learning & the Future of AI
+title: 思维向量、深度学习与人工智能的未来
 layout: cn-default
 ---
 
-# Thought Vectors, Deep Learning & the Future of AI
+# 思维向量、深度学习与人工智能的未来
 
-“Thought vector” is a term popularized by Geoffrey Hinton, the prominent deep-learning researcher now at Google, which is using [vectors based on natural language](http://www.bloomberg.com/news/articles/2015-10-26/google-turning-its-lucrative-web-search-over-to-ai-machines) to improve its search results. 
+“思维向量”是一个由现在谷歌任职的著名深度学习研究者Geoffrey Hinton发扬光大的术语，目前谷歌正在使用[基于自然语言的向量](http://www.bloomberg.com/news/articles/2015-10-26/google-turning-its-lucrative-web-search-over-to-ai-machines)来改善其搜索结果。 
 
-A thought vector is like a [*word vector*](http://deeplearning4j.org/word2vec.html#embed), which is typically a vector of 300-500 numbers that represent a word. A word vector represents a word’s meaning as it relates to other words (its context) with a single column of numbers. 
+思维向量与[*词向量*](http://deeplearning4j.org/word2vec.html#embed)相类似。词向量通常是一个包含300-500个数字的向量，用于表示一个词。词向量用一个单列的数值矩阵来表示一个词的含义，亦即该词与其他词（其上下文）之间的关联。 
 
-That is, the word is embedded in a vector space using a shallow neural network like [word2vec](http://deeplearning4j.org/word2vec.html), which learns to generate the word's context through repeated guesses. 
+[Word2Vec](http://deeplearning4j.org/word2vec.html)等浅层神经网络可以将词嵌入至一个向量空间中，然后通过反复预测来学习生成词的上下文。 
 
-A thought vector, therefore, is a vectorized thought, and the vector represents one thought’s relations to others. A thought vector is trained to generate a thought's context. Just as a words are linked by grammar (a sentence is just a path drawn across words), so thoughts are linked by a chain of reasoning, a logical path of sorts. 
+因此，一个思维向量就是一个想法的向量化形式，用以表示该想法与其他想法之间的关联。思维向量网络的训练目标是生成一个想法的上下文。就像词汇由语法相连接一样（一个句子其实就是一条经过多个词的路径），不同想法之间是由思维链条，亦即某种逻辑路径连接起来的。 
 
-So training an algorithm to represent any thought in its relation to others might be called the artificial construction of common sense. Given one thought, a neural network might predict the thoughts that are likely to follow, much like [recurrent neural networks](http://deeplearning4j.org/recurrentnetwork) do with characters and words. Conversation as search. 
+因此，让一种算法学习如何表示任意想法与其他想法之间关联的训练过程可以称为人工常识构建。神经网络可以依据一个给定的想法预测紧接着有可能会出现的想法，就像[循环神经网络](http://deeplearning4j.org/cn/recurrentnetwork)预测字符和词语一样。会话即搜索。 
 
-Hinton, in a 2015 [speech to the Royal Society in London](https://www.youtube.com/watch?v=IcOMKXAw5VA), said this: 
+Hinton在2015年[在伦敦皇家学会的演讲](https://www.youtube.com/watch?v=IcOMKXAw5VA)中如是说： 
 
-		"The implications of this for document processing are very important. If we convert a sentence into a vector that captures the meaning of the sentence, then Google can do much better searches; they can search based on what's being said in a document.
-		Also, if you can convert each sentence in a document into a vector, then you can take that sequence of vectors and [try to model] natural reasoning. And that was something that old fashioned AI could never do.
-		If we can read every English document on the web, and turn each sentence into a thought vector, you've got plenty of data for training a system that can reason like people do. 
-		Now, you might not want it to reason like people do, but at least we can see what they would think.
-		What I think is going to happen over the next few years is this ability to turn sentences into thought vectors is going to rapidly change the level at which we can understand documents. 
-		To understand it at a human level, we're probably going to need human level resources and we have trillions of connections [in our brains], but the biggest networks we have built so far only have billions of connections. So we're a few orders of magnitude off, but I'm sure the hardware people will fix that." 
+		“这对于文档处理具有非常重要的意义。如果我们将一个句子转换为一个能够捕捉句子含义的向量，那么谷歌的搜索就可以大大改善；他们就可以依据文档中所说的内容来进行搜索。
+		
+		同时，如果你能把每份文档中的每个句子都转换为向量，那么就可以按照这些向量的顺序来[尝试]实现自然思维[建模]。而这是旧式人工智能永远无法做到的一件事。
+		
+		如果我们能读取网页上的每一份英语文档，将每句话都转换为一个思维向量，那就可以获得足够多的数据，能够训练出一个可以像人一样思考的系统。 
+		
+		当然，我们可能未必真的要让系统采用人们在网上的思维方式，但这样我们至少可以预见到人们的想法。
+		
+		我觉得未来几年的发展趋势是，这种把句子转换为向量的能力会快速改变我们理解文档的水平。 
+		
+		要达到人类的理解水平，我们可能需要人类级别的资源——我们[大脑中]有数万亿个神经连接，而目前我们构建的最大的网络也只有数十亿个连接。所以目前我们还差了几个数量级，但我相信硬件专家们会解决这个问题。” 
 
-Let’s pause for a moment and consider what Hinton is saying. 
+且让我们玩味一下Hinton的话。 
 
-Traditional, rules-based AI, a pile of if-then statements locking brittle symbols into hard-coded relationships with others, is not flexible enough to represent the world without near infinite amounts of human intervention. Symbolic logic and knowledge graphs may establish strict relations between entities, but those relations are unlikely to adapt quickly to the new.
+传统的基于规则的人工智能无非是一堆if-then语句，用硬编码在僵硬的符号之间建立锁定的关系，因此它们的灵活度很低，没有人类的大规模干预就无法表示现实世界中的各类现象。符号逻辑和知识图或许可以在实体间建立严格的关联，但这种关联不可能快速适应新的情况。
 
-Hinton is saying that, rather than hard-code the logical leaps that lead an AI from one thought to another, we can simply feed neural nets enough text – enough trains of thought – that they will eventually be able to mimic the thoughts expressed there, and generate their own thought trains, the context of the thoughts they've been fed. 
+Hinton的意思是说，我们不应该用硬编码来指定人工智能要沿着何种逻辑从一个想法跳至另一个想法，其实只需要对神经网络输入足够多的文本（足够多的思维路径），网络最终就能模仿这些文本中表达的想法，并且生成自己的思维路径，即输入网络的想法的上下文。 
 
-This affects how well algorithms will understand natural-language queries at search engines like Google, and it will also go beyond pure search. 
+对于谷歌等搜索引擎而言，这将会改变其算法理解自然语言查询的能力，使之超越纯粹的搜索。 
 
-With the ability to associate thoughts comes the ability to converse. Thought vectors could serve as the basis for chatbots, personal assistants, and other agents whose purpose is to augment and entertain human beings. That’s the good side. The bad side is that, [on the Internet, you really won’t know who’s a dog](https://upload.wikimedia.org/wikipedia/en/f/f8/Internet_dog.jpg), or in this case, a bot. 
+思维关联能力带来的是会话能力。以增强人类能力和娱乐人类为目的的聊天机器人、个人助理等智能体可以建立在思维向量的基础之上——这是好的一面。而坏的一面则是，[在网上，你根本不知道谁是条狗](https://upload.wikimedia.org/wikipedia/en/f/f8/Internet_dog.jpg)，或者说，谁是个机器人。 
 
-If we define thought vectors loosely, we could say they are already being used to represent similar sentences in different languages, which is useful in [machine translation](http://arxiv.org/pdf/1409.3215). (In fact, improving Google Translate was one the goals that brought thought vectors about.) They are therefore independent of any particular language. 
+如果采用不太严格的定义，我们可以说思维向量已在被用于表示不同语言中的相似语句了，这在[机器翻译](http://arxiv.org/pdf/1409.3215)领域具有实践意义。（事实上，发明思维向量的目的之一就是改进谷歌翻译。）因此，思维向量是独立于任何特定语言之外的。 
 
-Thought vectors can also [represent images](http://arxiv.org/abs/1411.4555), which makes them more general than, and independent of, language alone. Thus the term *thought*, a concept more general that the textual or visual mediums by which it is expressed. 
-The problem with thought vectors, even if we limit ourselves to words, is that their number increases exponentially with the words used to express them. Thoughts are combinatorial. What's more, one sentence may contain many states, or discrete elements of thought; e.g. x is-a y, or b has-a c. So every sentence might contain and mingle several thoughts.
+思维向量还可以[表示图像](http://arxiv.org/abs/1411.4555)，这不仅说明思维向量的范围广于语言本身，也进一步证明思维向量并不依赖于语言。所以我们使用的术语是*想法*（thought），这一概念本身的范围比用于表达想法的文字或视觉媒体更加广泛。 
+思维向量的问题是，即便我们只停留在词语层面，向量的数量也会随着表达想法所用的词数增加而呈现指数式增长。想法是组合性的。此外，一个句子可能包含许多种状态，亦即想法的元素；比如x是一个y，或者b有一个c。因此每句话中都可能包含、混杂了多个想法。
 
-This is important, because when we vectorize words, we index those words in a lookup table. In the massive matrix of all words, each word is a vector, and that vector is a row in the matrix. (Each column represents a feature of the word, which in a low-dimensional space would be 300-500 columns.) 
+这一点很重要，因为我们在将词向量化的时候，会在一个查找表中生成这些词的索引。在包含所有词的大规模矩阵中，每个词都是一个向量，而该向量是矩阵的一行。（每一列表示词的一个特征，而在低维空间中的词可能有300～500个列。） 
 
-Given that neural networks are already taxing current hardware to its limits, the exponentially larger costs of manipulating a dense matrix containing all thought vectors looks impractical. For now.  
+操纵包含所有思维向量的致密矩阵会令资源开销指数式增长，鉴于当下的神经网络已经在考验现有硬件的极限，这种模式似乎并不可行。至少目前还是这样。
 
-The autonomous conversational agents, or chatbots, so much in the news will probably require proper thought vectors to determine the most appropriate response in a given conversation. For the moment, those chatbots are unable to deliver useful, interesting and plausible responses in a complex conversation of any duration. Our best tools tend to serve up hard answers, like Watson winning at Jeopardy, or 3-5 words sentences, as you find with Google Smart Reply. As of mid-2016, we're not capable of much more than that. 
+新闻中频频出现的自主会话智能体（聊天机器人）多半需要依赖可靠的思维向量才能决定某次具体会话中最恰当的回答。就目前而言，这些聊天机器人还无法在任意长度的复杂会话中给出有用、有趣且合理的回答。我们最好的工具通常善于回答事实性问题，比如智力问答节目Jeopardy的冠军是Watson），或是生成3～5个词的句子，就像谷歌智能回复技术的功能一样。截止到2016年年中，我们的能力并未在此基础上提升多少。 
 
-The future of this branch of AI will depend on advances in hardware, as well as advances in thought vectorization, or capturing thoughts with numbers in novel ways. (How do we discretize sentences? What are the fundamental units of thought?)
+人工智能的这一分支未来将取决于硬件发展，也取决于思维向量的发展，即能否用全新的数字形式来表示想法。（如何将语句离散化？思维的基本单位是什么？）
 
-A word should be said about semantic structure. It's possible to embed dependency and constituency based parsing in vectors. In fact, interesting work is being done at [Stanford](http://nlp.stanford.edu/), [Cornell](https://confluence.cornell.edu/display/NLP/Home) and [University of Texas](http://www.katrinerk.com/home/research/publications), among other schools. 
+语义结构方面有一点应当说明。基于依赖关系和语法成分的解析是可以嵌入向量的。事实上，[斯坦福](http://nlp.stanford.edu/)、[康奈尔](https://confluence.cornell.edu/display/NLP/Home)和[德克萨斯大学](http://www.katrinerk.com/home/research/publications)等学校目前就这一课题开展的研究都很值得关注。 
 
-Advances in theory and hardware, in turn, will give us other tools to tackle natural language processing and machine conceptualization, the missing link between symbolic logic, which is abstract, and machine percetion via deep learning, which is processing concrete instances of, say, images or sounds. 
+理论与硬件的进步将为我们带来其他工具，帮助我们解决自然语言处理和机器概念化的问题——这正是抽象的符号逻辑与基于深度学习的机器感知（主要处理图像、声音等具体实例）之间缺失的一环。 
 
-Here are a few of the approaches that are being made to thought vectorization: 
+以下是几种目前用于思维向量化的方法： 
 
-* Doc2vec: [Doc2Vec](http://deeplearning4j.org/doc2vec.html), paragraph vectors and sentence vectors are broadly synonymous. It doesn't necessarily account for word order and it is generally used in associating word groups with labels (in sentiment analysis, for example)
-* [Seq2seq bilingual translation](http://arxiv.org/pdf/1409.3215) and [skip-thought vectors](http://arxiv.org/abs/1506.06726).
+* Doc2vec：[Doc2Vec](http://deeplearning4j.org/doc2vec.html)，段落向量和语句向量基本上同一个意思。它不一定会考虑词的顺序，一般用于在有标签的词的组合之间建立关联（比如用于情感分析）
+* [Seq2seq双语翻译](http://arxiv.org/pdf/1409.3215)和[skip-thought向量](http://arxiv.org/abs/1506.06726)。
 
-### <a name="beginner">Other Deeplearning4j Tutorials</a>
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
-* [LSTMs and Recurrent Networks](./lstm)
-* [Neural Networks](./neuralnet-overview)
-* [Neural Networks and Regression](./linear-regression)
-* [Convolutional Networks](./convolutionalnets)
+### <a name="beginner">其他Deeplearning4j教程</a>
+* [受限玻尔兹曼机](./restrictedboltzmannmachine)
+* [本征向量、协方差、PCA和熵](./cn/eigenvector)
+* [LSTM和循环网络](./cn/lstm)
+* [神经网络](./neuralnet-overview)
+* [神经网络与回归分析](./linear-regression)
+* [卷积网络](./convolutionalnets)
 * [Word2vec](./word2vec)
