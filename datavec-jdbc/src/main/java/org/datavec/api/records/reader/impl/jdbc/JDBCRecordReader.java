@@ -46,6 +46,8 @@ public class JDBCRecordReader extends BaseRecordReader {
     @Setter
     private boolean trimStrings = false;
     @Setter
+    private int resultSetType = ResultSet.TYPE_SCROLL_INSENSITIVE;
+    @Setter
     private DataSource dataSource;
     private final String metadataQuery;
     private final int[] metadataIndices;
@@ -55,6 +57,7 @@ public class JDBCRecordReader extends BaseRecordReader {
     public final static String JDBC_DRIVER_CLASS_NAME = NAME_SPACE + ".jdbcDriverClassName";
     public final static String JDBC_USERNAME = NAME_SPACE + ".jdbcUsername";
     public final static String JDBC_PASSWORD = NAME_SPACE + ".jdbcPassword";
+    public final static String JDBC_RESULTSET_TYPE = NAME_SPACE + ".resultSetType";
 
     /**
      * Build a new JDBCRecordReader with a given query. After constructing the reader in this way, the initialize method
@@ -114,11 +117,14 @@ public class JDBCRecordReader extends BaseRecordReader {
     /**
      * Initialize all required jdbc elements and make the reader ready for iteration.
      *
-     * Possible configuration keys : <br /> - JDBCRecordReader.TRIM_STRINGS : Whether or not read strings should be
-     * trimmed before being returned. False by default <br />- JDBCRecordReader.JDBC_URL : Jdbc url to use for
-     * datastource configuration (see JDBCRecordReaderTest for examples) <br />- JDBCRecordReader.JDBC_DRIVER_CLASS_NAME
-     * : Driver class to use for datasource configuration <br />- JDBCRecordReader.JDBC_USERNAME && JDBC_PASSWORD :
-     * Username and password to use for datasource configuration<br /><br />
+     * Possible configuration keys :
+     * <ol>
+     *     <li>JDBCRecordReader.TRIM_STRINGS : Whether or not read strings should be trimmed before being returned. False by default</li>
+     *     <li>JDBCRecordReader.JDBC_URL : Jdbc url to use for datastource configuration (see JDBCRecordReaderTest for examples)</li>
+     *     <li>JDBCRecordReader.JDBC_DRIVER_CLASS_NAME : Driver class to use for datasource configuration</li>
+     *     <li>JDBCRecordReader.JDBC_USERNAME && JDBC_PASSWORD : Username and password to use for datasource configuration</li>
+     *     <li>JDBCRecordReader.JDBC_RESULTSET_TYPE : ResultSet type to use (int value defined in jdbc doc)</li>
+     * </ol>
      *
      * Url and driver class name are not mandatory. If one of them is specified, the other must be specified as well. If
      * they are set and there already is a DataSource set in the reader, it will be discarded and replaced with the
@@ -130,7 +136,8 @@ public class JDBCRecordReader extends BaseRecordReader {
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         this.setConf(conf);
-        this.trimStrings = conf.getBoolean(TRIM_STRINGS, trimStrings);
+        this.setTrimStrings(conf.getBoolean(TRIM_STRINGS, trimStrings));
+        this.setResultSetType(conf.getInt(JDBC_RESULTSET_TYPE, resultSetType));
 
         String jdbcUrl = conf.get(JDBC_URL);
         String driverClassName = conf.get(JDBC_DRIVER_CLASS_NAME);
@@ -144,14 +151,14 @@ public class JDBCRecordReader extends BaseRecordReader {
             // FIXME : find a way to read wildcard properties from conf in order to fill the third argument bellow
             this.dataSource = new DriverDataSource(jdbcUrl, driverClassName, new Properties(), conf.get(JDBC_USERNAME),
                 conf.get(JDBC_PASSWORD));
-            this.initializeJdbc();
         }
+        this.initializeJdbc();
     }
 
     private void initializeJdbc() {
         try {
             this.conn = dataSource.getConnection();
-            this.statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            this.statement = conn.createStatement(this.resultSetType, ResultSet.CONCUR_READ_ONLY);
             this.statement.closeOnCompletion();
             ResultSet rs = statement.executeQuery(this.query);
             this.meta = rs.getMetaData();
@@ -164,10 +171,6 @@ public class JDBCRecordReader extends BaseRecordReader {
 
     @Override
     public List<Writable> next() {
-        if (!iter.hasNext()) {
-            throw new NoSuchElementException("No next element found!");
-        }
-
         Object[] next = iter.next();
         invokeListeners(next);
         return toWritable(next);
@@ -204,6 +207,9 @@ public class JDBCRecordReader extends BaseRecordReader {
         throw new UnsupportedOperationException("JDBCRecordReader does not support getLabels yet");
     }
 
+    /**
+     * Depending on the jdbc driver implementation, this will probably fail if the resultset was created with ResultSet.TYPE_FORWARD_ONLY
+     */
     @Override
     public void reset() {
         iter.reset();

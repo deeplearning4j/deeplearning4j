@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.net.URI;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -165,6 +166,18 @@ public class JDBCRecordReaderTest {
             assertEquals(fields.get(i), fieldsRecovered.get(i));
         }
         reader.close();
+    }
+
+    // Resetting the record reader when initialized as forward only should fail
+    @Test(expected = RuntimeException.class)
+    public void testResetForwardOnlyShouldFail() throws Exception {
+        JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM Coffee", dataSource);
+        Configuration conf = new Configuration();
+        conf.setInt(JDBCRecordReader.JDBC_RESULTSET_TYPE, ResultSet.TYPE_FORWARD_ONLY);
+        reader.initialize(conf, null);
+        reader.next();
+        reader.reset();
+
     }
 
     private JDBCRecordReader getInitializedReader(String query) throws Exception {
