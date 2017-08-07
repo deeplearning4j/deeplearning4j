@@ -120,7 +120,7 @@ The DeepLearning4J Github repo is [here](http://github.com/deeplearning4j/deeple
 
 The DeepLearning4J JavaDoc is available [here](http://deeplearning4j.org/doc/).
 
-### <a name=dl4jexamples>DeepLearning4J Examples</a>
+### <a name="dl4jexamples">DeepLearning4J Examples</a>
 
 There are DeepLearning4J examples in the Github repository [here](https://github.com/deeplearning4j/dl4j-examples). 
 
