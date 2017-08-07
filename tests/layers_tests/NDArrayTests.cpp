@@ -170,3 +170,18 @@ TEST_F(NDArrayTest, TestTranspose1) {
     }
 
 }
+
+TEST_F(NDArrayTest, TestTranspose2) {
+    auto *arrayC = new NDArray<double>('c', {2, 5, 10});
+
+    int *expC = new int[10] {3, 2, 5, 10, 50, 10, 1, 0, 1, 99};
+    int *expT = new int[10] {3, 10, 5, 2, 1, 10, 50, 0, 1, 102};
+
+    arrayC->transposei();
+
+
+    for (int e = 0; e < arrayC->rankOf() * 2 + 4; e++) {
+        ASSERT_EQ(expT[e], arrayC->shapeInfo[e]);
+    }
+
+}

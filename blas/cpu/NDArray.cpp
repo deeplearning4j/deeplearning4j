@@ -240,6 +240,36 @@ NDArray<T>* NDArray<T>::transpose() {
 }
 
 template <typename T>
+void NDArray<T>::transposei() {
+    int *rearrange = new int[this->rankOf()];
+    int cnt = 0;
+    for (int d = this->rankOf() - 1; d >= 0; d--) {
+        rearrange[cnt++] = d;
+    }
+
+    int *newShapeBuffer;
+    int sLen = this->rankOf() * 2 + 4;
+    if (!this->allocated) {
+        // if we're going for transpose - we'll have to detach this array from original one
+        this->allocated = true;
+
+        T *newBuffer = new T[this->lengthOf()];
+        memcpy(newBuffer, this->buffer, this->sizeOfT() * this->lengthOf());
+
+        this->buffer = newBuffer;
+        newShapeBuffer = new int[sLen];
+        memcpy(newShapeBuffer, this->shapeInfo, sizeof(int) * sLen);
+    } else {
+        newShapeBuffer = this->shapeInfo;
+    }
+
+    shape::doPermuteShapeBuffer(newShapeBuffer, rearrange);
+
+    // fixme: this is bad
+    newShapeBuffer[sLen - 2] = 1;
+}
+
+template <typename T>
 void NDArray<T>::addiRowVector(NDArray<T> *row) {
     if (this->rankOf() != 2)
         throw std::invalid_argument("addiRowVector can be called only on Matrix");

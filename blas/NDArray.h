@@ -151,6 +151,12 @@ template <typename T> class NDArray
     NDArray<T> *transpose();
 
     /**
+     * This method applies inplace transpose to this NDArray
+     *
+     */
+    void transposei();
+
+    /**
      * This method returns true if two arrays are equal, with custom Eps value, false otherwise
      *
      * @param other
