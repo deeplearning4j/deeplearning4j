@@ -28,6 +28,17 @@ template <typename T> NDArray<T>::NDArray(int rows, int columns, char order){
     delete[] shape;
 }
 
+template <typename T>
+NDArray<T>::NDArray(NDArray<T> *other) {
+    this->buffer = new T[other->lengthOf()];
+
+    memset(this->buffer, 0, other->lengthOf() * sizeOfT());
+
+    this->shapeInfo = new int[other->rankOf() * 2 + 4];
+    memcpy(this->shapeInfo, other->shapeInfo, (other->rankOf() * 2 + 4) * sizeof(int));
+    this->allocated = true;
+}
+
 template <typename T> NDArray<T>::NDArray(char order, std::initializer_list<int> shape) {
     int rank = (int) shape.size();
 

@@ -22,6 +22,12 @@ template <typename T> class NDArray
 
         NDArray(char order, std::initializer_list<int> shape);
 
+        /**
+         * creates NEW NDarray with shape matching other array
+         * @param other
+         */
+        NDArray(NDArray<T> *other);
+
 
     /**
      * This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)

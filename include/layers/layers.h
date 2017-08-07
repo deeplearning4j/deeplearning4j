@@ -45,7 +45,7 @@ template <typename T> class INativeLayer {
         //T *output;                      // flattened multidimensional matrix of outputs
         //int *outputShapeInfo;             // see _paramsShapeInfo explanation
 
-        NDArray *gradient;              // flattened multidimensional matrix of gradients used in bp
+        NDArray<T> *gradient;              // flattened multidimensional matrix of gradients used in bp
 
         Nd4jIndex allocated;            // memory amount which is already used from workspace, more probably it would be just 0
         Nd4jIndex length;               // memory amount which is still available from workspace, (allocated + length) = total size of workspace
