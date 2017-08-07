@@ -138,6 +138,7 @@ public class ArbiterModule implements UIModule {
 
     @Override
     public void reportStorageEvents(Collection<StatsStorageEvent> events) {
+        boolean attachedArbiter = false;
         for (StatsStorageEvent sse : events) {
             if (ARBITER_UI_TYPE_ID.equals(sse.getTypeID())) {
                 if (sse.getEventType() == StatsStorageListener.EventType.PostStaticInfo) {
@@ -150,6 +151,7 @@ public class ArbiterModule implements UIModule {
                 } else if (sse.getTimestamp() > lastUpdate) {
                     lastUpdateForSession.put(sse.getSessionID(), sse.getTimestamp()); //Should be thread safe - read only elsewhere
                 }
+                attachedArbiter = true;
             }
         }
 
@@ -157,7 +159,7 @@ public class ArbiterModule implements UIModule {
             getDefaultSession();
         }
 
-        if(!loggedArbiterAddress.getAndSet(true)){
+        if(attachedArbiter && !loggedArbiterAddress.getAndSet(true)){
             String address = UIServer.getInstance().getAddress();
             address += "/arbiter";
             log.info("DL4J Arbiter Hyperparameter Optimization UI: {}", address);
