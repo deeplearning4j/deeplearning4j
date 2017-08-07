@@ -185,3 +185,27 @@ TEST_F(NDArrayTest, TestTranspose2) {
     }
 
 }
+
+TEST_F(NDArrayTest, TestSumAlongDimension1) {
+    float *c = new float[4] {1, 2, 3, 4};
+    auto *array = new NDArray<float>(c, cShape);
+
+    auto *res = array->sum({0});
+
+    ASSERT_EQ(2, res->lengthOf());
+
+    ASSERT_EQ(4.0f, res->getScalar(0));
+    ASSERT_EQ(6.0f, res->getScalar(1));
+}
+
+TEST_F(NDArrayTest, TestSumAlongDimension2) {
+    float *c = new float[4] {1, 2, 3, 4};
+    auto *array = new NDArray<float>(c, cShape);
+
+    auto *res = array->sum({1});
+
+    ASSERT_EQ(2, res->lengthOf());
+
+    ASSERT_EQ(3.0f, res->getScalar(0));
+    ASSERT_EQ(7.0f, res->getScalar(1));
+}

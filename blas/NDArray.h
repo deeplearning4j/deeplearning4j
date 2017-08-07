@@ -176,6 +176,15 @@ template <typename T> class NDArray
 
 
     /**
+     * This method returns sum along dimension(s) in a new NDArray
+     *
+     * @param dimensions
+     * @return
+     */
+    NDArray<T> *sum(std::initializer_list<int> dimensions);
+
+
+    /**
      * This method applies transpose to this NDArray and returns new instance of NDArray
      *
      */

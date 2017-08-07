@@ -231,6 +231,29 @@ template <typename T> NDArray<T>* NDArray<T>::dup(char newOrder) {
 }
 
 template <typename T>
+NDArray<T>* NDArray<T>::sum(std::initializer_list<int> dimensions) {
+    int *dims = new int[dimensions.size()];
+    int cnt = 0;
+    for (auto d:dimensions)
+        dims[cnt++] = d;
+
+    // FIXME: we need inplace sort on dims here (!!!)
+
+    shape::TAD *tad = new shape::TAD(this->shapeInfo, dims, dimensions.size());
+    tad->createTadOnlyShapeInfo();
+    tad->createOffsets();
+
+    auto *result = new NDArray<T>(1, tad->numTads, 'c');
+
+    NativeOpExcutioner<T>::execReduce(1, this->buffer, this->shapeInfo, nullptr, result->buffer, result->shapeInfo, dims, dimensions.size(), tad->tadOnlyShapeInfo, tad->tadOffsets);
+
+    delete tad;
+    delete dims;
+
+    return result;
+}
+
+template <typename T>
 NDArray<T>* NDArray<T>::transpose() {
     int *rearrange = new int[this->rankOf()];
     int cnt = 0;
