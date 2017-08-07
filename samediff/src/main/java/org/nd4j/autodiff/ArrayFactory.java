@@ -200,7 +200,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     public ArrayField zero(int[] shape) {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString())
-                .id("zero").owner(null).shape(shape).build();
+                .id("zero-" + UUID.randomUUID().toString()).owner(null).shape(shape).build();
         return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }
 
@@ -208,7 +208,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     public ArrayField one(int[] shape) {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString())
-                .id("one").owner(null).shape(shape).build();
+                .id("one-"  + UUID.randomUUID().toString()).owner(null).shape(shape).build();
         return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }
 
@@ -221,7 +221,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     @Override
     public ArrayField scalar(double value) {
         NDArrayInformation information = NDArrayInformation.builder()
-                .arrId(UUID.randomUUID().toString())
+                .arrId(UUID.randomUUID().toString()).scalarValue(value)
                 .id(String.valueOf(value)).owner(null).shape(new int[]{1,1}).build();
         return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }

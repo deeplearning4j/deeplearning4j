@@ -9,11 +9,10 @@ import lombok.Data;
  */
 @AllArgsConstructor
 @Data
-
 public class Vertex<T> {
 
-    protected final int idx;
-    protected final T value;
+    protected  int idx;
+    protected  T value;
 
     public int vertexID() {
         return idx;
