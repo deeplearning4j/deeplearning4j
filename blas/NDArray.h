@@ -151,6 +151,12 @@ template <typename T> class NDArray
     NDArray<T> *transpose();
 
     /**
+     * This method returns true if buffer && shapeInfo were defined
+     * @return
+     */
+    bool nonNull();
+
+    /**
      * This method applies inplace transpose to this NDArray
      *
      */

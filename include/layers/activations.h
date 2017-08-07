@@ -21,17 +21,6 @@ namespace nd4j {
         template <typename T>
         class IActivationsExecutioner {
         public:
-            // DEPRECATED, WILL BE REMOVED
-            // add extraParams here probably?
-            static inline void executeFF(int aNum, T *input, T *output, int *inputShapeInfo) {
-                // we need to build activations executor here. some macros, anyone?
-            }
-
-            // DEPRECATED, WILL BE REMOVED
-            // add extraParams here probably?
-            static inline void executeBP(int aNum, T *input, T *epsilon, T *output, int *inputShapeInfo) {
-                // we need to build activations executor here. some macros, again? :)
-            }
 
             /**
              * This method should be backend-specific, and should be implemented accordingly
@@ -41,12 +30,12 @@ namespace nd4j {
              * @param inputShapeInfo
              */
             template<typename Activation>
-            static void executeFF(T *input, T *output, int *inputShapeInfo) {
+            static void executeFF(NDArray<T> *input, NDArray<T> *output) {
                 // platform-specific invocation loop here
             }
 
             template<typename Activation>
-            static void executeBP(T *input, T *epsilon, T *output, int *inputShapeInfo) {
+            static void executeBP(NDArray<T> *input, NDArray<T> *epsilon, NDArray<T> *output) {
                 // platform-specific invocation loop here
             };
         };

@@ -29,37 +29,37 @@ template<typename T, typename AF> class BaseLayer: public INativeLayer<T> {
         // TODO: we need platform-specific RNG here (!!!)
 
         // basically we loop over input here, and we're using inverted dropout here
-        void dropOutHelper(T *input, int *shapeInfo);
+        void dropOutHelper(NDArray<T> *input);
 
          // and here we just loop over copy of params for dropout. regular dropout is use
-        void dropConnectHelper(T *input, int *shapeInfo); 
+        void dropConnectHelper(NDArray<T> *input);
     };
 
 
 /////// inmplementation part ///////
 
 
-template<typename T, typename AF> void BaseLayer<T,AF>::dropOutHelper(T *input, int *shapeInfo) {
+template<typename T, typename AF> void BaseLayer<T,AF>::dropOutHelper(NDArray<T> *input) {
     // basically we loop over input here, and we're using inverted dropout here
     if (this->rng == nullptr)
         throw std::invalid_argument("RNG is undefined");
 
     // executing DropOutInverted here
     T *extras = new T[1] {this->pDropOut};
-    NativeOpExcutioner<T>::execRandom(2, (Nd4jPointer) this->rng, input, shapeInfo, input, shapeInfo, extras);
+    NativeOpExcutioner<T>::execRandom(2, (Nd4jPointer) this->rng, input->buffer, input->shapeInfo, input->buffer, input->shapeInfo, extras);
 
     delete[] extras;
 }
 
 
-template<typename T, typename AF> void BaseLayer<T,AF>::dropConnectHelper(T *input, int *shapeInfo) {
+template<typename T, typename AF> void BaseLayer<T,AF>::dropConnectHelper(NDArray<T> *input) {
     // and here we just loop over copy of params for dropout. regular dropout is use
     if (this->rng == nullptr)
         throw std::invalid_argument("RNG is undefined");
 
     // executing regular DropOut op here for DropConnect
     T *extras = new T[1] {this->pDropConnect};
-    NativeOpExcutioner<T>::execRandom(1, (Nd4jPointer) this->rng, input, shapeInfo, input, shapeInfo, extras);
+    NativeOpExcutioner<T>::execRandom(1, (Nd4jPointer) this->rng, input->buffer, input->shapeInfo, input->buffer, input->shapeInfo, extras);
 
     delete[] extras;
 }

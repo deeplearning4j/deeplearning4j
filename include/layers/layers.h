@@ -19,23 +19,31 @@ namespace layers {
 
 template <typename T> class INativeLayer {
     public:
-        T   *params;                    // flattened rectangle matrix with parameters (weights) 
-        int *paramsShapeInfo;           // defines matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
-                
-        T *bias;                        // flattened multidimensional matrix of biases
-        int *biasShapeInfo;               // see _paramsShapeInfo explanation
-        
-        T   *input;                     // flattened multidimensional matrix of inputs
-        int *inputShapeInfo;            // see _paramsShapeInfo explanation
 
-        T   *epsilon;                     // flattened multidimensional matrix of inputs
-        int *epsilontShapeInfo;            // see _paramsShapeInfo explanation       
-        
-        T   *mask;                      // the matrix of zeros and unities, takes into account possible different size of inputs, for outer pixels absent in smaller inputs zeros are set, the rest is unities
-        int *maskShapeInfo;             // see _paramsShapeInfo explanation
+        NDArray<T> *params;
+        //T   *params;                    // flattened rectangle matrix with parameters (weights)
+        //int *paramsShapeInfo;           // defines matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
 
-        T *output;                      // flattened multidimensional matrix of outputs
-        int *outputShapeInfo;             // see _paramsShapeInfo explanation
+        NDArray<T> *bias;
+        //T *bias;                        // flattened multidimensional matrix of biases
+        //int *biasShapeInfo;               // see _paramsShapeInfo explanation
+
+
+        NDArray<T> *input;
+        //T   *input;                     // flattened multidimensional matrix of inputs
+        //int *inputShapeInfo;            // see _paramsShapeInfo explanation
+
+        NDArray<T> *epsilon;
+        //T   *epsilon;                     // flattened multidimensional matrix of inputs
+        //int *epsilontShapeInfo;            // see _paramsShapeInfo explanation
+
+        NDArray<T> *mask;
+        //T   *mask;                      // the matrix of zeros and unities, takes into account possible different size of inputs, for outer pixels absent in smaller inputs zeros are set, the rest is unities
+        //int *maskShapeInfo;             // see _paramsShapeInfo explanation
+
+        NDArray<T> *output;
+        //T *output;                      // flattened multidimensional matrix of outputs
+        //int *outputShapeInfo;             // see _paramsShapeInfo explanation
         
         Nd4jIndex allocated;            // memory amount which is already used from workspace, more probably it would be just 0
         Nd4jIndex length;               // memory amount which is still available from workspace, (allocated + length) = total size of workspace
@@ -51,6 +59,8 @@ template <typename T> class INativeLayer {
                 
         // default constructor, sets all pointers to be empty
         INativeLayer();
+
+        ~INativeLayer();
         
         // copy constructor
         // creation of this class objects by copying is not expected, therefore disable copy constructor 
@@ -73,8 +83,8 @@ template <typename T> class INativeLayer {
         virtual int validateOutput() = 0;
        
         // DropOut & DropConnect helpers are platform-specific too
-        virtual void dropOutHelper(T *input, int *shapeInfo) = 0;
-        virtual void dropConnectHelper(T *input, int *shapeInfo) = 0;
+        virtual void dropOutHelper(NDArray<T> *input) = 0;
+        virtual void dropConnectHelper(NDArray<T> *input) = 0;
 
         // this inline method attaches layer to workspace memory
         void setWorkspace(void *memory, Nd4jIndex length) {
@@ -90,10 +100,8 @@ template <typename T> class INativeLayer {
         // This inline method allows to set parameters/biases for current layer
         // this input will be either activation from previous layer, or error coming from next layer
         int setParameters(T *params, int *paramsShapeInfo, T *bias, int *biasShapeInfo) {
-            this->params = params;
-            this->paramsShapeInfo = paramsShapeInfo;
-            this->biasShapeInfo = biasShapeInfo;
-            this->bias = bias;
+            this->params->replacePointers(params, paramsShapeInfo);
+            this->bias->replacePointers(bias, biasShapeInfo);
 
             return validateParameters();
         }
@@ -105,18 +113,15 @@ template <typename T> class INativeLayer {
         // This inline method allows to specify input data for layer
         // this output will be either activation of this layer, or error from next layer        
         int setInput(T *input, int *inputShapeInfo, T *mask, int *maskShapeInfo) {
-            this->input = input;
-            this->inputShapeInfo = inputShapeInfo;
-            this->mask = mask;
-            this->maskShapeInfo = maskShapeInfo;
+            this->input->replacePointers(input, inputShapeInfo);
+            this->mask->replacePointers(mask, maskShapeInfo);
 
             return validateInput();
         }
 
         // This inline method allows to specify output pointer for layer
         int setOutput(T *output, int *shapeInfo) {
-            this->output = output;
-            this->outputShapeInfo = shapeInfo;
+            this->output->replacePointers(output, shapeInfo);
 
             return validateOutput();
         }
@@ -141,18 +146,13 @@ template <typename T> class INativeLayer {
     
 // default constructor sets all pointers to be empty
 template <typename T> INativeLayer<T>::INativeLayer() {
-    params = nullptr;   
-    paramsShapeInfo = nullptr;
-    bias = nullptr;    
-    biasShapeInfo = nullptr;
-    input = nullptr;
-    inputShapeInfo = nullptr;
-    epsilon = nullptr;
-    epsilontShapeInfo; 
-    mask = nullptr;
-    maskShapeInfo = nullptr;
-    output = nullptr;
-    outputShapeInfo = nullptr;
+    params = new NDArray<T>(nullptr, nullptr);
+    bias = new NDArray<T>(nullptr, nullptr);
+    input = new NDArray<T>(nullptr, nullptr);
+    epsilon = new NDArray<T>(nullptr, nullptr);
+    mask = new NDArray<T>(nullptr, nullptr);
+    output = new NDArray<T>(nullptr, nullptr);
+
     workspace = nullptr;
     Nd4jIndex allocated = 0;
     Nd4jIndex length = 0;
@@ -161,6 +161,16 @@ template <typename T> INativeLayer<T>::INativeLayer() {
     pDropOut = 0.;   
     pDropConnect = 0.;
     rng = nullptr;
+}
+
+template <typename T>
+INativeLayer<T>::~INativeLayer() {
+    delete params;
+    delete bias;
+    delete input;
+    delete epsilon;
+    delete mask;
+    delete output;
 }
 
 template <typename T> void INativeLayer<T>::gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, T alpha, T beta) {
@@ -293,15 +303,14 @@ template <typename T> int INativeLayer<T>::configureLayer(T *input, int *inputSh
     if ((this->dropOut || this->dropConnect) && this->rng == nullptr)
         return ND4J_STATUS_BAD_RNG;
 
-    this->input = input;
-    this->inputShapeInfo = inputShapeInfo;
+    this->input->replacePointers(input, inputShapeInfo);
+
 
     if (validateInput() != ND4J_STATUS_OK)
         return ND4J_STATUS_BAD_INPUT;
 
 
-    this->output = output;
-    this->outputShapeInfo = outputShapeInfo;
+    this->output->replacePointers(output, outputShapeInfo);
 
     if (validateOutput() != ND4J_STATUS_OK)
         return ND4J_STATUS_BAD_OUTPUT;

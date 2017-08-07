@@ -309,7 +309,7 @@ TEST_F(DenseLayerInputTest, DropOutTest1) {
     auto *exp = input->dup('c');
 
     // input should be modified inplace here
-    layer->dropOutHelper(input->buffer, input->shapeInfo);
+    layer->dropOutHelper(input);
 /*
     printf("Original array: ");
     for (int i = 0; i < exp->lengthOf(); i++) {
@@ -349,7 +349,7 @@ TEST_F(DenseLayerInputTest, DropConnectTest1) {
     auto *exp = input->dup('c');
 
     // input should be modified inplace here
-    layer->dropConnectHelper(input->buffer, input->shapeInfo);
+    layer->dropConnectHelper(input);
 
     /*
     printf("Original array: ");

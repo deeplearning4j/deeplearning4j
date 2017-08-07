@@ -12,41 +12,41 @@ template <typename T> class ActivationsExecutioner {
     public: 
     
     // This method should be backend-specific, and should be implemented accordingly
-    template<typename Activation> inline static void executeFF(T *input, T *output, int *inputShapeInfo);
+    template<typename Activation> inline static void executeFF(NDArray<T> *input, NDArray<T> *output);
     
-    template<typename Activation> inline static void executeBP(T *input, T *epsilon, T *output, int *inputShapeInfo);
+    template<typename Activation> inline static void executeBP(NDArray<T> *input, NDArray<T> *epsilon, NDArray<T> *output);
 };
 
 
 // This method should be backend-specific, and should be implemented accordingly
 template<typename T> template<typename Activation> 
-void ActivationsExecutioner<T>::executeFF(T *input, T *output, int *inputShapeInfo) {
+void ActivationsExecutioner<T>::executeFF(NDArray<T> *input, NDArray<T> *output) {
     // add special invocation here, like softmax case etc
     if (Activation::requiresSpecialFF()) {
-        Activation::ffActivation(input, output, inputShapeInfo);
+        Activation::ffActivation(input, output);
         return;
     }
 
-    Nd4jIndex n = shape::length(inputShapeInfo);
+    Nd4jIndex n = input->lengthOf();
     //#pragma omp parallel for
     for (Nd4jIndex e = 0; e < n; e++) {
-       output[e] = Activation::ffActivation(input[e]);
+       output->buffer[e] = Activation::ffActivation(input->buffer[e]);
     }
 }
 
 
 template<typename T> template<typename Activation> 
-void ActivationsExecutioner<T>::executeBP(T * input, T *epsilon, T *output, int *inputShapeInfo) {
+void ActivationsExecutioner<T>::executeBP(NDArray<T> * input, NDArray<T> *epsilon, NDArray<T> *output) {
         // add special invocation here, like softmax case etc
         if (Activation::requiresSpecialBP()) {
-            Activation::bpActivation(input, epsilon, output, inputShapeInfo);
+            Activation::bpActivation(input, epsilon, output);
             return;
         }
 
-        Nd4jIndex n = shape::length(inputShapeInfo);
+        Nd4jIndex n = input->lengthOf();
         //#pragma omp parallel for
         for (Nd4jIndex e = 0; e < n; e++) {
-            output[e] = Activation::bpActivation(input[e], epsilon[e]);
+            output->buffer[e] = Activation::bpActivation(input->buffer[e], epsilon->buffer[e]);
         }
 }
 #endif //PROJECT_ACTIVATIONSEXECUTIONER_H

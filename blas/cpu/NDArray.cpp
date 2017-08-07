@@ -56,6 +56,7 @@ template <typename T> NDArray<T>::NDArray(char order, std::initializer_list<int>
 template <typename T>
 void NDArray<T>::replacePointers(T* _buffer, int* _shapeInfo, bool releaseExisting) {
     if (this->allocated && releaseExisting) {
+        printf("Deleting original memory\n");
         delete[] this->buffer;
         delete[] this->shapeInfo;
     }
@@ -185,6 +186,11 @@ template <typename T> void NDArray<T>::assign(NDArray<T> *other) {
         // now we invoke dup pwt against target buffer
         NativeOpExcutioner<T>::execPairwiseTransform(1, buffer, shapeInfo, other->buffer, other->shapeInfo, buffer, shapeInfo, nullptr);
     }
+}
+
+template <typename T>
+bool NDArray<T>::nonNull() {
+    return this->buffer != nullptr && this->shapeInfo != nullptr;
 }
 
 template <typename T> NDArray<T>* NDArray<T>::dup(char newOrder) {
