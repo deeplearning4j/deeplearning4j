@@ -31,6 +31,9 @@ template<typename T, typename AF> class DenseLayer: public BaseLayer<T, AF> {
 
         // This method should valudate output parameters, and return TRUE if everything is ok, FALSE otherwise        
         inline int validateOutput();
+
+        // this method should validate memory/holders for BP pass
+        inline int validateGradients();
 };
 
 
@@ -68,17 +71,35 @@ template<typename T, typename AF> int DenseLayer<T,AF>::backPropagate() {
 }
 
 
+template<typename T, typename AF>
+int DenseLayer<T,AF>::validateGradients() {
+    if (this->gradientW == nullptr || this->gradientB == nullptr || this->bias == nullptr || !this->gradientW->nonNull() || !this->gradientB->nonNull() || !this->bias->nonNull())
+        return ND4J_STATUS_BAD_GRADIENTS;
+
+    if (this->output == nullptr || !this->output->nonNull())
+        return ND4J_STATUS_BAD_OUTPUT;
 
 
+    if (!this->gradientW->isSameShape(this->params)) {
+        return ND4J_STATUS_BAD_GRADIENTS;
+    }
 
+    if (!this->gradientB->isSameShape(this->bias))
+        return ND4J_STATUS_BAD_BIAS;
 
+    // we're checking equality of input/epsilon batch size
+    if (this->epsilon->shapeOf()[0] != this->input->shapeOf()[0])
+        return ND4J_STATUS_BAD_EPSILON;
 
-  // inline static T bpActivation(T value, T epsilon) {
-                // // FIXME: ultra-bad. should consider conigurable extra params here
-                // T extra[] = {(T) 0.0f};
-                // return simdOps::Step<T>::template op(value, extra) * epsilon;
+    if (this->epsilon->columns() != this->bias->columns())
+        return ND4J_STATUS_BAD_EPSILON;
 
+    // batch comparison again
+    if (!this->output->isSameShape(this->input))
+        return ND4J_STATUS_BAD_OUTPUT;
 
+    return ND4J_STATUS_OK;
+};
 
 
 

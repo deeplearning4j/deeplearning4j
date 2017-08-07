@@ -25,6 +25,8 @@ template <typename T> NDArray<T>::NDArray(int rows, int columns, char order){
         shapeInfo[7] = 99;
     }
 
+    shapeInfo[6] = 1;
+
     delete[] shape;
 }
 

@@ -12,6 +12,9 @@
 #define ND4J_STATUS_BAD_PARAMS 4
 #define ND4J_STATUS_BAD_OUTPUT 5
 #define ND4J_STATUS_BAD_RNG 6
+#define ND4J_STATUS_BAD_EPSILON 7
+#define ND4J_STATUS_BAD_GRADIENTS 8
+#define ND4J_STATUS_BAD_BIAS 9
 
 
 namespace nd4j {
@@ -45,7 +48,8 @@ template <typename T> class INativeLayer {
         //T *output;                      // flattened multidimensional matrix of outputs
         //int *outputShapeInfo;             // see _paramsShapeInfo explanation
 
-        NDArray<T> *gradient;              // flattened multidimensional matrix of gradients used in bp
+        NDArray<T> *gradientW;              // flattened multidimensional matrix of gradients used in bp
+        NDArray<T> *gradientB;              // bias gradients holder
 
         Nd4jIndex allocated;            // memory amount which is already used from workspace, more probably it would be just 0
         Nd4jIndex length;               // memory amount which is still available from workspace, (allocated + length) = total size of workspace
@@ -77,6 +81,9 @@ template <typename T> class INativeLayer {
         
         // This method should validate parameters & bias, and return TRUE if everything ok. False otherwise
         virtual int validateParameters() = 0;
+
+        // this method should validate memory/holders for BP pass
+        virtual int validateGradients() = 0;
 
         // This method should validate input parameters, and return corresponding codes errors if mistake is present
         virtual int validateInput() = 0;
@@ -110,7 +117,9 @@ template <typename T> class INativeLayer {
 
         // We have some options to be configured in layer: dropout, dropconnect, lr, etc 
         // This method should handle that. Maybe map (key-value), or something like that?           
-        int configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect, Nd4jPointer rngPointer);
+        int configureLayerFF(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect, Nd4jPointer rngPointer);
+
+        int configureLayerBP(T *output, int *outputShapeInfo, T* gradientW, int *gradientWShapeInfo, T* gradientB, int *gradientBShapeInfo, T *epsilonPrev, int *epsilonShapeInfo);
 
         // This inline method allows to specify input data for layer
         // this output will be either activation of this layer, or error from next layer        
@@ -147,13 +156,17 @@ template <typename T> class INativeLayer {
 /////// implementation part ///////
     
 // default constructor sets all pointers to be empty
-template <typename T> INativeLayer<T>::INativeLayer() {
+template <typename T>
+INativeLayer<T>::INativeLayer() {
     params = new NDArray<T>(nullptr, nullptr);
     bias = new NDArray<T>(nullptr, nullptr);
     input = new NDArray<T>(nullptr, nullptr);
     epsilon = new NDArray<T>(nullptr, nullptr);
     mask = new NDArray<T>(nullptr, nullptr);
     output = new NDArray<T>(nullptr, nullptr);
+    epsilon = new NDArray<T>(nullptr, nullptr);
+    gradientW = new NDArray<T>(nullptr, nullptr);
+    gradientB = new NDArray<T>(nullptr, nullptr);
 
     workspace = nullptr;
     Nd4jIndex allocated = 0;
@@ -170,9 +183,11 @@ INativeLayer<T>::~INativeLayer() {
     delete params;
     delete bias;
     delete input;
-    delete epsilon;
+    delete gradientW;
+    delete gradientB;
     delete mask;
     delete output;
+    delete epsilon;
 }
 
 template <typename T> void INativeLayer<T>::gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, T alpha, T beta) {
@@ -288,10 +303,26 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 }
 
 
+template <typename T>
+int INativeLayer<T>::configureLayerBP(T *output, int *outputShapeInfo, T* gradientW, int *gradientWShapeInfo, T* gradientB, int *gradientBShapeInfo, T *epsilonPrev, int *epsilonShapeInfo) {
+    this->output->replacePointers(output, outputShapeInfo);
+    this->gradientW->replacePointers(gradientW, gradientWShapeInfo);
+    this->gradientB->replacePointers(gradientB, gradientBShapeInfo);
+    this->epsilon->replacePointers(epsilonPrev, epsilonShapeInfo);
+
+    // TODO: add gradient/epsilon valdiation here
+    if (validateGradients() != ND4J_STATUS_OK)
+        return validateGradients();
+
+    return ND4J_STATUS_OK;
+}
+
+
 
 // We have some options to be configured in layer: dropout, dropconnect, lr, etc 
 // This method should handle that. Maybe map (key-value), or something like that?           
-template <typename T> int INativeLayer<T>::configureLayer(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect, Nd4jPointer ptrRng) {
+template <typename T>
+int INativeLayer<T>::configureLayerFF(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect, Nd4jPointer ptrRng) {
 
     if (ptrRng != nullptr)
         this->rng = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRng);

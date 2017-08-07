@@ -114,6 +114,12 @@ template <typename T> class NDArray
         return sizeof(T);
     }
 
+
+    void printShapeInfo() {
+        //shape::printShapeInfo(this->shapeInfo);
+        shape::printShapeInfoLinear(this->shapeInfo);
+    }
+
     /**
      * This method returns new copy of this NDArray, optionally in different order
      *
@@ -121,6 +127,25 @@ template <typename T> class NDArray
      * @return
      */
     NDArray<T>* dup(char newOrder);
+
+    /**
+     * Returns true if these two NDArrays have same shape
+     * @param other
+     * @return
+     */
+    bool isSameShape(NDArray<T> *other) {
+        if (this->rankOf() != other->rankOf())
+            return false;
+        else {
+            for (int e = 0; e < this->rankOf(); e++) {
+                if (this->shapeOf()[e] != other->shapeOf()[e]) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
 
     /**
      * This method assigns values of given NDArray to this one, wrt order

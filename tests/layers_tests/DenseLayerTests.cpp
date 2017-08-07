@@ -95,11 +95,11 @@ TEST_F(DenseLayerInputTest, JointConfiguration1) {
 
     float *output = new float[100];
 
-    int result = layer->configureLayer(output, inputShape2D, output, outputShape2D, 0.5f, 0.1f, nullptr);
+    int result = layer->configureLayerFF(output, inputShape2D, output, outputShape2D, 0.5f, 0.1f, nullptr);
 
     ASSERT_EQ(ND4J_STATUS_BAD_RNG, result);
 
-    result = layer->configureLayer(output, inputShape2D, output, outputShape2D, 0.5f, 0.1f, output);
+    result = layer->configureLayerFF(output, inputShape2D, output, outputShape2D, 0.5f, 0.1f, output);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
@@ -115,6 +115,67 @@ TEST_F(DenseLayerInputTest, JointConfiguration1) {
     delete[] output;
 }
 
+TEST_F(DenseLayerInputTest, JointOutputConfiuguration1) {
+    auto *input = new NDArray<double>(32, 784, 'c');
+    auto *output = new NDArray<double>(32, 1000, 'f');
+
+    auto *weights = new NDArray<double>(784, 1000, 'c');
+    auto *bias = new NDArray<double>(1, 1000, 'f');
+
+
+    auto *epsilonGood = new NDArray<double>(32, 1000, 'f');
+    auto *epsilonBad1 = new NDArray<double>(32, 1001, 'f');
+    auto *epsilonBad2 = new NDArray<double>(31, 1000, 'f');
+
+    auto *outputBPGood = new NDArray<double>(32, 784, 'f');
+    auto *outputBPBad1 = new NDArray<double>(32, 785, 'f');
+    auto *outputBPBad2 = new NDArray<double>(31, 784, 'f');
+
+    auto *gradWGood = new NDArray<double>(784, 1000, 'f');
+    auto *gradWBad1 = new NDArray<double>(784, 1001, 'f');
+    auto *gradWBad2 = new NDArray<double>(783, 1000, 'f');
+
+    auto *gradBGood = new NDArray<double>(1, 1000, 'f');
+    auto *gradBBad1 = new NDArray<double>(1, 1001, 'f');
+    auto *gradBBad2 = new NDArray<double>(2, 1000, 'f');
+
+
+
+
+
+    nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>> *layer = new nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>>();
+
+    int result = layer->setParameters(weights->buffer, weights->shapeInfo, bias->buffer, bias->shapeInfo);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+
+    result = layer->configureLayerFF(input->buffer, input->shapeInfo, output->buffer, output->shapeInfo, 0.0, 0.0, nullptr);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+
+    result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+
+    result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWBad1->buffer, gradWBad1->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    ASSERT_EQ(ND4J_STATUS_BAD_GRADIENTS, result);
+
+    result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBBad1->buffer, gradBBad1->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    ASSERT_EQ(ND4J_STATUS_BAD_BIAS, result);
+
+    result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonBad1->buffer, epsilonBad1->shapeInfo);
+    ASSERT_EQ(ND4J_STATUS_BAD_EPSILON, result);
+
+    result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonBad2->buffer, epsilonBad2->shapeInfo);
+    ASSERT_EQ(ND4J_STATUS_BAD_EPSILON, result);
+
+    result = layer->configureLayerBP(outputBPBad1->buffer, outputBPBad1->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    ASSERT_EQ(ND4J_STATUS_BAD_OUTPUT, result);
+
+    result = layer->configureLayerBP(outputBPBad2->buffer, outputBPBad2->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    ASSERT_EQ(ND4J_STATUS_BAD_OUTPUT, result);
+}
+
 TEST_F(DenseLayerInputTest, ParamsTest1) {
     nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
 
@@ -125,7 +186,7 @@ TEST_F(DenseLayerInputTest, ParamsTest1) {
 
     ASSERT_EQ(ND4J_STATUS_OK,result);
 
-    result = layer->configureLayer(stub, batchInputShapeGood, stub, batchOutputShapeGood, 0.0f, 0.0f, nullptr);
+    result = layer->configureLayerFF(stub, batchInputShapeGood, stub, batchOutputShapeGood, 0.0f, 0.0f, nullptr);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 }
@@ -140,7 +201,7 @@ TEST_F(DenseLayerInputTest, ParamsTest2) {
 
     ASSERT_EQ(ND4J_STATUS_BAD_SHAPE, result);
 
-    result = layer->configureLayer(stub, inputShape2D, stub, outputShape2D, 0.0f, 0.0f, nullptr);
+    result = layer->configureLayerFF(stub, inputShape2D, stub, outputShape2D, 0.0f, 0.0f, nullptr);
 
     ASSERT_EQ(ND4J_STATUS_BAD_INPUT, result);
 }
@@ -154,11 +215,11 @@ TEST_F(DenseLayerInputTest, ParamsTest3) {
 
     ASSERT_EQ(ND4J_STATUS_OK,result);
 
-    result = layer->configureLayer(stub, batchInputShapeBad, stub, batchOutputShapeGood, 0.0f, 0.0f, nullptr);
+    result = layer->configureLayerFF(stub, batchInputShapeBad, stub, batchOutputShapeGood, 0.0f, 0.0f, nullptr);
 
     ASSERT_EQ(ND4J_STATUS_BAD_INPUT, result);
 
-    result = layer->configureLayer(stub, batchInputShapeGood, stub, batchOutputShapeBad, 0.0f, 0.0f, nullptr);
+    result = layer->configureLayerFF(stub, batchInputShapeGood, stub, batchOutputShapeBad, 0.0f, 0.0f, nullptr);
 
     ASSERT_EQ(ND4J_STATUS_BAD_OUTPUT, result);
 }
@@ -402,7 +463,7 @@ TEST_F(DenseLayerInputTest, FeedForwardTest1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
-    result = layer->configureLayer(input->buffer, input->shapeInfo, output->buffer, output->shapeInfo, 0.0f, 0.0f, nullptr);
+    result = layer->configureLayerFF(input->buffer, input->shapeInfo, output->buffer, output->shapeInfo, 0.0f, 0.0f, nullptr);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
@@ -461,7 +522,7 @@ TEST_F(DenseLayerInputTest, FeedForwardTest2) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
-    result = layer->configureLayer(input->buffer, input->shapeInfo, output->buffer, output->shapeInfo, 0.0f, 0.0f, nullptr);
+    result = layer->configureLayerFF(input->buffer, input->shapeInfo, output->buffer, output->shapeInfo, 0.0f, 0.0f, nullptr);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
