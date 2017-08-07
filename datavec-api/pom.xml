@@ -95,7 +95,7 @@
             <version>${nd4j.version}</version>
         </dependency>
 
-        <!-- ND4J api, mainly for recognizing an INDArray in UnsafeWritableInjector -->
+        <!-- ND4J api, mainly for NDArrayWritable and recognizing an INDArray in UnsafeWritableInjector -->
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
@@ -154,14 +154,5 @@
             </dependencies>
         </profile>
     </profiles>
-
-
-    <build>
-        <resources>
-            <resource>
-                <directory>src/resources</directory>
-            </resource>
-        </resources>
-    </build>
 
 </project>

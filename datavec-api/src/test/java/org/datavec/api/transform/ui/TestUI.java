@@ -99,7 +99,11 @@ public class TestUI {
                             new Text(String.valueOf(i))));
         }
 
-        File f = new File("seqHtml.html");
+        String tempDir = System.getProperty("java.io.tmpdir");
+        String outPath = FilenameUtils.concat(tempDir, "datavec_seqplot_test.html");
+        //        System.out.println(outPath);
+        File f = new File(outPath);
+        f.deleteOnExit();
         HtmlSequencePlotting.createHtmlSequencePlotFile("Title!", schema, sequence, f);
 
 
