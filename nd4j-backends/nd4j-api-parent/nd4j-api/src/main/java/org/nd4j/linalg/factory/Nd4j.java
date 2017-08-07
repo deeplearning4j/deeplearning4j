@@ -85,6 +85,7 @@ import org.nd4j.linalg.memory.MemoryManager;
 import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.versioncheck.VersionCheck;
 
 import java.io.*;
 import java.lang.ref.ReferenceQueue;
@@ -6094,6 +6095,8 @@ public class Nd4j {
      * @param backend the backend to initialize with
      */
     public void initWithBackend(Nd4jBackend backend) {
+        VersionCheck.checkVersions();
+
         try {
             if (System.getProperties().getProperty("backends") != null
                     && !System.getProperties().getProperty("backends").contains(backend.getClass().getName())) {

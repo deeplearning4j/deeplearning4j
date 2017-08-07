@@ -138,5 +138,10 @@
             <artifactId>neoitertools</artifactId>
             <version>1.0.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>${reflections.version}</version>
+        </dependency>
     </dependencies>
 </project>

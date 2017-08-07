@@ -40,7 +40,7 @@
         <dependency>
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
-            <version>0.9.10</version>
+            <version>${reflections.version}</version>
             <exclusions>
               <exclusion>
                 <groupId>com.google.code.findbugs</groupId>
