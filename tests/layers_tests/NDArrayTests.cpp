@@ -225,3 +225,23 @@ TEST_F(NDArrayTest, TestReduceAlongDimension1) {
     ASSERT_EQ(7.0f, res->getScalar(1));
 
 }
+
+
+TEST_F(NDArrayTest, TestTransform1) {
+    float *c = new float[4] {-1, -2, -3, -4};
+    auto *array = new NDArray<float>(c, cShape);
+
+    float *e = new float[4] {1, 2, 3, 4};
+    auto *exp = new NDArray<float>(e, cShape);
+
+    array->applyTransform<simdOps::Abs<float>>();
+
+    ASSERT_TRUE(exp->equalsTo(array));
+}
+
+TEST_F(NDArrayTest, TestReduceScalar1) {
+    float *c = new float[4] {-1, -2, -3, -4};
+    auto *array = new NDArray<float>(c, cShape);
+
+    ASSERT_EQ(-4, array->reduceNumber<simdOps::Min<float>>(nullptr));
+}

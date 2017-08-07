@@ -230,6 +230,28 @@ template <typename T> NDArray<T>* NDArray<T>::dup(char newOrder) {
         return result;
 }
 
+template <typename T>
+template <typename OpName>
+void NDArray<T>::applyTransform(T *extraParams) {
+    functions::transform::Transform<T>::template exec<OpName>(this->buffer, this->shapeInfo, this->buffer, this->shapeInfo, extraParams, nullptr, nullptr);
+}
+
+template <typename T>
+template <typename OpName>
+void NDArray<T>::applyTransform() {
+    this->applyTransform<OpName>(nullptr);
+}
+template <typename T>
+template<typename OpName>
+T NDArray<T>::reduceNumber(T *extraParams) {
+    return functions::reduce::ReduceFunction<T>::template execScalar<OpName>(this->buffer, this->shapeInfo, extraParams);
+}
+
+template <typename T>
+template<typename OpName>
+T NDArray<T>::reduceNumber() {
+    return this->reduceNumber(nullptr);
+}
 
 template <typename T>
 template <typename OpName>
