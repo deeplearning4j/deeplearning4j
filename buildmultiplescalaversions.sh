@@ -1,5 +1,5 @@
 #! /bin/bash
-BASEDIR=$(dirname $(readlink -f "$0"))
+BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 function echoError() {
     (>&2 echo "$1")
