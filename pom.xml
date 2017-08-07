@@ -432,7 +432,7 @@
         <playframework.version>2.4.6</playframework.version>
         <lombok.version>1.16.16</lombok.version>
         <jackson.version>2.5.1</jackson.version>
-        <reflections.version>0.9.11</reflections.version>
+        <reflections.version>0.9.10</reflections.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>4.12</junit.version>
         <slf4j.version>1.7.10</slf4j.version>

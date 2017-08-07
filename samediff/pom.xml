@@ -68,8 +68,7 @@
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>19.0</version>
+            <artifactId>guava</artifactId>  <!-- Version set by nd4j parent pom dependency management section -->
         </dependency>
         <!--Only for tests-->
         <dependency>
