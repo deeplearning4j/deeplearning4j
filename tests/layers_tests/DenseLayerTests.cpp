@@ -582,6 +582,9 @@ TEST_F(DenseLayerInputTest, BackPropagationTest1) {
     int result = layer->setParameters(weights->buffer, weights->shapeInfo, bias->buffer, bias->shapeInfo);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
+    result = layer->configureLayerFF(input->buffer, input->shapeInfo, output->buffer, output->shapeInfo, 0.0, 0.0, nullptr);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
     result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
     ASSERT_EQ(ND4J_STATUS_OK, result);        
 
