@@ -24,3 +24,4 @@ deeplearning4j-scaleout/deeplearning4j-aws/src/main/java/org/deeplearning4j/aws/
 .DS_Store
 /logs/
 /datavec-local/src/main/java/org/datavec/local/transforms/TableRecords.java
+**dependency-reduced-pom.xml
