@@ -231,7 +231,7 @@ public class PlayUIServer extends UIServer {
         List<UIModule> l = new ArrayList<>();
         while (iter.hasNext()) {
             UIModule m = iter.next();
-            log.info("Loaded UI module via service loader: {}", m.getClass());
+            log.debug("Loaded UI module via service loader: {}", m.getClass());
             l.add(m);
         }
 
