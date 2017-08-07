@@ -83,6 +83,18 @@
         <stream.analytics.version>2.7.0</stream.analytics.version>
         <hadoop.version>2.2.0</hadoop.version>  <!-- Hadoop version used by Spark 1.6.3 and 2.2.1 (and likely others) -->
         <mm-util-backport-java.version>1.0.1</mm-util-backport-java.version>
+        <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
+        <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
+        <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
+        <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
+        <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
+        <maven-compiler-plugin.version>3.5.1</maven-compiler-plugin.version>
+        <maven-lifecycle-mapping-plugin.version>1.0.0</maven-lifecycle-mapping-plugin.version>
+        <maven-scala-plugin.version>3.2.2</maven-scala-plugin.version>
+        <maven-lint-plugin.version>0.0.11</maven-lint-plugin.version>
+        <maven-formatter-plugin.version>2.0.0</maven-formatter-plugin.version>
+        <maven-git-commit-id-plugin.version>2.2.2</maven-git-commit-id-plugin.version>
+        <maven-build-helper-plugin.version>1.12</maven-build-helper-plugin.version>
     </properties>
 
     <repositories>
@@ -289,7 +301,6 @@
                     <scope>test</scope>
                 </dependency>
             </dependencies>
-            <!-- Default to ALL modules here, unlike nd4j-native -->
         </profile>
 
         <profile>
@@ -327,7 +338,7 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
+                        <version>${maven-gpg-plugin.version}</version>
                         <configuration>
                             <passphrase>${gpg.passphrase}</passphrase>
                         </configuration>
@@ -350,7 +361,7 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>3.0.1</version>
+                        <version>${maven-source-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
@@ -362,7 +373,7 @@
                     </plugin>
                     <plugin>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>2.10.4</version>
+                        <version>${maven-javadoc-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
@@ -398,7 +409,7 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.10.4</version>
+                    <version>${maven-javadoc-plugin.version}</version>
                     <configuration>
                         <additionalparam>-Xdoclint:none</additionalparam>
                     </configuration>
@@ -413,7 +424,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>3.0.1</version>
+                    <version>${maven-source-plugin.version}</version>
                     <executions>
                         <execution>
                             <id>attach-sources</id>
@@ -425,7 +436,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.19.1</version>
+                    <version>${maven-surefire-plugin.version}</version>
                     <configuration>
                         <argLine>-Ddtype=float</argLine>
                         <!--
@@ -442,7 +453,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>2.5.3</version>
+                    <version>${maven-release-plugin.version}</version>
                     <configuration>
                         <mavenExecutorId>forked-path</mavenExecutorId>
                         <!-- To deploy to an open staging repository: -Darguments=-DstagingRepositoryId=orgnd4j-xxxx -->
@@ -453,7 +464,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-gpg-plugin</artifactId>
-                    <version>1.6</version>
+                    <version>${maven-gpg-plugin.version}</version>
                     <configuration>
                         <passphrase>${gpg.passphrase}</passphrase>
                     </configuration>
@@ -469,7 +480,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.5.1</version>
+                    <version>${maven-compiler-plugin.version}</version>
                     <configuration>
                         <source>1.7</source>
                         <target>1.7</target>
@@ -479,7 +490,7 @@
                 <plugin>
                     <groupId>org.eclipse.m2e</groupId>
                     <artifactId>lifecycle-mapping</artifactId>
-                    <version>1.0.0</version>
+                    <version>${maven-lifecycle-mapping-plugin.version}</version>
                     <configuration>
                       <lifecycleMappingMetadata>
                         <pluginExecutions>
@@ -505,7 +516,7 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.2</version>
+                <version>${maven-scala-plugin.version}</version>
                 <configuration>
                     <scalaVersion>${scala.version}</scalaVersion>
                     <args>
@@ -544,7 +555,7 @@
             <plugin>
               <groupId>com.lewisd</groupId>
               <artifactId>lint-maven-plugin</artifactId>
-              <version>0.0.11</version>
+              <version>${maven-lint-plugin.version}</version>
               <configuration>
                 <failOnViolation>true</failOnViolation>
                 <onlyRunRules>
@@ -570,7 +581,7 @@
             <plugin>
               <groupId>net.revelc.code.formatter</groupId>
               <artifactId>formatter-maven-plugin</artifactId>
-              <version>2.0.0</version>
+              <version>${maven-formatter-plugin.version}</version>
               <configuration>
                 <configFile>${session.executionRootDirectory}/contrib/formatter.xml</configFile>
                 <directories>
@@ -592,7 +603,7 @@
             <plugin>
               <groupId>pl.project13.maven</groupId>
               <artifactId>git-commit-id-plugin</artifactId>
-              <version>2.2.2</version>
+              <version>${maven-git-commit-id-plugin.version}</version>
               <executions>
                 <execution>
                   <goals>
@@ -615,7 +626,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.12</version>
+                <version>${maven-build-helper-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>add-resource</id>
@@ -650,7 +661,7 @@
       <plugins>
         <plugin>
           <artifactId>maven-surefire-report-plugin</artifactId>
-          <version>2.19.1</version>
+          <version>${maven-surefire-plugin.version}</version>
         </plugin>
         <!-- Test coverage -->
         <plugin>
