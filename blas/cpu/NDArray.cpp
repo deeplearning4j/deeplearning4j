@@ -344,6 +344,7 @@ void NDArray<T>::transposei() {
 
     // fixme: this is bad
     newShapeBuffer[sLen - 2] = 1;
+    this->shapeInfo = newShapeBuffer;
 }
 
 template <typename T>

@@ -148,6 +148,7 @@ template <typename T> class INativeLayer {
 
         void gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, T alpha, T beta);
 
+        void gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, T alpha, T beta, bool transA, bool transB);
         // extracts shapes info and perform gemm 
         void gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta);
 

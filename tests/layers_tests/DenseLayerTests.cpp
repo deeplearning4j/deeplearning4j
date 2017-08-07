@@ -562,20 +562,12 @@ TEST_F(DenseLayerInputTest, BackPropagationTest1) {
     auto *bias = new NDArray<double>(1, 1000, 'f');
     
     auto *epsilonGood = new NDArray<double>(32, 1000, 'f');
-    auto *epsilonBad1 = new NDArray<double>(32, 1001, 'f');
-    auto *epsilonBad2 = new NDArray<double>(31, 1000, 'f');
 
     auto *outputBPGood = new NDArray<double>(32, 784, 'f');
-    auto *outputBPBad1 = new NDArray<double>(32, 785, 'f');
-    auto *outputBPBad2 = new NDArray<double>(31, 784, 'f');
 
     auto *gradWGood = new NDArray<double>(784, 1000, 'f');
-    auto *gradWBad1 = new NDArray<double>(784, 1001, 'f');
-    auto *gradWBad2 = new NDArray<double>(783, 1000, 'f');
 
     auto *gradBGood = new NDArray<double>(1, 1000, 'f');
-    auto *gradBBad1 = new NDArray<double>(1, 1001, 'f');
-    auto *gradBBad2 = new NDArray<double>(2, 1000, 'f');
 
     nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>> *layer = new nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>>();
 
@@ -588,30 +580,16 @@ TEST_F(DenseLayerInputTest, BackPropagationTest1) {
     result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
     ASSERT_EQ(ND4J_STATUS_OK, result);        
 
-    // result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWBad1->buffer, gradWBad1->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
-    // ASSERT_EQ(ND4J_STATUS_OK, result);
-
-    // result = layer->backPropagate();
-    // ASSERT_EQ(ND4J_STATUS_OK, result);
+    result = layer->backPropagate();
+    ASSERT_EQ(ND4J_STATUS_OK, result);
 
     delete  weights;
     delete  bias;
 
     delete epsilonGood;
-    delete epsilonBad1;
-    delete epsilonBad2;
-
     delete outputBPGood;
-    delete outputBPBad1;
-    delete outputBPBad2;
-
     delete gradWGood;
-    delete gradWBad1;
-    delete gradWBad2;
-
     delete gradBGood;
-    delete gradBBad1;
-    delete gradBBad2;
 
     // result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBBad1->buffer, gradBBad1->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
     // ASSERT_EQ(ND4J_STATUS_BAD_BIAS, result);

@@ -48,24 +48,50 @@ template<typename T, typename AF> DenseLayer<T,AF>::DenseLayer() {
 }     
 
 // back propagate
-template<typename T, typename AF> int DenseLayer<T,AF>::backPropagate() {
+template<typename T, typename AF>
+int DenseLayer<T,AF>::backPropagate() {
     // delta = dL/dz
     // epsilon = dL/da
     // delta = epsilon * da/dz = previous_params_T * previous_delta (*) da/dz
-    NDArray<T> *delta = new NDArray<T>(this->input);
+
+    // temporary save output pointers
+    T *__buffer = this->output->buffer;
+    int *__shapeInfo = this->output->shapeInfo;
+
+    NDArray<T> *preOutput = new NDArray<T>(this->input->shapeOf()[0], this->params->shapeOf()[1], 'f');
+    this->output->replacePointers(preOutput->buffer, preOutput->shapeInfo);
+    this->feedForward();
+
+    // put buffers back
+    this->output->replacePointers(__buffer, __shapeInfo);
+
+    NDArray<T> *delta = new NDArray<T>(preOutput);
     // calculate/fill delta
-    ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, delta);
+
+    ActivationsExecutioner<T>::template executeBP<AF>(preOutput, this->epsilon, delta);
+
     // gradient_on_param = delta * next_output
-    this->gemmHelper(this->input, delta, this->gradientW, (T) 1.0f, (T) 0.0f);
+    preOutput->transposei();
+    this->gemmHelper(preOutput, delta, this->gradientW, (T) 1.0f, (T) 0.0f);
     // gradient_on_bias = delta
+
     NDArray<T> *sumArr = delta->sum({0}); 
-    (this->gradientB)->assign(sumArr); 
+    this->gradientB->assign(sumArr);
     // calculate next epsilon
-    this->gemmHelper(this->gradientW, delta->transpose(), this->epsilon, (T) 1.0f, (T) 0.0f);
+
+
+
+    delta->transposei();
+    auto *oT = this->output->transpose();
+
+    this->gemmHelper(this->gradientW, delta, oT, (T) 1.0f, (T) 0.0f);
+    memcpy(this->output->buffer, oT->buffer, this->output->lengthOf());
     
     delete delta;
     delete sumArr;
-    
+    delete preOutput;
+    delete oT;
+
     return ND4J_STATUS_OK;
 }
 
