@@ -42,6 +42,12 @@ If you want to deploy on android, you can see our [android page](http://deeplear
 We deploy optimized code for various hardware architectures natively. We use c++ based for loops just like everybody else.
 See our [c++ framework](https://github.com/deeplearning4j/libnd4j)
 
+Deeplearning4j has 2 other notable components. [Baked in hyper param search](https://github.com/deeplearning4j/Arbiter)
+
+and [built in ETL](https://github.com/deeplearning4j/DataVec)
+
+Overall, deep learning4j is meant to be an end to end platform for building real applications. Not just a tensor library with automatic differentiation. If you want that, that's in nd4j and it's called [samediff](https://github.com/deeplearning4j/nd4j/tree/master/samediff)  samediff is still in high alpha yet but if you want to take a crack at contributing please come in to our livechat.
+
 #### A Taste of Code
 
 Deeplearning4j is a domain-specific language to configure deep neural networks, which are made of multiple layers. Everything starts with a `MultiLayerConfiguration`, which organizes those layers and their hyperparameters.
