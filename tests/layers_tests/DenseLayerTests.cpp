@@ -550,3 +550,124 @@ TEST_F(DenseLayerInputTest, FeedForwardTest2) {
 */
     ASSERT_TRUE(exp->equalsTo(output));
 }
+
+
+// back propagation test
+TEST_F(DenseLayerInputTest, BackPropagationTest1) {
+
+    auto *input = new NDArray<double>(32, 784, 'c');
+    auto *output = new NDArray<double>(32, 1000, 'f');
+
+    auto *weights = new NDArray<double>(784, 1000, 'c');
+    auto *bias = new NDArray<double>(1, 1000, 'f');
+    
+    auto *epsilonGood = new NDArray<double>(32, 1000, 'f');
+    auto *epsilonBad1 = new NDArray<double>(32, 1001, 'f');
+    auto *epsilonBad2 = new NDArray<double>(31, 1000, 'f');
+
+    auto *outputBPGood = new NDArray<double>(32, 784, 'f');
+    auto *outputBPBad1 = new NDArray<double>(32, 785, 'f');
+    auto *outputBPBad2 = new NDArray<double>(31, 784, 'f');
+
+    auto *gradWGood = new NDArray<double>(784, 1000, 'f');
+    auto *gradWBad1 = new NDArray<double>(784, 1001, 'f');
+    auto *gradWBad2 = new NDArray<double>(783, 1000, 'f');
+
+    auto *gradBGood = new NDArray<double>(1, 1000, 'f');
+    auto *gradBBad1 = new NDArray<double>(1, 1001, 'f');
+    auto *gradBBad2 = new NDArray<double>(2, 1000, 'f');
+
+    nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>> *layer = new nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>>();
+
+    int result = layer->setParameters(weights->buffer, weights->shapeInfo, bias->buffer, bias->shapeInfo);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    ASSERT_EQ(ND4J_STATUS_OK, result);        
+
+    result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWBad1->buffer, gradWBad1->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    ASSERT_EQ(ND4J_STATUS_BAD_GRADIENTS, result);
+
+    result = layer->backPropagate();
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    // result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBBad1->buffer, gradBBad1->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    // ASSERT_EQ(ND4J_STATUS_BAD_BIAS, result);
+
+    // result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonBad1->buffer, epsilonBad1->shapeInfo);
+    // ASSERT_EQ(ND4J_STATUS_BAD_EPSILON, result);
+
+    // result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonBad2->buffer, epsilonBad2->shapeInfo);
+    // ASSERT_EQ(ND4J_STATUS_BAD_EPSILON, result);
+
+    // result = layer->configureLayerBP(outputBPBad1->buffer, outputBPBad1->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    // ASSERT_EQ(ND4J_STATUS_BAD_OUTPUT, result);
+
+    // result = layer->configureLayerBP(outputBPBad2->buffer, outputBPBad2->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    // ASSERT_EQ(ND4J_STATUS_BAD_OUTPUT, result);
+
+
+
+    // nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>> *layer = new nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>>();
+
+
+    // int inputShape2D[8] = {2, 10, 10, 10, 1, 0, 1, 99};
+    // int batchInputShapeGood[8] = {2, 128, 784, 128, 1, 0, 1, 99};
+    
+    // auto *input = new NDArray<double>(16, 784, 'f');
+    // auto *output = new NDArray<double>(16, 1000, 'f');
+    
+    // auto *delta = new NDArray<T>(input);
+    
+    // auto *weights = new NDArray<double>(784, 1000, 'f');
+    // auto *bias = new NDArray<double>(1, 1000, 'f');
+
+    // weights->assign(0.15f);
+    // bias->assign(0.13f);
+
+    // // we're checking for assign validity
+    // ASSERT_NEAR(0.13f, bias->meanNumber(), 1e-5);
+    // ASSERT_NEAR(0.15f, weights->meanNumber(), 1e-5);
+
+    
+
+    // input->assign(0.19f);
+
+
+    // auto *exp = new NDArray<double>(16, 1000, 'f');
+    // exp->assign(22.474001);
+    // int configureLayerBP(T *output, int *outputShapeInfo, T* gradientW, int *gradientWShapeInfo, T* gradientB, int *gradientBShapeInfo, T *epsilonPrev, int *epsilonShapeInfo);
+    // auto *layer = new nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>>();
+
+    // int result = layer->setParameters(weights->buffer, weights->shapeInfo, bias->buffer, bias->shapeInfo);
+
+    // ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    // result = layer->configureLayerFF(input->buffer, input->shapeInfo, output->buffer, output->shapeInfo, 0.0f, 0.0f, nullptr);
+
+    // ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    // result = layer->feedForward();
+
+    // ASSERT_EQ(ND4J_STATUS_OK, result);
+// /*
+    // printf("Modified array: ");
+    // for (int i = 0; i < 30; i++) {
+        // printf("%f, ", output->getScalar(i));
+    // }
+    // printf("\n");
+
+
+    // printf("Exp array: ");
+    // for (int i = 0; i < 30; i++) {
+        // printf("%f, ", exp->getScalar(i));
+    // }
+    // printf("\n");
+
+
+    // auto meanNumber = output->meanNumber();
+
+    // printf("Output mean: %f\n", meanNumber);
+// */
+    // ASSERT_TRUE(exp->equalsTo(output));
+}
