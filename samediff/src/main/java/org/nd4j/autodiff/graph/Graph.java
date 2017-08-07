@@ -60,7 +60,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     public Graph(boolean allowMultipleEdges) {
         this.allowMultipleEdges = allowMultipleEdges;
         vertices = new TreeMap<>();
-        edges = new HashMap<>();
+        edges = new TreeMap<>();
         this.incomingEdges = new TreeMap<>();
         nextVertexId = 0;
     }

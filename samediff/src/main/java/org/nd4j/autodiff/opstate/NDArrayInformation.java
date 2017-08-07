@@ -40,6 +40,11 @@ public class NDArrayInformation implements Serializable {
                 .build();
     }
 
+    /**
+     * Get the arr id (possibly generating a
+     * new one lazily)
+     * @return
+     */
     public String getArrId() {
         if(arrId == null)
             arrId = UUID.randomUUID().toString();
@@ -47,6 +52,14 @@ public class NDArrayInformation implements Serializable {
 
     }
 
+    /**
+     * Return the scalar for this
+     * {@link NDArrayInformation}
+     * which is either the field itself,
+     * or if that's null, the owner's
+     * scalar value
+     * @return
+     */
     public Number scalar() {
         if(scalarValue != null)
             return scalarValue;

@@ -1739,10 +1739,6 @@ public class SameDiff {
 
     private INDArray getX(OpExecAction opExecAction) {
         INDArray ret =  vertexToArray.get(opExecAction.getInputs()[0].getArrId());
-        if(opExecAction.getOpState().getOpType() ==
-                OpState.OpType.SCALAR_TRANSFORM && ret.isScalar())  {
-            ret =  vertexToArray.get(opExecAction.getOutput().getArrId());
-        }
         return ret;
     }
 

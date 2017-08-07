@@ -45,6 +45,23 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
 
+    /**
+     * Get the value specifying
+     * whether to freeze the graph or not
+     * @param freeze whether to freeze the graph or not,
+     *               this means whether to add nodes to the internal
+     *               computation graph or not
+     * @return the value of this function
+     */
+    @Override
+    public  X getValue(boolean freeze) {
+        if(freeze) {
+            return m_x;
+        }
+
+        return super.getValue(freeze);
+    }
+
     private void setName(String i_name) {
         if (i_name != null) {
             m_name = i_name;// new String(i_name);

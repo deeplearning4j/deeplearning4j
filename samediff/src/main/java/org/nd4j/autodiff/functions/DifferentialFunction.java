@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.functions;
 
 import java.util.List;
+import java.util.UUID;
 
 import lombok.*;
 import org.nd4j.autodiff.AbstractIdentityFactory;
@@ -79,6 +80,12 @@ public abstract class DifferentialFunction<X extends Field<X>>
         }
 
         X val = doGetValue();
+        if(val instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) val;
+            NDArrayVertex vertex = (NDArrayVertex) getGraph().getVertex(getVertexId());
+            arrayField.setVertex(vertex);
+            arrayField.setInput(vertex.getValue());
+        }
 
         if(freeze && !graphAlreadyFrozen) {
             this.graph.unfreeze();
@@ -223,14 +230,16 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> rdiv(DifferentialFunction<X> i_v) {
-        DifferentialFunction<X> ret = this.div(i_v);
-        return ret;
+        X ret = i_v.getValue(true).rdiv(getValue(true));
+        return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
+
     }
 
     @Override
     public DifferentialFunction<X> rsub(DifferentialFunction<X> i_v) {
-        DifferentialFunction<X> ret = i_v.sub(this);
-        return ret;
+        X ret = i_v.getValue(true).rsub(getValue(true));
+        return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
+
     }
 
     @Override
@@ -783,6 +792,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
             int v2VertexId = i_v2.resultVertexId();
 
             NDArrayInformation arrInfo = NDArrayInformation.builder()
+                    .arrId(UUID.randomUUID().toString())
                     .id(opName +"(" + v1.getInput().getId() + "," + v2.getInput().getId() + ")")
                     .shape(shape).build();
             //result
