@@ -234,7 +234,7 @@ template <typename T>
 NDArray<T>* NDArray<T>::sum(std::initializer_list<int> dimensions) {
     int *dims = new int[dimensions.size()];
     int cnt = 0;
-    for (auto d:dimensions)
+    for (auto d : dimensions)
         dims[cnt++] = d;
 
     // FIXME: we need inplace sort on dims here (!!!)

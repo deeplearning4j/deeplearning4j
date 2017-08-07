@@ -51,45 +51,69 @@ template<typename T, typename AF> DenseLayer<T,AF>::DenseLayer() {
 template<typename T, typename AF> int DenseLayer<T,AF>::backPropagate() {
     // delta = dL/dz
     // epsilon = dL/da
-    // delta = epsilon * da/dz = next_params_T * next_delta (*) da/dz
-    auto *delta = new NDArray<T>(this->input);
-
+    // delta = epsilon * da/dz = previous_params_T * previous_delta (*) da/dz
+    NDArray<T> *delta = new NDArray<T>(this->input);
+    // calculate/fill delta
     ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, delta);
-    // gradient_on_param = delta * previous_output
+    // gradient_on_param = delta * next_output
+    this->gemmHelper(this->input, delta, this->gradientW, (T) 1.0f, (T) 0.0f);
     // gradient_on_bias = delta
-    this->gemmHelper(this->input, this->params, this->output, (T) 1.0f, (T) 0.0f);
-
-    //this->gemmHelper(this->input, this->inputShapeInfo, delta, this->epsilonShapeInfo, this->output, this->outputShapeInfo, (T)1.0f, (T)0.0f);
+    T tempSum = (T) 0.f;
+    NDArray<T> *sumArr = delta.sum({0}); 
+    (this->gradientB)->assign(sumArr); 
+    // calculate next epsilon
+    this->gemmHelper(this->gradient, delta.transpose(), this->epsilon);
     
-    // INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst();
-    // how to evaluate delta, what is it ???
-    // this->gemmHelper(this->input, this->inputShapeInfo, this->params, this->paramsShapeInfo, this->output, this->outputShapeInfo, (T) 1.0f, (T) 0.0f);
-    // Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
     delete delta;
-
+    delete sumArr;
+    
     return ND4J_STATUS_OK;
 }
+
 
 
 template<typename T, typename AF>
 int DenseLayer<T,AF>::validateGradients() {
     if (this->gradientW == nullptr || this->gradientB == nullptr || this->bias == nullptr || !this->gradientW->nonNull() || !this->gradientB->nonNull() || !this->bias->nonNull())
         return ND4J_STATUS_BAD_GRADIENTS;
+  // Gradient ret = new DefaultGradient();
 
     if (this->output == nullptr || !this->output->nonNull())
         return ND4J_STATUS_BAD_OUTPUT;
+        // INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY); //f order
+        // Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
+        // INDArray biasGrad = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
+        // delta.sum(biasGrad, 0); //biasGrad is initialized/zeroed first
 
+        // ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
+        // ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
 
     if (!this->gradientW->isSameShape(this->params)) {
         return ND4J_STATUS_BAD_GRADIENTS;
     }
+        // INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
 
     if (!this->gradientB->isSameShape(this->bias))
         return ND4J_STATUS_BAD_BIAS;
+// # forward pass
+// W = np.random.randn(5, 10)
+// X = np.random.randn(10, 3)
+// D = W.dot(X)
 
     // we're checking equality of input/epsilon batch size
     if (this->epsilon->shapeOf()[0] != this->input->shapeOf()[0])
         return ND4J_STATUS_BAD_EPSILON;
+// # now suppose we had the gradient on D from above in the circuit
+// dD = np.random.randn(*D.shape) # same shape as D
+// dW = dD.dot(X.T) #.T gives the transpose of the matrix
+// dX = W.T.dot(dD)
+
+
+
+  // inline static T bpActivation(T value, T epsilon) {
+                // // FIXME: ultra-bad. should consider conigurable extra params here
+                // T extra[] = {(T) 0.0f};
+                // return simdOps::Step<T>::template op(value, extra) * epsilon;
 
     if (this->epsilon->columns() != this->bias->columns())
         return ND4J_STATUS_BAD_EPSILON;
