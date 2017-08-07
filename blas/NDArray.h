@@ -183,6 +183,20 @@ template <typename T> class NDArray
      */
     NDArray<T> *sum(std::initializer_list<int> dimensions);
 
+    template<typename OpName>
+    NDArray<T> *reduceAlongDimension(std::initializer_list<int> dimensions);
+
+    template<typename OpName>
+    T reduceNumber(T* extraParams);
+
+    template<typename OpName>
+    T reduceNumber();
+
+    template<typename OpName>
+    void applyTransform();
+
+    template<typename OpName>
+    void applyTransform(T *extraParams);
 
     /**
      * This method applies transpose to this NDArray and returns new instance of NDArray

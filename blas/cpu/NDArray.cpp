@@ -231,7 +231,31 @@ template <typename T> NDArray<T>* NDArray<T>::dup(char newOrder) {
 }
 
 template <typename T>
-NDArray<T>* NDArray<T>::sum(std::initializer_list<int> dimensions) {
+template <typename OpName>
+void NDArray<T>::applyTransform(T *extraParams) {
+    functions::transform::Transform<T>::template exec<OpName>(this->buffer, this->shapeInfo, this->buffer, this->shapeInfo, extraParams, nullptr, nullptr);
+}
+
+template <typename T>
+template <typename OpName>
+void NDArray<T>::applyTransform() {
+    this->applyTransform<OpName>(nullptr);
+}
+template <typename T>
+template<typename OpName>
+T NDArray<T>::reduceNumber(T *extraParams) {
+    return functions::reduce::ReduceFunction<T>::template execScalar<OpName>(this->buffer, this->shapeInfo, extraParams);
+}
+
+template <typename T>
+template<typename OpName>
+T NDArray<T>::reduceNumber() {
+    return this->reduceNumber(nullptr);
+}
+
+template <typename T>
+template <typename OpName>
+NDArray<T> * NDArray<T>::reduceAlongDimension(std::initializer_list<int> dimensions) {
     int *dims = new int[dimensions.size()];
     int cnt = 0;
     for (auto d : dimensions)
@@ -239,18 +263,29 @@ NDArray<T>* NDArray<T>::sum(std::initializer_list<int> dimensions) {
 
     // FIXME: we need inplace sort on dims here (!!!)
 
+
     shape::TAD *tad = new shape::TAD(this->shapeInfo, dims, dimensions.size());
     tad->createTadOnlyShapeInfo();
     tad->createOffsets();
 
     auto *result = new NDArray<T>(1, tad->numTads, 'c');
 
-    NativeOpExcutioner<T>::execReduce(1, this->buffer, this->shapeInfo, nullptr, result->buffer, result->shapeInfo, dims, dimensions.size(), tad->tadOnlyShapeInfo, tad->tadOffsets);
+    functions::reduce::ReduceFunction<T>::template exec<OpName>(this->buffer, this->shapeInfo, nullptr, result->buffer, result->shapeInfo, dims, dimensions.size(), tad->tadOnlyShapeInfo, tad->tadOffsets);
 
     delete tad;
     delete dims;
 
     return result;
+}
+
+template <typename T>
+NDArray<T>* NDArray<T>::sum(std::initializer_list<int> dimensions) {
+
+
+    return this->reduceAlongDimension<simdOps::Sum<T>>(dimensions);
+
+//    NativeOpExcutioner<T>::execReduce(1, this->buffer, this->shapeInfo, nullptr, result->buffer, result->shapeInfo, dims, dimensions.size(), tad->tadOnlyShapeInfo, tad->tadOffsets);
+
 }
 
 template <typename T>
