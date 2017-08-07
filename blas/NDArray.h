@@ -21,38 +21,97 @@ template <typename T> class NDArray
         NDArray(int length, char order);
 
 
+    /**
+     * This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
+     * @param _buffer
+     * @param _shapeInfo
+     */
+    void replacePointers(T* _buffer, int* _shapeInfo, bool releaseExisting);
+
+    /**
+     * This method replaces existing buffer/shapeinfo, AND releases original pointers
+     *
+     * @param _buffer
+     * @param _shapeInfo
+     */
+    void replacePointers(T* _buffer, int* _shapeInfo) {
+        replacePointers(_buffer, _shapeInfo, true);
+    }
+
+    /**
+     * This method returns order of this NDArray
+     * @return
+     */
     char ordering() {
         return shape::order(shapeInfo);
     }
 
+    /**
+     * This method returns shape portion of shapeInfo
+     * @return
+     */
     int *shapeOf() {
         return shape::shapeOf(shapeInfo);
     }
 
+    /**
+     * This method returns strides portion of shapeInfo
+     * @return
+     */
     int *stridesOf() {
         return shape::stride(shapeInfo);
     }
 
+    /**
+     * This method returns rank of this NDArray
+     * @return
+     */
     int rankOf() {
         return shape::rank(shapeInfo);
     }
 
+    /**
+     * This method returns length of this NDArray
+     * @return
+     */
     Nd4jIndex lengthOf() {
         return shape::length(shapeInfo);
     }
 
+    /**
+     * This method returns number of rows in this NDArray
+     *
+     * PLEASE NOTE: Applicable only to 2D NDArrays
+     * @return
+     */
     int rows() {
         return shapeOf()[0];
     }
 
+    /**
+     * This method returns number of columns in this NDArray
+     *
+     * PLEASE NOTE: Applicable only to 2D NDArrays
+     * @return
+     */
     int columns() {
         return shapeOf()[1];
     }
 
+    /**
+     * This method retuns sizeof(T) for this NDArray
+     * @return
+     */
     int sizeOfT() {
         return sizeof(T);
     }
 
+    /**
+     * This method returns new copy of this NDArray, optionally in different order
+     *
+     * @param newOrder
+     * @return
+     */
     NDArray<T>* dup(char newOrder);
 
     /**
@@ -145,7 +204,11 @@ template <typename T> class NDArray
      */
     void putScalar(int i, int k, int j, T value);
 
-
+    /**
+     * This method adds given row to all rows in this NDArray
+     *
+     * @param row
+     */
     void addiRowVector(NDArray<T> *row);
 
 

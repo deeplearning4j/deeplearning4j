@@ -28,6 +28,19 @@ template <typename T> NDArray<T>::NDArray(int rows, int columns, char order){
     delete[] shape;
 }
 
+
+template <typename T>
+void NDArray<T>::replacePointers(T* _buffer, int* _shapeInfo, bool releaseExisting) {
+    if (this->allocated && releaseExisting) {
+        delete[] this->buffer;
+        delete[] this->shapeInfo;
+    }
+
+    this->allocated = false;
+    this->buffer = _buffer;
+    this->shapeInfo = _shapeInfo;
+}
+
 template <typename T> NDArray<T>::NDArray(int length, char order) {
     allocated = true;
 
