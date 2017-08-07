@@ -824,6 +824,20 @@ public class ParagraphVectors extends Word2Vec {
         }
 
         /**
+         * This method sets vocabulary limit during construction.
+         *
+         * Default value: 0. Means no limit
+         *
+         * @param limit
+         * @return
+         */
+        @Override
+        public Builder limitVocabularySize(int limit) {
+            super.limitVocabularySize(limit);
+            return this;
+        }
+
+        /**
          * This method allows you to specify SequenceElement that will be used as UNK element, if UNK is used
          *
          * @param element
@@ -948,6 +962,7 @@ public class ParagraphVectors extends Word2Vec {
             ret.unknownElement = this.unknownElement;
             ret.seed = this.seed;
             ret.enableScavenger = this.enableScavenger;
+            ret.vocabLimit = this.vocabLimit;
 
             ret.trainElementsVectors = this.trainElementsVectors;
             ret.trainSequenceVectors = this.trainSequenceVectors;

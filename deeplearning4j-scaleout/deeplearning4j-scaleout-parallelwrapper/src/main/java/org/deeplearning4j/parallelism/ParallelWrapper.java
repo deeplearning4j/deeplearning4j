@@ -33,7 +33,6 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -818,7 +817,7 @@ public class ParallelWrapper implements AutoCloseable {
                     this.trainerContext = new SymmetricTrainerContext();
                     if (this.accumulator == null) {
                         log.info("Creating new GradientsAccumulator instance");
-                        this.accumulator = new CudaGradientsAccumulator(workers, 1e-3);
+                        this.accumulator = new EncodedGradientsAccumulator(workers, 1e-3);
                     }
                 }
                     break;

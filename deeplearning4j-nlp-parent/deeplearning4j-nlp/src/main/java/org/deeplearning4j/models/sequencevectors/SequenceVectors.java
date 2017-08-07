@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -70,6 +71,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected transient boolean configured = false;
 
     protected boolean enableScavenger = false;
+    protected int vocabLimit = 0;
 
 
     @Setter
@@ -106,6 +108,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         VocabConstructor<T> constructor = new VocabConstructor.Builder<T>().addSource(iterator, minWordFrequency)
                         .setTargetVocabCache(vocab).fetchLabels(trainSequenceVectors).setStopWords(stopWords)
                         .enableScavenger(enableScavenger)
+                        .setEntriesLimit(vocabLimit)
                         .setUnk(useUnknown && unknownElement != null ? unknownElement : null).build();
 
         if (existingModel != null && lookupTable instanceof InMemoryLookupTable
@@ -401,6 +404,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected String STOP = configuration.getSTOP();
 
         protected boolean enableScavenger = false;
+        protected int vocabLimit;
 
         // defaults values for learning algorithms are set here
         protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<>();
@@ -636,6 +640,23 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> minWordFrequency(int minWordFrequency) {
             this.minWordFrequency = minWordFrequency;
+            return this;
+        }
+
+
+        /**
+         * This method sets vocabulary limit during construction.
+         *
+         * Default value: 0. Means no limit
+         *
+         * @param limit
+         * @return
+         */
+        public Builder limitVocabularySize(int limit) {
+            if (limit < 0)
+                throw new DL4JInvalidConfigException("Vocabulary limit should be non-negative number");
+
+            this.vocabLimit = limit;
             return this;
         }
 
@@ -949,6 +970,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             vectors.useUnknown = this.useUnknown;
             vectors.unknownElement = this.unknownElement;
             vectors.variableWindows = this.variableWindows;
+            vectors.vocabLimit = this.vocabLimit;
 
 
             vectors.trainElementsVectors = this.trainElementsVectors;

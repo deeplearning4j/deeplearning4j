@@ -3,11 +3,13 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -28,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class CudaGradientsAccumulator implements GradientsAccumulator, Registerable {
+public class EncodedGradientsAccumulator implements GradientsAccumulator, Registerable {
     protected ThreadLocal<INDArray> accumulator = new ThreadLocal<>();
 
     protected int parties;
@@ -63,21 +65,21 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                     .overallocationLimit(0.3).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
                     .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
 
-    public CudaGradientsAccumulator(double parties) {
+    public EncodedGradientsAccumulator(double parties) {
         this(Nd4j.getAffinityManager().getNumberOfDevices(), 1e-3);
     }
 
     // TODO: delete this one maybe?
-    public CudaGradientsAccumulator(int parties) {
+    public EncodedGradientsAccumulator(int parties) {
         this(parties, 1e-3);
     }
 
-    public CudaGradientsAccumulator(int parties, double threshold) {
+    public EncodedGradientsAccumulator(int parties, double threshold) {
         this(parties, new EncodingHandler(threshold), 100 * 1024 * 1024L, 10, 1.0);
     }
 
-    protected CudaGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory, int queueSize,
-                    Double boundary) {
+    protected EncodedGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory, int queueSize,
+                                          Double boundary) {
         this.parties = parties;
         this.handler = handler;
         this.initialMemory = initialMemory;
@@ -120,6 +122,31 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
         Nd4j.getAffinityManager().unsafeSetDevice(curDev);
 
         handler.initialize(this);
+    }
+
+    /**
+     * This method returns optimal bufferSize for a given model
+     *
+     * We know, that updates are guaranteed to have MAX size of params / 16. So, here we go.
+     * I.e. for model with 100m params, that's 400m of floats (or 800m of doubles)
+     * The worst case for us is bitmap encoding, that takes 2 bits to encode each gradient value
+     *
+     * so, for float in worst case we'll have (100m / 16) int elements. So, our buffer size will be 6.25m * queueSize * 4 bytes per int
+     *
+     * @param paramsLength
+     * @param numWorkers
+     * @param queueSize
+     * @return
+     */
+    public static int getOptimalBufferSize(int paramsLength, int numWorkers, int queueSize) {
+        // we add 64kb just for future proof volatility
+        int bufferSize = ((paramsLength / 16) + 65536) * numWorkers * queueSize * 4;
+        return bufferSize;
+    }
+
+
+    public static int getOptimalBufferSize(Model model, int numWorkers, int queueSize) {
+        return getOptimalBufferSize(model.params().length(), numWorkers, queueSize);
     }
 
     @Override
@@ -585,7 +612,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             return this;
         }
 
-        public CudaGradientsAccumulator build() {
+        public EncodedGradientsAccumulator build() {
             if (handler == null) {
                 if (boundary == null)
                     handler = new EncodingHandler(threshold);
@@ -593,8 +620,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                     handler = new EncodingHandler(threshold, boundary);
             }
 
-            CudaGradientsAccumulator accumulator =
-                            new CudaGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary);
+            EncodedGradientsAccumulator accumulator =
+                            new EncodedGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary);
 
             return accumulator;
         }

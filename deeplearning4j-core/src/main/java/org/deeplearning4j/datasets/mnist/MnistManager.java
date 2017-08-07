@@ -90,21 +90,18 @@ public class MnistManager {
      * @throws IOException
      */
     public MnistManager(String imagesFile, String labelsFile, boolean train) throws IOException {
+        this(imagesFile, labelsFile, train ? MnistDataFetcher.NUM_EXAMPLES : MnistDataFetcher.NUM_EXAMPLES_TEST);
+    }
+
+    public MnistManager(String imagesFile, String labelsFile, int numExamples) throws IOException {
         if (imagesFile != null) {
             images = new MnistImageFile(imagesFile, "r");
-            if (train)
-                imagesArr = images.readImagesUnsafe(MnistDataFetcher.NUM_EXAMPLES);
-            else
-                imagesArr = images.readImagesUnsafe(MnistDataFetcher.NUM_EXAMPLES_TEST);
+            imagesArr = images.readImagesUnsafe(numExamples);
         }
         if (labelsFile != null) {
             labels = new MnistLabelFile(labelsFile, "r");
-            if (train)
-                labelsArr = labels.readLabels(MnistDataFetcher.NUM_EXAMPLES);
-            else
-                labelsArr = labels.readLabels(MnistDataFetcher.NUM_EXAMPLES_TEST);
+            labelsArr = labels.readLabels(numExamples);
         }
-        System.out.println();
     }
 
     public MnistManager(String imagesFile, String labelsFile) throws IOException {
