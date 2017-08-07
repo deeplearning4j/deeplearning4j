@@ -34,7 +34,7 @@ template <typename T> class INativeLayer {
         //int *inputShapeInfo;            // see _paramsShapeInfo explanation
 
         NDArray<T> *epsilon;
-        //T   *epsilon;                     // flattened multidimensional matrix of inputs
+        //T   *epsilon;                     // epsilon = dL/da, L - loss function, a - activation
         //int *epsilontShapeInfo;            // see _paramsShapeInfo explanation
 
         NDArray<T> *mask;
@@ -44,7 +44,9 @@ template <typename T> class INativeLayer {
         NDArray<T> *output;
         //T *output;                      // flattened multidimensional matrix of outputs
         //int *outputShapeInfo;             // see _paramsShapeInfo explanation
-        
+
+        NDArray *gradient;              // flattened multidimensional matrix of gradients used in bp
+
         Nd4jIndex allocated;            // memory amount which is already used from workspace, more probably it would be just 0
         Nd4jIndex length;               // memory amount which is still available from workspace, (allocated + length) = total size of workspace
         void *workspace;                // if you are going to use additional memory, take it from workspace
@@ -61,7 +63,7 @@ template <typename T> class INativeLayer {
         INativeLayer();
 
         ~INativeLayer();
-        
+
         // copy constructor
         // creation of this class objects by copying is not expected, therefore disable copy constructor 
         INativeLayer(const INativeLayer& ) = delete;

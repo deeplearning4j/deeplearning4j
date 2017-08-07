@@ -46,10 +46,14 @@ template<typename T, typename AF> DenseLayer<T,AF>::DenseLayer() {
 
 // back propagate
 template<typename T, typename AF> int DenseLayer<T,AF>::backPropagate() {
-    // activation derivative call
-    ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, this->output);
-
-
+    // delta = dL/dz
+    // epsilon = dL/da
+    // delta = epsilon * da/dz = next_params_T * next_delta (*) da/dz
+    T* delta = new T[sizeof(T) * shape::length(this->epsilontShapeInfo)];
+    ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, this->delta, this->inputShapeInfo);
+    // gradient_on_param = delta * previous_output
+    // gradient_on_bias = delta
+    this->gemmHelper(this->input, this->inputShapeInfo, this->params, this->paramsShapeInfo, this->output, this->outputShapeInfo, (T) 1.0f, (T) 0.0f);
 
     //this->gemmHelper(this->input, this->inputShapeInfo, delta, this->epsilonShapeInfo, this->output, this->outputShapeInfo, (T)1.0f, (T)0.0f);
     
@@ -57,6 +61,7 @@ template<typename T, typename AF> int DenseLayer<T,AF>::backPropagate() {
     // how to evaluate delta, what is it ???
     // this->gemmHelper(this->input, this->inputShapeInfo, this->params, this->paramsShapeInfo, this->output, this->outputShapeInfo, (T) 1.0f, (T) 0.0f);
     // Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
+    delete [] delta;
     return ND4J_STATUS_OK;
 }
 
