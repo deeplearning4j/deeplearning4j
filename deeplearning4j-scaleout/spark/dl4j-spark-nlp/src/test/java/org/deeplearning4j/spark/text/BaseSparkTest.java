@@ -51,8 +51,9 @@ public abstract class BaseSparkTest implements Serializable {
         if (sc != null)
             return sc;
         // set to test mode
-        SparkConf sparkConf = new SparkConf().setMaster("local[4]").setAppName("sparktest")
-                        .set(Word2VecVariables.NUM_WORDS, String.valueOf(1));
+        SparkConf sparkConf = new SparkConf().setMaster("local[4]").set("spark.driver.host", "localhost")
+            .setAppName("sparktest")
+            .set(Word2VecVariables.NUM_WORDS, String.valueOf(1));
 
 
         sc = new JavaSparkContext(sparkConf);
