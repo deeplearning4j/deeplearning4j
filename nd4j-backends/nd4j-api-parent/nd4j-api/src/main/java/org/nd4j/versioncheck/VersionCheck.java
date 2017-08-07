@@ -89,6 +89,14 @@ public class VersionCheck {
         }
 
         List<VersionInfo> repos = getVersionInfos();
+
+        if(getVersionInfos().size() == 0){
+            //No -properties.git files were found on the classpath. This may be due to a misconfigured uber-jar
+            // or maybe running in IntelliJ with "dynamic.classpath" set to true (in workspace.xml). Either way,
+            // we can't check versions and don't want to log an error, which will more often than not be wrong
+            return;
+        }
+
         Set<String> foundVersions = new HashSet<>();
         for(VersionInfo vi : repos){
             String g = vi.getGroupId();
