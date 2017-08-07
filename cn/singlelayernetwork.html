@@ -1,0 +1,36 @@
+---
+title: 单层神经网络
+layout: cn-default
+---
+<h1>单层神经网络</h1>
+<p>深度学习中的单层神经网络是一种由一个可见的输入层和一个隐藏的输出层组成的网络。</p>
+<p>单层网络的目的（亦即<a href="glossary.html#objectivefunction">目标函数</a>）是通过最小化<a href="glossary.html#reconstructionentropy">重构熵</a>来学习特征。</p>
+<p>这让网络能自动学习输入的特征，进而能更好地找出关联，更加准确地识别判别性特征。在此基础之上，多层网络可以准确地对数据进行分类。单层网络的学习是预定型步骤。</p>
+<p>每个单层网络都具备下列属性：</p>
+<ul>
+  <li>隐藏偏差：输出的偏差</li>
+  <li>可见偏差：输入的偏差</li>
+  <li>权重矩阵：网络的权重</li>
+</ul>
+<br>
+<br>
+<h2>单层网络的定型</h2>
+<p>要定型网络，首先将输入向量导入输入层。再为输入加入一些高斯噪声。噪声函数的类型取决于神经网络的具体情况。然后通过预定型使重构熵最小化，直至网络学会最适合用于重构输入数据的特征。</p>
+<br>
+<br>
+<h2>学习速率</h2>
+<p>学习速率一般在0.001到0.1之间。学习速率又称步幅，是函数在搜索空间中移动的速率。学习速率越低，定型时间越长，但有可能带来更精确的结果。</p>
+<br>
+<br>
+<h2>动量</h2>
+<p>动量是另一项决定优化算法收敛速度的因素。</p>
+<br>
+<br>
+<h2>L2正则化常数</h2>
+<p>L2是<a href="http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm" target="_blank">这一等式</a>中的λ。</p>
+<p>单层网络包括以下类型：</p>
+<ul>
+  <li><a href="restrictedboltzmannmachine">受限玻尔兹曼机</a></li>
+  <li><a href="continuousrestrictedboltzmannmachine.html">连续受限玻尔兹曼机</a></li>
+  <li><a href="denoisingautoencoder">降噪自动编码器</a></li>
+</ul>

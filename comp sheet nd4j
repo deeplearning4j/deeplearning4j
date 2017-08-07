@@ -1,0 +1,14 @@
+1) basic data type is a java object. not first class data types in java. we rolled our own. you can treat an ndarray as a matrix
+2) we're 0-based indexing like numpy
+3) java is meant for enterprise environments. has the fastest optimized runtime. ecosystem for distributed tools like hadoop, akka. works with scala and clojure and other jvm languages. 
+4) pass-by-reference: pass an array into a function, i can actually change the array. our views are slice operations.
+5) java has a built in package manager and ways of managing large hierarchies of code. unlike python, we have ways of static typing. scales to larger code bases. built in safeguards for compiler.
+6) community: started with DL4J. growing. google group. 
+7) like SLF4J, we're a baseline tool for various sorts of matrix backends like GPUs and native Blas.
+8) we don't do plotting or viz. delegate to matplotlib.
+9) eclipse and intelliJ are suggested for development. 
+10) free in the double sense. apache licensed. 
+
+http://wiki.scipy.org/NumPy_for_Matlab_Users
+
+paraphrase 

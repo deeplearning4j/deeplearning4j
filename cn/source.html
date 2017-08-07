@@ -1,0 +1,29 @@
+---
+layout: cn-default
+title: 用源代码工作
+---
+<h1>用源代码工作</h1>
+<p>如果您不打算以提交者（committer）的身份为Deeplearning4j做贡献，或者您不需要最新的Alpha版本，那么我们建议您从<a href="https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j" target="_blank">Maven中央仓库</a>下载Deeplearning4j最新的稳定发布版本，0.4-rc*。具体操作与在IntelliJ中将依赖项添加至您的POM.xml一样简单。</p>
+<p>与此同时，我们的<a href="https://github.com/deeplearning4j/deeplearning4j/" target="_blank">Github代码库见此处</a>。请安装<a href="https://mac.github.com/">Mac</a>或<a href="https://windows.github.com/" target="_blank">Windows</a>平台的<a href="http://nd4j.org/getstarted.html" target="_blank">Github</a>，然后将代码库&ldquo;Git克隆&rdquo;，让Maven运行如下命令：</p>
+<pre><code class="language-java">
+mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true
+</code></pre>
+<br>
+<p>如果您希望在主线安装完成后运行Deeplearning4j示例，您应当依次先后<em>Git克隆</em> ND4J、DataVec和Deeplearning4j，然后用Maven运行上述命令，从源代码安装所有的库。</p>
+<p>按上述步骤操作，您应当就能运行0.4-rc*的示例了。</p>
+<p>对于已有项目而言，您可以自行构建Deeplearning4j的源文件，然后将依赖项以JAR文件的形式添加至您的项目。Deeplearning4j和<a href="http://nd4j.org/dependencies.html" target="_blank">ND4J</a>使用的每一个依赖项都可以如此作为JAR文件添加至项目的POM.xml，您需要在<code>properties</code>标签对之间指定ND4J或Deeplearning4j的最新版本。</p>
+<pre class="line-numbers"><code class="language-java">
+&lt;dependency&gt;
+        &lt;groupId&gt;org.deeplearning4j&lt;/groupId&gt;
+        &lt;artifactId&gt;deeplearning4j-ui&lt;/artifactId&gt;
+        &lt;version&gt;${dl4j.version}&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.deeplearning4j&lt;/groupId&gt;
+        &lt;artifactId&gt;deeplearning4j-nlp&lt;/artifactId&gt;
+        &lt;version&gt;${dl4j.version}&lt;/version&gt;
+    &lt;/dependency&gt;
+</code></pre>
+<br>
+<p>在使用源代码工作时，您需要为IntelliJ或Eclipse安装一个<a href="https://projectlombok.org/download.html" target="_blank">Lombok项目插件</a>。</p>
+<p>如需了解为Deeplearning4j做出贡献的方法，请阅读我们的<a href="https://deeplearning4j.org/cn/devguide.html" target="_blank">开发者指南</a>。</p>

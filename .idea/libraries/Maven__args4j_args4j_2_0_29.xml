@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: args4j:args4j:2.0.29">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/args4j/args4j/2.0.29/args4j-2.0.29.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/args4j/args4j/2.0.29/args4j-2.0.29-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/args4j/args4j/2.0.29/args4j-2.0.29-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

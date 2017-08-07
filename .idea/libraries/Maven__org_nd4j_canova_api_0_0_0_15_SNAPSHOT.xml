@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.nd4j:canova-api:0.0.0.15-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/nd4j/canova-api/0.0.0.15-SNAPSHOT/canova-api-0.0.0.15-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/nd4j/canova-api/0.0.0.15-SNAPSHOT/canova-api-0.0.0.15-SNAPSHOT-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/nd4j/canova-api/0.0.0.15-SNAPSHOT/canova-api-0.0.0.15-SNAPSHOT-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

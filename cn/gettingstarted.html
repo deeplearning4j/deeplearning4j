@@ -1,0 +1,131 @@
+---
+title: 完全安装 Deeplearning4j
+layout: cn-default
+redirect_from: /zh-gettingstarted
+---
+<p><h1>DL4J安装指南</h1></p>
+<p>本页在<a href="quickstart">快速入门指南</a>的基础上介绍更多细节和一些问题解决步骤。建议您在查看本页内容之前先阅读快速入门指南，如此上手DL4J会比较容易。</p>
+<p>完全安装包括多个步骤。如果您希望提问或反馈，我们强烈建议您加入我们的<a href="https://gitter.im/deeplearning4j/deeplearning4j">Gitter线上交流群</a>，便于我们引导您进行安装。若您不乐意在群里发言，或要力求无师自通，也欢迎加入交流群默默潜水学习。此外，如果您是初次接触深度学习，我们还准备了一份<a href="deeplearningforbeginners">初学者学习计划</a>。</p>
+<p>在完成<a href="quickstart">快速入门指南</a>中的步骤之后，请阅读以下内容：</p>
+<ol>
+  <li><a href="#walk">详细过程说明</a></li>
+  <li><a href="#eclipse">在Eclipse中使用DL4J示例</a></li>
+  <li><a href="#trouble">疑难解答</a></li>
+  <li><a href="#managed">管理环境</a></li>
+  <li><a href="#results">可复现结果</a></li>
+  <li><a href="#scala">Scala 版本</a></li>
+  <li><a href="#advanced">在AWS上使用命令行</a></li>
+  <li><a href="native" target="_blank">CPU/GPU优化</a></li>
+  <li><a href="#next">后续步骤</a></li>
+</ol>
+<br />
+
+<p><h2><a name="walk">DL4J示例：详细过程说明</a></h2></p>
+<p>本节提供比<a href="quickstart">快速入门指南</a>更详尽的安装步骤介绍。</p>
+<ul>
+  <li>如果已有Git，可在命令行中输入：</li>
+  <pre><code class="language-java">
+  git --version
+  </code></pre>
+  <li>如果您没有Git，请 <a href="https://git-scm.herokuapp.com/book/en/v2/Getting-Started-Installing-Git" target="_blank">点此安装</a>。</li>
+  <li>随后，请注册<a href="https://github.com/join" target="_blank">Github账户</a>并下载GitHub的<a href="https://mac.github.com/" target="_blank">Mac</a>或<a href="https://windows.github.com/" target="_blank">Windows</a>版本。</li>
+  <li>如您使用Windows，请在开始菜单中找到 “Git Bash” 并打开。Git Bash终端的外观应与cmd.exe相似。</li>
+	<li>用 <code>cd</code> 命令进入想要存放DL4J示例的文件夹。您可以建立名为 <code>mkdir dl4j-examples</code>的新文件夹，再cd进入该文件夹。接着运行：git clone https://github.com/deeplearning4j/dl4j-examples
+  </li>
+	<li>输入 <code>ls</code>，确认文件已下载。</li>
+  <li>打开IntelliJ。</li>
+  <li>选择 “文件”菜单，点击“导入项目”或“从已有来源新建项目”，显示本地文件菜单。</li>
+  <li>选择包含DL4J示例的文件夹。</li>
+  <li>下一个窗口中将显示可供选择的构建工具。选中Maven。</li>
+  <li>勾选 “以递归方式搜索项目” 和 “自动导入Maven项目” 两项，随后点击 “下一步”。</li>
+  <li>确保JDK/SDK已安装，如尚未安装，请点击SDK窗口底部的加号添加。</li>
+  <li>随后继续点击确认，直至为项目命名的一步。使用默认的项目名称即可，所以请点击 “完成”。</li>
+</ul>
+<br />
+
+<p><h2><a name="eclipse">在Eclipse中使用DL4J示例</a></h2></p>
+<p>在IntelliJ中，导入示例只需按快速入门指南中的说明操作。若要在Eclipse中使用这些示例，则需要增加一个步骤。</p>
+<p>运行了git clone之后，输入以下命令：</p>
+<pre><code class="language-java">
+mvn eclipse:eclipse
+</code></pre>
+<p>该命令将创建一个可用于导入的Eclipse项目。</p>
+<p>根据多年使用Eclipse的经验，我们推荐具有相似界面的IntelliJ。Eclipse单一、庞大的架构常使我们和其他开发人员的代码产生奇怪错误。</p>
+<p>如果使用Eclipse，则需要安装Maven插件：<a href="https://eclipse.org/m2e/" target="_blank">eclipse.org/m2e/</a>。</p>
+<p>Michael Depies撰写了<a href="https://depiesml.wordpress.com/2015/08/26/dl4j-gettingstarted/" target="_blank">在Eclipse上安装Deeplearning4j</a>的指南。</p>
+<br />
+
+<p><h2><a name="trouble">疑难解答</a></h2></p>
+<ul>
+  <li>您可以随时在我们的<a href="https://gitter.im/deeplearning4j/deeplearning4j">Gitter线上交流群</a>提出有关错误信息的问题。请您在提问时准备好以下信息（这样可以明显加快我们的处理速度！）： 
+  <pre><code>
+  	* 操作系统（Windows、OSX、Linux）及版本
+	* Java版本（7、8）：在您的终端/CMD中输入“java -version”
+	* Maven版本：在您的终端/CMD中输入“mvn --version”
+	* Stacktrace：请在Gist上发布错误代码，并将链接分享给我们：https://gist.github.com/
+  </code></pre>	
+  </li>
+  <li>如果您曾安装过DL4J，但现在示例产生错误，则请对相关库进行升级。使用Maven进行升级时，仅需升级POM.xml文件中的版本，使之与<a href="https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j" target="_blank">Maven Central</a>中的最新版本相符。使用源进行升级时，可以在<a href="http://nd4j.org/cn/getstarted.html" target="_blank">ND4J</a>、DataVec和DL4J上运行 <code>git clone</code>，并以此顺序在所有三个目录内运行 <code>mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true。</code></li>
+  <li>在运行示例时，可能会得到较低的<a href="https://deeplearning4j.org/cn/glossary.html#f1">f1分数</a>。这一分数评估的，是网络分类准确的可能性。在这一情况下，f1分数分数低并不表明表现不佳，因为示例是通过小数据组进行定型的。之所以数据组较小，是为了加快运行速度。因为小数据组相比大数据组较不具有代表性，所以其生成的结果也会有很大差异。比如说，在示例数据量微小的情况下，我们的深度置信网络f1分数目前为从0.32到1.0不等。</li>
+  <li>Deeplearning4j包括<strong>自动完成功能</strong>。如果您不确定哪些命令可用，可任意按下某一字母键，将出现如下所示的下拉式菜单：</li>
+  <br /><img class="img-responsive center-block" src="../img/dl4j_autocomplete.png" alt="deeplearning4j"><br />
+  <li>此处为包含所有<a href="http://deeplearning4j.org/doc/" target="_blank">Deeplearning4j课程及方法</a>的<strong>Javadoc</strong>。</li>
+  <li>随着代码数量的增加，使用源进行安装将需要更多内存。如果在DL4J构建过程中发生<code>Permgen error</code>，则需要添加更多<strong>堆空间</strong>，方法是找到并更改隐藏的<code>.bash_profile</code>文件。这一文件在bash中添加环境变量。要了解具体有哪些变量，请在命令行中输入<code>env</code>。要添加更多堆空间，请在控制台输入下列命令： echo &ldquo;export MAVEN_OPTS=&rdquo;-Xmx512m -XX:MaxPermSize=512m&rdquo;&rdquo; &gt; ~/.bash_profile</li>
+  <li>如3.0.4等较早的Maven版本可能会产生NoSuchMethodError等异常情况。解决办法是将Maven升级到最新版本（当前为3.3.x）。您可以在命令行中输入<code>mvn -v</code>，检查Maven版本。</li>
+  <li>在安装Maven之后，您还将收到如下信息：<code>mvn is not recognised as an internal or external command, operable program or batch file.</code>（无法识别mvn为任何内部或外部命令、可执行文件或批处理文件。）此时，你需要在<a href="https://www.java.com/en/download/help/path.xml" target="_blank">PATH变量</a>中添加Maven，修改方法同对其他环境变量的修改。</li>
+  <li>如果出现<code>Invalid JDK version in profile 'java8-and-higher': Unbounded range: [1.8, for project com.github.jai-imageio:jai-imageio-core com.github.jai-imageio:jai-imageio-core:jar:1.3.0</code> 错误信息，则说明Maven出现问题。请升级至3.3.x版本。</li>
+  <li>欲对部分ND4J依赖项进行编译，请安装C和C++所用的<strong>开发工具</strong>。<a href="http://nd4j.org/cn/getstarted.html#devtools" target="_blank">请参见我们的ND4J指南</a>。</li>
+  <li><a href="https://github.com/bytedeco/javacpp" target="_blank">Java CPP</a>的包含路径可能在<strong>Windows</strong>环境下发生问题。解决办法之一，是将Visual Studio包含目录中的标头文件放入Java运行时环境（JRE）的包含路径中（亦即Java的安装路径）。如此将对standardio.h等文件产生影响。更多信息请访问<a href="http://nd4j.org/cn/getstarted.html#windows" target="_blank">此页面</a>。</li>
+  <li>监测GPU的说明请见<a href="http://nd4j.org/cn/getstarted.html#gpu">此处</a>。</li>
+  <li>使用Java的重要理由之一是 <strong><a href="https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jvisualvm.html" target="_blank">JVisualVM</a></strong> 中预装的诊断工具。如果已安装Java，在命令行中输入<code>jvisualvm</code>，即可获得关于CPU、Heap、PermGen、Classes和Threads的图像信息。有用的视图：点击右上角<code>Sampler</code>标签，然后点击CPU或内存按钮以获得相关视图。</li>
+  <br /><img class="img-responsive center-block" src="../img/jvisualvm.png" alt="deeplearning4j"><br />  
+  <li>在使用DL4J过程中出现的部分问题可能与对机器学习概念和技术的不了解有关。我们强烈推荐所有Deeplearning4j用户使用本网站以外的资源，来了解机器学习的基本要点。我们在这一页面上列出了机器和深度学习的一些学习资源。虽然我们已对DL4J编写部分文档，但其中有些代码基本上仍属于原始且领域专用的深度学习语言。</li>
+	<li>在通过 <strong>Clojure</strong> 使用<code>deeplearning4j-nlp</code>、通过Leiningen生成uberjar时，需要在<code>project.clj</code>中指定以下内容，以使<code>akka reference.conf</code> 资源文件得到正确合并：<code>:uberjar-merge-with {#"\.properties$" [slurp str spit] "reference.conf" [slurp str spit]}</code>。请注意，<code>.properties</code> 文件映射图中的首个条目通常为缺省项。如果未能完成上述步骤，在运行相关uberjar时将出现以下异常信息：<code>Exception in thread "main" com.typesafe.config.ConfigException$Missing:No configuration setting found for key 'akka.version'.</code></li>
+	<li>OSX环境下，浮动支持有很多问题。如果在运行我们的示例时，在应出现数字的地方出现NaN，则请将数据类型改为 <code>double</code>。</li>
+	<li>Java 7的分叉联接存在问题。解决方法是升级至Java 8。如果出现如下OutofMemory错误，则分叉联接是问题所在：<code>java.util.concurrent.ExecutionException: java.lang.OutOfMemoryError</code>….<code>java.util.concurrent.ForkJoinTask.getThrowableException(ForkJoinTask.java:536)</code></li>
+</ul>
+<br />
+<p><h2><a name="managed">托管环境</a></h2></p>
+<p>在Databricks、Domino或Sense.io等托管环境下运行时，需要增加一个步骤。按上述步骤进行本地安装后，进入示例所在的文件夹，在命令行中输入</p>
+<pre><code class="language-java">
+mvn clean package
+</code></pre>
+<p>随后即可将JAR文件上传至所选的托管环境。</p>
+<br />
+
+
+<h2><a name="results">可复现结果</a></h2>
+<p>神经网络权重开始时随机生成，也就是说，模型开始时每次会在权重空间中习得一个不同位置。这可能会导致不同的局部最佳值。寻求可复现结果的用户需要使用相同的随机权重，必须在模型创建之前即进行初始化。可以通过以下命令行重新初始化相同的随机权重：</p>
+<pre><code class="language-java">
+Nd4j.getRandom().setSeed(123);
+</code></pre>
+<br />
+
+
+<p><h2><a name="scala">Scala</a></h2></p>
+<p>Scala版本的示例见<a href="https://github.com/kogecoo/dl4j-examples-scala" title="DL4J Scala" target="_blank">此处</a>。</p>
+<br />
+
+
+<p><h2><a name="advanced">高级内容：在AWS上使用命令行</a></h2></p>
+<p>如果在采用Linux操作系统的AWS服务器上安装了Deeplearning4j，则可能需要用命令行来运行最初的示例，而非依靠IDE运行。在这种情况下，请按上文的说明运行<em>git clone </em>和 <em>mvn clean install</em>。安装完成后，即可在命令行中输入一行代码，运行一个实际的示例。输入代码取决于存储库版本和所选的具体示例。</p>
+<p>模板如下：</p>
+<pre><code class="language-java">
+java -cp target/nameofjar.jar fully.qualified.class.name
+</code></pre>
+<p>需要输入的命令应当与以下示例相类似：</p>
+<pre><code class="language-java">
+java -cp target/dl4j-examples.jar org.deeplearning4j.MLPBackpropIrisExample
+</code></pre>
+<p>在版本更新后，或使用不同的示例时，有两个项目会发生改变：</p>
+<pre><code class="language-java">
+java -cp target/*.jar org.deeplearning4j.*
+</code></pre>
+<p>您可以用命令行变更示例并运行变更后的文件，例如可以调整 <code>src/main/java/org/deeplearning4j/multilayer</code> 中的 <code>MLPBackpropIrisExample</code>，随后对示例运行 <code>maven-build</code>。</p>
+<br />
+
+<p><h2><a name="next">后续步骤：鸢尾花示例与神经网络构建</a></h2></p>
+<p>欲开始创建神经网络，请参阅<a href="neuralnet-overview">神经网络简介</a>获得更多信息。</p>
+<p>请参阅<a href="mnist-tutorial">MNIST教程</a>，学习如何加速运行，也可阅读<a href="restrictedboltzmannmachine">受限玻尔兹曼机介绍</a>，了解<em>深度置信网络</em>的基本机制。</p>
+<p>请根据<a href="http://nd4j.org/getstarted.html" target="_blank">ND4J入门指南</a>上的说明创建新项目，并将必要的<a href="http://nd4j.org/dependencies.html" target="_blank">POM依赖项</a>包括在内。</p>
+

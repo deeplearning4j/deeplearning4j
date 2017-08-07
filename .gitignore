@@ -1,10 +1,17 @@
 .DS_Store
 pom.xml.releaseBackup 
 target/
+<<<<<<< HEAD
+_site/
+application.home_IS_UNDEFINEiD
+README.md~
+*model.bin*
+=======
 dependency-reduced-pom.xml
 *.ser
 application.home_IS_UNDEFINEiD
 README.md~
+>>>>>>> master
 *.bin
 *.releaseBackup
 *.out
@@ -21,5 +28,12 @@ deeplearning4j-scaleout/deeplearning4j-aws/src/main/java/org/deeplearning4j/aws/
 *.log
 .project
 .classpath
+<<<<<<< HEAD
+_site/
+.idea/
+.idea/workspace.xml
+*.iml
+=======
 metastore_db
 *.ipynb*
+>>>>>>> master

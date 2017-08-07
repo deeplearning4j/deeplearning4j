@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.jcodec:jcodec:0.1.5">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jcodec/jcodec/0.1.5/jcodec-0.1.5.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jcodec/jcodec/0.1.5/jcodec-0.1.5-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jcodec/jcodec/0.1.5/jcodec-0.1.5-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

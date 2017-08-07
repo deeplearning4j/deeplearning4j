@@ -1,0 +1,36 @@
+/* Gitter Customized Button */
+
+.dl4j-gitter-open-chat-button:active {
+    color: #eee;
+}
+
+.dl4j-gitter-open-chat-button:focus,
+.dl4j-gitter-open-chat-button:hover {
+    background-color: #3ea07f;
+    color: #fff;
+}
+
+.dl4j-gitter-open-chat-button,
+.dl4j-gitter-open-chat-button:visited {
+    position: fixed;
+    right: 10px;
+    bottom: 0;
+    z-index: 100;
+    box-sizing: border-box;
+    padding: 1em 3em;
+    border: 0;
+    border-top-left-radius: .5em;
+    border-top-right-radius: .5em;
+    background-color: #36bc98;
+    color: #fff;
+    text-align: center;
+    text-decoration: none;
+    letter-spacing: 1px;
+    font-size: 12px;
+    font-family: sans-serif;
+    cursor: pointer;
+    cursor: hand;
+}
+
+
+/* End of Gitter Customized Button */

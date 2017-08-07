@@ -1,0 +1,50 @@
+---
+layout: cn-default
+title: Deeplearning4j更新器介绍
+---
+<p><h1>Deeplearning4j更新器介绍</h1></p>
+<p>本页内容主要面向已经了解<a href="glossary.html#stochasticgradientdescent">随机梯度下降</a>原理的读者。</p>
+<p>下文介绍的各种更新器之间最主要的区别是对于学习速率的处理方式。</p>
+<br>
+
+<p><h2>随机梯度下降</h2></p>
+<img class="img-responsive center-block" src="../img/updater_math1.png" alt="deeplearning4j"><br>
+<p><code>Theta</code>（θ）是权重，每个theta按其对应的损失函数的梯度进行调整。</p>
+<p><code>Alpha</code>（α）是学习速率。如果alpha值很小，那么向最小误差收敛的过程会比较缓慢。如果alpha值很大，模型会偏离最小误差，学习将会停止。</p>
+<p>由于定型样例之间的差异，损失函数(L)的梯度在每次迭代后变化很快。请看下图中的收敛路径。更新的步幅很小，在向最小误差逼近的过程中会来回振荡。</p>
+<img class="img-responsive center-block" src="../img/updater_1.png" alt="deeplearning4j">
+<p align="center">Github：<a href="https://github.com/deeplearning4j/deeplearning4j/blob/b585d6c1ae75e48e06db86880a5acd22593d3889/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/updater/SgdUpdater.java">Deeplearning4j中的SGDUpdater</a></p><br>
+
+
+<p><h2>动量</h2></p>
+<p>我们用<em>动量（momentum）</em>来减少振荡。动量会根据之前更新步骤的情况来调整更新器的运动方向。我们用一个新的超参数μ（mu）来表示动量。</p>
+<br>
+<img class="img-responsive center-block" src="../img/updater_math2.png" alt="deeplearning4j">
+<p align="center">上图为使用了动量的SGD算法。Github：<a href="https://github.com/deeplearning4j/deeplearning4j/blob/b585d6c1ae75e48e06db86880a5acd22593d3889/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/updater/NesterovsUpdater.java">Deeplearnign4j中的Nesterov动量更新器</a></p><br>
+
+
+<p><h2>Adagrad</h2></p>
+<p>Adagrad会根据每个参数对应的历史梯度（之前更新步骤中的情况）来调整该参数的alpha。具体方法是将更新规则中的当前梯度除以历史梯度之和。其结果是，梯度很大时，alpha会减小，反之则alpha增大。</p>
+<img class="img-responsive center-block" src="../img/updater_math3.png" alt="deeplearning4j"><br>
+<p align="center">参考：<a href="https://deeplearning4j.org/doc/org/deeplearning4j/nn/updater/AdaGradUpdater.html">Deeplearning4j中的AdaGradUpdater</a></p><br>
+
+<p><h2>RMSProp</h2></p>
+<p>RMSProp和Adagrad的唯一区别在于<code>g_t</code>项的计算方式是对梯度的平均值而非总和进行指数衰减。</p><br>
+<img class="img-responsive center-block" src="../img/updater_math4.png" alt="deeplearning4j"><br>
+<p>此处的<code>g_t</code>称为δL的二阶矩。此外，还可以引入一阶矩<code>m_t</code>。</p>
+<img class="img-responsive center-block" src="../img/updater_math5.png" alt="deeplearning4j"><br>
+<p>像第一个例子中那样加入动量……</p>
+<img class="img-responsive center-block" src="../img/updater_math6.png" alt="deeplearning4j"><br>
+<p>……最后像第一个例子中一样得到新的<code>theta</code>。</p>
+<img class="img-responsive center-block" src="../img/updater_math7.png" alt="deeplearning4j"><br>
+<p align="center">Github：<a href="https://github.com/deeplearning4j/deeplearning4j/blob/b585d6c1ae75e48e06db86880a5acd22593d3889/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/updater/RmsPropUpdater.java">Deeplearning4j中的RMSPropUpdater</a></p><br>
+
+<p><h2>AdaDelta</h2></p>
+<p>AdaDelta同样采用指数衰减的<code>g_t</code>平均值，也就是梯度的二阶矩。但它不采用通常作为学习速率的alpha，而是引入<code>x_t</code>，即<code>v_t</code>的二阶矩。</p>
+<img class="img-responsive center-block" src="../img/updater_math8.png" alt="deeplearning4j"><br>
+<p align="center">参考：<a href="https://deeplearning4j.org/doc/org/deeplearning4j/nn/updater/AdaDeltaUpdater.html">Deepelearning4j中的AdaDeltaUpdater</a></p><br>
+
+<p><h2>ADAM</h2></p>
+<p>ADAM同时使用一阶矩<code>m_t</code>和二阶矩<code>g_t</code>，但二者均会随时间衰减。步幅约为<code>±α</code>。当我们不断逼近最小误差时，步幅会逐渐缩小。</p><br>
+<img class="img-responsive center-block" src="../img/updater_math9.png" alt="deeplearning4j"><br>
+<p align="center">参考：<a href="http://deeplearning4j.org/doc/org/deeplearning4j/nn/updater/AdamUpdater.html">Deeplearning4j中的AdamUpdater</a></p>

@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="target12">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/dl4j-test-resources/target/dl4j-test-resources-0.4-rc3.4-SNAPSHOT-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dl4j-test-resources/target/dl4j-test-resources-0.4-rc3.4-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

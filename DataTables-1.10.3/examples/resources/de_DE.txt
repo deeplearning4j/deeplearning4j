@@ -1,0 +1,17 @@
+{
+	"processing": "Bitte warten...",
+	"lengthMenu": "_MENU_ Einträge anzeigen",
+	"zeroRecords": "Keine Einträge vorhanden.",
+	"info": "_START_ bis _END_ von _TOTAL_ Einträgen",
+	"infoEmpty": "0 bis 0 von 0 Einträgen",
+	"infoFiltered": "(gefiltert von _MAX_  Einträgen)",
+	"infoPostFix": "",
+	"search": "Suchen",
+	"url": "",
+	"paginate": {
+		"first":    "Erster",
+		"previous": "Zurück",
+		"next":     "Nächster",
+		"last":     "Letzter"
+	}
+}
