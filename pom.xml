@@ -602,7 +602,7 @@
               </executions>
               <configuration>
                 <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                  <generateGitPropertiesFilename>${project.basedir}/src/resources/ai/skymind/${project.groupId}-${project.artifactId}-git.properties
+                  <generateGitPropertiesFilename>${project.basedir}/src/main/resources/ai/skymind/${project.groupId}-${project.artifactId}-git.properties
                   </generateGitPropertiesFilename>
                 <gitDescribe>
                   <skip>true</skip>
