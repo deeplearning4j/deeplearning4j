@@ -208,14 +208,20 @@ public class VersionCheck {
         if(!dl4jFound){
             //See if pre-0.9.1 DL4J is present on classpath;
             if(classExists(DL4J_CLASS)){
-                repState.add(new VersionInfo(DL4J_GROUPID, DL4J_ARTIFACT, UNKNOWN_VERSION));
+                List<VersionInfo> temp = new ArrayList<>();
+                temp.add(new VersionInfo(DL4J_GROUPID, DL4J_ARTIFACT, UNKNOWN_VERSION));
+                temp.addAll(repState);
+                repState = temp;
             }
         }
 
         if(!datavecFound){
             //See if pre-0.9.1 DataVec is present on classpath
             if(classExists(DATAVEC_CLASS)){
-                repState.add(new VersionInfo(DATAVEC_GROUPID, DATAVEC_ARTIFACT, UNKNOWN_VERSION));
+                List<VersionInfo> temp = new ArrayList<>();
+                temp.add(new VersionInfo(DATAVEC_GROUPID, DATAVEC_ARTIFACT, UNKNOWN_VERSION));
+                temp.addAll(repState);
+                repState = temp;
             }
         }
 
