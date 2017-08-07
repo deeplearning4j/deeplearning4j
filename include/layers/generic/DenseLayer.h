@@ -54,18 +54,17 @@ template<typename T, typename AF> int DenseLayer<T,AF>::backPropagate() {
     // delta = epsilon * da/dz = previous_params_T * previous_delta (*) da/dz
     NDArray<T> *delta = new NDArray<T>(this->input);
     // calculate/fill delta
-    // ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, delta);
-    // // gradient_on_param = delta * next_output
-    // this->gemmHelper(this->input, delta, this->gradientW, (T) 1.0f, (T) 0.0f);
-    // // gradient_on_bias = delta
-    // T tempSum = (T) 0.f;
-    // NDArray<T> *sumArr = delta->sum({0}); 
-    // (this->gradientB)->assign(sumArr); 
-    // // calculate next epsilon
-    // this->gemmHelper(this->gradientW, delta->transpose(), this->epsilon);
+    ActivationsExecutioner<T>::template executeBP<AF>(this->input, this->epsilon, delta);
+    // gradient_on_param = delta * next_output
+    this->gemmHelper(this->input, delta, this->gradientW, (T) 1.0f, (T) 0.0f);
+    // gradient_on_bias = delta
+    NDArray<T> *sumArr = delta->sum({0}); 
+    (this->gradientB)->assign(sumArr); 
+    // calculate next epsilon
+    this->gemmHelper(this->gradientW, delta->transpose(), this->epsilon, (T) 1.0f, (T) 0.0f);
     
     delete delta;
-    // delete sumArr;
+    delete sumArr;
     
     return ND4J_STATUS_OK;
 }
