@@ -1,5 +1,6 @@
 package org.datavec.api.util.jdbc;
 
+import java.math.BigDecimal;
 import java.sql.Types;
 import org.datavec.api.writable.BooleanWritable;
 import org.datavec.api.writable.DoubleWritable;
@@ -30,7 +31,7 @@ public class JdbcWritableConverter {
             case Types.NCHAR:
             case Types.NVARCHAR:
             case Types.VARCHAR:
-                return new Text((String) columnValue);
+                return new Text(columnValue.toString());
 
             case Types.FLOAT:
             case Types.REAL:
@@ -38,14 +39,18 @@ public class JdbcWritableConverter {
 
             case Types.DECIMAL:
             case Types.NUMERIC:
+                return new DoubleWritable(((BigDecimal) columnValue).doubleValue()); //!\ This may overflow
+
             case Types.DOUBLE:
                 return new DoubleWritable((double) columnValue);
 
             case Types.INTEGER:
             case Types.SMALLINT:
             case Types.TINYINT:
-            case Types.BIT:
                 return new IntWritable((int) columnValue);
+
+            case Types.BIT:
+                return new BooleanWritable((boolean) columnValue);
 
             case Types.BIGINT:
                 return new LongWritable((long) columnValue);

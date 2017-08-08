@@ -53,131 +53,145 @@ public class JDBCRecordReaderTest {
 
     @Test
     public void testSimpleIter() throws Exception {
-        JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee");
-        List<List<Writable>> records = new ArrayList<>();
-        while (reader.hasNext()) {
-            List<Writable> values = reader.next();
-            records.add(values);
-        }
-        reader.close();
-        assertFalse(records.isEmpty());
+        try (JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee")) {
+            List<List<Writable>> records = new ArrayList<>();
+            while (reader.hasNext()) {
+                List<Writable> values = reader.next();
+                records.add(values);
+            }
 
-        List<Writable> first = records.get(0);
-        assertEquals(new Text("Bolivian Dark"), first.get(0));
-        assertEquals(new Text("14-001"), first.get(1));
-        assertEquals(new DoubleWritable(8.95), first.get(2));
+            assertFalse(records.isEmpty());
+
+            List<Writable> first = records.get(0);
+            assertEquals(new Text("Bolivian Dark"), first.get(0));
+            assertEquals(new Text("14-001"), first.get(1));
+            assertEquals(new DoubleWritable(8.95), first.get(2));
+        }
     }
 
     @Test
     public void testSimpleWithListener() throws Exception {
-        JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee");
-        RecordListener recordListener = new LogRecordListener();
-        reader.setListeners(recordListener);
-        reader.next();
-        reader.close();
-        assertTrue(recordListener.invoked());
+        try (JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee")) {
+            RecordListener recordListener = new LogRecordListener();
+            reader.setListeners(recordListener);
+            reader.next();
+
+            assertTrue(recordListener.invoked());
+        }
     }
 
     @Test
     public void testReset() throws Exception {
-        JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee");
-        List<List<Writable>> records = new ArrayList<>();
-        records.add(reader.next());
-        reader.reset();
-        records.add(reader.next());
-        reader.close();
+        try (JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee")) {
+            List<List<Writable>> records = new ArrayList<>();
+            records.add(reader.next());
+            reader.reset();
+            records.add(reader.next());
 
-        assertEquals(2, records.size());
-        assertEquals(new Text("Bolivian Dark"), records.get(0).get(0));
-        assertEquals(new Text("Bolivian Dark"), records.get(1).get(0));
+            assertEquals(2, records.size());
+            assertEquals(new Text("Bolivian Dark"), records.get(0).get(0));
+            assertEquals(new Text("Bolivian Dark"), records.get(1).get(0));
+        }
     }
 
     @Test(expected = IllegalStateException.class)
     public void testLackingDataSourceShouldFail() throws Exception {
-        JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM Coffee");
-        reader.initialize(null);
+        try (JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM Coffee")) {
+            reader.initialize(null);
+        }
     }
 
     @Test
     public void testConfigurationDataSourceInitialization() throws Exception {
-        JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM Coffee");
-        Configuration conf = new Configuration();
-        conf.set(JDBCRecordReader.JDBC_URL, "jdbc:derby:"+dbName+";create=true");
-        conf.set(JDBCRecordReader.JDBC_DRIVER_CLASS_NAME, driverClassName);
-        reader.initialize(conf, null);
-        assertTrue(reader.hasNext());
-        reader.close();
+        try (JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM Coffee")) {
+            Configuration conf = new Configuration();
+            conf.set(JDBCRecordReader.JDBC_URL, "jdbc:derby:" + dbName + ";create=true");
+            conf.set(JDBCRecordReader.JDBC_DRIVER_CLASS_NAME, driverClassName);
+            reader.initialize(conf, null);
+            assertTrue(reader.hasNext());
+        }
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testInitConfigurationMissingParametersShouldFail() throws Exception {
-        JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM Coffee");
-        Configuration conf = new Configuration();
-        conf.set(JDBCRecordReader.JDBC_URL, "should fail anyway");
-        reader.initialize(conf, null);
+        try (JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM Coffee")) {
+            Configuration conf = new Configuration();
+            conf.set(JDBCRecordReader.JDBC_URL, "should fail anyway");
+            reader.initialize(conf, null);
+        }
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testRecordDataInputStreamShouldFail() throws Exception {
-        JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee");
-        reader.record(null, null);
+        try (JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee")) {
+            reader.record(null, null);
+        }
     }
 
     @Test
     public void testLoadFromMetaData() throws Exception {
-        JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee");
-        RecordMetaDataJdbc rmd = new RecordMetaDataJdbc(new URI(conn.getMetaData().getURL()), "SELECT * FROM Coffee WHERE ProdNum = ?", Collections.singletonList("14-001"), reader.getClass());
+        try (JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee")) {
+            RecordMetaDataJdbc rmd = new RecordMetaDataJdbc(new URI(conn.getMetaData().getURL()),
+                "SELECT * FROM Coffee WHERE ProdNum = ?", Collections.singletonList("14-001"), reader.getClass());
 
-        Record res = reader.loadFromMetaData(rmd);
-        assertNotNull(res);
-        assertEquals(new Text("Bolivian Dark"), res.getRecord().get(0));
-        assertEquals(new Text("14-001"), res.getRecord().get(1));
-        assertEquals(new DoubleWritable(8.95), res.getRecord().get(2));
-
-        reader.close();
+            Record res = reader.loadFromMetaData(rmd);
+            assertNotNull(res);
+            assertEquals(new Text("Bolivian Dark"), res.getRecord().get(0));
+            assertEquals(new Text("14-001"), res.getRecord().get(1));
+            assertEquals(new DoubleWritable(8.95), res.getRecord().get(2));
+        }
     }
 
     @Test
     public void testNextRecord() throws Exception {
-        JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee");
-        Record r = reader.nextRecord();
-        List<Writable> fields = r.getRecord();
-        RecordMetaData meta = r.getMetaData();
-        assertNotNull(r);
-        assertNotNull(fields);
-        assertNotNull(meta);
-        assertEquals(new Text("Bolivian Dark"), fields.get(0));
-        assertEquals(new Text("14-001"), fields.get(1));
-        assertEquals(new DoubleWritable(8.95), fields.get(2));
-        assertEquals(RecordMetaDataJdbc.class, meta.getClass());
-        reader.close();
+        try (JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee")) {
+            Record r = reader.nextRecord();
+            List<Writable> fields = r.getRecord();
+            RecordMetaData meta = r.getMetaData();
+            assertNotNull(r);
+            assertNotNull(fields);
+            assertNotNull(meta);
+            assertEquals(new Text("Bolivian Dark"), fields.get(0));
+            assertEquals(new Text("14-001"), fields.get(1));
+            assertEquals(new DoubleWritable(8.95), fields.get(2));
+            assertEquals(RecordMetaDataJdbc.class, meta.getClass());
+        }
     }
 
     @Test
     public void testNextRecordAndRecover() throws Exception {
-        JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee");
-        Record r = reader.nextRecord();
-        List<Writable> fields = r.getRecord();
-        RecordMetaData meta = r.getMetaData();
-        Record recovered = reader.loadFromMetaData(meta);
-        List<Writable> fieldsRecovered = recovered.getRecord();
-        assertEquals(fields.size(), fieldsRecovered.size());
-        for (int i = 0; i < fields.size(); i++) {
-            assertEquals(fields.get(i), fieldsRecovered.get(i));
+        try (JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee")) {
+            Record r = reader.nextRecord();
+            List<Writable> fields = r.getRecord();
+            RecordMetaData meta = r.getMetaData();
+            Record recovered = reader.loadFromMetaData(meta);
+            List<Writable> fieldsRecovered = recovered.getRecord();
+            assertEquals(fields.size(), fieldsRecovered.size());
+            for (int i = 0; i < fields.size(); i++) {
+                assertEquals(fields.get(i), fieldsRecovered.get(i));
+            }
         }
-        reader.close();
     }
 
     // Resetting the record reader when initialized as forward only should fail
     @Test(expected = RuntimeException.class)
     public void testResetForwardOnlyShouldFail() throws Exception {
-        JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM Coffee", dataSource);
-        Configuration conf = new Configuration();
-        conf.setInt(JDBCRecordReader.JDBC_RESULTSET_TYPE, ResultSet.TYPE_FORWARD_ONLY);
-        reader.initialize(conf, null);
-        reader.next();
-        reader.reset();
+        try (JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM Coffee", dataSource)) {
+            Configuration conf = new Configuration();
+            conf.setInt(JDBCRecordReader.JDBC_RESULTSET_TYPE, ResultSet.TYPE_FORWARD_ONLY);
+            reader.initialize(conf, null);
+            reader.next();
+            reader.reset();
+        }
+    }
 
+    @Test
+    public void testReadAllTypes() throws Exception {
+        TestDb.buildAllTypesTable(conn);
+        try (JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM AllTypes", dataSource)) {
+            reader.initialize(null);
+            List<Writable> item = reader.next();
+        }
     }
 
     private JDBCRecordReader getInitializedReader(String query) throws Exception {
