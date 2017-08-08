@@ -602,7 +602,9 @@ public class MathUtils {
      * @param arr the data applyTransformToDestination to pass in
      * @param chunk the number to separate by
      * @return a partition data applyTransformToDestination relative to the passed in chunk number
+     * @deprecated not thread-safe, unused, see https://github.com/deeplearning4j/deeplearning4j/issues/3797
      */
+    @Deprecated
     public static List<List<Double>> partitionVariable(List<Double> arr, int chunk) {
         int count = 0;
         List<List<Double>> ret = new ArrayList<>();
