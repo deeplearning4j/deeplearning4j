@@ -1041,17 +1041,17 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
-    public void putByGlobalType(long i, Number element) {
-        if (DataTypeUtil.getDtypeFromContext() == Type.INT || type == Type.INT) {
+    public void putByGlobalType(long i, Number element, Type globalType) {
+        if (globalType == Type.INT || type == Type.INT) {
             int anElement = element.intValue();
             put(i, anElement);
-        } else if (DataTypeUtil.getDtypeFromContext() == Type.FLOAT || DataTypeUtil.getDtypeFromContext() == Type.HALF) {
+        } else if (globalType == Type.FLOAT || globalType == Type.HALF) {
             float anElement = element.floatValue();
             put(i, anElement);
-        } else if (DataTypeUtil.getDtypeFromContext() == Type.DOUBLE) {
+        } else if (globalType == Type.DOUBLE) {
             double anElement = element.doubleValue();
             put(i, anElement);
-        } else if (DataTypeUtil.getDtypeFromContext() == Type.LONG) {
+        } else if (globalType == Type.LONG) {
             long anElement = element.longValue();
             put(i, anElement);
         }
@@ -1303,7 +1303,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             pointerIndexerByGlobalType(currentType);
 
             if (currentType != Type.COMPRESSED)
-                readContent(s, currentType);
+                readContent(s, currentType, DataTypeUtil.getDtypeFromContext());
 
             //wrappedBuffer = pointer().asByteBuffer();
 
@@ -1312,15 +1312,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
-    protected void readContent(DataInputStream s, Type currentType) {
+    protected void readContent(DataInputStream s, Type currentType, Type globalType) {
         try {
             if (currentType == Type.DOUBLE) {
                 for (int i = 0; i < length(); i++) {
-                    putByGlobalType(i, s.readDouble());
+                    putByGlobalType(i, s.readDouble(), globalType);
                 }
             } else if (currentType == Type.FLOAT) {
                 for (int i = 0; i < length(); i++) {
-                    putByGlobalType(i, s.readFloat());
+                    putByGlobalType(i, s.readFloat(), globalType);
                 }
             } else if (currentType == Type.COMPRESSED) {
                 String compressionAlgorithm = s.readUTF();
@@ -1338,11 +1338,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             } else if (currentType == Type.HALF) {
                 for (int i = 0; i < length(); i++) {
-                    putByGlobalType(i, toFloat(s.readShort()));
+                    putByGlobalType(i, toFloat(s.readShort()), globalType);
                 }
             } else {
                 for (int i = 0; i < length(); i++) {
-                    putByGlobalType(i, s.readInt());
+                    putByGlobalType(i, s.readInt(), globalType);
                 }
             }
         } catch (Exception e) {
