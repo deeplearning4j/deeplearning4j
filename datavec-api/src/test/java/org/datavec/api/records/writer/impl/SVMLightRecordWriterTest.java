@@ -70,7 +70,7 @@ public class SVMLightRecordWriterTest {
         configReader.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         configReader.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
 
-        File inputFile = new ClassPathResource("svmlight/basic.txt").getFile();
+        File inputFile = new ClassPathResource("svmlight/noLabels.txt").getFile();
         executeTest(configWriter, configReader, inputFile);
     }
 
@@ -144,7 +144,12 @@ public class SVMLightRecordWriterTest {
         List<String> linesOriginal = new ArrayList<>();
         for (String line : FileUtils.readLines(inputFile)) {
             if (!line.startsWith(SVMLightRecordReader.COMMENT_CHAR)) {
-                String lineClean = line.split(SVMLightRecordReader.COMMENT_CHAR, 2)[0].trim();
+                String lineClean = line.split(SVMLightRecordReader.COMMENT_CHAR, 2)[0];
+                if (lineClean.startsWith(" ")) {
+                    lineClean = " " + lineClean.trim();
+                } else {
+                    lineClean = lineClean.trim();
+                }
                 Matcher m = p.matcher(lineClean);
                 lineClean = m.replaceAll("");
                 linesOriginal.add(lineClean);
@@ -250,7 +255,8 @@ public class SVMLightRecordWriterTest {
 
         try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
             Configuration configWriter = new Configuration();
-            configWriter.setBoolean(SVMLightRecordWriter.ZERO_BASED_INDEXING, true);
+            configWriter.setBoolean(SVMLightRecordWriter.ZERO_BASED_INDEXING, true); // NOT STANDARD!
+            configWriter.setBoolean(SVMLightRecordWriter.ZERO_BASED_LABEL_INDEXING, true); // NOT STANDARD!
             configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
             configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 3);
