@@ -18,7 +18,6 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
@@ -85,22 +84,22 @@ public class ManualTests {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(123);
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).theta(0.5).learningRate(500)
-                .useAdaGrad(true).build();
+                        .useAdaGrad(true).build();
 
         org.nd4j.linalg.io.ClassPathResource resource = new org.nd4j.linalg.io.ClassPathResource("/mnist2500_X.txt");
         File f = resource.getTempFileFromArchive();
         INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ").get(NDArrayIndex.interval(0, 100),
-                NDArrayIndex.interval(0, 784));
+                        NDArrayIndex.interval(0, 784));
 
 
 
         org.nd4j.linalg.io.ClassPathResource labels = new org.nd4j.linalg.io.ClassPathResource("mnist2500_labels.txt");
         List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
         b.fit(data);
-        File save = new File(System.getProperty("java.io.tmpdir"),"labels-" + UUID.randomUUID().toString());
+        File save = new File(System.getProperty("java.io.tmpdir"), "labels-" + UUID.randomUUID().toString());
         System.out.println("Saved to " + save.getAbsolutePath());
         save.deleteOnExit();
-        b. saveAsFile(labelsList, save.getAbsolutePath());
+        b.saveAsFile(labelsList, save.getAbsolutePath());
 
         INDArray output = b.getData();
         System.out.println("Coordinates");

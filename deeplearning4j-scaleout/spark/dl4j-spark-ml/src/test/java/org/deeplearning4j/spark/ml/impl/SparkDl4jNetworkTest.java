@@ -1,7 +1,6 @@
 package org.deeplearning4j.spark.ml.impl;
 
 
-import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -25,11 +24,13 @@ import org.deeplearning4j.spark.ml.utils.ParamSerializer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
-import java.util.*;
-
-import org.nd4j.linalg.lossfunctions.LossFunctions;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 
 public class SparkDl4jNetworkTest {
 

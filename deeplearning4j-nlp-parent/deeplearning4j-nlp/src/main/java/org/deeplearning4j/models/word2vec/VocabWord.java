@@ -18,11 +18,11 @@
 
 package org.deeplearning4j.models.word2vec;
 
-import lombok.NonNull;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.Serializable;
 

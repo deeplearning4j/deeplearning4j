@@ -8,7 +8,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com

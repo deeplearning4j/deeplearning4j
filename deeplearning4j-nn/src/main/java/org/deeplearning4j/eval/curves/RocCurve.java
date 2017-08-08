@@ -1,7 +1,6 @@
 package org.deeplearning4j.eval.curves;
 
 import com.google.common.base.Preconditions;
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonProperty;

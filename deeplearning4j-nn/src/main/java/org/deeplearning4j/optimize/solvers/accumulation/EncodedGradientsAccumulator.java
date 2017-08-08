@@ -9,7 +9,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -18,7 +17,8 @@ import org.nd4j.linalg.util.AtomicThrowable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
@@ -78,8 +78,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         this(parties, new EncodingHandler(threshold), 100 * 1024 * 1024L, 10, 1.0);
     }
 
-    protected EncodedGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory, int queueSize,
-                                          Double boundary) {
+    protected EncodedGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory,
+                    int queueSize, Double boundary) {
         this.parties = parties;
         this.handler = handler;
         this.initialMemory = initialMemory;
@@ -283,7 +283,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                             else if (encoding == ThresholdCompression.BITMAP_ENCODING)
                                 Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
                             else
-                                throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
+                                throw new DL4JInvalidConfigException(
+                                                "Unknown compression header received: " + encoding);
                         }
                     } else {
                         int encoding = compressed.data().getInt(3);
@@ -366,7 +367,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                             else if (encoding == ThresholdCompression.BITMAP_ENCODING)
                                 Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
                             else
-                                throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
+                                throw new DL4JInvalidConfigException(
+                                                "Unknown compression header received: " + encoding);
                         }
                     } else {
                         int encoding = compressed.data().getInt(3);

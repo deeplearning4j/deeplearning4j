@@ -19,7 +19,6 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;

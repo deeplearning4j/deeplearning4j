@@ -1,11 +1,11 @@
 package org.ansj.util;
 
-import java.util.Map;
-
 import org.ansj.domain.Term;
 import org.ansj.library.NatureLibrary;
 import org.ansj.library.NgramLibrary;
 import org.ansj.recognition.impl.NatureRecognition.NatureTerm;
+
+import java.util.Map;
 
 public class MathUtil {
 

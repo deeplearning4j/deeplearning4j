@@ -18,19 +18,6 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
-import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
-import org.deeplearning4j.models.word2vec.StaticWord2Vec;
-import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.util.OneTimeLogger;
-import org.nd4j.compression.impl.NoOp;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.shade.jackson.databind.DeserializationFeature;
-import org.nd4j.shade.jackson.databind.MapperFeature;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.SerializationFeature;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -39,10 +26,12 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
-import org.apache.commons.io.output.*;
+import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
@@ -52,6 +41,7 @@ import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceElementFactory;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.sequencevectors.serialization.VocabWordFactory;
+import org.deeplearning4j.models.word2vec.StaticWord2Vec;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -61,9 +51,18 @@ import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
+import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.util.OneTimeLogger;
+import org.nd4j.compression.impl.NoOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.storage.CompressedRamStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -471,7 +470,8 @@ public class WordVectorSerializer {
      * @param file
      */
     public static void writeParagraphVectors(ParagraphVectors vectors, File file) {
-        try (FileOutputStream fos = new FileOutputStream(file); BufferedOutputStream stream = new BufferedOutputStream(fos)) {
+        try (FileOutputStream fos = new FileOutputStream(file);
+                        BufferedOutputStream stream = new BufferedOutputStream(fos)) {
             writeParagraphVectors(vectors, stream);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -493,7 +493,8 @@ public class WordVectorSerializer {
      *
      */
     public static void writeWord2VecModel(Word2Vec vectors, File file) {
-        try (FileOutputStream fos = new FileOutputStream(file); BufferedOutputStream stream = new BufferedOutputStream(fos)) {
+        try (FileOutputStream fos = new FileOutputStream(file);
+                        BufferedOutputStream stream = new BufferedOutputStream(fos)) {
             writeWord2VecModel(vectors, stream);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -2817,7 +2818,7 @@ public class WordVectorSerializer {
             value = memSize / 1024 / 1024 / 1024;
         }
 
-        OneTimeLogger.info(log,"Projected memory use for model: [{} {}]", String.format("%.2f", value), sfx);
+        OneTimeLogger.info(log, "Projected memory use for model: [{} {}]", String.format("%.2f", value), sfx);
 
     }
 }

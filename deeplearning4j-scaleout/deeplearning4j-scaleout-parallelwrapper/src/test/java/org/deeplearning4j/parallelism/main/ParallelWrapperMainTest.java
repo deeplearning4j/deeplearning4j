@@ -20,7 +20,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
-import java.util.Random;
 
 /**
  * Created by agibsonccc on 12/29/16.

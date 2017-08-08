@@ -2,11 +2,11 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.exception.DL4JInvalidInputException;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;

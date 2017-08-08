@@ -440,7 +440,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          * See: http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
          * @param bpttLength length > 0
          */
-        public Builder tBPTTLength(int bpttLength){
+        public Builder tBPTTLength(int bpttLength) {
             tBPTTForwardLength(bpttLength);
             return tBPTTBackwardLength(bpttLength);
         }

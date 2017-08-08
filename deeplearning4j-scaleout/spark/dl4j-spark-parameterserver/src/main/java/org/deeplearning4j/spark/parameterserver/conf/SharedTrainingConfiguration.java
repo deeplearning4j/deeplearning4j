@@ -32,7 +32,8 @@ public class SharedTrainingConfiguration implements Serializable {
     /**
      * This value **overrides** bufferSize calculations for gradients accumulator
      */
-    @Builder.Default protected int bufferSize = 0;
+    @Builder.Default
+    protected int bufferSize = 0;
 
     // TODO: decide, if we abstract this one out, or not
     protected double threshold;

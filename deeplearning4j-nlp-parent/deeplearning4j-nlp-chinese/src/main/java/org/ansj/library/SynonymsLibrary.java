@@ -1,15 +1,5 @@
 package org.ansj.library;
 
-import java.io.BufferedReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
-
 import org.ansj.dic.PathToStream;
 import org.ansj.domain.KV;
 import org.ansj.util.MyStaticValue;
@@ -17,6 +7,10 @@ import org.nlpcn.commons.lang.tire.domain.SmartForest;
 import org.nlpcn.commons.lang.util.IOUtil;
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.commons.lang.util.logging.Log;
+
+import java.io.BufferedReader;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class SynonymsLibrary {
 

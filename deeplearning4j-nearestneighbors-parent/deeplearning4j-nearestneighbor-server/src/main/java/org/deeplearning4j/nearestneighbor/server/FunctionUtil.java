@@ -6,12 +6,6 @@ import play.mvc.Result;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static play.mvc.Results.internalServerError;
-import static play.mvc.Results.ok;
-
-import static play.mvc.Results.internalServerError;
-import static play.mvc.Results.ok;
-
 /**
  * Utility methods for Routing
  *

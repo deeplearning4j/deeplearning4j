@@ -8,10 +8,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-
 /**
  * Unit tests for Keras model configuration import.
  *

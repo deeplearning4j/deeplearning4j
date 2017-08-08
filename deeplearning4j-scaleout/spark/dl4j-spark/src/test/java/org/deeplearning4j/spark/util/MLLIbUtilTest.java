@@ -54,7 +54,7 @@ public class MLLIbUtilTest extends BaseSparkTest {
 
 
     @Test
-    public void testINDtoMLMatrix(){
+    public void testINDtoMLMatrix() {
         INDArray matIND = Nd4j.rand(23, 100);
 
         Matrix matMl = MLLibUtil.toMatrix(matIND);
@@ -72,19 +72,22 @@ public class MLLIbUtilTest extends BaseSparkTest {
         assertTrue(matrixEquals(matMl, matIND, 0.01));
     }
 
-    private boolean matrixEquals(Matrix mlMatrix, INDArray indMatrix, Double eps){
+    private boolean matrixEquals(Matrix mlMatrix, INDArray indMatrix, Double eps) {
         final int mlRows = mlMatrix.numRows();
         final int mlCols = mlMatrix.numCols();
         final int indRows = indMatrix.rows();
         final int indCols = indMatrix.columns();
 
-        if(mlRows != indRows) return false;
-        if(mlCols != indCols) return false;
+        if (mlRows != indRows)
+            return false;
+        if (mlCols != indCols)
+            return false;
 
-        for(int i=0; i < mlRows; i++){
-            for(int j=0; j < mlCols; j++){
+        for (int i = 0; i < mlRows; i++) {
+            for (int j = 0; j < mlCols; j++) {
                 double delta = Math.abs(mlMatrix.apply(i, j) - indMatrix.getDouble(i, j));
-                if(delta > eps) return false;
+                if (delta > eps)
+                    return false;
             }
         }
         return true;

@@ -54,6 +54,10 @@
     </prerequisites>
 
     <properties>
+        <deeplearning4j.version>0.9.1-SNAPSHOT</deeplearning4j.version>
+        <nd4j.version>0.9.1-SNAPSHOT</nd4j.version>
+        <datavec.version>0.9.1-SNAPSHOT</datavec.version>
+        <dl4j-test-resources.version>0.9.1-SNAPSHOT</dl4j-test-resources.version>
         <kafka.version>0.10.1.1</kafka.version>
         <akka.version>2.3.13</akka.version>
         <typesafe.config.version>1.3.0</typesafe.config.version>
@@ -61,12 +65,9 @@
         <jcommander.version>1.27</jcommander.version>
         <javacpp.version>1.3.3</javacpp.version>
         <javacpp-presets.version>1.3</javacpp-presets.version>
-        <nd4j.version>0.9.1-SNAPSHOT</nd4j.version>
-        <deeplearning4j.version>0.9.1-SNAPSHOT</deeplearning4j.version>
-        <datavec.version>0.9.1-SNAPSHOT</datavec.version>
         <hadoop.version>2.2.0</hadoop.version>
         <commonsmath.version>3.4.1</commonsmath.version>
-        <commonslang.version>3.3.1</commonslang.version>
+        <commonslang.version>3.4</commonslang.version>
         <commonsio.version>2.4</commonsio.version>
         <commons-codec.version>1.10</commons-codec.version>
         <args4j.version>2.0.29</args4j.version>
@@ -109,7 +110,6 @@
         <maven-lint-plugin.version>0.0.11</maven-lint-plugin.version>
         <maven-formatter-plugin.version>2.0.0</maven-formatter-plugin.version>
         <maven-lifecycle-mapping-plugin.version>1.0.0</maven-lifecycle-mapping-plugin.version>
-        <dl4j-test-resources.version>0.9.1-SNAPSHOT</dl4j-test-resources.version>
         <mockito.version>2.2.6</mockito.version>
     </properties>
 

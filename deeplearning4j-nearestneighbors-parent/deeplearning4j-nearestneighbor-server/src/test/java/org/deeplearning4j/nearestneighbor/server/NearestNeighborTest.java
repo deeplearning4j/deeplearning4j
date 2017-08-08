@@ -5,7 +5,6 @@ import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
 import org.deeplearning4j.nearestneighbor.client.NearestNeighborsClient;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
-import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResult;
 import org.deeplearning4j.nearestneighbor.model.NearstNeighborsResults;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -15,7 +14,6 @@ import org.nd4j.serde.binary.BinarySerde;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 

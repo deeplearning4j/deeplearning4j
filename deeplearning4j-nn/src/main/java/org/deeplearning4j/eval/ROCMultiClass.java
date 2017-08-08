@@ -2,7 +2,6 @@ package org.deeplearning4j.eval;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
 import org.deeplearning4j.eval.serde.ROCArraySerializer;

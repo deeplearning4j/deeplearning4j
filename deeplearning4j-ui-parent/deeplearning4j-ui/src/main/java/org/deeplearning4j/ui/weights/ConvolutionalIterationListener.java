@@ -160,7 +160,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                 for (Layer layer : l.getLayers()) {
                     if (!(layer instanceof FrozenLayer) && layer.type() == Layer.Type.CONVOLUTIONAL) {
                         INDArray output = layer.activate();
-                        int sampleDim = output.shape()[0] == 1 ? 0 :rnd.nextInt(output.shape()[0] - 1) + 1;
+                        int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
                             INDArray inputs = ((ConvolutionLayer) layer).input();
 

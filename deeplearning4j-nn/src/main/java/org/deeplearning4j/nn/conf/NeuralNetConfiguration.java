@@ -1019,15 +1019,24 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public Builder updater(IUpdater updater) {
             //Ensure legacy field is set...
-            if(updater instanceof Sgd) this.updater = Updater.SGD;
-            else if(updater instanceof Adam) this.updater = Updater.ADAM;
-            else if(updater instanceof AdaMax) this.updater = Updater.ADAMAX;
-            else if(updater instanceof AdaDelta) this.updater = Updater.ADADELTA;
-            else if(updater instanceof Nesterovs) this.updater = Updater.NESTEROVS;
-            else if(updater instanceof Nadam) this.updater = Updater.NADAM;
-            else if(updater instanceof AdaGrad) this.updater = Updater.ADAGRAD;
-            else if(updater instanceof RmsProp) this.updater = Updater.RMSPROP;
-            else if(updater instanceof NoOp) this.updater = Updater.NONE;
+            if (updater instanceof Sgd)
+                this.updater = Updater.SGD;
+            else if (updater instanceof Adam)
+                this.updater = Updater.ADAM;
+            else if (updater instanceof AdaMax)
+                this.updater = Updater.ADAMAX;
+            else if (updater instanceof AdaDelta)
+                this.updater = Updater.ADADELTA;
+            else if (updater instanceof Nesterovs)
+                this.updater = Updater.NESTEROVS;
+            else if (updater instanceof Nadam)
+                this.updater = Updater.NADAM;
+            else if (updater instanceof AdaGrad)
+                this.updater = Updater.ADAGRAD;
+            else if (updater instanceof RmsProp)
+                this.updater = Updater.RMSPROP;
+            else if (updater instanceof NoOp)
+                this.updater = Updater.NONE;
             this.iUpdater = updater;
             return this;
         }

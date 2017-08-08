@@ -2,11 +2,9 @@ package org.deeplearning4j.spark.parameterserver.training;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.input.PortableDataStream;
@@ -14,23 +12,14 @@ import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StorageMetaData;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
-import org.deeplearning4j.spark.api.worker.ExecuteWorkerFlatMap;
-import org.deeplearning4j.spark.api.worker.ExecuteWorkerPDSFlatMap;
-import org.deeplearning4j.spark.api.worker.ExecuteWorkerPathFlatMap;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.BaseTrainingMaster;
-import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
-import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingResult;
-import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingAggregationTuple;
-import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingElementAddFunction;
-import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingElementCombineFunction;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
 import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAccumulationFunction;
 import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAccumulationTuple;
@@ -52,15 +41,8 @@ import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
-import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
-import org.nd4j.shade.jackson.annotation.PropertyAccessor;
-import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
-import org.nd4j.shade.jackson.databind.DeserializationFeature;
-import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.SerializationFeature;
-import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -113,7 +95,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers,
                     RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats,
-                    RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold, double minThreshold, double thresholdStep, double stepTrigger, int stepDelay, int shakeFrequency,
+                    RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold,
+                    double minThreshold, double thresholdStep, double stepTrigger, int stepDelay, int shakeFrequency,
                     int batchSizePerWorker, long debugLongerIterations, int numWorkersPerNode) {
         this.voidConfiguration = voidConfiguration;
         this.numWorkers = numWorkers;
@@ -218,9 +201,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                         network.getNetwork().params(), network.getNetwork().getUpdater().getStateViewArray());
 
         SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder().threshold(threshold)
-                        .minThreshold(minThreshold).shakeFrequency(shakeFrequency).thresholdStep(thresholdStep).stepTrigger(stepTrigger).stepDelay(stepDelay)
-                        .voidConfiguration(voidConfiguration).debugLongerIterations(debugLongerIterations)
-                        .numberOfWorkersPerNode(numWorkersPerNode).build();
+                        .minThreshold(minThreshold).shakeFrequency(shakeFrequency).thresholdStep(thresholdStep)
+                        .stepTrigger(stepTrigger).stepDelay(stepDelay).voidConfiguration(voidConfiguration)
+                        .debugLongerIterations(debugLongerIterations).numberOfWorkersPerNode(numWorkersPerNode).build();
 
         if (collectTrainingStats)
             stats.logBroadcastStart();
@@ -1223,9 +1206,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         public SharedTrainingMaster build() {
             SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach,
-                            storageLevel, true, repartitionStrategy, repartition, threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency,
-                    batchSize,
-                            debugLongerIterations, numWorkersPerNode);
+                            storageLevel, true, repartitionStrategy, repartition, threshold, minThreshold,
+                            thresholdStep, stepTrigger, stepDelay, shakeFrequency, batchSize, debugLongerIterations,
+                            numWorkersPerNode);
             if (transport != null)
                 master.transport = this.transport;
 

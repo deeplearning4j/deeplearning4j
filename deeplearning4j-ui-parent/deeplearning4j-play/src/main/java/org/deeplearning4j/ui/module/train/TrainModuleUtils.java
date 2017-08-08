@@ -11,12 +11,8 @@ import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
-import org.deeplearning4j.ui.flow.beans.Description;
-import org.deeplearning4j.ui.flow.beans.LayerInfo;
-import org.deeplearning4j.ui.flow.beans.ModelInfo;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *

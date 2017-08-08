@@ -3,9 +3,8 @@ package org.deeplearning4j.ui.storage;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.api.storage.*;
-import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 

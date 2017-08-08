@@ -4,13 +4,11 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nearestneighbor.model.*;
-import org.jboss.netty.util.internal.ByteBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -24,17 +22,12 @@ import play.routing.RoutingDsl;
 import play.server.Server;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import static play.mvc.Controller.request;
-import static play.mvc.Results.badRequest;
-import static play.mvc.Results.internalServerError;
-import static play.mvc.Results.ok;
+import static play.mvc.Results.*;
 
 /**
  * A rest server for using an
@@ -84,7 +77,8 @@ public class NearestNeighborsServer {
         for (int i = 0; i < pathArr.length; i++) {
             DataBuffer shape = BinarySerde.readShapeFromDisk(new File(pathArr[i]));
 
-            log.info("Loading shape {} of {}; Shape: [{} x {}]", i+1, pathArr.length, Shape.size(shape, 0), Shape.size(shape, 1));
+            log.info("Loading shape {} of {}; Shape: [{} x {}]", i + 1, pathArr.length, Shape.size(shape, 0),
+                            Shape.size(shape, 1));
 
             if (Shape.rank(shape) != 2)
                 throw new DL4JInvalidInputException("NearestNeighborsServer assumes 2D chunks");
@@ -93,16 +87,16 @@ public class NearestNeighborsServer {
 
             if (cols == 0)
                 cols = Shape.size(shape, 1);
-            else
-                if (cols != Shape.size(shape, 1))
-                    throw new DL4JInvalidInputException("NearestNeighborsServer requires equal 2D chunks. Got columns mismatch.");
+            else if (cols != Shape.size(shape, 1))
+                throw new DL4JInvalidInputException(
+                                "NearestNeighborsServer requires equal 2D chunks. Got columns mismatch.");
         }
 
         final INDArray points = Nd4j.createUninitialized(rows, cols);
 
         int lastPosition = 0;
         for (int i = 0; i < pathArr.length; i++) {
-            log.info("Loading chunk {} of {}", i+1, pathArr.length);
+            log.info("Loading chunk {} of {}", i + 1, pathArr.length);
             INDArray pointsArr = BinarySerde.readFromDisk(new File(pathArr[i]));
 
             points.get(NDArrayIndex.interval(lastPosition, lastPosition + pointsArr.rows())).assign(pointsArr);

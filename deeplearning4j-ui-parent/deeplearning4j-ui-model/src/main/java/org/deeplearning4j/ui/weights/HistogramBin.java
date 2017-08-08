@@ -1,9 +1,9 @@
 package org.deeplearning4j.ui.weights;
 
-import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
