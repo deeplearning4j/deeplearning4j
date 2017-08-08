@@ -20,4 +20,5 @@ model-saver-*
 .project
 .classpath
 .idea
+*-git.properties
 
