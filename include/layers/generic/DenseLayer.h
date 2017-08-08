@@ -71,8 +71,8 @@ int DenseLayer<T,AF>::backPropagate() {
     ActivationsExecutioner<T>::template executeBP<AF>(preOutput, this->epsilon, delta);
 
     // gradient_on_param = delta * next_output
-    preOutput->transposei();
-    this->gemmHelper(preOutput, delta, this->gradientW, (T) 1.0f, (T) 0.0f);
+    auto iT = this->input->transpose();
+    this->gemmHelper(iT, delta, this->gradientW, (T) 1.0f, (T) 0.0f);
     // gradient_on_bias = delta
 
     NDArray<T> *sumArr = delta->sum({0}); 
@@ -80,17 +80,19 @@ int DenseLayer<T,AF>::backPropagate() {
     // calculate next epsilon
 
 
-
+    // creating temp output array
+    auto *oT = new NDArray<T>(this->params->shapeOf()[0], this->input->shapeOf()[0], 'f');
     delta->transposei();
-    auto *oT = this->output->transpose();
+    this->gemmHelper(this->params, delta, oT, (T) 1.0f, (T) 0.0f);
+    //printf("O length: %i\n", this->output->lengthOf());
+    oT->transposei();
+    this->output->assign(oT);
 
-    this->gemmHelper(this->gradientW, delta, oT, (T) 1.0f, (T) 0.0f);
-    memcpy(this->output->buffer, oT->buffer, this->output->lengthOf());
-    
     delete delta;
     delete sumArr;
     delete preOutput;
     delete oT;
+    delete iT;
 
     return ND4J_STATUS_OK;
 }
