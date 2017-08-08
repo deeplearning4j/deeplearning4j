@@ -13,7 +13,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Properties;
 import javax.sql.DataSource;
 import lombok.Setter;
@@ -225,10 +224,6 @@ public class JDBCRecordReader extends BaseRecordReader {
      */
     @Override
     public Record nextRecord() {
-        if (!iter.hasNext()) {
-            throw new NoSuchElementException("No next element found!");
-        }
-
         Object[] next = iter.next();
         invokeListeners(next);
 

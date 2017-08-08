@@ -19,8 +19,13 @@ import org.datavec.api.records.listener.RecordListener;
 import org.datavec.api.records.listener.impl.LogRecordListener;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataJdbc;
+import org.datavec.api.records.metadata.RecordMetaDataLine;
 import org.datavec.api.records.reader.impl.jdbc.JDBCRecordReader;
+import org.datavec.api.writable.BooleanWritable;
 import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.FloatWritable;
+import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.After;
@@ -191,12 +196,50 @@ public class JDBCRecordReaderTest {
         try (JDBCRecordReader reader = new JDBCRecordReader("SELECT * FROM AllTypes", dataSource)) {
             reader.initialize(null);
             List<Writable> item = reader.next();
+
+            assertEquals(item.size(), 15);
+            assertEquals(BooleanWritable.class, item.get(0).getClass()); // boolean to boolean
+            assertEquals(Text.class, item.get(1).getClass()); // date to text
+            assertEquals(Text.class, item.get(2).getClass()); // time to text
+            assertEquals(Text.class, item.get(3).getClass()); // timestamp to text
+            assertEquals(Text.class, item.get(4).getClass()); // char to text
+            assertEquals(Text.class, item.get(5).getClass()); // long varchar to text
+            assertEquals(Text.class, item.get(6).getClass()); // varchar to text
+            assertEquals(DoubleWritable.class,
+                item.get(7).getClass()); // float to double (derby's float is an alias of double by default)
+            assertEquals(FloatWritable.class, item.get(8).getClass()); // real to float
+            assertEquals(DoubleWritable.class, item.get(9).getClass()); // decimal to double
+            assertEquals(DoubleWritable.class, item.get(10).getClass()); // numeric to double
+            assertEquals(DoubleWritable.class, item.get(11).getClass()); // double to double
+            assertEquals(IntWritable.class, item.get(12).getClass()); // integer to integer
+            assertEquals(IntWritable.class, item.get(13).getClass()); // small int to integer
+            assertEquals(LongWritable.class, item.get(14).getClass()); // bigint to long
+
+        }
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testNextNoMoreShouldFail() throws Exception {
+        try (JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee")) {
+            while (reader.hasNext()) {
+                reader.next();
+            }
+            reader.next();
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidMetadataShouldFail() throws Exception {
+        try (JDBCRecordReader reader = getInitializedReader("SELECT * FROM Coffee")) {
+            RecordMetaDataLine md = new RecordMetaDataLine(1, new URI("file://test"), JDBCRecordReader.class);
+            reader.loadFromMetaData(md);
         }
     }
 
     private JDBCRecordReader getInitializedReader(String query) throws Exception {
         int[] indices = {1}; // ProdNum column
-        JDBCRecordReader reader = new JDBCRecordReader(query, dataSource, "SELECT * FROM Coffee WHERE ProdNum = ?", indices);
+        JDBCRecordReader reader = new JDBCRecordReader(query, dataSource, "SELECT * FROM Coffee WHERE ProdNum = ?",
+            indices);
         reader.setTrimStrings(true);
         reader.initialize(null);
         return reader;
