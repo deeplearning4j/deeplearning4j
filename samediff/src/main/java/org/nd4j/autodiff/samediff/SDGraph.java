@@ -111,10 +111,6 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         //iterate over op execution order skipping
         // nodes that are only inputs
         //the goal is to get all of the needed op executions
-        /**
-         * Duplicate nodes or something seem to be popping up here..
-         *
-         */
         for (int i = 0; i < order.length; i++) {
             //skip vertices that are only inputs
             if (getVertexInDegree(order[i]) < 1) {
@@ -151,6 +147,12 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         }
 
 
+        Collections.sort(ret, new Comparator<OpExecAction>() {
+            @Override
+            public int compare(OpExecAction o1, OpExecAction o2) {
+                return Integer.compare(o1.getOutputId(),o2.getOutputId());
+            }
+        });
 
         return OpExecOrder.builder().actions(ret).build();
     }
@@ -175,23 +177,24 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
      */
     public int[] topologicalSort() {
         LinkedList<Integer> noIncoming = new LinkedList<>();
-        Map<Integer, Set<Integer>> inputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex receives input from
-        Map<Integer, Set<Integer>> outputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex outputs to
+        Map<Integer, Set<Integer>> inputEdges = new TreeMap<>(); //key: vertex. Values: vertices that the key vertex receives input from
+        Map<Integer, Set<Integer>> outputEdges = new TreeMap<>(); //key: vertex. Values: vertices that the key vertex outputs to
         int[] ret = new int[numVertices()];
-        Collection<Integer> vertices = getVertices().keySet();
+        List<Integer> vertices = new ArrayList<>(getVertices().keySet());
+        Collections.sort(vertices);
         for (int i : vertices) {
             if (getVertexInDegree(i) < 1) {
                 noIncoming.add(i);
             }
 
             List<Edge<OpState>> edges = getEdgesOut(i);
-            Set<Integer> outVertices = new HashSet<>();
+            Set<Integer> outVertices = new TreeSet<>();
             Set<Integer> currInputs = new TreeSet<>();
             for (Edge<OpState> edge : edges) {
                 outVertices.add(edge.getTo());
                 Set<Integer> outputSetForInputIdx = outputEdges.get(i);
                 if (outputSetForInputIdx == null) {
-                    outputSetForInputIdx = new HashSet<>();
+                    outputSetForInputIdx = new TreeSet<>();
                     outputEdges.put(i, outputSetForInputIdx);
                 }
 
@@ -237,6 +240,7 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
             if (!set.isEmpty())
                 throw new IllegalStateException("Graph has cycles");
         }
+
 
         return ret;
     }

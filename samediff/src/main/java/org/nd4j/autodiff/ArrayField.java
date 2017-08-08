@@ -13,10 +13,7 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -35,6 +32,8 @@ public class ArrayField implements Field<ArrayField> {
     @Getter
     @Setter
     private Graph<NDArrayInformation,OpState> ops;
+    @Getter
+    @Setter
     private NDArrayInformation input;
     @Getter
     @Setter
@@ -45,15 +44,6 @@ public class ArrayField implements Field<ArrayField> {
         this.input = ndArrayVertex.getValue();
         this.vertex = ndArrayVertex;
         this.ops = ops;
-        ops.addVertex(vertex);
-    }
-
-    public ArrayField(NDArrayInformation input,Graph<NDArrayInformation,OpState> ops) {
-        this.input = input;
-        this.ops = ops;
-        NDArrayVertex vertex = new NDArrayVertex(ops.nextVertexId(), input);
-        ops.addVertex(vertex);
-        this.vertex = vertex;
     }
 
 
@@ -64,8 +54,11 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField add(ArrayField i_v) {
-        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
-            return addScalarTransformOp(new ScalarAdd().name(),i_v.getInput().scalar());
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1 ||
+                ArrayUtil.prod(getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarAdd().name(),getNonScalar(i_v),
+                    getNonScalarShape(i_v),getScalar(i_v),false);
+
         return addPairTransformOp(new AddOp().name(),i_v);
     }
 
@@ -73,15 +66,19 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField sub(ArrayField i_v) {
-        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
-            return addScalarTransformOp(new ScalarSubtraction().name(),i_v.getInput().scalar());
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1 || ArrayUtil.prod(getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarSubtraction().name(),getNonScalar(i_v),
+                    getNonScalarShape(i_v),getScalar(i_v),false);
         return addPairTransformOp(new SubOp().name(),i_v);
     }
 
     @Override
     public ArrayField rsub(ArrayField i_v) {
-        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
-            return addScalarTransformOp(new ScalarReverseSubtraction().name(),i_v.getInput().scalar());
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1 ||
+                ArrayUtil.prod(getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarReverseSubtraction().name(),
+                    getNonScalar(i_v),
+                    getNonScalarShape(i_v),getScalar(i_v),false);
         return addPairTransformOp("rsub",i_v);
     }
 
@@ -102,26 +99,29 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField addi(ArrayField i_v) {
-        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
-            return addScalarTransformOp(new ScalarAdd().name(),i_v.getInput().scalar(),true);
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1 || ArrayUtil.prod(getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarAdd().name(),getNonScalar(i_v),
+                    getNonScalarShape(i_v),getScalar(i_v),true);
         return addPairTransformOp(new AddOp().name(),i_v,new Object[]{true});
     }
 
     @Override
     public ArrayField addi(double i_v) {
-        return addScalarTransformOp(new ScalarAdd().name(),i_v,true);
+        return addScalarTransformOp(new ScalarAdd().name(),input,getInput().getShape(),i_v,true);
     }
 
     @Override
     public ArrayField muli(ArrayField i_v) {
-        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
-            return addScalarTransformOp(new ScalarMultiplication().name(),i_v.getInput().scalar(),true);
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1 ||
+                ArrayUtil.prod(getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarMultiplication().name(),getNonScalar(i_v),
+                    getNonScalarShape(i_v),getScalar(i_v),true);
         return addPairTransformOp(new MulOp().name(),i_v,new Object[]{true});
     }
 
     @Override
     public ArrayField muli(double v) {
-        return addScalarTransformOp(new ScalarMultiplication().name(),v,true);
+        return addScalarTransformOp(new ScalarMultiplication().name(),input,getInput().getShape(),v,true);
     }
 
     @Override
@@ -131,8 +131,9 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField mul(ArrayField i_v) {
-        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
-            return addScalarTransformOp(new ScalarMultiplication().name(),i_v.getInput().scalar());
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1 ||
+                ArrayUtil.prod(getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarMultiplication().name(),getNonScalar(i_v),getNonScalarShape(i_v),getScalar(i_v),false);
         return addPairTransformOp(new MulOp().name(),i_v);
     }
 
@@ -149,25 +150,43 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField rsubi(ArrayField i_v) {
-        return i_v.subi(this);
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1 ||
+                ArrayUtil.prod(getInput().getShape()) == 1)
+            return addScalarTransformOp(new RSubOp().name(),
+                    getNonScalar(i_v),
+                    getNonScalarShape(i_v),getScalar(i_v),
+                    true);
+        return addPairTransformOp(new RSubOp().name(),i_v,new Object[]{true});
     }
 
     @Override
     public ArrayField rdivi(ArrayField i_v) {
-        return i_v.divi(this);
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1 ||
+                ArrayUtil.prod(getInput().getShape()) == 1)
+            return addScalarTransformOp(new RDivOp().name(),
+                    getNonScalar(i_v),
+                    getNonScalarShape(i_v),getScalar(i_v),
+                    true);
+        return addPairTransformOp(new RDivOp().name(),i_v,new Object[]{true});
     }
 
     @Override
     public ArrayField subi(ArrayField i_v) {
-        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
-            return addScalarTransformOp(new ScalarSubtraction().name(),i_v.getInput().scalar(),true);
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1 ||
+                ArrayUtil.prod(getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarSubtraction().name(),
+                    getNonScalar(i_v),
+                    getNonScalarShape(i_v),getScalar(i_v),
+                    true);
         return addPairTransformOp(new SubOp().name(),i_v,new Object[]{true});
     }
 
     @Override
     public ArrayField divi(ArrayField i_v) {
-        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
-            return addScalarTransformOp(new ScalarDivision().name(),i_v.getInput().scalar(),true);
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1 ||
+                ArrayUtil.prod(getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarDivision().name(),getNonScalar(i_v),
+                    getNonScalarShape(i_v),getScalar(i_v),true);
         return addPairTransformOp(new DivOp().name(),i_v,new Object[]{true});
     }
 
@@ -178,30 +197,36 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField subi(double i_v) {
-        return addScalarTransformOp(new ScalarSubtraction().name(),i_v,true);
+        return addScalarTransformOp(new ScalarSubtraction().name(),input,getInput().getShape(),i_v,true);
     }
 
     @Override
     public ArrayField rsubi(double v) {
-        return addScalarTransformOp(new ScalarReverseSubtraction().name(),v,true);
+        return addScalarTransformOp(new ScalarReverseSubtraction().name(),input,getInput().getShape(),v,true);
     }
 
     @Override
     public ArrayField rdivi(double v) {
-        return addScalarTransformOp(new ScalarReverseDivision().name(),v,true);
+        return addScalarTransformOp(new ScalarReverseDivision().name(),input,getInput().getShape(),v,true);
+    }
+
+    @Override
+    public ArrayField divi(double v) {
+        return addScalarTransformOp(new ScalarDivision().name(),input,getInput().getShape(),v,true);
     }
 
     @Override
     public ArrayField rdiv(ArrayField i_v) {
-        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
-            return addScalarTransformOp(new ScalarReverseDivision().name(),i_v.getInput().scalar());
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1 ||
+                ArrayUtil.prod(getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarReverseDivision().name(),getNonScalar(i_v),getNonScalarShape(i_v),getScalar(i_v),false);
         return addPairTransformOp("rdiv",i_v);
     }
 
     @Override
     public ArrayField div(ArrayField i_v) {
-        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
-            return addScalarTransformOp(new ScalarDivision().name(),i_v.getInput().scalar());
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1 || ArrayUtil.prod(getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarDivision().name(),getNonScalar(i_v),getNonScalarShape(i_v),getScalar(i_v),false);
         return addPairTransformOp(new DivOp().name(),i_v);
     }
 
@@ -815,13 +840,31 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     private ArrayField addScalarTransformOp(String name,
+                                            NDArrayInformation input,
+                                            int[] nonScalarShape,
                                             Number scalarValue,
+
                                             boolean inPlace) {
-        NDArrayInformation result =  NDArrayInformation.builder().scalarValue(scalarValue)
-                .id(name + "(" + input.getId() + ")").arrId(UUID.randomUUID().toString())
-                .shape(input.getShape()).build();
+       //for the purpose of the graph, we only need the scalar
+        //value, therefore the input should be the
+        //non scalar
+
+
+       if(this.getInput() != input) {
+           setInput(input);
+           getVertex().setValue(input);
+       }
+
+
+        NDArrayInformation result =  NDArrayInformation.builder()
+                .scalarValue(scalarValue)
+                .id(name + "(" + input.getId() + ")")
+                .arrId(UUID.randomUUID().toString())
+                .shape(nonScalarShape).build();
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(),result);
+        NDArrayVertex newVertex = new NDArrayVertex(
+                this.ops.nextVertexId(),
+                result);
 
         //add the result vertex to the graph
         this.getOps().addVertex(newVertex);
@@ -830,9 +873,12 @@ public class ArrayField implements Field<ArrayField> {
                 .n(ArrayUtil.prod(input.getShape()))
                 .opName(name).extraArgs(new Object[]{scalarValue,inPlace})
                 .scalarValue(scalarValue)
-                .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                .opType(OpState.OpType.SCALAR_TRANSFORM).result(newVertex.getValue())
-                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                .id(vertex.getValue().getId() + "-> " +
+                        name + " " + newVertex.getValue().getId())
+                .opType(OpState.OpType.SCALAR_TRANSFORM)
+                .result(newVertex.getValue())
+                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),
+                        String.valueOf(newVertex.vertexID())})
                 .build();
         //map x -> z
         this.ops.addEdge(vertex.vertexID(),
@@ -845,7 +891,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     private ArrayField addScalarTransformOp(String name,Number scalarValue) {
-        return addScalarTransformOp(name,scalarValue,false);
+        return addScalarTransformOp(name,input,input.getShape(),scalarValue,false);
     }
 
     private ArrayField addPairReduceOp(String name,
@@ -991,9 +1037,9 @@ public class ArrayField implements Field<ArrayField> {
                 .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.TRANSFORM).build();
         yToZ.setResult(resultInfo);
-       if(i_v.getVertex().vertexID() == newVertex.vertexID())
-           throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
-                   " when next vertex id was " + this.ops.getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
+        if(i_v.getVertex().vertexID() == newVertex.vertexID())
+            throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
+                    " when next vertex id was " + this.ops.getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
         this.ops.addEdge(i_v.getVertex().vertexID(),
                 newVertex.vertexID(),yToZ,true);
         resultInfo.setOwner(yToZ);
@@ -1072,6 +1118,30 @@ public class ArrayField implements Field<ArrayField> {
     }
 
 
+    private double getScalar(ArrayField other) {
+        if(ArrayUtil.prod(getInput().getShape()) == 1)
+            return this.getInput().getScalarValue().doubleValue();
+        else if(ArrayUtil.prod(other.getInput().getShape()) == 1)
+            return other.getInput().getScalarValue().doubleValue();
+        throw new IllegalArgumentException("Neither this element nor the other input is a scalar");
+    }
+
+    private NDArrayInformation getNonScalar(ArrayField other) {
+        if(ArrayUtil.prod(getInput().getShape()) != 1 && ArrayUtil.prod(other.getInput().getShape()) == 1)
+            return this.getInput();
+        else if(ArrayUtil.prod(other.getInput().getShape()) != 1 && ArrayUtil.prod(getInput().getShape()) == 1)
+            return other.getInput();
+        throw new IllegalArgumentException("Neither this element nor the other input is a scalar");
+
+    }
+    private int[] getNonScalarShape(ArrayField other) {
+        if(ArrayUtil.prod(getInput().getShape()) != 1 && ArrayUtil.prod(other.getInput().getShape()) == 1)
+            return this.getInput().getShape();
+        else if(ArrayUtil.prod(other.getInput().getShape()) != 1 && ArrayUtil.prod(getInput().getShape()) == 1)
+            return other.getInput().getShape();
+        throw new IllegalArgumentException("Neither this element nor the other input is a scalar");
+
+    }
 
     @Override
     public String toString() {

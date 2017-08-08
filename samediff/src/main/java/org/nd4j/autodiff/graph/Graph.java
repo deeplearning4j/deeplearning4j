@@ -60,7 +60,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     public Graph(boolean allowMultipleEdges) {
         this.allowMultipleEdges = allowMultipleEdges;
         vertices = new TreeMap<>();
-        edges = new HashMap<>();
+        edges = new TreeMap<>();
         this.incomingEdges = new TreeMap<>();
         nextVertexId = 0;
     }
@@ -80,10 +80,20 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     }
 
     public void addVertex(Vertex<V> vVertex) {
+
         if(frozen) {
             log.trace("Attempted to add vertex to frozen graph " + vVertex);
             return;
         }
+
+        if(vertices.get(vVertex.vertexID()) != null) {
+            throw new IllegalArgumentException("Unable to readd vertex. Vertex id must be unique: " + vVertex.getIdx());
+        }
+
+        if(vVertex.getIdx() != vertices.size() + 1) {
+            throw new IllegalArgumentException("Unable to add vertex. Contiguous id not found");
+        }
+
         //this is for a temporary substitution of
         // the graph
         if(graphApply != null) {
@@ -309,6 +319,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             if (!duplicate) {
                 list.add(edge);
             }
+
         } else {
             //allow multiple/duplicate edges
             list.add(edge);

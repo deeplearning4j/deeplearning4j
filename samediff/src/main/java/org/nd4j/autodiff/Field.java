@@ -29,6 +29,8 @@ public interface Field<X> extends CommutativeRing<X> {
 
     X rdivi(double v);
 
+    X divi(double v);
+
     X rdiv(X i_v);
 
     X div(X i_v);

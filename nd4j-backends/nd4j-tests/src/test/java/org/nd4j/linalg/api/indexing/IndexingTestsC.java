@@ -52,6 +52,18 @@ public class IndexingTestsC extends BaseNd4jTest {
 
 
     @Test
+    public void testIntervalsIn3D() {
+        INDArray arr = Nd4j.arange(8).reshape(2, 2, 2);
+        INDArray assertion = Nd4j.create(new double[][]{
+                {4, 5},
+                {6,7}
+        }).reshape(1,2,2);
+        INDArray rest = arr.get(interval(1, 2), interval(0, 2), interval(0, 2));
+        assertEquals(assertion,rest);
+
+    }
+
+    @Test
     public void testSmallInterval() {
         INDArray arr = Nd4j.arange(8).reshape(2, 2, 2);
         INDArray assertion = Nd4j.create(new double[][]{
@@ -89,7 +101,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     @Test
     public void testAllWithNewAxis() {
         INDArray arr = Nd4j.linspace(1,24,24).reshape(4,2,3);
-        INDArray get = arr.get(newAxis(), all(), point(1));
+        INDArray get = arr.get(newAxis(), all(),    point(1));
         INDArray assertion = Nd4j.create(new double[][]{
                 {4,5,6},
                 {10,11,12},
