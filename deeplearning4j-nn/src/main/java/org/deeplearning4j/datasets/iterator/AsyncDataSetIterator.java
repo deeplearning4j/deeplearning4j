@@ -421,10 +421,17 @@ public class AsyncDataSetIterator implements DataSetIterator {
                         }
                     } else {
                         smth = iterator.next();
+
+                        if (callback != null)
+                            callback.call(smth);
                     }
+
+                    // we want to ensure underlying iterator finished dataset creation
+                    Nd4j.getExecutioner().commit();
 
                     if (smth != null)
                         queue.put(smth);
+
                 }
                 queue.put(terminator);
             } catch (InterruptedException e) {

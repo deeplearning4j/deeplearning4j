@@ -337,7 +337,6 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             try {
                 if (useWorkspaces) {
                     workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceId);
-                    //workspace.enableDebug(true);
                 }
 
                 while (iterator.hasNext() && shouldWork.get()) {
@@ -356,6 +355,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                         if (callback != null)
                             callback.call(smth);
                     }
+
+                    // we want to ensure underlying iterator finished dataset creation
+                    Nd4j.getExecutioner().commit();
 
                     if (smth != null)
                         queue.put(smth);
