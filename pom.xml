@@ -35,8 +35,15 @@
 
     <properties>
         <unirest.version>1.4.9</unirest.version>
+        <maven-build-helper-plugin.version>3.0.0</maven-build-helper-plugin.version>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
+        <maven-git-commit-plugin.version>2.2.2</maven-git-commit-plugin.version>
+        <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
+        <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
+        <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
+        <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
+        <maven-compiler-plugin.version>3.5.1</maven-compiler-plugin.version>
         <nd4j.version>0.9.1-SNAPSHOT</nd4j.version>
         <nd4j.backend>nd4j-native</nd4j.backend>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -115,7 +122,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>3.0.1</version>
+                <version>${maven-source-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -127,7 +134,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19.1</version>
+                <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <!--
                      By default: Surefire will set the classpath based on the manifest. Because tests are not included
@@ -143,7 +150,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.10.4</version>
+                <version>${maven-javadoc-plugin.version}</version>
                 <configuration>
                     <additionalparam>-Xdoclint:none</additionalparam>
                 </configuration>
@@ -180,6 +187,7 @@
                 </execution>
               </executions>
             </plugin>
+
             <plugin>
               <groupId>net.revelc.code.formatter</groupId>
               <artifactId>formatter-maven-plugin</artifactId>
@@ -188,27 +196,54 @@
                 <configFile>${session.executionRootDirectory}/contrib/formatter.xml</configFile>
               </configuration>
             </plugin>
+
+            <!-- Configuration for git-commit-id plugin - used with ND4J version check functionality -->
             <plugin>
               <groupId>pl.project13.maven</groupId>
               <artifactId>git-commit-id-plugin</artifactId>
-              <version>2.2.2</version>
+              <version>${maven-git-commit-plugin.version}</version>
               <executions>
                 <execution>
                   <goals>
                     <goal>revision</goal>
                   </goals>
-                  <phase>package</phase>
+                  <phase>generate-resources</phase>
                 </execution>
               </executions>
               <configuration>
                 <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                <generateGitPropertiesFilename>${project.basedir}/target/generated-sources/src/main/resources/ai/skymind/${project.groupId}-${project.artifactId}-git.properties</generateGitPropertiesFilename>
                 <gitDescribe>
                   <skip>true</skip>
                 </gitDescribe>
               </configuration>
             </plugin>
-        </plugins>
+
+            <!-- Add generated git.properties files resource directory, for output of git-commit-id plugin -->
+            <plugin>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>build-helper-maven-plugin</artifactId>
+              <version>${maven-build-helper-plugin.version}</version>
+              <executions>
+                <execution>
+                  <id>add-resource</id>
+                  <phase>generate-resources</phase>
+                  <goals>
+                    <goal>add-resource</goal>
+                  </goals>
+                  <configuration>
+                    <resources>
+                      <resource>
+                        <directory>${project.basedir}/target/generated-sources/src/main/resources</directory>
+                      </resource>
+                    </resources>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+
+
+         </plugins>
         <pluginManagement>
           <plugins>
             <plugin>
@@ -266,7 +301,7 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-deploy-plugin</artifactId>
-                        <version>2.8.2</version>
+                        <version>${maven-deploy-plugin.version}</version>
                         <configuration>
                             <skip>true</skip>
                         </configuration>
@@ -362,7 +397,7 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-deploy-plugin</artifactId>
-                        <version>2.8.2</version>
+                        <version>${maven-deploy-plugin.version}</version>
                         <configuration>
                             <skip>true</skip>
                         </configuration>
