@@ -361,6 +361,19 @@
                 <version>${maven-source-plugin.version}</version>
             </plugin>
 
+            <plugin>
+                <groupId>net.revelc.code.formatter</groupId>
+                <artifactId>formatter-maven-plugin</artifactId>
+                <version>2.0.0</version>
+                <configuration>
+                    <configFile>${session.executionRootDirectory}/contrib/formatter.xml</configFile>
+                    <directories>
+                        <directory>arbiter-deeplearning4j</directory>
+                        <directory>arbiter-core</directory>
+                    </directories>
+                </configuration>
+            </plugin>
+
             <!-- Configuration for git-commit-id plugin - used with ND4J version check functionality -->
             <plugin>
                 <groupId>pl.project13.maven</groupId>
