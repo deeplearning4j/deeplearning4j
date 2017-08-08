@@ -991,6 +991,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
 
+    /**
+     * Clones the multilayernetwork
+     * @return
+     */
     @Override
     public MultiLayerNetwork clone() {
         MultiLayerConfiguration conf = this.layerWiseConfigurations.clone();
