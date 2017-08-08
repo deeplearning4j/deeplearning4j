@@ -1,7 +1,6 @@
 package org.deeplearning4j.rl4j.network.ac;
 
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;

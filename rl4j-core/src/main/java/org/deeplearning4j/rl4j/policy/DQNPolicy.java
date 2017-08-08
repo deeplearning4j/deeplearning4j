@@ -1,12 +1,13 @@
 package org.deeplearning4j.rl4j.policy;
 
-import java.io.IOException;
 import lombok.AllArgsConstructor;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.dqn.DQN;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.io.IOException;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.

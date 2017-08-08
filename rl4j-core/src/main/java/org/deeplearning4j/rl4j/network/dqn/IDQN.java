@@ -4,8 +4,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.io.OutputStream;
-
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
  *

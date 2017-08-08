@@ -1,13 +1,13 @@
 package org.deeplearning4j.rl4j.policy;
 
-import java.io.IOException;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticCompGraph;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticSeparate;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.io.IOException;
 import java.util.Random;
 
 /**

@@ -1,9 +1,5 @@
 package vizdoom;
 
-import java.util.ArrayList;
-import java.util.List;
-import vizdoom.*;
-
 public class GameState{
     public int number;
     public int tic;
