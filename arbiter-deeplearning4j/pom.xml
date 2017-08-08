@@ -15,6 +15,7 @@
             <artifactId>nd4j-jackson-reflectionloader</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>arbiter-core</artifactId>
@@ -28,22 +29,10 @@
         </dependency>
 
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-ui-components</artifactId>
-            <version>${dl4j.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
             <version>${nd4j.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
         </dependency>
 
         <dependency>
@@ -59,21 +48,11 @@
             <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>jackson</artifactId>
             <version>${nd4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>0.9.10</version>
-            <exclusions>
-              <exclusion>
-                <groupId>com.google.code.findbugs</groupId>
-                <artifactId>annotations</artifactId>
-              </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 
