@@ -1,9 +1,9 @@
 package org.deeplearning4j.rl4j.network;
 
-import java.io.IOException;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.io.IOException;
 import java.io.OutputStream;
 
 /**

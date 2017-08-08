@@ -17,10 +17,11 @@
  */
 package org.deeplearning4j.rl4j.network.dqn;
 
-import java.io.File;
-import java.io.IOException;
 import org.junit.Test;
 import org.nd4j.linalg.learning.config.RmsProp;
+
+import java.io.File;
+import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 

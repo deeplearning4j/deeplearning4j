@@ -17,14 +17,15 @@
  */
 package org.deeplearning4j.rl4j.policy;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Random;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

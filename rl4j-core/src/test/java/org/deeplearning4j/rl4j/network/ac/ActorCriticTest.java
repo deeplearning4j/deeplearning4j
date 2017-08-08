@@ -17,14 +17,14 @@
  */
 package org.deeplearning4j.rl4j.network.ac;
 
-import java.io.File;
-import java.io.IOException;
-import org.apache.commons.math3.util.Pair;
 import org.junit.Test;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.RmsProp;
+
+import java.io.File;
+import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

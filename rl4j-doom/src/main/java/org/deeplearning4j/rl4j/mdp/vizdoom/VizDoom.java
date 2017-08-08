@@ -7,13 +7,12 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
-import org.deeplearning4j.rl4j.mdp.MDP;
-
-import vizdoom.*; // "Code original to ViZDoom is under MIT license"
+import vizdoom.*;
 
 import java.util.ArrayList;
 import java.util.List;
