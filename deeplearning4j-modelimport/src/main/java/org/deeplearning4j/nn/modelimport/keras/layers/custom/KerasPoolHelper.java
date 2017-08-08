@@ -1,8 +1,6 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.custom;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
-import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.graph.PoolHelperVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;

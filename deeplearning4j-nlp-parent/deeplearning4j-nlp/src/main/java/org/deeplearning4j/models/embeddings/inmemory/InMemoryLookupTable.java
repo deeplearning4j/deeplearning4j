@@ -107,7 +107,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         int[] shape = new int[] {vocab.numWords() + 1, vectorLength};
         int length = ArrayUtil.prod(shape);
         adaGrad = new AdaGrad(shape, lr.get());
-        adaGrad.setStateViewArray(Nd4j.zeros(shape).reshape(1,length),shape,Nd4j.order(),true);
+        adaGrad.setStateViewArray(Nd4j.zeros(shape).reshape(1, length), shape, Nd4j.order(), true);
 
     }
 

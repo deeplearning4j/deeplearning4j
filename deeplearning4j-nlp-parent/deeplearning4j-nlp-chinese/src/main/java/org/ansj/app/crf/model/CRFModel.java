@@ -1,17 +1,13 @@
 package org.ansj.app.crf.model;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipException;
-
 import org.ansj.app.crf.Config;
 import org.ansj.app.crf.Model;
 import org.nlpcn.commons.lang.tire.domain.SmartForest;
 import org.nlpcn.commons.lang.util.IOUtil;
+
+import java.io.*;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipException;
 
 /**
  * 加载ansj格式的crfmodel,目前此model格式是通过crf++ 或者wapiti生成的

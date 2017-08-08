@@ -8,24 +8,19 @@ import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.recurrent.CudnnLSTMHelper;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 18/07/2017.
@@ -41,7 +36,7 @@ public class ValidateCudnnLSTM {
         int lstmLayerSize = 4;
         int timeSeriesLength = 3;
         int nOut = 2;
-        INDArray input = Nd4j.rand(new int[]{minibatch, inputSize, timeSeriesLength});
+        INDArray input = Nd4j.rand(new int[] {minibatch, inputSize, timeSeriesLength});
         INDArray labels = Nd4j.zeros(minibatch, nOut, timeSeriesLength);
         Random r = new Random(12345);
         for (int i = 0; i < minibatch; i++) {
@@ -50,16 +45,15 @@ public class ValidateCudnnLSTM {
             }
         }
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
-                .learningRate(1.0)
-                .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
-                .dist(new NormalDistribution(0, 2)).list()
-                .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
-                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
-                .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
-                .pretrain(false).backprop(true).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().inferenceWorkspaceMode(WorkspaceMode.NONE)
+                        .trainingWorkspaceMode(WorkspaceMode.NONE).learningRate(1.0).regularization(false)
+                        .updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 2)).list()
+                        .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
+                                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                        .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
+                        .pretrain(false).backprop(true).build();
 
         MultiLayerNetwork mln1 = new MultiLayerNetwork(conf.clone());
         mln1.init();
@@ -120,7 +114,7 @@ public class ValidateCudnnLSTM {
         int lstmLayerSize = 4;
         int timeSeriesLength = 3;
         int nOut = 2;
-        INDArray input = Nd4j.rand(new int[]{minibatch, inputSize, timeSeriesLength});
+        INDArray input = Nd4j.rand(new int[] {minibatch, inputSize, timeSeriesLength});
         INDArray labels = Nd4j.zeros(minibatch, nOut, timeSeriesLength);
         Random r = new Random(12345);
         for (int i = 0; i < minibatch; i++) {
@@ -130,16 +124,16 @@ public class ValidateCudnnLSTM {
         }
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
-                .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
-                .dist(new NormalDistribution(0, 2)).list()
-                .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
-                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
-                .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
-                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
-                .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
-                .pretrain(false).backprop(true).build();
+                        .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
+                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 2)).list()
+                        .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
+                                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                        .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
+                                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                        .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
+                        .pretrain(false).backprop(true).build();
 
         MultiLayerNetwork mln1 = new MultiLayerNetwork(conf.clone());
         mln1.init();
@@ -171,8 +165,8 @@ public class ValidateCudnnLSTM {
 
         assertEquals(out1, out2);
 
-        for( int x=0; x<10; x++ ){
-            input = Nd4j.rand(new int[]{minibatch, inputSize, timeSeriesLength});
+        for (int x = 0; x < 10; x++) {
+            input = Nd4j.rand(new int[] {minibatch, inputSize, timeSeriesLength});
             labels = Nd4j.zeros(minibatch, nOut, timeSeriesLength);
             for (int i = 0; i < minibatch; i++) {
                 for (int j = 0; j < timeSeriesLength; j++) {
@@ -214,19 +208,17 @@ public class ValidateCudnnLSTM {
         int nOut = 2;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
-                .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
-                .dist(new NormalDistribution(0, 2)).list()
-                .layer(0, new LSTM.Builder().nIn(inputSize).nOut(lstmLayerSize)
-                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
-                .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
-                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
-                .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
-                .pretrain(false).backprop(true)
-                .backpropType(BackpropType.TruncatedBPTT)
-                .tBPTTLength(tbpttLength)
-                .build();
+                        .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
+                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 2)).list()
+                        .layer(0, new LSTM.Builder().nIn(inputSize).nOut(lstmLayerSize)
+                                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                        .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
+                                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                        .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
+                        .pretrain(false).backprop(true).backpropType(BackpropType.TruncatedBPTT)
+                        .tBPTTLength(tbpttLength).build();
 
         MultiLayerNetwork mln1 = new MultiLayerNetwork(conf.clone());
         mln1.init();
@@ -253,8 +245,8 @@ public class ValidateCudnnLSTM {
         assertTrue(f.get(l1) instanceof CudnnLSTMHelper);
 
         Random r = new Random(12345);
-        for(int x=0; x<1; x++ ){
-            INDArray input = Nd4j.rand(new int[]{minibatch, inputSize, timeSeriesLength});
+        for (int x = 0; x < 1; x++) {
+            INDArray input = Nd4j.rand(new int[] {minibatch, inputSize, timeSeriesLength});
             INDArray labels = Nd4j.zeros(minibatch, nOut, timeSeriesLength);
             for (int i = 0; i < minibatch; i++) {
                 for (int j = 0; j < timeSeriesLength; j++) {
@@ -283,20 +275,17 @@ public class ValidateCudnnLSTM {
         int nOut = 2;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
-                .cacheMode(CacheMode.NONE)
-                .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
-                .dist(new NormalDistribution(0, 2)).list()
-                .layer(0, new LSTM.Builder().nIn(inputSize).nOut(lstmLayerSize)
-                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
-                .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
-                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
-                .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
-                .pretrain(false).backprop(true)
-                .backpropType(BackpropType.TruncatedBPTT)
-                .tBPTTLength(tbpttLength)
-                .build();
+                        .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
+                        .cacheMode(CacheMode.NONE).regularization(false).updater(Updater.NONE).seed(12345L)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2)).list()
+                        .layer(0, new LSTM.Builder().nIn(inputSize).nOut(lstmLayerSize)
+                                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                        .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
+                                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                        .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
+                        .pretrain(false).backprop(true).backpropType(BackpropType.TruncatedBPTT)
+                        .tBPTTLength(tbpttLength).build();
 
         MultiLayerNetwork mln1 = new MultiLayerNetwork(conf.clone());
         mln1.init();
@@ -323,8 +312,8 @@ public class ValidateCudnnLSTM {
         assertTrue(f.get(l1) instanceof CudnnLSTMHelper);
 
         Random r = new Random(12345);
-        for(int x=0; x<5; x++ ){
-            INDArray input = Nd4j.rand(new int[]{minibatch, inputSize, timeSeriesLength});
+        for (int x = 0; x < 5; x++) {
+            INDArray input = Nd4j.rand(new int[] {minibatch, inputSize, timeSeriesLength});
 
             INDArray step1 = mln1.rnnTimeStep(input);
             INDArray step2 = mln2.rnnTimeStep(input);

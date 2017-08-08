@@ -1,8 +1,8 @@
 package org.ansj.domain;
 
-import java.io.Serializable;
-
 import org.ansj.library.NatureLibrary;
+
+import java.io.Serializable;
 
 /**
  * 一个词里面会有一些词性

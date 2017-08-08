@@ -3,7 +3,6 @@ package org.deeplearning4j.parallelism.main;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import lombok.Builder;
 import lombok.Data;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.impl.RemoteUIStatsStorageRouter;

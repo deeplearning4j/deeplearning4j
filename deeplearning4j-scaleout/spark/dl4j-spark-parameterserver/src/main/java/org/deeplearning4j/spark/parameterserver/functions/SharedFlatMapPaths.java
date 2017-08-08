@@ -1,16 +1,13 @@
 package org.deeplearning4j.spark.parameterserver.functions;
 
-import org.apache.spark.input.PortableDataStream;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.iterator.PathSparkDataSetIterator;
-import org.deeplearning4j.spark.parameterserver.callbacks.PortableDataStreamCallback;
 import org.deeplearning4j.spark.parameterserver.pw.SharedTrainingWrapper;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
-import org.nd4j.linalg.dataset.DataSet;
 
 import java.util.Collections;
 import java.util.Iterator;

@@ -1,7 +1,5 @@
 package org.deeplearning4j.api.storage;
 
-import org.deeplearning4j.api.storage.Persistable;
-
 import java.io.IOException;
 import java.util.List;
 

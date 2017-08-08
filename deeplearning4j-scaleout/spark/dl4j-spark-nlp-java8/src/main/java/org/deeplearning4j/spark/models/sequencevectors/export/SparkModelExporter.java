@@ -1,9 +1,7 @@
 package org.deeplearning4j.spark.models.sequencevectors.export;
 
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.Function;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * This interface describes

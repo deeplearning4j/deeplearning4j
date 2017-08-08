@@ -36,7 +36,7 @@ public class EmnistFetcher extends MnistFetcher {
 
     private final EmnistDataSetIterator.Set ds;
 
-    public EmnistFetcher(EmnistDataSetIterator.Set ds){
+    public EmnistFetcher(EmnistDataSetIterator.Set ds) {
         this.ds = ds;
         FILE_DIR = new File(BASE_DIR, LOCAL_DIR_NAME);
     }
@@ -61,8 +61,8 @@ public class EmnistFetcher extends MnistFetcher {
         return "emnist-" + name(ds) + "-mapping.txt";
     }
 
-    private static String name(EmnistDataSetIterator.Set ds){
-        switch (ds){
+    private static String name(EmnistDataSetIterator.Set ds) {
+        switch (ds) {
             case COMPLETE:
                 return "byclass";
             case MERGE:
@@ -81,19 +81,19 @@ public class EmnistFetcher extends MnistFetcher {
     }
 
     @Override
-    public String getName(){
+    public String getName() {
         return "EMNIST";
     }
 
     // --- Train files ---
     @Override
-    public String getTrainingFilesURL(){
+    public String getTrainingFilesURL() {
         return baseURL + getImagesFileName(ds, true);
     }
 
     @Override
-    public String getTrainingFilesMD5(){
-        switch (ds){
+    public String getTrainingFilesMD5() {
+        switch (ds) {
             case COMPLETE:
                 //byclass-train-images
                 return "712dda0bd6f00690f32236ae4325c377";
@@ -118,23 +118,23 @@ public class EmnistFetcher extends MnistFetcher {
     }
 
     @Override
-    public String getTrainingFilesFilename(){
+    public String getTrainingFilesFilename() {
         return getImagesFileName(ds, true);
     }
 
     @Override
-    public String getTrainingFilesFilename_unzipped(){
+    public String getTrainingFilesFilename_unzipped() {
         return getImagesFileNameUnzipped(ds, true);
     }
 
     @Override
-    public String getTrainingFileLabelsURL(){
+    public String getTrainingFileLabelsURL() {
         return baseURL + getLabelsFileName(ds, true);
     }
 
     @Override
-    public String getTrainingFileLabelsMD5(){
-        switch (ds){
+    public String getTrainingFileLabelsMD5() {
+        switch (ds) {
             case COMPLETE:
                 //byclass-train-labels
                 return "ee299a3ee5faf5c31e9406763eae7e43";
@@ -159,12 +159,12 @@ public class EmnistFetcher extends MnistFetcher {
     }
 
     @Override
-    public String getTrainingFileLabelsFilename(){
+    public String getTrainingFileLabelsFilename() {
         return getLabelsFileName(ds, true);
     }
 
     @Override
-    public String getTrainingFileLabelsFilename_unzipped(){
+    public String getTrainingFileLabelsFilename_unzipped() {
         return getLabelsFileNameUnzipped(ds, true);
     }
 
@@ -172,13 +172,13 @@ public class EmnistFetcher extends MnistFetcher {
     // --- Test files ---
 
     @Override
-    public String getTestFilesURL(){
+    public String getTestFilesURL() {
         return baseURL + getImagesFileName(ds, false);
     }
 
     @Override
-    public String getTestFilesMD5(){
-        switch (ds){
+    public String getTestFilesMD5() {
+        switch (ds) {
             case COMPLETE:
                 //byclass-test-images
                 return "1435209e34070a9002867a9ab50160d7";
@@ -203,23 +203,23 @@ public class EmnistFetcher extends MnistFetcher {
     }
 
     @Override
-    public String getTestFilesFilename(){
+    public String getTestFilesFilename() {
         return getImagesFileName(ds, false);
     }
 
     @Override
-    public String getTestFilesFilename_unzipped(){
+    public String getTestFilesFilename_unzipped() {
         return getImagesFileNameUnzipped(ds, false);
     }
 
     @Override
-    public String getTestFileLabelsURL(){
+    public String getTestFileLabelsURL() {
         return baseURL + getLabelsFileName(ds, false);
     }
 
     @Override
-    public String getTestFileLabelsMD5(){
-        switch (ds){
+    public String getTestFileLabelsMD5() {
+        switch (ds) {
             case COMPLETE:
                 //byclass-test-labels
                 return "7a0f934bd176c798ecba96b36fda6657";
@@ -244,17 +244,17 @@ public class EmnistFetcher extends MnistFetcher {
     }
 
     @Override
-    public String getTestFileLabelsFilename(){
+    public String getTestFileLabelsFilename() {
         return getLabelsFileName(ds, false);
     }
 
     @Override
-    public String getTestFileLabelsFilename_unzipped(){
+    public String getTestFileLabelsFilename_unzipped() {
         return getLabelsFileNameUnzipped(ds, false);
     }
 
-    public static int numLabels(EmnistDataSetIterator.Set dataSet){
-        switch (dataSet){
+    public static int numLabels(EmnistDataSetIterator.Set dataSet) {
+        switch (dataSet) {
             case COMPLETE:
                 return 62;
             case MERGE:

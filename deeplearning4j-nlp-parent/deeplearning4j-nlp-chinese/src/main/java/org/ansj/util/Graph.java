@@ -1,14 +1,14 @@
 package org.ansj.util;
 
-import java.util.List;
-import java.util.Map;
-
 import org.ansj.domain.AnsjItem;
 import org.ansj.domain.Term;
 import org.ansj.domain.TermNatures;
 import org.ansj.library.DATDictionary;
 import org.ansj.splitWord.Analysis.Merger;
 import org.ansj.util.TermUtil.InsertTermType;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 最短路径

@@ -17,8 +17,6 @@
  */
 package org.deeplearning4j.ui.api;
 
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,6 +25,8 @@ import org.deeplearning4j.ui.components.component.style.StyleDiv;
 import org.deeplearning4j.ui.components.decorator.style.StyleAccordion;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.components.text.style.StyleText;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.awt.*;
 

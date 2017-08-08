@@ -10,7 +10,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com

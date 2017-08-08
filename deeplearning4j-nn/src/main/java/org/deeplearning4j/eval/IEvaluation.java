@@ -1,7 +1,6 @@
 package org.deeplearning4j.eval;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;

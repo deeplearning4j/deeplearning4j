@@ -1,13 +1,11 @@
 package org.deeplearning4j.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.util.HashUtil;
 import org.slf4j.Logger;
 
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -31,7 +29,7 @@ public class OneTimeLogger {
                 return false;
 
         } finally {
-                lock.readLock().unlock();
+            lock.readLock().unlock();
         }
 
         try {
@@ -51,21 +49,21 @@ public class OneTimeLogger {
         }
     }
 
-    public static void info(Logger logger, String format, Object...arguments) {
+    public static void info(Logger logger, String format, Object... arguments) {
         if (!isEligible(format))
             return;
 
         logger.info(format, arguments);
     }
 
-    public static void warn(Logger logger, String format, Object...arguments) {
+    public static void warn(Logger logger, String format, Object... arguments) {
         if (!isEligible(format))
             return;
 
         logger.warn(format, arguments);
     }
 
-    public static void error(Logger logger, String format, Object...arguments) {
+    public static void error(Logger logger, String format, Object... arguments) {
         if (!isEligible(format))
             return;
 

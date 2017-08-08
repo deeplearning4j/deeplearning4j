@@ -2,17 +2,9 @@
 package org.deeplearning4j.ui.views.html.defaultPage
 
 import play.twirl.api._
-import play.twirl.api.TemplateMagic._
 
 
      object DefaultPage_Scope0 {
-import models._
-import controllers._
-import play.api.i18n._
-import views.html._
-import play.api.templates.PlayMagic._
-import play.api.mvc._
-import play.api.data._
 
 class DefaultPage extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appendable,Format[play.twirl.api.HtmlFormat.Appendable]](play.twirl.api.HtmlFormat) with play.twirl.api.Template0[play.twirl.api.HtmlFormat.Appendable] {
 

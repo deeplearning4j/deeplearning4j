@@ -1,8 +1,8 @@
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
-import lombok.Setter;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;

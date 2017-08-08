@@ -1,8 +1,8 @@
 package org.deeplearning4j.spark.models.sequencevectors.export.impl;
 
 import lombok.NonNull;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.spark.models.sequencevectors.export.ExportContainer;
 import org.deeplearning4j.spark.models.sequencevectors.export.SparkModelExporter;

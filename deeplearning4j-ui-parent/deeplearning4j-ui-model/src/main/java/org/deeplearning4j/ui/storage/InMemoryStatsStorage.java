@@ -5,7 +5,6 @@ import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
-import org.deeplearning4j.util.UIDProvider;
 
 import java.io.IOException;
 import java.util.*;

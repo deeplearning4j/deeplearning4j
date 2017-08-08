@@ -1,10 +1,10 @@
 package org.ansj.dic.impl;
 
-import java.io.InputStream;
-
 import org.ansj.dic.DicReader;
 import org.ansj.dic.PathToStream;
 import org.ansj.exception.LibraryException;
+
+import java.io.InputStream;
 
 /**
  * 从系统jar包中读取文件，你们不能用，只有我能用 jar://org.ansj.dic.DicReader|/crf.model

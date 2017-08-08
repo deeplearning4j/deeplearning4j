@@ -1,14 +1,13 @@
 package org.deeplearning4j.nn.conf;
 
 
+import com.google.common.collect.Lists;
+import org.reflections.vfs.Vfs;
+
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import org.reflections.vfs.Vfs;
-
-import com.google.common.collect.Lists;
 
 /**
  * Original credit:

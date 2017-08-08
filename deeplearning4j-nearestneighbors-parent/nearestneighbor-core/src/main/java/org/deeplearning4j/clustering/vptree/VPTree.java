@@ -22,7 +22,6 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.clustering.berkeley.PriorityQueue;
 import org.deeplearning4j.clustering.sptree.DataPoint;
-import org.deeplearning4j.clustering.sptree.HeapItem;
 import org.deeplearning4j.clustering.sptree.HeapObject;
 import org.deeplearning4j.clustering.util.MathUtils;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -40,7 +39,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * Vantage point tree implementation
@@ -114,7 +112,7 @@ public class VPTree {
      */
     public VPTree(List<DataPoint> items, String similarityFunction, int workers, boolean invert) {
         if (this.items == null) {
-            this.items = Nd4j.create(items.size(),items.get(0).getPoint().columns());
+            this.items = Nd4j.create(items.size(), items.get(0).getPoint().columns());
         }
 
         this.workers = workers;
@@ -208,16 +206,19 @@ public class VPTree {
     public void calcDistancesRelativeTo(INDArray items, INDArray basePoint, INDArray distancesArr) {
         switch (similarityFunction) {
             case "euclidean":
-                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, items.lengthLong()), -1);
+                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, items.lengthLong()),
+                                -1);
                 break;
             case "cosinedistance":
                 Nd4j.getExecutioner().exec(new CosineDistance(items, basePoint, distancesArr, items.lengthLong()), -1);
                 break;
             case "cosinesimilarity":
-                Nd4j.getExecutioner().exec(new CosineSimilarity(items, basePoint, distancesArr, items.lengthLong()), -1);
+                Nd4j.getExecutioner().exec(new CosineSimilarity(items, basePoint, distancesArr, items.lengthLong()),
+                                -1);
                 break;
             case "manhattan":
-                Nd4j.getExecutioner().exec(new ManhattanDistance(items, basePoint, distancesArr, items.lengthLong()), -1);
+                Nd4j.getExecutioner().exec(new ManhattanDistance(items, basePoint, distancesArr, items.lengthLong()),
+                                -1);
                 break;
             case "dot":
                 Nd4j.getExecutioner().exec(new Dot(items, basePoint, distancesArr, items.lengthLong()), -1);
@@ -229,7 +230,8 @@ public class VPTree {
                 Nd4j.getExecutioner().exec(new HammingDistance(items, basePoint, distancesArr, items.lengthLong()), -1);
                 break;
             default:
-                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, items.lengthLong()), -1);
+                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, items.lengthLong()),
+                                -1);
                 break;
 
         }
@@ -254,29 +256,42 @@ public class VPTree {
 
         switch (similarityFunction) {
             case "jaccard":
-                float ret7 = Nd4j.getExecutioner().execAndReturn(new JaccardDistance(arr1, arr2, scalars.get(),arr1.length())).getFinalResult().floatValue();
+                float ret7 = Nd4j.getExecutioner()
+                                .execAndReturn(new JaccardDistance(arr1, arr2, scalars.get(), arr1.length()))
+                                .getFinalResult().floatValue();
                 return invert ? -ret7 : ret7;
             case "hamming":
-                float ret8 = Nd4j.getExecutioner().execAndReturn(new HammingDistance(arr1, arr2, scalars.get(),arr1.length())).getFinalResult().floatValue();
+                float ret8 = Nd4j.getExecutioner()
+                                .execAndReturn(new HammingDistance(arr1, arr2, scalars.get(), arr1.length()))
+                                .getFinalResult().floatValue();
                 return invert ? -ret8 : ret8;
             case "euclidean":
-                float ret = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get(),arr1.length())).getFinalResult().floatValue();
+                float ret = Nd4j.getExecutioner()
+                                .execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get(), arr1.length()))
+                                .getFinalResult().floatValue();
                 return invert ? -ret : ret;
             case "cosinesimilarity":
-                float ret2 = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(arr1, arr2, scalars.get(), arr1.length())).getFinalResult().floatValue();
+                float ret2 = Nd4j.getExecutioner()
+                                .execAndReturn(new CosineSimilarity(arr1, arr2, scalars.get(), arr1.length()))
+                                .getFinalResult().floatValue();
                 return invert ? -ret2 : ret2;
             case "cosinedistance":
-                float ret6 = Nd4j.getExecutioner().execAndReturn(new CosineDistance(arr1, arr2, scalars.get(), arr1.length())).getFinalResult().floatValue();
+                float ret6 = Nd4j.getExecutioner()
+                                .execAndReturn(new CosineDistance(arr1, arr2, scalars.get(), arr1.length()))
+                                .getFinalResult().floatValue();
                 return invert ? -ret6 : ret6;
             case "manhattan":
-                float ret3 = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(arr1, arr2,scalars.get(),arr1.length())).getFinalResult().floatValue();
+                float ret3 = Nd4j.getExecutioner()
+                                .execAndReturn(new ManhattanDistance(arr1, arr2, scalars.get(), arr1.length()))
+                                .getFinalResult().floatValue();
                 return invert ? -ret3 : ret3;
             case "dot":
                 float dotRet = (float) Nd4j.getBlasWrapper().dot(arr1, arr2);
                 return invert ? -dotRet : dotRet;
             default:
-                float ret4 = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get(),arr1.length())).getFinalResult()
-                        .floatValue();
+                float ret4 = Nd4j.getExecutioner()
+                                .execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get(), arr1.length()))
+                                .getFinalResult().floatValue();
                 return invert ? -ret4 : ret4;
 
         }
@@ -285,6 +300,7 @@ public class VPTree {
     protected class NodeBuilder implements Callable<Node> {
         protected List<INDArray> list;
         protected List<Integer> indices;
+
         public NodeBuilder(List<INDArray> list, List<Integer> indices) {
             this.list = list;
             this.indices = indices;
@@ -308,7 +324,8 @@ public class VPTree {
         }
 
         // opening workspace, and creating it if that's the first call
-        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "VPTREE_WORSKPACE");
+        MemoryWorkspace workspace =
+                        Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "VPTREE_WORSKPACE");
 
         INDArray items = Nd4j.vstack(points);
         int randomPoint = MathUtils.randomNumberBetween(0, items.rows() - 1, Nd4j.getRandom());
@@ -358,22 +375,21 @@ public class VPTree {
     private Node buildFromPoints(INDArray items) {
         if (executorService == null && items == this.items) {
 
-            executorService = Executors.newFixedThreadPool(workers,
-                    new ThreadFactory() {
-                        @Override
-                        public Thread newThread(Runnable r) {
-                            Thread t = Executors.defaultThreadFactory().newThread(r);
+            executorService = Executors.newFixedThreadPool(workers, new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread t = Executors.defaultThreadFactory().newThread(r);
 
-                            t.setDaemon(true);
-                            t.setName("VPTree thread");
+                    t.setDaemon(true);
+                    t.setName("VPTree thread");
 
-                            // we don't want threads to be working on different devices
-                            Nd4j.getAffinityManager().attachThreadToDevice(t,
+                    // we don't want threads to be working on different devices
+                    Nd4j.getAffinityManager().attachThreadToDevice(t,
                                     Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
-                            return t;
-                        }
-                    });
+                    return t;
+                }
+            });
 
 
             //executorService = new ThreadPoolExecutor(workers, workers, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(32));
@@ -383,17 +399,14 @@ public class VPTree {
         final Node ret = new Node(0, 0);
         size.incrementAndGet();
 
-        workspaceConfiguration = WorkspaceConfiguration.builder()
-                .cyclesBeforeInitialization(1)
-                .policyAllocation(AllocationPolicy.STRICT)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyMirroring(MirroringPolicy.FULL)
-                .policyReset(ResetPolicy.BLOCK_LEFT)
-                .policySpill(SpillPolicy.REALLOCATE)
-                .build();
+        workspaceConfiguration = WorkspaceConfiguration.builder().cyclesBeforeInitialization(1)
+                        .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.FIRST_LOOP)
+                        .policyMirroring(MirroringPolicy.FULL).policyReset(ResetPolicy.BLOCK_LEFT)
+                        .policySpill(SpillPolicy.REALLOCATE).build();
 
         // opening workspace
-        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "VPTREE_WORSKPACE");
+        MemoryWorkspace workspace =
+                        Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "VPTREE_WORSKPACE");
 
         int randomPoint = MathUtils.randomNumberBetween(0, items.rows() - 1, Nd4j.getRandom());
         INDArray basePoint = items.getRow(randomPoint);
@@ -462,14 +475,15 @@ public class VPTree {
     public void search(@NonNull INDArray target, int k, List<DataPoint> results, List<Double> distances) {
         if (items != null)
             if (!target.isVector() || target.columns() != items.columns() || target.rows() > 1)
-                throw new ND4JIllegalStateException("Target for search should have shape of [" + 1 + ", "+ items.columns() + "] but got " + Arrays.toString(target.shape()) + " instead");
+                throw new ND4JIllegalStateException("Target for search should have shape of [" + 1 + ", "
+                                + items.columns() + "] but got " + Arrays.toString(target.shape()) + " instead");
 
         k = Math.min(k, items.rows());
         results.clear();
         distances.clear();
 
         PriorityQueue<HeapObject> pq = new PriorityQueue<>();
-        search(root, target, k+1, pq,  Double.MAX_VALUE);
+        search(root, target, k + 1, pq, Double.MAX_VALUE);
 
         if (pq.size() > k)
             pq.next();

@@ -1,7 +1,9 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;

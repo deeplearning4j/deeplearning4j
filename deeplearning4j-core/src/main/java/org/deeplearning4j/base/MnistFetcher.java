@@ -20,19 +20,14 @@ package org.deeplearning4j.base;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.codec.digest.DigestUtils;
-
 import org.deeplearning4j.util.ArchiveUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 
 @Data
@@ -66,79 +61,79 @@ public class MnistFetcher {
     public static final String testFileLabelsFilename_unzipped = "t10k-labels-idx1-ubyte";
 
 
-    public String getName(){
+    public String getName() {
         return "MNIST";
     }
 
-    public File getBaseDir(){
+    public File getBaseDir() {
         return FILE_DIR;
     }
 
     // --- Train files ---
-    public String getTrainingFilesURL(){
+    public String getTrainingFilesURL() {
         return trainingFilesURL;
     }
 
-    public String getTrainingFilesMD5(){
+    public String getTrainingFilesMD5() {
         return trainingFilesMD5;
     }
 
-    public String getTrainingFilesFilename(){
+    public String getTrainingFilesFilename() {
         return trainingFilesFilename;
     }
 
-    public String getTrainingFilesFilename_unzipped(){
+    public String getTrainingFilesFilename_unzipped() {
         return trainingFilesFilename_unzipped;
     }
 
-    public String getTrainingFileLabelsURL(){
+    public String getTrainingFileLabelsURL() {
         return trainingFileLabelsURL;
     }
 
-    public String getTrainingFileLabelsMD5(){
+    public String getTrainingFileLabelsMD5() {
         return trainingFileLabelsMD5;
     }
 
-    public String getTrainingFileLabelsFilename(){
+    public String getTrainingFileLabelsFilename() {
         return trainingFileLabelsFilename;
     }
 
-    public String getTrainingFileLabelsFilename_unzipped(){
+    public String getTrainingFileLabelsFilename_unzipped() {
         return trainingFileLabelsFilename_unzipped;
     }
 
 
     // --- Test files ---
 
-    public String getTestFilesURL(){
+    public String getTestFilesURL() {
         return testFilesURL;
     }
 
-    public String getTestFilesMD5(){
+    public String getTestFilesMD5() {
         return testFilesMD5;
     }
 
-    public String getTestFilesFilename(){
+    public String getTestFilesFilename() {
         return testFilesFilename;
     }
 
-    public String getTestFilesFilename_unzipped(){
+    public String getTestFilesFilename_unzipped() {
         return testFilesFilename_unzipped;
     }
 
-    public String getTestFileLabelsURL(){
+    public String getTestFileLabelsURL() {
         return testFileLabelsURL;
     }
 
-    public String getTestFileLabelsMD5(){
+    public String getTestFileLabelsMD5() {
         return testFileLabelsMD5;
     }
 
-    public String getTestFileLabelsFilename(){
+    public String getTestFileLabelsFilename() {
         return testFileLabelsFilename;
     }
 
-    public String getTestFileLabelsFilename_unzipped(){
+    public String getTestFileLabelsFilename_unzipped() {
         return testFileLabelsFilename_unzipped;
     }
 

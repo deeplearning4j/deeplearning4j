@@ -1,29 +1,11 @@
 package org.ansj.util;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.PropertyResourceBundle;
-import java.util.ResourceBundle;
-
 import org.ansj.app.crf.SplitWord;
 import org.ansj.dic.DicReader;
 import org.ansj.dic.impl.Jdbc2Stream;
 import org.ansj.domain.AnsjItem;
 import org.ansj.exception.LibraryException;
-import org.ansj.library.AmbiguityLibrary;
-import org.ansj.library.CrfLibrary;
-import org.ansj.library.DATDictionary;
-import org.ansj.library.DicLibrary;
-import org.ansj.library.StopLibrary;
-import org.ansj.library.SynonymsLibrary;
+import org.ansj.library.*;
 import org.ansj.recognition.impl.StopRecognition;
 import org.nlpcn.commons.lang.tire.domain.Forest;
 import org.nlpcn.commons.lang.tire.domain.SmartForest;
@@ -33,6 +15,13 @@ import org.nlpcn.commons.lang.util.ObjConver;
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.commons.lang.util.logging.Log;
 import org.nlpcn.commons.lang.util.logging.LogFactory;
+
+import java.io.*;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.PropertyResourceBundle;
+import java.util.ResourceBundle;
 
 /**
  * 这个类储存一些公用变量.

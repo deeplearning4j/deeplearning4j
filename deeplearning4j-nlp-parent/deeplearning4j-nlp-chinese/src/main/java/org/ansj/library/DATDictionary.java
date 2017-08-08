@@ -1,10 +1,5 @@
 package org.ansj.library;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import org.ansj.dic.DicReader;
 import org.ansj.domain.AnsjItem;
 import org.ansj.domain.PersonNatureAttr;
@@ -15,6 +10,11 @@ import org.nlpcn.commons.lang.dat.DoubleArrayTire;
 import org.nlpcn.commons.lang.dat.Item;
 import org.nlpcn.commons.lang.util.logging.Log;
 import org.nlpcn.commons.lang.util.logging.LogFactory;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.Set;
 
 public class DATDictionary {
 

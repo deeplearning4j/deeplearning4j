@@ -25,9 +25,6 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
-
-import java.util.Arrays;
 
 /**
  * StackVertex allows for stacking of inputs so that they may be forwarded through

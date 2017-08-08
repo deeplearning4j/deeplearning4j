@@ -2,18 +2,44 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.*;
-import static org.deeplearning4j.nn.modelimport.keras.layers.KerasLstm.*;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_ACTIVATION;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_CONVOLUTION_2D;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_DENSE;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_DROPOUT;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_LSTM;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_MAX_POOLING_2D;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_ACTIVATION;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_BORDER_MODE;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_CLASS_NAME;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_CONFIG;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_DROPOUT;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_DROPOUT_W;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_INIT;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_NAME;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_NB_COL;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_NB_FILTER;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_NB_ROW;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_OUTPUT_DIM;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_POOL_SIZE;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_STRIDES;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_SUBSAMPLE;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_W_REGULARIZER;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.REGULARIZATION_TYPE_L1;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.REGULARIZATION_TYPE_L2;
 import static org.deeplearning4j.nn.modelimport.keras.layers.KerasBatchNormalization.*;
-import static org.junit.Assert.*;
+import static org.deeplearning4j.nn.modelimport.keras.layers.KerasLstm.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Unit tests for end-to-end Keras layer configuration import.

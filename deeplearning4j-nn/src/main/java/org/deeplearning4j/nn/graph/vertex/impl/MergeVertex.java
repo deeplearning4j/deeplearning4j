@@ -117,7 +117,7 @@ public class MergeVertex extends BaseGraphVertex {
                 //Standard feedforward inputs...
                 /*
                 out = Nd4j.create(nExamples, nOut);
-
+                
                 for (INDArray activation : inputs) {
                     int[] currShape = activation.shape();
                     out.get(NDArrayIndex.all(), NDArrayIndex.interval(nOutCumulative, nOutCumulative + currShape[1]))
@@ -132,7 +132,7 @@ public class MergeVertex extends BaseGraphVertex {
                 /*
                 int tsLength = inputs[0].size(2);
                 out = Nd4j.create(nExamples, nOut, tsLength);
-
+                
                 for (INDArray activation : inputs) {
                     int[] currShape = activation.shape();
                     out.get(NDArrayIndex.all(), NDArrayIndex.interval(nOutCumulative, nOutCumulative + currShape[1]),
@@ -149,7 +149,7 @@ public class MergeVertex extends BaseGraphVertex {
                 int[] outShape = Arrays.copyOf(inputs[0].shape(), 4);
                 outShape[1] = nOut;
                 out = Nd4j.create(outShape);
-
+                
                 //Input activations: [minibatch,depth,width,height]
                 for (INDArray activation : inputs) {
                     out.get(NDArrayIndex.all(),

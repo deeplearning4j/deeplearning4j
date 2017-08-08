@@ -1,13 +1,13 @@
 package org.ansj.recognition.impl;
 
+import org.ansj.domain.Result;
+import org.ansj.domain.Term;
+import org.ansj.recognition.Recognition;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.ansj.domain.Result;
-import org.ansj.domain.Term;
-import org.ansj.recognition.Recognition;
 
 /**
  * 电子邮箱抽取

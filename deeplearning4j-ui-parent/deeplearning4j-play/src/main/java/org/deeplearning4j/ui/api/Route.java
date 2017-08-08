@@ -2,7 +2,6 @@ package org.deeplearning4j.ui.api;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import play.libs.F;
 import play.mvc.Result;
 
 import java.util.function.BiFunction;

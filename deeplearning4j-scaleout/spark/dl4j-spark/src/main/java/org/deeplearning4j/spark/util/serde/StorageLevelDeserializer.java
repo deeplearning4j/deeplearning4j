@@ -1,11 +1,11 @@
 package org.deeplearning4j.spark.util.serde;
 
+import org.apache.spark.storage.StorageLevel;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
 import org.nd4j.shade.jackson.databind.JsonDeserializer;
 import org.nd4j.shade.jackson.databind.JsonNode;
-import org.apache.spark.storage.StorageLevel;
 
 import java.io.IOException;
 

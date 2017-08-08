@@ -1,11 +1,5 @@
 package org.ansj.recognition.arrimpl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.ansj.domain.Nature;
 import org.ansj.domain.NewWord;
 import org.ansj.domain.Term;
@@ -13,6 +7,8 @@ import org.ansj.domain.TermNatures;
 import org.ansj.recognition.TermArrRecognition;
 import org.ansj.util.TermUtil;
 import org.nlpcn.commons.lang.util.StringUtil;
+
+import java.util.*;
 
 /**
  * 外国人名识别

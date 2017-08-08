@@ -1,9 +1,5 @@
 package org.ansj.dic;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map.Entry;
-
 import org.ansj.app.crf.SplitWord;
 import org.ansj.domain.Nature;
 import org.ansj.domain.NewWord;
@@ -15,6 +11,10 @@ import org.ansj.util.Graph;
 import org.nlpcn.commons.lang.tire.domain.Forest;
 import org.nlpcn.commons.lang.tire.domain.SmartForest;
 import org.nlpcn.commons.lang.util.CollectionUtil;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
 
 /**
  * 新词发现,这是个线程安全的.所以可以多个对象公用一个

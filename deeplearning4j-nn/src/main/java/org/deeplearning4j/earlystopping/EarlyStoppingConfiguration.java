@@ -25,8 +25,6 @@ import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
 import org.deeplearning4j.nn.api.Model;
-import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 
 import java.io.Serializable;
 import java.util.ArrayList;

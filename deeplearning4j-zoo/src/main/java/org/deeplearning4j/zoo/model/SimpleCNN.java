@@ -17,7 +17,6 @@ import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.AdaDelta;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
  * A simple convolutional network for generic image classification.

@@ -163,7 +163,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
                         forBackprop ? cacheMode : CacheMode.NONE);
 
 
-        if (training && cacheMode != CacheMode.NONE ) {
+        if (training && cacheMode != CacheMode.NONE) {
             cachedFwdPass = fwd;
         }
 

@@ -1,14 +1,5 @@
 package org.ansj.app.crf.model;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.ansj.app.crf.Config;
 import org.ansj.app.crf.Model;
 import org.nlpcn.commons.lang.tire.domain.SmartForest;
@@ -16,6 +7,11 @@ import org.nlpcn.commons.lang.util.IOUtil;
 import org.nlpcn.commons.lang.util.ObjConver;
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.commons.lang.util.tuples.Pair;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
 
 /**
  * 加载wapiti生成的crf模型,测试使用的wapiti版本为:Wapiti v1.5.0

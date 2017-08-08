@@ -1,10 +1,10 @@
 package org.ansj.domain;
 
-import java.util.Iterator;
-import java.util.List;
-
 import org.ansj.recognition.Recognition;
 import org.nlpcn.commons.lang.util.StringUtil;
+
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * 分词结果的一个封装

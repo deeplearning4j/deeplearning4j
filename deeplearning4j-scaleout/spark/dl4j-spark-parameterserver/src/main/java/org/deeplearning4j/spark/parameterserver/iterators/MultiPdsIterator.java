@@ -2,9 +2,7 @@ package org.deeplearning4j.spark.parameterserver.iterators;
 
 import lombok.NonNull;
 import org.apache.spark.input.PortableDataStream;
-import org.deeplearning4j.spark.parameterserver.callbacks.PortableDataStreamCallback;
 import org.deeplearning4j.spark.parameterserver.callbacks.PortableDataStreamMDSCallback;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import java.util.Iterator;

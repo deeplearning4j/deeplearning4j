@@ -1,17 +1,16 @@
 package org.deeplearning4j.models.sequencevectors.sequence;
 
+import com.google.common.util.concurrent.AtomicDouble;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
-import com.google.common.util.concurrent.AtomicDouble;
-import lombok.Getter;
-import lombok.Setter;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.legacy.AdaGrad;
 
 import java.io.Serializable;
 import java.util.ArrayList;

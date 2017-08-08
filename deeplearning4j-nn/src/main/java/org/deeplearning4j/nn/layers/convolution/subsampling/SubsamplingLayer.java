@@ -28,22 +28,16 @@ import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
-import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
-import org.nd4j.linalg.api.ops.impl.transforms.Pow;
 import org.nd4j.linalg.api.ops.impl.transforms.convolution.Pooling2D;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
@@ -298,16 +292,18 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         switch (layerConf().getPoolingType()) {
             case AVG:
-//                reduced = col2d.mean(1);
-//                time2 = System.nanoTime();
+                //                reduced = col2d.mean(1);
+                //                time2 = System.nanoTime();
 
                 Convolution.pooling2D(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1],
-                        convolutionMode == ConvolutionMode.Same, Pooling2D.Pooling2DType.AVG, 0.0, outH, outW, output);
+                                convolutionMode == ConvolutionMode.Same, Pooling2D.Pooling2DType.AVG, 0.0, outH, outW,
+                                output);
 
                 break;
             case MAX:
                 Convolution.pooling2D(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1],
-                        convolutionMode == ConvolutionMode.Same, Pooling2D.Pooling2DType.MAX, 0.0, outH, outW, output);
+                                convolutionMode == ConvolutionMode.Same, Pooling2D.Pooling2DType.MAX, 0.0, outH, outW,
+                                output);
 
                 break;
             case PNORM:
@@ -316,16 +312,17 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 // the pooling layer and then applying the same inverse exponent
                 int pnorm = layerConf().getPnorm();
                 /*
-
+                
                 Transforms.abs(col2d, false);
                 Transforms.pow(col2d, pnorm, false);
                 reduced = col2d.sum(1);
                 Transforms.pow(reduced, (1.0 / pnorm), false);
                 time2 = System.nanoTime();
-*/
+                */
 
                 Convolution.pooling2D(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1],
-                        convolutionMode == ConvolutionMode.Same, Pooling2D.Pooling2DType.PNORM, (double) pnorm, outH, outW, output);
+                                convolutionMode == ConvolutionMode.Same, Pooling2D.Pooling2DType.PNORM, (double) pnorm,
+                                outH, outW, output);
 
                 break;
             case NONE:

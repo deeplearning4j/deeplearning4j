@@ -63,7 +63,6 @@ declare class TSUtils {
     static min(input: number[][]): number;
     static normalizeLengthUnit(input: string): string;
 }
-import Ordinal = d3.scale.Ordinal;
 declare abstract class Chart extends Component {
     protected style: StyleChart;
     protected title: string;

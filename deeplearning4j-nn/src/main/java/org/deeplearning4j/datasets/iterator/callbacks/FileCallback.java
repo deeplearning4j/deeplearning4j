@@ -1,7 +1,5 @@
 package org.deeplearning4j.datasets.iterator.callbacks;
 
-import org.nd4j.linalg.dataset.DataSet;
-
 import java.io.File;
 
 /**

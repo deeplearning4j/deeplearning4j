@@ -1,15 +1,11 @@
 package org.ansj.app.keyword;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
-
 import org.ansj.domain.Term;
 import org.ansj.splitWord.Analysis;
-import org.ansj.splitWord.analysis.*;
+import org.ansj.splitWord.analysis.NlpAnalysis;
 import org.nlpcn.commons.lang.util.StringUtil;
+
+import java.util.*;
 
 public class KeyWordComputer<T extends Analysis> {
 

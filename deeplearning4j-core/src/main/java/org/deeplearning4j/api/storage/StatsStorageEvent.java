@@ -2,8 +2,6 @@ package org.deeplearning4j.api.storage;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.deeplearning4j.api.storage.StatsStorage;
-import org.deeplearning4j.api.storage.StatsStorageListener;
 
 /**
  * StatsStorageEvent: use with {@link StatsStorageListener} to specify when the state of the {@link StatsStorage}

@@ -4,8 +4,6 @@ import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import scala.Tuple2;
 
-import java.util.Iterator;
-
 /**
  * PairFlatMapFunction adapter to hide incompatibilities between Spark 1.x and Spark 2.x
  *

@@ -1,10 +1,10 @@
 package org.ansj.app.crf;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.ansj.app.crf.pojo.Element;
 import org.nlpcn.commons.lang.util.WordAlert;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Config {
 

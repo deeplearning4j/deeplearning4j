@@ -1,6 +1,5 @@
 package org.deeplearning4j.gradientcheck;
 
-import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -24,14 +23,12 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.lang.reflect.Field;
 import java.util.Random;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -291,12 +288,10 @@ public class CuDNNGradientChecks {
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
 
-        Field f = org.deeplearning4j.nn.layers.recurrent.LSTM.class
-                        .getDeclaredField("helper");
+        Field f = org.deeplearning4j.nn.layers.recurrent.LSTM.class.getDeclaredField("helper");
         f.setAccessible(true);
 
-        org.deeplearning4j.nn.layers.recurrent.LSTM l =
-                        (org.deeplearning4j.nn.layers.recurrent.LSTM) mln.getLayer(1);
+        org.deeplearning4j.nn.layers.recurrent.LSTM l = (org.deeplearning4j.nn.layers.recurrent.LSTM) mln.getLayer(1);
         LSTMHelper helper = (LSTMHelper) f.get(l);
         assertTrue(helper instanceof CudnnLSTMHelper);
 
@@ -337,25 +332,23 @@ public class CuDNNGradientChecks {
         }
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
-                .dist(new NormalDistribution(0, 2)).list()
-                .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
-                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
-                .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
-                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
-                .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
-                .pretrain(false).backprop(true);
+                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 2)).list()
+                        .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
+                                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                        .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
+                                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                        .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
+                        .pretrain(false).backprop(true);
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
 
-        Field f = org.deeplearning4j.nn.layers.recurrent.LSTM.class
-                .getDeclaredField("helper");
+        Field f = org.deeplearning4j.nn.layers.recurrent.LSTM.class.getDeclaredField("helper");
         f.setAccessible(true);
 
-        org.deeplearning4j.nn.layers.recurrent.LSTM l =
-                (org.deeplearning4j.nn.layers.recurrent.LSTM) mln.getLayer(1);
+        org.deeplearning4j.nn.layers.recurrent.LSTM l = (org.deeplearning4j.nn.layers.recurrent.LSTM) mln.getLayer(1);
         LSTMHelper helper = (LSTMHelper) f.get(l);
         assertTrue(helper instanceof CudnnLSTMHelper);
 
@@ -371,7 +364,7 @@ public class CuDNNGradientChecks {
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
         assertTrue(gradOK);
     }

@@ -10,8 +10,6 @@ import org.deeplearning4j.parallelism.trainer.DefaultTrainer;
 import org.deeplearning4j.parallelism.trainer.SymmetricTrainer;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 
-import java.util.concurrent.ThreadFactory;
-
 /**
  * Creates {@link DefaultTrainer}
  * instances for use with {@link ParallelWrapper}

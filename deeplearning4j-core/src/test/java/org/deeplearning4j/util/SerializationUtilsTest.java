@@ -19,14 +19,10 @@
 package org.deeplearning4j.util;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.clustering.cluster.Cluster;
-import org.deeplearning4j.clustering.cluster.ClusterSet;
-import org.deeplearning4j.clustering.cluster.Point;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.io.IOException;

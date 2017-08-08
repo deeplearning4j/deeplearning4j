@@ -1,6 +1,5 @@
 package org.deeplearning4j.eval;
 
-import org.deeplearning4j.eval.curves.BaseCurve;
 import org.deeplearning4j.eval.curves.Histogram;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
@@ -10,7 +9,8 @@ import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 public class EvalJsonTest {

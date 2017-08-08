@@ -19,7 +19,6 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -31,7 +30,10 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 
 /**
- * Adds the ability to reshape and flatten the tensor in the computation graph.
+ * Adds the ability to reshape and flatten the tensor in the computation graph.<br>
+ * NOTE: This class should only be used if you know exactly what you are doing with reshaping activations.
+ * Use preprocessors such as {@link org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor} and
+ * {@link org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor} for most cases.
  *
  * @author Justin Long (crockpotveggies)
  */
@@ -84,49 +86,18 @@ public class ReshapeVertex extends GraphVertex {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        if (vertexInputs.length == 1)
-            return vertexInputs[0];
-        InputType first = vertexInputs[0];
-        if (first.getType() != InputType.Type.CNN) {
-            //FF, RNN or flat CNN data inputs
-            for (int i = 1; i < vertexInputs.length; i++) {
-                if (vertexInputs[i].getType() != first.getType()) {
-                    throw new InvalidInputTypeException(
-                                    "Invalid input: Reshape vertex cannot process activations of different types:"
-                                                    + " first type = " + first.getType() + ", input type " + (i + 1)
-                                                    + " = " + vertexInputs[i].getType());
-                }
-            }
-        } else {
-            //CNN inputs... also check that the depth, width and heights match:
-            InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
-            int fd = firstConv.getDepth();
-            int fw = firstConv.getWidth();
-            int fh = firstConv.getHeight();
-
-            for (int i = 1; i < vertexInputs.length; i++) {
-                if (vertexInputs[i].getType() != InputType.Type.CNN) {
-                    throw new InvalidInputTypeException(
-                                    "Invalid input: Reshape vertex cannot process activations of different types:"
-                                                    + " first type = " + InputType.Type.CNN + ", input type " + (i + 1)
-                                                    + " = " + vertexInputs[i].getType());
-                }
-
-                InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
-
-                int od = otherConv.getDepth();
-                int ow = otherConv.getWidth();
-                int oh = otherConv.getHeight();
-
-                if (fd != od || fw != ow || fh != oh) {
-                    throw new InvalidInputTypeException(
-                                    "Invalid input: Reshape vertex cannot process CNN activations of different sizes:"
-                                                    + "first [depth,width,height] = [" + fd + "," + fw + "," + fh
-                                                    + "], input " + i + " = [" + od + "," + ow + "," + oh + "]");
-                }
-            }
+        //Infer output shape from specified shape:
+        switch (newShape.length) {
+            case 2:
+                return InputType.feedForward(newShape[1]);
+            case 3:
+                return InputType.recurrent(newShape[1]);
+            case 4:
+                return InputType.convolutional(newShape[1], newShape[2], newShape[0]); //[mb,d,h,w] for activations
+            default:
+                throw new UnsupportedOperationException(
+                                "Cannot infer input type for reshape array " + Arrays.toString(newShape));
         }
-        return first; //Same output shape/size as
     }
 
     @Override

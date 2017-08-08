@@ -1,14 +1,5 @@
 package org.ansj.app.crf;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectOutputStream;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.zip.GZIPOutputStream;
-
 import org.ansj.app.crf.model.CRFModel;
 import org.ansj.app.crf.model.CRFppTxtModel;
 import org.ansj.app.crf.model.WapitiCRFModel;
@@ -16,6 +7,11 @@ import org.nlpcn.commons.lang.tire.domain.SmartForest;
 import org.nlpcn.commons.lang.util.MapCount;
 import org.nlpcn.commons.lang.util.logging.Log;
 import org.nlpcn.commons.lang.util.logging.LogFactory;
+
+import java.io.*;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.zip.GZIPOutputStream;
 
 public abstract class Model {
 

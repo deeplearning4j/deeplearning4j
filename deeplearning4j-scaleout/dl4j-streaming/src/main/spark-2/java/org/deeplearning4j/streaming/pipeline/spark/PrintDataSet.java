@@ -1,7 +1,6 @@
 package org.deeplearning4j.streaming.pipeline.spark;
 
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.nd4j.linalg.dataset.DataSet;
 

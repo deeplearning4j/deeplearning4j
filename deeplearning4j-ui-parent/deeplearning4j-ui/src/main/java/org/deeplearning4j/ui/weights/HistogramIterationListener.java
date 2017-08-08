@@ -4,7 +4,6 @@ package org.deeplearning4j.ui.weights;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorage;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.UiUtils;
@@ -13,7 +12,6 @@ import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.stats.api.StatsUpdateConfiguration;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
-import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 
 /**
  *

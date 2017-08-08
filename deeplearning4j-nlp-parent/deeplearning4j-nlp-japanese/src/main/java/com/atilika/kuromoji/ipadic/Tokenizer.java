@@ -21,7 +21,6 @@ import com.atilika.kuromoji.dict.*;
 import com.atilika.kuromoji.ipadic.compile.DictionaryEntry;
 import com.atilika.kuromoji.trie.DoubleArrayTrie;
 import com.atilika.kuromoji.util.FileResourceResolver;
-import com.atilika.kuromoji.util.SimpleResourceResolver;
 import com.atilika.kuromoji.viterbi.TokenFactory;
 import com.atilika.kuromoji.viterbi.ViterbiNode;
 

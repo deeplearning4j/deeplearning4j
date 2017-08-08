@@ -21,8 +21,6 @@ package org.deeplearning4j.earlystopping.termination;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Terminate training if best model score does not improve for N epochs

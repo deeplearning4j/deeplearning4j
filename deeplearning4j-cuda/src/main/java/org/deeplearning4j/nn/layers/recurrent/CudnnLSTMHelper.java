@@ -17,10 +17,8 @@
  */
 package org.deeplearning4j.nn.layers.recurrent;
 
-import java.util.Arrays;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -30,13 +28,14 @@ import org.deeplearning4j.nn.layers.BaseCudnnHelper;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
+import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+
+import java.util.Map;
 
 import static org.bytedeco.javacpp.cuda.*;
 import static org.bytedeco.javacpp.cudnn.*;
@@ -164,15 +163,16 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
     private DataCache reserveSpace = new DataCache();
     private DataCache weightsSpace = new DataCache();
 
-    private static INDArray toCOrder(INDArray arr){
-        if(arr.isView() || arr.ordering() != 'c' || !Shape.strideDescendingCAscendingF(arr)){
+    private static INDArray toCOrder(INDArray arr) {
+        if (arr.isView() || arr.ordering() != 'c' || !Shape.strideDescendingCAscendingF(arr)) {
             arr = arr.dup('c');
         }
         return arr;
     }
 
     @Override
-    public boolean checkSupported(IActivation gateActivationFn, IActivation activationFn, boolean hasPeepholeConnections) {
+    public boolean checkSupported(IActivation gateActivationFn, IActivation activationFn,
+                    boolean hasPeepholeConnections) {
         boolean supported = checkSupported();
         if (!(gateActivationFn instanceof ActivationSigmoid)) {
             supported = false;
@@ -197,7 +197,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                     final FwdPassReturn fwdPass, final boolean forwards, final String inputWeightKey,
                     final String recurrentWeightKey, final String biasWeightKey,
                     final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections) {            //True for GravesLSTM, false for LSTM
+                    final boolean hasPeepholeConnections) { //True for GravesLSTM, false for LSTM
 
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
         int hiddenLayerSize = recurrentWeights.size(0); //i.e., n^L
@@ -215,7 +215,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey); //Order: {I,F,O,G}
         INDArray bGradientsOut = gradientViews.get(biasWeightKey);
 
-        INDArray outputActivations = toCOrder(fwdPass.fwdPassOutput.permute(2,0,1));
+        INDArray outputActivations = toCOrder(fwdPass.fwdPassOutput.permute(2, 0, 1));
         INDArray prevStepMemCellState = toCOrder(fwdPass.prevMemCell);
         INDArray prevStepActivations = toCOrder(fwdPass.prevAct);
 
@@ -249,23 +249,21 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
         checkCudnn(cudnnRNNBackwardData(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, yDesc,
                         outputActivationsData, dyDesc, dyData, cudnnContext.dhyDesc, null, cudnnContext.dcyDesc, null,
-                        cudnnContext.wDesc, weightsSpace,
-                        cudnnContext.hxDesc, prevStepActivationsData,   //hx: initial hidden state of RNN
-                        cudnnContext.cxDesc, prevMemCellStateData,      //cx: initial cell state of RNN
-                        dxDesc, dxData,                                 //dx: gradient at input of each time step
-                        cudnnContext.dhxDesc, null,             //dhx: gradient at initial hidden state of RNN
-                        cudnnContext.dcxDesc, null,             //dcx: Gradient at initial cell state
+                        cudnnContext.wDesc, weightsSpace, cudnnContext.hxDesc, prevStepActivationsData, //hx: initial hidden state of RNN
+                        cudnnContext.cxDesc, prevMemCellStateData, //cx: initial cell state of RNN
+                        dxDesc, dxData, //dx: gradient at input of each time step
+                        cudnnContext.dhxDesc, null, //dhx: gradient at initial hidden state of RNN
+                        cudnnContext.dcxDesc, null, //dcx: Gradient at initial cell state
                         workSpace, workSpace.limit(), reserveSpace, reserveSpace.limit()));
 
         // cudnnRNNBackwardWeights adds to the data in dw.
         checkCuda(cudaMemsetAsync(weightsSpace, 0, weightsSpace.limit(), stream));
 
-        checkCudnn(cudnnRNNBackwardWeights(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength,
-                        xDesc, xData,       //Input data
-                        cudnnContext.hxDesc, prevStepActivationsData,   //Initial hidden state
-                        yDesc, outputActivationsData,                   //Output data
-                        workSpace, workSpace.limit(),
-                        cudnnContext.dwDesc, weightsSpace, reserveSpace, reserveSpace.limit()));
+        checkCudnn(cudnnRNNBackwardWeights(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc, xData, //Input data
+                        cudnnContext.hxDesc, prevStepActivationsData, //Initial hidden state
+                        yDesc, outputActivationsData, //Output data
+                        workSpace, workSpace.limit(), cudnnContext.dwDesc, weightsSpace, reserveSpace,
+                        reserveSpace.limit()));
 
         int[] dataType = new int[1];
         int[] format = new int[1];
@@ -277,36 +275,68 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         for (int layer = 0; layer < numLayers * (bidirectional ? 2 : 1); layer++) {
             for (int linLayerID = 0; linLayerID < numLinearLayers; linLayerID++) {
                 checkCudnn(cudnnGetRNNLinLayerMatrixParams(cudnnContext, cudnnContext.rnnDesc, layer, xDesc0,
-                                cudnnContext.wDesc, weightsSpace, linLayerID,
-                                cudnnContext.linLayerMatDesc, linLayerMat));
+                                cudnnContext.wDesc, weightsSpace, linLayerID, cudnnContext.linLayerMatDesc,
+                                linLayerMat));
 
-                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerMatDesc,
-                                3, dataType, format, nbDims, filterDimA));
+                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerMatDesc, 3, dataType, format, nbDims,
+                                filterDimA));
 
                 checkCudnn(cudnnGetRNNLinLayerBiasParams(cudnnContext, cudnnContext.rnnDesc, layer, xDesc0,
-                                cudnnContext.wDesc, weightsSpace, linLayerID,
-                                cudnnContext.linLayerBiasDesc, linLayerBias));
+                                cudnnContext.wDesc, weightsSpace, linLayerID, cudnnContext.linLayerBiasDesc,
+                                linLayerBias));
 
-                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerBiasDesc,
-                                3, dataType, format, nbDims, filterDimA));
+                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerBiasDesc, 3, dataType, format, nbDims,
+                                filterDimA));
 
                 // our data is in "new, forget, output, and input gates" order (aka IFOG), each kind of weight packed together
                 int position = 0, size = 0;
                 Pointer data = null;
                 switch (linLayerID) {
-                    case 0: data = iwGradientsOutData; position = 3; size = inputLayerSize; break; // input gate
-                    case 1: data = iwGradientsOutData; position = 1; size = inputLayerSize; break; // forget gate
-                    case 2: data = iwGradientsOutData; position = 0; size = inputLayerSize; break; // new gate (input modulation gate)
-                    case 3: data = iwGradientsOutData; position = 2; size = inputLayerSize; break; // output gate
-                    case 4: data = rwGradientsOutData; position = 3; size = hiddenLayerSize; break; // input gate
-                    case 5: data = rwGradientsOutData; position = 1; size = hiddenLayerSize; break; // forget gate
-                    case 6: data = rwGradientsOutData; position = 0; size = hiddenLayerSize; break; // new gate (input modulation gate)
-                    case 7: data = rwGradientsOutData; position = 2; size = hiddenLayerSize; break; // output gate
+                    case 0:
+                        data = iwGradientsOutData;
+                        position = 3;
+                        size = inputLayerSize;
+                        break; // input gate
+                    case 1:
+                        data = iwGradientsOutData;
+                        position = 1;
+                        size = inputLayerSize;
+                        break; // forget gate
+                    case 2:
+                        data = iwGradientsOutData;
+                        position = 0;
+                        size = inputLayerSize;
+                        break; // new gate (input modulation gate)
+                    case 3:
+                        data = iwGradientsOutData;
+                        position = 2;
+                        size = inputLayerSize;
+                        break; // output gate
+                    case 4:
+                        data = rwGradientsOutData;
+                        position = 3;
+                        size = hiddenLayerSize;
+                        break; // input gate
+                    case 5:
+                        data = rwGradientsOutData;
+                        position = 1;
+                        size = hiddenLayerSize;
+                        break; // forget gate
+                    case 6:
+                        data = rwGradientsOutData;
+                        position = 0;
+                        size = hiddenLayerSize;
+                        break; // new gate (input modulation gate)
+                    case 7:
+                        data = rwGradientsOutData;
+                        position = 2;
+                        size = hiddenLayerSize;
+                        break; // output gate
                     default:
                         throw new RuntimeException();
                 }
-                checkCuda(cudaMemcpyAsync(data.position(position * size * hiddenLayerSize * dataTypeSize),
-                                linLayerMat, size * hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
+                checkCuda(cudaMemcpyAsync(data.position(position * size * hiddenLayerSize * dataTypeSize), linLayerMat,
+                                size * hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
                 if (linLayerID < 4) {
                     checkCuda(cudaMemcpyAsync(bGradientsOutData.position(position * hiddenLayerSize * dataTypeSize),
                                     linLayerBias, hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
@@ -333,10 +363,9 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                     INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                     final INDArray inputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
                     final INDArray biases, //Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
-                    final boolean training, final INDArray prevOutputActivations,
-                    final INDArray prevMemCellState, boolean forBackprop, boolean forwards,
-                    final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections) {            //True for GravesLSTM, false for LSTM
+                    final boolean training, final INDArray prevOutputActivations, final INDArray prevMemCellState,
+                    boolean forBackprop, boolean forwards, final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
+                    final boolean hasPeepholeConnections) { //True for GravesLSTM, false for LSTM
 
         boolean is2dInput = input.rank() < 3; //Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
         int timeSeriesLength = (is2dInput ? 1 : input.size(2));
@@ -352,12 +381,12 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         INDArray prevAct = toCOrder(prevOutputActivations);
         INDArray prevMemCell = toCOrder(prevMemCellState);
 
-        INDArray outputActivations = Nd4j.createUninitialized(new int[] {
-                        timeSeriesLength, miniBatchSize, hiddenLayerSize * (bidirectional ? 2 : 1)}, 'c');
-        INDArray finalMemCellState = Nd4j.createUninitialized(new int[] {
-                        /*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
-        INDArray finalStepActivations = Nd4j.createUninitialized(new int[] {
-                        /*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
+        INDArray outputActivations = Nd4j.createUninitialized(
+                        new int[] {timeSeriesLength, miniBatchSize, hiddenLayerSize * (bidirectional ? 2 : 1)}, 'c');
+        INDArray finalMemCellState = Nd4j.createUninitialized(
+                        new int[] {/*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
+        INDArray finalStepActivations = Nd4j.createUninitialized(
+                        new int[] {/*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
 
         FwdPassReturn toReturn = new FwdPassReturn();
         toReturn.prevAct = prevAct;
@@ -418,12 +447,12 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         }
         stateSpace.limit(stateSize);
 
-        checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext,
-                        dropout, stateSpace, stateSize, Nd4j.getRandom().getSeed()));
+        checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, dropout, stateSpace, stateSize,
+                        Nd4j.getRandom().getSeed()));
 
         checkCudnn(cudnnSetRNNDescriptor(cudnnContext.rnnDesc, hiddenLayerSize, numLayers, cudnnContext.dropoutDesc,
-                        CUDNN_LINEAR_INPUT, bidirectional ? CUDNN_BIDIRECTIONAL
-                                                          : CUDNN_UNIDIRECTIONAL, RNNMode, dataType));
+                        CUDNN_LINEAR_INPUT, bidirectional ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL, RNNMode,
+                        dataType));
 
         cudnnTensorStruct xDesc0 = xDesc.get(cudnnTensorStruct.class, 0);
         checkCudnn(cudnnGetRNNParamsSize(cudnnContext, cudnnContext.rnnDesc, xDesc0, sizeInBytes, dataType));
@@ -434,7 +463,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         }
         weightsSpace.limit(weightsSize);
 
-        int[] dimW = {(int)weightsSize / dataTypeSize, 1, 1};
+        int[] dimW = {(int) weightsSize / dataTypeSize, 1, 1};
 
         checkCudnn(cudnnSetFilterNdDescriptor(cudnnContext.wDesc, dataType, CUDNN_TENSOR_NCHW, 3, dimW));
         checkCudnn(cudnnSetFilterNdDescriptor(cudnnContext.dwDesc, dataType, CUDNN_TENSOR_NCHW, 3, dimW));
@@ -447,7 +476,8 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         }
         workSpace.limit(workSize);
 
-        checkCudnn(cudnnGetRNNTrainingReserveSize(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc, sizeInBytes));
+        checkCudnn(cudnnGetRNNTrainingReserveSize(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc,
+                        sizeInBytes));
         long reserveSize = sizeInBytes.get(0);
         if (reserveSize > reserveSpace.capacity()) {
             reserveSpace.deallocate();
@@ -456,9 +486,9 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         reserveSpace.limit(reserveSize);
 
         Allocator allocator = AtomicAllocator.getInstance();
-        CudaContext context = allocator.getFlowController().prepareActionAllWrite(x,
-                        linInputWeights, linRecurrentWeights, linBiases, prevAct, prevMemCell,
-                        outputActivations, finalMemCellState, finalStepActivations);
+        CudaContext context = allocator.getFlowController().prepareActionAllWrite(x, linInputWeights,
+                        linRecurrentWeights, linBiases, prevAct, prevMemCell, outputActivations, finalMemCellState,
+                        finalStepActivations);
         Pointer xData = allocator.getPointer(x, context);
         Pointer linInputWeightsData = allocator.getPointer(linInputWeights, context);
         Pointer linRecurrentWeightsData = allocator.getPointer(linRecurrentWeights, context);
@@ -484,38 +514,71 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         for (int layerNum = 0; layerNum < numLayers * (bidirectional ? 2 : 1); layerNum++) {
             for (int linLayerID = 0; linLayerID < numLinearLayers; linLayerID++) {
                 checkCudnn(cudnnGetRNNLinLayerMatrixParams(cudnnContext, cudnnContext.rnnDesc, layerNum, xDesc0,
-                                cudnnContext.wDesc, weightsSpace, linLayerID,
-                                cudnnContext.linLayerMatDesc, linLayerMat));
+                                cudnnContext.wDesc, weightsSpace, linLayerID, cudnnContext.linLayerMatDesc,
+                                linLayerMat));
 
-                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerMatDesc,
-                                3, dataType, format, nbDims, filterDimA));
+                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerMatDesc, 3, dataType, format, nbDims,
+                                filterDimA));
 
                 checkCudnn(cudnnGetRNNLinLayerBiasParams(cudnnContext, cudnnContext.rnnDesc, layerNum, xDesc0,
-                                cudnnContext.wDesc, weightsSpace, linLayerID,
-                                cudnnContext.linLayerBiasDesc, linLayerBias));
+                                cudnnContext.wDesc, weightsSpace, linLayerID, cudnnContext.linLayerBiasDesc,
+                                linLayerBias));
 
-                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerBiasDesc,
-                                3, dataType, format, nbDims, filterDimA));
+                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerBiasDesc, 3, dataType, format, nbDims,
+                                filterDimA));
 
                 // our data is in "new, forget, output, and input gates" order (aka IFOG), each kind of weight packed together
                 int position = 0, size = 0;
                 Pointer data = null;
                 switch (linLayerID) {
-                    case 0: data = linInputWeightsData;     position = 3; size = inputLayerSize;  break; // input gate
-                    case 1: data = linInputWeightsData;     position = 1; size = inputLayerSize;  break; // forget gate
-                    case 2: data = linInputWeightsData;     position = 0; size = inputLayerSize;  break; // new gate
-                    case 3: data = linInputWeightsData;     position = 2; size = inputLayerSize;  break; // output gate
-                    case 4: data = linRecurrentWeightsData; position = 3; size = hiddenLayerSize; break; // input gate
-                    case 5: data = linRecurrentWeightsData; position = 1; size = hiddenLayerSize; break; // forget gate
-                    case 6: data = linRecurrentWeightsData; position = 0; size = hiddenLayerSize; break; // new gate
-                    case 7: data = linRecurrentWeightsData; position = 2; size = hiddenLayerSize; break; // output gate
+                    case 0:
+                        data = linInputWeightsData;
+                        position = 3;
+                        size = inputLayerSize;
+                        break; // input gate
+                    case 1:
+                        data = linInputWeightsData;
+                        position = 1;
+                        size = inputLayerSize;
+                        break; // forget gate
+                    case 2:
+                        data = linInputWeightsData;
+                        position = 0;
+                        size = inputLayerSize;
+                        break; // new gate
+                    case 3:
+                        data = linInputWeightsData;
+                        position = 2;
+                        size = inputLayerSize;
+                        break; // output gate
+                    case 4:
+                        data = linRecurrentWeightsData;
+                        position = 3;
+                        size = hiddenLayerSize;
+                        break; // input gate
+                    case 5:
+                        data = linRecurrentWeightsData;
+                        position = 1;
+                        size = hiddenLayerSize;
+                        break; // forget gate
+                    case 6:
+                        data = linRecurrentWeightsData;
+                        position = 0;
+                        size = hiddenLayerSize;
+                        break; // new gate
+                    case 7:
+                        data = linRecurrentWeightsData;
+                        position = 2;
+                        size = hiddenLayerSize;
+                        break; // output gate
                     default:
                         throw new RuntimeException();
                 }
                 checkCuda(cudaMemcpyAsync(linLayerMat, data.position(position * size * hiddenLayerSize * dataTypeSize),
                                 size * hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
                 if (linLayerID < 4) {
-                    checkCuda(cudaMemcpyAsync(linLayerBias, linBiasesData.position(position * hiddenLayerSize * dataTypeSize),
+                    checkCuda(cudaMemcpyAsync(linLayerBias,
+                                    linBiasesData.position(position * hiddenLayerSize * dataTypeSize),
                                     hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
                 }
             }
@@ -524,19 +587,19 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         if (training) {
             checkCudnn(cudnnRNNForwardTraining(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc, xData,
                             cudnnContext.hxDesc, prevActData, cudnnContext.cxDesc, prevMemCellData, cudnnContext.wDesc,
-                            weightsSpace, yDesc, outputActivationsData, cudnnContext.hyDesc, finalTimeStepActivationsData,
-                            cudnnContext.cyDesc, finalMemCellStateData, workSpace, workSpace.limit(),
-                            reserveSpace, reserveSpace.limit()));
+                            weightsSpace, yDesc, outputActivationsData, cudnnContext.hyDesc,
+                            finalTimeStepActivationsData, cudnnContext.cyDesc, finalMemCellStateData, workSpace,
+                            workSpace.limit(), reserveSpace, reserveSpace.limit()));
         } else {
             checkCudnn(cudnnRNNForwardInference(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc, xData,
                             cudnnContext.hxDesc, prevActData, cudnnContext.cxDesc, prevMemCellData, cudnnContext.wDesc,
-                            weightsSpace, yDesc, outputActivationsData, cudnnContext.hyDesc, finalTimeStepActivationsData,
-                            cudnnContext.cyDesc, finalMemCellStateData, workSpace, workSpace.limit()));
+                            weightsSpace, yDesc, outputActivationsData, cudnnContext.hyDesc,
+                            finalTimeStepActivationsData, cudnnContext.cyDesc, finalMemCellStateData, workSpace,
+                            workSpace.limit()));
         }
 
-        allocator.getFlowController().registerActionAllWrite(context, x,
-                        linInputWeights, linRecurrentWeights, linBiases, prevAct, prevMemCell,
-                        outputActivations, finalMemCellState, finalStepActivations);
+        allocator.getFlowController().registerActionAllWrite(context, x, linInputWeights, linRecurrentWeights,
+                        linBiases, prevAct, prevMemCell, outputActivations, finalMemCellState, finalStepActivations);
 
         toReturn.fwdPassOutput = outputActivations.permute(1, 2, 0);
         toReturn.lastAct = finalStepActivations;

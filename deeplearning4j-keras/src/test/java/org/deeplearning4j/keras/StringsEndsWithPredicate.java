@@ -1,7 +1,6 @@
 package org.deeplearning4j.keras;
 
 import com.google.common.base.Predicate;
-
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class StringsEndsWithPredicate implements Predicate<String> {

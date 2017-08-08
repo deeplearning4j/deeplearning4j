@@ -6,7 +6,6 @@ import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.concurrent.atomic.AtomicLong;
 

@@ -1,7 +1,6 @@
 package org.deeplearning4j.ui.stats.impl;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import org.deeplearning4j.ui.stats.api.StatsType;
 import org.deeplearning4j.ui.stats.api.StatsUpdateConfiguration;
 

@@ -1,6 +1,7 @@
 package org.deeplearning4j.base;
 
 import org.junit.Test;
+
 import java.io.File;
 
 /**

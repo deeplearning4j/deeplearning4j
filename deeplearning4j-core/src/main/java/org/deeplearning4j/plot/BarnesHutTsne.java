@@ -515,8 +515,9 @@ public class BarnesHutTsne implements Model {
 
         if (useAdaGrad) {
             if (adaGrad == null) {
-                adaGrad = new AdaGrad(gradient.shape(),learningRate);
-                adaGrad.setStateViewArray(Nd4j.zeros(gradient.shape()).reshape(1,gradChange.length()),gradChange.shape(),gradient.ordering(),true);
+                adaGrad = new AdaGrad(gradient.shape(), learningRate);
+                adaGrad.setStateViewArray(Nd4j.zeros(gradient.shape()).reshape(1, gradChange.length()),
+                                gradChange.shape(), gradient.ordering(), true);
             }
 
             gradChange = adaGrad.getGradient(gradChange, 0);

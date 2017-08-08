@@ -1,6 +1,6 @@
 package org.deeplearning4j.parallelism.trainer;
 
-import lombok.*;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
@@ -9,8 +9,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.SharedGradient;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.parallelism.ParallelWrapper;
-import org.nd4j.linalg.dataset.api.DataSet;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 /**
  * This trainer implementation does parallel training via gradients broadcasts.
