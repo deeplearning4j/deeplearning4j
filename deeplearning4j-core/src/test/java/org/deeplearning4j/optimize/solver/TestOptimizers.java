@@ -423,8 +423,7 @@ public class TestOptimizers {
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
-                opt.getUpdater().setStateViewArray((Layer) m, Nd4j.create(new int[] {1, nParams}, 'c'),
-                                true);
+                opt.getUpdater().setStateViewArray((Layer) m, Nd4j.create(new int[] {1, nParams}, 'c'), true);
                 opt.optimize();
                 m.computeGradientAndScore();
                 scores[i] = m.score();

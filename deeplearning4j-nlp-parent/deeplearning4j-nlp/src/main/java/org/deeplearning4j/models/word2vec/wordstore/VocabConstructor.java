@@ -2,7 +2,6 @@ package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.Data;
 import lombok.NonNull;
-import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;

@@ -13,7 +13,6 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiConnectionInfo;
-
 import org.deeplearning4j.ui.flow.beans.*;
 import org.deeplearning4j.ui.weights.HistogramBin;
 import org.nd4j.linalg.api.ndarray.INDArray;

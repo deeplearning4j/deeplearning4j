@@ -1,15 +1,15 @@
 package org.ansj.util;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import org.ansj.domain.Nature;
 import org.ansj.domain.Term;
 import org.ansj.domain.TermNatures;
 import org.ansj.library.NatureLibrary;
 import org.ansj.library.company.CompanyAttrLibrary;
 import org.ansj.recognition.arrimpl.ForeignPersonRecognition;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * term的操作类

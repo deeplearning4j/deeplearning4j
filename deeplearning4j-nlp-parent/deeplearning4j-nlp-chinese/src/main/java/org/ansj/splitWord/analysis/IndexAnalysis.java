@@ -1,13 +1,5 @@
 package org.ansj.splitWord.analysis;
 
-import java.io.Reader;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
 import org.ansj.domain.Result;
 import org.ansj.domain.Term;
 import org.ansj.recognition.arrimpl.AsianPersonRecognition;
@@ -22,6 +14,9 @@ import org.ansj.util.TermUtil.InsertTermType;
 import org.nlpcn.commons.lang.tire.GetWord;
 import org.nlpcn.commons.lang.tire.domain.Forest;
 import org.nlpcn.commons.lang.util.ObjConver;
+
+import java.io.Reader;
+import java.util.*;
 
 /**
  * 用于检索的分词方式

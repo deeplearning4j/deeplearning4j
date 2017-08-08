@@ -4,7 +4,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.KoreanTokenizerFact
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by kepricon on 16. 10. 24.

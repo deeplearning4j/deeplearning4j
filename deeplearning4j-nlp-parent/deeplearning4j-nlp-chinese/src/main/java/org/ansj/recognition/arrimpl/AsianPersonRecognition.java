@@ -1,17 +1,13 @@
 package org.ansj.recognition.arrimpl;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.ansj.domain.Nature;
-import org.ansj.domain.NewWord;
-import org.ansj.domain.PersonNatureAttr;
-import org.ansj.domain.Term;
-import org.ansj.domain.TermNatures;
+import org.ansj.domain.*;
 import org.ansj.library.NgramLibrary;
 import org.ansj.recognition.TermArrRecognition;
 import org.ansj.util.TermUtil;
 import org.ansj.util.TermUtil.InsertTermType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 人名识别工具类

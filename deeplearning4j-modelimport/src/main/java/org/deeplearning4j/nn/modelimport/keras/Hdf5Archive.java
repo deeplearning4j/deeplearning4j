@@ -32,9 +32,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
-import static org.bytedeco.javacpp.hdf5.H5O_TYPE_DATASET;
-import static org.bytedeco.javacpp.hdf5.H5O_TYPE_GROUP;
+import static org.bytedeco.javacpp.hdf5.*;
+
+import java.lang.Exception;
 
 /**
  * Class for reading ND4J arrays and JSON strings from HDF5

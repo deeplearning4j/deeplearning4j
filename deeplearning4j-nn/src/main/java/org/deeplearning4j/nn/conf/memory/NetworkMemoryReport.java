@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.conf.memory;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -11,7 +10,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.text.DecimalFormat;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 

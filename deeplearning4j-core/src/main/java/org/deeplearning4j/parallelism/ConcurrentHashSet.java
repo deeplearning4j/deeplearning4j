@@ -1,7 +1,6 @@
 package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serializable;
 import java.util.Collection;

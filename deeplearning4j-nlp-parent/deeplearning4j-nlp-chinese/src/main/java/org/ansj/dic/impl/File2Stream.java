@@ -1,17 +1,12 @@
 package org.ansj.dic.impl;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.io.SequenceInputStream;
-import java.util.Vector;
-
 import org.ansj.dic.PathToStream;
 import org.ansj.exception.LibraryException;
 import org.nlpcn.commons.lang.util.logging.Log;
 import org.nlpcn.commons.lang.util.logging.LogFactory;
+
+import java.io.*;
+import java.util.Vector;
 
 /**
  * 将文件转换为流 file://c:/dic.txt

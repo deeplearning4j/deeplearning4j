@@ -1,12 +1,12 @@
 package org.deeplearning4j.ui.components.chart;
 
-import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.ui.api.Utils;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.awt.*;
 import java.util.ArrayList;

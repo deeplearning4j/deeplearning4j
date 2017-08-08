@@ -21,7 +21,6 @@ package org.deeplearning4j.plot;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
-// import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,6 +32,8 @@ import java.io.File;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+
+// import org.nd4j.jita.conf.CudaEnvironment;
 
 /**
  * Created by agibsonccc on 10/1/14.

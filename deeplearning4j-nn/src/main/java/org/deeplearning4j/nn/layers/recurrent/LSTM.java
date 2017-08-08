@@ -29,7 +29,6 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -62,7 +61,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     void initializeHelper() {
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.recurrent.CudnnLSTMHelper")
-                    .asSubclass(LSTMHelper.class).newInstance();
+                            .asSubclass(LSTMHelper.class).newInstance();
             log.debug("CudnnLSTMHelper successfully initialized");
             if (!helper.checkSupported(layerConf().getGateActivationFn(), layerConf().getActivationFn(), false)) {
                 helper = null;

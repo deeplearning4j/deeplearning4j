@@ -39,7 +39,8 @@ public class EmnistDataFetcher extends MnistDataFetcher {
 
     protected EmnistFetcher fetcher;
 
-    public EmnistDataFetcher(EmnistDataSetIterator.Set dataSet, boolean binarize, boolean train, boolean shuffle, long rngSeed) throws IOException {
+    public EmnistDataFetcher(EmnistDataSetIterator.Set dataSet, boolean binarize, boolean train, boolean shuffle,
+                    long rngSeed) throws IOException {
         fetcher = new EmnistFetcher(dataSet);
         if (!emnistExists(fetcher)) {
             fetcher.downloadAndUntar();
@@ -81,7 +82,7 @@ public class EmnistDataFetcher extends MnistDataFetcher {
 
         //For some inexplicable reason, EMNIST LETTERS set is indexed 1 to 26 (i.e., 1 to nClasses), while everything else
         // is indexed (0 to nClasses-1) :/
-        if(dataSet == EmnistDataSetIterator.Set.LETTERS){
+        if (dataSet == EmnistDataSetIterator.Set.LETTERS) {
             oneIndexed = true;
         } else {
             oneIndexed = false;

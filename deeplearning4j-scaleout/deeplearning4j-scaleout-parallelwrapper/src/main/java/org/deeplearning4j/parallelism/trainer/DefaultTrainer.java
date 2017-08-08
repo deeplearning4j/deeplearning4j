@@ -1,6 +1,9 @@
 package org.deeplearning4j.parallelism.trainer;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
@@ -16,7 +19,6 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -267,7 +269,8 @@ public class DefaultTrainer extends Thread implements Trainer {
                         Updater updaterOrigina = ((MultiLayerNetwork) originalModel).getUpdater();
 
                         if (updaterOrigina != null && updaterOrigina.getStateViewArray() != null)
-                            updaterReplica.setStateViewArray((MultiLayerNetwork) replicatedModel, updaterOrigina.getStateViewArray().unsafeDuplication(true), false);
+                            updaterReplica.setStateViewArray((MultiLayerNetwork) replicatedModel,
+                                            updaterOrigina.getStateViewArray().unsafeDuplication(true), false);
 
                         Nd4j.getExecutioner().commit();
                     }
@@ -296,7 +299,8 @@ public class DefaultTrainer extends Thread implements Trainer {
                         ComputationGraphUpdater updaterOrigina = ((ComputationGraph) originalModel).getUpdater();
 
                         if (updaterOrigina != null && updaterOrigina.getStateViewArray() != null)
-                            updaterReplica.setStateViewArray(updaterOrigina.getStateViewArray().unsafeDuplication(true));
+                            updaterReplica.setStateViewArray(
+                                            updaterOrigina.getStateViewArray().unsafeDuplication(true));
 
                         Nd4j.getExecutioner().commit();
                     }
@@ -331,8 +335,8 @@ public class DefaultTrainer extends Thread implements Trainer {
                         fit(dataSet);
 
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
-                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()
-                                        && ( averagingFrequency == 0 || iterationsCounter.incrementAndGet() % averagingFrequency == 0)
+                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && (averagingFrequency == 0
+                                        || iterationsCounter.incrementAndGet() % averagingFrequency == 0)
                                         && averagingRequired()) {
                             // we ensure all operations are finished in this training round
                             Nd4j.getExecutioner().commit();
@@ -369,8 +373,8 @@ public class DefaultTrainer extends Thread implements Trainer {
                         fit(dataSet);
 
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
-                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()
-                                        && (averagingFrequency == 0 ||iterationsCounter.incrementAndGet() % averagingFrequency == 0)
+                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && (averagingFrequency == 0
+                                        || iterationsCounter.incrementAndGet() % averagingFrequency == 0)
                                         && averagingRequired()) {
                             // we ensure all operations are finished in this training round
                             Nd4j.getExecutioner().commit();

@@ -1,17 +1,12 @@
 package org.deeplearning4j.eval;
 
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
-import org.deeplearning4j.eval.curves.RocCurve;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.List;
-
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * Created by Alex on 21/03/2017.

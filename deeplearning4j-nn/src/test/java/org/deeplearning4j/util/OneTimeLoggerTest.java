@@ -3,7 +3,8 @@ package org.deeplearning4j.util;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author raver119@gmail.com

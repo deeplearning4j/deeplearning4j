@@ -4,7 +4,6 @@ import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
-import org.deeplearning4j.spark.iterator.PathSparkDataSetIterator;
 import org.deeplearning4j.spark.iterator.PathSparkMultiDataSetIterator;
 import org.deeplearning4j.spark.parameterserver.pw.SharedTrainingWrapper;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;

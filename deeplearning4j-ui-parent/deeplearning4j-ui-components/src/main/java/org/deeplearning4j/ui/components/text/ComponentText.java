@@ -17,11 +17,11 @@
  */
 package org.deeplearning4j.ui.components.text;
 
-import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.components.text.style.StyleText;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 /**
  * Simple text component with styling

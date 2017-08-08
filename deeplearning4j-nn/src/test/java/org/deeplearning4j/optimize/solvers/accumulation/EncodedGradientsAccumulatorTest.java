@@ -3,10 +3,9 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for memory-related stuff in gradients accumulator
@@ -24,15 +23,16 @@ public class EncodedGradientsAccumulatorTest {
     public void testStore1() throws Exception {
         int numParams = 100000;
 
-        int workers[] = new int[]{2, 4, 8};
+        int workers[] = new int[] {2, 4, 8};
 
         EncodingHandler handler = new EncodingHandler(1e-3);
 
 
-        for (int numWorkers: workers) {
+        for (int numWorkers : workers) {
             int bufferSize = EncodedGradientsAccumulator.getOptimalBufferSize(numParams, numWorkers, 2);
             log.info("Workers: {}; Buffer size: {} bytes", numWorkers, bufferSize);
-            EncodedGradientsAccumulator accumulator = new EncodedGradientsAccumulator(numWorkers, handler, bufferSize, 2, null);
+            EncodedGradientsAccumulator accumulator =
+                            new EncodedGradientsAccumulator(numWorkers, handler, bufferSize, 2, null);
 
             for (int e = 10; e < numParams / 10; e++) {
                 INDArray encoded = handler.encodeUpdates(getGradients(numParams, e, 2e-3));
@@ -61,16 +61,17 @@ public class EncodedGradientsAccumulatorTest {
         for (int e = 10; e < numParams / 5; e++) {
             INDArray encoded = handler.encodeUpdates(getGradients(numParams, e, 2e-3));
 
-          //  log.info("enc len: {}", encoded.data().length());
+            //  log.info("enc len: {}", encoded.data().length());
 
             int encFormat = encoded.data().getInt(3);
 
-            assertTrue("Failed for E = " + e + "; Format: " + encFormat + "; Length: " + encoded.data().length(), encoded.data().length() < numParams / 16 + 6);
+            assertTrue("Failed for E = " + e + "; Format: " + encFormat + "; Length: " + encoded.data().length(),
+                            encoded.data().length() < numParams / 16 + 6);
         }
     }
 
 
-  protected INDArray getGradients(int length, int numPositives, double value) {
+    protected INDArray getGradients(int length, int numPositives, double value) {
         INDArray grad = Nd4j.create(length);
 
         for (int i = 0; i < numPositives; i++) {

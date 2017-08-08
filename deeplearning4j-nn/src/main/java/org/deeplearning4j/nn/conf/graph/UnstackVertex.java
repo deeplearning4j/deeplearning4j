@@ -19,7 +19,6 @@
 package org.deeplearning4j.nn.conf.graph;
 
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;

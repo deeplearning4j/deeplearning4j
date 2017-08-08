@@ -1,9 +1,5 @@
 package org.ansj.splitWord.analysis;
 
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.ansj.domain.Result;
 import org.ansj.domain.Term;
 import org.ansj.recognition.arrimpl.AsianPersonRecognition;
@@ -16,6 +12,10 @@ import org.ansj.util.Graph;
 import org.ansj.util.NameFix;
 import org.ansj.util.TermUtil.InsertTermType;
 import org.nlpcn.commons.lang.tire.domain.Forest;
+
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 标准分词

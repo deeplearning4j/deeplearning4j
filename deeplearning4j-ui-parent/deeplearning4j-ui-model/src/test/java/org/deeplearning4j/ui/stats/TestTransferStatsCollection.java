@@ -16,8 +16,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import static org.junit.Assert.assertNotNull;
-
 /**
  * Created by Alex on 07/04/2017.
  */

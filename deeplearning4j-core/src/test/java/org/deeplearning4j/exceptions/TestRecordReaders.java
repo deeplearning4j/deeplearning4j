@@ -1,6 +1,5 @@
 package org.deeplearning4j.exceptions;
 
-import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
 import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader;
 import org.datavec.api.writable.DoubleWritable;
@@ -12,14 +11,12 @@ import org.deeplearning4j.exception.DL4JException;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
 import static junit.framework.TestCase.fail;
-import static org.junit.Assert.assertEquals;
 
 /**
  * Created by Alex on 14/11/2016.

@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.File;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This callback does DataSet deserialization of a given file.

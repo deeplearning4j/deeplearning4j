@@ -1,11 +1,11 @@
 package org.deeplearning4j.iterator.provider;
 
 import lombok.NonNull;
+import org.datavec.api.util.RandomUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.iterator.LabeledSentenceProvider;
 
 import java.util.*;
-import org.datavec.api.util.RandomUtils;
 
 /**
  * Iterate over a set of sentences/documents,

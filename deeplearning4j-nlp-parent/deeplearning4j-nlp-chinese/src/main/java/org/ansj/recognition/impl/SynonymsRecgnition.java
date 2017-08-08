@@ -1,12 +1,12 @@
 package org.ansj.recognition.impl;
 
-import java.util.List;
-
 import org.ansj.domain.Result;
 import org.ansj.domain.Term;
 import org.ansj.library.SynonymsLibrary;
 import org.ansj.recognition.Recognition;
 import org.nlpcn.commons.lang.tire.domain.SmartForest;
+
+import java.util.List;
 
 /**
  * 同义词功能

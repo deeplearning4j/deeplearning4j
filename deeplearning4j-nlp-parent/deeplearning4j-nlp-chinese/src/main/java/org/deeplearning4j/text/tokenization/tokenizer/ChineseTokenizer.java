@@ -3,6 +3,7 @@ package org.deeplearning4j.text.tokenization.tokenizer;
 import org.ansj.domain.Result;
 import org.ansj.domain.Term;
 import org.ansj.splitWord.analysis.NlpAnalysis;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

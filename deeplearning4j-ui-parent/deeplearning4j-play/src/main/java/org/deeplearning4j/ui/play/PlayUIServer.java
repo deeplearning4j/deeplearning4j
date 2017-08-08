@@ -27,7 +27,6 @@ import org.deeplearning4j.ui.play.staticroutes.Assets;
 import org.deeplearning4j.ui.play.staticroutes.I18NRoute;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
-import org.nd4j.linalg.io.CollectionUtils;
 import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
 import play.Mode;

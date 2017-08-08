@@ -1,8 +1,6 @@
 package org.deeplearning4j.clustering.vptree;
 
 import lombok.Getter;
-import org.deeplearning4j.clustering.berkeley.Counter;
-import org.deeplearning4j.clustering.berkeley.PriorityQueue;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -49,14 +47,13 @@ public class VPTreeFillSearch {
         INDArray[] sortWithIndices = Nd4j.sortWithIndices(distancesArr, 0, !vpTree.isInvert());
         results.clear();
         distances.clear();
-        if(vpTree.getItems().isVector()) {
+        if (vpTree.getItems().isVector()) {
             for (int i = 0; i < k; i++) {
                 int idx = sortWithIndices[0].getInt(i);
                 results.add(new DataPoint(idx, Nd4j.scalar(vpTree.getItems().getDouble(idx))));
                 distances.add(sortWithIndices[1].getDouble(idx));
             }
-        }
-        else {
+        } else {
             for (int i = 0; i < k; i++) {
                 int idx = sortWithIndices[0].getInt(i);
                 results.add(new DataPoint(idx, vpTree.getItems().getRow(idx)));

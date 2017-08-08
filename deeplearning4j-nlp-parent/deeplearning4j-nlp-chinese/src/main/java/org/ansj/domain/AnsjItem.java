@@ -1,9 +1,9 @@
 package org.ansj.domain;
 
+import org.nlpcn.commons.lang.dat.Item;
+
 import java.io.Serializable;
 import java.util.Map;
-
-import org.nlpcn.commons.lang.dat.Item;
 
 public class AnsjItem extends Item implements Serializable {
 

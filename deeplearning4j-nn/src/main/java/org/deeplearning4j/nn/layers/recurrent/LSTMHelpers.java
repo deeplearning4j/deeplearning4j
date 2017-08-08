@@ -3,12 +3,10 @@ package org.deeplearning4j.nn.layers.recurrent;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.graph.ScaleVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.AbstractLSTM;
 import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -76,9 +74,8 @@ public class LSTMHelpers {
                     final boolean training, final INDArray originalPrevOutputActivations,
                     final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
                     final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections,            //True for GravesLSTM, false for LSTM
-                    final LSTMHelper helper,
-                    final CacheMode cacheMode // cacheMode for layer calling this helper
+                    final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
+                    final LSTMHelper helper, final CacheMode cacheMode // cacheMode for layer calling this helper
     ) {
 
         //Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
@@ -190,8 +187,8 @@ public class LSTMHelpers {
 
         if (helper != null) {
             FwdPassReturn ret = helper.activate(layer, conf, gateActivationFn, input, recurrentWeights, inputWeights,
-                    biases, training, prevOutputActivations, prevMemCellState, forBackprop, forwards, inputWeightKey,
-                    maskArray, hasPeepholeConnections);
+                            biases, training, prevOutputActivations, prevMemCellState, forBackprop, forwards,
+                            inputWeightKey, maskArray, hasPeepholeConnections);
             if (ret != null) {
                 return ret;
             }
@@ -407,9 +404,8 @@ public class LSTMHelpers {
                     final FwdPassReturn fwdPass, final boolean forwards, final String inputWeightKey,
                     final String recurrentWeightKey, final String biasWeightKey,
                     final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections,            //True for GravesLSTM, false for LSTM
-                    final LSTMHelper helper
-    ) {
+                    final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
+                    final LSTMHelper helper) {
 
 
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
@@ -472,10 +468,10 @@ public class LSTMHelpers {
         }
 
         if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(conf, gateActivationFn, input,
-                    recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength,
-                    fwdPass, forwards, inputWeightKey, recurrentWeightKey, biasWeightKey, gradientViews,
-                    maskArray, hasPeepholeConnections);
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(conf, gateActivationFn, input, recurrentWeights,
+                            inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, forwards,
+                            inputWeightKey, recurrentWeightKey, biasWeightKey, gradientViews, maskArray,
+                            hasPeepholeConnections);
             if (ret != null) {
                 return ret;
             }
@@ -520,7 +516,8 @@ public class LSTMHelpers {
             }
 
             INDArray prevMemCellState = (iTimeIndex == 0 ? fwdPass.prevMemCell : fwdPass.memCellState[time - inext]);
-            INDArray prevHiddenUnitActivation = (iTimeIndex == 0 ? fwdPass.prevAct : fwdPass.fwdPassOutputAsArrays[time - inext]);
+            INDArray prevHiddenUnitActivation =
+                            (iTimeIndex == 0 ? fwdPass.prevAct : fwdPass.fwdPassOutputAsArrays[time - inext]);
             INDArray currMemCellState = fwdPass.memCellState[time];
 
 
@@ -569,7 +566,7 @@ public class LSTMHelpers {
             //Forget gate delta:
             INDArray af = fwdPass.fa[time];
             INDArray deltaf = null;
-            if (iTimeIndex > 0 || prevMemCellState != null) {   //For time == 0 && no prevMemCellState, equivalent to muli by 0
+            if (iTimeIndex > 0 || prevMemCellState != null) { //For time == 0 && no prevMemCellState, equivalent to muli by 0
                 //Note that prevMemCellState may be non-null at t=0 for TBPTT
                 deltaf = deltafNext;
                 if (sigmoidGates) {
@@ -621,7 +618,7 @@ public class LSTMHelpers {
 
             INDArray prevLayerActivationSlice =
                             Shape.toMmulCompatible(is2dInput ? input : input.tensorAlongDimension(time, 1, 0));
-            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {      //For time == 0 && no prevMemCellState, equivalent to muli by 0
+            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) { //For time == 0 && no prevMemCellState, equivalent to muli by 0
                 //Note that prevHiddenUnitActivations may be non-null at t=0 for TBPTT
                 //Again, deltaifog_current == deltaifogNext at this point... same array
                 Nd4j.gemm(prevLayerActivationSlice, deltaifogNext, iwGradientsOut, true, false, 1.0, 1.0);
@@ -658,7 +655,7 @@ public class LSTMHelpers {
                 l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwOO, rwGradientsOO); //rwGradients[5].addi(dLdwOO);    //dL/dw_{OOxy}
             }
 
-            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {   //For time == 0 && no prevMemCellState, equivalent to muli by 0
+            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) { //For time == 0 && no prevMemCellState, equivalent to muli by 0
                 //Note that prevHiddenUnitActivation may be non-null at t=0 for TBPTT
                 l1BLAS.axpy(4 * hiddenLayerSize, 1.0, deltaifogNext.sum(0), bGradientsOut);
             } else {

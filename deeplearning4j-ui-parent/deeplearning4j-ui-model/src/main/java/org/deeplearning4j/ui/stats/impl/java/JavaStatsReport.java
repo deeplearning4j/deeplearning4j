@@ -10,7 +10,6 @@ import org.deeplearning4j.ui.stats.api.Histogram;
 import org.deeplearning4j.ui.stats.api.StatsReport;
 import org.deeplearning4j.ui.stats.api.StatsType;
 import org.deeplearning4j.ui.stats.api.SummaryType;
-import org.deeplearning4j.ui.stats.impl.SbeStatsReport;
 
 import java.io.*;
 import java.lang.reflect.Field;

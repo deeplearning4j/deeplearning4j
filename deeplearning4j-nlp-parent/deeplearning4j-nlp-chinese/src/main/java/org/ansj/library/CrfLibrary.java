@@ -1,11 +1,5 @@
 package org.ansj.library;
 
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import org.ansj.app.crf.Model;
 import org.ansj.app.crf.SplitWord;
 import org.ansj.app.crf.model.CRFModel;
@@ -13,6 +7,12 @@ import org.ansj.dic.PathToStream;
 import org.ansj.domain.KV;
 import org.ansj.util.MyStaticValue;
 import org.nlpcn.commons.lang.util.logging.Log;
+
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 public class CrfLibrary {
 

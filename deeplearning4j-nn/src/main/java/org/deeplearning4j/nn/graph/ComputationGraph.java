@@ -76,7 +76,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A ComputationGraph network is a neural network with arbitrary (directed acyclic graph) connection structure.
@@ -748,25 +747,27 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         MemoryWorkspace workspace =
-                configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        ComputationGraph.workspaceConfigurationExternal, ComputationGraph.workspaceExternal);
-        MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceConfigurationCache, ComputationGraph.workspaceCache);
+                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        ComputationGraph.workspaceConfigurationExternal,
+                                                        ComputationGraph.workspaceExternal);
+        MemoryWorkspace cache =
+                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        ComputationGraph.workspaceConfigurationCache,
+                                                        ComputationGraph.workspaceCache);
 
-        MemoryWorkspace wsFF = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE
-                ? new DummyWorkspace()
-                : configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
-                ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                workspaceConfigurationFeedForward, workspaceFeedForward);
+        MemoryWorkspace wsFF = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                        : configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
+                                        ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        workspaceConfigurationFeedForward, workspaceFeedForward);
 
-        MemoryWorkspace wsPTR = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE
-                ? new DummyWorkspace()
-                : configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
-                ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                workspaceConfigurationFeedForward, workspacePretrain);
+        MemoryWorkspace wsPTR = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                        : configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
+                                        ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        workspaceConfigurationFeedForward, workspacePretrain);
 
         while (iter.hasNext()) {
             MultiDataSet multiDataSet = iter.next();
@@ -788,7 +789,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                         int vIdx = v.getVertexIndex();
                                         int vIdxInputNum = v.getVertexEdgeNumber();
                                         //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-                                        vertices[vIdx].setInput(vIdxInputNum, input.dup().leverageTo(workspacePretrain)); //TODO When to dup?
+                                        vertices[vIdx].setInput(vIdxInputNum,
+                                                        input.dup().leverageTo(workspacePretrain)); //TODO When to dup?
                                     }
 
                                 } else {
@@ -1120,15 +1122,17 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         update(TaskUtils.buildTask(inputs, labels));
 
         MemoryWorkspace workspace =
-                configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal, workspaceExternal);
+                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        workspaceConfigurationExternal, workspaceExternal);
         MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
-                workspaceCache);
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
+                                        workspaceCache);
 
         if (configuration.isPretrain()) {
-            MultiDataSetIterator iter = new SingletonMultiDataSetIterator(new org.nd4j.linalg.dataset.MultiDataSet(inputs, labels, featureMaskArrays, labelMaskArrays));
+            MultiDataSetIterator iter =
+                            new SingletonMultiDataSetIterator(new org.nd4j.linalg.dataset.MultiDataSet(inputs, labels,
+                                            featureMaskArrays, labelMaskArrays));
 
 
             pretrain(iter);

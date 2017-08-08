@@ -19,10 +19,8 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -89,15 +87,16 @@ public class ReshapeVertex extends GraphVertex {
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         //Infer output shape from specified shape:
-        switch (newShape.length){
+        switch (newShape.length) {
             case 2:
                 return InputType.feedForward(newShape[1]);
             case 3:
                 return InputType.recurrent(newShape[1]);
             case 4:
-                return InputType.convolutional(newShape[1],newShape[2],newShape[0]);    //[mb,d,h,w] for activations
+                return InputType.convolutional(newShape[1], newShape[2], newShape[0]); //[mb,d,h,w] for activations
             default:
-                throw new UnsupportedOperationException("Cannot infer input type for reshape array " + Arrays.toString(newShape));
+                throw new UnsupportedOperationException(
+                                "Cannot infer input type for reshape array " + Arrays.toString(newShape));
         }
     }
 

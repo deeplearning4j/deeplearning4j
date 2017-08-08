@@ -1,11 +1,11 @@
 package org.ansj.app.summary;
 
-import java.util.List;
-
 import org.ansj.app.keyword.Keyword;
 import org.ansj.app.summary.pojo.Summary;
 import org.nlpcn.commons.lang.tire.SmartGetWord;
 import org.nlpcn.commons.lang.tire.domain.SmartForest;
+
+import java.util.List;
 
 /**
  * 关键字标红，

@@ -2,9 +2,9 @@ package org.deeplearning4j.spark.ml.impl
 
 import java.util
 
-import org.apache.spark.ml.{PredictionModel, Predictor}
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util._
+import org.apache.spark.ml.{PredictionModel, Predictor}
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
@@ -16,10 +16,10 @@ import org.deeplearning4j.spark.api.stats.SparkTrainingStats
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
 import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer, SparkDl4jUtil}
 import org.deeplearning4j.spark.util.MLLibUtil
+import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.util.FeatureUtil
-import org.nd4j.linalg.api.ndarray.INDArray
 
 import scala.collection.JavaConverters._
 

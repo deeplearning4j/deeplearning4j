@@ -1,11 +1,11 @@
 package org.ansj.domain;
 
+import org.ansj.util.MathUtil;
+import org.nlpcn.commons.lang.util.StringUtil;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-
-import org.ansj.util.MathUtil;
-import org.nlpcn.commons.lang.util.StringUtil;
 
 public class Term implements Serializable {
     /**
