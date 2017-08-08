@@ -926,7 +926,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * Returns the underlying indices of the element of the given index
      * such as there really are in the original ndarray
      *
-     * @param i the index of the element
+     * @param i the index of the element+
      * @return a dataBuffer containing the indices of element
      * */
     public DataBuffer getUnderlyingIndicesOf(int i){

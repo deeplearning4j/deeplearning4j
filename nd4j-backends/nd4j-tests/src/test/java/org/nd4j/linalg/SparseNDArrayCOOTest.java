@@ -216,7 +216,7 @@ public class SparseNDArrayCOOTest {
         int[][] indices  = new int[][]{{0, 0, 2}, {0, 1, 1}, {1,0, 0}, {1, 0, 1}, {1, 1, 2},
                 {2, 0, 1}, {2, 1, 2}, {3, 0, 2}, {3, 1, 0}};
         INDArray array = Nd4j.createSparseCOO(values, indices, shape);
-        
+
         BaseSparseNDArrayCOO newArray = (BaseSparseNDArrayCOO) array.get(
                 NDArrayIndex.interval(1, 4),
                 new SpecifiedIndex(new int[]{0}),
@@ -366,6 +366,8 @@ public class SparseNDArrayCOOTest {
         INDArray original = Nd4j.createSparseCOO(values, indices, shape);
 
         BaseSparseNDArrayCOO view = (BaseSparseNDArrayCOO) original.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.point(1));
+        System.out.println(view.getIncludedIndices());
+        System.out.println(view.getIncludedValues());
         assertArrayEquals(new int[]{0, 1, 0}, view.translateToPhysical(new int[]{0, 0, 0}));
         assertArrayEquals(new int[]{1, 1, 1}, view.translateToPhysical(new int[]{0, 1, 1}));
 
@@ -394,11 +396,12 @@ public class SparseNDArrayCOOTest {
     @Test
     public void testWithDense(){
         INDArray arr = Nd4j.rand(new int[]{4, 2, 3});
-
+        System.out.println(arr);
         INDArray view = arr.get(NDArrayIndex.all(), NDArrayIndex.point(1));
-        System.out.println(view.shapeInfoDataBuffer());
-        view = arr.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.point(1));
-
+       // System.out.println(view.shapeInfoDataBuffer());
+        view = arr.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all());
+        System.out.println("view");
+        System.out.println(view);
         System.out.println(view.shapeInfoDataBuffer());
     }
 

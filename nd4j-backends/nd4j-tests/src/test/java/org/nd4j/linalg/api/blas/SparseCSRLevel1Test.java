@@ -15,7 +15,7 @@ import static org.junit.Assert.assertEquals;
  * @author Audrey Loeffel
  */
 @RunWith(Parameterized.class)
-public class SparseLevel1Test extends BaseNd4jTest{
+public class SparseCSRLevel1Test extends BaseNd4jTest{
 
     private double[] data = {1,2,4} ;
     private int[] col = {0,1,3};
@@ -23,7 +23,7 @@ public class SparseLevel1Test extends BaseNd4jTest{
     private int[] pointerE = {4};
     private int[] shape = {1, 4};
 
-    public SparseLevel1Test(Nd4jBackend backend) {
+    public SparseCSRLevel1Test(Nd4jBackend backend) {
         super(backend);
     }
 
