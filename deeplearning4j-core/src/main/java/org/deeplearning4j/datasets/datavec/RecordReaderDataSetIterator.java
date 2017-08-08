@@ -142,7 +142,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      * @param labelIndexFrom    the index of the label (for classification), or the first index of the labels for multi-output regression
      * @param labelIndexTo      only used if regression == true. The last index _inclusive_ of the multi-output regression
      * @param numPossibleLabels the number of possible labels for classification. Not used if regression == true
-     * @param regression        if true: regression. If false: classification (assume labelIndexFrom is a
+     * @param regression        if true: regression. If false: classification (assume labelIndexFrom is the class it belongs to)
      */
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
                     int labelIndexFrom, int labelIndexTo, int numPossibleLabels, int maxNumBatches,
