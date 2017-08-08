@@ -28,7 +28,7 @@ MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 .layer(0, new DenseLayer.Builder().nIn(784).nOut(250)
                 .build())
 </code></pre>
-<p>网络配置完成后，就可以用<code>model.fit</code>来定型模型了。</p>
+<p>网络配置完成后，就可以用<code>model.fit</code>来训练模型了。</p>
 
 
 <br />
@@ -132,7 +132,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 <p>另一个窗口中的图像会显示多层感知器（MLP）对示例数据的分类结果，如下图所示：</p>
 <img class="img-shadow img-responsive center-block" src="../img/mlp_classifier_viz.png" alt="shadowed image">
 <br />
-<p>祝贺您！您已经用Deeplearning4j成功定型了第一个神经网络。现在你不妨可以试试我们下一个教程：<a href="mnist-for-beginners" title="MNIST 初学者">MNIST 初学者</a>，在这里你可以学习到如何使用深度学习来分类图像</p>
+<p>祝贺您！您已经用Deeplearning4j成功训练了第一个神经网络。现在你不妨可以试试我们下一个教程：<a href="mnist-for-beginners" title="MNIST 初学者">MNIST 初学者</a>，在这里你可以学习到如何使用深度学习来分类图像</p>
 <p>相关链接：</p>
 <ul>
 <li><a href="http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j" target="_blank">Maven Central上的Deeplearning4j工件</a></li>
@@ -152,7 +152,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 <li>加入<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=5d3891e980a3a1d54f72dbe3e9831df9237be11634766440e8fbe2bdf4836748">Deeplearning4j QQ 交流群</a></li>
 <li>阅读<a href="neuralnet-overview">深度神经网络简介</a>或其他详细教程。</li>
 <li>浏览<a href="documentation">DL4J文档</a>。 </li>	
-<li><strong>Python用户</strong>：如果您计划对Deeplearning4j运行对标，将其与知名的Python框架[x]进行比较，那么请先阅读<a href="benchmark">相关指南</a>，了解如何在JVM上优化堆空间、垃圾回收和ETL。若按其中的指示操作，您至少能将<em>定型速度提高10倍</em></li>
+<li><strong>Python用户</strong>：如果您计划对Deeplearning4j运行基准测试，将其与知名的Python框架[x]进行比较，那么请先阅读<a href="benchmark">相关指南</a>，了解如何在JVM上优化堆空间、垃圾回收和ETL。若按其中的指示操作，您至少能将<em>训练速度提高10倍</em></li>
 </ul>
 
 <br />
