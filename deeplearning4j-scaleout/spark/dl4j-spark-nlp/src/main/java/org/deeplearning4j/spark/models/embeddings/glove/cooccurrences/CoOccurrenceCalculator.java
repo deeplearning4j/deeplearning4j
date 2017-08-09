@@ -20,7 +20,7 @@ package org.deeplearning4j.spark.models.embeddings.glove.cooccurrences;
 
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.berkeley.CounterMap;
+import org.nd4j.linalg.primitives.CounterMap;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;

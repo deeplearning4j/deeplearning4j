@@ -26,7 +26,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.berkeley.CounterMap;
+import org.nd4j.linalg.primitives.CounterMap;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.models.glove.GloveWeightLookupTable;
@@ -167,7 +167,7 @@ public class Glove implements Serializable {
         CounterMap<String, String> coOccurrenceCounts = sentenceWordsCountRDD
                         .map(new CoOccurrenceCalculator(symmetric, vocabCacheBroadcast, windowSize))
                         .fold(new CounterMap<String, String>(), new CoOccurrenceCounts());
-        Iterator<Pair<String, String>> pair2 = coOccurrenceCounts.getPairIterator();
+        Iterator<Pair<String, String>> pair2 = coOccurrenceCounts.getIterator();
         List<Triple<String, String, Float>> counts = new ArrayList<>();
 
         while (pair2.hasNext()) {
@@ -177,7 +177,7 @@ public class Glove implements Serializable {
                                 (float) gloveWeightLookupTable.getMaxCount());
             }
             counts.add(new Triple<>(next.getFirst(), next.getSecond(),
-                            coOccurrenceCounts.getCount(next.getFirst(), next.getSecond())));
+                    (float) coOccurrenceCounts.getCount(next.getFirst(), next.getSecond())));
 
         }
 

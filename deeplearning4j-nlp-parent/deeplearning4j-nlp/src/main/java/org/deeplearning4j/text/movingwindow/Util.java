@@ -19,7 +19,7 @@
 package org.deeplearning4j.text.movingwindow;
 
 import org.nd4j.linalg.primitives.Counter;
-import org.deeplearning4j.berkeley.CounterMap;
+import org.nd4j.linalg.primitives.CounterMap;
 import org.deeplearning4j.berkeley.MapFactory;
 
 import java.util.List;
@@ -49,7 +49,7 @@ public class Util {
 
         };
 
-        CounterMap<K, V> totalWords = new CounterMap(factory, factory);
+        CounterMap<K, V> totalWords = new CounterMap<>();
         return totalWords;
     }
 
