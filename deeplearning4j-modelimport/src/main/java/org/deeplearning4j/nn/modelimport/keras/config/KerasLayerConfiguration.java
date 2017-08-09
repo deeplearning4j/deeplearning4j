@@ -33,14 +33,14 @@ public class KerasLayerConfiguration {
 
     private final String LAYER_FIELD_KERAS_VERSION = "keras_version";
     private final String LAYER_FIELD_CLASS_NAME = "class_name";
+    private final String LAYER_FIELD_LAYER = "layer";
 
-    /**
-     *  Basic layer names
-     *  */
+    // Basic layer names
     // Missing Layers: Reshape, Permute, RepeatVector, Lambda, ActivityRegularization, Masking
-    // Conv1D, Conv3D, SeparableConv2D, Conv2DTranspose, Cropping1D-3D, UpSampling1D-3D, ZeroPadding3D
-    // LocallyConnected1D-2D
+    // Conv1D, Conv3D, SeparableConv2D, Deconvolution2D/Conv2DTranspose, Cropping1D-3D, UpSampling1D-3D,
+    // ZeroPadding3D, LocallyConnected1D-2D
     // Missing layers from keras 1: AtrousConvolution1D-2D, Highway, MaxoutDense
+
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
     private final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
@@ -61,9 +61,9 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D = "GlobalMaxPooling2D";
     private final String LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D = "GlobalAveragePooling1D";
     private final String LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D = "GlobalAveragePooling2D";
-    private final String LAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE = "TimeDistributedDense";
-    private final String LAYER_CLASS_NAME_CONVOLUTION_1D = "";
-    private final String LAYER_CLASS_NAME_CONVOLUTION_2D = "";
+    private final String LAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE = "TimeDistributedDense"; // Keras 1 only
+    private final String LAYER_CLASS_NAME_CONVOLUTION_1D = ""; // 1: Convolution1D, 2: Conv1D
+    private final String LAYER_CLASS_NAME_CONVOLUTION_2D = ""; // 1: Convolution2D, 2: Conv2D
 
     /* Partially shared layer configurations. */
     private final String LAYER_FIELD_CONFIG = "config";
@@ -72,56 +72,107 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_INBOUND_NODES = "inbound_nodes";
     private final String LAYER_FIELD_OUTBOUND_NODES = "outbound_nodes";
     private final String LAYER_FIELD_DROPOUT = "dropout";
-    private final String LAYER_FIELD_DROPOUT_W = "dropout_W";
-    private final String LAYER_FIELD_DROPOUT_U = "dropout_U";
-    private final String LAYER_FIELD_OUTPUT_DIM = "output_dim";
-    private final String LAYER_FIELD_NB_FILTER = "nb_filter";
+    private final String LAYER_FIELD_ACTIVITY_REGULARIZER = "activity_regularizer";
+    private final String LAYER_FIELD_OUTPUT_DIM = ""; // 1: output_dim, 2: units
+    private final String LAYER_FIELD_DROPOUT_RATE = ""; // 1: p, 2: rate
+    private final String LAYER_FIELD_USE_BIAS = ""; // 1: bias, 2: use_bias
+
+    /* Keras dimension ordering for, e.g., convolutional layersOrdered. */
+    private final String LAYER_FIELD_DIM_ORDERING = ""; // 1: dim_ordering, 2: data_format
+    private final String DIM_ORDERING_THEANO = ""; // 1: th, 2: channels_first
+    private final String DIM_ORDERING_TENSORFLOW = ""; // 1: tf, 2: channels_last
+
+    /* Recurrent layers */
+    private final String LAYER_FIELD_DROPOUT_W = ""; // 1: dropout_W, 2: dropout
+    private final String LAYER_FIELD_DROPOUT_U = ""; // 2: dropout_U, 2: recurrent_dropout
+    private final String LAYER_FIELD_RECURENT_INIT = ""; // 1: inner_init, 2: recurrent_initializer
+    private final String LAYER_FIELD_RECURENT_CONSTRAINT = "recurrent_constraint"; // keras 2 only
+    private final String LAYER_FIELD_RECURENT_DROPOUT = ""; // 1: dropout_U, 2: recurrent_dropout
+
+
+    /* Embedding layer properties */
+    private final String LAYER_FIELD_EMBEDDINGS_REGULARIZER = ""; // 1: W_regularizer, 2: embeddings_regularizer
+    private final String LAYER_FIELD_EMBEDDINGS_CONSTRAINT = ""; // 1: W_constraint, 2: embeddings_constraint
+    private final String LAYER_FIELD_MASK_ZERO = "mask_zero";
+    private final String LAYER_FIELD_INPUT_LENGTH = "input_length";
+
+    /* Normalisation layers */
+    // Missing: keras 2 moving_mean_initializer, moving_variance_initializer
+    private final String LAYER_FIELD_BATCHNORMALIZATION_MODE = "mode"; // keras 1 only
+    private final String LAYER_FIELD_BATCHNORMALIZATION_BETA_INIT = ""; // 1: beta_init, 2: beta_initializer
+    private final String LAYER_FIELD_BATCHNORMALIZATION_GAMMA_INIT = ""; // 1: gamma_init, 2: gamma_initializer
+    private final String LAYER_FIELD_BATCHNORMALIZATION_BETA_CONSTRAINT = "beta_constraint"; // keras 2 only
+    private final String LAYER_FIELD_BATCHNORMALIZATION_GAMMA_CONSTRAINT = "gamma_constraint"; // keras 2 only
+    private final String LAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN = ""; // 1: running_mean, 2: moving_mean
+    private final String LAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE = ""; // 1: running_std, 2: moving_variance
 
     /* Advanced activations */
-    // Missing: LeakyReLU, PReLU, ThresholdedReLU
-
-    /* Noise layers */
-    // Missing: GaussianNoise, GaussianDropout, AlphaDropout
-
-    /* Layer wrappers */
-    // Missing: TimeDistributed, Bidirectional
-
+    // Missing: LeakyReLU, PReLU, ThresholdedReLU, ParametricSoftplus, SReLu
+    private final String LAYER_FIELD_PRELU_INIT = ""; // 1: init, 2: alpha_initializer
 
     /* Convolutional layer properties */
-    private final String LAYER_FIELD_NB_ROW = "nb_row"; // TODO: gone
-    private final String LAYER_FIELD_NB_COL = "nb_col"; // TODO: kernel_size
-    private final String LAYER_FIELD_KERNEL_SIZE = "kernel_size";
+    private final String LAYER_FIELD_NB_FILTER = ""; // 1: nb_filter, 2: filters
+    private final String LAYER_FIELD_NB_ROW = "nb_row"; // keras 1 only
+    private final String LAYER_FIELD_NB_COL = "nb_col"; // keras 1 only
+    private final String LAYER_FIELD_KERNEL_SIZE = "kernel_size"; // keras 2 only
     private final String LAYER_FIELD_POOL_SIZE = "pool_size";
-    private final String LAYER_FIELD_SUBSAMPLE = "subsample";
-    private final String LAYER_FIELD_STRIDES = "strides";
+    private final String LAYER_FIELD_CONVOLUTION_STRIDES = ""; // 1: subsample, 2: strides
+    private final String LAYER_FIELD_DILATION_RATE = "dilation_rate"; // keras 2 only, replaces Atrous layers
+
+    /* Pooling / Upsampling layer properties */
+    private final String LAYER_FIELD_POOL_STRIDES = "strides";
+    private final String LAYER_FIELD_POOL_1D_SIZE = ""; // 1: pool_length, 2: pool_size
+    private final String LAYER_FIELD_POOL_1D_STRIDES = ""; // 1: stride, 2: strides
+    private final String LAYER_FIELD_UPSAMPLING_SIZE = ""; // 1: length, 2: size
 
     /* Keras convolution border modes. */
-    private final String LAYER_FIELD_BORDER_MODE = "border_mode";
+    private final String LAYER_FIELD_BORDER_MODE = ""; // 1: border_mode, 2: padding
     private final String LAYER_BORDER_MODE_SAME = "same";
     private final String LAYER_BORDER_MODE_VALID = "valid";
     private final String LAYER_BORDER_MODE_FULL = "full";
 
+    /* Noise layers */
+    // Missing: GaussianNoise, GaussianDropout, AlphaDropout
+    private final String LAYER_FIELD_GAUSSIAN_VARIANCE = ""; // 1: sigma, 2: stddev
+
+    /* Layer wrappers */
+    // Missing: TimeDistributed, Bidirectional
+
     /* Keras weight regularizers. */
-    private final String LAYER_FIELD_W_REGULARIZER = "";
-    private final String LAYER_FIELD_B_REGULARIZER = "";
+    private final String LAYER_FIELD_W_REGULARIZER = ""; // 1: W_regularizer, 2: kernel_regularizer
+    private final String LAYER_FIELD_B_REGULARIZER = ""; // 1: b_regularizer, 2: bias_regularizer
     private final String REGULARIZATION_TYPE_L1 = "l1";
     private final String REGULARIZATION_TYPE_L2 = "l2";
 
+    /* Keras constraints */
+    private final String LAYER_FIELD_W_CONSTRAINT = ""; // 1: W_constraint, 2: kernel_constraint
+    private final String LAYER_FIELD_B_CONSTRAINT = ""; // 1: b_constraint, 2: bias_constraint
+
+
     /* Keras weight initializers. */
-    private final String LAYER_FIELD_INIT = "init";
-    private final String INIT_UNIFORM = "uniform";
-    private final String INIT_ZERO = "zero";
+    private final String LAYER_FIELD_INIT = "init"; // 1: init, 2: kernel_initializer
+    private final String LAYER_FIELD_BIAS_INIT = "bias_initializer"; // keras 2 only
+
+    private final String INIT_UNIFORM = "uniform"; // keras 2 aliases: random_uniform, RandomUniform
+    private final String INIT_ZERO = "zero"; // keras 2 aliases: zeros, Zeros
+    private final String INIT_ONE = "one"; // keras 2 aliases: ones, Ones
+    private final String INIT_CONSTANT = "constant"; // keras 2 alias: Constant
+    private final String INIT_TRUNCATED_NORMAL = "truncated_normal"; // TruncatedNormal
     private final String INIT_GLOROT_NORMAL = "glorot_normal";
     private final String INIT_GLOROT_UNIFORM = "glorot_uniform";
     private final String INIT_HE_NORMAL = "he_normal";
     private final String INIT_HE_UNIFORM = "he_uniform";
     private final String INIT_LECUN_UNIFORM = "lecun_uniform";
-    private final String INIT_NORMAL = "normal";
-    private final String INIT_ORTHOGONAL = "orthogonal";
-    private final String INIT_IDENTITY = "identity";
+    private final String INIT_LECUN_NORMAL = "lecun_normal";
+    private final String INIT_NORMAL = "normal"; // keras 2 aliases: random_normal, RandomNormal
+    private final String INIT_ORTHOGONAL = "orthogonal"; // Orthogonal
+    private final String INIT_IDENTITY = "identity"; // Identity
+    private final String INIT_VARIANCE_SCALING = "VarianceScaling"; // keras 2 only
+
 
     /* Keras and DL4J activation types. */
     private final String LAYER_FIELD_ACTIVATION = "activation";
+
     private final String KERAS_ACTIVATION_SOFTMAX = "softmax";
     private final String KERAS_ACTIVATION_SOFTPLUS = "softplus";
     private final String KERAS_ACTIVATION_SOFTSIGN = "softsign";
@@ -130,12 +181,8 @@ public class KerasLayerConfiguration {
     private final String KERAS_ACTIVATION_SIGMOID = "sigmoid";
     private final String KERAS_ACTIVATION_HARD_SIGMOID = "hard_sigmoid";
     private final String KERAS_ACTIVATION_LINEAR = "linear";
-    // TODO: missing activations
-
-    /* Keras dimension ordering for, e.g., convolutional layersOrdered. */
-    private final String LAYER_FIELD_DIM_ORDERING = "";
-    private final String DIM_ORDERING_THEANO = "th";
-    private final String DIM_ORDERING_TENSORFLOW = "tf";
+    private final String KERAS_ACTIVATION_ELU = "elu"; // keras 2 only
+    private final String KERAS_ACTIVATION_SELU = "selu"; // keras 2 only
 
     /* Keras loss functions. */
     private final String KERAS_LOSS_MEAN_SQUARED_ERROR = "mean_squared_error";
@@ -148,6 +195,7 @@ public class KerasLayerConfiguration {
     private final String KERAS_LOSS_MSLE = "msle";
     private final String KERAS_LOSS_SQUARED_HINGE = "squared_hinge";
     private final String KERAS_LOSS_HINGE = "hinge";
+    private final String KERAS_LOSS_CATEGORICAL_HINGE = "categorical_hinge"; // keras 2 only
     private final String KERAS_LOSS_BINARY_CROSSENTROPY = "binary_crossentropy";
     private final String KERAS_LOSS_CATEGORICAL_CROSSENTROPY = "categorical_crossentropy";
     private final String KERAS_LOSS_SPARSE_CATEGORICAL_CROSSENTROPY = "sparse_categorical_crossentropy";
@@ -155,6 +203,6 @@ public class KerasLayerConfiguration {
     private final String KERAS_LOSS_KLD = "kld";
     private final String KERAS_LOSS_POISSON = "poisson";
     private final String KERAS_LOSS_COSINE_PROXIMITY = "cosine_proximity";
-    private final String LAYER_FIELD_LAYER = "layer";
+    private final String KERAS_LOSS_LOG_COSH = "logcosh"; // keras 2 only
 
 }
