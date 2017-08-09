@@ -204,10 +204,9 @@ We recommend and use Maven and Intellij. If you prefer Eclipse and dislike Maven
 
 ## DL4J Overview
 
-Deeplearning4j is a "pick and choose with everything available" framework. That means *everything* is made available for you from the beginning. Deeplearning4j has several sub projects for you to build end to end applications.
-Deeplearning4j is not tensorflow or pytorch. See [our comparison page](https://deeplearning4j.org/compare-dl4j-torch7-pylearn).
+Deeplearning4j is a framework that lets you pick and choose with everything available from the beginning. We're not Tensorflow (a low-level numerical computing library with automatic differentiation) or Pytorch. For more details, please see [our deep learning library compsheet](https://deeplearning4j.org/compare-dl4j-torch7-pylearn). Deeplearning4j has several subprojects that make it easy-ish to build end-to-end applications. 
 
-If you're coming here looking to just deploy models to production, you might like our [model import from Keras](https://deeplearning4j.org/model-import-keras).
+If you'd like to deploy models to production, you might like our [model import from Keras](https://deeplearning4j.org/model-import-keras).
 
 Deeplearning4j has several submodules. These range from a visualization UI to distributed training on Spark. For an overview of these modules, please look at the [**Deeplearning4j examples on Github**](https://github.com/deeplearning4j/dl4j-examples).
 
