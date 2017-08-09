@@ -37,7 +37,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Unit tests for end-to-end Keras layer configuration import.
+ * Unit tests for end-to-end Keras 1.x layer configuration import.
  *
  * @author dave@skymind.io
  */

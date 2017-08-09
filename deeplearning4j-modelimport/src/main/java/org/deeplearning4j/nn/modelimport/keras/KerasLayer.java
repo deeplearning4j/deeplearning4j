@@ -106,25 +106,6 @@ public class KerasLayer {
     public static final String DIM_ORDERING_THEANO = "th";
     public static final String DIM_ORDERING_TENSORFLOW = "tf";
 
-    /* Keras loss functions. */
-    public static final String KERAS_LOSS_MEAN_SQUARED_ERROR = "mean_squared_error";
-    public static final String KERAS_LOSS_MSE = "mse";
-    public static final String KERAS_LOSS_MEAN_ABSOLUTE_ERROR = "mean_absolute_error";
-    public static final String KERAS_LOSS_MAE = "mae";
-    public static final String KERAS_LOSS_MEAN_ABSOLUTE_PERCENTAGE_ERROR = "mean_absolute_percentage_error";
-    public static final String KERAS_LOSS_MAPE = "mape";
-    public static final String KERAS_LOSS_MEAN_SQUARED_LOGARITHMIC_ERROR = "mean_squared_logarithmic_error";
-    public static final String KERAS_LOSS_MSLE = "msle";
-    public static final String KERAS_LOSS_SQUARED_HINGE = "squared_hinge";
-    public static final String KERAS_LOSS_HINGE = "hinge";
-    public static final String KERAS_LOSS_BINARY_CROSSENTROPY = "binary_crossentropy";
-    public static final String KERAS_LOSS_CATEGORICAL_CROSSENTROPY = "categorical_crossentropy";
-    public static final String KERAS_LOSS_SPARSE_CATEGORICAL_CROSSENTROPY = "sparse_categorical_crossentropy";
-    public static final String KERAS_LOSS_KULLBACK_LEIBLER_DIVERGENCE = "kullback_leibler_divergence";
-    public static final String KERAS_LOSS_KLD = "kld";
-    public static final String KERAS_LOSS_POISSON = "poisson";
-    public static final String KERAS_LOSS_COSINE_PROXIMITY = "cosine_proximity";
-    public static final String LAYER_FIELD_LAYER = "layer";
 
     public static final Map<String, Class<? extends KerasLayer>> customLayers = new HashMap<>();
 
@@ -658,53 +639,38 @@ public class KerasLayer {
      * @param kerasLoss    String containing Keras loss function name
      * @return             String containing DL4J loss function
      */
-    public static LossFunctions.LossFunction mapLossFunction(String kerasLoss)
+    public LossFunctions.LossFunction mapLossFunction(String kerasLoss)
             throws UnsupportedKerasConfigurationException {
-        LossFunctions.LossFunction dl4jLoss = LossFunctions.LossFunction.SQUARED_LOSS;
-        switch (kerasLoss) {
-            case KERAS_LOSS_MEAN_SQUARED_ERROR:
-            case KERAS_LOSS_MSE:
-                dl4jLoss = LossFunctions.LossFunction.SQUARED_LOSS;
-                break;
-            case KERAS_LOSS_MEAN_ABSOLUTE_ERROR:
-            case KERAS_LOSS_MAE:
-                dl4jLoss = LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR;
-                break;
-            case KERAS_LOSS_MEAN_ABSOLUTE_PERCENTAGE_ERROR:
-            case KERAS_LOSS_MAPE:
-                dl4jLoss = LossFunctions.LossFunction.MEAN_ABSOLUTE_PERCENTAGE_ERROR;
-                break;
-            case KERAS_LOSS_MEAN_SQUARED_LOGARITHMIC_ERROR:
-            case KERAS_LOSS_MSLE:
-                dl4jLoss = LossFunctions.LossFunction.MEAN_SQUARED_LOGARITHMIC_ERROR;
-                break;
-            case KERAS_LOSS_SQUARED_HINGE:
-                dl4jLoss = LossFunctions.LossFunction.SQUARED_HINGE;
-                break;
-            case KERAS_LOSS_HINGE:
-                dl4jLoss = LossFunctions.LossFunction.HINGE;
-                break;
-            case KERAS_LOSS_BINARY_CROSSENTROPY:
-                dl4jLoss = LossFunctions.LossFunction.XENT;
-                break;
-            case KERAS_LOSS_SPARSE_CATEGORICAL_CROSSENTROPY:
-                /* TODO: should this be an error instead? */
-                log.warn("Sparse cross entropy not implemented, using multiclass cross entropy instead.");
-            case KERAS_LOSS_CATEGORICAL_CROSSENTROPY:
-                dl4jLoss = LossFunctions.LossFunction.MCXENT;
-                break;
-            case KERAS_LOSS_KULLBACK_LEIBLER_DIVERGENCE:
-            case KERAS_LOSS_KLD:
-                dl4jLoss = LossFunctions.LossFunction.KL_DIVERGENCE;
-                break;
-            case KERAS_LOSS_POISSON:
-                dl4jLoss = LossFunctions.LossFunction.POISSON;
-                break;
-            case KERAS_LOSS_COSINE_PROXIMITY:
-                dl4jLoss = LossFunctions.LossFunction.COSINE_PROXIMITY;
-                break;
-            default:
-                throw new UnsupportedKerasConfigurationException("Unknown Keras loss function " + kerasLoss);
+        LossFunctions.LossFunction dl4jLoss;
+        if (kerasLoss.equals(conf.getKERAS_LOSS_MEAN_SQUARED_ERROR()) ||
+                kerasLoss.equals(conf.getKERAS_LOSS_MSE())) {
+            dl4jLoss = LossFunctions.LossFunction.SQUARED_LOSS;
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_MEAN_ABSOLUTE_ERROR()) ||
+                kerasLoss.equals(conf.getKERAS_LOSS_MAE())) {
+            dl4jLoss = LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR;
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_MEAN_ABSOLUTE_PERCENTAGE_ERROR()) ||
+                kerasLoss.equals(conf.getKERAS_LOSS_MAPE())) {
+            dl4jLoss = LossFunctions.LossFunction.MEAN_ABSOLUTE_PERCENTAGE_ERROR;
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_MEAN_SQUARED_LOGARITHMIC_ERROR()) ||
+                kerasLoss.equals(conf.getKERAS_LOSS_MSLE())) {
+            dl4jLoss = LossFunctions.LossFunction.MEAN_SQUARED_LOGARITHMIC_ERROR;
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_SQUARED_HINGE())) {
+            dl4jLoss = LossFunctions.LossFunction.SQUARED_HINGE;
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_HINGE())) {
+            dl4jLoss = LossFunctions.LossFunction.HINGE;
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_SPARSE_CATEGORICAL_CROSSENTROPY())) {
+            throw new UnsupportedKerasConfigurationException("Loss function " + kerasLoss + " not supported yet.");
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_CATEGORICAL_CROSSENTROPY())) {
+            dl4jLoss = LossFunctions.LossFunction.MCXENT;
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_KULLBACK_LEIBLER_DIVERGENCE()) ||
+                kerasLoss.equals(conf.getKERAS_LOSS_KLD())) {
+            dl4jLoss = LossFunctions.LossFunction.KL_DIVERGENCE;
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_POISSON())) {
+            dl4jLoss = LossFunctions.LossFunction.POISSON;
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_COSINE_PROXIMITY())) {
+            dl4jLoss = LossFunctions.LossFunction.COSINE_PROXIMITY;
+        } else {
+            throw new UnsupportedKerasConfigurationException("Unknown Keras loss function " + kerasLoss);
         }
         return dl4jLoss;
     }
@@ -787,12 +753,12 @@ public class KerasLayer {
         if (!layerConfig.containsKey(LAYER_FIELD_CONFIG))
             throw new InvalidKerasConfigurationException("Field " + LAYER_FIELD_CONFIG + " missing from layer config");
         Map<String, Object> outerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        Map<String, Object> innerLayer = (Map<String, Object>) outerConfig.get(LAYER_FIELD_LAYER);
+        Map<String, Object> innerLayer = (Map<String, Object>) outerConfig.get(conf.getLAYER_FIELD_LAYER());
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
         layerConfig.put(LAYER_FIELD_NAME, innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
         Map<String, Object> innerConfig = (Map<String, Object>) getInnerLayerConfigFromConfig(innerLayer);
         outerConfig.putAll(innerConfig);
-        outerConfig.remove(LAYER_FIELD_LAYER);
+        outerConfig.remove(conf.getLAYER_FIELD_LAYER());
         return layerConfig;
     }
 
