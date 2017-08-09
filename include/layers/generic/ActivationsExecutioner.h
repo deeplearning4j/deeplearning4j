@@ -30,7 +30,7 @@ void ActivationsExecutioner<T>::executeFF(NDArray<T> *input, NDArray<T> *output)
     Nd4jIndex n = input->lengthOf();
     //#pragma omp parallel for
     for (Nd4jIndex e = 0; e < n; e++) {
-       output->buffer[e] = Activation::ffActivation(input->buffer[e]);
+       output->_buffer[e] = Activation::ffActivation(input->_buffer[e]);
     }
 }
 
@@ -46,7 +46,7 @@ void ActivationsExecutioner<T>::executeBP(NDArray<T> * input, NDArray<T> *epsilo
         Nd4jIndex n = input->lengthOf();
         //#pragma omp parallel for
         for (Nd4jIndex e = 0; e < n; e++) {
-            output->buffer[e] = Activation::bpActivation(input->buffer[e], epsilon->buffer[e]);
+            output->_buffer[e] = Activation::bpActivation(input->_buffer[e], epsilon->_buffer[e]);
         }
 }
 #endif //PROJECT_ACTIVATIONSEXECUTIONER_H

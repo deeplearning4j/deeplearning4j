@@ -55,11 +55,11 @@ int DenseLayer<T,AF>::backPropagate() {
     // delta = epsilon * da/dz = previous_params_T * previous_delta (*) da/dz
 
     // temporary save output pointers
-    T *__buffer = this->output->buffer;
-    int *__shapeInfo = this->output->shapeInfo;
+    T *__buffer = this->output->_buffer;
+    int *__shapeInfo = this->output->_shapeInfo;
 
     NDArray<T> *preOutput = new NDArray<T>(this->input->shapeOf()[0], this->params->shapeOf()[1], 'f');
-    this->output->replacePointers(preOutput->buffer, preOutput->shapeInfo);
+    this->output->replacePointers(preOutput->_buffer, preOutput->_shapeInfo);
     this->feedForward();
 
     // put buffers back
@@ -157,7 +157,7 @@ int DenseLayer<T,AF>::validateGradients() {
 // This method should validate layer parameters & bias, and return TRUE if everything ok. FALSE otherwise
 template<typename T, typename AF>
 int DenseLayer<T,AF>::validateParameters() {
-    if (this->params->shapeInfo == nullptr || this->bias->shapeInfo == nullptr || this->params == nullptr || this->bias == nullptr || this->params->buffer == nullptr || this->bias->buffer == nullptr) {
+    if (this->params->_shapeInfo == nullptr || this->bias->_shapeInfo == nullptr || this->params == nullptr || this->bias == nullptr || this->params->_buffer == nullptr || this->bias->_buffer == nullptr) {
 //        printf("Got nulls here\n");
         return ND4J_STATUS_BAD_PARAMS;
     }
@@ -190,7 +190,7 @@ int DenseLayer<T,AF>::validateParameters() {
 // This method should validate input parameters, and return TRUE if everything ok. FALSE otherwise
 template<typename T, typename AF> int DenseLayer<T,AF>::validateInput() {
     // we expect input to be either vector or matrix, in both cases - that's rank2
-    if (this->input == nullptr || this->input->shapeInfo == nullptr ||this->input->buffer == nullptr)
+    if (this->input == nullptr || this->input->_shapeInfo == nullptr ||this->input->_buffer == nullptr)
         return ND4J_STATUS_BAD_INPUT;
 
     if (this->input->rankOf() != 2)
@@ -225,7 +225,7 @@ template<typename T, typename AF> int DenseLayer<T,AF>::validateInput() {
 // This method should valudate output parameters, and return TRUE if everything is ok, FALSE otherwise
 template<typename T, typename AF> int DenseLayer<T,AF>::validateOutput() {
     // same as input validation here. we expect rank of output arra
-    if (this->output == nullptr || this->output->buffer == nullptr || this->output->shapeInfo == nullptr)
+    if (this->output == nullptr || this->output->_buffer == nullptr || this->output->_shapeInfo == nullptr)
         return ND4J_STATUS_BAD_OUTPUT;
 
     if (this->output->rankOf() != 2)
@@ -272,7 +272,7 @@ template<typename T, typename AF> int DenseLayer<T,AF>::feedForward() {
 
     // do wxa+b here or something else
     // TODO: introduce BLAS right here
-    if (shape::isRowVector(this->input->shapeInfo)) {
+    if (shape::isRowVector(this->input->_shapeInfo)) {
         // gemv here input * W
 
     } else {

@@ -145,34 +145,34 @@ TEST_F(DenseLayerInputTest, JointOutputConfiuguration1) {
 
     nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>> *layer = new nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>>();
 
-    int result = layer->setParameters(weights->buffer, weights->shapeInfo, bias->buffer, bias->shapeInfo);
+    int result = layer->setParameters(weights->_buffer, weights->_shapeInfo, bias->_buffer, bias->_shapeInfo);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
 
-    result = layer->configureLayerFF(input->buffer, input->shapeInfo, output->buffer, output->shapeInfo, 0.0, 0.0, nullptr);
+    result = layer->configureLayerFF(input->_buffer, input->_shapeInfo, output->_buffer, output->_shapeInfo, 0.0, 0.0, nullptr);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
 
-    result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    result = layer->configureLayerBP(outputBPGood->_buffer, outputBPGood->_shapeInfo, gradWGood->_buffer, gradWGood->_shapeInfo, gradBGood->_buffer, gradBGood->_shapeInfo, epsilonGood->_buffer, epsilonGood->_shapeInfo);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
 
-    result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWBad1->buffer, gradWBad1->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    result = layer->configureLayerBP(outputBPGood->_buffer, outputBPGood->_shapeInfo, gradWBad1->_buffer, gradWBad1->_shapeInfo, gradBGood->_buffer, gradBGood->_shapeInfo, epsilonGood->_buffer, epsilonGood->_shapeInfo);
     ASSERT_EQ(ND4J_STATUS_BAD_GRADIENTS, result);
 
-    result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBBad1->buffer, gradBBad1->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    result = layer->configureLayerBP(outputBPGood->_buffer, outputBPGood->_shapeInfo, gradWGood->_buffer, gradWGood->_shapeInfo, gradBBad1->_buffer, gradBBad1->_shapeInfo, epsilonGood->_buffer, epsilonGood->_shapeInfo);
     ASSERT_EQ(ND4J_STATUS_BAD_BIAS, result);
 
-    result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonBad1->buffer, epsilonBad1->shapeInfo);
+    result = layer->configureLayerBP(outputBPGood->_buffer, outputBPGood->_shapeInfo, gradWGood->_buffer, gradWGood->_shapeInfo, gradBGood->_buffer, gradBGood->_shapeInfo, epsilonBad1->_buffer, epsilonBad1->_shapeInfo);
     ASSERT_EQ(ND4J_STATUS_BAD_EPSILON, result);
 
-    result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonBad2->buffer, epsilonBad2->shapeInfo);
+    result = layer->configureLayerBP(outputBPGood->_buffer, outputBPGood->_shapeInfo, gradWGood->_buffer, gradWGood->_shapeInfo, gradBGood->_buffer, gradBGood->_shapeInfo, epsilonBad2->_buffer, epsilonBad2->_shapeInfo);
     ASSERT_EQ(ND4J_STATUS_BAD_EPSILON, result);
 
-    result = layer->configureLayerBP(outputBPBad1->buffer, outputBPBad1->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    result = layer->configureLayerBP(outputBPBad1->_buffer, outputBPBad1->_shapeInfo, gradWGood->_buffer, gradWGood->_shapeInfo, gradBGood->_buffer, gradBGood->_shapeInfo, epsilonGood->_buffer, epsilonGood->_shapeInfo);
     ASSERT_EQ(ND4J_STATUS_BAD_OUTPUT, result);
 
-    result = layer->configureLayerBP(outputBPBad2->buffer, outputBPBad2->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    result = layer->configureLayerBP(outputBPBad2->_buffer, outputBPBad2->_shapeInfo, gradWGood->_buffer, gradWGood->_shapeInfo, gradBGood->_buffer, gradBGood->_shapeInfo, epsilonGood->_buffer, epsilonGood->_shapeInfo);
     ASSERT_EQ(ND4J_STATUS_BAD_OUTPUT, result);
 }
 
@@ -459,11 +459,11 @@ TEST_F(DenseLayerInputTest, FeedForwardTest1) {
 
     auto *layer = new nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>>();
 
-    int result = layer->setParameters(weights->buffer, weights->shapeInfo, bias->buffer, bias->shapeInfo);
+    int result = layer->setParameters(weights->_buffer, weights->_shapeInfo, bias->_buffer, bias->_shapeInfo);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
-    result = layer->configureLayerFF(input->buffer, input->shapeInfo, output->buffer, output->shapeInfo, 0.0f, 0.0f, nullptr);
+    result = layer->configureLayerFF(input->_buffer, input->_shapeInfo, output->_buffer, output->_shapeInfo, 0.0f, 0.0f, nullptr);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
@@ -518,11 +518,11 @@ TEST_F(DenseLayerInputTest, FeedForwardTest2) {
 
     auto *layer = new nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>>();
 
-    int result = layer->setParameters(weights->buffer, weights->shapeInfo, bias->buffer, bias->shapeInfo);
+    int result = layer->setParameters(weights->_buffer, weights->_shapeInfo, bias->_buffer, bias->_shapeInfo);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
-    result = layer->configureLayerFF(input->buffer, input->shapeInfo, output->buffer, output->shapeInfo, 0.0f, 0.0f, nullptr);
+    result = layer->configureLayerFF(input->_buffer, input->_shapeInfo, output->_buffer, output->_shapeInfo, 0.0f, 0.0f, nullptr);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
@@ -577,13 +577,13 @@ TEST_F(DenseLayerInputTest, BackPropagationTest1) {
 
     nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>> *layer = new nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>>();
 
-    int result = layer->setParameters(weights->buffer, weights->shapeInfo, bias->buffer, bias->shapeInfo);
+    int result = layer->setParameters(weights->_buffer, weights->_shapeInfo, bias->_buffer, bias->_shapeInfo);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
-    result = layer->configureLayerFF(input->buffer, input->shapeInfo, output->buffer, output->shapeInfo, 0.0, 0.0, nullptr);
+    result = layer->configureLayerFF(input->_buffer, input->_shapeInfo, output->_buffer, output->_shapeInfo, 0.0, 0.0, nullptr);
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
-    result = layer->configureLayerBP(outputBPGood->buffer, outputBPGood->shapeInfo, gradWGood->buffer, gradWGood->shapeInfo, gradBGood->buffer, gradBGood->shapeInfo, epsilonGood->buffer, epsilonGood->shapeInfo);
+    result = layer->configureLayerBP(outputBPGood->_buffer, outputBPGood->_shapeInfo, gradWGood->_buffer, gradWGood->_shapeInfo, gradBGood->_buffer, gradBGood->_shapeInfo, epsilonGood->_buffer, epsilonGood->_shapeInfo);
     ASSERT_EQ(ND4J_STATUS_OK, result);        
 
     result = layer->backPropagate();

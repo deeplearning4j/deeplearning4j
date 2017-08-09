@@ -46,7 +46,7 @@ template<typename T, typename AF> void BaseLayer<T,AF>::dropOutHelper(NDArray<T>
 
     // executing DropOutInverted here
     T *extras = new T[1] {this->pDropOut};
-    NativeOpExcutioner<T>::execRandom(2, (Nd4jPointer) this->rng, input->buffer, input->shapeInfo, input->buffer, input->shapeInfo, extras);
+    NativeOpExcutioner<T>::execRandom(2, (Nd4jPointer) this->rng, input->_buffer, input->_shapeInfo, input->_buffer, input->_shapeInfo, extras);
 
     delete[] extras;
 }
@@ -59,7 +59,7 @@ template<typename T, typename AF> void BaseLayer<T,AF>::dropConnectHelper(NDArra
 
     // executing regular DropOut op here for DropConnect
     T *extras = new T[1] {this->pDropConnect};
-    NativeOpExcutioner<T>::execRandom(1, (Nd4jPointer) this->rng, input->buffer, input->shapeInfo, input->buffer, input->shapeInfo, extras);
+    NativeOpExcutioner<T>::execRandom(1, (Nd4jPointer) this->rng, input->_buffer, input->_shapeInfo, input->_buffer, input->_shapeInfo, extras);
 
     delete[] extras;
 }

@@ -5,291 +5,168 @@
 
 template <typename T> class NDArray 
 { 
-    private:
-        bool allocated = false;
-
     public:
-        T *buffer;                      // pointer on flattened data array in memory
-        int *shapeInfo;                 // pointer on array containing shape information about data array
+        T    *_buffer;                   // pointer on flattened data array in memory
+        int  *_shapeInfo;                // contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
+        bool  _allocated;                // indicates whether user allocates memory for array by himself, in opposite case the memory must be allocated from outside 
 
-        // default constructor
-        NDArray(T *buffer_ = nullptr, int *shapeInfo_ = nullptr);
+        
+        // default constructor, do not allocate memory, memory for array is passed from outside 
+        NDArray(T *buffer = nullptr, int *shapeInfo = nullptr);
 
-        // This constructor creates new 2D NDArray
-        NDArray(int rows, int columns, char order);
+        // this constructor creates 2D NDArray, memory for array is allocated in constructor 
+        NDArray(const int rows, const int columns, const char order);
+        
+        // this constructor creates NDArray as single row (dimension is 1xlength), memory for array is allocated in constructor 
+        NDArray(const int length, const char order);
+        
+        // this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        NDArray(const NDArray<T> *other);
 
-        NDArray(int length, char order);
+        // this constructor creates new array using shape information contained in initializer_list argument
+        NDArray(const char order, const std::initializer_list<int>& shape);
 
-        NDArray(char order, std::initializer_list<int> shape);
+        // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
+        void replacePointers(T* buffer, int* shapeInfo, const bool releaseExisting = true);
 
-        /**
-         * creates NEW NDarray with shape matching other array
-         * @param other
-         */
-        NDArray(NDArray<T> *other);
-
-
-    /**
-     * This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
-     * @param _buffer
-     * @param _shapeInfo
-     */
-    void replacePointers(T* _buffer, int* _shapeInfo, bool releaseExisting);
-
-    /**
-     * This method replaces existing buffer/shapeinfo, AND releases original pointers
-     *
-     * @param _buffer
-     * @param _shapeInfo
-     */
-    void replacePointers(T* _buffer, int* _shapeInfo) {
-        replacePointers(_buffer, _shapeInfo, true);
-    }
-
-    /**
-     * This method returns order of this NDArray
-     * @return
-     */
-    char ordering() {
-        return shape::order(shapeInfo);
-    }
-
-    /**
-     * This method returns shape portion of shapeInfo
-     * @return
-     */
-    int *shapeOf() {
-        return shape::shapeOf(shapeInfo);
-    }
-
-    /**
-     * This method returns strides portion of shapeInfo
-     * @return
-     */
-    int *stridesOf() {
-        return shape::stride(shapeInfo);
-    }
-
-    /**
-     * This method returns rank of this NDArray
-     * @return
-     */
-    int rankOf() {
-        return shape::rank(shapeInfo);
-    }
-
-    /**
-     * This method returns length of this NDArray
-     * @return
-     */
-    Nd4jIndex lengthOf() {
-        return shape::length(shapeInfo);
-    }
-
-    /**
-     * This method returns number of rows in this NDArray
-     *
-     * PLEASE NOTE: Applicable only to 2D NDArrays
-     * @return
-     */
-    int rows() {
-        return shapeOf()[0];
-    }
-
-    /**
-     * This method returns number of columns in this NDArray
-     *
-     * PLEASE NOTE: Applicable only to 2D NDArrays
-     * @return
-     */
-    int columns() {
-        return shapeOf()[1];
-    }
-
-    /**
-     * This method retuns sizeof(T) for this NDArray
-     * @return
-     */
-    int sizeOfT() {
-        return sizeof(T);
-    }
-
-
-    void printShapeInfo() {
-        //shape::printShapeInfo(this->shapeInfo);
-        shape::printShapeInfoLinear(this->shapeInfo);
-    }
-
-    /**
-     * This method returns new copy of this NDArray, optionally in different order
-     *
-     * @param newOrder
-     * @return
-     */
-    NDArray<T>* dup(char newOrder);
-
-    /**
-     * Returns true if these two NDArrays have same shape
-     * @param other
-     * @return
-     */
-    bool isSameShape(NDArray<T> *other) {
-        if (this->rankOf() != other->rankOf())
-            return false;
-        else {
-            for (int e = 0; e < this->rankOf(); e++) {
-                if (this->shapeOf()[e] != other->shapeOf()[e]) {
-                    return false;
-                }
-            }
+        // This method returns order of this NDArray
+        char ordering() const {
+            return shape::order(_shapeInfo);
         }
 
-        return true;
-    }
+        // This method returns shape portion of shapeInfo
+        int *shapeOf() const {
+            return shape::shapeOf(_shapeInfo);
+        }
 
-    /**
-     * This method assigns values of given NDArray to this one, wrt order
-     *
-     * @param other
-     */
-    void assign(NDArray<T> *other);
+        // This method returns strides portion of shapeInfo
+        int *stridesOf() const {
+            return shape::stride(_shapeInfo);
+        }
 
-    /**
-     * This method assigns given value to all elements in this NDArray
-     *
-     * @param value
-     */
-    void assign(T value);
+        // This method returns rank of this NDArray
+        int rankOf() const {
+            return shape::rank(_shapeInfo);
+        }
 
-    /**
-     * This method returns sum of all elements of this NDArray
-     * @return
-     */
-    T sumNumber();
+        // This method returns length of this NDArray
+        Nd4jIndex lengthOf() const {
+            return shape::length(_shapeInfo);
+        }
 
-    /**
-     * This method returns mean number of this NDArray
-     *
-     * @return
-     */
-    T meanNumber();
+        // This method returns number of rows in this NDArray
+        int rows() const {
+            return shapeOf()[0];
+        }
 
+        // This method returns number of columns in this NDArray
+        int columns() const {
+            return shapeOf()[1];
+        }
 
-    /**
-     * This method returns sum along dimension(s) in a new NDArray
-     *
-     * @param dimensions
-     * @return
-     */
-    NDArray<T> *sum(std::initializer_list<int> dimensions);
+        // This method returns sizeof(T) for this NDArray
+        int sizeOfT() const {
+            return sizeof(T);
+        }
 
-    template<typename OpName>
-    NDArray<T> *reduceAlongDimension(std::initializer_list<int> dimensions);
+        // print information about array shape
+        void printShapeInfo() const {
+            //shape::printShapeInfo(this->_shapeInfo);
+            shape::printShapeInfoLinear(_shapeInfo);
+        }
 
-    template<typename OpName>
-    T reduceNumber(T* extraParams);
+        // This method assigns values of given NDArray to this one, wrt order
+        void assign(NDArray<T> *other);
 
-    template<typename OpName>
-    T reduceNumber();
+        // This method assigns given value to all elements in this NDArray
+        void assign(const T value);
 
-    template<typename OpName>
-    void applyTransform();
+        // This method returns new copy of this NDArray, optionally in different order
+        NDArray<T>* dup(const char newOrder);
 
-    template<typename OpName>
-    void applyTransform(T *extraParams);
+        // Returns true if these two NDArrays have same shape
+        inline bool isSameShape(const NDArray<T> *other) const;
 
-    /**
-     * This method applies transpose to this NDArray and returns new instance of NDArray
-     *
-     */
-    NDArray<T> *transpose();
+        // This method returns sum of all elements of this NDArray
+        T sumNumber() const;
 
-    /**
-     * This method returns true if buffer && shapeInfo were defined
-     * @return
-     */
-    bool nonNull();
+        // This method returns mean number of this NDArray
+        T meanNumber() const;
 
-    /**
-     * This method applies inplace transpose to this NDArray
-     *
-     */
-    void transposei();
+        // method calculates sum along dimension(s) in this array and save it to row: as new NDArray with dimensions 1xN
+        NDArray<T>* sum(const std::initializer_list<int>& dimensions) const;
 
-    /**
-     * This method returns true if two arrays are equal, with custom Eps value, false otherwise
-     *
-     * @param other
-     * @param eps
-     * @return
-     */
-    bool equalsTo(NDArray<T> *other, T eps);
+        // eventually this method reduces this array to 1xN row 
+        template<typename OpName> NDArray<T>* reduceAlongDimension(const std::initializer_list<int>& dimensions) const;
 
-    /**
-     * This method returns true if two arrays are equal, with default Eps value of 1e-5, false otherwise
-     *
-     * @param other
-     * @param eps
-     * @return
-     */
-    bool equalsTo(NDArray<T> *other) {
-        return equalsTo(other, (T) 1e-5f);
-    }
+        //
+        template<typename OpName> T reduceNumber() const;
 
-    /**
-     * Return value from linear buffer
-     *
-     * @param i
-     * @return
-     */
-    T getScalar(Nd4jIndex i);
+        // 
+        template<typename OpName> T reduceNumber(T* extraParams) const;
+        
+        // perform array transformation
+        template<typename OpName> void applyTransform();
+        
+        // perform array transformation
+        template<typename OpName> void applyTransform(T *extraParams);
 
-    /**
-     * Returns value from 2D matrix by coordinates
-     * @param i
-     * @param k
-     * @return
-     */
-    T getScalar(int i, int k);
+        // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
+        NDArray<T> *transpose() const;
 
-    /**
-     * Returns value from 3D tensor by coordinates
-     * @param i
-     * @param k
-     * @param j
-     * @return
-     */
-    T getScalar(int i, int k, int j);
+        // This method applies in-place transpose to this array, so this array becomes transposed 
+        void transposei();
+        
+        // This method returns true if buffer && shapeInfo were defined
+        bool nonNull() const {
+            return this->_buffer != nullptr && this->_shapeInfo != nullptr;
+        }
+  
+        // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
+        bool equalsTo(const NDArray<T> *other, T eps = (T) 1e-5f) const;
+   
+        // Return value from linear buffer
+        T getScalar(const Nd4jIndex i) const;
 
-    /**
-     * This method sets value in linear buffer to position i
-     * @param i
-     */
-    void putScalar(Nd4jIndex i, T value);
+        // Returns value from 2D matrix by coordinates/indexes 
+        T getScalar(const int i, const int j) const;
 
-    /**
-     * This method sets value in 2D matrix to position i,k
-     * @param i
-     */
-    void putScalar(int i, int k, T value);
+        // returns value from 3D tensor by coordinates
+        T getScalar(const int i, const int k, const int j) const;
 
-    /**
-     * This method sets value in 3D matrix to position i,k,j
-     * @param i
-     */
-    void putScalar(int i, int k, int j, T value);
+        // This method sets value in linear buffer to position i
+        void putScalar(const Nd4jIndex i, const T value);
 
-    /**
-     * This method adds given row to all rows in this NDArray
-     *
-     * @param row
-     */
-    void addiRowVector(NDArray<T> *row);
+        // This method sets value in 2D matrix to position i, j 
+        void putScalar(const int i, const int j, const T value);
+
+        // This method sets value in 3D matrix to position i,j,k
+        void putScalar(const int i, const int k, const int j, const T value);
+
+        // This method adds given row to all rows in this NDArray, that is this array becomes affected
+        void addiRowVector(const NDArray<T> *row);
 
 
     // default destructor
     ~NDArray();
 
 };
+
+
+
+
+// returns true if these two NDArrays have same shape
+// still the definition of inline function must be in header file
+template <typename T> inline bool NDArray<T>::isSameShape(const NDArray<T> *other) const {
+    
+    if (this->rankOf() != other->rankOf())
+        return false;
+    
+    for (int e = 0; e < this->rankOf(); e++)
+        if (this->shapeOf()[e] != other->shapeOf()[e]) 
+            return false;
+    
+    return true;
+}
 
 #endif

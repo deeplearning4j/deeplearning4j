@@ -41,19 +41,19 @@ TEST_F(NDArrayTest, NDArrayOrder1) {
     ASSERT_EQ('c', arrayC2->ordering());
 
     for (int i = 0; i < 4; i++) {
-        ASSERT_EQ(f[i], arrayF->buffer[i]);
+        ASSERT_EQ(f[i], arrayF->_buffer[i]);
     }
 
     for (int i = 0; i < 8; i++) {
-        ASSERT_EQ(fShape[i], arrayF->shapeInfo[i]);
+        ASSERT_EQ(fShape[i], arrayF->_shapeInfo[i]);
     }
 
     for (int i = 0; i < 4; i++) {
-        ASSERT_EQ(c[i], arrayC2->buffer[i]);
+        ASSERT_EQ(c[i], arrayC2->_buffer[i]);
     }
 
     for (int i = 0; i < 8; i++) {
-        ASSERT_EQ(cShape[i], arrayC2->shapeInfo[i]);
+        ASSERT_EQ(cShape[i], arrayC2->_shapeInfo[i]);
     }
 }
 
@@ -165,8 +165,8 @@ TEST_F(NDArrayTest, TestTranspose1) {
 
 
     for (int e = 0; e < arrayC->rankOf() * 2 + 4; e++) {
-        ASSERT_EQ(expC[e], arrayC->shapeInfo[e]);
-        ASSERT_EQ(expT[e], arrayT->shapeInfo[e]);
+        ASSERT_EQ(expC[e], arrayC->_shapeInfo[e]);
+        ASSERT_EQ(expT[e], arrayT->_shapeInfo[e]);
     }
 
 }
@@ -181,7 +181,7 @@ TEST_F(NDArrayTest, TestTranspose2) {
 
 
     for (int e = 0; e < arrayC->rankOf() * 2 + 4; e++) {
-        ASSERT_EQ(expT[e], arrayC->shapeInfo[e]);
+        ASSERT_EQ(expT[e], arrayC->_shapeInfo[e]);
     }
 
 }

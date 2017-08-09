@@ -5,16 +5,16 @@
 #define PROJECT_LAYERS_H
 
 // the list of errors codes for layer data
-#define ND4J_STATUS_OK         0
-#define ND4J_STATUS_BAD_INPUT  1
-#define ND4J_STATUS_BAD_SHAPE  2
-#define ND4J_STATUS_BAD_RANK   3
-#define ND4J_STATUS_BAD_PARAMS 4
-#define ND4J_STATUS_BAD_OUTPUT 5
-#define ND4J_STATUS_BAD_RNG 6
-#define ND4J_STATUS_BAD_EPSILON 7
+#define ND4J_STATUS_OK            0
+#define ND4J_STATUS_BAD_INPUT     1
+#define ND4J_STATUS_BAD_SHAPE     2
+#define ND4J_STATUS_BAD_RANK      3
+#define ND4J_STATUS_BAD_PARAMS    4
+#define ND4J_STATUS_BAD_OUTPUT    5
+#define ND4J_STATUS_BAD_RNG       6
+#define ND4J_STATUS_BAD_EPSILON   7
 #define ND4J_STATUS_BAD_GRADIENTS 8
-#define ND4J_STATUS_BAD_BIAS 9
+#define ND4J_STATUS_BAD_BIAS      9
 
 
 namespace nd4j {
@@ -37,7 +37,7 @@ template <typename T> class INativeLayer {
         //int *inputShapeInfo;            // see _paramsShapeInfo explanation
 
         NDArray<T> *epsilon;
-        //T   *epsilon;                     // epsilon = dL/da, L - loss function, a - activation
+        //T   *epsilon;                     // epsilon = dL/da, L - loss function, a - input/activation
         //int *epsilontShapeInfo;            // see _paramsShapeInfo explanation
 
         NDArray<T> *mask;
@@ -192,7 +192,7 @@ INativeLayer<T>::~INativeLayer() {
 }
 
 template <typename T> void INativeLayer<T>::gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, T alpha, T beta) {
-    gemmHelper(A->buffer, A->shapeInfo, B->buffer, B->shapeInfo, C->buffer, C->shapeInfo, alpha, beta);
+    gemmHelper(A->_buffer, A->_shapeInfo, B->_buffer, B->_shapeInfo, C->_buffer, C->_shapeInfo, alpha, beta);
 }
 
 // perform C = alpha*A*B + beta*C
@@ -282,7 +282,7 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
     // we'll use platform-specific gemm here eventually. maybe tomorrow.
     // TODO: put proper _gemm here
-    nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, _A->buffer, lda, _B->buffer, ldb, beta, _C->buffer, ldc);
+    nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, _A->_buffer, lda, _B->_buffer, ldb, beta, _C->_buffer, ldc);
 
     if (cOrder != 'f') {
         tC->assign(_C);
