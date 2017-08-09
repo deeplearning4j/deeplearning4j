@@ -88,17 +88,40 @@ public class VersionCheck {
             System.exit(1);
         }
 
-        List<VersionInfo> repos = getVersionInfos();
-
-        if(getVersionInfos().size() == 0){
+        List<VersionInfo> dependencies = getVersionInfos();
+        if(dependencies.size() <= 2){
             //No -properties.git files were found on the classpath. This may be due to a misconfigured uber-jar
             // or maybe running in IntelliJ with "dynamic.classpath" set to true (in workspace.xml). Either way,
             // we can't check versions and don't want to log an error, which will more often than not be wrong
-            return;
+            if(dependencies.size() == 0){
+                return;
+            }
+
+            //Another edge case: no -properties.git files were found, but DL4J and/or DataVec were inferred
+            // by class names. If these "inferred by name" versions were the only things found, we should also
+            // not log a warning, as we can't check versions in this case
+
+            boolean dl4jViaClass = false;
+            boolean datavecViaClass = false;
+            for(VersionInfo vi : dependencies ){
+                if(DL4J_GROUPID.equals(vi.getGroupId()) && DL4J_ARTIFACT.equals(vi.getArtifactId())
+                        && UNKNOWN_VERSION.equals(vi.getBuildVersion())){
+                    dl4jViaClass = true;
+                } else if(DATAVEC_GROUPID.equals(vi.getGroupId()) && DATAVEC_ARTIFACT.equals(vi.getArtifactId())
+                        && UNKNOWN_VERSION.equals(vi.getBuildVersion())){
+                    datavecViaClass = true;
+                }
+            }
+
+            if(dependencies.size() == 1 && (dl4jViaClass || datavecViaClass)){
+                return;
+            } else if(dependencies.size() == 2 && dl4jViaClass && datavecViaClass){
+                return;
+            }
         }
 
         Set<String> foundVersions = new HashSet<>();
-        for(VersionInfo vi : repos){
+        for(VersionInfo vi : dependencies){
             String g = vi.getGroupId();
             if(g != null && GROUPIDS_TO_CHECK.contains(g)){
                 String version = vi.getBuildVersion();
@@ -134,7 +157,7 @@ public class VersionCheck {
         boolean scala211 = false;
         boolean spark1 = false;
         boolean spark2 = false;
-        for(VersionInfo vi : repos){
+        for(VersionInfo vi : dependencies){
             String artifact = vi.getArtifactId();
             if(!scala210 && artifact.contains(SCALA_210_SUFFIX)){
                 scala210 = true;
