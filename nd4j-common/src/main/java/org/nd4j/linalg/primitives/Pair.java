@@ -30,6 +30,14 @@ public class Pair<K, V> implements Serializable {
         return value;
     }
 
+    public void setFirst(K first) {
+        key = first;
+    }
+
+    public void setSecond(V second) {
+        value = second;
+    }
+
     public static <T, E> Pair<T,E> makePair(T key, E value) {
         return new Pair<T, E>(key, value);
     }
