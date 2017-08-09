@@ -9,6 +9,8 @@ import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
@@ -30,6 +32,7 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 public class LossMCXENT implements ILossFunction {
+    private static final double SOFTMAX_CLIPPING_EPSILON = 1e-10;
 
     @JsonSerialize(using = RowVectorSerializer.class)
     @JsonDeserialize(using = RowVectorDeserializer.class)
@@ -60,18 +63,13 @@ public class LossMCXENT implements ILossFunction {
                             + ") ");
             
         }
-        INDArray scoreArr;
-        //if ("softmax".equals(activationFn)) {
-        if (activationFn instanceof ActivationSoftmax) {
-            //Use LogSoftMax op to avoid numerical issues when calculating score
-            INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(preOutput.dup()));
-            scoreArr = logsoftmax.muli(labels);
 
-        } else {
-            //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
-            INDArray output = activationFn.getActivation(preOutput.dup(), true);
-            scoreArr = Transforms.log(output, false).muli(labels);
+        INDArray output = activationFn.getActivation(preOutput.dup(), true);
+        if(activationFn instanceof ActivationSoftmax){
+            BooleanIndexing.replaceWhere(output, SOFTMAX_CLIPPING_EPSILON, Conditions.lessThan(SOFTMAX_CLIPPING_EPSILON));
+            BooleanIndexing.replaceWhere(output, 1.0-SOFTMAX_CLIPPING_EPSILON, Conditions.greaterThan(1.0-SOFTMAX_CLIPPING_EPSILON));
         }
+        INDArray scoreArr = Transforms.log(output, false).muli(labels);
 
         //Weighted loss function
         if (weights != null) {
