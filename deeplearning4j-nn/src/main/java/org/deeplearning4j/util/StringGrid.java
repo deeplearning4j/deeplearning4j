@@ -233,7 +233,7 @@ public class StringGrid extends ArrayList<List<String>> {
         for (String key : remove)
             counter.removeKey(key);
 
-        counter.pruneKeysBelowThreshold(4.0f);
+        counter.dropElementsBelowThreshold(4.0f);
 
 
         final double totalCount = counter.totalCount();
@@ -684,7 +684,7 @@ public class StringGrid extends ArrayList<List<String>> {
         Counter<String> counter = new Counter<>();
         for (String val : columns)
             counter.incrementCount(val, 1.0f);
-        counter.pruneKeysBelowThreshold(2.0f);
+        counter.dropElementsBelowThreshold(2.0f);
         Set<String> keys = counter.keySet();
         for (List<String> row : this) {
             for (String key : keys)

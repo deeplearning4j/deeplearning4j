@@ -70,7 +70,7 @@ public class Util {
 
         };
 
-        Counter<K> totalWords = new Counter<>(factory);
+        Counter<K> totalWords = new Counter<>();
         return totalWords;
     }
 

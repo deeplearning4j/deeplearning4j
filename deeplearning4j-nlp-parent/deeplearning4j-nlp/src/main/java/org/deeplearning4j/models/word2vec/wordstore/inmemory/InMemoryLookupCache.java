@@ -253,7 +253,7 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable 
             vw.setIndex(index);
         }
 
-        if (!wordFrequencies.containsKey(word))
+        if (!wordFrequencies.containsElement(word))
             wordFrequencies.incrementCount(word, 1);
 
         wordIndex.add(word, index);

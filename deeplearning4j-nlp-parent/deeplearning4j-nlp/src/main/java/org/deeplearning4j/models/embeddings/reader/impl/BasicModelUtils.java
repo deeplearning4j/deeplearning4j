@@ -268,7 +268,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         }
 
 
-        distances.keepTopNKeys(top);
+        distances.keepTopNElements(top);
         return distances.keySet();
 
 
@@ -348,7 +348,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
             distances.incrementCount(s, (float) sim);
         }
 
-        distances.keepTopNKeys(top);
+        distances.keepTopNElements(top);
         return distances.keySet();
     }
 

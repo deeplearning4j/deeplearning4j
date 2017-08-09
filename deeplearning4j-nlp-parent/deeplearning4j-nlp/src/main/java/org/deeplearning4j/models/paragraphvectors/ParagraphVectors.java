@@ -484,7 +484,7 @@ public class ParagraphVectors extends Word2Vec {
             distances.incrementCount(s, (float) sim);
         }
 
-        return distances.getSortedKeys().subList(0, limit);
+        return distances.keySetSorted().subList(0, limit);
     }
 
     /**

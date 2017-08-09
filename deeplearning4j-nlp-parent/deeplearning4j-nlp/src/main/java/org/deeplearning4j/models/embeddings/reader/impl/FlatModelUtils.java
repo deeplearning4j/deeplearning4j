@@ -54,7 +54,7 @@ public class FlatModelUtils<T extends SequenceElement> extends BasicModelUtils<T
             distances.incrementCount(s, (float) sim);
         }
 
-        distances.keepTopNKeys(top);
-        return distances.getSortedKeys();
+        distances.keepTopNElements(top);
+        return distances.keySetSorted();
     }
 }
