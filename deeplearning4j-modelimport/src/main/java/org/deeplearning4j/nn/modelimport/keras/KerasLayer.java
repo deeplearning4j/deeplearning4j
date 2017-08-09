@@ -49,7 +49,7 @@ import java.util.*;
 public class KerasLayer {
 
     public static final String LAYER_FIELD_KERAS_VERSION = "keras_version";
-    public static final String LAYER_FIELD_CLASS_NAME = "class_name";
+
     public static final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     public static final String LAYER_CLASS_NAME_INPUT = "InputLayer";
     public static final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
@@ -330,6 +330,8 @@ public class KerasLayer {
      */
     protected KerasLayer(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this.kerasMajorVersion = (Integer) layerConfig.get(LAYER_FIELD_KERAS_VERSION);
+        this.conf = KerasLayerConfigurationFactory.get(this.kerasMajorVersion);
         this.className = getClassNameFromConfig(layerConfig);
         if (this.className == null)
             throw new InvalidKerasConfigurationException("Keras layer class name is missing");
@@ -346,9 +348,9 @@ public class KerasLayer {
         this.weightL2Regularization = getWeightL2RegularizationFromConfig(layerConfig, enforceTrainingConfig);
         this.dropout = getDropoutFromConfig(layerConfig);
         // TODO: Extract this as method and make sure to check properly
-        this.kerasMajorVersion = (Integer) layerConfig.get(LAYER_FIELD_KERAS_VERSION);
-        this.conf = KerasLayerConfigurationFactory.get(this.kerasMajorVersion);
         checkForUnsupportedConfigurations(layerConfig, enforceTrainingConfig);
+
+
     }
 
     /**
@@ -811,10 +813,10 @@ public class KerasLayer {
      */
     public String getClassNameFromConfig(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException {
-        if (!layerConfig.containsKey(LAYER_FIELD_CLASS_NAME))
+        if (!layerConfig.containsKey(conf.getLAYER_FIELD_CLASS_NAME()))
             throw new InvalidKerasConfigurationException(
-                    "Field " + LAYER_FIELD_CLASS_NAME + " missing from layer config");
-        return (String) layerConfig.get(LAYER_FIELD_CLASS_NAME);
+                    "Field " + conf.getLAYER_FIELD_CLASS_NAME() + " missing from layer config");
+        return (String) layerConfig.get(conf.getLAYER_FIELD_CLASS_NAME());
     }
 
     /**
@@ -827,18 +829,18 @@ public class KerasLayer {
      */
     public Map<String, Object> getTimeDistributedLayerConfig(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException {
-        if (!layerConfig.containsKey(LAYER_FIELD_CLASS_NAME))
+        if (!layerConfig.containsKey(conf.getLAYER_FIELD_CLASS_NAME()))
             throw new InvalidKerasConfigurationException(
-                    "Field " + LAYER_FIELD_CLASS_NAME + " missing from layer config");
-        if (!layerConfig.get(LAYER_FIELD_CLASS_NAME).equals(LAYER_CLASS_NAME_TIME_DISTRIBUTED))
+                    "Field " + conf.getLAYER_FIELD_CLASS_NAME() + " missing from layer config");
+        if (!layerConfig.get(conf.getLAYER_FIELD_CLASS_NAME()).equals(LAYER_CLASS_NAME_TIME_DISTRIBUTED))
             throw new InvalidKerasConfigurationException("Expected " + LAYER_CLASS_NAME_TIME_DISTRIBUTED
-                    + " layer, found " + (String) layerConfig.get(LAYER_FIELD_CLASS_NAME));
+                    + " layer, found " + (String) layerConfig.get(conf.getLAYER_FIELD_CLASS_NAME()));
         if (!layerConfig.containsKey(LAYER_FIELD_CONFIG))
             throw new InvalidKerasConfigurationException("Field " + LAYER_FIELD_CONFIG + " missing from layer config");
         Map<String, Object> outerConfig = getInnerLayerConfigFromConfig(layerConfig);
         Map<String, Object> innerLayer = (Map<String, Object>) outerConfig.get(LAYER_FIELD_LAYER);
-        layerConfig.put(LAYER_FIELD_CLASS_NAME, innerLayer.get(LAYER_FIELD_CLASS_NAME));
-        layerConfig.put(LAYER_FIELD_NAME, innerLayer.get(LAYER_FIELD_CLASS_NAME));
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
+        layerConfig.put(LAYER_FIELD_NAME, innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
         Map<String, Object> innerConfig = (Map<String, Object>) getInnerLayerConfigFromConfig(innerLayer);
         outerConfig.putAll(innerConfig);
         outerConfig.remove(LAYER_FIELD_LAYER);

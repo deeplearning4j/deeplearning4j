@@ -3,6 +3,8 @@ package org.deeplearning4j.nn.modelimport.keras;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -12,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_KERAS_VERSION;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_ACTIVATION;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_CONVOLUTION_2D;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_DENSE;
@@ -21,7 +22,6 @@ import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAM
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_MAX_POOLING_2D;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_ACTIVATION;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_BORDER_MODE;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_CLASS_NAME;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_CONFIG;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_DROPOUT;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_DROPOUT_W;
@@ -71,17 +71,24 @@ public class KerasLayerTest {
     public static final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
     public static final double EPSILON = 1E-5;
     public static final double MOMENTUM = 0.99;
-    public static final Integer KERAS_VERSION = 1;
+
+    private Integer kerasVersion = 1;
+    private KerasLayer keras1Layer = new KerasLayer(kerasVersion);
+    private Keras1LayerConfiguration conf1 = (Keras1LayerConfiguration) keras1Layer.conf;
+    private String KERAS_VERSION_FIELD = conf1.getLAYER_FIELD_KERAS_VERSION();
+
+    public KerasLayerTest() throws UnsupportedKerasConfigurationException {
+    }
 
     @Test
     public void testBuildActivationLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_ACTIVATION);
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_ACTIVATION);
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         layerConfig.put(LAYER_FIELD_CONFIG, config);
-        layerConfig.put(LAYER_FIELD_KERAS_VERSION, KERAS_VERSION);
+        layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
 
         ActivationLayer layer = new KerasActivation(layerConfig).getActivationLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
@@ -91,12 +98,12 @@ public class KerasLayerTest {
     @Test
     public void testBuildDropoutLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_DROPOUT);
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_DROPOUT);
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         config.put(LAYER_FIELD_DROPOUT, DROPOUT_KERAS);
         layerConfig.put(LAYER_FIELD_CONFIG, config);
-        layerConfig.put(LAYER_FIELD_KERAS_VERSION, KERAS_VERSION);
+        layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
 
         DropoutLayer layer = new KerasDropout(layerConfig).getDropoutLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
@@ -106,7 +113,7 @@ public class KerasLayerTest {
     @Test
     public void testBuildDenseLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_DENSE);
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_DENSE);
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
@@ -118,7 +125,8 @@ public class KerasLayerTest {
         config.put(LAYER_FIELD_DROPOUT, DROPOUT_KERAS);
         config.put(LAYER_FIELD_OUTPUT_DIM, N_OUT);
         layerConfig.put(LAYER_FIELD_CONFIG, config);
-        layerConfig.put(LAYER_FIELD_KERAS_VERSION, KERAS_VERSION);
+        layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
+
 
         DenseLayer layer = new KerasDense(layerConfig, false).getDenseLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
@@ -133,7 +141,7 @@ public class KerasLayerTest {
     @Test
     public void testBuildConvolutionLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_CONVOLUTION_2D);
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_CONVOLUTION_2D);
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
@@ -152,7 +160,8 @@ public class KerasLayerTest {
         config.put(LAYER_FIELD_NB_FILTER, N_OUT);
         config.put(LAYER_FIELD_BORDER_MODE, BORDER_MODE_VALID);
         layerConfig.put(LAYER_FIELD_CONFIG, config);
-        layerConfig.put(LAYER_FIELD_KERAS_VERSION, KERAS_VERSION);
+        layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
+
 
         ConvolutionLayer layer = new KerasConvolution(layerConfig).getConvolutionLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
@@ -171,7 +180,7 @@ public class KerasLayerTest {
     @Test
     public void testBuildSubsamplingLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_MAX_POOLING_2D);
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_MAX_POOLING_2D);
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         List<Integer> kernelSizeList = new ArrayList<>();
@@ -184,7 +193,7 @@ public class KerasLayerTest {
         config.put(LAYER_FIELD_STRIDES, subsampleList);
         config.put(LAYER_FIELD_BORDER_MODE, BORDER_MODE_VALID);
         layerConfig.put(LAYER_FIELD_CONFIG, config);
-        layerConfig.put(LAYER_FIELD_KERAS_VERSION, KERAS_VERSION);
+        layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
 
         SubsamplingLayer layer = new KerasPooling(layerConfig).getSubsamplingLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
@@ -198,7 +207,7 @@ public class KerasLayerTest {
     @Test
     public void testBuildGravesLstmLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_LSTM);
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_LSTM);
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_INNER_ACTIVATION, INNER_ACTIVATION_KERAS); // keras linear -> dl4j identity
@@ -215,7 +224,7 @@ public class KerasLayerTest {
         config.put(LAYER_FIELD_OUTPUT_DIM, N_OUT);
         config.put(LAYER_FIELD_UNROLL, LSTM_UNROLL);
         layerConfig.put(LAYER_FIELD_CONFIG, config);
-        layerConfig.put(LAYER_FIELD_KERAS_VERSION, KERAS_VERSION);
+        layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
 
         GravesLSTM layer = new KerasLstm(layerConfig).getGravesLSTMLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
@@ -231,7 +240,7 @@ public class KerasLayerTest {
     @Test
     public void testBuildBatchNormalizationLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_BATCHNORMALIZATION);
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_BATCHNORMALIZATION);
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         config.put(LAYER_FIELD_EPSILON, EPSILON);
@@ -241,7 +250,7 @@ public class KerasLayerTest {
         config.put(LAYER_FIELD_MODE, 0);
         config.put(LAYER_FIELD_AXIS, 3);
         layerConfig.put(LAYER_FIELD_CONFIG, config);
-        layerConfig.put(LAYER_FIELD_KERAS_VERSION, KERAS_VERSION);
+        layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
 
         BatchNormalization layer = new KerasBatchNormalization(layerConfig).getBatchNormalizationLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
