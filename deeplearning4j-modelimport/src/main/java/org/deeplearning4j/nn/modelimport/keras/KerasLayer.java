@@ -50,30 +50,6 @@ public class KerasLayer {
 
     public static final String LAYER_FIELD_KERAS_VERSION = "keras_version";
 
-//    public static final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
-    public static final String LAYER_CLASS_NAME_INPUT = "InputLayer";
-    public static final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
-    public static final String LAYER_CLASS_NAME_DENSE = "Dense";
-    public static final String LAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE = "TimeDistributedDense";
-    public static final String LAYER_CLASS_NAME_LSTM = "LSTM";
-    public static final String LAYER_CLASS_NAME_CONVOLUTION_1D = "Convolution1D";
-    public static final String LAYER_CLASS_NAME_CONVOLUTION_2D = "Convolution2D";
-    public static final String LAYER_CLASS_NAME_MAX_POOLING_1D = "MaxPooling1D";
-    public static final String LAYER_CLASS_NAME_MAX_POOLING_2D = "MaxPooling2D";
-    public static final String LAYER_CLASS_NAME_AVERAGE_POOLING_1D = "AveragePooling1D";
-    public static final String LAYER_CLASS_NAME_AVERAGE_POOLING_2D = "AveragePooling2D";
-    public static final String LAYER_CLASS_NAME_ZERO_PADDING_1D = "ZeroPadding1D";
-    public static final String LAYER_CLASS_NAME_ZERO_PADDING_2D = "ZeroPadding2D";
-    public static final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
-    public static final String LAYER_CLASS_NAME_MERGE = "Merge";
-    public static final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
-    public static final String LAYER_CLASS_NAME_TIME_DISTRIBUTED = "TimeDistributed";
-    public static final String LAYER_CLASS_NAME_EMBEDDING = "Embedding";
-    public static final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D = "GlobalMaxPooling1D";
-    public static final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D = "GlobalMaxPooling2D";
-    public static final String LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D = "GlobalAveragePooling1D";
-    public static final String LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D = "GlobalAveragePooling2D";
-
     /* Keras layer configurations. */
     public static final String LAYER_FIELD_CONFIG = "config";
     public static final String LAYER_FIELD_NAME = "name";
@@ -200,7 +176,7 @@ public class KerasLayer {
     public KerasLayer getKerasLayerFromConfig(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         String layerClassName = getClassNameFromConfig(layerConfig);
-        if (layerClassName.equals(LAYER_CLASS_NAME_TIME_DISTRIBUTED)) {
+        if (layerClassName.equals(conf.getLAYER_CLASS_NAME_TIME_DISTRIBUTED())) {
             layerConfig = getTimeDistributedLayerConfig(layerConfig);
             layerClassName = getClassNameFromConfig(layerConfig);
         }
@@ -208,39 +184,39 @@ public class KerasLayer {
         KerasLayer layer = null;
         if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ACTIVATION())) {
             layer = new KerasActivation(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(LAYER_CLASS_NAME_DROPOUT)){
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DROPOUT())){
             layer = new KerasDropout(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(LAYER_CLASS_NAME_DENSE) ||
-                layerClassName.equals(LAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE)){
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DENSE()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE())){
             layer = new KerasDense(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(LAYER_CLASS_NAME_LSTM)) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LSTM())) {
             layer = new KerasLstm(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(LAYER_CLASS_NAME_CONVOLUTION_2D)) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_2D())) {
             layer = new KerasConvolution(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(LAYER_CLASS_NAME_MAX_POOLING_2D) ||
-                layerClassName.equals(LAYER_CLASS_NAME_AVERAGE_POOLING_2D)){
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_2D()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_2D())){
             layer = new KerasPooling(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D) ||
-                layerClassName.equals(LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D) ||
-                layerClassName.equals(LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D) ||
-                layerClassName.equals(LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D)) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D())) {
             layer = new KerasGlobalPooling(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(LAYER_CLASS_NAME_BATCHNORMALIZATION)) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_BATCHNORMALIZATION())) {
             layer = new KerasBatchNormalization(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(LAYER_CLASS_NAME_EMBEDDING)) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_EMBEDDING())) {
             layer = new KerasEmbedding(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(LAYER_CLASS_NAME_INPUT)) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_INPUT())) {
             layer = new KerasInput(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(LAYER_CLASS_NAME_MERGE)) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MERGE())) {
             layer = new KerasMerge(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(LAYER_CLASS_NAME_FLATTEN)) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_FLATTEN())) {
             layer = new KerasFlatten(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(LAYER_CLASS_NAME_ZERO_PADDING_2D)) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ZERO_PADDING_2D())) {
             layer = new KerasZeroPadding(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(LAYER_CLASS_NAME_CONVOLUTION_1D) ||
-                layerClassName.equals(LAYER_CLASS_NAME_MAX_POOLING_1D) ||
-                layerClassName.equals(LAYER_CLASS_NAME_AVERAGE_POOLING_1D) ||
-                layerClassName.equals(LAYER_CLASS_NAME_ZERO_PADDING_1D)) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_1D()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_1D()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_1D()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_ZERO_PADDING_1D())) {
             layer = new KerasGlobalPooling(layerConfig, enforceTrainingConfig);
         }
         else {
@@ -585,7 +561,7 @@ public class KerasLayer {
      */
     public boolean isValidInboundLayer() throws InvalidKerasConfigurationException {
         return (getLayer() != null || getVertex() != null || getInputPreprocessor() != null
-                || this.className.equals(LAYER_CLASS_NAME_INPUT));
+                || this.className.equals(conf.getLAYER_CLASS_NAME_INPUT()));
     }
 
     /**
@@ -740,22 +716,18 @@ public class KerasLayer {
      * @return
      * @throws UnsupportedKerasConfigurationException
      */
-    public static PoolingType mapPoolingType(String className) throws UnsupportedKerasConfigurationException {
+    public PoolingType mapPoolingType(String className) throws UnsupportedKerasConfigurationException {
         PoolingType poolingType;
-        switch (className) {
-            case LAYER_CLASS_NAME_MAX_POOLING_2D:
-            case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D:
-            case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D:
-                poolingType = PoolingType.MAX;
-                break;
-            case LAYER_CLASS_NAME_AVERAGE_POOLING_2D:
-            case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D:
-            case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D:
-                poolingType = PoolingType.AVG;
-                break;
-            /* TODO: 1D (and 3D?) shaped pooling layers. */
-            default:
-                throw new UnsupportedKerasConfigurationException("Unsupported Keras pooling layer " + className);
+        if (className.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_2D()) ||
+                className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D()) ||
+                className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D())) {
+            poolingType = PoolingType.MAX;
+        } else if (className.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_2D()) ||
+                className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D()) ||
+                className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D())) {
+            poolingType = PoolingType.AVG;
+        } else {
+            throw new UnsupportedKerasConfigurationException("Unsupported Keras pooling layer " + className);
         }
         return poolingType;
     }
@@ -767,19 +739,16 @@ public class KerasLayer {
      * @return
      * @throws UnsupportedKerasConfigurationException
      */
-    public static int[] mapPoolingDimensions(String className) throws UnsupportedKerasConfigurationException {
+    public int[] mapPoolingDimensions(String className) throws UnsupportedKerasConfigurationException {
         int[] dimensions;
-        switch (className) {
-            case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D:
-            case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D:
-                dimensions = new int[] {2};
-                break;
-            case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D:
-            case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D:
-                dimensions = new int[] {2, 3};
-                break;
-            default:
-                throw new UnsupportedKerasConfigurationException("Unsupported Keras pooling layer " + className);
+        if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D()) ||
+                className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D())) {
+            dimensions = new int[] {2};
+        } else if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D()) ||
+                className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D())) {
+            dimensions = new int[] {2, 3};
+        } else {
+            throw new UnsupportedKerasConfigurationException("Unsupported Keras pooling layer " + className);
         }
         return dimensions;
     }
@@ -812,8 +781,8 @@ public class KerasLayer {
         if (!layerConfig.containsKey(conf.getLAYER_FIELD_CLASS_NAME()))
             throw new InvalidKerasConfigurationException(
                     "Field " + conf.getLAYER_FIELD_CLASS_NAME() + " missing from layer config");
-        if (!layerConfig.get(conf.getLAYER_FIELD_CLASS_NAME()).equals(LAYER_CLASS_NAME_TIME_DISTRIBUTED))
-            throw new InvalidKerasConfigurationException("Expected " + LAYER_CLASS_NAME_TIME_DISTRIBUTED
+        if (!layerConfig.get(conf.getLAYER_FIELD_CLASS_NAME()).equals(conf.getLAYER_CLASS_NAME_TIME_DISTRIBUTED()))
+            throw new InvalidKerasConfigurationException("Expected " + conf.getLAYER_CLASS_NAME_TIME_DISTRIBUTED()
                     + " layer, found " + (String) layerConfig.get(conf.getLAYER_FIELD_CLASS_NAME()));
         if (!layerConfig.containsKey(LAYER_FIELD_CONFIG))
             throw new InvalidKerasConfigurationException("Field " + LAYER_FIELD_CONFIG + " missing from layer config");

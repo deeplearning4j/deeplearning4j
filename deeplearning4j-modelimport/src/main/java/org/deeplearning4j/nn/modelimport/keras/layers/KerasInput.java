@@ -71,7 +71,7 @@ public class KerasInput extends KerasLayer {
      */
     public KerasInput(String layerName, int[] inputShape, boolean enforceTrainingConfig)
                     throws UnsupportedKerasConfigurationException {
-        this.className = LAYER_CLASS_NAME_INPUT;
+        this.className = conf.getLAYER_CLASS_NAME_INPUT();
         this.layerName = layerName;
         this.inputShape = inputShape;
         this.inboundLayerNames = new ArrayList<String>();

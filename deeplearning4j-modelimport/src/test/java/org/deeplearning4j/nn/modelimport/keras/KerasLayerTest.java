@@ -14,11 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_CONVOLUTION_2D;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_DENSE;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_DROPOUT;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_LSTM;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_MAX_POOLING_2D;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_ACTIVATION;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_BORDER_MODE;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_CONFIG;
@@ -97,7 +92,7 @@ public class KerasLayerTest {
     @Test
     public void testBuildDropoutLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_DROPOUT);
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_CLASS_NAME_DROPOUT());
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         config.put(LAYER_FIELD_DROPOUT, DROPOUT_KERAS);
@@ -112,7 +107,7 @@ public class KerasLayerTest {
     @Test
     public void testBuildDenseLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_DENSE);
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_CLASS_NAME_DENSE());
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
@@ -140,7 +135,7 @@ public class KerasLayerTest {
     @Test
     public void testBuildConvolutionLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_CONVOLUTION_2D);
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_CLASS_NAME_CONVOLUTION_2D());
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
@@ -179,7 +174,7 @@ public class KerasLayerTest {
     @Test
     public void testBuildSubsamplingLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_MAX_POOLING_2D);
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_CLASS_NAME_MAX_POOLING_2D());
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         List<Integer> kernelSizeList = new ArrayList<>();
@@ -206,7 +201,7 @@ public class KerasLayerTest {
     @Test
     public void testBuildGravesLstmLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_LSTM);
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_CLASS_NAME_LSTM());
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_INNER_ACTIVATION, INNER_ACTIVATION_KERAS); // keras linear -> dl4j identity
