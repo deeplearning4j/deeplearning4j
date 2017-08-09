@@ -203,7 +203,7 @@ public class KerasModel {
             Map<String, Object> layerConfigMap = (Map<String, Object>) layerConfig;
             // Append major keras version to each layer config.
             layerConfigMap.put(config.getFieldKerasVersion(), this.kerasMajorVersion);
-            KerasLayer layer = KerasLayer.getKerasLayerFromConfig(layerConfigMap,
+            KerasLayer layer = new KerasLayer(this.kerasMajorVersion).getKerasLayerFromConfig(layerConfigMap,
                     this.enforceTrainingConfig);
             if (dimOrder == DimOrder.NONE && layer.getDimOrder() != DimOrder.NONE) // determine dimension order, if any
                 dimOrder = layer.getDimOrder();
