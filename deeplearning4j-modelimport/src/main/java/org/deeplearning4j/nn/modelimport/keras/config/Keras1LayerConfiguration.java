@@ -28,28 +28,59 @@ import lombok.Data;
 @Data
 public class Keras1LayerConfiguration extends KerasLayerConfiguration {
 
-    private final String LAYER_FIELD_CLASS_NAME = "class_name";
-    private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
-    private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
-    private final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
-    private final String LAYER_CLASS_NAME_DENSE = "Dense";
-    private final String LAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE = "TimeDistributedDense";
-    private final String LAYER_CLASS_NAME_LSTM = "LSTM";
+    /* Basic layer names */
     private final String LAYER_CLASS_NAME_CONVOLUTION_1D = "Convolution1D";
     private final String LAYER_CLASS_NAME_CONVOLUTION_2D = "Convolution2D";
-    private final String LAYER_CLASS_NAME_MAX_POOLING_1D = "MaxPooling1D";
-    private final String LAYER_CLASS_NAME_MAX_POOLING_2D = "MaxPooling2D";
-    private final String LAYER_CLASS_NAME_AVERAGE_POOLING_1D = "AveragePooling1D";
-    private final String LAYER_CLASS_NAME_AVERAGE_POOLING_2D = "AveragePooling2D";
-    private final String LAYER_CLASS_NAME_ZERO_PADDING_1D = "ZeroPadding1D";
-    private final String LAYER_CLASS_NAME_ZERO_PADDING_2D = "ZeroPadding2D";
-    private final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
-    private final String LAYER_CLASS_NAME_MERGE = "Merge";
-    private final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
-    private final String LAYER_CLASS_NAME_TIME_DISTRIBUTED = "TimeDistributed";
-    private final String LAYER_CLASS_NAME_EMBEDDING = "Embedding";
-    private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D = "GlobalMaxPooling1D";
-    private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D = "GlobalMaxPooling2D";
-    private final String LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D = "GlobalAveragePooling1D";
-    private final String LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D = "GlobalAveragePooling2D";
+
+    /* Partially shared layer configurations. */
+    private final String LAYER_FIELD_OUTPUT_DIM = "output_dim";
+    private final String LAYER_FIELD_DROPOUT_RATE = "p";
+    private final String LAYER_FIELD_USE_BIAS = "bias";
+
+    /* Keras dimension ordering for, e.g., convolutional layersOrdered. */
+    private final String LAYER_FIELD_DIM_ORDERING = "dim_ordering";
+    private final String DIM_ORDERING_THEANO = "th";
+    private final String DIM_ORDERING_TENSORFLOW = "tf";
+
+    /* Recurrent layers */
+    private final String LAYER_FIELD_DROPOUT_W = "dropout_W";
+    private final String LAYER_FIELD_DROPOUT_U = "dropout_U";
+    private final String LAYER_FIELD_RECURRENT_INIT = "inner_init";
+
+    /* Embedding layer properties */
+    private final String LAYER_FIELD_EMBEDDINGS_REGULARIZER = "W_regularizer";
+    private final String LAYER_FIELD_EMBEDDINGS_CONSTRAINT = "W_constraint";
+
+    /* Normalisation layers */
+    private final String LAYER_FIELD_BATCHNORMALIZATION_BETA_INIT = "beta_init";
+    private final String LAYER_FIELD_BATCHNORMALIZATION_GAMMA_INIT = "gamma_init";
+    private final String LAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN = "running_mean";
+    private final String LAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE = "running_std";
+
+    /* Advanced activations */
+    private final String LAYER_FIELD_PRELU_INIT = "init";
+
+    /* Convolutional layer properties */
+    private final String LAYER_FIELD_NB_FILTER = "nb_filter";
+    private final String LAYER_FIELD_CONVOLUTION_STRIDES = "subsample";
+
+    /* Pooling / Upsampling layer properties */
+    private final String LAYER_FIELD_POOL_1D_SIZE = "pool_length";
+    private final String LAYER_FIELD_POOL_1D_STRIDES = "stride";
+    private final String LAYER_FIELD_UPSAMPLING_SIZE = "length";
+
+    /* Keras convolution border modes. */
+    private final String LAYER_FIELD_BORDER_MODE = "border_mode";
+
+    /* Noise layers */
+    private final String LAYER_FIELD_GAUSSIAN_VARIANCE = "sigma";
+
+    /* Keras weight regularizers. */
+    private final String LAYER_FIELD_W_REGULARIZER = "W_regularizer";
+    private final String LAYER_FIELD_B_REGULARIZER = "b_regularizer";
+
+    /* Keras constraints */
+    private final String LAYER_FIELD_W_CONSTRAINT = "W_constraint";
+    private final String LAYER_FIELD_B_CONSTRAINT = "b_constraint";
+
 }

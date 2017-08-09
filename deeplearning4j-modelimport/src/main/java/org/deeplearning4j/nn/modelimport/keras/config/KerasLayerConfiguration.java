@@ -35,7 +35,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_CLASS_NAME = "class_name";
     private final String LAYER_FIELD_LAYER = "layer";
 
-    // Basic layer names
+    /* Basic layer names */
     // Missing Layers: Reshape, Permute, RepeatVector, Lambda, ActivityRegularization, Masking
     // Conv1D, Conv3D, SeparableConv2D, Deconvolution2D/Conv2DTranspose, Cropping1D-3D, UpSampling1D-3D,
     // ZeroPadding3D, LocallyConnected1D-2D
@@ -85,9 +85,9 @@ public class KerasLayerConfiguration {
     /* Recurrent layers */
     private final String LAYER_FIELD_DROPOUT_W = ""; // 1: dropout_W, 2: dropout
     private final String LAYER_FIELD_DROPOUT_U = ""; // 2: dropout_U, 2: recurrent_dropout
-    private final String LAYER_FIELD_RECURENT_INIT = ""; // 1: inner_init, 2: recurrent_initializer
-    private final String LAYER_FIELD_RECURENT_CONSTRAINT = "recurrent_constraint"; // keras 2 only
-    private final String LAYER_FIELD_RECURENT_DROPOUT = ""; // 1: dropout_U, 2: recurrent_dropout
+    private final String LAYER_FIELD_RECURRENT_INIT = ""; // 1: inner_init, 2: recurrent_initializer
+    private final String LAYER_FIELD_RECURRENT_CONSTRAINT = "recurrent_constraint"; // keras 2 only
+    private final String LAYER_FIELD_RECURRENT_DROPOUT = ""; // 1: dropout_U, 2: recurrent_dropout
 
 
     /* Embedding layer properties */
