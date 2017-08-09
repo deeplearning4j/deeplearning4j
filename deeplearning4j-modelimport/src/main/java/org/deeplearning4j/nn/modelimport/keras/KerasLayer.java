@@ -50,17 +50,8 @@ public class KerasLayer {
 
     public static final String LAYER_FIELD_KERAS_VERSION = "keras_version";
 
-    /* Keras dimension ordering for, e.g., convolutional layersOrdered. */
-    public static final String LAYER_FIELD_DIM_ORDERING = "dim_ordering";
-    public static final String DIM_ORDERING_THEANO = "th";
-    public static final String DIM_ORDERING_TENSORFLOW = "tf";
-
-
     public static final Map<String, Class<? extends KerasLayer>> customLayers = new HashMap<>();
 
-    /* Keras backends store convolutional inputs and weights
-     * in tensors with different dimension orders.
-     */
     public enum DimOrder {
         NONE, THEANO, TENSORFLOW;
     }
@@ -744,18 +735,14 @@ public class KerasLayer {
     private DimOrder getDimOrderFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         DimOrder dimOrder = DimOrder.NONE;
-        if (innerConfig.containsKey(LAYER_FIELD_DIM_ORDERING)) {
-            String dimOrderStr = (String) innerConfig.get(LAYER_FIELD_DIM_ORDERING);
-            switch (dimOrderStr) {
-                case DIM_ORDERING_TENSORFLOW:
-                    dimOrder = DimOrder.TENSORFLOW;
-                    break;
-                case DIM_ORDERING_THEANO:
-                    dimOrder = DimOrder.THEANO;
-                    break;
-                default:
-                    log.warn("Keras layer has unknown Keras dimension order: " + dimOrder);
-                    break;
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_DIM_ORDERING())) {
+            String dimOrderStr = (String) innerConfig.get(conf.getLAYER_FIELD_DIM_ORDERING());
+            if (dimOrderStr.equals(conf.getDIM_ORDERING_TENSORFLOW())) {
+                dimOrder = DimOrder.TENSORFLOW;
+            } else if (dimOrderStr.equals(conf.getDIM_ORDERING_THEANO())) {
+                dimOrder = DimOrder.THEANO;
+            } else {
+                log.warn("Keras layer has unknown Keras dimension order: " + dimOrder);
             }
         }
         return dimOrder;
