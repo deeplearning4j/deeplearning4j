@@ -19,7 +19,7 @@ import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.datavec.api.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.loader.NativeImageLoader;

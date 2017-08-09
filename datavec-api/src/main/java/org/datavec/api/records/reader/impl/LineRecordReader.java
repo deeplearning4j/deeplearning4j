@@ -22,7 +22,6 @@ package org.datavec.api.records.reader.impl;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
-import org.datavec.api.berkeley.Triple;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
@@ -33,6 +32,7 @@ import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.split.StringSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.primitives.Triple;
 
 import java.io.*;
 import java.net.URI;

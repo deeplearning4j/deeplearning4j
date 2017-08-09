@@ -18,7 +18,8 @@ package org.datavec.api.util;
 
 
 import org.apache.commons.math3.random.RandomGenerator;
-import org.datavec.api.berkeley.Counter;
+import org.nd4j.linalg.primitives.Counter;
+
 
 import java.util.ArrayList;
 import java.util.List;

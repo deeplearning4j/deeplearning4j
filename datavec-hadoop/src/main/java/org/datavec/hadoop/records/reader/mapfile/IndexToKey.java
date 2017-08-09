@@ -19,7 +19,7 @@ package org.datavec.hadoop.records.reader.mapfile;
 import org.apache.hadoop.io.MapFile;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
-import org.datavec.api.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.IOException;
 import java.util.List;
