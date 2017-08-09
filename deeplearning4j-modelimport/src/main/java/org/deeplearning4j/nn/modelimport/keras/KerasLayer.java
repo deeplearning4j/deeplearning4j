@@ -50,7 +50,7 @@ public class KerasLayer {
 
     public static final String LAYER_FIELD_KERAS_VERSION = "keras_version";
 
-    public static final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
+//    public static final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     public static final String LAYER_CLASS_NAME_INPUT = "InputLayer";
     public static final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
     public static final String LAYER_CLASS_NAME_DENSE = "Dense";
@@ -204,77 +204,57 @@ public class KerasLayer {
             layerConfig = getTimeDistributedLayerConfig(layerConfig);
             layerClassName = getClassNameFromConfig(layerConfig);
         }
-        String test = conf.getLAYER_CLASS_NAME_CONVOLUTION_2D();
 
         KerasLayer layer = null;
-        switch (layerClassName) {
-            case LAYER_CLASS_NAME_ACTIVATION:
-                layer = new KerasActivation(layerConfig, enforceTrainingConfig);
-                break;
-            case LAYER_CLASS_NAME_DROPOUT:
-                layer = new KerasDropout(layerConfig, enforceTrainingConfig);
-                break;
-            case LAYER_CLASS_NAME_DENSE:
-            case LAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE:
-                /* TODO: test to make sure that mapping TimeDistributedDense to DenseLayer works.
-                 * Also, Keras recently added support for TimeDistributed layer wrapper so may
-                 * need to look into how that changes things.
-                 * */
-                layer = new KerasDense(layerConfig, enforceTrainingConfig);
-                break;
-            case LAYER_CLASS_NAME_LSTM:
-                layer = new KerasLstm(layerConfig, enforceTrainingConfig);
-                break;
-            case LAYER_CLASS_NAME_CONVOLUTION_2D:
-                /* TODO: Add support for 1D, 3D convolutional layersOrdered? */
-                layer = new KerasConvolution(layerConfig, enforceTrainingConfig);
-                break;
-            case LAYER_CLASS_NAME_MAX_POOLING_2D:
-            case LAYER_CLASS_NAME_AVERAGE_POOLING_2D:
-                /* TODO: Add support for 1D, 3D pooling layersOrdered? */
-                layer = new KerasPooling(layerConfig, enforceTrainingConfig);
-                break;
-            case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D:
-            case LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D:
-            case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D:
-            case LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D:
-                layer = new KerasGlobalPooling(layerConfig, enforceTrainingConfig);
-                break;
-            case LAYER_CLASS_NAME_BATCHNORMALIZATION:
-                layer = new KerasBatchNormalization(layerConfig, enforceTrainingConfig);
-                break;
-            case LAYER_CLASS_NAME_EMBEDDING:
-                layer = new KerasEmbedding(layerConfig, enforceTrainingConfig);
-                break;
-            case LAYER_CLASS_NAME_INPUT:
-                layer = new KerasInput(layerConfig, enforceTrainingConfig);
-                break;
-            case LAYER_CLASS_NAME_MERGE:
-                layer = new KerasMerge(layerConfig, enforceTrainingConfig);
-                break;
-            case LAYER_CLASS_NAME_FLATTEN:
-                layer = new KerasFlatten(layerConfig, enforceTrainingConfig);
-                break;
-            case LAYER_CLASS_NAME_ZERO_PADDING_2D:
-                layer = new KerasZeroPadding(layerConfig, enforceTrainingConfig);
-                break;
-            case LAYER_CLASS_NAME_CONVOLUTION_1D:
-            case LAYER_CLASS_NAME_MAX_POOLING_1D:
-            case LAYER_CLASS_NAME_AVERAGE_POOLING_1D:
-            case LAYER_CLASS_NAME_ZERO_PADDING_1D:
-            default:
-                // check if user registered a custom config
-                Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
+        if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ACTIVATION())) {
+            layer = new KerasActivation(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(LAYER_CLASS_NAME_DROPOUT)){
+            layer = new KerasDropout(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(LAYER_CLASS_NAME_DENSE) ||
+                layerClassName.equals(LAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE)){
+            layer = new KerasDense(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(LAYER_CLASS_NAME_LSTM)) {
+            layer = new KerasLstm(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(LAYER_CLASS_NAME_CONVOLUTION_2D)) {
+            layer = new KerasConvolution(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(LAYER_CLASS_NAME_MAX_POOLING_2D) ||
+                layerClassName.equals(LAYER_CLASS_NAME_AVERAGE_POOLING_2D)){
+            layer = new KerasPooling(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D) ||
+                layerClassName.equals(LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D) ||
+                layerClassName.equals(LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D) ||
+                layerClassName.equals(LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D)) {
+            layer = new KerasGlobalPooling(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(LAYER_CLASS_NAME_BATCHNORMALIZATION)) {
+            layer = new KerasBatchNormalization(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(LAYER_CLASS_NAME_EMBEDDING)) {
+            layer = new KerasEmbedding(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(LAYER_CLASS_NAME_INPUT)) {
+            layer = new KerasInput(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(LAYER_CLASS_NAME_MERGE)) {
+            layer = new KerasMerge(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(LAYER_CLASS_NAME_FLATTEN)) {
+            layer = new KerasFlatten(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(LAYER_CLASS_NAME_ZERO_PADDING_2D)) {
+            layer = new KerasZeroPadding(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(LAYER_CLASS_NAME_CONVOLUTION_1D) ||
+                layerClassName.equals(LAYER_CLASS_NAME_MAX_POOLING_1D) ||
+                layerClassName.equals(LAYER_CLASS_NAME_AVERAGE_POOLING_1D) ||
+                layerClassName.equals(LAYER_CLASS_NAME_ZERO_PADDING_1D)) {
+            layer = new KerasGlobalPooling(layerConfig, enforceTrainingConfig);
+        }
+        else {
+            // check if user registered a custom config
+            Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
 
-                if (customConfig == null)
-                    throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);
-                try {
-                    Constructor constructor = customConfig.getConstructor(Map.class);
-                    layer = (KerasLayer) constructor.newInstance(layerConfig);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-                break;
+            if (customConfig == null)
+                throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);
+            try {
+                Constructor constructor = customConfig.getConstructor(Map.class);
+                layer = (KerasLayer) constructor.newInstance(layerConfig);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
         return layer;
     }

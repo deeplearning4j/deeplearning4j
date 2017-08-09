@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_ACTIVATION;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_CONVOLUTION_2D;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_DENSE;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_CLASS_NAME_DROPOUT;
@@ -83,7 +82,7 @@ public class KerasLayerTest {
     @Test
     public void testBuildActivationLayer() throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_ACTIVATION);
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_FIELD_ACTIVATION());
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
