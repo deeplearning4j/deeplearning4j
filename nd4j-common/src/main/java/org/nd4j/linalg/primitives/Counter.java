@@ -21,7 +21,11 @@ public class Counter<T> implements Serializable {
 
 
     public double getCount(T element) {
-        return map.get(element).get();
+        AtomicDouble t = map.get(element);
+        if (t == null)
+            return 0.0;
+
+        return t.get();
     }
 
     public void incrementCount(T element, double inc) {
@@ -277,7 +281,7 @@ public class Counter<T> implements Serializable {
 
         @Override
         public int compare(Pair<T, Double> o1, Pair<T, Double> o2) {
-            return Double.compare(o1.value, o2.value);
+            return Double.compare(o2.value, o1.value);
         }
     }
 
@@ -285,7 +289,7 @@ public class Counter<T> implements Serializable {
 
         @Override
         public int compare(Pair<T, Double> o1, Pair<T, Double> o2) {
-            return Double.compare(o2.value, o1.value);
+            return Double.compare(o1.value, o2.value);
         }
     }
 }
