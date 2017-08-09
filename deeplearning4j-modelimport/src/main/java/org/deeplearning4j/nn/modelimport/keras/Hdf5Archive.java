@@ -23,6 +23,7 @@ import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.hdf5;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;

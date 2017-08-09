@@ -16,32 +16,33 @@
  *
  */
 
-package org.deeplearning4j.nn.modelimport.keras;
+package org.deeplearning4j.nn.modelimport.keras.exceptions;
 
 
 /**
  * Indicates that user is attempting to import a Keras model configuration that
- * is malformed or invalid in some other way.
+ * is not currently supported.
  *
- * See http://deeplearning4j.org/model-import-keras for more information.
+ * See http://deeplearning4j.org/model-import-keras for more information and
+ * file an issue at http://github.com/deeplearning4j/deeplearning4j/issues.
  *
  * @author dave@skymind.io
  */
-public class InvalidKerasConfigurationException extends Exception {
+public class UnsupportedKerasConfigurationException extends Exception {
 
-    public InvalidKerasConfigurationException(String message) {
+    public UnsupportedKerasConfigurationException(String message) {
         super(appendDocumentationURL(message));
     }
 
-    public InvalidKerasConfigurationException(String message, Throwable cause) {
+    public UnsupportedKerasConfigurationException(String message, Throwable cause) {
         super(appendDocumentationURL(message), cause);
     }
 
-    public InvalidKerasConfigurationException(Throwable cause) {
+    public UnsupportedKerasConfigurationException(Throwable cause) {
         super(cause);
     }
 
     private static String appendDocumentationURL(String message) {
-        return message + ". For more information, see http://deeplearning4j.org/model-import-keras.";
+        return message + ". Please file an issue at http://github.com/deeplearning4j/deeplearning4j/issues.";
     }
 }

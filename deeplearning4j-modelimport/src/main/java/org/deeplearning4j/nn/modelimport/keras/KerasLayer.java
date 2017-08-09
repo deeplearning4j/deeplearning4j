@@ -25,6 +25,8 @@ import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.IActivation;
