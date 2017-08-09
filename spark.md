@@ -50,6 +50,10 @@ If you have not run JVM based spark jobs before, we recommend [building an uber 
 The rest of this page covers the details for running a spark job including how to customize the spark job
 and how to use the spark interface for dl4j.
 
+If you would like a managed spark cluster with someone to do it for you. [Please contact us](https://skymind.ai/)
+
+Various cloud services such as elastic map reduce are another way of running and managing a spark cluster.
+
 
 ## <a name="overview">Overview</a>
 
