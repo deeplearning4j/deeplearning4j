@@ -45,6 +45,10 @@ You should use parallelwrapper when you have a big box (64 cores or more) or mul
 
 Note that you can use multiple gpus AND cudnn with spark. The most difficult part of this will be cluster setup though. It is *not* dl4j's responsibility beyond being a spark job.
 
+If you have not run JVM based spark jobs before, we recommend [building an uber jar using the maven shade plugin](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/pom.xml#L140) . 
+
+The rest of this page covers the details for running a spark job including how to customize the spark job
+and how to use the spark interface for dl4j.
 
 
 ## <a name="overview">Overview</a>
