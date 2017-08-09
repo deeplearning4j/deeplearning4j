@@ -14,8 +14,6 @@ public:
     int outputShape2D[8] = {2, 10, 10, 10, 1, 0, 1, 99};
     int outputShape3D[10] = {3, 10, 10, 10, 100, 10, 1, 0, 1, 99};
 
-
-
     ////////////////
     int batchInputShapeGood[8] = {2, 128, 784, 128, 1, 0, 1, 99};
     int batchOutputShapeGood[8] = {2, 128, 1024, 128, 1, 0, 1, 99};
@@ -30,12 +28,16 @@ public:
 
 };
 
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+///////////////////// implementation part ////////////////////////////
+
 TEST_F(DenseLayerInputTest, InputValidationTest1) {
 
     nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
 
     float *input = new float[1000];
-
 
     int result = layer->setInput(input, inputShape3D, nullptr, nullptr);
 
@@ -103,13 +105,13 @@ TEST_F(DenseLayerInputTest, JointConfiguration1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
-    ASSERT_TRUE(layer->dropOut);
+    ASSERT_TRUE(layer->_dropOut);
 
-    ASSERT_TRUE(layer->dropConnect);
+    ASSERT_TRUE(layer->_dropConnect);
 
-    ASSERT_EQ(0.5f, layer->pDropOut);
+    ASSERT_EQ(0.5f, layer->_pDropOut);
 
-    ASSERT_EQ(0.1f, layer->pDropConnect);
+    ASSERT_EQ(0.1f, layer->_pDropConnect);
 
     delete layer;
     delete[] output;
@@ -361,8 +363,8 @@ TEST_F(DenseLayerInputTest, DropOutTest1) {
 
 
     nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
-    layer->rng = rng;
-    layer->pDropOut = 0.5f;
+    layer->_rng = rng;
+    layer->_pDropOut = 0.5f;
 
     auto *input = new NDArray<float>(5, 5, 'c');
     input->assign(13.0f);
@@ -401,8 +403,8 @@ TEST_F(DenseLayerInputTest, DropConnectTest1) {
 
 
     nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>> *layer = new nd4j::layers::DenseLayer<float, nd4j::activations::Identity<float>>();
-    layer->rng = rng;
-    layer->pDropConnect = 0.5f;
+    layer->_rng = rng;
+    layer->_pDropConnect = 0.5f;
 
     auto *input = new NDArray<float>(5, 5, 'c');
     input->assign(13.0f);
@@ -433,9 +435,7 @@ TEST_F(DenseLayerInputTest, DropConnectTest1) {
     }
 }
 
-/**
- * This test checks F order input, like middle layers have
- */
+// This test checks F order input, like middle layers have
 TEST_F(DenseLayerInputTest, FeedForwardTest1) {
 
     auto *weights = new NDArray<double>(784, 1000, 'f');
@@ -492,9 +492,7 @@ TEST_F(DenseLayerInputTest, FeedForwardTest1) {
     ASSERT_TRUE(exp->equalsTo(output));
 }
 
-/**
- * This test checks C input order, like this is the first layer in network
- */
+// This test checks C input order, like this is the first layer in network
 TEST_F(DenseLayerInputTest, FeedForwardTest2) {
 
     auto *weights = new NDArray<double>(784, 1000, 'f');

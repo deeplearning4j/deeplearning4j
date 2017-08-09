@@ -22,26 +22,36 @@
 #include <layers/generic/available.h>
 
 namespace nd4j {
-    namespace layers {
+namespace layers {
 
-        template <typename T>
-        class LayerFactory {
+template <typename T> class LayerFactory {
 
-        public:
+    public:
+        // we should give out layer instances depending on layerNum here
+        // TODO: we want to pass things like dropout, dropconnect, probabilities, whatever else here
+        static INativeLayer<float>* getNewLayerFloat(int layerNum, int activationNum);
+            
+};
 
-            // we should give out layer instances depending on layerNum here
-            // TODO: we want to pass things like dropout, dropconnect, probabilities, whatever else here
-            static INativeLayer<float>* getNewLayerFloat(int layerNum, int activationNum) {
-                // macro required here, based on list of available layers, declared in available.h
-                //return new DenseLayer<float, nd4j::activations::ReLU<float>>();
 
-                BUILD_LAYERS_FACTORY(float, OPS_A(NATIVE_LAYERS), OPS_B(ACTIVATIONS))
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+///////////////////// implementation part ////////////////////////////
 
-                // return null here
-                return nullptr;
-            }
-        };
-    }
+
+template <typename T> INativeLayer<float>* LayerFactory<T>::getNewLayerFloat(int layerNum, int activationNum) {
+    // macro required here, based on list of available layers, declared in available.h
+    //return new DenseLayer<float, nd4j::activations::ReLU<float>>();
+
+    BUILD_LAYERS_FACTORY(float, OPS_A(NATIVE_LAYERS), OPS_B(ACTIVATIONS))
+
+    // return null here
+    return nullptr;
+}
+
+
+// end of namespace brackets
+}
 }
 
 #endif //PROJECT_LAYERS_FACTORY_H

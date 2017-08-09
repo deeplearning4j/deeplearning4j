@@ -1,4 +1,5 @@
 //
+//
 // @author raver119@gmail.com
 //
 #ifndef PROJECT_LAYERS_H
@@ -23,50 +24,37 @@ namespace layers {
 template <typename T> class INativeLayer {
     public:
 
-        NDArray<T> *params;
-        //T   *params;                    // flattened rectangle matrix with parameters (weights)
-        //int *paramsShapeInfo;           // defines matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
+        NDArray<T> *_params;                 // flattened rectangle matrix with parameters (weights)
 
-        NDArray<T> *bias;
-        //T *bias;                        // flattened multidimensional matrix of biases
-        //int *biasShapeInfo;               // see _paramsShapeInfo explanation
+        NDArray<T> *_bias;                   // flattened multidimensional matrix of biases
 
+        NDArray<T> *_input;                  // flattened multidimensional matrix of inputs
 
-        NDArray<T> *input;
-        //T   *input;                     // flattened multidimensional matrix of inputs
-        //int *inputShapeInfo;            // see _paramsShapeInfo explanation
+        NDArray<T> *_epsilon;                // flattened multidimensional matrix of epsilons = dL/da, L - loss function, a - input/activation
 
-        NDArray<T> *epsilon;
-        //T   *epsilon;                     // epsilon = dL/da, L - loss function, a - input/activation
-        //int *epsilontShapeInfo;            // see _paramsShapeInfo explanation
+        NDArray<T> *_mask;                   // the matrix of zeros and unities, takes into account possible different size of inputs, outer pixels are set to zeros in order to suit smaller inputs, the rest is unities
 
-        NDArray<T> *mask;
-        //T   *mask;                      // the matrix of zeros and unities, takes into account possible different size of inputs, for outer pixels absent in smaller inputs zeros are set, the rest is unities
-        //int *maskShapeInfo;             // see _paramsShapeInfo explanation
-
-        NDArray<T> *output;
-        //T *output;                      // flattened multidimensional matrix of outputs
-        //int *outputShapeInfo;             // see _paramsShapeInfo explanation
-
-        NDArray<T> *gradientW;              // flattened multidimensional matrix of gradients used in bp
-        NDArray<T> *gradientB;              // bias gradients holder
+        NDArray<T> *_output;                // flattened multidimensional matrix of outputs
         
-        Nd4jIndex allocated;            // memory amount which is already used from workspace, more probably it would be just 0
-        Nd4jIndex length;               // memory amount which is still available from workspace, (allocated + length) = total size of workspace
-        void *workspace;                // if you are going to use additional memory, take it from workspace
-
-        nd4j::random::RandomBuffer *rng;    // rng helper
-
-        bool dropOut;                   // corresponds to dropout applying
-        bool dropConnect;               // ???
+        NDArray<T> *_gradientW;              // flattened multidimensional matrix of weights gradients used in BP
+        NDArray<T> *_gradientB;              // flattened multidimensional matrix of bias gradients used in BP
         
-        T pDropOut;                     // dropout probabilities (if used)
-        T pDropConnect;                 // dropconnect probabilities (if used)
+        Nd4jIndex _allocated;               // memory amount which is already used from workspace, more probably it would be just 0
+        Nd4jIndex _length;                  // memory amount which is still available from workspace, (allocated + length) = total size of workspace
+        void *_workspace;                   // if one is going to use additional memory, take it from workspace
+
+        nd4j::random::RandomBuffer *_rng;   // rng helper
+
+        bool _dropOut;                      // corresponds to dropout applying
+        bool _dropConnect;                  // corresponds to dropConnect applying
+        
+        T _pDropOut;                        // dropout probabilities (if used)
+        T _pDropConnect;                    // dropconnect probabilities (if used)
                 
         // default constructor, sets all pointers to be empty
         INativeLayer();
-
-        ~INativeLayer();
+        
+        virtual ~INativeLayer();
 
         // copy constructor
         // creation of this class objects by copying is not expected, therefore disable copy constructor 
@@ -80,37 +68,37 @@ template <typename T> class INativeLayer {
         virtual T* allocate(long bytes) = 0; 
         
         // This method should validate parameters & bias, and return TRUE if everything ok. False otherwise
-        virtual int validateParameters() = 0;
+        virtual int validateParameters() const = 0;
 
         // this method should validate memory/holders for BP pass
-        virtual int validateGradients() = 0;
+        virtual int validateGradients() const = 0;
 
         // This method should validate input parameters, and return corresponding codes errors if mistake is present
-        virtual int validateInput() = 0;
+        virtual int validateInput() const = 0;
 
         // This method should validate output parameters, and return TRUE if everything is ok, FALSE otherwise
-        virtual int validateOutput() = 0;
+        virtual int validateOutput() const = 0;
        
         // DropOut & DropConnect helpers are platform-specific too
         virtual void dropOutHelper(NDArray<T> *input) = 0;
         virtual void dropConnectHelper(NDArray<T> *input) = 0;
 
         // this inline method attaches layer to workspace memory
-        void setWorkspace(void *memory, Nd4jIndex length) {
-            this->length    = length;
-            this->workspace = memory;
+        void setWorkspace(const void *memory, const Nd4jIndex length) {
+            this->_length    = length;
+            this->_workspace = memory;
         };
 
         // this method returns number of bytes used
-        long inline getUsedMemory() {
-            return allocated;           // usually just 0
+        Nd4jIndex inline getUsedMemory() const {
+            return _allocated;           // usually just 0
         }
 
         // This inline method allows to set parameters/biases for current layer
         // this input will be either activation from previous layer, or error coming from next layer
         int setParameters(T *params, int *paramsShapeInfo, T *bias, int *biasShapeInfo) {
-            this->params->replacePointers(params, paramsShapeInfo);
-            this->bias->replacePointers(bias, biasShapeInfo);
+            this->_params->replacePointers(params, paramsShapeInfo);
+            this->_bias->replacePointers(bias, biasShapeInfo);
 
             return validateParameters();
         }
@@ -124,16 +112,14 @@ template <typename T> class INativeLayer {
         // This inline method allows to specify input data for layer
         // this output will be either activation of this layer, or error from next layer        
         int setInput(T *input, int *inputShapeInfo, T *mask, int *maskShapeInfo) {
-            this->input->replacePointers(input, inputShapeInfo);
-            this->mask->replacePointers(mask, maskShapeInfo);
-
+            this->_input->replacePointers(input, inputShapeInfo);
+            this->_mask->replacePointers(mask, maskShapeInfo);
             return validateInput();
         }
 
         // This inline method allows to specify output pointer for layer
         int setOutput(T *output, int *shapeInfo) {
-            this->output->replacePointers(output, shapeInfo);
-
+            this->_output->replacePointers(output, shapeInfo);
             return validateOutput();
         }
 
@@ -144,59 +130,59 @@ template <typename T> class INativeLayer {
         virtual int backPropagate() = 0;
 
         // gemv should be used here
-        void gemvHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta);
+        void gemvHelper(const T *A, int *aShapeInfo, const T *B, int *bShapeInfo, T *C, int *cShapeInfo, const T alpha, const T beta);
 
-        void gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, T alpha, T beta);
+        void gemmHelper(const NDArray<T> *A, const NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta);
 
-        void gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, T alpha, T beta, bool transA, bool transB);
+        void gemmHelper(const NDArray<T> *A, const NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta, bool transA, bool transB);
         // extracts shapes info and perform gemm 
-        void gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta);
+        void gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, const T alpha, const T beta);
 
 };
     
-/////// implementation part ///////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+///////////////////// implementation part ////////////////////////////
     
 // default constructor sets all pointers to be empty
-template <typename T>
-INativeLayer<T>::INativeLayer() {
-    params = new NDArray<T>(nullptr, nullptr);
-    bias = new NDArray<T>(nullptr, nullptr);
-    input = new NDArray<T>(nullptr, nullptr);
-    epsilon = new NDArray<T>(nullptr, nullptr);
-    mask = new NDArray<T>(nullptr, nullptr);
-    output = new NDArray<T>(nullptr, nullptr);
-    epsilon = new NDArray<T>(nullptr, nullptr);
-    gradientW = new NDArray<T>(nullptr, nullptr);
-    gradientB = new NDArray<T>(nullptr, nullptr);
+template <typename T> INativeLayer<T>::INativeLayer() {
+    
+    _params    = new NDArray<T>();
+    _bias      = new NDArray<T>();
+    _input     = new NDArray<T>();
+    _epsilon   = new NDArray<T>();
+    _mask      = new NDArray<T>();
+    _output    = new NDArray<T>();
+    _gradientW = new NDArray<T>();
+    _gradientB = new NDArray<T>();
 
-    workspace = nullptr;
-    Nd4jIndex allocated = 0;
-    Nd4jIndex length = 0;
-    dropOut = false;                   
-    dropConnect = false;                       
-    pDropOut = 0.;   
-    pDropConnect = 0.;
-    rng = nullptr;
+    _workspace = nullptr;
+    _rng = nullptr;
+    _allocated = 0;
+    _length = 0;
+    _dropOut = false;                   
+    _dropConnect = false;                       
+    _pDropOut = 0.;   
+    _pDropConnect = 0.;    
 }
 
-template <typename T>
-INativeLayer<T>::~INativeLayer() {
-    delete params;
-    delete bias;
-    delete input;
-    delete gradientW;
-    delete gradientB;
-    delete mask;
-    delete output;
-    delete epsilon;
+template <typename T> INativeLayer<T>::~INativeLayer() {
+    delete _params;
+    delete _bias;
+    delete _input;
+    delete _gradientW;
+    delete _gradientB;
+    delete _mask;
+    delete _output;
+    delete _epsilon;
 }
 
-template <typename T> void INativeLayer<T>::gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, T alpha, T beta) {
+template <typename T> void INativeLayer<T>::gemmHelper(const NDArray<T> *A, const NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta) {
     gemmHelper(A->_buffer, A->_shapeInfo, B->_buffer, B->_shapeInfo, C->_buffer, C->_shapeInfo, alpha, beta);
 }
 
 // perform C = alpha*A*B + beta*C
-template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, T alpha, T beta) {
+template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, const T alpha, const T beta) {
             /**
              * PLEASE NOTE: Return order will be F always
              */
@@ -306,10 +292,10 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
 template <typename T>
 int INativeLayer<T>::configureLayerBP(T *output, int *outputShapeInfo, T* gradientW, int *gradientWShapeInfo, T* gradientB, int *gradientBShapeInfo, T *epsilonPrev, int *epsilonShapeInfo) {
-    this->output->replacePointers(output, outputShapeInfo);
-    this->gradientW->replacePointers(gradientW, gradientWShapeInfo);
-    this->gradientB->replacePointers(gradientB, gradientBShapeInfo);
-    this->epsilon->replacePointers(epsilonPrev, epsilonShapeInfo);
+    this->_output->replacePointers(output, outputShapeInfo);
+    this->_gradientW->replacePointers(gradientW, gradientWShapeInfo);
+    this->_gradientB->replacePointers(gradientB, gradientBShapeInfo);
+    this->_epsilon->replacePointers(epsilonPrev, epsilonShapeInfo);
 
     // TODO: add gradient/epsilon valdiation here
     if (validateGradients() != ND4J_STATUS_OK)
@@ -323,28 +309,28 @@ int INativeLayer<T>::configureLayerBP(T *output, int *outputShapeInfo, T* gradie
 // We have some options to be configured in layer: dropout, dropconnect, lr, etc 
 // This method should handle that. Maybe map (key-value), or something like that?           
 template <typename T>
-int INativeLayer<T>::configureLayerFF(T *input, int *inputShapeInfo, T*output, int *outputShapeInfo, T pDropOut, T pDropConnect, Nd4jPointer ptrRng) {
+int INativeLayer<T>::configureLayerFF(T *input, int *inputShapeInfo, T *output, int *outputShapeInfo, T pDropOut, T pDropConnect, Nd4jPointer ptrRng) {
 
     if (ptrRng != nullptr)
-        this->rng = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRng);
+        this->_rng = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRng);
 
-    this->pDropOut = pDropOut > (T) 0.0f ? pDropOut : (T) 0.0f;
-    this->pDropConnect = pDropConnect > (T) 0.0f ? pDropConnect : (T) 0.0f;
+    this->_pDropOut = pDropOut > (T) 0.0f ? pDropOut : (T) 0.0f;
+    this->_pDropConnect = pDropConnect > (T) 0.0f ? pDropConnect : (T) 0.0f;
 
-    this->dropOut = this->pDropOut > (T) 0.0f;
-    this->dropConnect = this->pDropConnect > (T) 0.0f;
+    this->_dropOut = this->_pDropOut > (T) 0.0f;
+    this->_dropConnect = this->_pDropConnect > (T) 0.0f;
 
-    if ((this->dropOut || this->dropConnect) && this->rng == nullptr)
+    if ((this->_dropOut || this->_dropConnect) && this->_rng == nullptr)
         return ND4J_STATUS_BAD_RNG;
 
-    this->input->replacePointers(input, inputShapeInfo);
+    this->_input->replacePointers(input, inputShapeInfo);
 
 
     if (validateInput() != ND4J_STATUS_OK)
         return ND4J_STATUS_BAD_INPUT;
 
 
-    this->output->replacePointers(output, outputShapeInfo);
+    this->_output->replacePointers(output, outputShapeInfo);
 
     if (validateOutput() != ND4J_STATUS_OK)
         return ND4J_STATUS_BAD_OUTPUT;

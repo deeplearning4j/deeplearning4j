@@ -13,84 +13,74 @@ namespace layers {
 
 template<typename T, typename AF> class DenseLayer: public BaseLayer<T, AF> {
     public:
-
-        // default constructor
-        DenseLayer();     
-
+  
         // feed forward
-        int feedForward();
+        virtual int feedForward();
 
         // back propagate
-        int backPropagate();
+        virtual int backPropagate();
        
         // This method should validate layer parameters & bias, and return TRUE if everything ok. FALSE otherwise      
-        inline int validateParameters();
+        inline virtual int validateParameters() const;
 
         // This method should validate input parameters, and return TRUE if everything ok. FALSE otherwise
-        inline int validateInput();
+        inline virtual int validateInput() const;
 
         // This method should valudate output parameters, and return TRUE if everything is ok, FALSE otherwise        
-        inline int validateOutput();
+        inline virtual int validateOutput() const;
 
         // this method should validate memory/holders for BP pass
-        inline int validateGradients();
+        inline virtual int validateGradients() const;
 };
 
 
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+///////////////////// implementation part ////////////////////////////
 
-
-
-/////// implementation part ///////    
-
-// default constructor
-template<typename T, typename AF> DenseLayer<T,AF>::DenseLayer() { 
-
-}     
-
+ 
 // back propagate
-template<typename T, typename AF>
-int DenseLayer<T,AF>::backPropagate() {
+template<typename T, typename AF> int DenseLayer<T,AF>::backPropagate() {
     // delta = dL/dz
     // epsilon = dL/da
     // delta = epsilon * da/dz = previous_params_T * previous_delta (*) da/dz
 
     // temporary save output pointers
-    T *__buffer = this->output->_buffer;
-    int *__shapeInfo = this->output->_shapeInfo;
+    T *buffer = this->_output->_buffer;
+    int *shapeInfo = this->_output->_shapeInfo;
 
-    NDArray<T> *preOutput = new NDArray<T>(this->input->shapeOf()[0], this->params->shapeOf()[1], 'f');
-    this->output->replacePointers(preOutput->_buffer, preOutput->_shapeInfo);
+    NDArray<T> *preOutput = new NDArray<T>(this->_input->shapeOf()[0], this->_params->shapeOf()[1], 'f');
+    this->_output->replacePointers(preOutput->_buffer, preOutput->_shapeInfo);
     this->feedForward();
 
     // put buffers back
-    this->output->replacePointers(__buffer, __shapeInfo);
+    this->_output->replacePointers(buffer, shapeInfo);
 
     NDArray<T> *delta = new NDArray<T>(preOutput);
     // calculate/fill delta
 
-    ActivationsExecutioner<T>::template executeBP<AF>(preOutput, this->epsilon, delta);
+    ActivationsExecutioner<T>::template executeBP<AF>(preOutput, this->_epsilon, delta);
 
     // gradient_on_param = delta * next_output
-    auto iT = this->input->transpose();
-    this->gemmHelper(iT, delta, this->gradientW, (T) 1.0f, (T) 0.0f);
+    NDArray<T> *iT = this->_input->transpose();
+    this->gemmHelper(iT, delta, this->_gradientW, (T) 1.0f, (T) 0.0f);
     // gradient_on_bias = delta
 
     NDArray<T> *sumArr = delta->sum({0}); 
-    this->gradientB->assign(sumArr);
+    this->_gradientB->assign(sumArr);
     // calculate next epsilon
 
-
     // creating temp output array
-    auto *oT = new NDArray<T>(this->params->shapeOf()[0], this->input->shapeOf()[0], 'f');
+    NDArray<T> *oT = new NDArray<T>(this->_params->shapeOf()[0], this->_input->shapeOf()[0], 'f');
     delta->transposei();
-    this->gemmHelper(this->params, delta, oT, (T) 1.0f, (T) 0.0f);
-    //printf("O length: %i\n", this->output->lengthOf());
+    this->gemmHelper(this->_params, delta, oT, (T) 1.0f, (T) 0.0f);
+    //printf("O length: %i\n", this->_output->lengthOf());
     oT->transposei();
-    this->output->assign(oT);
+    this->_output->assign(oT);
 
-    delete delta;
-    delete sumArr;
     delete preOutput;
+    delete delta;
+    delete sumArr;    
     delete oT;
     delete iT;
 
@@ -99,54 +89,35 @@ int DenseLayer<T,AF>::backPropagate() {
 
 
 
-template<typename T, typename AF>
-int DenseLayer<T,AF>::validateGradients() {
-    if (this->gradientW == nullptr || this->gradientB == nullptr || this->bias == nullptr || !this->gradientW->nonNull() || !this->gradientB->nonNull() || !this->bias->nonNull())
-        return ND4J_STATUS_BAD_GRADIENTS;
-  // Gradient ret = new DefaultGradient();
+template<typename T, typename AF> int DenseLayer<T,AF>::validateGradients() const {
+    
+    if (this->_gradientW == nullptr || this->_gradientB == nullptr || this->_bias == nullptr || !this->_gradientW->nonNull() || !this->_gradientB->nonNull() || !this->_bias->nonNull())
+        return ND4J_STATUS_BAD_GRADIENTS;    
 
-    if (this->output == nullptr || !this->output->nonNull())
+    if (this->_output == nullptr || !this->_output->nonNull())
         return ND4J_STATUS_BAD_OUTPUT;
-        // INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY); //f order
-        // Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
-        // INDArray biasGrad = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-        // delta.sum(biasGrad, 0); //biasGrad is initialized/zeroed first
-
-        // ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
-        // ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
-
-    if (!this->gradientW->isSameShape(this->params)) {
+        
+    if (!this->_gradientW->isSameShape(this->_params)) 
         return ND4J_STATUS_BAD_GRADIENTS;
-    }
-        // INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
+    
 
-    if (!this->gradientB->isSameShape(this->bias))
+    if (!this->_gradientB->isSameShape(this->_bias))
         return ND4J_STATUS_BAD_BIAS;
-// # forward pass
-// W = np.random.randn(5, 10)
-// X = np.random.randn(10, 3)
-// D = W.dot(X)
 
     // we're checking equality of input/epsilon batch size
-    if (this->epsilon->shapeOf()[0] != this->input->shapeOf()[0])
+    if (this->_epsilon->shapeOf()[0] != this->_input->shapeOf()[0])
         return ND4J_STATUS_BAD_EPSILON;
-// # now suppose we had the gradient on D from above in the circuit
-// dD = np.random.randn(*D.shape) # same shape as D
-// dW = dD.dot(X.T) #.T gives the transpose of the matrix
-// dX = W.T.dot(dD)
-
-
 
   // inline static T bpActivation(T value, T epsilon) {
                 // // FIXME: ultra-bad. should consider conigurable extra params here
                 // T extra[] = {(T) 0.0f};
                 // return simdOps::Step<T>::template op(value, extra) * epsilon;
 
-    if (this->epsilon->columns() != this->bias->columns())
+    if (this->_epsilon->columns() != this->_bias->columns())
         return ND4J_STATUS_BAD_EPSILON;
 
     // batch comparison again
-    if (!this->output->isSameShape(this->input))
+    if (!this->_output->isSameShape(this->_input))
         return ND4J_STATUS_BAD_OUTPUT;
 
     return ND4J_STATUS_OK;
@@ -155,15 +126,14 @@ int DenseLayer<T,AF>::validateGradients() {
 
 
 // This method should validate layer parameters & bias, and return TRUE if everything ok. FALSE otherwise
-template<typename T, typename AF>
-int DenseLayer<T,AF>::validateParameters() {
-    if (this->params->_shapeInfo == nullptr || this->bias->_shapeInfo == nullptr || this->params == nullptr || this->bias == nullptr || this->params->_buffer == nullptr || this->bias->_buffer == nullptr) {
+template<typename T, typename AF> int DenseLayer<T,AF>::validateParameters() const {
+    if (this->_params->_shapeInfo == nullptr || this->_bias->_shapeInfo == nullptr || this->_params == nullptr || this->_bias == nullptr || this->_params->_buffer == nullptr || this->_bias->_buffer == nullptr) {
 //        printf("Got nulls here\n");
         return ND4J_STATUS_BAD_PARAMS;
     }
 
-    int wRank = this->params->rankOf();
-    int bRank = this->bias->rankOf();
+    int wRank = this->_params->rankOf();
+    int bRank = this->_bias->rankOf();
 
     // rank of params/bias has to be 2 here
     if (wRank != 2 || bRank != 2) {
@@ -172,9 +142,9 @@ int DenseLayer<T,AF>::validateParameters() {
     }
 
 
-    int *wShape = this->params->shapeOf();
+    int *wShape = this->_params->shapeOf();
 
-    int biasLength = this->bias->lengthOf();
+    int biasLength = this->_bias->lengthOf();
 
     // number of outputs must be equal to biasLength
     if (wShape[1] != biasLength) {
@@ -188,21 +158,21 @@ int DenseLayer<T,AF>::validateParameters() {
 
 
 // This method should validate input parameters, and return TRUE if everything ok. FALSE otherwise
-template<typename T, typename AF> int DenseLayer<T,AF>::validateInput() {
+template<typename T, typename AF> int DenseLayer<T,AF>::validateInput() const {
     // we expect input to be either vector or matrix, in both cases - that's rank2
-    if (this->input == nullptr || this->input->_shapeInfo == nullptr ||this->input->_buffer == nullptr)
+    if (this->_input == nullptr || this->_input->_shapeInfo == nullptr ||this->_input->_buffer == nullptr)
         return ND4J_STATUS_BAD_INPUT;
 
-    if (this->input->rankOf() != 2)
+    if (this->_input->rankOf() != 2)
         return ND4J_STATUS_BAD_RANK;
 
 
-    int *iShape = this->input->shapeOf();
+    int *iShape = this->_input->shapeOf();
 
-    if (this->params != nullptr && this->params->nonNull()) {
+    if (this->_params != nullptr && this->_params->nonNull()) {
         // check dimensionality
 
-        int *wShape = this->params->shapeOf();
+        int *wShape = this->_params->shapeOf();
 
         // number of input features should match number of rows in params
         if (iShape[1] != wShape[0]) {
@@ -210,8 +180,8 @@ template<typename T, typename AF> int DenseLayer<T,AF>::validateInput() {
         }
     }
 
-    if (this->output != nullptr && this->output->nonNull()) {
-        int *oShape = this->output->shapeOf();
+    if (this->_output != nullptr && this->_output->nonNull()) {
+        int *oShape = this->_output->shapeOf();
 
         // we check for input/output batchSize equality
         if (oShape[0] != iShape[0])
@@ -223,19 +193,19 @@ template<typename T, typename AF> int DenseLayer<T,AF>::validateInput() {
 
 
 // This method should valudate output parameters, and return TRUE if everything is ok, FALSE otherwise
-template<typename T, typename AF> int DenseLayer<T,AF>::validateOutput() {
+template<typename T, typename AF> int DenseLayer<T,AF>::validateOutput() const {
     // same as input validation here. we expect rank of output arra
-    if (this->output == nullptr || this->output->_buffer == nullptr || this->output->_shapeInfo == nullptr)
+    if (this->_output == nullptr || this->_output->_buffer == nullptr || this->_output->_shapeInfo == nullptr)
         return ND4J_STATUS_BAD_OUTPUT;
 
-    if (this->output->rankOf() != 2)
+    if (this->_output->rankOf() != 2)
         return ND4J_STATUS_BAD_RANK;
 
-    int *oShape = this->output->shapeOf();
+    int *oShape = this->_output->shapeOf();
 
     // length of output along dimension 1 should match length of parameters, if parameters are set,
-    if (this->params != nullptr && this->params->nonNull()) {
-        int *wShape = this->params->shapeOf();
+    if (this->_params != nullptr && this->_params->nonNull()) {
+        int *wShape = this->_params->shapeOf();
 
         // number of output features should match number of rows in params
         if (oShape[1] != wShape[1]) {
@@ -244,8 +214,8 @@ template<typename T, typename AF> int DenseLayer<T,AF>::validateOutput() {
     }
 
 
-    if (this->input != nullptr && this->input->nonNull()) {
-        int *iShape = this->input->shapeOf();
+    if (this->_input != nullptr && this->_input->nonNull()) {
+        int *iShape = this->_input->shapeOf();
 
         // we check for input/output batchSize equality
         if (oShape[0] != iShape[0])
@@ -258,35 +228,35 @@ template<typename T, typename AF> int DenseLayer<T,AF>::validateOutput() {
 // feed forward
 template<typename T, typename AF> int DenseLayer<T,AF>::feedForward() {
     // dropout helper call
-    if (this->dropOut) {
+    if (this->_dropOut) {
         //printf("Going dropout\n");
-        this->dropOutHelper(this->input);
+        this->dropOutHelper(this->_input);
     }
 
     // dropconnect helper
-    if (this->dropConnect) {
+    if (this->_dropConnect) {
         //printf("Going dropconnect\n");
-        this->dropConnectHelper(this->params);
+        this->dropConnectHelper(this->_params);
     }
     
 
     // do wxa+b here or something else
     // TODO: introduce BLAS right here
-    if (shape::isRowVector(this->input->_shapeInfo)) {
+    if (shape::isRowVector(this->_input->_shapeInfo)) {
         // gemv here input * W
 
     } else {
         // gemm here, input * W
         // these values should be set appropriately
 
-        this->gemmHelper(this->input, this->params, this->output, (T) 1.0f, (T) 0.0f);
+        this->gemmHelper(this->_input, this->_params, this->_output, (T) 1.0f, (T) 0.0f);
 
         // we're rolling through rows here
-        this->output->addiRowVector(this->bias);
+        this->_output->addiRowVector(this->_bias);
     }
 
     // activation call
-    ActivationsExecutioner<T>::template executeFF<AF>(this->output, this->output);
+    ActivationsExecutioner<T>::template executeFF<AF>(this->_output, this->_output);
 
     return ND4J_STATUS_OK;
 }

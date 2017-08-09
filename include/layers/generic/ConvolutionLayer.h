@@ -9,20 +9,24 @@
 #include <layers/generic/BaseLayer.h>
 
 namespace nd4j {
-    namespace layers {
+namespace layers {
 
-        template<typename T, typename AF>
-        class ConvolutionLayer: public BaseLayer<T, AF> {
+template<typename T, typename AF> class ConvolutionLayer: public BaseLayer<T, AF> {
 
-            void feedForward() {
-                // to be implemented
-            }
+    public:
+        virtual int feedForward() {}
+        virtual int backPropagate() {} 
+};
 
-            void backPropagate() {
-                // to be implemented
-            }
-        };
-    }
+
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+///////////////////// implementation part ////////////////////////////
+
+
+// end of namespace brackets
+}
 }
 
 #endif //PROJECT_CONVOLUTIONLAYER_H

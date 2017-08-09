@@ -18,6 +18,10 @@ template <typename T> class ActivationsExecutioner {
 };
 
 
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+///////////////////// implementation part ////////////////////////////
+
 // This method should be backend-specific, and should be implemented accordingly
 template<typename T> template<typename Activation> 
 void ActivationsExecutioner<T>::executeFF(NDArray<T> *input, NDArray<T> *output) {

@@ -15,31 +15,23 @@
          * There's just nothing to override here.
          */
 namespace nd4j {
-    namespace activations {
+namespace activations {
 
 
-        template <typename T>
-        class IActivationsExecutioner {
-        public:
+template <typename T> class IActivationsExecutioner {
+    public:
+        // This method should be backend-specific, and should be implemented accordingly
+        template<typename Activation> static void executeFF(NDArray<T> *input, NDArray<T> *output) {
+            // platform-specific invocation loop here
+        }
 
-            /**
-             * This method should be backend-specific, and should be implemented accordingly
-             *
-             * @tparam Activation
-             * @param input
-             * @param inputShapeInfo
-             */
-            template<typename Activation>
-            static void executeFF(NDArray<T> *input, NDArray<T> *output) {
-                // platform-specific invocation loop here
-            }
-
-            template<typename Activation>
-            static void executeBP(NDArray<T> *input, NDArray<T> *epsilon, NDArray<T> *output) {
-                // platform-specific invocation loop here
-            };
+        template<typename Activation> static void executeBP(NDArray<T> *input, NDArray<T> *epsilon, NDArray<T> *output) {
+            // platform-specific invocation loop here
         };
-    }
+    };
+
+// end of namespace brackets
+}
 }
 
 #endif //PROJECT_ACTIVATIONS_H

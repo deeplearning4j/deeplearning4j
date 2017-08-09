@@ -9,20 +9,29 @@
 #include <layers/generic/BaseLayer.h>
 
 namespace nd4j {
-    namespace layers {
+namespace layers {
 
-        template<typename T, typename AF>
-        class LSTMLayer: public BaseLayer<T, AF> {
+template<typename T, typename AF> class LSTMLayer: public BaseLayer<T, AF> {
+           
+    public:
+        virtual int feedForward() {
+            // to be implemented
+        }
 
-            void feedForward() {
-                // to be implemented
-            }
+        virtual int backPropagate() {
+            // to be implemented
+        }
+};
 
-            void backPropagate() {
-                // to be implemented
-            }
-        };
-    }
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+///////////////////// implementation part ////////////////////////////
+
+
+
+// end of namespace brackets
+}
 }
 
 #endif //PROJECT_POOLING2DLAYER_H
