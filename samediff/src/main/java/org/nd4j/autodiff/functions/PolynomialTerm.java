@@ -44,7 +44,7 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
     }
 
     @Override
-    public DifferentialFunction<X> diff(Variable<X> i_v) {
+    public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
         return (new PolynomialTerm<>(graph,m_scale * m_exponent, arg(), m_exponent - 1))
                 .mul(arg().diff(i_v));
     }

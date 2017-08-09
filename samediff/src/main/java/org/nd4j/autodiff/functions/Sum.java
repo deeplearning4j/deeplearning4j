@@ -24,7 +24,7 @@ public class Sum<X extends Field<X>> extends AbstractBinaryFunction<X> {
     }
 
     @Override
-    public DifferentialFunction<X> diff(Variable<X> i_v1) {
+    public DifferentialFunction<X> diff(DifferentialFunction<X> i_v1) {
         return (larg() == rarg()) ? larg().diff(i_v1).mul(2L) // Field is
                                                               // commutative
                                                               // with respect to

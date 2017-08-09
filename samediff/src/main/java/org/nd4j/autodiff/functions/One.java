@@ -16,6 +16,8 @@ public class One<X extends Field<X>> extends Constant<X> {
                AbstractIdentityFactory<X> i_factory) {
         super(graph,i_factory.one(shape),shape, i_factory);
         this.shape = shape;
+        ArrayField arrayField = (ArrayField) m_x;
+        arrayField.getInput().setScalarValue(1.0);
     }
 
 

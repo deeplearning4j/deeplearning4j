@@ -81,9 +81,11 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                             String opName,
                             int...shape) {
         if(i_v1.getValue(true) instanceof ArrayField) {
-            ArrayField v1 = (ArrayField) i_v1.getValue(true);
-            NDArrayInformation information =    NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
-                    .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
+            ArrayField v1 = (ArrayField) i_v1.getValue(false);
+            NDArrayInformation information =    NDArrayInformation.builder()
+                    .arrId(UUID.randomUUID().toString())
+                    .id(opName + "(" + v1.getInput().getId() + " -> " +
+                            v1.getInput().getId() + ")")
                     .shape(shape).build();
             //result
             NDArrayVertex newVertex = new NDArrayVertex(graph.nextVertexId(), information);
@@ -122,6 +124,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
         if(i_v1.getValue(true) instanceof ArrayField) {
             this.opType = OpState.OpType.TRANSFORM;
             ArrayField arrayField = (ArrayField) i_v1.getValue(true);
+
             addEdges(graph,
                     i_v1,
                     opName,

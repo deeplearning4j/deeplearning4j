@@ -463,6 +463,23 @@ public class SameDiffTests {
     }
 
     @Test
+    public void testInplaceSubi() {
+        SameDiff sameDiffOuter = SameDiff.create();
+        Map<String,INDArray> params = new HashMap<>();
+        params.put("x",Nd4j.ones(4));
+        sameDiffOuter.defineFunction("inplacesubi", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable inplace = sameDiff.var("x",inputs.get("x"));
+                return inplace.subi(1.0);
+            }
+        },params);
+
+        sameDiffOuter.getFunction("inplacesubi").eval(params);
+        assertEquals(Nd4j.zeros(4),params.get("x"));
+    }
+
+    @Test
     public void testTransformPostExecFunction() {
         SameDiff sameDiffOuter = SameDiff.create();
         Map<String,INDArray> inputs = variablesForInput();
@@ -628,15 +645,18 @@ public class SameDiffTests {
             @Override
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable outputs = sameDiffOuter.invokeFunctionOn("loss",sameDiff);
-                SDVariable grad = sameDiff.grad(outputs,sameDiff.var("w",inputs.get("w")));
+                 SDVariable grad = sameDiff.grad(outputs,sameDiff.var("w",inputs.get("w")));
                 return grad;
             }
         },inputs);
 
 
-        SameDiff logisticGraph = sameDiffOuter.getFunction("loss");
-        INDArray[] outputs = logisticGraph.eval(inputs);
-        System.out.println(Arrays.toString(outputs));
+        SameDiff logisticGraph = sameDiffOuter.getFunction("lossGrad");
+        for(int i = 0; i < 5; i++) {
+            INDArray[] outputs = logisticGraph.eval(inputs);
+            inputs.get("w").subi(outputs[outputs.length - 1].mul(0.01));
+            System.out.println(inputs.get("w"));
+        }
 
 
     }

@@ -7,6 +7,7 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
@@ -31,7 +32,7 @@ import java.util.UUID;
 public class ArrayField implements Field<ArrayField> {
     @Getter
     @Setter
-    private Graph<NDArrayInformation,OpState> ops;
+    private SDGraph ops;
     @Getter
     @Setter
     private NDArrayInformation input;
@@ -40,7 +41,7 @@ public class ArrayField implements Field<ArrayField> {
     private NDArrayVertex vertex;
 
     public ArrayField(NDArrayVertex ndArrayVertex,
-                      Graph<NDArrayInformation,OpState> ops) {
+                      SDGraph ops) {
         this.input = ndArrayVertex.getValue();
         this.vertex = ndArrayVertex;
         this.ops = ops;
@@ -845,15 +846,15 @@ public class ArrayField implements Field<ArrayField> {
                                             Number scalarValue,
 
                                             boolean inPlace) {
-       //for the purpose of the graph, we only need the scalar
+        //for the purpose of the graph, we only need the scalar
         //value, therefore the input should be the
         //non scalar
 
 
-       if(this.getInput() != input) {
-           setInput(input);
-           getVertex().setValue(input);
-       }
+        if(this.getInput() != input) {
+            setInput(input);
+            getVertex().setValue(input);
+        }
 
 
         NDArrayInformation result =  NDArrayInformation.builder()
@@ -1072,6 +1073,7 @@ public class ArrayField implements Field<ArrayField> {
         //result
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId() ,
                 NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
+                        .scalarValue(getInput().getScalarValue())
                         .id(name + "(" + input.getId() + ")")
                         .shape(shape).build());
         return newVertex;
@@ -1119,11 +1121,28 @@ public class ArrayField implements Field<ArrayField> {
 
 
     private double getScalar(ArrayField other) {
-        if(ArrayUtil.prod(getInput().getShape()) == 1)
-            return this.getInput().getScalarValue().doubleValue();
-        else if(ArrayUtil.prod(other.getInput().getShape()) == 1)
-            return other.getInput().getScalarValue().doubleValue();
-        throw new IllegalArgumentException("Neither this element nor the other input is a scalar");
+        if(ArrayUtil.prod(getInput().getShape()) == 1) {
+            if(this.getInput().getScalarValue() != null)
+                return this.getInput().getScalarValue().doubleValue();
+            else if(this.getInput().getOwner().getScalarValue() != null)
+                return this.getInput().getOwner().getScalarValue().doubleValue();
+
+            else if(ops.getSameDiff().getVertexToArray().get(input.getArrId()) != null) {
+                return ops.getSameDiff().getVertexToArray().get(input.getArrId()).getDouble(0);
+            }
+        }
+        else if(ArrayUtil.prod(other.getInput().getShape()) == 1) {
+            if(other.getInput().getScalarValue() != null)
+                return other.getInput().getScalarValue().doubleValue();
+            else if(other.getInput().getScalarValue() != null)
+                return other.getInput().getScalarValue().doubleValue();
+
+            else if(ops.getSameDiff().getVertexToArray().get(other.getInput().getArrId()) != null) {
+                return ops.getSameDiff().getVertexToArray().get(other.getInput().getArrId()).getDouble(0);
+            }
+        }
+
+        return Double.MIN_VALUE;
     }
 
     private NDArrayInformation getNonScalar(ArrayField other) {

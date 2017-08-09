@@ -7,7 +7,6 @@ import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.functions.AbstractBinaryReduceFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.functions.Variable;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
@@ -99,7 +98,7 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
 
 
     @Override
-    public DifferentialFunction<X> diff(Variable<X> i_v1) {
+    public DifferentialFunction<X> diff(DifferentialFunction<X> i_v1) {
         return doTensorMmul(argNum,larg(),rarg());
     }
 

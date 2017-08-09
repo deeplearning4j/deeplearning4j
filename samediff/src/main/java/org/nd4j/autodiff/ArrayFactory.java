@@ -199,7 +199,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     @Override
     public ArrayField zero(int[] shape) {
         NDArrayInformation information = NDArrayInformation.builder()
-                .arrId(UUID.randomUUID().toString())
+                .arrId(UUID.randomUUID().toString()).scalarValue(0.0)
                 .id("zero-" + UUID.randomUUID().toString()).owner(null).shape(shape).build();
         return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }
@@ -207,7 +207,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     @Override
     public ArrayField one(int[] shape) {
         NDArrayInformation information = NDArrayInformation.builder()
-                .arrId(UUID.randomUUID().toString())
+                .arrId(UUID.randomUUID().toString()).scalarValue(1.0)
                 .id("one-"  + UUID.randomUUID().toString()).owner(null).shape(shape).build();
         return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }

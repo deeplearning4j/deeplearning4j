@@ -85,7 +85,7 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
     @Override
-    public DifferentialFunction<X> diff(Variable<X> i_v) {
+    public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
         return new Zero<>(graph,shape, m_factory);
     }
 

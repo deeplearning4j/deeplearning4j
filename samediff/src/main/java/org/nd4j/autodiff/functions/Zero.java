@@ -14,6 +14,8 @@ public class Zero<X extends Field<X>> extends Constant<X> {
 
     public Zero(SDGraph graph, int[] shape, AbstractIdentityFactory<X> i_factory) {
         super(graph,i_factory.zero(shape),shape, i_factory);
+        ArrayField arrayField = (ArrayField) m_x;
+        arrayField.getInput().setScalarValue(0.0);
     }
 
     @Override
