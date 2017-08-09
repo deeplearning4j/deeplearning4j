@@ -12,6 +12,7 @@ Data parallelism shards large datasets and hands those pieces to separate neural
 **Contents**
 
 * [Overview](#overview)
+* [Pre requisites](#prerequisites)
 * [How Distributed Network Training Occurs with DL4J on Spark](#how)
 * [A Minimal Example](#minimal)
 * [Configuring the TrainingMaster](#configuring)
@@ -30,6 +31,21 @@ Data parallelism shards large datasets and hands those pieces to separate neural
 * [Caching/Persisting RDD&lt;DataSets&gt; and RDD&lt;INDArrays&gt;](#caching)
 * [Using Kryo Serialization with Deeplearning4j](#kryo)
 * [Using Intel MKL on Amazon Elastic MapReduce with Deeplearning4j](#mklemr)
+
+prerequisites
+## <a name="prerequisites">Pre requisites</a>
+
+This page assumes a working knowledge of spark. If you are not familiar with how to both: setup spark clusters and run
+spark jobs, this page will not teach you that. Please consider understanding spark basics first. The [spark quick start](https://spark.apache.org/docs/latest/quick-start.html) is a great place to start with running spark jobs.
+
+If you are just looking for a way to run multiple models on the same server, consider using [parallelwrapper instead](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-cuda-specific-examples/src/main/java/org/deeplearning4j/examples/multigpu/MultiGpuLenetMnistExample.java).
+
+Parallelwrapper implements the same concepts (parameter averaging and gradient sharing) optimized for a single server.
+You should use parallelwrapper when you have a big box (64 cores or more) or multiple gpus.
+
+Note that you can use multiple gpus AND cudnn with spark. The most difficult part of this will be cluster setup though. It is *not* dl4j's responsibility beyond being a spark job.
+
+
 
 ## <a name="overview">Overview</a>
 
