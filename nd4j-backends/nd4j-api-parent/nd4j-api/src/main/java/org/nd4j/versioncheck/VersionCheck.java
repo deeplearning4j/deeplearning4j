@@ -106,10 +106,10 @@ public class VersionCheck {
             boolean datavecViaClass = false;
             for(VersionInfo vi : dependencies ){
                 if(DL4J_GROUPID.equals(vi.getGroupId()) && DL4J_ARTIFACT.equals(vi.getArtifactId())
-                        && UNKNOWN_VERSION.equals(vi.getBuildVersion())){
+                        && (UNKNOWN_VERSION.equals(vi.getBuildVersion()) || UNKNOWN_VERSION_2.equals(vi.getBuildVersion()))){
                     dl4jViaClass = true;
                 } else if(DATAVEC_GROUPID.equals(vi.getGroupId()) && DATAVEC_ARTIFACT.equals(vi.getArtifactId())
-                        && UNKNOWN_VERSION.equals(vi.getBuildVersion())){
+                        && (UNKNOWN_VERSION.equals(vi.getBuildVersion()) || UNKNOWN_VERSION_2.equals(vi.getBuildVersion()))){
                     datavecViaClass = true;
                 }
             }
