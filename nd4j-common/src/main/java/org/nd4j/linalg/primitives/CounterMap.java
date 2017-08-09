@@ -18,10 +18,21 @@ public class CounterMap<F, S> implements Serializable{
 
     protected Map<F, Counter<S>> maps = new ConcurrentHashMap<>();
 
+    /**
+     * This method checks if this CounterMap has any values stored
+     *
+     * @return
+     */
     public boolean isEmpty() {
         return maps.isEmpty();
     }
 
+    /**
+     * This method checks if this CounterMap has any values stored for a given first element
+     *
+     * @param element
+     * @return
+     */
     public boolean isEmpty(F element){
         if (isEmpty())
             return true;
@@ -33,7 +44,11 @@ public class CounterMap<F, S> implements Serializable{
             return m.isEmpty();
     }
 
-
+    /**
+     * This method will increment values of this counter, by counts of other counter
+     *
+     * @param other
+     */
     public void incrementAll(CounterMap<F, S> other) {
         for (Map.Entry<F, Counter<S>> entry : other.maps.entrySet()) {
             F key = entry.getKey();
@@ -45,6 +60,13 @@ public class CounterMap<F, S> implements Serializable{
         }
     }
 
+    /**
+     * This method will increment counts for a given first/second pair
+     *
+     * @param first
+     * @param second
+     * @param inc
+     */
     public void incrementCount(F first, S second, double inc) {
         Counter<S> counter = maps.get(first);
         if (counter == null) {
@@ -55,7 +77,13 @@ public class CounterMap<F, S> implements Serializable{
         counter.incrementCount(second, inc);
     }
 
-
+    /**
+     * This method returns counts for a given first/second pair
+     *
+     * @param first
+     * @param second
+     * @return
+     */
     public double getCount(F first, S second) {
         Counter<S> counter = maps.get(first);
         if (counter == null)
@@ -64,7 +92,14 @@ public class CounterMap<F, S> implements Serializable{
         return counter.getCount(second);
     }
 
-
+    /**
+     * This method allows you to set counter value for a given first/second pair
+     *
+     * @param first
+     * @param second
+     * @param value
+     * @return
+     */
     public double setCount(F first, S second, double value) {
         Counter<S> counter = maps.get(first);
         if (counter == null) {
@@ -75,7 +110,11 @@ public class CounterMap<F, S> implements Serializable{
         return counter.setCount(second, value);
     }
 
-
+    /**
+     * This method returns pair of elements with a max value
+     *
+     * @return
+     */
     public Pair<F, S> argMax() {
         Double maxCount = -Double.MAX_VALUE;
         Pair<F, S> maxKey = null;
@@ -90,14 +129,46 @@ public class CounterMap<F, S> implements Serializable{
         return maxKey;
     }
 
+    /**
+     * This method purges all counters
+     */
+    public void clear() {
+        maps.clear();
+    }
+
+    /**
+     * This method purges counter for a given first element
+     * @param element
+     */
+    public void clear(F element) {
+        Counter<S> s = maps.get(element);
+        if (s != null)
+            s.clear();
+    }
+
+    /**
+     * This method returns Set of all first elements
+     * @return
+     */
     public Set<F> keySet() {
         return maps.keySet();
     }
 
+    /**
+     * This method returns counter for a given first element
+     *
+     * @param first
+     * @return
+     */
     public Counter<S> getCounter(F first) {
         return maps.get(first);
     }
 
+    /**
+     * This method returns Iterator of all first/second pairs stored in this counter
+     *
+     * @return
+     */
     public Iterator<Pair<F, S>> getIterator() {
         return new Iterator<Pair<F, S>>() {
 
