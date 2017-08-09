@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 
 /**
  *
@@ -14,23 +15,23 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
     protected double m_scale;
     protected int m_exponent;
 
-    public PolynomialTerm(SDGraph graph,
+    public PolynomialTerm(SameDiff sameDiff,
                           double i_scale,
                           DifferentialFunction<X> i_v,
                           int i_exponent,
                           boolean inPlace) {
         // scale v^{exponent}
         //note that super handles addEdges
-        super(graph,i_v,new Object[]{i_scale,i_exponent,inPlace});
+        super(sameDiff,i_v,new Object[]{i_scale,i_exponent,inPlace});
         m_scale = i_scale;
         m_exponent = i_exponent;
     }
 
-    public PolynomialTerm(SDGraph graph,
+    public PolynomialTerm(SameDiff sameDiff,
                           double i_scale,
                           DifferentialFunction<X> i_v,
                           int i_exponent) {
-        this(graph,i_scale,i_v,i_exponent,false);
+        this(sameDiff,i_scale,i_v,i_exponent,false);
     }
 
     @Override
@@ -45,7 +46,7 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
 
     @Override
     public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
-        return (new PolynomialTerm<>(graph,m_scale * m_exponent, arg(), m_exponent - 1))
+        return (new PolynomialTerm<>(sameDiff,m_scale * m_exponent, arg(), m_exponent - 1))
                 .mul(arg().diff(i_v));
     }
 
@@ -67,12 +68,12 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
 
     @Override
     public DifferentialFunction<X> inverse() {
-        return new PolynomialTerm<>(graph, m_scale, arg(), -m_exponent);
+        return new PolynomialTerm<>(sameDiff, m_scale, arg(), -m_exponent);
     }
 
     @Override
     public DifferentialFunction<X> negate() {
-        return new PolynomialTerm<>(graph, -m_scale, arg(), m_exponent);
+        return new PolynomialTerm<>(sameDiff, -m_scale, arg(), m_exponent);
     }
 
 }

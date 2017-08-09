@@ -5,11 +5,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.List;
@@ -23,37 +23,37 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
     protected int[] shape;
     protected OpState.OpType opType;
 
-    public AbstractUnaryFunction(SDGraph graph,
+    public AbstractUnaryFunction(SameDiff sameDiff,
                                  DifferentialFunction<X> i_v,
                                  int[] shape,
                                  OpState.OpType opType,
                                  Object[] extraArgs) {
-        super(graph,extraArgs);
+        super(sameDiff,extraArgs);
         this.opType = opType;
 
         if (i_v != null) {
             m_x = i_v;
-            addEdges(graph,m_x,functionName(),shape);
+            addEdges(sameDiff,m_x,functionName(),shape);
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
     }
 
-    public AbstractUnaryFunction(SDGraph graph,
+    public AbstractUnaryFunction(SameDiff sameDiff,
                                  DifferentialFunction<X> i_v,
                                  int[] shape,
                                  Object[] extraArgs) {
-        this(graph,i_v,shape, OpState.OpType.TRANSFORM,extraArgs);
+        this(sameDiff,i_v,shape, OpState.OpType.TRANSFORM,extraArgs);
     }
 
 
-    public AbstractUnaryFunction(SDGraph graph,
+    public AbstractUnaryFunction(SameDiff sameDiff,
                                  DifferentialFunction<X> i_v,
                                  Object[] extraArgs) {
-        super(graph,extraArgs);
+        super(sameDiff,extraArgs);
         if (i_v != null) {
             m_x = i_v;
-            addEdges(graph,m_x,functionName());
+            addEdges(sameDiff,m_x,functionName());
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -72,11 +72,11 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
 
     /**
      * Add nodes to the graph
-     * @param graph
+     * @param sameDiff
      * @param i_v1
      * @param opName
      */
-    protected void addEdges(Graph<NDArrayInformation,OpState> graph,
+    protected void addEdges(SameDiff sameDiff,
                             DifferentialFunction<X> i_v1,
                             String opName,
                             int...shape) {
@@ -88,10 +88,10 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                             v1.getInput().getId() + ")")
                     .shape(shape).build();
             //result
-            NDArrayVertex newVertex = new NDArrayVertex(graph.nextVertexId(), information);
+            NDArrayVertex newVertex = new NDArrayVertex(sameDiff.getGraph().nextVertexId(), information);
             this.vertexId = newVertex.vertexID();
 
-            graph.addVertex(newVertex);
+            sameDiff.getGraph().addVertex(newVertex);
             OpState owner =  OpState.builder()
                     .opType(opType)
                     .opName(opName).extraArgs(extraArgs)
@@ -99,7 +99,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                     .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                     .n(ArrayUtil.prod(shape)).result(information)
                     .build();
-            graph.addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),owner,true);
+            sameDiff.getGraph().addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),owner,true);
             newVertex.setOpState(owner);
             information.setOwner(owner);
             owner.setResult(information);
@@ -114,18 +114,18 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
 
     /**
      * Add nodes to the graph
-     * @param graph
+     * @param sameDiff
      * @param i_v1
      * @param opName
      */
-    protected void addEdges(Graph<NDArrayInformation,OpState> graph,
+    protected void addEdges(SameDiff sameDiff,
                             DifferentialFunction<X> i_v1,
                             String opName) {
         if(i_v1.getValue(true) instanceof ArrayField) {
             this.opType = OpState.OpType.TRANSFORM;
             ArrayField arrayField = (ArrayField) i_v1.getValue(true);
 
-            addEdges(graph,
+            addEdges(sameDiff,
                     i_v1,
                     opName,
                     arrayField.getInput().getShape());

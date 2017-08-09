@@ -9,6 +9,7 @@ import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
+import org.nd4j.autodiff.functions.Variable;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.*;
@@ -50,7 +51,7 @@ import java.util.*;
 @Builder
 public class SameDiff {
     private SDGraph graph = new SDGraph();
-    private ArrayFactory arrayFactory = new ArrayFactory(graph);
+    private ArrayFactory arrayFactory = new ArrayFactory(this);
     private DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory;
     private List<SDVariable> sameDiffVariables = new ArrayList<>();
     private Map<String,SDVariable> variableMap;
@@ -136,9 +137,10 @@ public class SameDiff {
 
         }
 
+        List<SDVariable> variables = variables();
 
         //copy over variables
-        for(SDVariable variable : variables()) {
+        for(SDVariable variable : variables) {
             SDVariable deepClone = cloner.deepCloneDontCloneInstances(
                     variable,
                     variable.getDifferentialFunction(),
@@ -152,15 +154,34 @@ public class SameDiff {
             if(variable.getArrayField() != null) {
                 int vertexId = variable.getArrayField().getVertexId();
                 deepClone.getArrayField().setVertexId(vertexId);
-                deepClone.getArrayField().getM_x().setOps(sameDiff.graph());
-                deepClone.getArrayField().setGraph(sameDiff.graph());
+                deepClone.getArrayField().getM_x().setOps(sameDiff);
+                deepClone.getArrayField().setSameDiff(sameDiff);
+                if(variable.getArrayField() instanceof Variable) {
+                    Variable<ArrayField> variable1 = (Variable<ArrayField>) deepClone.getArrayField();
+                    variable1.setSameDiff(sameDiff);
+                    variable1.setVertexId(vertexId);
+                    variable1.getM_x().setOps(sameDiff);
 
+
+                }
             }
             else if(variable.getDifferentialFunction() != null) {
                 DifferentialFunction<ArrayField> val = deepClone.getDifferentialFunction();
-                int vertexId = val.getVertexId();
-                val.setVertexId(vertexId);
-                val.setGraph(sameDiff.graph());
+                if(val instanceof Variable) {
+                    Variable<ArrayField> variable1 = (Variable<ArrayField>) val;
+                    variable1.setSameDiff(sameDiff);
+                    variable1.setVertexId(val.getVertexId());
+                    variable1.getM_x().setOps(sameDiff);
+
+
+                }
+                else {
+                    int vertexId = val.getVertexId();
+                    val.setVertexId(vertexId);
+                    val.setSameDiff(sameDiff);
+                }
+
+
 
             }
 
@@ -236,8 +257,8 @@ public class SameDiff {
     private SameDiff() {
         graph = new SDGraph();
         graph.setSameDiff(this);
-        arrayFactory = new ArrayFactory(graph);
-        arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
+        arrayFactory = new ArrayFactory(this);
+        arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(this);
         sameDiffVariables = new ArrayList<>();
         variableMap = new HashMap<>();
         vertexToArray = new HashMap<>();
@@ -264,10 +285,13 @@ public class SameDiff {
 
         SameDiff that = (SameDiff) o;
 
-        if (graph != null ? !graph.equals(that.graph) : that.graph != null) return false;
-        if (sameDiffVariables != null ? !sameDiffVariables.equals(that.sameDiffVariables) : that.sameDiffVariables != null)
+        if (graph != null ? !graph.equals(that.graph) : that.graph != null)
             return false;
-        return variableMap != null ? variableMap.equals(that.variableMap) : that.variableMap == null;
+        if (sameDiffVariables != null ? !sameDiffVariables.equals(that.
+                sameDiffVariables) : that.sameDiffVariables != null)
+            return false;
+        return variableMap != null ? variableMap.equals(that.variableMap) :
+                that.variableMap == null;
     }
 
     @Override
@@ -289,18 +313,20 @@ public class SameDiff {
      * @return
      */
     public static SameDiff create(SameDiff originalSameDiff, SDGraph graph) {
-        ArrayFactory arrayFactory = new ArrayFactory(graph);
         SDGraph clone = new SDGraph(graph);
         SameDiff ret = SameDiff.builder()
                 .variableMap(originalSameDiff.getVariableMap())
-                .arrayFactory(arrayFactory)
                 .sameDiffVariables(originalSameDiff.getSameDiffVariables())
-                .arrayFieldDifferentialFunctionFactory(new DifferentialFunctionFactory<>(graph,arrayFactory))
                 .graph(clone)
                 .build();
         //ensuring proper sameDiff reference
         clone.setSameDiff(ret);
-
+        ArrayFactory arrayFactory = new ArrayFactory(ret);
+        DifferentialFunctionFactory<ArrayField> differentialFunctionFactory =
+                new
+                DifferentialFunctionFactory<>(ret);
+        ret.setArrayFieldDifferentialFunctionFactory(differentialFunctionFactory);
+        ret.setArrayFactory(arrayFactory);
         return ret;
     }
 
@@ -469,7 +495,7 @@ public class SameDiff {
 
         NDArrayVertex ndArrayVertex = new NDArrayVertex(graph.nextVertexId(), ndArrayInformation);
         graph.addVertex(ndArrayVertex);
-        ArrayField arrayField = new ArrayField(ndArrayVertex,graph);
+        ArrayField arrayField = new ArrayField(ndArrayVertex,this);
         SDVariable ret = SDVariable.builder()
                 .sameDiff(this).
                         arrayField(arrayFieldDifferentialFunctionFactory.var(name,arrayField))
@@ -502,6 +528,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable grad(SDVariable iX, SDVariable wrt) {
+        Preconditions.checkState(iX.getSameDiff() == wrt.getSameDiff(),"Same diff instances must be the same.");
         DifferentialFunction<ArrayField> arrField = getFunctionInput(iX).diff(wrt.getArrayField());
         SDVariable ret = SDVariable.builder()
                 .arr(null).shape(wrt.getShape())
@@ -1705,7 +1732,7 @@ public class SameDiff {
             variableMap = new HashMap<>();
 
         if(variable.getArrayField() != null) {
-            variable.getArrayField().setGraph(graph());
+            variable.getArrayField().setSameDiff(this);
         }
 
 

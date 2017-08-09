@@ -2,38 +2,37 @@ package org.nd4j.autodiff.functions;
 
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import lombok.Data;
+import lombok.Getter;
 import org.nd4j.autodiff.AbstractIdentityFactory;
+import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 
 @Data
 public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
-
+    @Getter
     private X m_x;
-    private AbstractIdentityFactory<X> m_factory;
     private String m_name;
     private PreEvaluator<X> preEvaluator;
 
-    protected Variable(SDGraph graph,
+    protected Variable(SameDiff sameDiff,
                        String i_name,
-                       X i_v,
-                       AbstractIdentityFactory<X> i_factory) {
-        this(graph,i_name, i_v, i_factory, null);
-    }
+                       X i_v) {
+        this(sameDiff,i_name, i_v, null);
+     }
 
-    protected Variable(SDGraph graph,
+    protected Variable(SameDiff sameDiff,
                        String i_name,
-                       X i_v,
-                       AbstractIdentityFactory<X> i_factory,
-                       PreEvaluator<X> preEvaluator) {
-        super(graph,null);
+                       X i_v,PreEvaluator<X> preEvaluator) {
+        super(sameDiff,null);
         this.preEvaluator = preEvaluator;
         setName(i_name);
-        if (i_v != null && i_factory != null) {
+        if (i_v != null) {
             m_x = i_v;
-            m_factory = i_factory;
         } else {
             throw new IllegalArgumentException("Input not null value.");
         }
@@ -42,6 +41,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
             ArrayField arrayField = (ArrayField) i_v;
             this.vertexId = arrayField.getVertex().vertexID();
         }
+
     }
 
 
@@ -117,7 +117,9 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     public Constant<X> diff(DifferentialFunction<X> i_v) {
         if(m_x instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) m_x;
-            Constant<X> ret =  (this.equals(i_v) ? new One<>(graph, arrayField.getInput().getShape(),m_factory) : new Zero<>(graph,arrayField.getInput().getShape(), m_factory));
+            Constant<X> ret =  (this.equals(i_v) ? new One<>(sameDiff,
+                    arrayField.getInput().getShape()) : new Zero<>(sameDiff,
+                    arrayField.getInput().getShape()));
 
             /*addEdges(graph,
                     this,ret,
@@ -161,12 +163,13 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public DifferentialFunction<X> div(DifferentialFunction<X> i_v) {
-        return (i_v == this) ? new One<>(graph,i_v.getResultShape(), m_factory) : super.mul(i_v.inverse());
+        return (i_v == this) ? new One<>(sameDiff,i_v.getResultShape()) : super.mul(i_v.inverse());
     }
 
     @Override
     public DifferentialFunction<X> dup() {
-        return new Variable<>(graph, getName(), m_x, m_factory);
+        return new Variable<>(sameDiff, getName(),
+                m_x);
     }
 
 

@@ -5,7 +5,7 @@ import lombok.Data;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -14,10 +14,10 @@ import java.util.*;
 @Data
 public class ArrayFactory implements AbstractFactory<ArrayField> {
 
-    private SDGraph graph;
+    private SameDiff graph;
     private Map<String,Method> methodNames;
 
-    public ArrayFactory(SDGraph graph) {
+    public ArrayFactory(SameDiff graph) {
         this.graph = graph;
         methodNames = new HashMap<>();
         Method[] methods = getClass().getDeclaredMethods();
@@ -25,13 +25,10 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
             methodNames.put(method.getName(),method);
     }
 
-    public ArrayFactory() {
-        this(new SDGraph());
-    }
 
 
     @Override
-    public SDGraph graph() {
+    public SameDiff sameDiff() {
         return graph;
     }
 
@@ -201,7 +198,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString()).scalarValue(0.0)
                 .id("zero-" + UUID.randomUUID().toString()).owner(null).shape(shape).build();
-        return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
+        return new ArrayField(new NDArrayVertex(graph.getGraph().nextVertexId(), information), graph);
     }
 
     @Override
@@ -209,7 +206,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString()).scalarValue(1.0)
                 .id("one-"  + UUID.randomUUID().toString()).owner(null).shape(shape).build();
-        return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
+        return new ArrayField(new NDArrayVertex(graph.getGraph().nextVertexId(), information), graph);
     }
 
     /**
@@ -223,7 +220,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString()).scalarValue(value)
                 .id(String.valueOf(value)).owner(null).shape(new int[]{1,1}).build();
-        return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
+        return new ArrayField(new NDArrayVertex(graph.getGraph().nextVertexId(), information), graph);
     }
 
     @Override
@@ -632,4 +629,10 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         return value.permute(dimensions);
     }
 
+    @Override
+    public String toString() {
+        return "ArrayFactory{" +
+                "methodNames=" + methodNames +
+                '}';
+    }
 }

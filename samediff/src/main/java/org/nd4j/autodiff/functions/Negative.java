@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 
 
 /**
@@ -12,13 +13,13 @@ import org.nd4j.autodiff.samediff.SDGraph;
  */
 public class Negative<X extends Field<X>> extends AbstractUnaryFunction<X> {
 
-    public Negative(SDGraph graph, DifferentialFunction<X> i_v,boolean inPlace) {
-        super(graph,i_v,new Object[]{inPlace});
+    public Negative(SameDiff sameDiff, DifferentialFunction<X> i_v, boolean inPlace) {
+        super(sameDiff,i_v,new Object[]{inPlace});
     }
 
 
-    public Negative(SDGraph graph, DifferentialFunction<X> i_v) {
-        this(graph,i_v,false);
+    public Negative(SameDiff sameDiff, DifferentialFunction<X> i_v) {
+        this(sameDiff,i_v,false);
     }
 
     @Override

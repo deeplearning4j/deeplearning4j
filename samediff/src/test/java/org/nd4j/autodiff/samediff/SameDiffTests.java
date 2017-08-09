@@ -645,7 +645,8 @@ public class SameDiffTests {
             @Override
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable outputs = sameDiffOuter.invokeFunctionOn("loss",sameDiff);
-                 SDVariable grad = sameDiff.grad(outputs,sameDiff.var("w",inputs.get("w")));
+                SDVariable wrtWeights = sameDiff.var("w",inputs.get("w"));
+                SDVariable grad = sameDiff.grad(outputs,wrtWeights);
                 return grad;
             }
         },inputs);

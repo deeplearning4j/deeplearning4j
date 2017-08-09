@@ -1,20 +1,18 @@
 package org.nd4j.autodiff.functions;
 
-import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 
 
 public class One<X extends Field<X>> extends Constant<X> {
 
 
-    public One(SDGraph graph,
-               int[] shape,
-               AbstractIdentityFactory<X> i_factory) {
-        super(graph,i_factory.one(shape),shape, i_factory);
+    public One(SameDiff sameDiff,
+               int[] shape) {
+        super(sameDiff, (X) sameDiff.getArrayFactory().one(shape),shape);
         this.shape = shape;
         ArrayField arrayField = (ArrayField) m_x;
         arrayField.getInput().setScalarValue(1.0);
@@ -28,7 +26,7 @@ public class One<X extends Field<X>> extends Constant<X> {
         DifferentialFunction<X> dup = i_v.dup();
         if(i_v.getValue(true) instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) i_v.getValue(true);
-            addEdges(graph,
+            addEdges(sameDiff,
                     dup,
                     this,
                     new MulOp().name(),
@@ -43,6 +41,6 @@ public class One<X extends Field<X>> extends Constant<X> {
 
     @Override
     public DifferentialFunction<X> dup() {
-        return new One<>(graph, shape,getM_factory());
+        return new One<>(sameDiff, shape);
     }
 }
