@@ -4,7 +4,7 @@ layout: cn-default
 redirect_from: /zh-compare-dl4j-torch7-pylearn
 ---
 <p><h1>DL4J与Torch、Theano、TensorFlow、Caffe、Paddle、MxNet、Keras 和 CNTK的比较</h1></p>
-<p>Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他项目相比，DL4J在编程语言和宗旨两方面都独具特色。DL4J是基于JVM、聚焦行业应用且提供商业支持的<strong>分布式深度学习框架</strong>，其宗旨是在合理的时间内解决各类涉及大量数据的问题。它与Hadoop和<a href="spark.html">Spark</a>集成，可使用任意数量的[GPU](./gpu)或[CPU](./native)运行，而且发生任何问题都可以[联系服务热线](http://www.skymind.io/contact)。DL4J是一种适用于各类平台的便携式学习库，并未同AWS、Azure或谷歌云等任何云端服务相捆绑。论速度，DL4J用多GPU运行非平凡图像处理任务时的[性能可媲美Caffe](https://github.com/deeplearning4j/dl4j-benchmark)，优于TensorFlow和Torch。如需对Deeplearning4j运行对标，请参阅[此页](https://deeplearning4j.org/benchmark)的指南，通过调整JVM的堆空间、垃圾回收算法、内存管理以及DL4J的ETL数据加工管道来优化DL4J的性能。 
+<p>Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他项目相比，DL4J在编程语言和宗旨两方面都独具特色。DL4J是基于JVM、聚焦行业应用且提供商业支持的<strong>分布式深度学习框架</strong>，其宗旨是在合理的时间内解决各类涉及大量数据的问题。它与Hadoop和<a href="spark.html">Spark</a>集成，可使用任意数量的[GPU](./gpu)或[CPU](./native)运行，而且发生任何问题都可以[联系服务热线](http://www.skymind.io/contact)。DL4J是一种适用于各类平台的便携式学习库，并未同AWS、Azure或谷歌云等任何云端服务相捆绑。论速度，DL4J用多GPU运行非平凡图像处理任务时的[性能可媲美Caffe](https://github.com/deeplearning4j/dl4j-benchmark)，优于TensorFlow和Torch。如需对Deeplearning4j运行基准测试，请参阅[此页](https://deeplearning4j.org/benchmark)的指南，通过调整JVM的堆空间、垃圾回收算法、内存管理以及DL4J的ETL数据加工管道来优化DL4J的性能。 
 </p>
 <br />
 <p><h2>目录</h2></p>
@@ -126,7 +126,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <br />
 
 <p><h3><a name="chainer">Chainer</a></h3></p>
-<p>Chainer是一个带有Python API的开源神经网络框架，其核心开发团队隶属于东京一家名叫<a href="https://www.crunchbase.com/organization/preferred-networks#/entity" target="_blank">Preferred Networks</a>的机器学习创业公司，团队工程师主要来自东京大学。在CMU的DyNet和Facebook的PyTorch问世以前，Chainer是最领先的动态计算图神经网络框架。动态计算图能处理可变长度的输入，很适合进行自然语言分析任务。Chainer自己的<a href="http://chainer.org/general/2017/02/08/Performance-of-Distributed-Deep-Learning-Using-ChainerMN.html" target="_blank">对标研究</a>发现，该框架的速度明显快于包括MxNet和CNTK在内的其他面向Python的学习框架，而TensorFlow的速度最慢。 </p>
+<p>Chainer是一个带有Python API的开源神经网络框架，其核心开发团队隶属于东京一家名叫<a href="https://www.crunchbase.com/organization/preferred-networks#/entity" target="_blank">Preferred Networks</a>的机器学习创业公司，团队工程师主要来自东京大学。在CMU的DyNet和Facebook的PyTorch问世以前，Chainer是最领先的动态计算图神经网络框架。动态计算图能处理可变长度的输入，很适合进行自然语言分析任务。Chainer自己的<a href="http://chainer.org/general/2017/02/08/Performance-of-Distributed-Deep-Learning-Using-ChainerMN.html" target="_blank">基准测试</a>发现，该框架的速度明显快于包括MxNet和CNTK在内的其他面向Python的学习框架，而TensorFlow的速度最慢。 </p>
 <br />
 
 <p><h3><a name="dsstne">DSSTNE</a></h3></p>
