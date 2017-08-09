@@ -50,17 +50,6 @@ public class KerasLayer {
 
     public static final String LAYER_FIELD_KERAS_VERSION = "keras_version";
 
-    /* Keras and DL4J activation types. */
-    public static final String LAYER_FIELD_ACTIVATION = "activation";
-    public static final String KERAS_ACTIVATION_SOFTMAX = "softmax";
-    public static final String KERAS_ACTIVATION_SOFTPLUS = "softplus";
-    public static final String KERAS_ACTIVATION_SOFTSIGN = "softsign";
-    public static final String KERAS_ACTIVATION_RELU = "relu";
-    public static final String KERAS_ACTIVATION_TANH = "tanh";
-    public static final String KERAS_ACTIVATION_SIGMOID = "sigmoid";
-    public static final String KERAS_ACTIVATION_HARD_SIGMOID = "hard_sigmoid";
-    public static final String KERAS_ACTIVATION_LINEAR = "linear";
-
     /* Keras dimension ordering for, e.g., convolutional layersOrdered. */
     public static final String LAYER_FIELD_DIM_ORDERING = "dim_ordering";
     public static final String DIM_ORDERING_THEANO = "th";
@@ -511,37 +500,28 @@ public class KerasLayer {
      * @param kerasActivation   String containing Keras activation function name
      * @return                  String containing DL4J activation function name
      */
-    public static IActivation mapActivation(String kerasActivation) throws UnsupportedKerasConfigurationException {
+    public IActivation mapActivation(String kerasActivation) throws UnsupportedKerasConfigurationException {
         IActivation dl4jActivation = null;
         /* Keras and DL4J use the same name for most activations. */
-        switch (kerasActivation) {
-            case KERAS_ACTIVATION_SOFTMAX:
-                dl4jActivation = new ActivationSoftmax();
-                break;
-            case KERAS_ACTIVATION_SOFTPLUS:
-                dl4jActivation = new ActivationSoftPlus();
-                break;
-            case KERAS_ACTIVATION_SOFTSIGN:
-                dl4jActivation = new ActivationSoftSign();
-                break;
-            case KERAS_ACTIVATION_RELU:
-                dl4jActivation = new ActivationReLU();
-                break;
-            case KERAS_ACTIVATION_TANH:
-                dl4jActivation = new ActivationTanH();
-                break;
-            case KERAS_ACTIVATION_SIGMOID:
-                dl4jActivation = new ActivationSigmoid();
-                break;
-            case KERAS_ACTIVATION_HARD_SIGMOID:
-                dl4jActivation = new ActivationHardSigmoid();
-                break;
-            case KERAS_ACTIVATION_LINEAR:
-                dl4jActivation = new ActivationIdentity();
-                break;
-            default:
-                throw new UnsupportedKerasConfigurationException(
-                        "Unknown Keras activation function " + kerasActivation);
+        if (kerasActivation.equals(conf.getKERAS_ACTIVATION_SOFTMAX())) {
+            dl4jActivation = new ActivationSoftmax();
+        } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_SOFTPLUS())) {
+            dl4jActivation = new ActivationSoftPlus();
+        } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_SOFTSIGN())) {
+            dl4jActivation = new ActivationSoftSign();
+        } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_RELU())) {
+            dl4jActivation = new ActivationReLU();
+        } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_TANH())) {
+            dl4jActivation = new ActivationTanH();
+        } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_SIGMOID())) {
+            dl4jActivation = new ActivationSigmoid();
+        } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_HARD_SIGMOID())) {
+            dl4jActivation = new ActivationHardSigmoid();
+        } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_LINEAR())) {
+            dl4jActivation = new ActivationIdentity();
+        } else {
+            throw new UnsupportedKerasConfigurationException(
+                    "Unknown Keras activation function " + kerasActivation);
         }
         return dl4jActivation;
     }
@@ -858,9 +838,9 @@ public class KerasLayer {
     protected IActivation getActivationFromConfig(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(LAYER_FIELD_ACTIVATION))
-            throw new InvalidKerasConfigurationException("Keras layer is missing " + LAYER_FIELD_ACTIVATION + " field");
-        return mapActivation((String) innerConfig.get(LAYER_FIELD_ACTIVATION));
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_ACTIVATION()))
+            throw new InvalidKerasConfigurationException("Keras layer is missing " + conf.getLAYER_FIELD_ACTIVATION() + " field");
+        return mapActivation((String) innerConfig.get(conf.getLAYER_FIELD_ACTIVATION()));
     }
 
     /**

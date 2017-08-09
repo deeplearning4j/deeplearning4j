@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_ACTIVATION;
 import static org.deeplearning4j.nn.modelimport.keras.layers.KerasBatchNormalization.*;
 import static org.deeplearning4j.nn.modelimport.keras.layers.KerasLstm.*;
 import static org.junit.Assert.assertArrayEquals;
@@ -63,7 +62,7 @@ public class KerasLayerTest {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_FIELD_ACTIVATION());
         Map<String, Object> config = new HashMap<String, Object>();
-        config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
+        config.put(conf1.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
         layerConfig.put(conf1.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
@@ -93,7 +92,7 @@ public class KerasLayerTest {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_CLASS_NAME_DENSE());
         Map<String, Object> config = new HashMap<String, Object>();
-        config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
+        config.put(conf1.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
         config.put(conf1.getLAYER_FIELD_INIT(), INIT_KERAS);
         Map<String, Object> W_reg = new HashMap<String, Object>();
@@ -121,7 +120,7 @@ public class KerasLayerTest {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_CLASS_NAME_CONVOLUTION_2D());
         Map<String, Object> config = new HashMap<String, Object>();
-        config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
+        config.put(conf1.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
         config.put(conf1.getLAYER_FIELD_INIT(), INIT_KERAS);
         Map<String, Object> W_reg = new HashMap<String, Object>();
@@ -187,7 +186,7 @@ public class KerasLayerTest {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_CLASS_NAME_LSTM());
         Map<String, Object> config = new HashMap<String, Object>();
-        config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
+        config.put(conf1.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_INNER_ACTIVATION, INNER_ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
         config.put(conf1.getLAYER_FIELD_INIT(), INIT_KERAS);
