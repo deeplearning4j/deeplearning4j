@@ -13,14 +13,13 @@ setTimeout(ldinsp, 500); document.readyState != "complete" ? (window.attachEvent
 </script>
 <!-- End Inspectlet Embed Code -->
 
-Quick Start Guide
-=================
+# Quick Start Guide
 
 This is everything you need to run DL4J examples and begin your own projects.
 
 We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). Gitter is where you can request help and give feedback, but please do use this guide before asking questions we've answered below. If you are new to deep learning, we've included [a road map for beginners](./deeplearningforbeginners.html) with links to courses, readings and other resources. If you need an end to end tutorial to get started (including setup), then please go to our [getting started](http://deeplearning4j.org/gettingstarted).
 
-#### A Taste of Code
+### A Taste of Code
 
 Deeplearning4j is a domain-specific language to configure deep neural networks, which are made of multiple layers. Everything starts with a `MultiLayerConfiguration`, which organizes those layers and their hyperparameters.
 
