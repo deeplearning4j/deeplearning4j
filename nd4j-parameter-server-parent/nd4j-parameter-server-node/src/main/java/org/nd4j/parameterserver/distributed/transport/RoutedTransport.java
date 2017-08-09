@@ -178,7 +178,7 @@ public class RoutedTransport extends BaseTransport {
         clients.values().parallelStream().filter(rc -> {
             // do not send message back to yourself :)
             if (rc.getLongHash() == this.originatorId || rc.getLongHash() == 0) {
-//                builder.append(", SKIP: ").append(rc.getLongHash());
+                //                builder.append(", SKIP: ").append(rc.getLongHash());
                 return false;
             }
 
@@ -187,15 +187,15 @@ public class RoutedTransport extends BaseTransport {
                 for (Long exclude : exclusions)
                     if (exclude.longValue() == rc.getLongHash()) {
                         cnt.incrementAndGet();
-//                        builder.append(", SKIP: ").append(rc.getLongHash());
+                        //                        builder.append(", SKIP: ").append(rc.getLongHash());
                         return false;
                     }
             }
 
-     //       builder.append(", PASS: ").append(rc.getLongHash());
+            //       builder.append(", PASS: ").append(rc.getLongHash());
             return true;
-        }).forEach((rc)->{
-      //      log.info("Sending message to {}", rc.getLongHash());
+        }).forEach((rc) -> {
+            //      log.info("Sending message to {}", rc.getLongHash());
 
             RetransmissionHandler.TransmissionStatus res;
             long retr = 0;
@@ -214,7 +214,7 @@ public class RoutedTransport extends BaseTransport {
 
                             if (retr > 20)
                                 throw new ND4JIllegalStateException(
-                                        "Can't connect to Shard: [" + rc.getPublication().channel() + "]");
+                                                "Can't connect to Shard: [" + rc.getPublication().channel() + "]");
 
                             try {
                                 //Thread.sleep(voidConfiguration.getRetransmitTimeout());
@@ -226,7 +226,7 @@ public class RoutedTransport extends BaseTransport {
                             throw new ND4JIllegalStateException("Shards reassignment is to be implemented yet");
                         }
                     }
-                    break;
+                        break;
                     case ADMIN_ACTION:
                     case BACKPRESSURE: {
                         try {
@@ -236,7 +236,7 @@ public class RoutedTransport extends BaseTransport {
                             throw new RuntimeException(e);
                         }
                     }
-                    break;
+                        break;
                     case MESSAGE_SENT:
                         delivered = true;
                         rc.getActivated().set(true);
@@ -245,7 +245,7 @@ public class RoutedTransport extends BaseTransport {
             }
         });
 
-     //s   log.info("RESULT: {}", builder.toString());
+        //s   log.info("RESULT: {}", builder.toString());
     }
 
     /**
@@ -594,10 +594,9 @@ public class RoutedTransport extends BaseTransport {
         Long hash = HashUtil.getLongHash(ip + ":" + port);
 
         RemoteConnection connection = RemoteConnection.builder().ip(ip).port(port)
-                .publication(aeron.addPublication("aeron:udp?endpoint=" + ip + ":" + port,
-                        voidConfiguration.getStreamId()))
-                .longHash(hash)
-                .locker(new Object()).activated(new AtomicBoolean(false)).build();
+                        .publication(aeron.addPublication("aeron:udp?endpoint=" + ip + ":" + port,
+                                        voidConfiguration.getStreamId()))
+                        .longHash(hash).locker(new Object()).activated(new AtomicBoolean(false)).build();
 
         log.info("sI_{} {}: Adding SHARD: [{}] to {}:{}", shardIndex, nodeRole, hash, ip, port);
         shards.add(connection);
@@ -612,8 +611,7 @@ public class RoutedTransport extends BaseTransport {
         RemoteConnection connection = RemoteConnection.builder().ip(ip).port(port)
                         .publication(aeron.addPublication("aeron:udp?endpoint=" + ip + ":" + port,
                                         voidConfiguration.getStreamId()))
-                        .longHash(hash)
-                        .locker(new Object()).activated(new AtomicBoolean(false)).build();
+                        .longHash(hash).locker(new Object()).activated(new AtomicBoolean(false)).build();
 
 
         log.info("sI_{} {}: Adding connection: [{}] to {}:{}", shardIndex, nodeRole, hash, ip, port);

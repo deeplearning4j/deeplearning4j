@@ -38,13 +38,11 @@ public abstract class BaseLapack implements Lapack {
         if (INFO.getInt(0) < 0) {
             throw new Error("Parameter #" + INFO.getInt(0) + " to getrf() was not valid");
         } else if (INFO.getInt(0) > 0) {
-            log.warn("The matrix is singular - cannot be used for inverse op. Check L matrix at row "
-                            + INFO.getInt(0));
+            log.warn("The matrix is singular - cannot be used for inverse op. Check L matrix at row " + INFO.getInt(0));
         }
 
         return IPIV;
     }
-
 
 
 
@@ -60,33 +58,34 @@ public abstract class BaseLapack implements Lapack {
     * @param INFO error details 1 int array, a positive number (i) implies row i cannot be factored, a negative value implies paramtere i is invalid
     */
     public abstract void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO);
+
     public abstract void dgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO);
 
 
 
     @Override
-    public void potrf(INDArray A, boolean lower ) {
+    public void potrf(INDArray A, boolean lower) {
 
-        byte uplo = (byte)(lower?'L':'U') ; // upper or lower part of the factor desired ?
+        byte uplo = (byte) (lower ? 'L' : 'U'); // upper or lower part of the factor desired ?
         int n = A.columns();
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
                         Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}).getFirst());
 
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
-            dpotrf( uplo, n, A, INFO);
+            dpotrf(uplo, n, A, INFO);
         else if (A.data().dataType() == DataBuffer.Type.FLOAT)
-            spotrf( uplo, n, A, INFO);
+            spotrf(uplo, n, A, INFO);
         else
             throw new UnsupportedOperationException();
 
         if (INFO.getInt(0) < 0) {
             throw new Error("Parameter #" + INFO.getInt(0) + " to potrf() was not valid");
         } else if (INFO.getInt(0) > 0) {
-            throw new Error("The matrix is not positive definite! (potrf fails @ order " + INFO.getInt(0) + ")" ) ;
+            throw new Error("The matrix is not positive definite! (potrf fails @ order " + INFO.getInt(0) + ")");
         }
 
-        return ;
+        return;
     }
 
 
@@ -101,14 +100,14 @@ public abstract class BaseLapack implements Lapack {
     * @param A  the matrix to factorize - data must be in column order ( create with 'f' ordering )
     * @param INFO error details 1 int array, a positive number (i) implies row i cannot be factored, a negative value implies paramtere i is invalid
     */
-    public abstract void spotrf( byte uplo, int N, INDArray A, INDArray INFO)  ;
-    public abstract void dpotrf( byte uplo, int N, INDArray A, INDArray INFO ) ;
+    public abstract void spotrf(byte uplo, int N, INDArray A, INDArray INFO);
 
+    public abstract void dpotrf(byte uplo, int N, INDArray A, INDArray INFO);
 
 
 
     @Override
-    public void geqrf(INDArray A, INDArray R ) {
+    public void geqrf(INDArray A, INDArray R) {
 
         int m = A.rows();
         int n = A.columns();
@@ -116,8 +115,8 @@ public abstract class BaseLapack implements Lapack {
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
                         Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}).getFirst());
 
-        if( R.rows() != A.columns() || R.columns() != A.columns() ) {
-            throw new Error( "geqrf: R must be N x N (n = columns in A)") ;
+        if (R.rows() != A.columns() || R.columns() != A.columns()) {
+            throw new Error("geqrf: R must be N x N (n = columns in A)");
         }
         if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             dgeqrf(m, n, A, R, INFO);
@@ -145,30 +144,31 @@ public abstract class BaseLapack implements Lapack {
     * @param INFO error details 1 int array, a positive number (i) implies row i cannot be factored, a negative value implies paramtere i is invalid
     */
     public abstract void sgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO);
+
     public abstract void dgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO);
 
 
 
     @Override
-    public int syev( char jobz, char uplo, INDArray A, INDArray V ) {
+    public int syev(char jobz, char uplo, INDArray A, INDArray V) {
 
-        if( A.rows() != A.columns() ) {
-            throw new Error( "syev: A must be square.") ;
+        if (A.rows() != A.columns()) {
+            throw new Error("syev: A must be square.");
         }
-        if( A.rows() != V.length() ) {
-            throw new Error( "syev: V must be the length of the matrix dimension.") ;
+        if (A.rows() != V.length()) {
+            throw new Error("syev: V must be the length of the matrix dimension.");
         }
 
-	int status = -1 ;
+        int status = -1;
         if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            status = dsyev( jobz, uplo, A.rows(), A, V ) ;
+            status = dsyev(jobz, uplo, A.rows(), A, V);
         } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
-            status = ssyev( jobz, uplo, A.rows(), A, V ) ;
+            status = ssyev(jobz, uplo, A.rows(), A, V);
         } else {
             throw new UnsupportedOperationException();
         }
 
-	return status ;
+        return status;
     }
 
 
@@ -182,9 +182,9 @@ public abstract class BaseLapack implements Lapack {
     * @param R  an output array for eigenvalues ( may be null )
     * @param INFO error details 1 int array, a positive number (i) implies row i cannot be factored, a negative value implies paramtere i is invalid
     */
-    public abstract int ssyev( char jobz, char uplo, int N, INDArray A, INDArray R ) ;
-    public abstract int dsyev( char jobz, char uplo, int N, INDArray A, INDArray R ) ;
+    public abstract int ssyev(char jobz, char uplo, int N, INDArray A, INDArray R);
 
+    public abstract int dsyev(char jobz, char uplo, int N, INDArray A, INDArray R);
 
 
 
@@ -219,9 +219,6 @@ public abstract class BaseLapack implements Lapack {
     public abstract void dgesvd(byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT,
                     INDArray INFO);
 
-
-
-	
 
 
     @Override

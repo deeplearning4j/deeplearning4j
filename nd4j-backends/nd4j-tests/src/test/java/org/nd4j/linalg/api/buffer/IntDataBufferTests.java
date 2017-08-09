@@ -67,8 +67,8 @@ public class IntDataBufferTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testReallocation(){
-        DataBuffer buffer = Nd4j.createBuffer(new int[]{1, 2, 3, 4});
+    public void testReallocation() {
+        DataBuffer buffer = Nd4j.createBuffer(new int[] {1, 2, 3, 4});
         assertEquals(4, buffer.capacity());
         int[] old = buffer.asInt();
         buffer.reallocate(6);
@@ -78,14 +78,11 @@ public class IntDataBufferTests extends BaseNd4jTest {
 
     @Test
     public void testReallocationWorkspace() {
-        WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder()
-                .initialSize(10 * 1024L * 1024L)
-                .policyAllocation(AllocationPolicy.STRICT)
-                .policyLearning(LearningPolicy.NONE)
-                .build();
+        WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
+                        .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();
         MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
 
-        DataBuffer buffer = Nd4j.createBuffer(new int[]{1, 2, 3, 4});
+        DataBuffer buffer = Nd4j.createBuffer(new int[] {1, 2, 3, 4});
         int[] old = buffer.asInt();
         assertTrue(buffer.isAttached());
         assertEquals(4, buffer.capacity());
@@ -95,7 +92,7 @@ public class IntDataBufferTests extends BaseNd4jTest {
         workspace.close();
     }
 
-        @Override
+    @Override
     public char ordering() {
         return 'c';
     }

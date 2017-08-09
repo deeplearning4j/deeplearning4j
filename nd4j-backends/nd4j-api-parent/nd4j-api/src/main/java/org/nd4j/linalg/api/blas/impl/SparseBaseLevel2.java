@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 
 import static com.google.common.base.Preconditions.checkArgument;
+
 /**
  * @author Audrey Loeffel
  */
@@ -27,28 +28,16 @@ public abstract class SparseBaseLevel2 extends SparseBaseLevel implements Level2
         switch (A.data().dataType()) {
             case DOUBLE:
                 DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, parameters.getA(), parameters.getX(),
-                        parameters.getY());
-                dcoomv(parameters.getAOrdering(),
-                        parameters.getM(),
-                        parameters.getVal(),
-                        parameters.getRowInd(),
-                        parameters.getColInd(),
-                        parameters.getNnz(),
-                        parameters.getX(),
-                        parameters.getY());
+                                parameters.getY());
+                dcoomv(parameters.getAOrdering(), parameters.getM(), parameters.getVal(), parameters.getRowInd(),
+                                parameters.getColInd(), parameters.getNnz(), parameters.getX(), parameters.getY());
 
                 break;
             case FLOAT:
                 DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, parameters.getA(), parameters.getX(),
-                        parameters.getY());
-                scoomv(parameters.getAOrdering(),
-                        parameters.getM(),
-                        parameters.getVal(),
-                        parameters.getRowInd(),
-                        parameters.getColInd(),
-                        parameters.getNnz(),
-                        parameters.getX(),
-                        parameters.getY());
+                                parameters.getY());
+                scoomv(parameters.getAOrdering(), parameters.getM(), parameters.getVal(), parameters.getRowInd(),
+                                parameters.getColInd(), parameters.getNnz(), parameters.getX(), parameters.getY());
 
                 break;
             default:
@@ -58,17 +47,20 @@ public abstract class SparseBaseLevel2 extends SparseBaseLevel implements Level2
     }
 
     @Override
-    public void gemv(char order, char transA, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
+    public void gemv(char order, char transA, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X,
+                    IComplexNumber beta, IComplexNDArray Y) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void gbmv(char order, char TransA, int KL, int KU, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
+    public void gbmv(char order, char TransA, int KL, int KU, double alpha, INDArray A, INDArray X, double beta,
+                    INDArray Y) {
 
     }
 
     @Override
-    public void gbmv(char order, char TransA, int KL, int KU, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
+    public void gbmv(char order, char TransA, int KL, int KU, IComplexNumber alpha, IComplexNDArray A,
+                    IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
         throw new UnsupportedOperationException();
     }
 
@@ -83,27 +75,32 @@ public abstract class SparseBaseLevel2 extends SparseBaseLevel implements Level2
     }
 
     @Override
-    public void hbmv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
+    public void hbmv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X,
+                    IComplexNumber beta, IComplexNDArray Y) {
 
     }
 
     @Override
-    public void hemv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
+    public void hemv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X,
+                    IComplexNumber beta, IComplexNDArray Y) {
 
     }
 
     @Override
-    public void her2(char order, char Uplo, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y, IComplexNDArray A) {
+    public void her2(char order, char Uplo, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y,
+                    IComplexNDArray A) {
 
     }
 
     @Override
-    public void hpmv(char order, char Uplo, int N, IComplexNumber alpha, IComplexNDArray Ap, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
+    public void hpmv(char order, char Uplo, int N, IComplexNumber alpha, IComplexNDArray Ap, IComplexNDArray X,
+                    IComplexNumber beta, IComplexNDArray Y) {
 
     }
 
     @Override
-    public void hpr2(char order, char Uplo, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y, IComplexNDArray Ap) {
+    public void hpr2(char order, char Uplo, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y,
+                    IComplexNDArray Ap) {
 
     }
 
@@ -173,7 +170,9 @@ public abstract class SparseBaseLevel2 extends SparseBaseLevel implements Level2
     }
 
     // ----
-    protected abstract void scoomv(char transA, int M, DataBuffer values, DataBuffer rowInd, DataBuffer colInd, int nnz, INDArray x, INDArray y);
+    protected abstract void scoomv(char transA, int M, DataBuffer values, DataBuffer rowInd, DataBuffer colInd, int nnz,
+                    INDArray x, INDArray y);
 
-    protected abstract void dcoomv(char transA, int M, DataBuffer values, DataBuffer rowInd, DataBuffer colInd, int nnz, INDArray x, INDArray y);
+    protected abstract void dcoomv(char transA, int M, DataBuffer values, DataBuffer rowInd, DataBuffer colInd, int nnz,
+                    INDArray x, INDArray y);
 }

@@ -26,7 +26,8 @@ public interface ShapeInfoProvider {
      * @param shape
      * @return
      */
-    Pair<DataBuffer, int[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order);
+    Pair<DataBuffer, int[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride,
+                    char order);
 
     /**
      * This method forces cache purge, if cache is available for specific implementation

@@ -26,7 +26,7 @@ public class SparseCpuLevel2 extends SparseBaseLevel2 {
                 (FloatPointer) values.addressPointer(),
                 (IntPointer) rowInd.addressPointer(),
                 (IntPointer) colInd.addressPointer(),
-                (IntPointer) Nd4j.createBuffer(nnz).addressPointer(),
+                (IntPointer) Nd4j.createBuffer(new int[]{nnz}).addressPointer(),
                 (FloatPointer) x.data().addressPointer(),
                 (FloatPointer)y.data().addressPointer());
     }

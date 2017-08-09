@@ -15,10 +15,10 @@ import static org.junit.Assert.assertEquals;
  * @author Audrey Loeffel
  */
 @RunWith(Parameterized.class)
-public class SparseCSRLevel1Test extends BaseNd4jTest{
+public class SparseCSRLevel1Test extends BaseNd4jTest {
 
-    private double[] data = {1,2,4} ;
-    private int[] col = {0,1,3};
+    private double[] data = {1, 2, 4};
+    private int[] col = {0, 1, 3};
     private int[] pointerB = {0};
     private int[] pointerE = {4};
     private int[] shape = {1, 4};
@@ -63,19 +63,19 @@ public class SparseCSRLevel1Test extends BaseNd4jTest{
     @Test
     public void shouldComputeAxpy() {
         INDArray sparseVec = Nd4j.createSparseCSR(data, col, pointerB, pointerE, shape);
-        INDArray vec = Nd4j.create( new double[] {1 ,2, 3, 4});
-        INDArray expected = Nd4j.create(new double[]{2, 4, 3, 8});
+        INDArray vec = Nd4j.create(new double[] {1, 2, 3, 4});
+        INDArray expected = Nd4j.create(new double[] {2, 4, 3, 8});
         Nd4j.getBlasWrapper().level1().axpy(vec.length(), 1, sparseVec, vec);
         assertEquals(getFailureMessage(), expected, vec);
     }
 
     @Test
-    public void shouldComputeRot(){
+    public void shouldComputeRot() {
 
         // try with dense vectors to get the expected result
 
-        INDArray temp1 = Nd4j.create( new double[] {1 ,2, 0, 4});
-        INDArray temp2 = Nd4j.create( new double[] {1 ,2, 3, 4});
+        INDArray temp1 = Nd4j.create(new double[] {1, 2, 0, 4});
+        INDArray temp2 = Nd4j.create(new double[] {1, 2, 3, 4});
         System.out.println("before: " + temp1.data() + " " + temp2.data());
         Nd4j.getBlasWrapper().level1().rot(temp1.length(), temp1, temp2, 1, 2);
         System.out.println("after: " + temp1.data() + " " + temp2.data());
@@ -84,18 +84,14 @@ public class SparseCSRLevel1Test extends BaseNd4jTest{
         // after: [3.0,6.0,6.0,12.0] [-1.0,-2.0,3.0,-4.0]
 
         INDArray sparseVec = Nd4j.createSparseCSR(data, col, pointerB, pointerE, shape);
-        INDArray vec = Nd4j.create( new double[] {1 ,2, 3, 4});
+        INDArray vec = Nd4j.create(new double[] {1, 2, 3, 4});
         Nd4j.getBlasWrapper().level1().rot(vec.length(), sparseVec, vec, 1, 2);
-        System.out.println(sparseVec.data()  + " " + vec.data());
+        System.out.println(sparseVec.data() + " " + vec.data());
 
         //System.out.println("indexes: " + ((BaseSparseNDArray) sparseVec).getVectorCoordinates().toString());
-        INDArray expectedSparseVec = Nd4j.createSparseCSR(
-                new double[]{3, 6, 6, 12},
-                new int[]{0, 1, 2, 3},
-                new int[]{0},
-                new int[]{4},
-                new int[]{1,4});
-        INDArray expectedVec = Nd4j.create(new  double[]{-1, -2, 3, -4});
+        INDArray expectedSparseVec = Nd4j.createSparseCSR(new double[] {3, 6, 6, 12}, new int[] {0, 1, 2, 3},
+                        new int[] {0}, new int[] {4}, new int[] {1, 4});
+        INDArray expectedVec = Nd4j.create(new double[] {-1, -2, 3, -4});
         assertEquals(getFailureMessage(), expectedSparseVec.data(), sparseVec.data());
 
         assertEquals(getFailureMessage(), expectedVec, vec);
@@ -103,7 +99,7 @@ public class SparseCSRLevel1Test extends BaseNd4jTest{
     }
 
     @Test
-    public void shouldComputeRotWithFullVector(){
+    public void shouldComputeRotWithFullVector() {
 
         // try with dense vectors to get the expected result
         /*
@@ -116,22 +112,18 @@ public class SparseCSRLevel1Test extends BaseNd4jTest{
         //before: [1.0,2.0,3.0,4.0]  [1.0,2.0,3.0,4.0]
         // after: [3.0,6.0,0.0,12.0] [-1.0,-2.0,-3.0,-4.0]
 
-        int[] cols = {0,1,2,3};
-        double[] values = {1,2,3,4};
+        int[] cols = {0, 1, 2, 3};
+        double[] values = {1, 2, 3, 4};
         INDArray sparseVec = Nd4j.createSparseCSR(values, cols, pointerB, pointerE, shape);
-        INDArray vec = Nd4j.create( new double[] {1 ,2, 3, 4});
+        INDArray vec = Nd4j.create(new double[] {1, 2, 3, 4});
         Nd4j.getBlasWrapper().level1().rot(vec.length(), sparseVec, vec, 1, 2);
 
-        INDArray expectedSparseVec = Nd4j.createSparseCSR(
-                new double[]{3, 6, 9, 12},
-                new int[]{0, 1, 2, 3},
-                new int[]{0},
-                new int[]{4},
-                new int[]{1,4});
-        INDArray expectedVec = Nd4j.create(new  double[]{-1, -2, -3, -4});
+        INDArray expectedSparseVec = Nd4j.createSparseCSR(new double[] {3, 6, 9, 12}, new int[] {0, 1, 2, 3},
+                        new int[] {0}, new int[] {4}, new int[] {1, 4});
+        INDArray expectedVec = Nd4j.create(new double[] {-1, -2, -3, -4});
         assertEquals(getFailureMessage(), expectedSparseVec.data(), sparseVec.data());
         assertEquals(getFailureMessage(), expectedVec, vec);
-        if(expectedSparseVec.isSparse() && sparseVec.isSparse()){
+        if (expectedSparseVec.isSparse() && sparseVec.isSparse()) {
             BaseSparseNDArray vec2 = ((BaseSparseNDArray) expectedSparseVec);
             BaseSparseNDArray vecSparse2 = ((BaseSparseNDArray) sparseVec);
             assertEquals(getFailureMessage(), vec2.getVectorCoordinates(), vecSparse2);

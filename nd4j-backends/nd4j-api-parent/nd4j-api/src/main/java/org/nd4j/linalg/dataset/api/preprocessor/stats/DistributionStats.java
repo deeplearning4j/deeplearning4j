@@ -112,7 +112,7 @@ public class DistributionStats implements NormalizerStats {
                 runningVariance = variance;
                 runningCount = count;
 
-                if(data.size(0) == 1){
+                if (data.size(0) == 1) {
                     //Handle edge case: currently, reduction ops may return the same array
                     //But we don't want to modify this array in-place later
                     runningMean = runningMean.dup();

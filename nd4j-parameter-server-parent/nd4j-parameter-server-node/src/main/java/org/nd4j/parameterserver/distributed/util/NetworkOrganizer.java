@@ -86,7 +86,8 @@ public class NetworkOrganizer {
 
         List<String> list = getSubset(1);
         if (list.size() < 1)
-            throw new ND4JIllegalStateException("Unable to find network interface matching requested mask: " + networkMask);
+            throw new ND4JIllegalStateException(
+                            "Unable to find network interface matching requested mask: " + networkMask);
 
         if (list.size() > 1)
             log.warn("We have {} local IPs matching given netmask [{}]", list.size(), networkMask);

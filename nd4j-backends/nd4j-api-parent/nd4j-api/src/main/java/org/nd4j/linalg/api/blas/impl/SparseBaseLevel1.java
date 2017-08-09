@@ -11,7 +11,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 /**
  * @author Audrey Loeffel
  */
-public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1{
+public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1 {
 
     /**
      * computes a vector-vector dot product.
@@ -25,11 +25,11 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     @Override
     public double dot(int n, double alpha, INDArray X, INDArray Y) {
 
-        if(X instanceof BaseSparseNDArray) {
+        if (X instanceof BaseSparseNDArray) {
             BaseSparseNDArray sparseX = (BaseSparseNDArray) X;
             DataBuffer pointers = sparseX.getVectorCoordinates();
 
-            switch(X.data().dataType()){
+            switch (X.data().dataType()) {
                 case DOUBLE:
                     DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X, Y);
                     return ddoti(n, X, pointers, Y);
@@ -41,7 +41,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
                     return hdoti(n, X, pointers, Y);
                 default:
             }
-         }
+        }
         throw new UnsupportedOperationException();
     }
 
@@ -65,7 +65,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     @Override
     public double nrm2(INDArray arr) {
 
-        switch(arr.data().dataType()){
+        switch (arr.data().dataType()) {
             case DOUBLE:
                 DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
                 return dnrm2(arr.length(), arr, 1);
@@ -93,7 +93,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     @Override
     public double asum(INDArray arr) {
 
-        switch(arr.data().dataType()){
+        switch (arr.data().dataType()) {
             case DOUBLE:
                 DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
                 return dasum(arr.length(), arr, 1);
@@ -127,7 +127,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
      * */
     @Override
     public int iamax(INDArray arr) {
-        switch(arr.data().dataType()){
+        switch (arr.data().dataType()) {
             case DOUBLE:
                 DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
                 return idamax(arr.length(), arr, 1);
@@ -166,7 +166,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
      * */
     @Override
     public int iamin(INDArray arr) {
-        switch(arr.data().dataType()){
+        switch (arr.data().dataType()) {
             case DOUBLE:
                 DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, arr);
                 return idamin(arr.length(), arr, 1);
@@ -225,7 +225,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     public void axpy(int n, double alpha, INDArray x, INDArray y) {
         BaseSparseNDArray sparseX = (BaseSparseNDArray) x;
         DataBuffer pointers = sparseX.getVectorCoordinates();
-        switch(x.data().dataType()){
+        switch (x.data().dataType()) {
             case DOUBLE:
                 DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, x);
                 DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, y);
@@ -260,6 +260,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     public void rotg(INDArray a, INDArray b, INDArray c, INDArray s) {
         throw new UnsupportedOperationException();
     }
+
     /**
      * Applies Givens rotation to sparse vectors one of which is in compressed form.
      *
@@ -274,10 +275,10 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     public void rot(int N, INDArray X, INDArray Y, double c, double s) {
 
 
-        if(X instanceof  BaseSparseNDArray){
+        if (X instanceof BaseSparseNDArray) {
             BaseSparseNDArray sparseX = (BaseSparseNDArray) X;
 
-            switch(X.data().dataType()) {
+            switch (X.data().dataType()) {
                 case DOUBLE:
                     droti(N, X, sparseX.getVectorCoordinates(), Y, c, s);
                     break;
@@ -287,7 +288,8 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
                 case HALF:
                     hroti(N, X, sparseX.getVectorCoordinates(), Y, c, s);
                     break;
-                default: throw new UnsupportedOperationException();
+                default:
+                    throw new UnsupportedOperationException();
             }
         } else {
             throw new UnsupportedOperationException();
@@ -305,7 +307,8 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     }
 
     @Override
-    public void rotmg(IComplexNDArray d1, IComplexNDArray d2, IComplexNDArray b1, IComplexNumber b2, IComplexNDArray P) {
+    public void rotmg(IComplexNDArray d1, IComplexNDArray d2, IComplexNDArray b1, IComplexNumber b2,
+                    IComplexNDArray P) {
         throw new UnsupportedOperationException();
     }
 
@@ -318,7 +321,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
      * */
     @Override
     public void scal(int N, double alpha, INDArray X) {
-        switch(X.data().dataType()) {
+        switch (X.data().dataType()) {
             case DOUBLE:
                 dscal(N, alpha, X, 1);
                 break;
@@ -328,7 +331,8 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
             case HALF:
                 hscal(N, alpha, X, 1);
                 break;
-            default: throw new UnsupportedOperationException();
+            default:
+                throw new UnsupportedOperationException();
         }
 
     }

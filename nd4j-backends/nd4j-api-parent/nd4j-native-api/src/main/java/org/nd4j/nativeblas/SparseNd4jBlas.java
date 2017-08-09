@@ -4,7 +4,7 @@ import org.nd4j.linalg.api.blas.Blas;
 
 public abstract class SparseNd4jBlas implements Blas {
 
-    public SparseNd4jBlas(){
+    public SparseNd4jBlas() {
 
     }
 

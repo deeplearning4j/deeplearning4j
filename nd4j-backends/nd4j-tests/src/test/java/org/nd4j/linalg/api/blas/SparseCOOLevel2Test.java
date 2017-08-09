@@ -15,11 +15,11 @@ import static org.junit.Assert.assertEquals;
  * @author Audrey Loeffel
  */
 @RunWith(Parameterized.class)
-public class SparseCOOLevel2Test extends BaseNd4jTest{
+public class SparseCOOLevel2Test extends BaseNd4jTest {
 
-    // vector = [1, 2, 0, 4]
-    private double[] data = {1,2} ;
-    private int[][] indexes = new int[][]{{0, 0}, {0, 1}};
+    // matrix = [[1, 2], [0, 0]]
+    private double[] data = {1, 2};
+    private int[][] indexes = new int[][] {{0, 0}, {0, 1}};
     private int[] shape = {2, 2};
 
     public SparseCOOLevel2Test(Nd4jBackend backend) {
@@ -27,11 +27,14 @@ public class SparseCOOLevel2Test extends BaseNd4jTest{
     }
 
     @Test
-    public void testGemv(){
+    public void testGemv() {
         INDArray array1 = Nd4j.createSparseCOO(data, indexes, shape);
         INDArray array2 = Nd4j.linspace(1, 2, 2).reshape(2, 1);
 
-        INDArray array3 = array1.mmul(array2);
+        INDArray array3 = array1.mmul(array2); // should be [5, 0]
+        assertEquals(2, array3.length());
+        assertEquals(5, array3.getFloat(0), 1e-5);
+        assertEquals(0, array3.getFloat(1), 1e-5);
     }
 
 

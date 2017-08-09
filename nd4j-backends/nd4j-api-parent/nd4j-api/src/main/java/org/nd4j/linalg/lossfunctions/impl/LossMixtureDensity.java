@@ -56,8 +56,8 @@ public class LossMixtureDensity implements ILossFunction {
 
     private final int mMixtures;
     private final int mLabelWidth;
-    private static final double SQRT_TWO_PI = Math.sqrt(2*Math.PI);
-    
+    private static final double SQRT_TWO_PI = Math.sqrt(2 * Math.PI);
+
     /**
      * This method constructs a mixture density cost function
      * which causes the network to learn a mixture of gaussian distributions
@@ -70,14 +70,11 @@ public class LossMixtureDensity implements ILossFunction {
      * @param mixtures Number of gaussian mixtures to model.
      * @param labelWidth Size of the labels vector for each sample.
      */
-    private LossMixtureDensity(
-            @JsonProperty("mixtures") int mixtures,
-            @JsonProperty("labelWidth") int labelWidth
-            ) {
+    private LossMixtureDensity(@JsonProperty("mixtures") int mixtures, @JsonProperty("labelWidth") int labelWidth) {
         mMixtures = mixtures;
         mLabelWidth = labelWidth;
     }
-    
+
     /**
      * This class is a data holder for the mixture density
      * components for convenient manipulation.
@@ -100,11 +97,13 @@ public class LossMixtureDensity implements ILossFunction {
     public MixtureDensityComponents extractComponents(INDArray output) {
         int outputSize = output.size(1);
         if (outputSize != (mLabelWidth + 2) * mMixtures) {
-            throw new IllegalArgumentException("Network output size " + outputSize + " must be (labels+2)*mixtures where labels = " + mLabelWidth + " and mixtures = " + mMixtures);
+            throw new IllegalArgumentException(
+                            "Network output size " + outputSize + " must be (labels+2)*mixtures where labels = "
+                                            + mLabelWidth + " and mixtures = " + mMixtures);
         }
-        
+
         MixtureDensityComponents mdc = new MixtureDensityComponents();
-        
+
         // Output is 2 dimensional (samples, labels)
         //
         // For each label vector of length 'labels', we will have
@@ -112,7 +111,7 @@ public class LossMixtureDensity implements ILossFunction {
         // The first nMixtures outputs will correspond to the 'alpha' for each mixture.
         // The second nMixtures outputs will correspond to the 'sigma' and the last nMixtures*labels
         // will correspond to the 'mu' (mean) of the output.
-        
+
         // Reorganize these.
         // alpha = samples, 0 to nMixtures
         // mu = samples, nMixtures to 2*nMixtures
@@ -120,29 +119,28 @@ public class LossMixtureDensity implements ILossFunction {
         // Alpha is then sub-divided through reshape by mixtures per label and samples.
 
         mdc.alpha = output.get(NDArrayIndex.all(), NDArrayIndex.interval(0, mMixtures));
-        mdc.sigma = output.get(NDArrayIndex.all(), NDArrayIndex.interval(mMixtures, 2*mMixtures));
-        mdc.mu = output
-                .get(NDArrayIndex.all(), NDArrayIndex.interval(2*mMixtures, (mLabelWidth + 2) * mMixtures))
-                .reshape(output.size(0), mMixtures, mLabelWidth);
-        
+        mdc.sigma = output.get(NDArrayIndex.all(), NDArrayIndex.interval(mMixtures, 2 * mMixtures));
+        mdc.mu = output.get(NDArrayIndex.all(), NDArrayIndex.interval(2 * mMixtures, (mLabelWidth + 2) * mMixtures))
+                        .reshape(output.size(0), mMixtures, mLabelWidth);
+
         // Alpha is a softmax because
         // the alpha should all sum to 1 for a given gaussian mixture.
         mdc.alpha = Nd4j.getExecutioner().execAndReturn(new SoftMax(mdc.alpha));
-        
+
         // Mu comes directly from the network as an unmolested value.
         // Note that this effectively means that the output layer of
         // the network should have an activation function at least as large as
         // the expected values.  It is best for the output
         // layer to be an IDENTITY activation function.
         //mdc.mu = mdc.mu;
-        
+
         // Sigma comes from the network as an exponential in order to
         // ensure that it is positive-definite.
         mdc.sigma = Transforms.exp(mdc.sigma);
 
         return mdc;
     }
-    
+
     /**
      * Computes the aggregate score as a sum of all of the individual scores of
      * each of the labels against each of the outputs of the network.  For
@@ -157,7 +155,8 @@ public class LossMixtureDensity implements ILossFunction {
      * @return Returns a single double which corresponds to the total score of all label values.
      */
     @Override
-    public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
+    public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask,
+                    boolean average) {
         // The score overall consists of the
         // sum of the negative log likelihoods for each
         // of the individual labels.
@@ -192,11 +191,11 @@ public class LossMixtureDensity implements ILossFunction {
         INDArray output = activationFn.getActivation(preOutput.dup(), false);
         MixtureDensityComponents mdc = extractComponents(output);
         INDArray scoreArr = negativeLogLikelihood(labels, mdc.alpha, mdc.mu, mdc.sigma);
-        
+
         if (mask != null) {
             LossUtil.applyMask(scoreArr, mask);
         }
-        
+
         return scoreArr;
     }
 
@@ -215,11 +214,11 @@ public class LossMixtureDensity implements ILossFunction {
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         int nSamples = labels.size(0);
-        
+
         INDArray output = activationFn.getActivation(preOutput.dup(), false);
-        
+
         MixtureDensityComponents mdc = extractComponents(output);
-        
+
         INDArray gradient = Nd4j.zeros(nSamples, preOutput.columns());
 
         INDArray labelsMinusMu = labelsMinusMu(labels, mdc.mu);
@@ -250,7 +249,7 @@ public class LossMixtureDensity implements ILossFunction {
         // See Bishop equation (38)
         INDArray dLdZSigma = (labelsMinusMuSquared.div(variance).subi(mLabelWidth)).muli(-1).muli(pi);
         // See Bishop equation (39)
-        
+
         // This turned out to be way less efficient than
         // the simple 'for' loop here.
         //INDArray dLdZMu = pi
@@ -260,32 +259,34 @@ public class LossMixtureDensity implements ILossFunction {
         //        .muli(labelsMinusMu)
         //        .negi()
         //        .reshape(nSamples, mMixtures * mLabelWidth);
-        
+
         INDArray dLdZMu = Nd4j.create(nSamples, mMixtures, mLabelWidth);
         for (int k = 0; k < mLabelWidth; k++) {
-            dLdZMu.put(
-                    new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(k)},
-                    labelsMinusMu.get(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(k)}).muli(pi).divi(variance).negi()
-            );
+            dLdZMu.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(k)},
+                            labelsMinusMu.get(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
+                                            NDArrayIndex.point(k)}).muli(pi).divi(variance).negi());
         }
         dLdZMu = dLdZMu.reshape(nSamples, mMixtures * mLabelWidth);
-        
+
         // Place components of gradient into gradient holder.
-        gradient.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(0, mMixtures)}, dLdZAlpha);
-        gradient.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(mMixtures, mMixtures*2)}, dLdZSigma);
-        gradient.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(mMixtures*2, (mLabelWidth + 2) * mMixtures)}, dLdZMu);
+        gradient.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(0, mMixtures)}, dLdZAlpha);
+        gradient.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(mMixtures, mMixtures * 2)},
+                        dLdZSigma);
+        gradient.put(new INDArrayIndex[] {NDArrayIndex.all(),
+                        NDArrayIndex.interval(mMixtures * 2, (mLabelWidth + 2) * mMixtures)}, dLdZMu);
 
         INDArray gradients = activationFn.backprop(preOutput, gradient).getFirst();
-        
+
         if (mask != null) {
             LossUtil.applyMask(gradients, mask);
         }
-        
+
         return gradients;
     }
 
     @Override
-    public Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
+    public Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn,
+                    INDArray mask, boolean average) {
         double score = computeScore(labels, preOutput, activationFn, mask, average);
         INDArray gradient = computeGradient(labels, preOutput, activationFn, mask);
         Pair<Double, INDArray> returnCode = new Pair<>(score, gradient);
@@ -316,12 +317,9 @@ public class LossMixtureDensity implements ILossFunction {
         INDArray labelsMinusMu = labelsMinusMu(labels, mu);
         INDArray diffsquared = labelsMinusMu.mul(labelsMinusMu).sum(2);
         INDArray phitimesalphasum = phi(diffsquared, sigma).muli(alpha).sum(1);
-        
+
         // result = See Bishop(28,29)
-        INDArray result = 
-            Transforms.log(
-                    phitimesalphasum
-            ).negi();
+        INDArray result = Transforms.log(phitimesalphasum).negi();
         return result;
     }
 
@@ -330,7 +328,7 @@ public class LossMixtureDensity implements ILossFunction {
         // log likelihodd of the label against the 
         int nSamples = labels.size(0);
         int labelsPerSample = labels.size(1);
-        
+
         // This worked, but was actually much
         // slower than the for loop below.
         // labels = samples, mixtures, labels
@@ -340,19 +338,20 @@ public class LossMixtureDensity implements ILossFunction {
         //        .repeat(2, mMixtures)
         //        .permute(0, 2, 1)
         //        .subi(mu);
-        
+
         // The above code does the same thing as the loop below,
         // but it does it with index magix instead of a for loop.
         // It turned out to be way less efficient than the simple 'for' here.
         INDArray labelMinusMu = Nd4j.zeros(nSamples, mMixtures, labelsPerSample);
         for (int k = 0; k < mMixtures; k++) {
-            labelMinusMu.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(k), NDArrayIndex.all()}, labels);
+            labelMinusMu.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.point(k), NDArrayIndex.all()},
+                            labels);
         }
         labelMinusMu.subi(mu);
-        
+
         return labelMinusMu;
     }
-    
+
     /**
      * This method calculates 'phi' which is the probability
      * density function (see Bishop 23)
@@ -366,10 +365,9 @@ public class LossMixtureDensity implements ILossFunction {
         INDArray minustwovariance = sigma.mul(sigma).muli(2).negi();
 
         // This is phi_i(x,mu,sigma)
-        INDArray likelihoods = 
-            Transforms.exp(diffSquared.divi(minustwovariance))
-            .divi(Transforms.pow(sigma.mul(SQRT_TWO_PI), (double)mLabelWidth));
-        
+        INDArray likelihoods = Transforms.exp(diffSquared.divi(minustwovariance))
+                        .divi(Transforms.pow(sigma.mul(SQRT_TWO_PI), (double) mLabelWidth));
+
         return likelihoods;
     }
 
@@ -382,7 +380,7 @@ public class LossMixtureDensity implements ILossFunction {
     public int getNMixtures() {
         return mMixtures;
     }
-    
+
     /**
      * Returns the width of each label vector.
      * @return Width of label vectors expected.
@@ -396,14 +394,17 @@ public class LossMixtureDensity implements ILossFunction {
     public String toString() {
         return "LossMixtureDensity(mixtures=" + mMixtures + ", labels=" + mLabelWidth + ")";
     }
-    
-    public static Builder builder() { return new Builder(); }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static class Builder {
         private int mGaussians = 0;
         private int mLabelWidth = 0;
-        
-        private Builder() { }
-        
+
+        private Builder() {}
+
         /**
          * Specifies the number of gaussian functions to attempt
          * fitting against the data.
@@ -414,6 +415,7 @@ public class LossMixtureDensity implements ILossFunction {
             mGaussians = aGaussians;
             return this;
         }
+
         /**
          * Specifies the width of the labels vector which also corresponds
          * to the width of the 'mean' vector for each of the gaussian functions.
@@ -424,6 +426,7 @@ public class LossMixtureDensity implements ILossFunction {
             mLabelWidth = aLabelWidth;
             return this;
         }
+
         /**
          * Creates a new instance of the mixture density
          * cost function.
@@ -432,10 +435,12 @@ public class LossMixtureDensity implements ILossFunction {
          */
         public LossMixtureDensity build() {
             if (mGaussians <= 0) {
-                throw new IllegalArgumentException("Mixture density cost function must specify the number of mixtures to fit");
+                throw new IllegalArgumentException(
+                                "Mixture density cost function must specify the number of mixtures to fit");
             }
             if (mLabelWidth <= 0) {
-                throw new IllegalArgumentException("Mixture density cost function must specify the size of the labels vectors");
+                throw new IllegalArgumentException(
+                                "Mixture density cost function must specify the size of the labels vectors");
             }
             return new LossMixtureDensity(mGaussians, mLabelWidth);
         }

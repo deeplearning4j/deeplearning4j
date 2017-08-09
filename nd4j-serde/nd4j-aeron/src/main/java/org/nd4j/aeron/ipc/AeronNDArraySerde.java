@@ -34,9 +34,9 @@ public class AeronNDArraySerde extends BinarySerde {
      * @return
      */
     public static ByteBuffer getDirectByteBuffer(DirectBuffer directBuffer) {
-        return directBuffer.byteBuffer() == null ?
-                ByteBuffer.allocateDirect(directBuffer.capacity()).put(directBuffer.byteArray())
-                : directBuffer.byteBuffer();
+        return directBuffer.byteBuffer() == null
+                        ? ByteBuffer.allocateDirect(directBuffer.capacity()).put(directBuffer.byteArray())
+                        : directBuffer.byteBuffer();
     }
 
     /**
@@ -52,8 +52,6 @@ public class AeronNDArraySerde extends BinarySerde {
 
 
 
-
-
     /**
      * Create an ndarray
      * from the unsafe buffer.
@@ -65,7 +63,7 @@ public class AeronNDArraySerde extends BinarySerde {
      * @return the ndarray derived from this buffer
      */
     public static Pair<INDArray, ByteBuffer> toArrayAndByteBuffer(DirectBuffer buffer, int offset) {
-        return toArrayAndByteBuffer(getDirectByteBuffer(buffer),offset);
+        return toArrayAndByteBuffer(getDirectByteBuffer(buffer), offset);
     }
 
 

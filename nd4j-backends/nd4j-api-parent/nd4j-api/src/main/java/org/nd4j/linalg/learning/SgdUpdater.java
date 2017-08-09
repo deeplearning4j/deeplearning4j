@@ -32,7 +32,7 @@ public class SgdUpdater implements GradientUpdater<Sgd> {
 
     private final Sgd config;
 
-    public SgdUpdater(Sgd config){
+    public SgdUpdater(Sgd config) {
         this.config = config;
     }
 

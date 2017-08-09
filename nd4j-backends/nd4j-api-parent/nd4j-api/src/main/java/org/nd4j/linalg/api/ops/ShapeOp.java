@@ -3,9 +3,7 @@ package org.nd4j.linalg.api.ops;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 public abstract class ShapeOp extends BaseOp {
-    public ShapeOp() {
-    }
-
+    public ShapeOp() {}
 
 
 

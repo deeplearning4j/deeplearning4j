@@ -28,7 +28,6 @@ public class IndexingTestsC extends BaseNd4jTest {
 
 
 
-
     @Test
     public void testNewAxis() {
         INDArray arr = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
@@ -40,7 +39,7 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void broadcastBug() throws Exception {
-        INDArray a = Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0}, new int[]{2, 2});
+        INDArray a = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0}, new int[] {2, 2});
         final INDArray col = a.get(NDArrayIndex.all(), NDArrayIndex.point(0));
 
         final INDArray aBad = col.broadcast(2, 2);
@@ -54,100 +53,77 @@ public class IndexingTestsC extends BaseNd4jTest {
     @Test
     public void testIntervalsIn3D() {
         INDArray arr = Nd4j.arange(8).reshape(2, 2, 2);
-        INDArray assertion = Nd4j.create(new double[][]{
-                {4, 5},
-                {6,7}
-        }).reshape(1,2,2);
+        INDArray assertion = Nd4j.create(new double[][] {{4, 5}, {6, 7}}).reshape(1, 2, 2);
         INDArray rest = arr.get(interval(1, 2), interval(0, 2), interval(0, 2));
-        assertEquals(assertion,rest);
+        assertEquals(assertion, rest);
 
     }
 
     @Test
     public void testSmallInterval() {
         INDArray arr = Nd4j.arange(8).reshape(2, 2, 2);
-        INDArray assertion = Nd4j.create(new double[][]{
-                {4, 5},
-                {6,7}
-        }).reshape(1,2,2);
+        INDArray assertion = Nd4j.create(new double[][] {{4, 5}, {6, 7}}).reshape(1, 2, 2);
         INDArray rest = arr.get(interval(1, 2), all(), all());
-        assertEquals(assertion,rest);
+        assertEquals(assertion, rest);
 
     }
 
     @Test
     public void testAllWithNewAxisAndInterval() {
-        INDArray arr = Nd4j.linspace(1,24,24).reshape(4,2,3);
-        INDArray assertion2 = Nd4j.create(new double[][]{
-                {7,8,9},
-        }).reshape(1,1,3);
+        INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 2, 3);
+        INDArray assertion2 = Nd4j.create(new double[][] {{7, 8, 9},}).reshape(1, 1, 3);
 
-        INDArray get2 = arr.get(NDArrayIndex.point(1), newAxis(),NDArrayIndex.interval(0,1));
-        assertEquals(assertion2,get2);
+        INDArray get2 = arr.get(NDArrayIndex.point(1), newAxis(), NDArrayIndex.interval(0, 1));
+        assertEquals(assertion2, get2);
     }
 
     @Test
     public void testAllWithNewAxisInMiddle() {
-        INDArray arr = Nd4j.linspace(1,24,24).reshape(4,2,3);
-        INDArray assertion2 = Nd4j.create(new double[][]{
-                {7,8,9},
-                {10,11,12}
-        }).reshape(1,2,3);
+        INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 2, 3);
+        INDArray assertion2 = Nd4j.create(new double[][] {{7, 8, 9}, {10, 11, 12}}).reshape(1, 2, 3);
 
         INDArray get2 = arr.get(NDArrayIndex.point(1), newAxis(), all());
-        assertEquals(assertion2,get2);
+        assertEquals(assertion2, get2);
     }
 
     @Test
     public void testAllWithNewAxis() {
-        INDArray arr = Nd4j.linspace(1,24,24).reshape(4,2,3);
-        INDArray get = arr.get(newAxis(), all(),    point(1));
-        INDArray assertion = Nd4j.create(new double[][]{
-                {4,5,6},
-                {10,11,12},
-                {16,17,18},
-                {22,23,24}
-        }).reshape(1,4,3);
-        assertEquals(assertion,get);
+        INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 2, 3);
+        INDArray get = arr.get(newAxis(), all(), point(1));
+        INDArray assertion = Nd4j.create(new double[][] {{4, 5, 6}, {10, 11, 12}, {16, 17, 18}, {22, 23, 24}})
+                        .reshape(1, 4, 3);
+        assertEquals(assertion, get);
 
     }
 
     @Test
     public void testIndexingWithMmul() {
-        INDArray a = Nd4j.linspace(1,9,9).reshape(3,3);
-        INDArray b = Nd4j.linspace(1,5,5);
+        INDArray a = Nd4j.linspace(1, 9, 9).reshape(3, 3);
+        INDArray b = Nd4j.linspace(1, 5, 5);
         System.out.println(b);
-        INDArray view = a.get(all(),NDArrayIndex.interval(0, 1));
+        INDArray view = a.get(all(), NDArrayIndex.interval(0, 1));
         INDArray c = view.mmul(b);
-        INDArray assertion = a.get(all(),NDArrayIndex.interval(0, 1)).dup().mmul(b);
-        assertEquals(assertion,c);
+        INDArray assertion = a.get(all(), NDArrayIndex.interval(0, 1)).dup().mmul(b);
+        assertEquals(assertion, c);
     }
 
     @Test
     public void testPointPointInterval() {
-        INDArray wholeArr = Nd4j.linspace(1,36,36).reshape(4,3,3);
-        INDArray get = wholeArr.get(point(0), interval(1,3), interval(1,3));
-        INDArray assertion = Nd4j.create(new double[][]{
-                {5,6},
-                {8,9}
-        });
+        INDArray wholeArr = Nd4j.linspace(1, 36, 36).reshape(4, 3, 3);
+        INDArray get = wholeArr.get(point(0), interval(1, 3), interval(1, 3));
+        INDArray assertion = Nd4j.create(new double[][] {{5, 6}, {8, 9}});
 
-        assertEquals(assertion,get);
+        assertEquals(assertion, get);
     }
 
     @Test
     public void testIntervalLowerBound() {
-        INDArray wholeArr = Nd4j.linspace(1,24,24).reshape(4,2,3);
-        INDArray subarray = wholeArr.get(
-                interval(1, 3),
-                new SpecifiedIndex(new int[]{0}),
-                new SpecifiedIndex(new int[]{0, 2}));
-        INDArray assertion = Nd4j.create(new double[][]{
-                {7,9},
-                {13,15}
-        });
+        INDArray wholeArr = Nd4j.linspace(1, 24, 24).reshape(4, 2, 3);
+        INDArray subarray = wholeArr.get(interval(1, 3), new SpecifiedIndex(new int[] {0}),
+                        new SpecifiedIndex(new int[] {0, 2}));
+        INDArray assertion = Nd4j.create(new double[][] {{7, 9}, {13, 15}});
 
-        assertEquals(assertion,subarray);
+        assertEquals(assertion, subarray);
 
     }
 

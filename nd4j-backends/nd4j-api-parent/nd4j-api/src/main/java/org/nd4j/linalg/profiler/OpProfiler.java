@@ -10,7 +10,6 @@ import org.nd4j.linalg.profiler.data.StackAggregator;
 import org.nd4j.linalg.profiler.data.StringAggregator;
 import org.nd4j.linalg.profiler.data.StringCounter;
 
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,15 +30,10 @@ import static org.nd4j.linalg.profiler.OpProfiler.PenaltyCause.NONE;
 public class OpProfiler {
 
     public enum PenaltyCause {
-        NONE,
-        NON_EWS_ACCESS,
-        STRIDED_ACCESS,
-        MIXED_ORDER,
-        TAD_NON_EWS_ACCESS,
-        TAD_STRIDED_ACCESS,
+        NONE, NON_EWS_ACCESS, STRIDED_ACCESS, MIXED_ORDER, TAD_NON_EWS_ACCESS, TAD_STRIDED_ACCESS,
     }
 
-    public  interface OpProfilerListener {
+    public interface OpProfilerListener {
         void invoke(Op op);
     }
 
@@ -256,7 +250,7 @@ public class OpProfiler {
             }
         }
 
-        for(OpProfilerListener listener : listeners) {
+        for (OpProfilerListener listener : listeners) {
             listener.invoke(op);
         }
     }
@@ -512,7 +506,7 @@ public class OpProfiler {
                     case NONE: {
                         blasAggregator.incrementCount();
                     }
-                    break;
+                        break;
                     case MIXED_ORDER: // we wo nothing for gemm in this case
                     default:
                         break;
@@ -585,7 +579,7 @@ public class OpProfiler {
             int ews = tadBuffer.getInt(length - 2);
 
             if ((ews < 1 || rank > 2 || (rank == 2 && tadBuffer.getInt(1) > 1 && tadBuffer.getInt(2) > 1))
-                    && !causes.contains(PenaltyCause.TAD_NON_EWS_ACCESS))
+                            && !causes.contains(PenaltyCause.TAD_NON_EWS_ACCESS))
                 causes.add(PenaltyCause.TAD_NON_EWS_ACCESS);
             else if (ews > 1 && !causes.contains(PenaltyCause.TAD_STRIDED_ACCESS))
                 causes.add(PenaltyCause.TAD_STRIDED_ACCESS);

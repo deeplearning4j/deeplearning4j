@@ -67,17 +67,17 @@ public class ATanh extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -102,7 +102,7 @@ public class ATanh extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-      throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override

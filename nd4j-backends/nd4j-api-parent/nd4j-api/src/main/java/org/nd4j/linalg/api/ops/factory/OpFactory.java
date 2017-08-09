@@ -99,7 +99,6 @@ public interface OpFactory {
 
 
 
-
     /**
      *
      * @param name
@@ -158,8 +157,7 @@ public interface OpFactory {
      * @return-m 'add more scalar ops' -a
      * git push or
      */
-    TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z,Object[] extraArgs);
-
+    TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs);
 
 
 
@@ -213,7 +211,6 @@ public interface OpFactory {
 
 
 
-
     /** Create a vector operation
      *
      * @param name Name of the vector op
@@ -235,7 +232,8 @@ public interface OpFactory {
      * @param dimension
      * @return
      */
-    BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs, int... dimension);
+    BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs,
+                    int... dimension);
 
     /** Create a vector operation
      *

@@ -48,7 +48,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         int newSize = (int) buffer.length() * 2;
         DataBuffer newBuffer = Nd4j.createBuffer(newSize);
 
-        switch(buffer.dataType()){
+        switch (buffer.dataType()) {
             case INT:
                 newBuffer.setData(buffer.asInt());
                 break;
@@ -71,20 +71,22 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public boolean isSparse(){
+    public boolean isSparse() {
         return isSparse;
     }
 
     @Override
-    public int length(){
+    public int length() {
         return (int) length;
     }
+
     @Override
-    public int nnz(){
+    public int nnz() {
         return length();
     }
+
     @Override
-    public long lengthLong(){
+    public long lengthLong() {
         return length;
     }
 
@@ -150,14 +152,17 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public int rank() {
         return Shape.rank(shapeInformation);
     }
+
     @Override
     public int[] flags() {
         return Shape.flags(sparseInformation);
     }
+
     @Override
     public int[] hiddenDimensions() {
         return Shape.hiddenDimension(sparseInformation);
     }
+
     @Override
     public int[] sparseOffsets() {
         return Shape.sparseOffsets(sparseInformation);
@@ -171,6 +176,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
             return strideOf().getInt(dimension + rank);
         return strideOf().getInt(dimension);
     }
+
     protected DataBuffer strideOf() {
         if (stride == null)
             stride = Shape.stride(shapeInfoDataBuffer());
@@ -947,53 +953,41 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
 
 
+        //We require that the result array is 'f' (fortran) order
+        // However, user might have called mmuli with a c order array for the result
+        // In which case, we need to allocate a temporary f order array, and later do an assign to the real result array
 
-            //We require that the result array is 'f' (fortran) order
-            // However, user might have called mmuli with a c order array for the result
-            // In which case, we need to allocate a temporary f order array, and later do an assign to the real result array
+        boolean requiresTemp = result.ordering() == 'c';
+        INDArray gemmResultArr;
+        if (requiresTemp) {
+            //Can use createUninitialized due to beta==0.0 parameter in gemm
+            gemmResultArr = Nd4j.createUninitialized(result.shape(), 'f');
+        } else {
+            gemmResultArr = result;
+        }
 
-            boolean requiresTemp = result.ordering() == 'c';
-            INDArray gemmResultArr;
-            if (requiresTemp) {
-                //Can use createUninitialized due to beta==0.0 parameter in gemm
-                gemmResultArr = Nd4j.createUninitialized(result.shape(), 'f');
-            } else {
-                gemmResultArr = result;
+        if (other.columns() == 1) {
+            Nd4j.getBlasWrapper().level2().gemv(ordering(), BlasBufferUtil.getCharForTranspose(other), 1.0, this, other,
+                            0.0, gemmResultArr);
+        } else {
+            //gemm doesn't support strides so vectors and views
+            //don't work
+            if (isView() && isVector()) {
+                return dup().mmuli(other, gemmResultArr);
             }
 
-            if (other.columns() == 1) {
-                Nd4j.getBlasWrapper().level2().gemv(
-                        ordering(),
-                        BlasBufferUtil.getCharForTranspose(other),
-                        1.0,
-                        this,
-                        other,
-                        0.0,
-                        gemmResultArr);
-            } else {
-                //gemm doesn't support strides so vectors and views
-                //don't work
-                if(isView() && isVector()) {
-                    return dup().mmuli(other,gemmResultArr);
-                }
+            Nd4j.getBlasWrapper().level3().gemm(ordering(), BlasBufferUtil.getCharForTranspose(other),
+                            BlasBufferUtil.getCharForTranspose(gemmResultArr), 1.0, this, other, 0.0, gemmResultArr);
+        }
 
-                Nd4j.getBlasWrapper().level3().gemm(ordering(),
-                        BlasBufferUtil.getCharForTranspose(other),
-                        BlasBufferUtil.getCharForTranspose(gemmResultArr),
-                        1.0,
-                        this,
-                        other,
-                        0.0,
-                        gemmResultArr);
-            }
-
-            if (requiresTemp) {
-                result.assign(gemmResultArr);
-            }
+        if (requiresTemp) {
+            result.assign(gemmResultArr);
+        }
 
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
+
         return result;
     }
 
@@ -1490,7 +1484,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
         if (dimension >= rank())
             throw new IllegalArgumentException("Invalid size: cannot get size of dimension " + dimension + " for rank "
-                    + rank() + " NDArray (array shape: " + Arrays.toString(this.shape()) + ")");
+                            + rank() + " NDArray (array shape: " + Arrays.toString(this.shape()) + ")");
 
 
         return shapeOf().getInt(dimension);
@@ -1839,6 +1833,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public Number logEntropyNumber() {
         return logEntropy(Integer.MAX_VALUE).getDouble(0);
     }
+
     /**
      * Returns entropy along dimension
      * @param dimension
@@ -1901,11 +1896,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         double pos = (quantile.doubleValue() / 100.0) * (double) (sorted.length() + 1);
 
         double fposition = FastMath.floor(pos);
-        int position = (int)fposition;
+        int position = (int) fposition;
 
         double diff = pos - fposition;
 
-        double lower = sorted.getDouble(position-1);
+        double lower = sorted.getDouble(position - 1);
         double upper = sorted.getDouble(position);
 
         return lower + diff * (upper - lower);

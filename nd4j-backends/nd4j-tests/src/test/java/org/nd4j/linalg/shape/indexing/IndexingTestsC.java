@@ -180,13 +180,13 @@ public class IndexingTestsC extends BaseNd4jTest {
 
         INDArray arr = Nd4j.linspace(0, 124, 125).reshape(5, 5, 5);
 
-      /*
-       * Extract elements with the following indices:
-       *
-       * (2,1,1) (2,1,2) (2,1,3)
-       * (2,2,1) (2,2,2) (2,2,3)
-       * (2,3,1) (2,3,2) (2,3,3)
-       */
+        /*
+         * Extract elements with the following indices:
+         *
+         * (2,1,1) (2,1,2) (2,1,3)
+         * (2,2,1) (2,2,2) (2,2,3)
+         * (2,3,1) (2,3,2) (2,3,3)
+         */
 
         int slice = 2;
 
@@ -198,13 +198,13 @@ public class IndexingTestsC extends BaseNd4jTest {
 
         // Method A: Element-wise.
 
-        INDArray subArr_A = Nd4j.create(new int[]{3, 3});
+        INDArray subArr_A = Nd4j.create(new int[] {3, 3});
 
         for (int i = iStart; i < iEnd; i++) {
             for (int j = jStart; j < jEnd; j++) {
 
                 double val = arr.getDouble(slice, i, j);
-                int[] sub = new int[]{i - iStart, j - jStart};
+                int[] sub = new int[] {i - iStart, j - jStart};
 
                 subArr_A.putScalar(sub, val);
             }
@@ -212,17 +212,17 @@ public class IndexingTestsC extends BaseNd4jTest {
 
         // Method B: Using NDArray get and put with index classes.
 
-        INDArray subArr_B = Nd4j.create(new int[]{3, 3});
+        INDArray subArr_B = Nd4j.create(new int[] {3, 3});
 
         INDArrayIndex ndi_Slice = NDArrayIndex.point(slice);
         INDArrayIndex ndi_J = NDArrayIndex.interval(jStart, jEnd);
         INDArrayIndex ndi_I = NDArrayIndex.interval(iStart, iEnd);
 
-        INDArrayIndex[] whereToGet = new INDArrayIndex[]{ndi_Slice, ndi_I, ndi_J};
+        INDArrayIndex[] whereToGet = new INDArrayIndex[] {ndi_Slice, ndi_I, ndi_J};
 
         INDArray whatToPut = arr.get(whereToGet);
         System.out.println(whatToPut);
-        INDArrayIndex[] whereToPut = new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all()};
+        INDArrayIndex[] whereToPut = new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all()};
 
         subArr_B.put(whereToPut, whatToPut);
 
@@ -233,7 +233,7 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testSimplePoint() {
-        INDArray A = Nd4j.linspace(1,3*3*3,3*3*3).reshape(3,3,3);
+        INDArray A = Nd4j.linspace(1, 3 * 3 * 3, 3 * 3 * 3).reshape(3, 3, 3);
 
         /*
             c - ordering
@@ -241,16 +241,16 @@ public class IndexingTestsC extends BaseNd4jTest {
             4,5,6   13,14,15    22,23,24
             7,8,9   16,17,18    25,26,27
          */
-        INDArray viewOne = A.get(NDArrayIndex.point(1),NDArrayIndex.interval(0,2),NDArrayIndex.interval(1,3));
-        INDArray viewTwo = A.get(NDArrayIndex.point(1)).get(NDArrayIndex.interval(0,2),NDArrayIndex.interval(1,3));
-        INDArray expected = Nd4j.zeros(2,2);
-        expected.putScalar(0,0,11);
-        expected.putScalar(0,1,12);
-        expected.putScalar(1,0,14);
-        expected.putScalar(1,1,15);
-        assertEquals("View with two get",expected,viewTwo);
-        assertEquals("View with one get",expected,viewOne); //FAILS!
-        assertEquals("Two views should be the same",viewOne,viewTwo); //obviously fails
+        INDArray viewOne = A.get(NDArrayIndex.point(1), NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 3));
+        INDArray viewTwo = A.get(NDArrayIndex.point(1)).get(NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 3));
+        INDArray expected = Nd4j.zeros(2, 2);
+        expected.putScalar(0, 0, 11);
+        expected.putScalar(0, 1, 12);
+        expected.putScalar(1, 0, 14);
+        expected.putScalar(1, 1, 15);
+        assertEquals("View with two get", expected, viewTwo);
+        assertEquals("View with one get", expected, viewOne); //FAILS!
+        assertEquals("Two views should be the same", viewOne, viewTwo); //obviously fails
     }
 
     /*

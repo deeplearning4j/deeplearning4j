@@ -214,7 +214,7 @@ public class ArrayUtil {
         return ret;
     }
 
-    public static long sumLong(long...add) {
+    public static long sumLong(long... add) {
         if (add.length < 1)
             return 0;
         int ret = 0;
@@ -898,8 +898,8 @@ public class ArrayUtil {
      */
     public static int[][] zip(int[] as, int[] bs) {
         int[][] result = new int[as.length][2];
-        for(int i = 0; i < result.length; i++) {
-            result[i] = new int[] {as[i],bs[i]};
+        for (int i = 0; i < result.length; i++) {
+            result[i] = new int[] {as[i], bs[i]};
         }
 
         return result;
@@ -916,8 +916,8 @@ public class ArrayUtil {
         int validationLength = Math.min(axes[0].length, axes[1].length);
         for (int i = 0; i < validationLength; i++) {
             if (aShape[axes[0][i]] != bShape[axes[1][i]])
-                throw new IllegalArgumentException("Size of the given axes a" +
-                        "t each dimension must be the same size.");
+                throw new IllegalArgumentException(
+                                "Size of the given axes a" + "t each dimension must be the same size.");
             if (axes[0][i] < 0)
                 axes[0][i] += aShape.length;
             if (axes[1][i] < 0)
@@ -987,9 +987,9 @@ public class ArrayUtil {
      * @param dimensions the dimensions
      * @return
      */
-    public static int[] permute(int[] shape,int[] dimensions) {
+    public static int[] permute(int[] shape, int[] dimensions) {
         int[] ret = new int[shape.length];
-        for(int i = 0; i < shape.length; i++) {
+        for (int i = 0; i < shape.length; i++) {
             ret[i] = shape[dimensions[i]];
         }
 
@@ -1002,7 +1002,7 @@ public class ArrayUtil {
      * @param a
      * @return
      */
-    public static int[] argsort( int[] a) {
+    public static int[] argsort(int[] a) {
         return argsort(a, true);
     }
 
@@ -1020,7 +1020,7 @@ public class ArrayUtil {
         });
 
         int[] ret = new int[indexes.length];
-        for(int i = 0; i  < ret.length; i++)
+        for (int i = 0; i < ret.length; i++)
             ret[i] = indexes[i];
 
         return ret;
@@ -1036,16 +1036,15 @@ public class ArrayUtil {
      * @param axes
      * @return
      */
-    public static int[] convertNegativeIndices(int range,int[] axes) {
-        int[] axesRet = ArrayUtil.range(0,range);
+    public static int[] convertNegativeIndices(int range, int[] axes) {
+        int[] axesRet = ArrayUtil.range(0, range);
         int[] newAxes = ArrayUtil.copy(axes);
-        for(int i = 0; i < axes.length; i++) {
-              newAxes[i] = axes[axesRet[i]];
+        for (int i = 0; i < axes.length; i++) {
+            newAxes[i] = axes[axesRet[i]];
         }
 
         return newAxes;
     }
-
 
 
 
@@ -1057,8 +1056,8 @@ public class ArrayUtil {
      * @param to the end of the interval to take
      * @return the generated array
      */
-    public static int[] copyOfRangeFrom(int length,int from,int to) {
-        return  Arrays.copyOfRange(ArrayUtil.range(0,length),from,to);
+    public static int[] copyOfRangeFrom(int length, int from, int to) {
+        return Arrays.copyOfRange(ArrayUtil.range(0, length), from, to);
 
     }
 

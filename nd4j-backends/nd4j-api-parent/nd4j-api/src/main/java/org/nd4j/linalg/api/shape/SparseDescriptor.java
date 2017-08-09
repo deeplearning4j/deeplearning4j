@@ -12,7 +12,7 @@ public class SparseDescriptor {
     int[] hiddenDimension;
     int underlyingRank;
 
-    public SparseDescriptor(int[] flags, long[] sparseOffsets, int[] hiddenDimension, int underlyingRank){
+    public SparseDescriptor(int[] flags, long[] sparseOffsets, int[] hiddenDimension, int underlyingRank) {
         this.flags = Arrays.copyOf(flags, flags.length);
         this.sparseOffsets = Arrays.copyOf(sparseOffsets, sparseOffsets.length);
         this.hiddenDimension = Arrays.copyOf(hiddenDimension, hiddenDimension.length);
@@ -37,11 +37,11 @@ public class SparseDescriptor {
 
         SparseDescriptor that = (SparseDescriptor) o;
 
-        if(!Arrays.equals(flags, that.flags))
+        if (!Arrays.equals(flags, that.flags))
             return false;
-        if(!Arrays.equals(sparseOffsets, that.sparseOffsets))
+        if (!Arrays.equals(sparseOffsets, that.sparseOffsets))
             return false;
-        if(!Arrays.equals(hiddenDimension, that.hiddenDimension))
+        if (!Arrays.equals(hiddenDimension, that.hiddenDimension))
             return false;
         return underlyingRank == that.underlyingRank;
     }
@@ -51,10 +51,9 @@ public class SparseDescriptor {
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append(flags.length).append(",").append(Arrays.toString(flags)).append(",")
-                .append(sparseOffsets.length).append(",").append(Arrays.toString(sparseOffsets)).append(",")
-                .append(hiddenDimension.length).append(",").append(Arrays.toString(hiddenDimension)).append(",")
-                .append(underlyingRank);
+        builder.append(flags.length).append(",").append(Arrays.toString(flags)).append(",").append(sparseOffsets.length)
+                        .append(",").append(Arrays.toString(sparseOffsets)).append(",").append(hiddenDimension.length)
+                        .append(",").append(Arrays.toString(hiddenDimension)).append(",").append(underlyingRank);
 
         String result = builder.toString().replaceAll("\\]", "").replaceAll("\\[", "");
         result = "[" + result + "]";

@@ -70,9 +70,9 @@ public class SpecialTests extends BaseNd4jTest {
     @Test(expected = ND4JIllegalStateException.class)
     public void testScalarShuffle1() throws Exception {
         List<DataSet> listData = new ArrayList<>();
-        for(int i = 0; i < 3; i++) {
-            INDArray features = Nd4j.ones(25,25);
-            INDArray label = Nd4j.create(new float[] {1}, new int[]{1});
+        for (int i = 0; i < 3; i++) {
+            INDArray features = Nd4j.ones(25, 25);
+            INDArray label = Nd4j.create(new float[] {1}, new int[] {1});
             DataSet dataset = new DataSet(features, label);
             listData.add(dataset);
         }
@@ -84,8 +84,8 @@ public class SpecialTests extends BaseNd4jTest {
     @Test
     public void testScalarShuffle2() throws Exception {
         List<DataSet> listData = new ArrayList<>();
-        for(int i = 0; i < 3; i++) {
-            INDArray features = Nd4j.ones(14,25);
+        for (int i = 0; i < 3; i++) {
+            INDArray features = Nd4j.ones(14, 25);
             INDArray label = Nd4j.create(14, 50);
             DataSet dataset = new DataSet(features, label);
             listData.add(dataset);
@@ -110,11 +110,11 @@ public class SpecialTests extends BaseNd4jTest {
     public void testVstack1() throws Exception {
         INDArray matrix = Nd4j.create(10000, 100);
 
-            List<INDArray> views = new ArrayList<>();
-            for (int i = 0; i < matrix.rows() / 2; i++) {
-                views.add(matrix.getRow(RandomUtils.nextInt(0, matrix.rows())));
-                //views.add(Nd4j.create(1, 10));
-            }
+        List<INDArray> views = new ArrayList<>();
+        for (int i = 0; i < matrix.rows() / 2; i++) {
+            views.add(matrix.getRow(RandomUtils.nextInt(0, matrix.rows())));
+            //views.add(Nd4j.create(1, 10));
+        }
 
         log.info("Starting...");
 

@@ -14,7 +14,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * @author Audrey Loeffel
  */
-public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
+public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
     protected static final SparseFormat format = SparseFormat.CSR;
     protected transient volatile DataBuffer values;
     protected transient volatile DataBuffer columnsPointers;
@@ -61,7 +61,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         this(Nd4j.createBuffer(data), columnsPointers, pointerB, pointerE, shape);
     }
 
-    public BaseSparseNDArrayCSR(DataBuffer data, int[] columnsPointers, int[] pointerB, int[] pointerE, int[] shape){
+    public BaseSparseNDArrayCSR(DataBuffer data, int[] columnsPointers, int[] pointerB, int[] pointerE, int[] shape) {
         checkArgument(pointerB.length == pointerE.length);
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
         init(shape);
@@ -76,9 +76,9 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         this.pointerE = Nd4j.getDataBufferFactory().createInt(pointersSpace);
         this.pointerE.setData(pointerE);
 
-        }
+    }
 
-    public INDArray putScalar(int row, int col, double value){
+    public INDArray putScalar(int row, int col, double value) {
 
         checkArgument(row < rows && 0 <= rows);
         checkArgument(col < columns && 0 <= columns);
@@ -86,8 +86,8 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         int idx = pointerB.getInt(row);
         int idxNextRow = pointerE.getInt(row);
 
-        while(columnsPointers.getInt(idx) < col && columnsPointers.getInt(idx) < idxNextRow) {
-            idx ++;
+        while (columnsPointers.getInt(idx) < col && columnsPointers.getInt(idx) < idxNextRow) {
+            idx++;
         }
         if (columnsPointers.getInt(idx) == col) {
             values.put(idx, value);
@@ -95,11 +95,11 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
             //Add a new entry in both buffers at a given position
             values = addAtPosition(values, length, idx, value);
             columnsPointers = addAtPosition(columnsPointers, length, idx, col);
-            length ++;
+            length++;
 
             // shift the indices of the next rows
             pointerE.put(row, pointerE.getInt(row) + 1);
-            for(int i = row + 1; i < rows; i ++){
+            for (int i = row + 1; i < rows; i++) {
                 pointerB.put(i, pointerB.getInt(i) + 1);
                 pointerE.put(i, pointerE.getInt(i) + 1);
             }
@@ -118,13 +118,11 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     @Override
     public INDArray get(INDArrayIndex... indexes) {
         //check for row/column vector and point index being 0
-        if (indexes.length == 1 && indexes[0] instanceof NDArrayIndexAll
-                || (indexes.length == 2 && (isRowVector()
-                && indexes[0] instanceof PointIndex && indexes[0].offset() == 0
-                && indexes[1] instanceof NDArrayIndexAll
-                || isColumnVector()
-                && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
-                && indexes[0] instanceof NDArrayIndexAll)))
+        if (indexes.length == 1 && indexes[0] instanceof NDArrayIndexAll || (indexes.length == 2 && (isRowVector()
+                        && indexes[0] instanceof PointIndex && indexes[0].offset() == 0
+                        && indexes[1] instanceof NDArrayIndexAll
+                        || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
+                                        && indexes[0] instanceof NDArrayIndexAll)))
             return this;
 
         indexes = NDArrayIndex.resolve(shapeInfoDataBuffer(), indexes);
@@ -157,57 +155,57 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     /**
      * Return the minor pointers. (columns for CSR, rows for CSC,...)
      * */
-    public DataBuffer getVectorCoordinates(){
+    public DataBuffer getVectorCoordinates() {
         return Nd4j.getDataBufferFactory().create(columnsPointers, 0, length());
 
     }
 
-    public double[] getDoubleValues(){
+    public double[] getDoubleValues() {
         return values.getDoublesAt(0, (int) length);
     }
 
-    public double[] getColumns(){
+    public double[] getColumns() {
         return columnsPointers.getDoublesAt(0, (int) length);
     }
 
-    public int[] getPointerBArray(){
+    public int[] getPointerBArray() {
         return pointerB.asInt();
     }
 
-    public int[] getPointerEArray(){
+    public int[] getPointerEArray() {
         return pointerE.asInt();
     }
 
-    public SparseFormat getFormat(){
+    public SparseFormat getFormat() {
         return format;
     }
 
-    private void add(DataBuffer buffer, int value){
+    private void add(DataBuffer buffer, int value) {
         // TODO add value and the end of the array
     }
 
     public DataBuffer getPointerB() {
-        return Nd4j.getDataBufferFactory().create(pointerB, 0,rows());
+        return Nd4j.getDataBufferFactory().create(pointerB, 0, rows());
     }
 
     public DataBuffer getPointerE() {
-        return Nd4j.getDataBufferFactory().create(pointerE, 0,rows());
+        return Nd4j.getDataBufferFactory().create(pointerE, 0, rows());
     }
 
-    private DataBuffer addAtPosition(DataBuffer buf, long dataSize, int pos, double value){
+    private DataBuffer addAtPosition(DataBuffer buf, long dataSize, int pos, double value) {
 
         DataBuffer buffer = (buf.length() == dataSize) ? reallocate(buf) : buf;
         double[] tail = buffer.getDoublesAt(pos, (int) dataSize - pos);
 
         buffer.put(pos, value);
-        for(int i = 0; i < tail.length; i++) {
+        for (int i = 0; i < tail.length; i++) {
             buffer.put(i + pos + 1, tail[i]);
         }
         return buffer;
     }
 
     @Override
-    public DataBuffer data(){
+    public DataBuffer data() {
         return Nd4j.getDataBufferFactory().create(values, 0, length());
     }
 
@@ -219,8 +217,8 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         int[] pointersB = pointerB.asInt();
         int[] pointersE = pointerE.asInt();
 
-        for(int row = 0; row < rows(); row++){
-            for(int idx = pointersB[row]; idx < pointersE[row]; idx++){
+        for (int row = 0; row < rows(); row++) {
+            for (int idx = pointersB[row]; idx < pointersE[row]; idx++) {
                 result.put(row, columnsPointers.getInt(idx), values.getNumber(idx));
             }
         }
@@ -243,52 +241,52 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         List<Integer> accuPointerB = new ArrayList<>();
         List<Integer> accuPointerE = new ArrayList<>();
 
-        if(shape.length == 2) {
+        if (shape.length == 2) {
 
-            if(resolution.getOffset() != 0 ) {
+            if (resolution.getOffset() != 0) {
                 offsets[0] = (int) resolution.getOffset() / shape()[1];
                 offsets[1] = (int) resolution.getOffset() % shape()[1];
             }
             long firstRow = offsets[0];
             long lastRow = firstRow + shape[0];
-            long firstElement = offsets [1];
+            long firstElement = offsets[1];
             long lastElement = firstElement + shape[1];
 
             int count = 0;
-            int i  = 0;
-            for(int rowIdx = 0; rowIdx < lastRow; rowIdx++){
+            int i = 0;
+            for (int rowIdx = 0; rowIdx < lastRow; rowIdx++) {
 
                 boolean isFirstInRow = true;
-                for(int idx = pointerB.getInt(rowIdx); idx < pointerE.getInt(rowIdx); idx++){
+                for (int idx = pointerB.getInt(rowIdx); idx < pointerE.getInt(rowIdx); idx++) {
 
                     int colIdx = columnsPointers.getInt(count);
 
                     // add the element in the subarray it it belongs to the view
-                    if(colIdx >= firstElement && colIdx < lastElement && rowIdx >= firstRow && rowIdx < lastRow){
+                    if (colIdx >= firstElement && colIdx < lastElement && rowIdx >= firstRow && rowIdx < lastRow) {
 
                         // add the new column pointer for this element
-                        accuColumns.add((int)(colIdx - firstElement));
+                        accuColumns.add((int) (colIdx - firstElement));
 
-                        if(isFirstInRow){
+                        if (isFirstInRow) {
                             // Add the index of the first element of the row in the pointer array
                             accuPointerB.add(idx);
-                            accuPointerE.add(idx+1);
+                            accuPointerE.add(idx + 1);
                             isFirstInRow = false;
                         } else {
                             // update the last element pointer array
-                            accuPointerE.set((int) (rowIdx - firstRow),idx + 1);
+                            accuPointerE.set((int) (rowIdx - firstRow), idx + 1);
                         }
                     }
-                     count++;
+                    count++;
                 }
 
                 // If the row doesn't contain any element and is included in the selected rows
-                if(isFirstInRow && rowIdx >= firstRow && rowIdx < lastRow){
-                    int lastIdx = i == 0 ? 0 : accuPointerE.get(i-1);
+                if (isFirstInRow && rowIdx >= firstRow && rowIdx < lastRow) {
+                    int lastIdx = i == 0 ? 0 : accuPointerE.get(i - 1);
                     accuPointerB.add(lastIdx);
                     accuPointerE.add(lastIdx);
                 }
-                if(rowIdx >= firstRow && rowIdx <= lastRow){
+                if (rowIdx >= firstRow && rowIdx <= lastRow) {
                     i++;
                 }
             }
@@ -317,21 +315,19 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     public boolean equals(Object o) {
         //TODO use op
         // fixme
-        if(o == null || !(o instanceof INDArray)){
+        if (o == null || !(o instanceof INDArray)) {
             return false;
         }
         INDArray n = (INDArray) o;
-        if(n.isSparse()){
+        if (n.isSparse()) {
             BaseSparseNDArray s = (BaseSparseNDArray) n;
-            switch(s.getFormat()){
+            switch (s.getFormat()) {
                 case CSR:
                     BaseSparseNDArrayCSR csrArray = (BaseSparseNDArrayCSR) s;
-                    if(csrArray.rows() == rows()
-                           && csrArray.columns() == columns()
-                           && csrArray.getVectorCoordinates().equals(getVectorCoordinates())
-                           && csrArray.data().equals(data())
-                           && csrArray.getPointerB().equals(getPointerB())
-                           && csrArray.getPointerE().equals(getPointerE())){
+                    if (csrArray.rows() == rows() && csrArray.columns() == columns()
+                                    && csrArray.getVectorCoordinates().equals(getVectorCoordinates())
+                                    && csrArray.data().equals(data()) && csrArray.getPointerB().equals(getPointerB())
+                                    && csrArray.getPointerE().equals(getPointerE())) {
                         return true;
                     }
                     break;

@@ -33,7 +33,7 @@ public class NoOpUpdater implements GradientUpdater<NoOp> {
 
     private final NoOp config;
 
-    public NoOpUpdater(NoOp config){
+    public NoOpUpdater(NoOp config) {
         this.config = config;
     }
 

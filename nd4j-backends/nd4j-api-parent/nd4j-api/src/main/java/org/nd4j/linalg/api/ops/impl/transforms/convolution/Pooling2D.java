@@ -26,15 +26,18 @@ public class Pooling2D extends BaseTransformOp {
     private Pooling2DType type;
     boolean isSameMode;
     double extra;
-    @Getter protected DataBuffer im2colShape;
+    @Getter
+    protected DataBuffer im2colShape;
 
     public Pooling2D() {}
-/*
+
+    /*
     public Pooling2D(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, Pooling2DType type) {
         this(x, kh, kw, sy, sx, ph, pw, isSameMode, type, getNewOutputArray(x, kh, kw, sy, sx, ph, pw, false));
     }
-*/
-    public Pooling2D(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, Pooling2DType type, double extra,  int virtualHeight, int virtualWidth, INDArray z) {
+    */
+    public Pooling2D(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, Pooling2DType type,
+                    double extra, int virtualHeight, int virtualWidth, INDArray z) {
         super(x);
         this.kh = kh;
         this.kw = kw;
@@ -71,7 +74,7 @@ public class Pooling2D extends BaseTransformOp {
     }
 
     private static INDArray getNewOutputArray(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,
-                                              int padHeight, int padWidth, boolean coverAll) {
+                    int padHeight, int padWidth, boolean coverAll) {
 
         // FIXME!!!
 
@@ -89,8 +92,8 @@ public class Pooling2D extends BaseTransformOp {
         return Nd4j.createUninitialized(new int[] {n, c, kernelHeight, kernelWidth, outHeight, outWidth}, 'c');
     }
 
-    private static DataBuffer getNewOutputShape(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,
-                                                int padHeight, int padWidth, int outHeight, int outWidth,  boolean coverAll) {
+    private static DataBuffer getNewOutputShape(INDArray img, int kernelHeight, int kernelWidth, int strideY,
+                    int strideX, int padHeight, int padWidth, int outHeight, int outWidth, boolean coverAll) {
         //number of images
         int n = img.size(0);
         //number of channels (depth)
@@ -100,7 +103,9 @@ public class Pooling2D extends BaseTransformOp {
         //image width
         int w = img.size(3);
 
-        return Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {n, c,  kernelHeight, kernelWidth, outHeight, outWidth}, 'c').getFirst();
+        return Nd4j.getShapeInfoProvider()
+                        .createShapeInformation(new int[] {n, c, kernelHeight, kernelWidth, outHeight, outWidth}, 'c')
+                        .getFirst();
     }
 
     @Override

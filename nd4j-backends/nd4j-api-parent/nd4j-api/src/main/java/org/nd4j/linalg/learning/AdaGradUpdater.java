@@ -48,7 +48,7 @@ public class AdaGradUpdater implements GradientUpdater<AdaGrad> {
 
     private AdaGrad config;
 
-    public AdaGradUpdater(AdaGrad config){
+    public AdaGradUpdater(AdaGrad config) {
         this.config = config;
     }
 

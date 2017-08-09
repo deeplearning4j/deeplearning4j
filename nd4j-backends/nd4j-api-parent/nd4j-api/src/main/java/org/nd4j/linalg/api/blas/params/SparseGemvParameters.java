@@ -18,12 +18,12 @@ public class SparseGemvParameters {
     private INDArray a, x, y;
     private char aOrdering = 'N';
 
-    public SparseGemvParameters(INDArray a, INDArray x, INDArray y){
+    public SparseGemvParameters(INDArray a, INDArray x, INDArray y) {
         this.a = a;
         this.x = x;
         this.y = y;
 
-        if(a.isMatrix() && a.getFormat() == SparseFormat.COO){
+        if (a.isMatrix() && a.getFormat() == SparseFormat.COO) {
             BaseSparseNDArrayCOO coo = (BaseSparseNDArrayCOO) a;
             val = coo.getIncludedValues();
             nnz = coo.nnz();
@@ -32,16 +32,16 @@ public class SparseGemvParameters {
         }
     }
 
-    private void setIndexes(BaseSparseNDArrayCOO coo){
+    private void setIndexes(BaseSparseNDArrayCOO coo) {
         int[] idx = coo.getIncludedIndices().asInt();
         int[] rows = new int[nnz];
         int[] cols = new int[nnz];
-        for(int i = 0; i < nnz; i++){
-            rows[i] = idx[i*2] + 1;
-            cols[i] = idx[(i*2)+1] + 1;
+        for (int i = 0; i < nnz; i++) {
+            rows[i] = idx[i * 2] + 1;
+            cols[i] = idx[(i * 2) + 1] + 1;
         }
-         rowInd = Nd4j.createBuffer(rows);
-         colInd = Nd4j.createBuffer(cols);
+        rowInd = Nd4j.createBuffer(rows);
+        colInd = Nd4j.createBuffer(cols);
     }
 
 }

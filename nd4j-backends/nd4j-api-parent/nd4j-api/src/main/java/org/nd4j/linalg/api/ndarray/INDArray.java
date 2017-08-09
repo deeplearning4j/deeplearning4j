@@ -2686,9 +2686,13 @@ public interface INDArray extends Serializable {
      * @see SparseFormat
      * */
     SparseFormat getFormat();
+
     int[] flags();
+
     int[] hiddenDimensions();
+
     int[] sparseOffsets();
+
     int underlyingRank();
 
 

@@ -56,15 +56,12 @@ public class LossBinaryXENT implements ILossFunction {
         this.weights = weights;
     }
 
-    private INDArray scoreArray(INDArray labels,
-                                INDArray preOutput,
-                                IActivation activationFn,
-                                INDArray mask) {
+    private INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
 
         if (labels.size(1) != preOutput.size(1)) {
-            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
-                    + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
-                    + ") ");
+            throw new IllegalArgumentException(
+                            "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
+                                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
         }
 
         INDArray scoreArr;
@@ -87,7 +84,7 @@ public class LossBinaryXENT implements ILossFunction {
         if (weights != null) {
             if (weights.length() != preOutput.size(1)) {
                 throw new IllegalStateException("Weights vector (length " + weights.length()
-                        + ") does not match output.size(1)=" + preOutput.size(1));
+                                + ") does not match output.size(1)=" + preOutput.size(1));
             }
 
             scoreArr.muliRowVector(weights);
@@ -100,11 +97,8 @@ public class LossBinaryXENT implements ILossFunction {
     }
 
     @Override
-    public double computeScore(INDArray labels,
-                               INDArray preOutput,
-                               IActivation activationFn,
-                               INDArray mask,
-                               boolean average) {
+    public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask,
+                    boolean average) {
 
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
 
@@ -118,38 +112,28 @@ public class LossBinaryXENT implements ILossFunction {
     }
 
     @Override
-    public INDArray computeScoreArray(INDArray labels,
-                                      INDArray preOutput,
-                                      IActivation activationFn,
-                                      INDArray mask) {
+    public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
 
-        INDArray scoreArr = scoreArray(
-                labels,
-                preOutput,
-                activationFn,
-                mask);
+        INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
         return scoreArr.sum(1).muli(-1);
     }
 
     @Override
-    public INDArray computeGradient(INDArray labels,
-                                    INDArray preOutput,
-                                    IActivation activationFn,
-                                    INDArray mask) {
+    public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
 
         if (labels.size(1) != preOutput.size(1)) {
-            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
-                    + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
-                    + ") ");
+            throw new IllegalArgumentException(
+                            "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
+                                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
         }
 
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray numerator = output.sub(labels);
-        INDArray denominator = Nd4j.getExecutioner().execAndReturn(new TimesOneMinus(output));  // output * (1-output)
+        INDArray denominator = Nd4j.getExecutioner().execAndReturn(new TimesOneMinus(output)); // output * (1-output)
         INDArray dLda = numerator.divi(denominator);
 
-        if(mask != null && LossUtil.isPerOutputMasking(dLda, mask)) {
+        if (mask != null && LossUtil.isPerOutputMasking(dLda, mask)) {
             //For *most* activation functions: we don't actually need to mask dL/da in addition to masking dL/dz later
             //but: some, like softmax, require both (due to dL/dz_i being a function of dL/da_j, for i != j)
             //We could add a special case for softmax (activationFn instanceof ActivationSoftmax) but that would be
@@ -163,7 +147,7 @@ public class LossBinaryXENT implements ILossFunction {
         if (weights != null) {
             if (weights.length() != output.size(1)) {
                 throw new IllegalStateException("Weights vector (length " + weights.length()
-                        + ") does not match output.size(1)=" + output.size(1));
+                                + ") does not match output.size(1)=" + output.size(1));
             }
 
             grad.muliRowVector(weights);
@@ -178,20 +162,11 @@ public class LossBinaryXENT implements ILossFunction {
 
     @Override
     public Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn,
-                                                          INDArray mask, boolean average) {
+                    INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
 
-        return new Pair<>(
-                computeScore(
-                labels,
-                preOutput,
-                activationFn,
-                mask,
-                average),
-                computeGradient(labels,
-                        preOutput,
-                        activationFn,
-                        mask));
+        return new Pair<>(computeScore(labels, preOutput, activationFn, mask, average),
+                        computeGradient(labels, preOutput, activationFn, mask));
     }
 
     /**

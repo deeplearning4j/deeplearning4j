@@ -13,7 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 /**
  * @author Audrey Loeffel
  */
-public abstract class BaseSparseBlasWrapper implements BlasWrapper{
+public abstract class BaseSparseBlasWrapper implements BlasWrapper {
 
 
     @Override
@@ -37,6 +37,7 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
         return Nd4j.sparseFactory().level3();
 
     }
+
     // ================== TODO ====================
     @Override
     public INDArray swap(INDArray x, INDArray y) {
@@ -174,17 +175,20 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
     }
 
     @Override
-    public IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a, IComplexNDArray x, IComplexDouble beta, IComplexNDArray y) {
+    public IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a, IComplexNDArray x, IComplexDouble beta,
+                    IComplexNDArray y) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IComplexNDArray gemv(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray x, IComplexNumber beta, IComplexNDArray y) {
+    public IComplexNDArray gemv(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray x, IComplexNumber beta,
+                    IComplexNDArray y) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y) {
+    public IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta,
+                    IComplexNDArray y) {
         throw new UnsupportedOperationException();
     }
 
@@ -224,7 +228,8 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
     }
 
     @Override
-    public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta, IComplexNDArray c) {
+    public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta,
+                    IComplexNDArray c) {
         throw new UnsupportedOperationException();
     }
 
@@ -249,12 +254,14 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
     }
 
     @Override
-    public int syevx(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol, INDArray w, INDArray z) {
+    public int syevx(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol,
+                    INDArray w, INDArray z) {
         return 0;
     }
 
     @Override
-    public int syevx(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, float abstol, INDArray w, INDArray z) {
+    public int syevx(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, float abstol,
+                    INDArray w, INDArray z) {
         return 0;
     }
 
@@ -264,17 +271,20 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
     }
 
     @Override
-    public int syevr(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol, INDArray w, INDArray z, int[] isuppz) {
+    public int syevr(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol,
+                    INDArray w, INDArray z, int[] isuppz) {
         return 0;
     }
 
     @Override
-    public int syevr(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, float abstol, INDArray w, INDArray z, int[] isuppz) {
+    public int syevr(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, float abstol,
+                    INDArray w, INDArray z, int[] isuppz) {
         return 0;
     }
 
     @Override
-    public int syevr(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, Number abstol, INDArray w, INDArray z, int[] isuppz) {
+    public int syevr(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, Number abstol,
+                    INDArray w, INDArray z, int[] isuppz) {
         return 0;
     }
 

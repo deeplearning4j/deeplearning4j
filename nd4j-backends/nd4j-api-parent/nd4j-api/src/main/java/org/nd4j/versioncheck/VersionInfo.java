@@ -22,30 +22,30 @@ public class VersionInfo {
     private String groupId;
     private String artifactId;
 
-    private String tags;                    // =${git.tags} // comma separated tag names
-    private String branch;                  // =${git.branch}
-    private String dirty;                   // =${git.dirty}
-    private String remoteOriginUrl;         // =${git.remote.origin.url}
+    private String tags; // =${git.tags} // comma separated tag names
+    private String branch; // =${git.branch}
+    private String dirty; // =${git.dirty}
+    private String remoteOriginUrl; // =${git.remote.origin.url}
 
-    private String commitId;                // =${git.commit.id.full} OR ${git.commit.id}
-    private String commitIdAbbrev;          // =${git.commit.id.abbrev}
-    private String describe;                // =${git.commit.id.describe}
-    private String describeShort;           // =${git.commit.id.describe-short}
-    private String commitUserName;          // =${git.commit.user.name}
-    private String commitUserEmail;         // =${git.commit.user.email}
-    private String commitMessageFull;       // =${git.commit.message.full}
-    private String commitMessageShort;      // =${git.commit.message.short}
-    private String commitTime;              // =${git.commit.time}
-    private String closestTagName;          // =${git.closest.tag.name}
-    private String closestTagCommitCount;   // =${git.closest.tag.commit.count}
+    private String commitId; // =${git.commit.id.full} OR ${git.commit.id}
+    private String commitIdAbbrev; // =${git.commit.id.abbrev}
+    private String describe; // =${git.commit.id.describe}
+    private String describeShort; // =${git.commit.id.describe-short}
+    private String commitUserName; // =${git.commit.user.name}
+    private String commitUserEmail; // =${git.commit.user.email}
+    private String commitMessageFull; // =${git.commit.message.full}
+    private String commitMessageShort; // =${git.commit.message.short}
+    private String commitTime; // =${git.commit.time}
+    private String closestTagName; // =${git.closest.tag.name}
+    private String closestTagCommitCount; // =${git.closest.tag.commit.count}
 
-    private String buildUserName;           // =${git.build.user.name}
-    private String buildUserEmail;          // =${git.build.user.email}
-    private String buildTime;               // =${git.build.time}
-    private String buildHost;               // =${git.build.host}
-    private String buildVersion;             // =${git.build.version}
+    private String buildUserName; // =${git.build.user.name}
+    private String buildUserEmail; // =${git.build.user.email}
+    private String buildTime; // =${git.build.time}
+    private String buildHost; // =${git.build.host}
+    private String buildVersion; // =${git.build.version}
 
-    public VersionInfo(String groupId, String artifactId, String buildVersion){
+    public VersionInfo(String groupId, String artifactId, String buildVersion) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.buildVersion = buildVersion;
@@ -56,15 +56,15 @@ public class VersionInfo {
         int idxOf = propertiesFilePath.lastIndexOf('/');
         idxOf = Math.max(idxOf, propertiesFilePath.lastIndexOf('\\'));
         String filename;
-        if(idxOf <= 0){
+        if (idxOf <= 0) {
             filename = propertiesFilePath;
         } else {
-            filename = propertiesFilePath.substring(idxOf+1);
+            filename = propertiesFilePath.substring(idxOf + 1);
         }
 
         idxOf = filename.indexOf('-');
         groupId = filename.substring(0, idxOf);
-        artifactId = filename.substring(idxOf+1, filename.length() - SUFFIX_LENGTH);
+        artifactId = filename.substring(idxOf + 1, filename.length() - SUFFIX_LENGTH);
 
 
         //Extract values from properties file:

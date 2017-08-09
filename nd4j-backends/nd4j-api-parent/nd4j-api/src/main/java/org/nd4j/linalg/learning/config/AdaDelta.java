@@ -30,7 +30,7 @@ public class AdaDelta implements IUpdater {
     private double rho;
     private double epsilon;
 
-    public AdaDelta(){
+    public AdaDelta() {
         this(DEFAULT_ADADELTA_RHO, DEFAULT_ADADELTA_EPSILON);
     }
 
@@ -65,7 +65,6 @@ public class AdaDelta implements IUpdater {
         private double rho = DEFAULT_ADADELTA_RHO;
         private double epsilon = DEFAULT_ADADELTA_EPSILON;
 
-        public Builder() {
-        }
+        public Builder() {}
     }
 }

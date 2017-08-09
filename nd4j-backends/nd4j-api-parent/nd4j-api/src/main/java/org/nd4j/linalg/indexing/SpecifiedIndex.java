@@ -62,11 +62,12 @@ public class SpecifiedIndex implements INDArrayIndex {
     public long next() {
         return indexes[counter++];
     }
+
     /**
      * Return the next index with its position in the indexes array
      * */
     public long[] nextSparse() {
-        return new long[]{indexes[counter], counter++};
+        return new long[] {indexes[counter], counter++};
     }
 
     @Override
@@ -223,6 +224,7 @@ public class SpecifiedIndex implements INDArrayIndex {
     public Generator<List<Long>> generator() {
         return new SingleGenerator();
     }
+
     public Generator<List<Long>> sparseGenerator() {
         return new SparseSingleGenerator();
     }

@@ -78,7 +78,8 @@ public class NativeRandomDeallocator {
                     if (reference != null) {
                         if (reference.getStatePointer() != null) {
                             referenceMap.remove(reference.getStatePointer().address());
-                            NativeOpsHolder.getInstance().getDeviceNativeOps().destroyRandom(reference.getStatePointer());
+                            NativeOpsHolder.getInstance().getDeviceNativeOps()
+                                            .destroyRandom(reference.getStatePointer());
                         }
                     } else {
                         LockSupport.parkNanos(5000L);

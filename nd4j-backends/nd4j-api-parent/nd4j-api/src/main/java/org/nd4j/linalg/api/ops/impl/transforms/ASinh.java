@@ -107,7 +107,7 @@ public class ASinh extends BaseTransformOp {
 
         if (y() != null)
             return new ASinh(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                    z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new ASinh(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -119,7 +119,7 @@ public class ASinh extends BaseTransformOp {
 
         if (y() != null)
             return new ASinh(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                    z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new ASinh(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

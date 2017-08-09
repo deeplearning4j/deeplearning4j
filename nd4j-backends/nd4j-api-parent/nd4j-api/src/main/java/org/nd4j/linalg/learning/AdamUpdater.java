@@ -41,7 +41,7 @@ public class AdamUpdater implements GradientUpdater<Adam> {
 
     private char gradientReshapeOrder;
 
-    public AdamUpdater(Adam config){
+    public AdamUpdater(Adam config) {
         this.config = config;
     }
 

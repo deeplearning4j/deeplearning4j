@@ -38,13 +38,13 @@ public class IndexingTests extends BaseNd4jTest {
 
         INDArray arr = Nd4j.linspace(0, 124, 125).reshape(5, 5, 5);
 
-      /*
-       * Extract elements with the following indices:
-       *
-       * (2,1,1) (2,1,2) (2,1,3)
-       * (2,2,1) (2,2,2) (2,2,3)
-       * (2,3,1) (2,3,2) (2,3,3)
-       */
+        /*
+         * Extract elements with the following indices:
+         *
+         * (2,1,1) (2,1,2) (2,1,3)
+         * (2,2,1) (2,2,2) (2,2,3)
+         * (2,3,1) (2,3,2) (2,3,3)
+         */
 
         int slice = 2;
 
@@ -56,13 +56,13 @@ public class IndexingTests extends BaseNd4jTest {
 
         // Method A: Element-wise.
 
-        INDArray subArr_A = Nd4j.create(new int[]{3, 3});
+        INDArray subArr_A = Nd4j.create(new int[] {3, 3});
 
         for (int i = iStart; i < iEnd; i++) {
             for (int j = jStart; j < jEnd; j++) {
-              
+
                 double val = arr.getDouble(slice, i, j);
-                int[] sub = new int[]{i - iStart, j - jStart};
+                int[] sub = new int[] {i - iStart, j - jStart};
 
                 subArr_A.putScalar(sub, val);
 
@@ -71,18 +71,18 @@ public class IndexingTests extends BaseNd4jTest {
 
         // Method B: Using NDArray get and put with index classes.
 
-        INDArray subArr_B = Nd4j.create(new int[]{3, 3});
+        INDArray subArr_B = Nd4j.create(new int[] {3, 3});
 
         INDArrayIndex ndi_Slice = NDArrayIndex.point(slice);
         INDArrayIndex ndi_J = NDArrayIndex.interval(jStart, jEnd);
         INDArrayIndex ndi_I = NDArrayIndex.interval(iStart, iEnd);
 
-        INDArrayIndex[] whereToGet = new INDArrayIndex[]{ndi_Slice, ndi_I, ndi_J};
+        INDArrayIndex[] whereToGet = new INDArrayIndex[] {ndi_Slice, ndi_I, ndi_J};
 
         INDArray whatToPut = arr.get(whereToGet);
-        assertEquals(subArr_A,whatToPut);
+        assertEquals(subArr_A, whatToPut);
         System.out.println(whatToPut);
-        INDArrayIndex[] whereToPut = new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all()};
+        INDArrayIndex[] whereToPut = new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all()};
 
         subArr_B.put(whereToPut, whatToPut);
 
@@ -95,29 +95,29 @@ public class IndexingTests extends BaseNd4jTest {
      */
     @Test
     public void testSimplePoint() {
-        INDArray A = Nd4j.linspace(1,3*3*3,3*3*3).reshape(3,3,3);
+        INDArray A = Nd4j.linspace(1, 3 * 3 * 3, 3 * 3 * 3).reshape(3, 3, 3);
 
         /*
             f - ordering
             1,10,19   2,11,20   3,12,21
             4,13,22   5,14,23   6,15,24
             7,16,25   8,17,26   9,18,27
-
+        
             subsetting the
                 11,20
                 14,24 ndarray
-
+        
          */
-        INDArray viewOne = A.get(NDArrayIndex.point(1),NDArrayIndex.interval(0,2),NDArrayIndex.interval(1,3));
-        INDArray viewTwo = A.get(NDArrayIndex.point(1)).get(NDArrayIndex.interval(0,2),NDArrayIndex.interval(1,3));
-        INDArray expected = Nd4j.zeros(2,2);
-        expected.putScalar(0,0,11);
-        expected.putScalar(0,1,20);
-        expected.putScalar(1,0,14);
-        expected.putScalar(1,1,23);
-        assertEquals("View with two get",expected,viewTwo);
-        assertEquals("View with one get",expected,viewOne); //FAILS!
-        assertEquals("Two views should be the same",viewOne,viewTwo); //Obviously fails
+        INDArray viewOne = A.get(NDArrayIndex.point(1), NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 3));
+        INDArray viewTwo = A.get(NDArrayIndex.point(1)).get(NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 3));
+        INDArray expected = Nd4j.zeros(2, 2);
+        expected.putScalar(0, 0, 11);
+        expected.putScalar(0, 1, 20);
+        expected.putScalar(1, 0, 14);
+        expected.putScalar(1, 1, 23);
+        assertEquals("View with two get", expected, viewTwo);
+        assertEquals("View with one get", expected, viewOne); //FAILS!
+        assertEquals("Two views should be the same", viewOne, viewTwo); //Obviously fails
     }
 
     /*
@@ -171,10 +171,10 @@ public class IndexingTests extends BaseNd4jTest {
         [  6.,  12.]]])
         */
 
-        INDArray firstAssertion = Nd4j.create(new double[]{1, 7});
+        INDArray firstAssertion = Nd4j.create(new double[] {1, 7});
         INDArray firstTest = threeTwoTwo.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all());
         assertEquals(firstAssertion, firstTest);
-        INDArray secondAssertion = Nd4j.create(new double[]{3, 9});
+        INDArray secondAssertion = Nd4j.create(new double[] {3, 9});
         INDArray secondTest = threeTwoTwo.get(NDArrayIndex.point(2), NDArrayIndex.point(0), NDArrayIndex.all());
         assertEquals(secondAssertion, secondTest);
     }
@@ -195,16 +195,18 @@ public class IndexingTests extends BaseNd4jTest {
 
         INDArray fMerged = Nd4j.concat(0, first, second);
 
-        assertEquals(first, fMerged.get(NDArrayIndex.interval(0, nExamples1), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+        assertEquals(first, fMerged.get(NDArrayIndex.interval(0, nExamples1), NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.all()));
 
-        INDArray get = fMerged.get(NDArrayIndex.interval(nExamples1, nExamples1 + nExamples2, true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-        assertEquals(second, get.dup());    //Passes
-        assertEquals(second, get);             //Fails
+        INDArray get = fMerged.get(NDArrayIndex.interval(nExamples1, nExamples1 + nExamples2, true), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.all());
+        assertEquals(second, get.dup()); //Passes
+        assertEquals(second, get); //Fails
     }
 
     @Test
     public void testShape() {
-        INDArray ndarray = Nd4j.create(new float[][]{{1f, 2f}, {3f, 4f}});
+        INDArray ndarray = Nd4j.create(new float[][] {{1f, 2f}, {3f, 4f}});
         INDArray subarray = ndarray.get(NDArrayIndex.point(0), NDArrayIndex.all());
         assertTrue(subarray.isRowVector());
         int[] shape = subarray.shape();
@@ -215,7 +217,7 @@ public class IndexingTests extends BaseNd4jTest {
     @Test
     public void testGetRows() {
         INDArray arr = Nd4j.linspace(1, 9, 9).reshape(3, 3);
-        INDArray testAssertion = Nd4j.create(new double[][]{{5, 8}, {6, 9}});
+        INDArray testAssertion = Nd4j.create(new double[][] {{5, 8}, {6, 9}});
 
         INDArray test = arr.get(new SpecifiedIndex(1, 2), new SpecifiedIndex(1, 2));
         assertEquals(testAssertion, test);
@@ -224,9 +226,9 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testFirstColumn() {
-        INDArray arr = Nd4j.create(new double[][]{{5, 6}, {7, 8}});
+        INDArray arr = Nd4j.create(new double[][] {{5, 6}, {7, 8}});
 
-        INDArray assertion = Nd4j.create(new double[]{5, 7});
+        INDArray assertion = Nd4j.create(new double[] {5, 7});
         INDArray test = arr.get(NDArrayIndex.all(), NDArrayIndex.point(0));
         assertEquals(assertion, test);
     }

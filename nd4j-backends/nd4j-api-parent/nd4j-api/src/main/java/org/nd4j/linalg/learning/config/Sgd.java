@@ -21,7 +21,7 @@ public class Sgd implements IUpdater {
 
     private double learningRate;
 
-    public Sgd(){
+    public Sgd() {
         this(DEFAULT_SGD_LR);
     }
 
@@ -51,7 +51,6 @@ public class Sgd implements IUpdater {
     public static class Builder {
         private double learningRate = DEFAULT_SGD_LR;
 
-        public Builder() {
-        }
+        public Builder() {}
     }
 }

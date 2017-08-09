@@ -28,47 +28,56 @@ public class VoidConfiguration implements Serializable {
     /**
      * StreamId is used for Aeron configuration
      */
-    @Builder.Default private int streamId = 119;
+    @Builder.Default
+    private int streamId = 119;
 
     /**
      * This variable defines UDP port that will be used for communication
      */
-    @Builder.Default private int unicastPort = 49876;
+    @Builder.Default
+    private int unicastPort = 49876;
 
     /**
      * This method specifies UDP port for multicast/broadcast transport
      */
-    @Builder.Default private int multicastPort = 59876;
+    @Builder.Default
+    private int multicastPort = 59876;
 
     /**
      * This method defines number of shards. Reserved for future use.
      */
-    @Builder.Default private int numberOfShards = 1;
+    @Builder.Default
+    private int numberOfShards = 1;
 
     /**
      * Reserved for future use.
      */
-    @Builder.Default private FaultToleranceStrategy faultToleranceStrategy = FaultToleranceStrategy.NONE;
+    @Builder.Default
+    private FaultToleranceStrategy faultToleranceStrategy = FaultToleranceStrategy.NONE;
 
     /**
      * Reserved for future use.
      */
-    @Builder.Default private ExecutionMode executionMode = ExecutionMode.SHARDED;
+    @Builder.Default
+    private ExecutionMode executionMode = ExecutionMode.SHARDED;
 
     /**
      * Reserved for future use.
      */
-    @Builder.Default private List<String> shardAddresses = new ArrayList<>();
+    @Builder.Default
+    private List<String> shardAddresses = new ArrayList<>();
 
     /**
      * Reserved for future use.
      */
-    @Builder.Default private List<String> backupAddresses = new ArrayList<>();
+    @Builder.Default
+    private List<String> backupAddresses = new ArrayList<>();
 
     /**
      * This variable defines network transport to be used for comms
      */
-    @Builder.Default private TransportType transportType = TransportType.ROUTED;
+    @Builder.Default
+    private TransportType transportType = TransportType.ROUTED;
 
     /**
      * This variable acts as hint for ParameterServer about IP address to be used for comms.
@@ -79,7 +88,8 @@ public class VoidConfiguration implements Serializable {
     /**
      * This value is optional, and has effect only for UDP MulticastTransport
      */
-    @Builder.Default private String multicastNetwork = "224.0.1.1";
+    @Builder.Default
+    private String multicastNetwork = "224.0.1.1";
 
     /**
      * This value is optional, and has effect only for UDP MulticastTransport
@@ -89,7 +99,8 @@ public class VoidConfiguration implements Serializable {
     /**
      * This value is optional, and has effect only for UDP MulticastTransport
      */
-    @Builder.Default private int ttl = 4;
+    @Builder.Default
+    private int ttl = 4;
 
     /**
      * This option is for debugging mostly. Do not use it, unless you have to.
@@ -112,17 +123,20 @@ public class VoidConfiguration implements Serializable {
      * This variable defines, how long transport should wait before resending message in case of network issues.
      * Measured in milliseconds.
      */
-    @Builder.Default private long retransmitTimeout = 1000;
+    @Builder.Default
+    private long retransmitTimeout = 1000;
 
     /**
      * This variable defines, how long transport should wait for response on specific messages.
      */
-    @Builder.Default private long responseTimeframe = 500;
+    @Builder.Default
+    private long responseTimeframe = 500;
 
     /**
      * This variable defines, how long transport should wait for answer on specific messages.
      */
-    @Builder.Default private long responseTimeout = 30000;
+    @Builder.Default
+    private long responseTimeout = 30000;
 
     /**
      * This optional variable defines IP address of the box which acts as master for gradients training.
@@ -144,7 +158,8 @@ public class VoidConfiguration implements Serializable {
         // micro-validaiton here
         String[] chunks = networkMask.split("\\.");
         if (chunks.length == 1 || networkMask.isEmpty())
-            throw new ND4JIllegalStateException("Provided netmask doesn't look like a legit one. Proper format is: 192.168.1.0/24 or 10.0.0.0/8");
+            throw new ND4JIllegalStateException(
+                            "Provided netmask doesn't look like a legit one. Proper format is: 192.168.1.0/24 or 10.0.0.0/8");
 
 
         // TODO: add support for IPv6 eventually here

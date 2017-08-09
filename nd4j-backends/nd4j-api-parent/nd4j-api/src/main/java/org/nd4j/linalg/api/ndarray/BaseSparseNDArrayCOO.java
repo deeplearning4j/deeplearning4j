@@ -37,27 +37,27 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     protected static final SparseFormat format = SparseFormat.COO;
     protected transient volatile DataBuffer values;
     protected transient volatile DataBuffer indices;
-   // protected transient volatile DataBuffer flags; // 0 = dimension is active, 1 = hidden
+    // protected transient volatile DataBuffer flags; // 0 = dimension is active, 1 = hidden
     //protected transient volatile DataBuffer hiddenDimension; // contains position of the hidden dim.
     //protected transient volatile int numHiddenDimension = 0;
     //protected transient volatile DataBuffer  sparseOffsets;
     protected transient volatile boolean isSorted = false;
 
 
-    public BaseSparseNDArrayCOO(double[] values, int[][] indices, int[] shape){
+    public BaseSparseNDArrayCOO(double[] values, int[][] indices, int[] shape) {
 
         checkNotNull(values);
         checkNotNull(indices);
         checkNotNull(shape);
-        for(int[] i : indices){
+        for (int[] i : indices) {
             checkNotNull(i);
         }
-        if(indices.length == 0 && values.length == 0){
+        if (indices.length == 0 && values.length == 0) {
             // make the room for one value
             this.indices = Nd4j.createBuffer(shape.length);
             this.values = Nd4j.createBuffer(1);
             this.length = 0;
-        } else if(indices.length != 0 && values.length != 0){
+        } else if (indices.length != 0 && values.length != 0) {
             if (indices.length == shape.length && indices[0].length == values.length) {
                 this.indices = Nd4j.createBuffer(ArrayUtil.flattenF(indices));
             } else if (indices.length == values.length && indices[0].length == shape.length) {
@@ -69,7 +69,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
             throw new IllegalArgumentException("Values array or indices array is empty");
         }
 
-        if(values.length == 0){
+        if (values.length == 0) {
             this.values = Nd4j.createBuffer(1);
             this.length = 0;
         } else {
@@ -82,27 +82,30 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         init(shape);
         int[] flags = new int[rank()];
         long[] sparseOffsets = new long[rank()];
-        int[] hiddenDimension = new int[]{-1};
+        int[] hiddenDimension = new int[] {-1};
         //this.numHiddenDimension = 0;
-        this.sparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,hiddenDimension, rank());
+        this.sparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,
+                        hiddenDimension, rank());
 
     }
 
-    public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, int[] shape){
+    public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, int[] shape) {
         checkArgument(values.length() * shape.length == indices.length());
 
-        this.values =  Nd4j.createBuffer(values, 0, values.length());
+        this.values = Nd4j.createBuffer(values, 0, values.length());
         this.indices = indices;
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
         init(shape);
         this.length = values.length();
         int[] flags = new int[rank()];
         long[] sparseOffsets = new long[rank()];
-        int[] hiddenDimension = new int[]{-1};
-        this.sparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,hiddenDimension, rank());
+        int[] hiddenDimension = new int[] {-1};
+        this.sparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,
+                        hiddenDimension, rank());
 
     }
-    public BaseSparseNDArrayCOO(float[] values, int[][] indices, int[] shape){
+
+    public BaseSparseNDArrayCOO(float[] values, int[][] indices, int[] shape) {
         checkArgument(values.length == indices.length);
         checkArgument(values.length == 0 || indices[0].length == shape.length);
 
@@ -113,8 +116,9 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         this.length = values.length;
         int[] flags = new int[rank()];
         long[] sparseOffsets = new long[rank()];
-        int[] hiddenDimension = new int[]{-1};
-        this.sparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,hiddenDimension, rank());
+        int[] hiddenDimension = new int[] {-1};
+        this.sparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,
+                        hiddenDimension, rank());
     }
 
     public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, int[] shape) {
@@ -126,25 +130,28 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         this.length = countNNZ();
 
     }
-    public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape){
-        this(values, indices, Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets, hiddenDimensions, underlyingRank), shape);
+
+    public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags,
+                    int[] hiddenDimensions, int underlyingRank, int[] shape) {
+        this(values, indices, Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,
+                        hiddenDimensions, underlyingRank), shape);
     }
 
     /**
      * Count the number of value that are included in the ndarray (view) according to the sparse offsets and the shape
      * @return nnz
      * */
-    public long countNNZ(){
+    public long countNNZ() {
         long count = 0;
 
-        for(int i = 0; i< values.length(); i++){
+        for (int i = 0; i < values.length(); i++) {
             int[] idx = getUnderlyingIndicesOf(i).asInt();
             boolean isIn = true;
             int idxNotFixed = 0;
-            for(int dim = 0; dim < idx.length; dim++){
+            for (int dim = 0; dim < idx.length; dim++) {
 
-                if(flags()[dim] == 1){
-                    if(sparseOffsets()[dim] != idx[dim]){
+                if (flags()[dim] == 1) {
+                    if (sparseOffsets()[dim] != idx[dim]) {
                         isIn = false;
                         break;
                     }
@@ -170,13 +177,14 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return this;
     }
 
-    public void sort(){
-        if(!isSorted){
+    public void sort() {
+        if (!isSorted) {
             Nd4j.sparseFactory().sortCooIndices(this);
             isSorted = true;
         }
 
     }
+
     /**
      * Translate the view index to the corresponding index of the original ndarray
      * @param virtualIndexes the view indexes
@@ -188,15 +196,15 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         int idxPhy = 0;
         int hidden = 0;
 
-        for(int idxVir = 0; idxVir < virtualIndexes.length; idxVir++){
-            if(hidden < getNumHiddenDimension() && hiddenDimensions()[hidden] == idxVir){
+        for (int idxVir = 0; idxVir < virtualIndexes.length; idxVir++) {
+            if (hidden < getNumHiddenDimension() && hiddenDimensions()[hidden] == idxVir) {
                 hidden++;
             } else {
                 while (idxPhy < underlyingRank() && isDimensionFixed(idxPhy)) {
                     physicalIndexes[idxPhy] = sparseOffsets()[idxPhy];
                     idxPhy++;
                 }
-                if(idxPhy < underlyingRank() && !isDimensionFixed(idxPhy)){
+                if (idxPhy < underlyingRank() && !isDimensionFixed(idxPhy)) {
                     physicalIndexes[idxPhy] = sparseOffsets()[idxPhy] + virtualIndexes[idxVir];
                     idxPhy++;
                 }
@@ -208,7 +216,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     /**
      * Return if a given dimension is flags in the view.
      * */
-    public boolean isDimensionFixed(int i){
+    public boolean isDimensionFixed(int i) {
         return flags()[i] == 1;
     }
 
@@ -220,15 +228,15 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
             if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
                 OpProfiler.getInstance().processScalarCall();
 
-            addOrUpdate(new int[]{0, 0}, value);
+            addOrUpdate(new int[] {0, 0}, value);
             return this;
         }
         if (isRowVector()) {
-            addOrUpdate(new int[]{0, i}, value);
+            addOrUpdate(new int[] {0, i}, value);
             return this;
         } else if (isColumnVector()) {
-           addOrUpdate(new int[]{i, 0}, value);
-           return this;
+            addOrUpdate(new int[] {i, 0}, value);
+            return this;
         }
         int[] indexes = ordering() == 'c' ? Shape.ind2subC(this, i) : Shape.ind2sub(this, i);
         return putScalar(indexes, value);
@@ -252,12 +260,12 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                 indexes[i] += rank();
         }
 
-        if(indexes.length == 1){
+        if (indexes.length == 1) {
             return putScalar(indexes[0], value);
         }
-        if(indexes.length != rank) {
-            throw new IllegalStateException("Cannot use putScalar with indexes length "
-                    + indexes.length + " on rank " + rank);
+        if (indexes.length != rank) {
+            throw new IllegalStateException(
+                            "Cannot use putScalar with indexes length " + indexes.length + " on rank " + rank);
         }
 
         addOrUpdate(indexes, value);
@@ -266,12 +274,12 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     @Override
     public INDArray putScalar(int row, int col, double value) {
-        return putScalar(new int[]{row, col}, value);
+        return putScalar(new int[] {row, col}, value);
     }
 
     @Override
     public INDArray putScalar(int dim0, int dim1, int dim2, double value) {
-        return putScalar(new int[]{dim0, dim1, dim2}, value);
+        return putScalar(new int[] {dim0, dim1, dim2}, value);
     }
 
     @Override
@@ -288,7 +296,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
-    public INDArray putColumn(int column, INDArray toPut) {  // todo move in base ?
+    public INDArray putColumn(int column, INDArray toPut) { // todo move in base ?
         if (isColumnVector() && toPut.isVector()) {
             return assign(toPut);
         }
@@ -324,9 +332,9 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
         if (!element.isScalar())
             throw new IllegalArgumentException("Unable to insert anything but a scalar");
-        if (indexes.length  != rank)
-            throw new IllegalStateException("Cannot use putScalar with indexes length "
-                    + indexes.length + " on rank " + rank);
+        if (indexes.length != rank)
+            throw new IllegalStateException(
+                            "Cannot use putScalar with indexes length " + indexes.length + " on rank " + rank);
 
         addOrUpdate(indexes, element.getDouble(0));
         return this;
@@ -358,7 +366,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
         int[] physicalIndexes = isView() ? translateToPhysical(indexes) : indexes;
 
-        for(int i = 0; i < length; i++) {
+        for (int i = 0; i < length; i++) {
             int[] idx = getUnderlyingIndicesOf(i).asInt();
             if (Arrays.equals(idx, physicalIndexes)) {
                 // There is already a non-null value at this index
@@ -375,7 +383,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         }
 
         // If the value is 0 and there is no existing non-null value at the given index
-        if(value == 0){
+        if (value == 0) {
             return;
         }
 
@@ -383,16 +391,16 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         * The buffers are no longer sorted !
         * /!\ We need to reallocate the buffers if they are full
         */
-        while(!canInsert(values, 1)){
+        while (!canInsert(values, 1)) {
             long size = (long) Math.ceil((values.capacity() * THRESHOLD_MEMORY_ALLOCATION));
             values.reallocate(size);
         }
         values.put(length, value);
-        while(!canInsert(indices, physicalIndexes.length)){
+        while (!canInsert(indices, physicalIndexes.length)) {
             long size = (long) Math.ceil((indices.capacity() * THRESHOLD_MEMORY_ALLOCATION));
             indices.reallocate(size);
         }
-        for(int i = 0; i< physicalIndexes.length; i++){
+        for (int i = 0; i < physicalIndexes.length; i++) {
             indices.put(length * rank() + i, physicalIndexes[i]);
         }
         length++;
@@ -405,12 +413,12 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @param length the length of the data
      * @return a boolean if the insertion is possible
      * */
-    public boolean canInsert(DataBuffer buffer, int length){
+    public boolean canInsert(DataBuffer buffer, int length) {
         return buffer.capacity() - buffer.length() >= length;
     }
 
-    public DataBuffer shiftLeft(DataBuffer buffer, int from, int offset, long datalength){
-        for(int i = from; i<datalength; i++) {
+    public DataBuffer shiftLeft(DataBuffer buffer, int from, int offset, long datalength) {
+        for (int i = from; i < datalength; i++) {
             buffer.put(i - offset, buffer.getDouble(i));
         }
         return buffer;
@@ -421,9 +429,10 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @param idx the index of the element to be removed
      * @return the ndarray
      * */
-    public INDArray removeEntry(int idx){
+    public INDArray removeEntry(int idx) {
         values = shiftLeft(values, idx + 1, 1, length());
-        indices = shiftLeft(indices, (int)(idx * shape.length() + shape.length()), (int) shape.length(), indices.length());
+        indices = shiftLeft(indices, (int) (idx * shape.length() + shape.length()), (int) shape.length(),
+                        indices.length());
         return this;
     }
 
@@ -440,10 +449,10 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         sort();
 
         if (indexes.length == 1 && indexes[0] instanceof NDArrayIndexAll || (indexes.length == 2 && (isRowVector()
-                && indexes[0] instanceof PointIndex && indexes[0].offset() == 0
-                && indexes[1] instanceof NDArrayIndexAll
-                || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
-                && indexes[0] instanceof NDArrayIndexAll)))
+                        && indexes[0] instanceof PointIndex && indexes[0].offset() == 0
+                        && indexes[1] instanceof NDArrayIndexAll
+                        || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
+                                        && indexes[0] instanceof NDArrayIndexAll)))
             return this;
 
         indexes = NDArrayIndex.resolve(shapeInfoDataBuffer(), indexes);
@@ -463,10 +472,10 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
         if (shape != null && numSpecifiedIndex > 0) {
             Generator<List<List<Long>>> gen = SpecifiedIndex.iterateOverSparse(indexes);
-            INDArray ret = Nd4j.createSparseCOO(new double[]{}, new int[][]{}, shape);
+            INDArray ret = Nd4j.createSparseCOO(new double[] {}, new int[][] {}, shape);
             int count = 0;
             int maxValue = ArrayUtil.prod(shape());
-            while (count<maxValue) {
+            while (count < maxValue) {
                 try {
                     List<List<Long>> next = gen.next();
                     List<Integer> coordsCombo = new ArrayList<>();
@@ -486,7 +495,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                     *   -> do nothing
                     * */
                     int[] idx = Ints.toArray(coordsCombo);
-                    if(!isZero(idx)){
+                    if (!isZero(idx)) {
                         double val = getDouble(idx);
                         ret.putScalar(filterOutFixedDimensions(resolution.getFixed(), cooIdx), val);
                     }
@@ -503,7 +512,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         for (int i = 0; i < indexes.length; i++)
             if (indexes[i] instanceof NewAxis)
                 numNewAxis++;
-        if(numNewAxis != 0){
+        if (numNewAxis != 0) {
 
         }
 
@@ -512,11 +521,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
 
-    public int[] filterOutFixedDimensions(int[] flags, List<Integer> idx){
+    public int[] filterOutFixedDimensions(int[] flags, List<Integer> idx) {
         checkArgument(flags.length == idx.size());
-        int lastIdx = idx.size()-1;
-        for(int i = lastIdx; i >= 0; i--){
-            if(flags[i]==1){
+        int lastIdx = idx.size() - 1;
+        for (int i = lastIdx; i >= 0; i--) {
+            if (flags[i] == 1) {
                 idx.remove(i);
             }
         }
@@ -528,28 +537,28 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @param indexes
      * @return index of the value
      * */
-    public int reverseIndexes(int ... indexes){
+    public int reverseIndexes(int... indexes) {
         int[] idx = translateToPhysical(indexes);
         sort();
         return indexesBinarySearch(0, length(), idx);
     }
 
-    public int indexesBinarySearch(int lowerBound, int upperBound, int[] indexes){
+    public int indexesBinarySearch(int lowerBound, int upperBound, int[] indexes) {
         int min = lowerBound;
         int max = upperBound;
 
-        int mid = (max + min)/2;
+        int mid = (max + min) / 2;
         int[] midIdx = getUnderlyingIndicesOf(mid).asInt();
-        if (Arrays.equals(indexes, midIdx)){
+        if (Arrays.equals(indexes, midIdx)) {
             return mid;
         }
-        if (ArrayUtil.lessThan(indexes, midIdx)){
+        if (ArrayUtil.lessThan(indexes, midIdx)) {
             max = mid;
         }
-        if (ArrayUtil.greaterThan(indexes, midIdx)){
+        if (ArrayUtil.greaterThan(indexes, midIdx)) {
             min = mid;
         }
-        if(min == max){
+        if (min == max) {
             return -1;
         }
         return indexesBinarySearch(min, max, indexes);
@@ -568,7 +577,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     @Override
     public double getDouble(int... indices) {
         int valIdx = reverseIndexes(indices);
-        if(valIdx == -1) {
+        if (valIdx == -1) {
             return 0;
         } else {
             return values.getDouble(valIdx);
@@ -612,7 +621,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return (float) getDouble(i, j);
     }
 
-    public SparseFormat getFormat(){
+    public SparseFormat getFormat() {
         return format;
     }
 
@@ -622,11 +631,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
-    public DataBuffer data(){
+    public DataBuffer data() {
         return values;
     }
 
-    public DataBuffer getUnderlyingIndices(){
+    public DataBuffer getUnderlyingIndices() {
         return indices;
     }
 
@@ -634,22 +643,22 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     * Return a copy of the indices in the context of the view.
     * Change this DataBuffer won't change the ndarray!
     *  */
-    public DataBuffer getIncludedIndices(){
+    public DataBuffer getIncludedIndices() {
 
-        if(isScalar()){
-            return Nd4j.createBuffer(new int[]{0, 0});
+        if (isScalar()) {
+            return Nd4j.createBuffer(new int[] {0, 0});
         }
 
         List<Integer> ind = new ArrayList<>();
 
-        for(int i = 0; i< values.length(); i++){
+        for (int i = 0; i < values.length(); i++) {
             boolean isIn = true;
             int idxNotFixed = 0;
             int[] idx = getUnderlyingIndicesOf(i).asInt(); // TODO change for getIndicesOf(i)
 
-            for(int dim = 0 ; dim < idx.length; dim++){
-                if(flags()[dim] == 1){
-                    if(sparseOffsets()[dim] != idx[dim]){
+            for (int dim = 0; dim < idx.length; dim++) {
+                if (flags()[dim] == 1) {
+                    if (sparseOffsets()[dim] != idx[dim]) {
                         isIn = false;
                         break;
                     }
@@ -663,11 +672,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                     idxNotFixed++;
                 }
             }
-            if(isIn){
+            if (isIn) {
                 int notFixedDim = 0;
-                for(int dim = 0; dim < idx.length; dim++){
-                    if(flags()[dim] == 0) {
-                        if(shape()[notFixedDim] == 1){
+                for (int dim = 0; dim < idx.length; dim++) {
+                    if (flags()[dim] == 0) {
+                        if (shape()[notFixedDim] == 1) {
                             ind.add(0);
                             notFixedDim++;
                         } else {
@@ -680,22 +689,22 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return Nd4j.createBuffer(Ints.toArray(ind));
     }
 
-    public DataBuffer getUnderlyingValues(){
+    public DataBuffer getUnderlyingValues() {
         return values;
     }
 
     /*
     * */
-    public DataBuffer getIncludedValues(){
+    public DataBuffer getIncludedValues() {
         List<Double> val = new ArrayList<>();
 
-        for(int i = 0; i< values.length(); i++) {
+        for (int i = 0; i < values.length(); i++) {
             boolean isIn = true;
             int idxNotFixed = 0;
             int[] idx = getUnderlyingIndicesOf(i).asInt();
             for (int dim = 0; dim < idx.length; dim++) {
-                if(flags()[dim] == 1){
-                    if(sparseOffsets()[dim] != idx[dim]){
+                if (flags()[dim] == 1) {
+                    if (sparseOffsets()[dim] != idx[dim]) {
                         isIn = false;
                         break;
                     }
@@ -726,7 +735,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         int idx;
         if (isRowVector()) {
             idx = 1;
-        } else if (isColumnVector()){
+        } else if (isColumnVector()) {
             idx = 0;
         } else {
             throw new UnsupportedOperationException();
@@ -748,16 +757,16 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         // TODO support view conversion
         INDArray result = Nd4j.zeros(shape());
 
-        switch (data().dataType()){
+        switch (data().dataType()) {
             case DOUBLE:
-                for(int i = 0; i < length; i++) {
+                for (int i = 0; i < length; i++) {
                     int[] idx = getUnderlyingIndicesOf(i).asInt();
                     double value = values.getDouble(i);
                     result.putScalar(idx, value);
                 }
                 break;
             case FLOAT:
-                for(int i = 0; i < length; i++) {
+                for (int i = 0; i < length; i++) {
                     int[] idx = getUnderlyingIndicesOf(i).asInt();
                     float value = values.getFloat(i);
                     result.putScalar(idx, value);
@@ -802,10 +811,12 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                 throw new IllegalArgumentException("Invalid subArray offsets");
             }
         }
-        DataBuffer newSparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets, newAxis, underlyingRank());
+        DataBuffer newSparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,
+                        newAxis, underlyingRank());
         return create(values, indices, newSparseInformation, Arrays.copyOf(shape, shape.length));
 
     }
+
     //@Override
     public INDArray subArray(ShapeOffsetResolution resolution, ShapeOffsetResolution resolutionWithoutNewAxis) {
         return null;
@@ -816,25 +827,25 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @param offset the offset of the view
      * @return an int array containing the sparse offsets
      * */
-    private long[] createSparseOffsets(long offset){
+    private long[] createSparseOffsets(long offset) {
 
         // resolve the offsets in the view dimension
         int underlyingRank = sparseOffsets().length;
         long[] newOffsets = new long[rank()];
         List<Integer> shapeList = Ints.asList(shape());
-        int penultimate = rank() -1;
-        for(int i = 0; i < penultimate; i++){
-            long prod = ArrayUtil.prod(shapeList.subList(i+1, rank()));
+        int penultimate = rank() - 1;
+        for (int i = 0; i < penultimate; i++) {
+            long prod = ArrayUtil.prod(shapeList.subList(i + 1, rank()));
             newOffsets[i] = offset / prod;
             offset = offset - newOffsets[i] * prod;
         }
-        newOffsets[rank()-1] =  offset % shape()[rank()-1];
+        newOffsets[rank() - 1] = offset % shape()[rank() - 1];
 
         // Merge the offsets with the original sparseOffsets
         long[] finalOffsets = new long[underlyingRank];
         int dimNotFixed = 0;
-        for(int dim = 0; dim < underlyingRank; dim++){
-            if(flags()[dim] == 1){
+        for (int dim = 0; dim < underlyingRank; dim++) {
+            if (flags()[dim] == 1) {
                 finalOffsets[dim] = sparseOffsets()[dim];
             } else {
                 finalOffsets[dim] = newOffsets[dimNotFixed] + sparseOffsets()[dim];
@@ -844,20 +855,20 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return finalOffsets;
     }
 
-    private int[] createHiddenDimensions(int[] newAxis){
-        if(newAxis == null || newAxis.length == 0){
+    private int[] createHiddenDimensions(int[] newAxis) {
+        if (newAxis == null || newAxis.length == 0) {
             return hiddenDimensions();
         }
-        if(getNumHiddenDimension() == 0){
+        if (getNumHiddenDimension() == 0) {
             return newAxis;
         }
         int size = newAxis.length + hiddenDimensions().length;
         int[] newHiddenDim = new int[size];
         int newDim = 0;
         int i = 0;
-        for(int oldDim = 0; oldDim < getNumHiddenDimension(); oldDim++){
+        for (int oldDim = 0; oldDim < getNumHiddenDimension(); oldDim++) {
             int j = 0;
-            while(newAxis[newDim] <= hiddenDimensions()[i]){
+            while (newAxis[newDim] <= hiddenDimensions()[i]) {
                 newHiddenDim[i] = newAxis[newDim];
                 i++;
                 j++;
@@ -877,18 +888,18 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     * @param viewFlags the Fixed array calculate within the view
     * @param newShape the shape of the view
     * */
-    private int[] updateFlags(int[] viewFlags, int[] newShape){
+    private int[] updateFlags(int[] viewFlags, int[] newShape) {
         // Check if flags is well-formed
         int count = 0;
-        for(int i = 0; i< viewFlags.length; i++){
-            if(viewFlags[i] == 0){
+        for (int i = 0; i < viewFlags.length; i++) {
+            if (viewFlags[i] == 0) {
                 count++;
             }
         }
 
-        for(int dim = 0; dim < viewFlags.length; dim++){
-            if(viewFlags[dim] == 1) {
-                if(newShape[dim] == 1 && count <2){
+        for (int dim = 0; dim < viewFlags.length; dim++) {
+            if (viewFlags[dim] == 1) {
+                if (newShape[dim] == 1 && count < 2) {
                     viewFlags[dim] = 0;
                 }
 
@@ -897,9 +908,9 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         // Take the original Fixed into account
         int[] extendedFlags = new int[underlyingRank()];
         int notFixedDim = 0;
-        for(int dim = 0; dim < underlyingRank(); dim++){
+        for (int dim = 0; dim < underlyingRank(); dim++) {
             int[] temp = flags();
-            if(flags()[dim] == 0){
+            if (flags()[dim] == 0) {
                 extendedFlags[dim] = viewFlags[notFixedDim];
                 notFixedDim++;
             } else {
@@ -927,7 +938,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @param i the index of the element+
      * @return a dataBuffer containing the indices of element
      * */
-    public DataBuffer getUnderlyingIndicesOf(int i){
+    public DataBuffer getUnderlyingIndicesOf(int i) {
         int from = underlyingRank() * i;
         int to = from + underlyingRank();
         int[] arr = Arrays.copyOfRange(indices.asInt(), from, to);
@@ -940,15 +951,15 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @param i the index of the element
      * @return a dataBuffer containing the indices of element
      * */
-    public DataBuffer getIndicesOf(int i){
+    public DataBuffer getIndicesOf(int i) {
         int from = underlyingRank() * i;
         int to = from + underlyingRank(); //not included
 
         int[] arr = new int[rank];
         int j = 0; // iterator over underlying indices
         int k = 0; //iterator over hiddenIdx
-        for(int dim = 0; dim < rank; dim ++){
-            if(k < hiddenDimensions().length && hiddenDimensions()[k]== j){
+        for (int dim = 0; dim < rank; dim++) {
+            if (k < hiddenDimensions().length && hiddenDimensions()[k] == j) {
                 arr[dim] = 0;
                 k++;
             } else {
@@ -960,10 +971,10 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
 
-    public boolean isZero(int... indexes){
-        for(int i = 0; i < length(); i++){
+    public boolean isZero(int... indexes) {
+        for (int i = 0; i < length(); i++) {
             int[] idx = getUnderlyingIndicesOf(i).asInt();
-            if(Arrays.equals(idx, translateToPhysical(indexes))){
+            if (Arrays.equals(idx, translateToPhysical(indexes))) {
                 return false;
             }
         }
@@ -972,12 +983,12 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     @Override
     public boolean isView() {
-        return Shape.offset(shapeInformation) > 0 ||  data().originalDataBuffer() != null; // TODO or if sparseOffset/flags != [0, ..,0]
+        return Shape.offset(shapeInformation) > 0 || data().originalDataBuffer() != null; // TODO or if sparseOffset/flags != [0, ..,0]
     }
 
 
     public int getNumHiddenDimension() {
-        if(hiddenDimensions() == null || hiddenDimensions().length == 0){
+        if (hiddenDimensions() == null || hiddenDimensions().length == 0) {
             throw new IllegalStateException("HiddenDimension array is malformed");
         }
         return hiddenDimensions()[0] == -1 ? 0 : hiddenDimensions().length;

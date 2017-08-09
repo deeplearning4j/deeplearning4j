@@ -13,7 +13,8 @@ import java.util.Map;
  * Constructor takes a map - keys are indices of the multidataset to apply preprocessor to, values are the target distributions
  * @author susaneraly
  */
-public class UnderSamplingByMaskingMultiDataSetPreProcessor extends BaseUnderSamplingPreProcessor implements MultiDataSetPreProcessor {
+public class UnderSamplingByMaskingMultiDataSetPreProcessor extends BaseUnderSamplingPreProcessor
+                implements MultiDataSetPreProcessor {
 
     private Map<Integer, Double> targetMinorityDistMap;
     private Map<Integer, Integer> minorityLabelMap = new HashMap<>();
@@ -28,7 +29,9 @@ public class UnderSamplingByMaskingMultiDataSetPreProcessor extends BaseUnderSam
 
         for (Integer index : targetDist.keySet()) {
             if (targetDist.get(index) > 0.5 || targetDist.get(index) <= 0) {
-                throw new IllegalArgumentException("Target distribution for the minority label class has to be greater than 0 and no greater than 0.5. Target distribution of " + targetDist.get(index) + "given for label at index " + index);
+                throw new IllegalArgumentException(
+                                "Target distribution for the minority label class has to be greater than 0 and no greater than 0.5. Target distribution of "
+                                                + targetDist.get(index) + "given for label at index " + index);
             }
             minorityLabelMap.put(index, 1);
         }
@@ -44,19 +47,21 @@ public class UnderSamplingByMaskingMultiDataSetPreProcessor extends BaseUnderSam
         if (targetMinorityDistMap.containsKey(index)) {
             minorityLabelMap.put(index, 0);
         } else {
-            throw new IllegalArgumentException("Index specified is not contained in the target minority distribution map specified with the preprocessor. Map contains " + ArrayUtils.toString(targetMinorityDistMap.keySet().toArray()));
+            throw new IllegalArgumentException(
+                            "Index specified is not contained in the target minority distribution map specified with the preprocessor. Map contains "
+                                            + ArrayUtils.toString(targetMinorityDistMap.keySet().toArray()));
         }
     }
 
     @Override
     public void preProcess(MultiDataSet multiDataSet) {
 
-        for (Integer index: targetMinorityDistMap.keySet()) {
+        for (Integer index : targetMinorityDistMap.keySet()) {
             INDArray label = multiDataSet.getLabels(index);
             INDArray labelMask = multiDataSet.getLabelsMaskArray(index);
             double targetMinorityDist = targetMinorityDistMap.get(index);
             int minorityLabel = minorityLabelMap.get(index);
-            multiDataSet.setLabelsMaskArray(index,adjustMasks(label,labelMask,minorityLabel,targetMinorityDist));
+            multiDataSet.setLabelsMaskArray(index, adjustMasks(label, labelMask, minorityLabel, targetMinorityDist));
         }
 
     }
