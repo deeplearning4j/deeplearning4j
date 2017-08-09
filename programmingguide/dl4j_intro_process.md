@@ -3,44 +3,44 @@ layout: default
 
 ------
 
-# Where DeepLearning4j Fits
+# Where DeepLearning4j Fits In
 
 (https://deeplearning4j.org/deeplearningforbeginners.html, https://deeplearning4j.org/neuralnet-overview)
 
-DeepLearning4j is a Java-based toolkit for building, training, and deploying neural networks.  
+Deeplearning4j is a JVM-based toolkit for building, training, and deploying neural networks. It was built to serve the Java and Scala communities, and is currently adding a Python API. 
 
 There are few reasons why you might be interested in DeepLearning4j. 
 
-- As a data scientist in the field or student with a Java project. Typical use cases allow for experiments and continuous training on clusters to manage processes for the most accruate model over the lifetime of the project. 
+- You are a data scientist in the field, or student with a Java project, and you need to integreate with a JVM stack (Hadoop, Spark, Kafka, ElasticSearch, Cassandra). You need to explore data, conduct and monitor experiments that apply various algorithms to the data, and perform training on clusters to obtain quickly the most accurate model for that data.  
 
-- As a data engineer or software developer in an enterprise environment who is tasked with providing reliable, scalable, accurate predictions about data within a large organization. The use case here is to have data programmatically and automatically processed and analyzed to determine a designated result, using simple and understandable APIs, leveraging day-to-day activities without impact to business operations.
+- You are a data engineer or software developer in an enterprise environment who needs stable data pipelines and reliable, scalable, accurate predictions about data. The use case here is to have data programmatically and automatically processed and analyzed to determine a designated result, using simple and understandable APIs.
 
-Deep learning encompasses both deep neural nets and deep reinforcement learning, which are subsets of machine learning, which in turn is a subset of artifical intelligence. Broadly speaking, deep learning is a form of machine perception that takes raw data and extracts information from that data by making predictions about it. Those predictions include identifying objects represented in images, mapping analog speech to written transcriptions, categorizing text by sentiment, and making forecasts about time series data, among other tasks. 
+Deep learning encompasses both deep neural nets and deep reinforcement learning, which are subsets of machine learning, which itself is a subset of artifical intelligence. Broadly speaking, deep neural nets perform machine perception that takes raw data and extracts information from that data by making predictions about it. Those predictions include identifying objects represented in images, mapping analog speech to written transcriptions, categorizing text by sentiment, and making forecasts about time series data, among other tasks. 
 
-Neural networks are a set of algorithms, or combinations of math and computational logic, that process multi-dimensional arrays of numerical data to extract information from the raw data, so the model can be used to return inferences about new data that has not yet been processed. 
+Neural networks are a group of algorithms, or combinations of math and computational logic, that process multi-dimensional arrays of numerical data to extract information from the raw data, so the model can be used to return inferences about new data that has not yet been processed. 
 
-You configure a neural network to make it able to learn about the structure of the dataset, and to return consistent, accurate interpretations of the data. Once it has been tuned properly and has trained long enough, it can be used to process new sets of data to return reasonably reliable conclusions and inferences from the data. 
+You configure a neural network by tuning its hyperparameters to that it is able to learn about the structure of the dataset, and return consistent, accurate interpretations for that data. Once it has been tuned properly and trained long enough, it can be used to process new sets of data to return reasonably reliable conclusions and inferences. 
 
 The complete process requires the following phases. DeepLearning4j has a role in each phase.
 
-1. Preparing the data
-  - Ingesting the data, ETL
+1. Prepare the data
+  - Ingest the data, ETL
     - Extract from the data source 
     - Transform to arrays of numbers
     - Load the data
-  - Reviewing the data types
-  - Processing the data
-2. Preparing the Neural Network
-  - Building the Neural Network
+  - Review the data types
+  - Process the data
+2. Prepare the Neural Network
+  - Build the Neural Network
     - Define configuration
     - Define dependencies, pom.xml
     - Setup the model
     - Validate the model
-  - Training the Neural Network
-3. Evaluating, Adjusting, and Deploying
-  - Evaluating the output
-  - Repeating step 2 until the output meets the goals
-  - Deploying the Neural Network
+  - Train the Neural Network
+3. Evaluate, Adjust, and Deploy
+  - Evaluat the output
+  - Repeat step 2 until the output meets the goals
+  - Deploy the Neural Network
 
 # DeepLearning4j Process
 
@@ -73,13 +73,13 @@ Content. General Big picture https://deeplearning4j.org/etl-userguide.  https://
 
 (https://deeplearning4j.org/overview#datavec)
 
-Transforming data into numbers. 
+Transforming data such as images, text and time series into multi-dimensional arrays, or tensors. We speak about vectorizing data, but with our pre-processing tools are are actually turning that input data into a tensor. 
 
-DataVec is a set of DeepLearning4j tools for turning raw data, such as images, video, audio, text and time series, into feature vectors for Neural Networks. Use these tools for ingesting, cleaning, joining, scaling, normalizing and transforming the data prior to performing any sort of analysis. 
+DataVec is a library of ETL tools built by the Skymind team for turning raw data, such as images, video, audio, text and time series, into data structures that neural networks can train on and understand. Use these tools for ingesting, cleaning, joining, scaling, normalizing and transforming the data before neural net training. 
 
 ## Processing Data
 
-Track and read meta data from arrays of rows and columns. 
+Track and read metadata from arrays of rows and columns. 
 
 Preprocessor for NN, features that will be in NN, track and read meta data what row/column. Collecting from various data sources, ex 2 files systems on disk somewhere and databases somewhere and columns from db that were public, create mixed, >> normalize it, preprocess >> all helped by dataVec. in a program that is coherent to ETL. 
 
