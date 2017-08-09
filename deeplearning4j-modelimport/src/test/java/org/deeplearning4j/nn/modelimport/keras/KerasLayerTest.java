@@ -16,9 +16,6 @@ import java.util.Map;
 
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_ACTIVATION;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_INIT;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_W_REGULARIZER;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.REGULARIZATION_TYPE_L1;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.REGULARIZATION_TYPE_L2;
 import static org.deeplearning4j.nn.modelimport.keras.layers.KerasBatchNormalization.*;
 import static org.deeplearning4j.nn.modelimport.keras.layers.KerasLstm.*;
 import static org.junit.Assert.assertArrayEquals;
@@ -101,9 +98,9 @@ public class KerasLayerTest {
         config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
         config.put(LAYER_FIELD_INIT, INIT_KERAS);
         Map<String, Object> W_reg = new HashMap<String, Object>();
-        W_reg.put(REGULARIZATION_TYPE_L1, L1_REGULARIZATION);
-        W_reg.put(REGULARIZATION_TYPE_L2, L2_REGULARIZATION);
-        config.put(LAYER_FIELD_W_REGULARIZER, W_reg);
+        W_reg.put(conf1.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
+        W_reg.put(conf1.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
+        config.put(conf1.getLAYER_FIELD_W_REGULARIZER(), W_reg);
         config.put(conf1.getLAYER_FIELD_DROPOUT(), DROPOUT_KERAS);
         config.put(conf1.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
         layerConfig.put(conf1.getLAYER_FIELD_CONFIG(), config);
@@ -129,9 +126,9 @@ public class KerasLayerTest {
         config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
         config.put(LAYER_FIELD_INIT, INIT_KERAS);
         Map<String, Object> W_reg = new HashMap<String, Object>();
-        W_reg.put(REGULARIZATION_TYPE_L1, L1_REGULARIZATION);
-        W_reg.put(REGULARIZATION_TYPE_L2, L2_REGULARIZATION);
-        config.put(LAYER_FIELD_W_REGULARIZER, W_reg);
+        W_reg.put(conf1.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
+        W_reg.put(conf1.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
+        config.put(conf1.getLAYER_FIELD_W_REGULARIZER(), W_reg);
         config.put(conf1.getLAYER_FIELD_DROPOUT(), DROPOUT_KERAS);
         config.put(conf1.getLAYER_FIELD_NB_ROW(), KERNEL_SIZE[0]);
         config.put(conf1.getLAYER_FIELD_NB_COL(), KERNEL_SIZE[1]);
@@ -197,9 +194,9 @@ public class KerasLayerTest {
         config.put(LAYER_FIELD_INIT, INIT_KERAS);
         config.put(LAYER_FIELD_INNER_INIT, INIT_KERAS);
         Map<String, Object> W_reg = new HashMap<String, Object>();
-        W_reg.put(REGULARIZATION_TYPE_L1, L1_REGULARIZATION);
-        W_reg.put(REGULARIZATION_TYPE_L2, L2_REGULARIZATION);
-        config.put(LAYER_FIELD_W_REGULARIZER, W_reg);
+        W_reg.put(conf1.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
+        W_reg.put(conf1.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
+        config.put(conf1.getLAYER_FIELD_W_REGULARIZER(), W_reg);
         config.put(conf1.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
         config.put(LAYER_FIELD_DROPOUT_U, 0.0);
         config.put(LAYER_FIELD_FORGET_BIAS_INIT, LSTM_FORGET_BIAS_STR);
