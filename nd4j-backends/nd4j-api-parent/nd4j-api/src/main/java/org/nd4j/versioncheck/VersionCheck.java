@@ -30,6 +30,7 @@ public class VersionCheck {
     private static final String SPARK_2_VER_STRING = "spark_2";
 
     private static final String UNKNOWN_VERSION = "(Unknown, pre-0.9.1)";
+    private static final String UNKNOWN_VERSION_2 = "(Unknown)";
 
     private static final String DL4J_GROUPID = "org.deeplearning4j";
     private static final String DL4J_ARTIFACT = "deeplearning4j-nn";
@@ -236,11 +237,16 @@ public class VersionCheck {
             }
         }
 
+        //Note that if NO git.properties files were found, it's still possible that the DL4J/DataVec versions found
+        // by their class names are correct. Consequently, only call them "pre-0.9.1" if we can be sure that's the case,
+        // otherwise just call them "Unknown"
+        String unknownVersionString = repState.size() == 0 ? UNKNOWN_VERSION_2 : UNKNOWN_VERSION;
+
         if(!dl4jFound){
             //See if pre-0.9.1 DL4J is present on classpath;
             if(classExists(DL4J_CLASS)){
                 List<VersionInfo> temp = new ArrayList<>();
-                temp.add(new VersionInfo(DL4J_GROUPID, DL4J_ARTIFACT, UNKNOWN_VERSION));
+                temp.add(new VersionInfo(DL4J_GROUPID, DL4J_ARTIFACT, unknownVersionString));
                 temp.addAll(repState);
                 repState = temp;
             }
@@ -250,7 +256,7 @@ public class VersionCheck {
             //See if pre-0.9.1 DataVec is present on classpath
             if(classExists(DATAVEC_CLASS)){
                 List<VersionInfo> temp = new ArrayList<>();
-                temp.add(new VersionInfo(DATAVEC_GROUPID, DATAVEC_ARTIFACT, UNKNOWN_VERSION));
+                temp.add(new VersionInfo(DATAVEC_GROUPID, DATAVEC_ARTIFACT, unknownVersionString));
                 temp.addAll(repState);
                 repState = temp;
             }
