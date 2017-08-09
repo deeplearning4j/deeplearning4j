@@ -7,20 +7,19 @@ layout: default
 
 (https://deeplearning4j.org/deeplearningforbeginners.html, https://deeplearning4j.org/neuralnet-overview)
 
-DeepLearning4j is a Java based toolkit for building, training, and deploying Neural Networks.  
+DeepLearning4j is a Java-based toolkit for building, training, and deploying neural networks.  
 
-Typically, there are few reasons why you might be interested in DeepLearning4j. 
+There are few reasons why you might be interested in DeepLearning4j. 
 
 - As a data scientist in the field or student with a Java project. Typical use cases allow for experiments and continuous training on clusters to manage processes for the most accruate model over the lifetime of the project. 
 
-- As a data engineer or developer in an enterprise environment and tasked with providing reliable, scalable, accurate conclusions across a structured organization. The use case here is to have data programmatically and automatically processed and analyzed to determine a designated result, using simple and understandable APIs, leveraging day to day activities without impact to business operations.
+- As a data engineer or software developer in an enterprise environment who is tasked with providing reliable, scalable, accurate predictions about data within a large organization. The use case here is to have data programmatically and automatically processed and analyzed to determine a designated result, using simple and understandable APIs, leveraging day-to-day activities without impact to business operations.
 
+Deep learning encompasses both deep neural nets and deep reinforcement learning, which are subsets of machine learning, which in turn is a subset of artifical intelligence. Broadly speaking, deep learning is a form of machine perception that takes raw data and extracts information from that data by making predictions about it. Those predictions include identifying objects represented in images, mapping analog speech to written transcriptions, categorizing text by sentiment, and making forecasts about time series data, among other tasks. 
 
-Hiearchically, DeepLearning4J is a type of Neural Network model within the deep learning field, that is a subset to machine learning, which in turn is a subset of artifical intelligence. Broadly, it is a form of data mining, extracting and deducing information from a set of data. 
+Neural networks are a set of algorithms, or combinations of math and computational logic, that process multi-dimensional arrays of numerical data to extract information from the raw data, so the model can be used to return inferences about new data that has not yet been processed. 
 
-Neural Networks are a computational model, containing multi-dimensional arrays of numerical data, using algorithms to extract information from the raw data, so the model can be used to return inferences about new data that has not yet been processed. 
-
-You build the Neural Network to learn about the type of data, and to return consistent, accurate, interpretations of the data. Once it has trained sufficiently, it can be used to process new sets of data to return reasonably reliable conclusions and inferences from the data. 
+You configure a neural network to make it able to learn about the structure of the dataset, and to return consistent, accurate interpretations of the data. Once it has been tuned properly and has trained long enough, it can be used to process new sets of data to return reasonably reliable conclusions and inferences from the data. 
 
 The complete process requires the following phases. DeepLearning4j has a role in each phase.
 
