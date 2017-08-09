@@ -11,11 +11,14 @@ import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.BaseOutputLayer;
+import org.deeplearning4j.nn.layers.LossLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -25,6 +28,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,6 +67,28 @@ public class GradientCheckUtil {
 
     private GradientCheckUtil() {}
 
+
+    private static void configureSoftmaxClippingIfPresent(IOutputLayer outputLayer){
+
+        ILossFunction lfn = null;
+        IActivation afn = null;
+        if(outputLayer instanceof BaseOutputLayer){
+            BaseOutputLayer o = (BaseOutputLayer)outputLayer;
+            lfn = ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)o.layerConf()).getLossFn();
+            afn = o.layerConf().getActivationFn();
+        } else if(outputLayer instanceof LossLayer){
+            LossLayer o = (LossLayer) outputLayer;
+            lfn = o.layerConf().getLossFn();
+            afn = o.layerConf().getActivationFn();
+        }
+
+        if (lfn instanceof LossMCXENT && afn instanceof ActivationSoftmax && ((LossMCXENT) lfn).getSoftmaxClipEps() != 0) {
+            log.info("Setting softmax clipping epsilon to 0.0 for " + lfn.getClass()
+                    + " loss function to avoid spurious gradient check failures");
+            ((LossMCXENT) lfn).setSoftmaxClipEps(0.0);
+        }
+    }
+
     /**
      * Check backprop gradients for a MultiLayerNetwork.
      * @param mln MultiLayerNetwork to test. This must be initialized.
@@ -94,7 +121,6 @@ public class GradientCheckUtil {
         }
 
         //Check network configuration:
-
         int layerCount = 0;
         for (NeuralNetConfiguration n : mln.getLayerWiseConfigurations().getConfs()) {
             if (n.getLayer() instanceof BaseLayer) {
@@ -128,6 +154,13 @@ public class GradientCheckUtil {
             if (n.isUseRegularization() && dropout != 0.0) {
                 throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
                                 + dropout + " for layer " + layerCount);
+            }
+        }
+
+        //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
+        for(Layer l : mln.getLayers()){
+            if(l instanceof IOutputLayer){
+                configureSoftmaxClippingIfPresent((IOutputLayer) l);
             }
         }
 
@@ -301,6 +334,13 @@ public class GradientCheckUtil {
             if (lv.getLayerConf().isUseRegularization() && dropout != 0.0) {
                 throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
                                 + dropout + " for layer " + layerCount);
+            }
+        }
+
+        //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
+        for(Layer l : graph.getLayers()){
+            if(l instanceof IOutputLayer){
+                configureSoftmaxClippingIfPresent((IOutputLayer) l);
             }
         }
 
