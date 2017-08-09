@@ -19,6 +19,9 @@ public class Counter<T> implements Serializable {
     protected AtomicDouble totalCount = new AtomicDouble(0);
     protected AtomicBoolean dirty = new AtomicBoolean(false);
 
+    public Counter() {
+
+    }
 
     public double getCount(T element) {
         AtomicDouble t = map.get(element);

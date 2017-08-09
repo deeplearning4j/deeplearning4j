@@ -36,6 +36,10 @@ public class CounterTest {
 
         assertEquals(3.0, counterA.getCount("A"), 1e-5);
         assertEquals(4.0, counterA.getCount("B"), 1e-5);
+
+        counterA.setCount("B", 234);
+
+        assertEquals(234.0, counterA.getCount("B"), 1e-5);
     }
 
 

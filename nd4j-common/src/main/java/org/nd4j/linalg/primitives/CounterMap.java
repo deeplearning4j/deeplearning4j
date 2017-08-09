@@ -18,6 +18,10 @@ public class CounterMap<F, S> implements Serializable{
 
     protected Map<F, Counter<S>> maps = new ConcurrentHashMap<>();
 
+    public CounterMap() {
+
+    }
+
     /**
      * This method checks if this CounterMap has any values stored
      *
@@ -207,6 +211,26 @@ public class CounterMap<F, S> implements Serializable{
                 //
             }
         };
+    }
 
+    /**
+     * This method returns number of First elements in this CounterMap
+     * @return
+     */
+    public int size() {
+        return maps.size();
+    }
+
+    /**
+     * This method returns total number of elements in this CounterMap
+     * @return
+     */
+    public int totalSize() {
+        int size = 0;
+        for (F first: keySet()) {
+            size += getCounter(first).size();
+        }
+
+        return size;
     }
 }

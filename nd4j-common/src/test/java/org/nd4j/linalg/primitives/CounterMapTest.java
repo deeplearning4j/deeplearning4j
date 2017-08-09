@@ -82,5 +82,13 @@ public class CounterMapTest {
         assertEquals(2.0, counterMapA.getCount(1,1), 1e-5);
         assertEquals(1.0, counterMapA.getCount(2,1), 1e-5);
         assertEquals(1.0, counterMapA.getCount(0,0), 1e-5);
+
+
+        assertEquals(7, counterMapA.totalSize());
+
+
+        counterMapA.setCount(2, 1, 17);
+
+        assertEquals(17.0, counterMapA.getCount(2, 1), 1e-5);
     }
 }
