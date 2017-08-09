@@ -1,20 +1,60 @@
 package org.nd4j.linalg.api.blas.impl;
 
 import org.nd4j.linalg.api.blas.Level2;
+import org.nd4j.linalg.api.blas.params.SparseGemvParameters;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.api.ndarray.BaseNDArray;
-import org.nd4j.linalg.api.ndarray.BaseSparseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 
+import static com.google.common.base.Preconditions.checkArgument;
 /**
  * @author Audrey Loeffel
  */
-public class SparseBaseLevel2 extends SparseBaseLevel implements Level2{
+public abstract class SparseBaseLevel2 extends SparseBaseLevel implements Level2 {
 
 
     @Override
     public void gemv(char order, char transA, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
+        checkArgument(A.isMatrix());
+        checkArgument(X.isVector());
+        checkArgument(Y.isVector());
+
+        SparseGemvParameters parameters = new SparseGemvParameters(A, X, Y);
+
+
+        switch (A.data().dataType()) {
+            case DOUBLE:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, parameters.getA(), parameters.getX(),
+                        parameters.getY());
+                dcoomv(parameters.getAOrdering(),
+                        parameters.getM(),
+                        parameters.getVal(),
+                        parameters.getRowInd(),
+                        parameters.getColInd(),
+                        parameters.getNnz(),
+                        parameters.getX(),
+                        parameters.getY());
+
+                break;
+            case FLOAT:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, parameters.getA(), parameters.getX(),
+                        parameters.getY());
+                scoomv(parameters.getAOrdering(),
+                        parameters.getM(),
+                        parameters.getVal(),
+                        parameters.getRowInd(),
+                        parameters.getColInd(),
+                        parameters.getNnz(),
+                        parameters.getX(),
+                        parameters.getY());
+
+                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
+
     }
 
     @Override
@@ -131,4 +171,9 @@ public class SparseBaseLevel2 extends SparseBaseLevel implements Level2{
     public void trsv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
 
     }
+
+    // ----
+    protected abstract void scoomv(char transA, int M, DataBuffer values, DataBuffer rowInd, DataBuffer colInd, int nnz, INDArray x, INDArray y);
+
+    protected abstract void dcoomv(char transA, int M, DataBuffer values, DataBuffer rowInd, DataBuffer colInd, int nnz, INDArray x, INDArray y);
 }

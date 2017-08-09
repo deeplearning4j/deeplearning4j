@@ -633,7 +633,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     /*
     * Return a copy of the indices in the context of the view.
     * Change this DataBuffer won't change the ndarray!
-    * TODO (used for tests, does it have another usecase?)
     *  */
     public DataBuffer getIncludedIndices(){
 
@@ -686,7 +685,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     /*
-    * TODO Same as get Indices - another usecase than tests?
     * */
     public DataBuffer getIncludedValues(){
         List<Double> val = new ArrayList<>();
@@ -1006,4 +1004,5 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     public INDArray putiRowVector(INDArray rowVector) {
         return null;
     }
+
 }

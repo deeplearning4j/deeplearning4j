@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ndarray;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -16,10 +17,13 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.LinAlgExceptions;
 
 import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.nd4j.linalg.factory.Nd4j.createUninitialized;
 
 /**
  * @author Audrey Loeffel
@@ -870,7 +874,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public INDArray mmul(INDArray other) {
-        return null;
+        int[] shape = {rows(), other.columns()};
+        INDArray result = createUninitialized(shape, 'f');
+        if (result.isScalar())
+            return Nd4j.scalar(Nd4j.getBlasWrapper().dot(this, other));
+        return mmuli(other, result);
     }
 
     @Override
@@ -925,7 +933,68 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public INDArray mmuli(INDArray other, INDArray result) {
-        return null;
+        LinAlgExceptions.assertMultiplies(this, other);
+
+
+        if (other.isScalar()) {
+            return muli(other.getDouble(0), result);
+        }
+        if (isScalar()) {
+            return other.muli(getDouble(0), result);
+        }
+
+        /* check sizes and resize if necessary */
+
+
+
+
+            //We require that the result array is 'f' (fortran) order
+            // However, user might have called mmuli with a c order array for the result
+            // In which case, we need to allocate a temporary f order array, and later do an assign to the real result array
+
+            boolean requiresTemp = result.ordering() == 'c';
+            INDArray gemmResultArr;
+            if (requiresTemp) {
+                //Can use createUninitialized due to beta==0.0 parameter in gemm
+                gemmResultArr = Nd4j.createUninitialized(result.shape(), 'f');
+            } else {
+                gemmResultArr = result;
+            }
+
+            if (other.columns() == 1) {
+                Nd4j.getBlasWrapper().level2().gemv(
+                        ordering(),
+                        BlasBufferUtil.getCharForTranspose(other),
+                        1.0,
+                        this,
+                        other,
+                        0.0,
+                        gemmResultArr);
+            } else {
+                //gemm doesn't support strides so vectors and views
+                //don't work
+                if(isView() && isVector()) {
+                    return dup().mmuli(other,gemmResultArr);
+                }
+
+                Nd4j.getBlasWrapper().level3().gemm(ordering(),
+                        BlasBufferUtil.getCharForTranspose(other),
+                        BlasBufferUtil.getCharForTranspose(gemmResultArr),
+                        1.0,
+                        this,
+                        other,
+                        0.0,
+                        gemmResultArr);
+            }
+
+            if (requiresTemp) {
+                result.assign(gemmResultArr);
+            }
+
+
+        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
+            Nd4j.clearNans(result);
+        return result;
     }
 
     @Override
