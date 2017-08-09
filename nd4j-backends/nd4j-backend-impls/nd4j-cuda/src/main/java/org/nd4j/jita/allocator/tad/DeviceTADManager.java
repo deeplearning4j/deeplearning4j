@@ -1,7 +1,7 @@
 package org.nd4j.jita.allocator.tad;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;

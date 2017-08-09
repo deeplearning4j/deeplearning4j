@@ -3,7 +3,7 @@ package org.nd4j.jita.memory.impl;
 import junit.framework.TestCase;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.jita.allocator.enums.AllocationStatus;

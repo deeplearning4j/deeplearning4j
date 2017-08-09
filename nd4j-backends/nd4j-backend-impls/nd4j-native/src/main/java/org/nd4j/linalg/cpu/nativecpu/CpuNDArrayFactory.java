@@ -21,7 +21,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;

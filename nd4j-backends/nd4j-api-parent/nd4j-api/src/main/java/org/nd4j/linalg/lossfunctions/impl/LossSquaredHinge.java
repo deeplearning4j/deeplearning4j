@@ -1,7 +1,7 @@
 package org.nd4j.linalg.lossfunctions.impl;
 
 import lombok.EqualsAndHashCode;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -92,7 +92,7 @@ public class LossSquaredHinge implements ILossFunction {
     }
 
     @Override
-    public org.apache.commons.math3.util.Pair<Double, INDArray> computeGradientAndScore(INDArray labels,
+    public Pair<Double, INDArray> computeGradientAndScore(INDArray labels,
                     INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
         //TODO: probably a more efficient way to do this...
 
