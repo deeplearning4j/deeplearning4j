@@ -20,7 +20,6 @@ package org.deeplearning4j.text.movingwindow;
 
 import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.primitives.CounterMap;
-import org.deeplearning4j.berkeley.MapFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -38,17 +37,6 @@ public class Util {
      * @return
      */
     public static <K, V> CounterMap<K, V> parallelCounterMap() {
-        MapFactory<K, Double> factory = new MapFactory<K, Double>() {
-
-            private static final long serialVersionUID = 5447027920163740307L;
-
-            @Override
-            public Map<K, Double> buildMap() {
-                return new java.util.concurrent.ConcurrentHashMap<>();
-            }
-
-        };
-
         CounterMap<K, V> totalWords = new CounterMap<>();
         return totalWords;
     }
@@ -59,17 +47,6 @@ public class Util {
      * @return
      */
     public static <K> Counter<K> parallelCounter() {
-        MapFactory<K, Float> factory = new MapFactory<K, Float>() {
-
-            private static final long serialVersionUID = 5447027920163740307L;
-
-            @Override
-            public Map<K, Float> buildMap() {
-                return new java.util.concurrent.ConcurrentHashMap<>();
-            }
-
-        };
-
         Counter<K> totalWords = new Counter<>();
         return totalWords;
     }
