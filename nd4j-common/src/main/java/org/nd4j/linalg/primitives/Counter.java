@@ -230,6 +230,14 @@ public class Counter<T> implements Serializable {
         dirty.set(false);
     }
 
+    /**
+     * Returns total number of tracked elements
+     *
+     * @return
+     */
+    public int size() {
+        return map.size();
+    }
 
     /**
      * This method removes all elements except of top N by counter values
@@ -255,11 +263,29 @@ public class Counter<T> implements Serializable {
         return pq;
     }
 
+
+    public PriorityQueue<Pair<T, Double>> asReversedPriorityQueue() {
+        PriorityQueue<Pair<T, Double>> pq = new PriorityQueue<>(map.size(), new ReversedPairComparator());
+        for (Map.Entry<T, AtomicDouble> entry : map.entrySet()) {
+            pq.add(Pair.create(entry.getKey(), entry.getValue().get()));
+        }
+
+        return pq;
+    }
+
     protected class PairComparator implements Comparator<Pair<T, Double>> {
 
         @Override
         public int compare(Pair<T, Double> o1, Pair<T, Double> o2) {
             return Double.compare(o1.value, o2.value);
+        }
+    }
+
+    protected class ReversedPairComparator implements Comparator<Pair<T, Double>> {
+
+        @Override
+        public int compare(Pair<T, Double> o1, Pair<T, Double> o2) {
+            return Double.compare(o2.value, o1.value);
         }
     }
 }
