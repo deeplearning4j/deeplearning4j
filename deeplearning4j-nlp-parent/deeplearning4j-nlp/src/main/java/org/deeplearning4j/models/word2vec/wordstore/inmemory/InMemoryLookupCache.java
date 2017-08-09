@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
-import org.deeplearning4j.berkeley.Counter;
+import org.nd4j.linalg.primitives.Counter;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.movingwindow.Util;

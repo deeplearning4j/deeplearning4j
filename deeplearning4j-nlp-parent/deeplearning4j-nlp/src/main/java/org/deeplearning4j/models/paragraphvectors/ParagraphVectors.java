@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.deeplearning4j.berkeley.Counter;
+import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;

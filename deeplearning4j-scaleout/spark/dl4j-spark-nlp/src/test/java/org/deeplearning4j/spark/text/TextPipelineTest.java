@@ -23,7 +23,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.berkeley.Counter;
+import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;

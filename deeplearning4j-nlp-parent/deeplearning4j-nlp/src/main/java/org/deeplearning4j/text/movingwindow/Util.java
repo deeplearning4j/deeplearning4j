@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.text.movingwindow;
 
-import org.deeplearning4j.berkeley.Counter;
+import org.nd4j.linalg.primitives.Counter;
 import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.berkeley.MapFactory;
 

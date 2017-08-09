@@ -20,7 +20,7 @@ package org.deeplearning4j.util;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.deeplearning4j.berkeley.Counter;
+import org.nd4j.linalg.primitives.Counter;
 import org.deeplearning4j.berkeley.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
