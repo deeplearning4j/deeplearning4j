@@ -51,8 +51,8 @@ public class Counter<T> implements Serializable {
      * This method will increment counts of this counter by counts from other counter
      * @param other
      */
-    public void incrementAll(Counter<T> other) {
-        for (T element: keySet()) {
+    public <T2 extends T> void incrementAll(Counter<T2> other) {
+        for (T2 element: other.keySet()) {
             double cnt = other.getCount(element);
             incrementCount(element, cnt);
         }
