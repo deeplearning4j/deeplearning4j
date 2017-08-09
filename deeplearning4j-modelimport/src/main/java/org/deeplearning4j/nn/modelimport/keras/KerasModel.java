@@ -76,6 +76,7 @@ public class KerasModel {
     protected ArrayList<String> outputLayerNames; // list of output layers
     protected boolean useTruncatedBPTT = false; // whether to use truncated BPTT
     protected int truncatedBPTT = 0; // truncated BPTT value
+    protected Integer kerasMajorVersion;
 
 
     /**
@@ -116,6 +117,24 @@ public class KerasModel {
             modelConfig = parseYamlString(modelYaml);
         else
             throw new InvalidKerasConfigurationException("Requires model configuration not found.");
+
+        /* Determine keras major version*/
+        if (!modelConfig.containsKey(config.getFieldKerasVersion())) {
+            log.warn("Could not read keras version used (no "
+                    + config.getFieldKerasVersion() + " field found) \n"
+                    + "assuming keras version is 1.0.7 or earlier."
+            );
+            this.kerasMajorVersion = 1;
+        } else {
+            String kerasVersionString = (String) modelConfig.get(config.getFieldKerasVersion());
+            if (Character.isDigit(kerasVersionString.charAt(0))) {
+                this.kerasMajorVersion = Character.getNumericValue(kerasVersionString.charAt(0));
+            } else {
+                throw new InvalidKerasConfigurationException(
+                        "Keras version was not readable (" +  config.getFieldKerasVersion() + " provided)"
+                );
+            }
+        }
 
         /* Whether to enforce training-related configurations. */
         this.enforceTrainingConfig = enforceTrainingConfig;
@@ -181,7 +200,10 @@ public class KerasModel {
         this.layers = new HashMap<String, KerasLayer>();
         DimOrder dimOrder = DimOrder.NONE;
         for (Object layerConfig : layerConfigs) {
-            KerasLayer layer = KerasLayer.getKerasLayerFromConfig((Map<String, Object>) layerConfig,
+            Map<String, Object> layerConfigMap = (Map<String, Object>) layerConfig;
+            // Append major keras version to each layer config.
+            layerConfigMap.put(config.getFieldKerasVersion(), this.kerasMajorVersion);
+            KerasLayer layer = KerasLayer.getKerasLayerFromConfig(layerConfigMap,
                     this.enforceTrainingConfig);
             if (dimOrder == DimOrder.NONE && layer.getDimOrder() != DimOrder.NONE) // determine dimension order, if any
                 dimOrder = layer.getDimOrder();
