@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_ACTIVATION;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_INIT;
 import static org.deeplearning4j.nn.modelimport.keras.layers.KerasBatchNormalization.*;
 import static org.deeplearning4j.nn.modelimport.keras.layers.KerasLstm.*;
 import static org.junit.Assert.assertArrayEquals;
@@ -96,7 +95,7 @@ public class KerasLayerTest {
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
-        config.put(LAYER_FIELD_INIT, INIT_KERAS);
+        config.put(conf1.getLAYER_FIELD_INIT(), INIT_KERAS);
         Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(conf1.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf1.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
@@ -124,7 +123,7 @@ public class KerasLayerTest {
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
-        config.put(LAYER_FIELD_INIT, INIT_KERAS);
+        config.put(conf1.getLAYER_FIELD_INIT(), INIT_KERAS);
         Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(conf1.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf1.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
@@ -191,7 +190,7 @@ public class KerasLayerTest {
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_INNER_ACTIVATION, INNER_ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
-        config.put(LAYER_FIELD_INIT, INIT_KERAS);
+        config.put(conf1.getLAYER_FIELD_INIT(), INIT_KERAS);
         config.put(LAYER_FIELD_INNER_INIT, INIT_KERAS);
         Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(conf1.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);

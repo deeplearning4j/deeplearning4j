@@ -50,19 +50,6 @@ public class KerasLayer {
 
     public static final String LAYER_FIELD_KERAS_VERSION = "keras_version";
 
-    /* Keras weight initializers. */
-    public static final String LAYER_FIELD_INIT = "init";
-    public static final String INIT_UNIFORM = "uniform";
-    public static final String INIT_ZERO = "zero";
-    public static final String INIT_GLOROT_NORMAL = "glorot_normal";
-    public static final String INIT_GLOROT_UNIFORM = "glorot_uniform";
-    public static final String INIT_HE_NORMAL = "he_normal";
-    public static final String INIT_HE_UNIFORM = "he_uniform";
-    public static final String INIT_LECUN_UNIFORM = "lecun_uniform";
-    public static final String INIT_NORMAL = "normal";
-    public static final String INIT_ORTHOGONAL = "orthogonal";
-    public static final String INIT_IDENTITY = "identity";
-
     /* Keras and DL4J activation types. */
     public static final String LAYER_FIELD_ACTIVATION = "activation";
     public static final String KERAS_ACTIVATION_SOFTMAX = "softmax";
@@ -566,41 +553,28 @@ public class KerasLayer {
      * @return              DL4J weight initialization enum
      * @see WeightInit
      */
-    public static WeightInit mapWeightInitialization(String kerasInit) throws UnsupportedKerasConfigurationException {
+    public WeightInit mapWeightInitialization(String kerasInit) throws UnsupportedKerasConfigurationException {
         /* WEIGHT INITIALIZATION
          * TODO: finish mapping keras-to-dl4j weight distributions.
          * Low priority since our focus is on loading trained models.
-         *
-         * Remaining dl4j distributions: DISTRIBUTION, SIZE, NORMALIZED,
-         * VI, RELU, XAVIER
+         * Remaining dl4j distributions: DISTRIBUTION, SIZE, NORMALIZED,VI
          */
         WeightInit init = WeightInit.XAVIER;
         if (kerasInit != null) {
-            switch (kerasInit) {
-                case INIT_GLOROT_NORMAL:
-                    init = WeightInit.XAVIER;
-                    break;
-                case INIT_GLOROT_UNIFORM:
-                    init = WeightInit.XAVIER_UNIFORM;
-                    break;
-                case INIT_HE_NORMAL:
-                    init = WeightInit.RELU;
-                    break;
-                case INIT_HE_UNIFORM:
-                    init = WeightInit.RELU_UNIFORM;
-                    break;
-                case INIT_ZERO:
-                    init = WeightInit.ZERO;
-                    break;
-                case INIT_UNIFORM:
-                    /* TODO: map to DL4J dist with scale taken from config. */
-                case INIT_NORMAL:
-                    /* TODO: map to DL4J normal with params taken from config. */
-                case INIT_IDENTITY: // does not map to existing Dl4J initializer
-                case INIT_ORTHOGONAL: // does not map to existing Dl4J initializer
-                case INIT_LECUN_UNIFORM: // does not map to existing Dl4J initializer
-                default:
-                    throw new UnsupportedKerasConfigurationException("Unknown keras weight initializer " + kerasInit);
+            if (kerasInit.equals(conf.getINIT_GLOROT_NORMAL())) {
+                init = WeightInit.XAVIER;
+            } else if (kerasInit.equals(conf.getINIT_GLOROT_UNIFORM())) {
+                init = WeightInit.XAVIER_UNIFORM;
+            } else if (kerasInit.equals(conf.getINIT_HE_NORMAL())) {
+                init = WeightInit.RELU;
+            } else if (kerasInit.equals(conf.getINIT_HE_UNIFORM())) {
+                init = WeightInit.RELU_UNIFORM;
+            } else if (kerasInit.equals(conf.getINIT_ZERO())) {
+                init = WeightInit.ZERO;
+            } else {
+                // TODO: map INIT_UNIFORM and INIT_NORMAL
+                // TODO: implement INIT_IDENTITY INIT_ORTHOGONAL INIT_LECUN_UNIFORM
+                throw new UnsupportedKerasConfigurationException("Unknown keras weight initializer " + kerasInit);
             }
         }
         return init;
@@ -901,9 +875,9 @@ public class KerasLayer {
     protected WeightInit getWeightInitFromConfig(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(LAYER_FIELD_INIT))
-            throw new InvalidKerasConfigurationException("Keras layer is missing " + LAYER_FIELD_INIT + " field");
-        String kerasInit = (String) innerConfig.get(LAYER_FIELD_INIT);
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_INIT()))
+            throw new InvalidKerasConfigurationException("Keras layer is missing " + conf.getLAYER_FIELD_INIT() + " field");
+        String kerasInit = (String) innerConfig.get(conf.getLAYER_FIELD_INIT());
         WeightInit init;
         try {
             init = mapWeightInitialization(kerasInit);
