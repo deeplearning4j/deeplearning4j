@@ -23,7 +23,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.eval.meta.Prediction;
 import org.deeplearning4j.eval.serde.ConfusionMatrixDeserializer;
 import org.deeplearning4j.eval.serde.ConfusionMatrixSerializer;

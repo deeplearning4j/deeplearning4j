@@ -1,7 +1,7 @@
 package org.deeplearning4j.nn.layers.custom.testclasses;
 
 import lombok.EqualsAndHashCode;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;

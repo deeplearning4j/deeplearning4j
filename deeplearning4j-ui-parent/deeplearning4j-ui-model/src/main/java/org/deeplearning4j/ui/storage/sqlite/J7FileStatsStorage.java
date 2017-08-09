@@ -2,7 +2,7 @@ package org.deeplearning4j.ui.storage.sqlite;
 
 import lombok.NonNull;
 import org.deeplearning4j.api.storage.*;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
 import java.sql.*;

@@ -2,7 +2,7 @@ package org.deeplearning4j.eval;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
