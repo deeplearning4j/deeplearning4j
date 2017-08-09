@@ -282,7 +282,7 @@ public class KerasLstm extends KerasLayer {
         return this.unroll;
     }
 
-    public static boolean getUnrollRecurrentLayer(Map<String, Object> layerConfig)
+    public boolean getUnrollRecurrentLayer(Map<String, Object> layerConfig)
                     throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         if (!innerConfig.containsKey(LAYER_FIELD_UNROLL))
@@ -298,7 +298,7 @@ public class KerasLstm extends KerasLayer {
      * @return                  epsilon
      * @throws InvalidKerasConfigurationException
      */
-    public static WeightInit getRecurrentWeightInitFromConfig(Map<String, Object> layerConfig, boolean train)
+    public  WeightInit getRecurrentWeightInitFromConfig(Map<String, Object> layerConfig, boolean train)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         if (!innerConfig.containsKey(LAYER_FIELD_INNER_INIT))
@@ -326,7 +326,7 @@ public class KerasLstm extends KerasLayer {
      * @return                  epsilon
      * @throws InvalidKerasConfigurationException
      */
-    public static double getRecurrentDropout(Map<String, Object> layerConfig)
+    public double getRecurrentDropout(Map<String, Object> layerConfig)
                     throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         /* NOTE: Keras "dropout" parameter determines dropout probability,
          * while DL4J "dropout" parameter determines retention probability.
@@ -348,7 +348,7 @@ public class KerasLstm extends KerasLayer {
      * @return                  epsilon
      * @throws InvalidKerasConfigurationException
      */
-    public static IActivation getGateActivationFromConfig(Map<String, Object> layerConfig)
+    public IActivation getGateActivationFromConfig(Map<String, Object> layerConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         if (!innerConfig.containsKey(LAYER_FIELD_INNER_ACTIVATION))
@@ -364,7 +364,7 @@ public class KerasLstm extends KerasLayer {
      * @return                  epsilon
      * @throws InvalidKerasConfigurationException
      */
-    public static double getForgetBiasInitFromConfig(Map<String, Object> layerConfig, boolean train)
+    public double getForgetBiasInitFromConfig(Map<String, Object> layerConfig, boolean train)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         if (!innerConfig.containsKey(LAYER_FIELD_FORGET_BIAS_INIT))
