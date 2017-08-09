@@ -84,19 +84,19 @@ public class KerasSequentialModel extends KerasModel {
         this.enforceTrainingConfig = enforceTrainingConfig;
 
         /* Determine model configuration type. */
-        if (!modelConfig.containsKey(MODEL_FIELD_CLASS_NAME))
+        if (!modelConfig.containsKey(config.getFieldClassName()))
             throw new InvalidKerasConfigurationException(
-                            "Could not determine Keras model class (no " + MODEL_FIELD_CLASS_NAME + " field found)");
-        this.className = (String) modelConfig.get(MODEL_FIELD_CLASS_NAME);
-        if (!this.className.equals(MODEL_CLASS_NAME_SEQUENTIAL))
-            throw new InvalidKerasConfigurationException("Model class name must be " + MODEL_CLASS_NAME_SEQUENTIAL
-                            + " (found " + this.className + ")");
+                    "Could not determine Keras model class (no " + config.getFieldClassName() + " field found)");
+        this.className = (String) modelConfig.get(config.getFieldClassName());
+        if (!this.className.equals(config.getFieldClassNameSequential()))
+            throw new InvalidKerasConfigurationException("Model class name must be " + config.getFieldClassNameSequential()
+                    + " (found " + this.className + ")");
 
         /* Process layer configurations. */
-        if (!modelConfig.containsKey(MODEL_FIELD_CONFIG))
+        if (!modelConfig.containsKey(config.getModelFieldConfig()))
             throw new InvalidKerasConfigurationException(
-                            "Could not find layer configurations (no " + MODEL_FIELD_CONFIG + " field found)");
-        helperPrepareLayers((List<Object>) modelConfig.get(MODEL_FIELD_CONFIG));
+                    "Could not find layer configurations (no " + config.getModelFieldConfig() + " field found)");
+        helperPrepareLayers((List<Object>) modelConfig.get(config.getModelFieldConfig()));
 
         KerasLayer inputLayer;
         if (this.layersOrdered.get(0) instanceof KerasInput) {
@@ -142,7 +142,7 @@ public class KerasSequentialModel extends KerasModel {
      */
     public MultiLayerConfiguration getMultiLayerConfiguration()
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        if (!this.className.equals(MODEL_CLASS_NAME_SEQUENTIAL))
+        if (!this.className.equals(config.getFieldClassNameSequential()))
             throw new InvalidKerasConfigurationException(
                             "Keras model class name " + this.className + " incompatible with MultiLayerNetwork");
         if (this.inputLayerNames.size() != 1)
