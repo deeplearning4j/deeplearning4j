@@ -478,7 +478,7 @@ public class VPTree {
         results.clear();
         distances.clear();
 
-        PriorityQueue<HeapObject> pq = new PriorityQueue<>(new HeapObjectComparator());
+        PriorityQueue<HeapObject> pq = new PriorityQueue<>(items.rows(), new HeapObjectComparator());
         search(root, target, k + 1, pq, Double.MAX_VALUE);
 
         if (pq.size() > k)
