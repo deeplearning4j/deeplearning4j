@@ -15,19 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_ACTIVATION;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_BORDER_MODE;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_CONFIG;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_DROPOUT;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_DROPOUT_W;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_INIT;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_NAME;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_NB_COL;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_NB_FILTER;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_NB_ROW;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_OUTPUT_DIM;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_POOL_SIZE;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_STRIDES;
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_SUBSAMPLE;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.LAYER_FIELD_W_REGULARIZER;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.REGULARIZATION_TYPE_L1;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.REGULARIZATION_TYPE_L2;
@@ -80,8 +68,8 @@ public class KerasLayerTest {
         layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_FIELD_ACTIVATION());
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
-        config.put(LAYER_FIELD_NAME, LAYER_NAME);
-        layerConfig.put(LAYER_FIELD_CONFIG, config);
+        config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
+        layerConfig.put(conf1.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
 
         ActivationLayer layer = new KerasActivation(layerConfig).getActivationLayer();
@@ -94,9 +82,9 @@ public class KerasLayerTest {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_CLASS_NAME_DROPOUT());
         Map<String, Object> config = new HashMap<String, Object>();
-        config.put(LAYER_FIELD_NAME, LAYER_NAME);
-        config.put(LAYER_FIELD_DROPOUT, DROPOUT_KERAS);
-        layerConfig.put(LAYER_FIELD_CONFIG, config);
+        config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
+        config.put(conf1.getLAYER_FIELD_DROPOUT(), DROPOUT_KERAS);
+        layerConfig.put(conf1.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
 
         DropoutLayer layer = new KerasDropout(layerConfig).getDropoutLayer();
@@ -110,15 +98,15 @@ public class KerasLayerTest {
         layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_CLASS_NAME_DENSE());
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
-        config.put(LAYER_FIELD_NAME, LAYER_NAME);
+        config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
         config.put(LAYER_FIELD_INIT, INIT_KERAS);
         Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(REGULARIZATION_TYPE_L1, L1_REGULARIZATION);
         W_reg.put(REGULARIZATION_TYPE_L2, L2_REGULARIZATION);
         config.put(LAYER_FIELD_W_REGULARIZER, W_reg);
-        config.put(LAYER_FIELD_DROPOUT, DROPOUT_KERAS);
-        config.put(LAYER_FIELD_OUTPUT_DIM, N_OUT);
-        layerConfig.put(LAYER_FIELD_CONFIG, config);
+        config.put(conf1.getLAYER_FIELD_DROPOUT(), DROPOUT_KERAS);
+        config.put(conf1.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
+        layerConfig.put(conf1.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
 
 
@@ -138,22 +126,22 @@ public class KerasLayerTest {
         layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_CLASS_NAME_CONVOLUTION_2D());
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
-        config.put(LAYER_FIELD_NAME, LAYER_NAME);
+        config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
         config.put(LAYER_FIELD_INIT, INIT_KERAS);
         Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(REGULARIZATION_TYPE_L1, L1_REGULARIZATION);
         W_reg.put(REGULARIZATION_TYPE_L2, L2_REGULARIZATION);
         config.put(LAYER_FIELD_W_REGULARIZER, W_reg);
-        config.put(LAYER_FIELD_DROPOUT, DROPOUT_KERAS);
-        config.put(LAYER_FIELD_NB_ROW, KERNEL_SIZE[0]);
-        config.put(LAYER_FIELD_NB_COL, KERNEL_SIZE[1]);
+        config.put(conf1.getLAYER_FIELD_DROPOUT(), DROPOUT_KERAS);
+        config.put(conf1.getLAYER_FIELD_NB_ROW(), KERNEL_SIZE[0]);
+        config.put(conf1.getLAYER_FIELD_NB_COL(), KERNEL_SIZE[1]);
         List<Integer> subsampleList = new ArrayList<>();
         subsampleList.add(STRIDE[0]);
         subsampleList.add(STRIDE[1]);
-        config.put(LAYER_FIELD_SUBSAMPLE, subsampleList);
-        config.put(LAYER_FIELD_NB_FILTER, N_OUT);
-        config.put(LAYER_FIELD_BORDER_MODE, BORDER_MODE_VALID);
-        layerConfig.put(LAYER_FIELD_CONFIG, config);
+        config.put(conf1.getLAYER_FIELD_CONVOLUTION_STRIDES(), subsampleList);
+        config.put(conf1.getLAYER_FIELD_NB_FILTER(), N_OUT);
+        config.put(conf1.getLAYER_FIELD_BORDER_MODE(), BORDER_MODE_VALID);
+        layerConfig.put(conf1.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
 
 
@@ -176,17 +164,17 @@ public class KerasLayerTest {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_CLASS_NAME_MAX_POOLING_2D());
         Map<String, Object> config = new HashMap<String, Object>();
-        config.put(LAYER_FIELD_NAME, LAYER_NAME);
+        config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
         List<Integer> kernelSizeList = new ArrayList<>();
         kernelSizeList.add(KERNEL_SIZE[0]);
         kernelSizeList.add(KERNEL_SIZE[1]);
-        config.put(LAYER_FIELD_POOL_SIZE, kernelSizeList);
+        config.put(conf1.getLAYER_FIELD_POOL_SIZE(), kernelSizeList);
         List<Integer> subsampleList = new ArrayList<>();
         subsampleList.add(STRIDE[0]);
         subsampleList.add(STRIDE[1]);
-        config.put(LAYER_FIELD_STRIDES, subsampleList);
-        config.put(LAYER_FIELD_BORDER_MODE, BORDER_MODE_VALID);
-        layerConfig.put(LAYER_FIELD_CONFIG, config);
+        config.put(conf1.getLAYER_FIELD_POOL_STRIDES(), subsampleList);
+        config.put(conf1.getLAYER_FIELD_BORDER_MODE(), BORDER_MODE_VALID);
+        layerConfig.put(conf1.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
 
         SubsamplingLayer layer = new KerasPooling(layerConfig).getSubsamplingLayer();
@@ -205,19 +193,19 @@ public class KerasLayerTest {
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(LAYER_FIELD_ACTIVATION, ACTIVATION_KERAS); // keras linear -> dl4j identity
         config.put(LAYER_FIELD_INNER_ACTIVATION, INNER_ACTIVATION_KERAS); // keras linear -> dl4j identity
-        config.put(LAYER_FIELD_NAME, LAYER_NAME);
+        config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
         config.put(LAYER_FIELD_INIT, INIT_KERAS);
         config.put(LAYER_FIELD_INNER_INIT, INIT_KERAS);
         Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(REGULARIZATION_TYPE_L1, L1_REGULARIZATION);
         W_reg.put(REGULARIZATION_TYPE_L2, L2_REGULARIZATION);
         config.put(LAYER_FIELD_W_REGULARIZER, W_reg);
-        config.put(LAYER_FIELD_DROPOUT_W, DROPOUT_KERAS);
+        config.put(conf1.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
         config.put(LAYER_FIELD_DROPOUT_U, 0.0);
         config.put(LAYER_FIELD_FORGET_BIAS_INIT, LSTM_FORGET_BIAS_STR);
-        config.put(LAYER_FIELD_OUTPUT_DIM, N_OUT);
+        config.put(conf1.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
         config.put(LAYER_FIELD_UNROLL, LSTM_UNROLL);
-        layerConfig.put(LAYER_FIELD_CONFIG, config);
+        layerConfig.put(conf1.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
 
         GravesLSTM layer = new KerasLstm(layerConfig).getGravesLSTMLayer();
@@ -236,14 +224,14 @@ public class KerasLayerTest {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), LAYER_CLASS_NAME_BATCHNORMALIZATION);
         Map<String, Object> config = new HashMap<String, Object>();
-        config.put(LAYER_FIELD_NAME, LAYER_NAME);
+        config.put(conf1.getLAYER_FIELD_NAME(), LAYER_NAME);
         config.put(LAYER_FIELD_EPSILON, EPSILON);
         config.put(LAYER_FIELD_MOMENTUM, MOMENTUM);
         config.put(LAYER_FIELD_GAMMA_REGULARIZER, null);
         config.put(LAYER_FIELD_BETA_REGULARIZER, null);
         config.put(LAYER_FIELD_MODE, 0);
         config.put(LAYER_FIELD_AXIS, 3);
-        layerConfig.put(LAYER_FIELD_CONFIG, config);
+        layerConfig.put(conf1.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(KERAS_VERSION_FIELD, kerasVersion);
 
         BatchNormalization layer = new KerasBatchNormalization(layerConfig).getBatchNormalizationLayer();

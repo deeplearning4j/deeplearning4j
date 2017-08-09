@@ -50,22 +50,6 @@ public class KerasLayer {
 
     public static final String LAYER_FIELD_KERAS_VERSION = "keras_version";
 
-    /* Keras layer configurations. */
-    public static final String LAYER_FIELD_CONFIG = "config";
-    public static final String LAYER_FIELD_NAME = "name";
-    public static final String LAYER_FIELD_BATCH_INPUT_SHAPE = "batch_input_shape";
-    public static final String LAYER_FIELD_INBOUND_NODES = "inbound_nodes";
-    public static final String LAYER_FIELD_DROPOUT = "dropout";
-    public static final String LAYER_FIELD_DROPOUT_W = "dropout_W";
-    public static final String LAYER_FIELD_OUTPUT_DIM = "output_dim";
-    public static final String LAYER_FIELD_NB_FILTER = "nb_filter";
-    public static final String LAYER_FIELD_NB_ROW = "nb_row";
-    public static final String LAYER_FIELD_NB_COL = "nb_col";
-    public static final String LAYER_FIELD_POOL_SIZE = "pool_size";
-    public static final String LAYER_FIELD_SUBSAMPLE = "subsample";
-    public static final String LAYER_FIELD_STRIDES = "strides";
-    public static final String LAYER_FIELD_BORDER_MODE = "border_mode";
-
     /* Keras convolution border modes. */
     public static final String LAYER_BORDER_MODE_SAME = "same";
     public static final String LAYER_BORDER_MODE_VALID = "valid";
@@ -750,12 +734,12 @@ public class KerasLayer {
         if (!layerConfig.get(conf.getLAYER_FIELD_CLASS_NAME()).equals(conf.getLAYER_CLASS_NAME_TIME_DISTRIBUTED()))
             throw new InvalidKerasConfigurationException("Expected " + conf.getLAYER_CLASS_NAME_TIME_DISTRIBUTED()
                     + " layer, found " + (String) layerConfig.get(conf.getLAYER_FIELD_CLASS_NAME()));
-        if (!layerConfig.containsKey(LAYER_FIELD_CONFIG))
-            throw new InvalidKerasConfigurationException("Field " + LAYER_FIELD_CONFIG + " missing from layer config");
+        if (!layerConfig.containsKey(conf.getLAYER_FIELD_CONFIG()))
+            throw new InvalidKerasConfigurationException("Field " + conf.getLAYER_FIELD_CONFIG() + " missing from layer config");
         Map<String, Object> outerConfig = getInnerLayerConfigFromConfig(layerConfig);
         Map<String, Object> innerLayer = (Map<String, Object>) outerConfig.get(conf.getLAYER_FIELD_LAYER());
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
-        layerConfig.put(LAYER_FIELD_NAME, innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
+        layerConfig.put(conf.getLAYER_FIELD_NAME(), innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
         Map<String, Object> innerConfig = (Map<String, Object>) getInnerLayerConfigFromConfig(innerLayer);
         outerConfig.putAll(innerConfig);
         outerConfig.remove(conf.getLAYER_FIELD_LAYER());
@@ -771,9 +755,9 @@ public class KerasLayer {
      */
     public Map<String, Object> getInnerLayerConfigFromConfig(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException {
-        if (!layerConfig.containsKey(LAYER_FIELD_CONFIG))
-            throw new InvalidKerasConfigurationException("Field " + LAYER_FIELD_CONFIG + " missing from layer config");
-        return (Map<String, Object>) layerConfig.get(LAYER_FIELD_CONFIG);
+        if (!layerConfig.containsKey(conf.getLAYER_FIELD_CONFIG()))
+            throw new InvalidKerasConfigurationException("Field " + conf.getLAYER_FIELD_CONFIG() + " missing from layer config");
+        return (Map<String, Object>) layerConfig.get(conf.getLAYER_FIELD_CONFIG());
     }
 
     /**
@@ -785,9 +769,9 @@ public class KerasLayer {
      */
     protected String getLayerNameFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(LAYER_FIELD_NAME))
-            throw new InvalidKerasConfigurationException("Field " + LAYER_FIELD_NAME + " missing from layer config");
-        return (String) innerConfig.get(LAYER_FIELD_NAME);
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_NAME()))
+            throw new InvalidKerasConfigurationException("Field " + conf.getLAYER_FIELD_NAME() + " missing from layer config");
+        return (String) innerConfig.get(conf.getLAYER_FIELD_NAME());
     }
 
     /**
@@ -798,9 +782,9 @@ public class KerasLayer {
      */
     private int[] getInputShapeFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(LAYER_FIELD_BATCH_INPUT_SHAPE))
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_BATCH_INPUT_SHAPE()))
             return null;
-        List<Integer> batchInputShape = (List<Integer>) innerConfig.get(LAYER_FIELD_BATCH_INPUT_SHAPE);
+        List<Integer> batchInputShape = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_BATCH_INPUT_SHAPE());
         int[] inputShape = new int[batchInputShape.size() - 1];
         for (int i = 1; i < batchInputShape.size(); i++) {
             inputShape[i - 1] = batchInputShape.get(i) != null ? batchInputShape.get(i) : 0;
@@ -842,8 +826,8 @@ public class KerasLayer {
      */
     public List<String> getInboundLayerNamesFromConfig(Map<String, Object> layerConfig) {
         List<String> inboundLayerNames = new ArrayList<>();
-        if (layerConfig.containsKey(LAYER_FIELD_INBOUND_NODES)) {
-            List<Object> inboundNodes = (List<Object>) layerConfig.get(LAYER_FIELD_INBOUND_NODES);
+        if (layerConfig.containsKey(conf.getLAYER_FIELD_INBOUND_NODES())) {
+            List<Object> inboundNodes = (List<Object>) layerConfig.get(conf.getLAYER_FIELD_INBOUND_NODES());
             if (inboundNodes.size() > 0) {
                 inboundNodes = (List<Object>) inboundNodes.get(0);
                 for (Object o : inboundNodes) {
@@ -865,15 +849,15 @@ public class KerasLayer {
     public  int getNOutFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         int nOut;
-        if (innerConfig.containsKey(LAYER_FIELD_OUTPUT_DIM))
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_OUTPUT_DIM()))
             /* Most feedforward layers: Dense, RNN, etc. */
-            nOut = (int) innerConfig.get(LAYER_FIELD_OUTPUT_DIM);
-        else if (innerConfig.containsKey(LAYER_FIELD_NB_FILTER))
+            nOut = (int) innerConfig.get(conf.getLAYER_FIELD_OUTPUT_DIM());
+        else if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_FILTER()))
             /* Convolutional layers. */
-            nOut = (int) innerConfig.get(LAYER_FIELD_NB_FILTER);
+            nOut = (int) innerConfig.get(conf.getLAYER_FIELD_NB_FILTER());
         else
             throw new InvalidKerasConfigurationException("Could not determine number of outputs for layer: no "
-                    + LAYER_FIELD_OUTPUT_DIM + " or " + LAYER_FIELD_NB_FILTER + " field found");
+                    + conf.getLAYER_FIELD_OUTPUT_DIM() + " or " + conf.getLAYER_FIELD_NB_FILTER() + " field found");
         return nOut;
     }
 
@@ -890,12 +874,12 @@ public class KerasLayer {
          * while DL4J "dropout" parameter determines retention probability.
          */
         double dropout = 1.0;
-        if (innerConfig.containsKey(LAYER_FIELD_DROPOUT)) {
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT())) {
             /* For most feedforward layers. */
-            dropout = 1.0 - (double) innerConfig.get(LAYER_FIELD_DROPOUT);
-        } else if (innerConfig.containsKey(LAYER_FIELD_DROPOUT_W)) {
+            dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT());
+        } else if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT_W())) {
             /* For LSTMs. */
-            dropout = 1.0 - (double) innerConfig.get(LAYER_FIELD_DROPOUT_W);
+            dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W());
         }
         return dropout;
     }
@@ -1023,12 +1007,12 @@ public class KerasLayer {
      *
      * TODO: should this throw an error instead?
      */
-    private static void checkForUnknownRegularizer(Map<String, Object> regularizerConfig, boolean enforceTrainingConfig)
+    private void checkForUnknownRegularizer(Map<String, Object> regularizerConfig, boolean enforceTrainingConfig)
             throws UnsupportedKerasConfigurationException {
         if (regularizerConfig != null) {
             for (String field : regularizerConfig.keySet()) {
                 if (!field.equals(REGULARIZATION_TYPE_L1) && !field.equals(REGULARIZATION_TYPE_L2)
-                        && !field.equals(LAYER_FIELD_NAME)) {
+                        && !field.equals(conf.getLAYER_FIELD_NAME())) {
                     if (enforceTrainingConfig)
                         throw new UnsupportedKerasConfigurationException("Unknown regularization field " + field);
                     else
@@ -1048,17 +1032,18 @@ public class KerasLayer {
     public int[] getStrideFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         int[] strides = null;
-        if (innerConfig.containsKey(LAYER_FIELD_SUBSAMPLE)) {
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_CONVOLUTION_STRIDES())) {
             /* Convolutional layers. */
-            List<Integer> stridesList = (List<Integer>) innerConfig.get(LAYER_FIELD_SUBSAMPLE);
+            List<Integer> stridesList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_CONVOLUTION_STRIDES());
             strides = ArrayUtil.toArray(stridesList);
-        } else if (innerConfig.containsKey(LAYER_FIELD_STRIDES)) {
+        } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_STRIDES())) {
             /* Pooling layers. */
-            List<Integer> stridesList = (List<Integer>) innerConfig.get(LAYER_FIELD_STRIDES);
+            List<Integer> stridesList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_STRIDES());
             strides = ArrayUtil.toArray(stridesList);
         } else
-            throw new InvalidKerasConfigurationException("Could not determine layer stride: no " + LAYER_FIELD_SUBSAMPLE
-                    + " or " + LAYER_FIELD_STRIDES + " field found");
+            throw new InvalidKerasConfigurationException("Could not determine layer stride: no "
+                    + conf.getLAYER_FIELD_CONVOLUTION_STRIDES() + " or "
+                    + conf.getLAYER_FIELD_POOL_STRIDES() + " field found");
         return strides;
     }
 
@@ -1073,19 +1058,21 @@ public class KerasLayer {
             throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         int[] kernelSize = null;
-        if (innerConfig.containsKey(LAYER_FIELD_NB_ROW) && innerConfig.containsKey(LAYER_FIELD_NB_COL)) {
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_ROW()) && innerConfig.containsKey(conf.getLAYER_FIELD_NB_COL())) {
             /* Convolutional layers. */
             List<Integer> kernelSizeList = new ArrayList<Integer>();
-            kernelSizeList.add((Integer) innerConfig.get(LAYER_FIELD_NB_ROW));
-            kernelSizeList.add((Integer) innerConfig.get(LAYER_FIELD_NB_COL));
+            kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_ROW()));
+            kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_COL()));
             kernelSize = ArrayUtil.toArray(kernelSizeList);
-        } else if (innerConfig.containsKey(LAYER_FIELD_POOL_SIZE)) {
+        } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_SIZE())) {
             /* Pooling layers. */
-            List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(LAYER_FIELD_POOL_SIZE);
+            List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_SIZE());
             kernelSize = ArrayUtil.toArray(kernelSizeList);
         } else
-            throw new InvalidKerasConfigurationException("Could not determine kernel size: no " + LAYER_FIELD_NB_ROW
-                    + ", " + LAYER_FIELD_NB_COL + ", or " + LAYER_FIELD_POOL_SIZE + " field found");
+            throw new InvalidKerasConfigurationException("Could not determine kernel size: no "
+                    + conf.getLAYER_FIELD_NB_ROW() + ", "
+                    + conf.getLAYER_FIELD_NB_COL() + ", or "
+                    + conf.getLAYER_FIELD_POOL_SIZE() + " field found");
         return kernelSize;
     }
 
@@ -1099,10 +1086,10 @@ public class KerasLayer {
     public ConvolutionMode getConvolutionModeFromConfig(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(LAYER_FIELD_BORDER_MODE))
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_BORDER_MODE()))
             throw new InvalidKerasConfigurationException("Could not determine convolution border mode: no "
-                    + LAYER_FIELD_BORDER_MODE + " field found");
-        String borderMode = (String) innerConfig.get(LAYER_FIELD_BORDER_MODE);
+                    + conf.getLAYER_FIELD_BORDER_MODE() + " field found");
+        String borderMode = (String) innerConfig.get(conf.getLAYER_FIELD_BORDER_MODE());
         ConvolutionMode convolutionMode = null;
         switch (borderMode) {
             /* Keras relies upon the Theano and TensorFlow border mode definitions
@@ -1146,11 +1133,11 @@ public class KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         int[] padding = null;
-        if (!innerConfig.containsKey(LAYER_FIELD_BORDER_MODE))
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_BORDER_MODE()))
             throw new InvalidKerasConfigurationException("Could not determine convolution border mode: no "
-                    + LAYER_FIELD_BORDER_MODE + " field found");
-        String borderMode = (String) innerConfig.get(LAYER_FIELD_BORDER_MODE);
-        if (borderMode == LAYER_FIELD_BORDER_MODE) {
+                    + conf.getLAYER_FIELD_BORDER_MODE() + " field found");
+        String borderMode = (String) innerConfig.get(conf.getLAYER_FIELD_BORDER_MODE());
+        if (borderMode == conf.getLAYER_FIELD_BORDER_MODE()) {
             padding = getKernelSizeFromConfig(layerConfig);
             for (int i = 0; i < padding.length; i++)
                 padding[i]--;
