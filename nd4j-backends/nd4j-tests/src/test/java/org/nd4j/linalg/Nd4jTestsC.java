@@ -710,9 +710,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         if (blockIdx.x == 0) {
             printf("original Z shape: \n");
             shape::printShapeInfoLinear(zShapeInfo);
-        
+
             printf("Target dimension: [%i], dimensionLength: [%i]\n", dimension[0], dimensionLength);
-        
+
             printf("TAD shape: \n");
             shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
         }
@@ -868,7 +868,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 INDArray inC = Nd4j.linspace(1, length, length).reshape('c', shape);
                 System.out.println("TAD shape");
                 System.out.println(Arrays.toString((inC.tensorAlongDimension(0,dims).shape())));
-        
+
                 INDArray inF = inC.dup('f');
                 System.out.println("C stride " + Arrays.toString(inC.tensorAlongDimension(0,dims).stride()) + " and f stride " + Arrays.toString(inF.tensorAlongDimension(0,dims).stride()));
                 for(int i = 0; i < inC.tensorssAlongDimension(dims); i++) {
@@ -4316,6 +4316,27 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
         Nd4j.getExecutioner().exec(new BroadcastGreaterThanOrEqual(initial, mask, initial, 1 ));
+
+
+        for (int i = 0; i < initial.rows(); i++) {
+            assertEquals(exp, initial.getRow(i));
+        }
+    }
+
+    @Test
+    public void testNewBroadcastComparison4() throws Exception {
+        INDArray initial = Nd4j.create(3, 5);
+        INDArray mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
+        INDArray exp = Nd4j.create(new double[] {0, 0, 1, 0, 0});
+
+        for (int i = 0; i < initial.columns(); i++) {
+            initial.getColumn(i).assign(i+1);
+        }
+
+        Nd4j.getExecutioner().commit();
+
+
+        Nd4j.getExecutioner().exec(new BroadcastEqualTo(initial, mask, initial, 1 ));
 
 
         for (int i = 0; i < initial.rows(); i++) {
