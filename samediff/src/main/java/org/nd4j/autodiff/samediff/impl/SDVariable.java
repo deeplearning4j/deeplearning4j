@@ -560,7 +560,29 @@ public class SDVariable  implements Serializable {
                 '}';
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
 
+        SDVariable variable = (SDVariable) o;
 
+        if (arr != null ? !arr.equals(variable.arr) : variable.arr != null) return false;
+        if (arrayField != null ? !arrayField.equals(variable.arrayField) : variable.arrayField != null) return false;
+        if (varName != null ? !varName.equals(variable.varName) : variable.varName != null) return false;
+        if (!Arrays.equals(shape, variable.shape)) return false;
+        return differentialFunction != null ? differentialFunction.equals(variable.differentialFunction) : variable.differentialFunction == null;
+    }
 
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (arr != null ? arr.hashCode() : 0);
+        result = 31 * result + (arrayField != null ? arrayField.hashCode() : 0);
+        result = 31 * result + (varName != null ? varName.hashCode() : 0);
+        result = 31 * result + Arrays.hashCode(shape);
+        result = 31 * result + (differentialFunction != null ? differentialFunction.hashCode() : 0);
+        return result;
+    }
 }

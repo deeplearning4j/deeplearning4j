@@ -28,10 +28,7 @@ import org.nd4j.autodiff.functions.impl.unary.transform.shape.RollAxis;
 import org.nd4j.autodiff.functions.impl.unary.transform.shape.Transpose;
 import org.nd4j.autodiff.functions.mmul.Mmul;
 import org.nd4j.autodiff.functions.mmul.TensorMmul;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
-import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -918,7 +915,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
                                                  DifferentialFunction<ArrayField> y) {
         validateDifferentialFunctionsameDiff(x);
         validateDifferentialFunctionsameDiff(y);
-        return new Mmul<>(sameDiff,x,y,argNum);
+        return new Mmul(sameDiff,x,y,argNum);
     }
 
     @Override

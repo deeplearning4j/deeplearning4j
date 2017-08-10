@@ -20,7 +20,7 @@ import java.lang.reflect.Array;
  *
  */
 
-public class Mmul<X extends Field<ArrayField>> extends TensorMmul<ArrayField> {
+public class Mmul extends TensorMmul<ArrayField> {
 
 
     public Mmul(SameDiff sameDiff,

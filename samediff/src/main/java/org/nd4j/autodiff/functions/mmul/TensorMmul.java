@@ -26,7 +26,7 @@ import java.util.List;
 public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduceFunction<X> {
     private int argNum;
     private int[][] axes;
-    private boolean addedEdges = false;
+    protected boolean addedEdges;
 
     public TensorMmul(SameDiff sameDiff,
                       DifferentialFunction<ArrayField> i_v1,
@@ -40,10 +40,9 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
         this.extraArgs = new Object[] {axes};
         this.m_x1 = i_v1;
         this.m_x2 = i_v2;
-
         if(!addedEdges) {
-            ArrayField a = (ArrayField) i_v1.getValue(true);
-            ArrayField b = (ArrayField) i_v2.getValue(true);
+            ArrayField a = i_v1.getValue(true);
+            ArrayField b = i_v2.getValue(true);
 
             addEdges(sameDiff,
                     i_v1,
@@ -51,6 +50,7 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
                     functionName(),
                     OpState.OpType.ACCUMULATION,
                     ArrayUtil.getTensorMmulShape(a.getInput().getShape(), b.getInput().getShape(), dimensions));
+            addedEdges = true;
         }
     }
 
@@ -105,8 +105,8 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
 
 
     private DifferentialFunction<ArrayField> doTensorMmul(int argNum,
-                                                 DifferentialFunction<ArrayField> a,
-                                                 DifferentialFunction<ArrayField> b) {
+                                                          DifferentialFunction<ArrayField> a,
+                                                          DifferentialFunction<ArrayField> b) {
         if (a.getValue(true) instanceof ArrayField) {
             ArrayField xField = (ArrayField) a.getValue(true);
             ArrayField yField = (ArrayField) b.getValue(true);
@@ -177,10 +177,10 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
             DifferentialFunction<ArrayField> at = getSameDiff()
                     .getFunctionFactory()
                     .reshape(getSameDiff().getFunctionFactory().permute
-                    (a,newAxesA),newShapeA);
+                            (a,newAxesA),newShapeA);
             DifferentialFunction<ArrayField> bt = getSameDiff().getFunctionFactory()
                     .reshape(getSameDiff().getFunctionFactory()
-                    .permute(b,newAxesB),newShapeB);
+                            .permute(b,newAxesB),newShapeB);
 
             DifferentialFunction<ArrayField> ret = getSameDiff().getFunctionFactory().mmul(argNum,at,bt);
             int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);

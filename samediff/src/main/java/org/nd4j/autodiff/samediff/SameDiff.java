@@ -284,21 +284,7 @@ public class SameDiff {
         return graph;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
 
-        SameDiff that = (SameDiff) o;
-
-        if (graph != null ? !graph.equals(that.graph) : that.graph != null)
-            return false;
-        if (sameDiffVariables != null ? !sameDiffVariables.equals(that.
-                sameDiffVariables) : that.sameDiffVariables != null)
-            return false;
-        return variableMap != null ? variableMap.equals(that.variableMap) :
-                that.variableMap == null;
-    }
 
     @Override
     public int hashCode() {
@@ -323,6 +309,9 @@ public class SameDiff {
         SameDiff ret = SameDiff.builder()
                 .variableMap(originalSameDiff.getVariableMap())
                 .sameDiffVariables(originalSameDiff.getSameDiffVariables())
+                .vertexIdxToInfo(originalSameDiff.getVertexIdxToInfo())
+                .sameDiffFunctionInstances(originalSameDiff.getSameDiffFunctionInstances())
+                .vertexToArray(originalSameDiff.getVertexToArray())
                 .graph(clone)
                 .build();
         //ensuring proper sameDiff reference
@@ -334,6 +323,27 @@ public class SameDiff {
         ret.setFunctionFactory(differentialFunctionFactory);
         ret.setArrayFactory(arrayFactory);
         return ret;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        SameDiff sameDiff = (SameDiff) o;
+
+        if (graph != null ? !graph.equals(sameDiff.graph) : sameDiff.graph != null) return false;
+        if (sameDiffVariables != null ? !sameDiffVariables.equals(sameDiff.sameDiffVariables) : sameDiff.sameDiffVariables != null)
+            return false;
+        if (variableMap != null ? !variableMap.equals(sameDiff.variableMap) : sameDiff.variableMap != null)
+            return false;
+        if (vertexToArray != null ? !vertexToArray.equals(sameDiff.vertexToArray) : sameDiff.vertexToArray != null)
+            return false;
+        if (vertexIdxToInfo != null ? !vertexIdxToInfo.equals(sameDiff.vertexIdxToInfo) : sameDiff.vertexIdxToInfo != null)
+            return false;
+        if (sameDiffFunctionDefinitionMap != null ? !sameDiffFunctionDefinitionMap.equals(sameDiff.sameDiffFunctionDefinitionMap) : sameDiff.sameDiffFunctionDefinitionMap != null)
+            return false;
+        return sameDiffFunctionInstances != null ? sameDiffFunctionInstances.equals(sameDiff.sameDiffFunctionInstances) : sameDiff.sameDiffFunctionInstances == null;
     }
 
     /**
@@ -1354,7 +1364,7 @@ public class SameDiff {
                 .differentialFunction(functionFactory.mmul(argNum ,x.getArrayField(), y.getArrayField()))
                 .varName("mmul(" + x.getVarName() + "," + y.getVarName()  + ")").sameDiff(this)
                 .build();
-        ret.setShape(ret.getDifferentialFunction().getOpState().getResult().getShape());
+        ret.setShape(Shape.getMatrixMultiplyShape(x.getShape(),y.getShape()));
         addVariable(ret);
         return ret;
     }
