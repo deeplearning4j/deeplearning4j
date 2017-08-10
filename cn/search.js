@@ -542,5 +542,11 @@ var PAGES = [{
 "url": "https://deeplearning4j.org/cn/native",
 "title": "Deeplearning4j的本机CPU优化",
 "description": "本页指南将介绍在DL4J和ND4J上调试或提升CPU系统性能的几种方法",
-"tags": ["cpu", "优化", "github", "openm", "内核", "超线程", "simd", "jvm", "本机", "gpu","并行","pcie","ram","内存","性能","调试","并行计算","omp","OMP_NUM_THREADS","NativeOpsHolder","intel","mkl","spark","源码","故障排除","后端","回退模式","INDArray","ND4J_FALLBACK","nd4j","fallback","native"]
+"tags": ["优化", "github", "openm", "内核", "超线程", "simd", "jvm", "本机", "gpu","并行","pcie","ram","内存","性能","调试","并行计算","omp","OMP_NUM_THREADS","NativeOpsHolder","intel","mkl","spark","源码","故障排除","后端","回退模式","INDArray","ND4J_FALLBACK","nd4j","fallback","native"]
+},
+{
+"url": "https://deeplearning4j.org/cn/build_vgg_webapp",
+"title": "如何用VGG-16构建识别图像的网页应用",
+"description": "神经网络不断刷新着图像识别的准确率纪录。本页主要介绍如何构建一个基于网页的应用程序，用著名的VGG-16网络实现推断，对用户上传的图像进行分类。",
+"tags": ["vgg", "图像", "例子", "用例", "猫", "狗", "imagenet", "预测", "加载", "测试","模型","ModelSerializer","代码","配置","训练","模型","model","照片","识别","ImageRecordReader","ModelSerializer"]
 }];
