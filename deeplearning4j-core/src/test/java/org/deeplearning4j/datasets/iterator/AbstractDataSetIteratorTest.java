@@ -1,7 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 import org.apache.commons.lang3.RandomUtils;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;

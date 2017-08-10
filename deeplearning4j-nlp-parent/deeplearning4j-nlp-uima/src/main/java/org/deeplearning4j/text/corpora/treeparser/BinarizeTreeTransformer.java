@@ -18,8 +18,8 @@
 
 package org.deeplearning4j.text.corpora.treeparser;
 
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.berkeley.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.Tree;
 import org.deeplearning4j.text.corpora.treeparser.transformer.TreeTransformer;
 import org.slf4j.Logger;

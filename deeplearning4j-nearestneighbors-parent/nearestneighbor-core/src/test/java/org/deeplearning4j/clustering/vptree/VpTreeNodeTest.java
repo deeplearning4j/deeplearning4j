@@ -18,15 +18,18 @@
 
 package org.deeplearning4j.clustering.vptree;
 
-import org.deeplearning4j.clustering.berkeley.Counter;
+import com.google.common.util.concurrent.AtomicDouble;
+import org.nd4j.linalg.primitives.Counter;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.TreeSet;
 
 import static org.junit.Assert.assertEquals;
@@ -104,12 +107,12 @@ public class VpTreeNodeTest {
 
             }
 
-            org.deeplearning4j.clustering.berkeley.PriorityQueue<Integer> pq = counter.asMinPriorityQueue();
+            PriorityQueue<Pair<Integer, Double>> pq = counter.asReversedPriorityQueue();
             // keep closest k
             for (int i = 0; i < k; i++) {
-                Integer di = pq.next();
-                System.out.println("exhaustive d=" + di);
-                s.add(di);
+                Pair<Integer, Double> di = pq.poll();
+                System.out.println("exhaustive d=" + di.getFirst());
+                s.add(di.getFirst());
             }
 
             // Check what VPTree gives for results

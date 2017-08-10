@@ -1,7 +1,7 @@
 package org.deeplearning4j.models.glove.count;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
 import java.util.Iterator;

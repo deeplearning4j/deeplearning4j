@@ -1,7 +1,7 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import org.apache.spark.api.java.function.Function;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.nd4j.linalg.api.ndarray.INDArray;
 

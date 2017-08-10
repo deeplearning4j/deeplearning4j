@@ -1,7 +1,7 @@
 package org.deeplearning4j.models.glove;
 
 import lombok.NonNull;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.models.glove.count.*;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.FilteredSequenceIterator;

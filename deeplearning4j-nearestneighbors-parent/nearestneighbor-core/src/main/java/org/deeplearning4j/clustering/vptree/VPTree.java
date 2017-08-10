@@ -20,7 +20,6 @@ package org.deeplearning4j.clustering.vptree;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.clustering.berkeley.PriorityQueue;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.HeapObject;
 import org.deeplearning4j.clustering.util.MathUtils;
@@ -33,10 +32,7 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -482,17 +478,17 @@ public class VPTree {
         results.clear();
         distances.clear();
 
-        PriorityQueue<HeapObject> pq = new PriorityQueue<>();
+        PriorityQueue<HeapObject> pq = new PriorityQueue<>(items.rows(), new HeapObjectComparator());
         search(root, target, k + 1, pq, Double.MAX_VALUE);
 
         if (pq.size() > k)
-            pq.next();
+            pq.poll();
 
         while (!pq.isEmpty()) {
             HeapObject ho = pq.peek();
             results.add(new DataPoint(ho.getIndex(), ho.getPoint()));
             distances.add(ho.getDistance());
-            pq.next();
+            pq.poll();
         }
 
 
@@ -520,8 +516,9 @@ public class VPTree {
         double distance = distance(get, target);
         if (distance < tau) {
             if (pq.size() == k)
-                pq.next();
-            pq.add(new HeapObject(node.getIndex(), node.getPoint(), distance), distance);
+                pq.poll();
+
+            pq.add(new HeapObject(node.getIndex(), node.getPoint(), distance));
             if (pq.size() == k)
                 tau = pq.peek().getDistance();
         }
@@ -553,6 +550,14 @@ public class VPTree {
 
     }
 
+
+    protected class HeapObjectComparator implements Comparator<HeapObject> {
+
+        @Override
+        public int compare(HeapObject o1, HeapObject o2) {
+            return Double.compare(o2.getDistance(), o1.getDistance());
+        }
+    }
 
     @Data
     public static class Node {

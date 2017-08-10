@@ -1,8 +1,8 @@
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
 import lombok.NonNull;
-import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -283,7 +283,7 @@ public class GloVe<T extends SequenceElement> implements ElementsLearningAlgorit
                         continue;
                     }
 
-                    errorCounter.incrementCount(epochId, (float) iterateSample(element1, element2, weight));
+                    errorCounter.incrementCount(epochId, iterateSample(element1, element2, weight));
                     if (pairsCounter.incrementAndGet() % 1000000 == 0) {
                         log.info("Processed [" + pairsCounter.get() + "] word pairs so far...");
                     }
