@@ -120,7 +120,6 @@ public class ParagraphVectors extends Word2Vec {
      * @param document the document
      * @return the word distances for each label
      */
-    @Deprecated
     public String predict(LabelledDocument document) {
         if (document.getReferencedContent() != null)
             return predict(document.getReferencedContent());
@@ -653,7 +652,6 @@ public class ParagraphVectors extends Word2Vec {
      * @param label
      * @return
      */
-    @Deprecated
     public double similarityToLabel(LabelledDocument document, String label) {
         if (document.getReferencedContent() != null) {
             return similarityToLabel(document.getReferencedContent(), label);
@@ -668,17 +666,17 @@ public class ParagraphVectors extends Word2Vec {
      * @param label
      * @return
      */
-    @Deprecated
     public double similarityToLabel(List<VocabWord> document, String label) {
         if (document.isEmpty())
             throw new IllegalStateException("Document has no words inside");
 
+        /*
         INDArray arr = Nd4j.create(document.size(), this.layerSize);
         for (int i = 0; i < document.size(); i++) {
             arr.putRow(i, getWordVectorMatrix(document.get(i).getWord()));
-        }
+        }*/
 
-        INDArray docMean = arr.mean(0);
+        INDArray docMean = inferVector(document); //arr.mean(0);
 
         INDArray otherVec = getWordVectorMatrix(label);
         double sim = Transforms.cosineSim(docMean, otherVec);

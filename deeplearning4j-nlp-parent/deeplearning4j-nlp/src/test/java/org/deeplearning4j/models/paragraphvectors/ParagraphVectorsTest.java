@@ -22,6 +22,7 @@ package org.deeplearning4j.models.paragraphvectors;
 import lombok.NonNull;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
@@ -637,7 +638,7 @@ public class ParagraphVectorsTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        Word2Vec wordVectors = new Word2Vec.Builder().minWordFrequency(1).batchSize(250).iterations(1).epochs(3)
+        Word2Vec wordVectors = new Word2Vec.Builder().seed(119).minWordFrequency(1).batchSize(250).iterations(1).epochs(3)
                         .learningRate(0.025).layerSize(150).minLearningRate(0.001)
                         .elementsLearningAlgorithm(new SkipGram<VocabWord>()).useHierarchicSoftmax(true).windowSize(5)
                         .iterate(iter).tokenizerFactory(t).build();
@@ -660,8 +661,8 @@ public class ParagraphVectorsTest {
 
 
         // we're building classifier now, with pre-built w2v model passed in
-        ParagraphVectors paragraphVectors = new ParagraphVectors.Builder().iterate(labelAwareIterator)
-                        .learningRate(0.025).minLearningRate(0.001).iterations(5).epochs(1).layerSize(150)
+        ParagraphVectors paragraphVectors = new ParagraphVectors.Builder().seed(119).iterate(labelAwareIterator)
+                        .learningRate(0.025).minLearningRate(0.001).iterations(10).epochs(1).layerSize(150)
                         .tokenizerFactory(t).sequenceLearningAlgorithm(new DBOW<VocabWord>()).useHierarchicSoftmax(true)
                         .trainWordVectors(false).useExistingWordVectors(wordVectors).build();
 
@@ -683,7 +684,7 @@ public class ParagraphVectorsTest {
         log.info("Day1: " + vector_day1);
         log.info("Day2: " + vector_day2);
         log.info("Cross-Day similarity: " + crossDay);
-        log.info("Cross-Day similiarity 2: " + Transforms.cosineSim(vector_day1, vector_day2));
+        log.info("Cross-Day similiarity 2: " + Transforms.cosineSim(Transforms.unitVec(vector_day1), Transforms.unitVec(vector_day2)));
 
         assertTrue(crossDay > 0.9d);
 
@@ -744,7 +745,7 @@ public class ParagraphVectorsTest {
         if (vector == null || vector2 == null)
             return -1;
 
-        return Nd4j.getBlasWrapper().dot(vector, vector2);
+        return Transforms.cosineSim(vector, vector2);
 
     }
 
