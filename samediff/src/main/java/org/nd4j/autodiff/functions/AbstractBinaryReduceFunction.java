@@ -7,6 +7,7 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.List;
@@ -16,31 +17,34 @@ import java.util.List;
  * Created by agibsonccc on 4/12/17.
  */
 @NoArgsConstructor
-public abstract class AbstractBinaryReduceFunction<X extends  Field<X>> extends AbstractBinaryFunction<X> {
+public abstract class AbstractBinaryReduceFunction<X extends  Field<ArrayField>> extends AbstractBinaryFunction<X> {
     protected int[] dimensions;
 
 
-    public AbstractBinaryReduceFunction(SDGraph graph, DifferentialFunction<X> i_v1, DifferentialFunction<X> i_v2, int...dimensions) {
-        super(graph, i_v1, i_v2);
+    public AbstractBinaryReduceFunction(SameDiff sameDiff,
+                                        DifferentialFunction<ArrayField> i_v1,
+                                        DifferentialFunction<ArrayField> i_v2,
+                                        int...dimensions) {
+        super(sameDiff, i_v1, i_v2);
         this.dimensions = dimensions;
     }
 
-    public AbstractBinaryReduceFunction(SDGraph graph) {
-        super(graph);
+    public AbstractBinaryReduceFunction(SameDiff sameDiff) {
+        super(sameDiff);
     }
 
 
     @Override
-    protected void addEdges(Graph<NDArrayInformation,OpState> graph,
-                            DifferentialFunction<X> i_v1,
-                            DifferentialFunction<X> i_v2,
+    protected void addEdges(SameDiff sameDiff,
+                            DifferentialFunction<ArrayField> i_v1,
+                            DifferentialFunction<ArrayField> i_v2,
                             String opName) {
         if(i_v1.getValue(true) instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) i_v1.getValue(true);
+            ArrayField arrayField = i_v1.getValue(true);
             //skip empty dimensions
             if(dimensions == null)
                 return;
-            addEdges(graph,i_v1,i_v2,opName,
+            addEdges(sameDiff,i_v1,i_v2,opName,
                     OpState.OpType.ACCUMULATION,
                     Shape.getReducedShape(arrayField.getInput().getShape(),
                             dimensions));
@@ -52,7 +56,7 @@ public abstract class AbstractBinaryReduceFunction<X extends  Field<X>> extends 
     }
 
     @Override
-    public String doGetFormula(List<Variable<X>> variables) {
+    public String doGetFormula(List<Variable<ArrayField>> variables) {
         return toString();
     }
 
@@ -68,9 +72,10 @@ public abstract class AbstractBinaryReduceFunction<X extends  Field<X>> extends 
 
 
     @Override
-    public DifferentialFunction<X> dup() {
+    public DifferentialFunction<ArrayField> dup() {
         try {
-            return getClass().getConstructor(graph.getClass(),larg().getClass(),rarg().getClass()).newInstance(graph,larg(),rarg());
+            return getClass().getConstructor(sameDiff.getClass(),larg()
+                    .getClass(),rarg().getClass()).newInstance(sameDiff,larg(),rarg());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

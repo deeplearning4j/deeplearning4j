@@ -7,6 +7,8 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
@@ -31,7 +33,7 @@ import java.util.UUID;
 public class ArrayField implements Field<ArrayField> {
     @Getter
     @Setter
-    private Graph<NDArrayInformation,OpState> ops;
+    private SameDiff ops;
     @Getter
     @Setter
     private NDArrayInformation input;
@@ -40,7 +42,7 @@ public class ArrayField implements Field<ArrayField> {
     private NDArrayVertex vertex;
 
     public ArrayField(NDArrayVertex ndArrayVertex,
-                      Graph<NDArrayInformation,OpState> ops) {
+                      SameDiff ops) {
         this.input = ndArrayVertex.getValue();
         this.vertex = ndArrayVertex;
         this.ops = ops;
@@ -804,7 +806,7 @@ public class ArrayField implements Field<ArrayField> {
     private ArrayField addFirstScalarTransformOp(String name,
                                                  ArrayField i_v,
                                                  Object[] extraArgs) {
-        Preconditions.checkState(this.ops == i_v.ops, "If adding a field. Must be apart of the same graph.");
+        Preconditions.checkState(this.ops.getGraph() == i_v.ops.getGraph(), "If adding a field. Must be apart of the same graph.");
 
         NDArrayInformation ndArrayInformation =  NDArrayInformation.builder()
                 .id(name + "(" + input.getId() + ")").scalarValue(this.getInput().getScalarValue())
@@ -812,11 +814,11 @@ public class ArrayField implements Field<ArrayField> {
                 .shape(getInput().getShape()).build();
         //result
         NDArrayVertex newVertex = new NDArrayVertex(
-                this.ops.nextVertexId(),
+                this.ops.getGraph().nextVertexId(),
                 ndArrayInformation);
 
         //add the result vertex to the graph
-        this.getOps().addVertex(newVertex);
+        this.ops.getGraph().addVertex(newVertex);
 
         OpState owner =    OpState.builder()
                 .n(ArrayUtil.prod(getInput().getShape()))
@@ -828,7 +830,7 @@ public class ArrayField implements Field<ArrayField> {
                 .build();
 
         //map x -> z
-        this.ops.addEdge(vertex.vertexID(),
+        this.ops.getGraph().addEdge(vertex.vertexID(),
                 newVertex.vertexID(),owner
                 ,true);
 
@@ -845,15 +847,15 @@ public class ArrayField implements Field<ArrayField> {
                                             Number scalarValue,
 
                                             boolean inPlace) {
-       //for the purpose of the graph, we only need the scalar
+        //for the purpose of the graph, we only need the scalar
         //value, therefore the input should be the
         //non scalar
 
 
-       if(this.getInput() != input) {
-           setInput(input);
-           getVertex().setValue(input);
-       }
+        if(this.getInput() != input) {
+            setInput(input);
+            getVertex().setValue(input);
+        }
 
 
         NDArrayInformation result =  NDArrayInformation.builder()
@@ -863,11 +865,11 @@ public class ArrayField implements Field<ArrayField> {
                 .shape(nonScalarShape).build();
         //result
         NDArrayVertex newVertex = new NDArrayVertex(
-                this.ops.nextVertexId(),
+                this.ops.getGraph().nextVertexId(),
                 result);
 
         //add the result vertex to the graph
-        this.getOps().addVertex(newVertex);
+        this.ops.getGraph().addVertex(newVertex);
 
         OpState owner =  OpState.builder()
                 .n(ArrayUtil.prod(input.getShape()))
@@ -881,7 +883,7 @@ public class ArrayField implements Field<ArrayField> {
                         String.valueOf(newVertex.vertexID())})
                 .build();
         //map x -> z
-        this.ops.addEdge(vertex.vertexID(),
+        this.ops.getGraph().addEdge(vertex.vertexID(),
                 newVertex.vertexID(), owner,true);
         result.setOwner(owner);
         if(owner.isInPlace()) {
@@ -908,17 +910,17 @@ public class ArrayField implements Field<ArrayField> {
                                        int[] dimensions,
                                        int[] resultShape,
                                        Object[] extraArgs) {
-        Preconditions.checkState(this.ops == i_v.ops, "If adding a field. Must be apart of the same graph.");
+        Preconditions.checkState(this.ops.getGraph() == i_v.ops.getGraph(), "If adding a field. Must be apart of the same graph.");
 
         NDArrayInformation information =   NDArrayInformation.builder()
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
                 .arrId(UUID.randomUUID().toString())
                 .shape(resultShape).build();
 
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(), information);
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getGraph().nextVertexId(), information);
 
         //add the result vertex to the graph
-        this.getOps().addVertex(newVertex);
+        this.ops.getGraph().addVertex(newVertex);
 
         //map x -> z
         OpState xToz = OpState.builder()
@@ -928,7 +930,7 @@ public class ArrayField implements Field<ArrayField> {
                 .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.ACCUMULATION).build();
         xToz.setResult(information);
-        this.ops.addEdge(vertex.vertexID(),
+        this.ops.getGraph().addEdge(vertex.vertexID(),
                 newVertex.vertexID(),xToz,true);
         //map y -> z
         OpState yToZ = OpState.builder()
@@ -943,7 +945,7 @@ public class ArrayField implements Field<ArrayField> {
             information.setArrId(input.getArrId());
         }
 
-        this.ops.addEdge(i_v.getVertex().vertexID(),
+        this.ops.getGraph().addEdge(i_v.getVertex().vertexID(),
                 newVertex.vertexID(),yToZ,true);
 
         return new ArrayField(newVertex,ops);
@@ -955,16 +957,16 @@ public class ArrayField implements Field<ArrayField> {
                                        ArrayField i_v,
                                        Object[] extraArgs) {
 
-        Preconditions.checkState(this.ops == i_v.ops, "If adding a field. Must be apart of the same graph.");
+        Preconditions.checkState(this.ops.getGraph() == i_v.ops.getGraph(), "If adding a field. Must be apart of the same graph.");
 
         //result
         NDArrayInformation resultInfo =  NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
                 .shape(input.getShape()).build();
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(), resultInfo);
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getGraph().nextVertexId(), resultInfo);
 
         //add the result vertex to the graph
-        this.getOps().addVertex(newVertex);
+        this.ops.getGraph().addVertex(newVertex);
 
         //map x -> z
         OpState xToZ = OpState.builder()
@@ -974,7 +976,7 @@ public class ArrayField implements Field<ArrayField> {
                 .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.ACCUMULATION).build();
         xToZ.setResult(resultInfo);
-        this.ops.addEdge(vertex.getIdx(),
+        this.ops.getGraph().addEdge(vertex.getIdx(),
                 newVertex.vertexID(),xToZ,true);
         //map y -> z
         OpState yToZ = OpState.builder()
@@ -984,7 +986,7 @@ public class ArrayField implements Field<ArrayField> {
                 .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.ACCUMULATION).build();
         yToZ.setResult(resultInfo);
-        this.ops.addEdge(i_v.getVertex().getIdx(),
+        this.ops.getGraph().addEdge(i_v.getVertex().getIdx(),
                 newVertex.vertexID(),yToZ,true);
         resultInfo.setOwner(yToZ);
 
@@ -1003,17 +1005,17 @@ public class ArrayField implements Field<ArrayField> {
                     i_v,extraArgs);
         }
 
-        Preconditions.checkState(this.ops == i_v.ops, "If adding a field. Must be apart of the same graph.");
+        Preconditions.checkState(this.ops.getGraph() == i_v.ops.getGraph(), "If adding a field. Must be apart of the same graph.");
         //result
         NDArrayInformation resultInfo =  NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
                 .shape(input.getShape()).build();
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(), resultInfo);
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getGraph().nextVertexId(), resultInfo);
 
         Preconditions.checkArgument(Arrays.equals(input.getShape(),i_v.getInput().getShape()),"X and y not equal shapes.");
 
         //add the result vertex to the graph
-        this.getOps().addVertex(newVertex);
+        this.ops.getGraph().addVertex(newVertex);
 
         //map x -> z
         OpState xToZ = OpState.builder()
@@ -1025,9 +1027,9 @@ public class ArrayField implements Field<ArrayField> {
         xToZ.setResult(resultInfo);
         if(vertex.vertexID() == newVertex.vertexID())
             throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
-                    " when next vertex id was " + this.ops.getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
+                    " when next vertex id was " + this.ops.getGraph().getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
 
-        this.ops.addEdge(vertex.vertexID(),
+        this.ops.getGraph().addEdge(vertex.vertexID(),
                 newVertex.vertexID(),xToZ,true);
         //map y -> z
         OpState yToZ = OpState.builder()
@@ -1039,8 +1041,8 @@ public class ArrayField implements Field<ArrayField> {
         yToZ.setResult(resultInfo);
         if(i_v.getVertex().vertexID() == newVertex.vertexID())
             throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
-                    " when next vertex id was " + this.ops.getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
-        this.ops.addEdge(i_v.getVertex().vertexID(),
+                    " when next vertex id was " + this.ops.getGraph().getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
+        this.ops.getGraph().addEdge(i_v.getVertex().vertexID(),
                 newVertex.vertexID(),yToZ,true);
         resultInfo.setOwner(yToZ);
 
@@ -1070,8 +1072,9 @@ public class ArrayField implements Field<ArrayField> {
 
     private NDArrayVertex getVertex(String name,int[] shape) {
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId() ,
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getGraph().nextVertexId() ,
                 NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
+                        .scalarValue(getInput().getScalarValue())
                         .id(name + "(" + input.getId() + ")")
                         .shape(shape).build());
         return newVertex;
@@ -1097,7 +1100,7 @@ public class ArrayField implements Field<ArrayField> {
         //result
         NDArrayVertex newVertex = getVertex(name,shape);
         //add the result vertex to the graph
-        this.getOps().addVertex(newVertex);
+        this.ops.getGraph().addVertex(newVertex);
 
         OpState opState = OpState.builder()
                 .n(ArrayUtil.prod(input.getShape()))
@@ -1111,7 +1114,7 @@ public class ArrayField implements Field<ArrayField> {
             newVertex.getValue().setArrId(input.getArrId());
         }
         //map x -> z
-        this.ops.addEdge(vertex.vertexID(),
+        this.ops.getGraph().addEdge(vertex.vertexID(),
                 newVertex.vertexID(),opState,true);
 
         return new ArrayField(newVertex,ops);
@@ -1119,27 +1122,51 @@ public class ArrayField implements Field<ArrayField> {
 
 
     private double getScalar(ArrayField other) {
-        if(ArrayUtil.prod(getInput().getShape()) == 1)
-            return this.getInput().getScalarValue().doubleValue();
-        else if(ArrayUtil.prod(other.getInput().getShape()) == 1)
-            return other.getInput().getScalarValue().doubleValue();
-        throw new IllegalArgumentException("Neither this element nor the other input is a scalar");
+        if(ArrayUtil.prod(getInput().getShape()) == 1) {
+            if(this.getInput().getScalarValue() != null)
+                return this.getInput().getScalarValue().doubleValue();
+            else if(this.getInput().getOwner().getScalarValue() != null)
+                return this.getInput().getOwner().getScalarValue().doubleValue();
+
+            else if(ops.getVertexToArray().get(input.getArrId()) != null) {
+                return ops.getVertexToArray().get(input.getArrId()).getDouble(0);
+            }
+        }
+        else if(ArrayUtil.prod(other.getInput().getShape()) == 1) {
+            if(other.getInput().getScalarValue() != null)
+                return other.getInput().getScalarValue().doubleValue();
+            else if(other.getInput().getScalarValue() != null)
+                return other.getInput().getScalarValue().doubleValue();
+
+            else if(ops.getVertexToArray().get(other.getInput().getArrId())
+                    != null) {
+                return ops.getVertexToArray().get(other.getInput().getArrId())
+                        .getDouble(0);
+            }
+        }
+
+        return Double.MIN_VALUE;
     }
 
     private NDArrayInformation getNonScalar(ArrayField other) {
-        if(ArrayUtil.prod(getInput().getShape()) != 1 && ArrayUtil.prod(other.getInput().getShape()) == 1)
+        if(ArrayUtil.prod(getInput().getShape()) != 1 &&
+                ArrayUtil.prod(other.getInput().getShape()) == 1)
             return this.getInput();
-        else if(ArrayUtil.prod(other.getInput().getShape()) != 1 && ArrayUtil.prod(getInput().getShape()) == 1)
+        else if(ArrayUtil.prod(other.getInput().getShape()) != 1 &&
+                ArrayUtil.prod(getInput().getShape()) == 1)
             return other.getInput();
         throw new IllegalArgumentException("Neither this element nor the other input is a scalar");
 
     }
     private int[] getNonScalarShape(ArrayField other) {
-        if(ArrayUtil.prod(getInput().getShape()) != 1 && ArrayUtil.prod(other.getInput().getShape()) == 1)
+        if(ArrayUtil.prod(getInput().getShape()) != 1 && ArrayUtil.prod(
+                other.getInput().getShape()) == 1)
             return this.getInput().getShape();
-        else if(ArrayUtil.prod(other.getInput().getShape()) != 1 && ArrayUtil.prod(getInput().getShape()) == 1)
+        else if(ArrayUtil.prod(other.getInput().getShape()) != 1 &&
+                ArrayUtil.prod(getInput().getShape()) == 1)
             return other.getInput().getShape();
-        throw new IllegalArgumentException("Neither this element nor the other input is a scalar");
+        throw new IllegalArgumentException("Neither this element nor" +
+                " the other input is a scalar");
 
     }
 
@@ -1158,7 +1185,8 @@ public class ArrayField implements Field<ArrayField> {
                         value.getInput().getShape()),null);
     }
 
-    public ArrayField tensorMmul(DifferentialFunction<ArrayField> y, int[][] dimensions) {
+    public ArrayField tensorMmul(DifferentialFunction<ArrayField> y,
+                                 int[][] dimensions) {
         return addPairReduceOp("tensorMmul",y.getValue(true),
                 null,
                 ArrayUtil.getTensorMmulShape(getInput().getShape(),

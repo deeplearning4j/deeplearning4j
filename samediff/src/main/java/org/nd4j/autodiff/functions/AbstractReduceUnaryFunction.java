@@ -8,6 +8,7 @@ import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -21,17 +22,24 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
     protected DifferentialFunction<X> m_x;
     protected int[] dimensions;
 
-    public AbstractReduceUnaryFunction(SDGraph graph,
+    public AbstractReduceUnaryFunction(SameDiff sameDiff,
                                        DifferentialFunction<X> i_v,
                                        int[] dimensions) {
-        super(graph,new Object[]{dimensions});
+        super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
             m_x = i_v;
             this.dimensions = dimensions;
-            addEdges(graph,m_x,functionName());
+            validateDifferentialFunctionsameDiff(i_v);
+
+            addEdges(sameDiff,m_x,functionName());
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
+    }
+
+    @Override
+    public X doGetValue() {
+        return (X) sameDiff.getArrayFactory().prod((ArrayField) arg().doGetValue(),dimensions);
     }
 
 
@@ -52,11 +60,11 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
 
     /**
      * Add nodes to the graph
-     * @param graph
+     * @param sameDiff
      * @param i_v1
      * @param opName
      */
-    protected void addEdges(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v1,String opName) {
+    protected void addEdges(SameDiff sameDiff, DifferentialFunction<X> i_v1,String opName) {
         if(i_v1.getValue(true) instanceof ArrayField) {
             ArrayField v1 = (ArrayField) i_v1.getValue(true);
             int[] resultShape = Shape.getReducedShape(v1.getInput().getShape(),dimensions);
@@ -64,9 +72,9 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
             NDArrayInformation information =  NDArrayInformation.builder()
                     .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
                     .shape(resultShape).build();
-            NDArrayVertex newVertex = new NDArrayVertex(graph.nextVertexId(), information);
+            NDArrayVertex newVertex = new NDArrayVertex(sameDiff.getGraph().nextVertexId(), information);
             this.vertexId = newVertex.vertexID();
-            graph.addVertex(newVertex);
+            sameDiff.getGraph().addVertex(newVertex);
             OpState opState =   OpState.builder()
                     .opType(OpState.OpType.ACCUMULATION)
                     .opName(opName).axes(dimensions)
@@ -75,7 +83,7 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
                     .n(ArrayUtil.prod(Shape.getReducedShape(v1.getInput().getShape(),dimensions)))
                     .build();
             newVertex.setOpState(opState);
-            graph.addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),opState
+            sameDiff.getGraph().addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),opState
                     ,true);
             this.opState = opState;
             information.setOwner(opState);
@@ -97,7 +105,8 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
     @Override
     public DifferentialFunction<X> dup() {
         try {
-            return getClass().getConstructor(graph.getClass(),arg().getClass(),int[].class).newInstance(graph,arg(),dimensions);
+            return getClass().getConstructor(sameDiff.getClass(),arg()
+                    .getClass(),int[].class).newInstance(sameDiff,arg(),dimensions);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
