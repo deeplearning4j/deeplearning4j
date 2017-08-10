@@ -16,7 +16,7 @@
 
 package org.datavec.nlp.metadata;
 
-import org.datavec.api.berkeley.Counter;
+import org.nd4j.linalg.primitives.Counter;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.util.Index;
 import org.datavec.api.util.MathUtils;

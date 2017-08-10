@@ -16,7 +16,6 @@
 
 package org.datavec.api.records.reader.impl.csv;
 
-import org.datavec.api.berkeley.Triple;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.SequenceRecord;
@@ -26,6 +25,7 @@ import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.primitives.Triple;
 
 import java.io.DataInputStream;
 import java.io.IOException;

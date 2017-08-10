@@ -16,9 +16,10 @@
 package org.datavec.image.transform;
 
 import lombok.NonNull;
-import org.datavec.api.berkeley.Pair;
+
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
 

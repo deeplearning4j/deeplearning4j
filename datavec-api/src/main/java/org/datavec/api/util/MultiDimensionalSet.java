@@ -16,7 +16,8 @@
 
 package org.datavec.api.util;
 
-import org.datavec.api.berkeley.Pair;
+
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
