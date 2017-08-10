@@ -120,7 +120,6 @@ public class ParagraphVectors extends Word2Vec {
      * @param document the document
      * @return the word distances for each label
      */
-    @Deprecated
     public String predict(LabelledDocument document) {
         if (document.getReferencedContent() != null)
             return predict(document.getReferencedContent());
@@ -391,7 +390,6 @@ public class ParagraphVectors extends Word2Vec {
      * @param document the document
      * @return the word distances for each label
      */
-    @Deprecated
     public String predict(List<VocabWord> document) {
         /*
             This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested
@@ -399,12 +397,13 @@ public class ParagraphVectors extends Word2Vec {
         if (document.isEmpty())
             throw new IllegalStateException("Document has no words inside");
 
+        /*
         INDArray arr = Nd4j.create(document.size(), this.layerSize);
         for (int i = 0; i < document.size(); i++) {
             arr.putRow(i, getWordVectorMatrix(document.get(i).getWord()));
-        }
+        }*/
 
-        INDArray docMean = arr.mean(0);
+        INDArray docMean = inferVector(document); //arr.mean(0);
         Counter<String> distances = new Counter<>();
 
         for (String s : labelsSource.getLabels()) {
@@ -423,7 +422,6 @@ public class ParagraphVectors extends Word2Vec {
      * @param document raw text of the document
      * @return possible labels in descending order
      */
-    @Deprecated
     public Collection<String> predictSeveral(@NonNull LabelledDocument document, int limit) {
         if (document.getReferencedContent() != null) {
             return predictSeveral(document.getReferencedContent(), limit);
@@ -438,7 +436,6 @@ public class ParagraphVectors extends Word2Vec {
      * @param rawText raw text of the document
      * @return possible labels in descending order
      */
-    @Deprecated
     public Collection<String> predictSeveral(String rawText, int limit) {
         if (tokenizerFactory == null)
             throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
@@ -461,20 +458,19 @@ public class ParagraphVectors extends Word2Vec {
      * @param document the document
      * @return possible labels in descending order
      */
-    @Deprecated
     public Collection<String> predictSeveral(List<VocabWord> document, int limit) {
         /*
             This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested
          */
         if (document.isEmpty())
             throw new IllegalStateException("Document has no words inside");
-
+/*
         INDArray arr = Nd4j.create(document.size(), this.layerSize);
         for (int i = 0; i < document.size(); i++) {
             arr.putRow(i, getWordVectorMatrix(document.get(i).getWord()));
         }
-
-        INDArray docMean = arr.mean(0);
+*/
+        INDArray docMean = inferVector(document); //arr.mean(0);
         Counter<String> distances = new Counter<>();
 
         for (String s : labelsSource.getLabels()) {
@@ -656,7 +652,6 @@ public class ParagraphVectors extends Word2Vec {
      * @param label
      * @return
      */
-    @Deprecated
     public double similarityToLabel(LabelledDocument document, String label) {
         if (document.getReferencedContent() != null) {
             return similarityToLabel(document.getReferencedContent(), label);
@@ -671,17 +666,17 @@ public class ParagraphVectors extends Word2Vec {
      * @param label
      * @return
      */
-    @Deprecated
     public double similarityToLabel(List<VocabWord> document, String label) {
         if (document.isEmpty())
             throw new IllegalStateException("Document has no words inside");
 
+        /*
         INDArray arr = Nd4j.create(document.size(), this.layerSize);
         for (int i = 0; i < document.size(); i++) {
             arr.putRow(i, getWordVectorMatrix(document.get(i).getWord()));
-        }
+        }*/
 
-        INDArray docMean = arr.mean(0);
+        INDArray docMean = inferVector(document); //arr.mean(0);
 
         INDArray otherVec = getWordVectorMatrix(label);
         double sim = Transforms.cosineSim(docMean, otherVec);
