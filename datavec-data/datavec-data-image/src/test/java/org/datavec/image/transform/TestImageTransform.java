@@ -26,6 +26,7 @@ import org.datavec.image.loader.NativeImageLoader;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.awt.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -167,6 +168,8 @@ public class TestImageTransform {
 
     @Test
     public void testShowImageTransform() throws Exception {
+        if (GraphicsEnvironment.isHeadless()) { return; }
+
         ImageWritable writable = makeRandomImage(0, 0, 3);
         ImageTransform transform = new ShowImageTransform("testShowImageTransform", 100);
 
@@ -180,6 +183,8 @@ public class TestImageTransform {
 
     @Test
     public void testConvertColorTransform() throws Exception {
+        if (GraphicsEnvironment.isHeadless()) { return; }
+
         //        Mat origImage = new Mat();
         //        Mat transImage = new Mat();
         //        OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
@@ -202,6 +207,8 @@ public class TestImageTransform {
 
     @Test
     public void testHistEqualization() throws CanvasFrame.Exception {
+        if (GraphicsEnvironment.isHeadless()) { return; }
+
         // TODO pull out historgram to confirm equalization...
         ImageWritable writable = makeRandomImage(32, 32, 3);
         Frame frame = writable.getFrame();
@@ -266,6 +273,9 @@ public class TestImageTransform {
      */
     @Test
     public void testLargestBlobCropTransform() throws Exception {
+        if (GraphicsEnvironment.isHeadless()) { return; }
+
+
         java.io.File f1 = new ClassPathResource("testimages/largestblobtest.jpg").getFile();
         NativeImageLoader loader = new NativeImageLoader();
         ImageWritable writable = loader.asWritable(f1);
