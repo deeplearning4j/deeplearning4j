@@ -76,6 +76,8 @@ public class CounterTest {
         counterA.incrementCount("D", 4);
         counterA.incrementCount("E", 5);
 
+        assertEquals("E", counterA.argMax());
+
         List<String> list = counterA.keySetSorted();
 
         assertEquals(5, list.size());
