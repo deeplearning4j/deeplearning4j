@@ -29,10 +29,17 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
         if (i_v != null) {
             m_x = i_v;
             this.dimensions = dimensions;
+            validateDifferentialFunctionsameDiff(i_v);
+
             addEdges(sameDiff,m_x,functionName());
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
+    }
+
+    @Override
+    public X doGetValue() {
+        return (X) sameDiff.getArrayFactory().prod((ArrayField) arg().doGetValue(),dimensions);
     }
 
 

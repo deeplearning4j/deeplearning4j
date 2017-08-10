@@ -1,7 +1,6 @@
 package org.nd4j.autodiff.functions;
 
 import lombok.NoArgsConstructor;
-import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -20,6 +19,9 @@ public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extend
         if (i_v1 != null && i_v2 != null) {
             m_x1 = i_v1;
             m_x2 = i_v2;
+            validateDifferentialFunctionsameDiff(i_v1);
+            validateDifferentialFunctionsameDiff(i_v2);
+
             this.sameDiff = sameDiff;
 
             addEdges(sameDiff,i_v1,i_v2,functionName());

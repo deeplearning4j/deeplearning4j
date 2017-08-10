@@ -62,7 +62,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
      * Get the value of this function
      * @return
      */
-    protected abstract X doGetValue();
+    public abstract X doGetValue();
 
 
 
@@ -939,5 +939,19 @@ public abstract class DifferentialFunction<X extends Field<X>>
         return vertexId;
     }
 
+    protected void validateDifferentialFunctionsameDiff(
+            DifferentialFunction<X> function) {
+        Preconditions.checkState(function.getSameDiff() ==
+                        this.getSameDiff(),
+                "Function applications must be contained " +
+                        "in same sameDiff. The left " + function +"" +
+                        " must match this function " + this);
+        Preconditions.checkState(sameDiff ==
+                this.getSameDiff(),"Function applications m" +
+                "ust be " +
+                "contained in same sameDiff. The left " + function +" " +
+                "must " +
+                "match this function " + this);
 
+    }
 }

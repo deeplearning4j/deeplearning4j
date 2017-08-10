@@ -33,6 +33,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
 
         if (i_v != null) {
             m_x = i_v;
+            validateDifferentialFunctionsameDiff(i_v);
             addEdges(sameDiff,m_x,functionName(),shape);
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -53,6 +54,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
         super(sameDiff,extraArgs);
         if (i_v != null) {
             m_x = i_v;
+            validateDifferentialFunctionsameDiff(i_v);
             addEdges(sameDiff,m_x,functionName());
         } else {
             throw new IllegalArgumentException("Input not null variable.");

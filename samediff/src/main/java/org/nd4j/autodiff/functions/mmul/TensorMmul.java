@@ -83,7 +83,7 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
      * @return
      */
     @Override
-    protected ArrayField doGetValue() {
+    public ArrayField doGetValue() {
         return sameDiff.getArrayFactory().tensorMmul(larg(),rarg(),axes);
     }
 
@@ -175,16 +175,16 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
 
 
             DifferentialFunction<ArrayField> at = getSameDiff()
-                    .getArrayFieldDifferentialFunctionFactory()
-                    .reshape(getSameDiff().getArrayFieldDifferentialFunctionFactory().permute
+                    .getFunctionFactory()
+                    .reshape(getSameDiff().getFunctionFactory().permute
                     (a,newAxesA),newShapeA);
-            DifferentialFunction<ArrayField> bt = getSameDiff().getArrayFieldDifferentialFunctionFactory()
-                    .reshape(getSameDiff().getArrayFieldDifferentialFunctionFactory()
+            DifferentialFunction<ArrayField> bt = getSameDiff().getFunctionFactory()
+                    .reshape(getSameDiff().getFunctionFactory()
                     .permute(b,newAxesB),newShapeB);
 
-            DifferentialFunction<ArrayField> ret = getSameDiff().getArrayFieldDifferentialFunctionFactory().mmul(argNum,at,bt);
+            DifferentialFunction<ArrayField> ret = getSameDiff().getFunctionFactory().mmul(argNum,at,bt);
             int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
-            return getSameDiff().getArrayFieldDifferentialFunctionFactory().reshape(ret,aPlusB);
+            return getSameDiff().getFunctionFactory().reshape(ret,aPlusB);
 
         }
 

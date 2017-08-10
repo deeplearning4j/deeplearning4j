@@ -103,7 +103,7 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> floor(DifferentialFunction<X> iX);
 
-    DifferentialFunction<X> relu(DifferentialFunction<X> iX);
+    DifferentialFunction<X> relu(DifferentialFunction<X> iX, double cutoff);
 
     DifferentialFunction<X> softmax(DifferentialFunction<X> iX);
 

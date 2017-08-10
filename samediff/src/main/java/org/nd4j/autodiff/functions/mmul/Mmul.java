@@ -42,8 +42,8 @@ public class Mmul<X extends Field<ArrayField>> extends TensorMmul<ArrayField> {
                             DifferentialFunction<ArrayField> i_v2,
                             String opName) {
         if(i_v1.getValue(true) instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) i_v1.getValue(true);
-            ArrayField secondVal = (ArrayField) i_v2.getValue(true);
+            ArrayField arrayField = i_v1.getValue(true);
+            ArrayField secondVal = i_v2.getValue(true);
             //skip empty dimensions
             addEdges(sameDiff,i_v1,i_v2,opName,
                     OpState.OpType.ACCUMULATION,
@@ -63,7 +63,7 @@ public class Mmul<X extends Field<ArrayField>> extends TensorMmul<ArrayField> {
      * @return
      */
     @Override
-    protected ArrayField doGetValue() {
+    public ArrayField doGetValue() {
         return sameDiff.getArrayFactory().mmul(larg(),rarg());
     }
 

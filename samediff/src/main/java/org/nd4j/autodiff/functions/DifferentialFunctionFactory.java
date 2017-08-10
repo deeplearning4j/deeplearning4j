@@ -9,14 +9,29 @@ import com.google.common.base.Preconditions;
 import lombok.Data;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
+import org.nd4j.autodiff.functions.impl.binary.reduce.EuclideanDistance;
+import org.nd4j.autodiff.functions.impl.binary.reduce.ManhattanDistance;
+import org.nd4j.autodiff.functions.impl.unary.reduce.Prod;
+import org.nd4j.autodiff.functions.impl.unary.transform.ACosh;
+import org.nd4j.autodiff.functions.impl.unary.transform.ASin;
+import org.nd4j.autodiff.functions.impl.unary.transform.ATan;
+import org.nd4j.autodiff.functions.impl.unary.transform.ATanh;
+import org.nd4j.autodiff.functions.impl.unary.transform.Exp;
+import org.nd4j.autodiff.functions.impl.unary.transform.ExpandDims;
+import org.nd4j.autodiff.functions.impl.unary.transform.Sinh;
+import org.nd4j.autodiff.functions.impl.unary.transform.Tanh;
+import org.nd4j.autodiff.functions.impl.unary.transform.Tile;
+import org.nd4j.autodiff.functions.impl.unary.transform.ValueArrayOf;
+import org.nd4j.autodiff.functions.impl.unary.transform.shape.Permute;
+import org.nd4j.autodiff.functions.impl.unary.transform.shape.Reshape;
+import org.nd4j.autodiff.functions.impl.unary.transform.shape.RollAxis;
+import org.nd4j.autodiff.functions.impl.unary.transform.shape.Transpose;
 import org.nd4j.autodiff.functions.mmul.Mmul;
 import org.nd4j.autodiff.functions.mmul.TensorMmul;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -58,7 +73,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
         if(iX instanceof ArrayField) {
 
             return new Constant<>(sameDiff, iX,
-                    ((ArrayField) iX).getInput().getShape());
+                    iX.getInput().getShape());
         }
         else
             throw new IllegalStateException("Illegal type. Must be ArrayField");
@@ -87,310 +102,90 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
 
     @Override
     public DifferentialFunction<ArrayField> tile(DifferentialFunction<ArrayField> iX,
-                                        int[] repeat) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,
-                new Object[]{repeat}) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().tile(arg().getValue(true),repeat);
-            }
-
-            @Override
-            public double getReal() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                validateDifferentialFunctionsameDiff(i_v);
-                throw new UnsupportedOperationException();
-            }
-
-
-            @Override
-            public String functionName() {
-                return "tile";
-            }
-        };
+                                                 int[] repeat) {
+        return new Tile(sameDiff,iX,repeat);
     }
 
 
     @Override
     public DifferentialFunction<ArrayField> valueArrayOf(DifferentialFunction<ArrayField> iX, int[] shape) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,new Object[]{shape}) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().valueArrayOf((ArrayField) arg().getValue(true),shape);
-            }
-
-            @Override
-            public double getReal() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                throw new UnsupportedOperationException();
-            }
-
-
-            @Override
-            public String functionName() {
-                return "valueArray";
-            }
-        };
+        return new ValueArrayOf(sameDiff,iX,shape,null);
     }
 
     @Override
-    public DifferentialFunction<ArrayField> sum(DifferentialFunction<ArrayField> i_x, int... dimensions) {
-        return new AbstractReduceUnaryFunction<ArrayField> (sameDiff,i_x,dimensions) {
-            @Override
-            protected ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().sum(arg().doGetValue(),dimensions);
-            }
-
-            @Override
-            public String functionName() {
-                return new org.nd4j.linalg.api.ops.impl.accum.Sum().name();
-            }
-
-
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-                validateDifferentialFunctionsameDiff(i_v1);
-                return doRepeat(this,i_v1,dimensions).mul(arg().diff(i_v1));
-            }
-        };
+    public DifferentialFunction<ArrayField> sum(DifferentialFunction<ArrayField> i_x,
+                                                int... dimensions) {
+        return new org.nd4j.autodiff.functions.impl.unary.reduce.Sum(sameDiff,i_x,dimensions);
     }
 
     @Override
     public DifferentialFunction<ArrayField> prod(DifferentialFunction<ArrayField> i_x, int... dimensions) {
-        return new AbstractReduceUnaryFunction<ArrayField> (sameDiff,i_x,dimensions) {
-            @Override
-            protected ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().prod((ArrayField) arg().doGetValue(),dimensions);
-            }
-
-
-            @Override
-            public String functionName() {
-                return new org.nd4j.linalg.api.ops.impl.accum.Prod().name();
-            }
-
-
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-                validateDifferentialFunctionsameDiff(i_v1);
-                return doRepeat(this,i_v1,dimensions).div(one(getResultShape()).mul(getInputLength(i_v1)));
-            }
-        };
+        return new Prod(sameDiff,i_x,dimensions);
     }
 
     @Override
     public DifferentialFunction<ArrayField> mean(DifferentialFunction<ArrayField> i_x, int... dimensions) {
-        return new AbstractReduceUnaryFunction<ArrayField> (sameDiff,i_x,dimensions) {
-            @Override
-            protected ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().mean((ArrayField) arg().doGetValue(),dimensions);
-            }
-
-
-            @Override
-            public String functionName() {
-                return new Mean().name();
-            }
-
-
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-                validateDifferentialFunctionsameDiff(i_v1);
-                return doRepeat(this,i_v1,dimensions).div(one(i_v1.getResultShape()).mul(getInputLength(i_v1)));
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.unary.reduce.Mean(sameDiff,i_x,dimensions);
     }
 
     @Override
     public DifferentialFunction<ArrayField> std(DifferentialFunction<ArrayField> i_x,
-                                       boolean biasCorrected,
-                                       int... dimensions) {
-        return new AbstractReduceUnaryFunction<ArrayField> (sameDiff,i_x,dimensions) {
-            @Override
-            protected ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().std(arg().doGetValue(),
-                        biasCorrected ,
-                        dimensions);
-            }
-
-            @Override
-            public String functionName() {
-                return new StandardDeviation().name();
-            }
-
-
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-                validateDifferentialFunctionsameDiff(i_v1);
-                int inputs = getInputLength(i_v1);
-                DifferentialFunction<ArrayField> g =  doRepeat(this,i_v1,dimensions);
-                return g.mul(arg().sub(DifferentialFunctionFactory.this.mean(arg(),dimensions))).div(one(g.getResultShape()).mul(inputs));
-            }
-        };
+                                                boolean biasCorrected,
+                                                int... dimensions) {
+        return new org.nd4j.autodiff.functions.impl.unary.reduce.StandardDeviation(sameDiff,i_x,dimensions,biasCorrected);
     }
 
     @Override
     public DifferentialFunction<ArrayField> variance(DifferentialFunction<ArrayField> i_x,
-                                            boolean biasCorrected,
-                                            int... dimensions) {
-        return new AbstractReduceUnaryFunction<ArrayField> (sameDiff,i_x,dimensions) {
-            @Override
-            protected ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().variance(arg().doGetValue(),
-                        biasCorrected, dimensions);
-            }
+                                                     boolean biasCorrected,
+                                                     int... dimensions) {
+        return new org.nd4j.autodiff.functions.impl.unary.reduce.Variance(sameDiff,i_x,dimensions,biasCorrected);
 
-
-            @Override
-            public String functionName() {
-                return new Variance().name();
-            }
-
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-                validateDifferentialFunctionsameDiff(i_v1);
-                int inputs = getInputLength(i_v1);
-                DifferentialFunction<ArrayField> g =  doRepeat(this,i_v1,dimensions);
-                return one(getResultShape()).mul(2).mul(g).mul(arg().sub(DifferentialFunctionFactory.this.mean(arg(),dimensions))).div(one(getResultShape()).mul(inputs));
-            }
-        };
     }
 
     @Override
     public DifferentialFunction<ArrayField> max(DifferentialFunction<ArrayField> i_x, int... dimensions) {
-        return new AbstractReduceUnaryFunction<ArrayField> (sameDiff,i_x,dimensions) {
-            @Override
-            protected ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().max((ArrayField) arg().doGetValue(),dimensions);
-            }
+        return new org.nd4j.autodiff.functions.impl.unary.reduce.Max(sameDiff,i_x,dimensions);
 
-
-            @Override
-            public String functionName() {
-                return new Max().name();
-            }
-
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-                validateDifferentialFunctionsameDiff(i_v1);
-                return doGradChoose(this,i_v1,dimensions);
-            }
-        };
     }
 
     @Override
     public DifferentialFunction<ArrayField> min(DifferentialFunction<ArrayField> i_x, int... dimensions) {
-        return new AbstractReduceUnaryFunction<ArrayField> (sameDiff,i_x,dimensions) {
-            @Override
-            protected ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().min((ArrayField) arg().doGetValue(),dimensions);
-            }
+        return new org.nd4j.autodiff.functions.impl.unary.reduce.Min(sameDiff,i_x,dimensions);
 
-            @Override
-            public String functionName() {
-                return new Min().name();
-            }
-
-
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-                validateDifferentialFunctionsameDiff(i_v1);
-                return doGradChoose(this,i_v1,dimensions);
-            }
-        };
     }
 
     @Override
     public DifferentialFunction<ArrayField> norm1(DifferentialFunction<ArrayField> i_x, int... dimensions) {
-        return new AbstractReduceUnaryFunction<ArrayField> (sameDiff,i_x,dimensions) {
-            @Override
-            protected ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().norm1((ArrayField) arg().doGetValue(),dimensions);
-            }
+        return new org.nd4j.autodiff.functions.impl.unary.reduce.Norm1(sameDiff,i_x,dimensions);
 
-
-            @Override
-            public String functionName() {
-                return new Norm1().name();
-            }
-
-
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-                return doNormGrad(this,i_v1,"norm1",dimensions);
-            }
-        };
     }
 
     @Override
     public DifferentialFunction<ArrayField> norm2(DifferentialFunction<ArrayField> i_x, int... dimensions) {
-        return new AbstractReduceUnaryFunction<ArrayField> (sameDiff,i_x,dimensions) {
-            @Override
-            protected ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().norm2((ArrayField) arg().doGetValue(),dimensions);
-            }
+        return new org.nd4j.autodiff.functions.impl.unary.reduce.Norm2(sameDiff,i_x,dimensions);
 
-
-            @Override
-            public String functionName() {
-                return new Norm2().name();
-            }
-
-
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-                validateDifferentialFunctionsameDiff(i_v1);
-                return doNormGrad(this,i_v1,"norm2",dimensions);
-            }
-        };
     }
 
     @Override
     public DifferentialFunction<ArrayField> normmax(DifferentialFunction<ArrayField> i_x, int... dimensions) {
-        return new AbstractReduceUnaryFunction<ArrayField> (sameDiff,i_x,dimensions) {
-            @Override
-            protected ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().normmax((ArrayField) arg().doGetValue(),dimensions);
-            }
+        return new org.nd4j.autodiff.functions.impl.unary.reduce.NormMax(sameDiff,i_x,dimensions);
 
-            @Override
-            public String functionName() {
-                return new NormMax().name();
-            }
-
-
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-                validateDifferentialFunctionsameDiff(i_v1);
-                return doNormGrad(this,i_v1,"max",dimensions);
-            }
-        };
     }
 
-    private DifferentialFunction<ArrayField> doNormGrad(DifferentialFunction<ArrayField> func,
-                                               DifferentialFunction<ArrayField> input,
-                                               String type,
-                                               int...axes) {
+    /**
+     * Handls gradient calculation
+     * for all nor types
+     * @param func
+     * @param input
+     * @param type
+     * @param axes
+     * @return
+     */
+    public DifferentialFunction<ArrayField> doNormGrad(DifferentialFunction<ArrayField> func,
+                                                       DifferentialFunction<ArrayField> input,
+                                                       String type,
+                                                       int... axes) {
 
         validateDifferentialFunctionsameDiff(func);
         validateDifferentialFunctionsameDiff(input);
@@ -416,894 +211,172 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
 
     @Override
     public DifferentialFunction<ArrayField> expandDims(DifferentialFunction<ArrayField> iX,int axis) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().expandDims(arg().getValue(true),axis);
-            }
-
-            @Override
-            public double getReal() {
-                return Math.abs(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                validateDifferentialFunctionsameDiff(i_v);
-                return arg().div(DifferentialFunctionFactory.this.abs(arg()));
-            }
-
-
-            @Override
-            public String functionName() {
-                return "expandDims";
-            }
-        };
+        return new ExpandDims(sameDiff,iX,null,axis);
     }
 
 
 
     @Override
     public DifferentialFunction<ArrayField> abs(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().abs((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.abs(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return arg().div(DifferentialFunctionFactory.this.abs(arg()));
-            }
-
-
-            @Override
-            public String functionName() {
-                return new Abs().name();
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Abs(sameDiff,iX,null);
     }
 
 
     @Override
     public DifferentialFunction<ArrayField> neg(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().neg((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return -arg().getReal();
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                validateDifferentialFunctionsameDiff(i_v);
-                return i_v.negate().mul(arg().diff(i_v));
-            }
-
-
-            @Override
-            public String functionName() {
-                return new Negative().name();
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Neg(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> cos(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().cos((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.cos(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                validateDifferentialFunctionsameDiff(i_v);
-                return (DifferentialFunctionFactory.this.sin(arg()).mul(arg().diff(i_v))).negate();
-            }
-
-
-            @Override
-            public String functionName() {
-                return new Cos().name();
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Cos(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> sin(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().sin((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.sin(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                validateDifferentialFunctionsameDiff(i_v);
-                return DifferentialFunctionFactory.this.cos(arg()).mul(arg().diff(i_v));
-            }
-
-
-            @Override
-            public String functionName() {
-                return new Sin().name();
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Sin(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> tan(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Tan(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().tan((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.tan(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return (new PolynomialTerm<>(sameDiff,1, DifferentialFunctionFactory.this.cos(arg()), -2)).mul(arg().diff(i_v));
-            }
-
-
-
-            @Override
-            public String functionName() {
-                return new Tan().name();
-            }
-        };
     }
 
     @Override
     public DifferentialFunction<ArrayField> permute(DifferentialFunction<ArrayField> iX, int... dimensions) {
-        if(iX.getValue(true) instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) iX.getValue(true);
-            return new AbstractUnaryFunction<ArrayField> (sameDiff,
-                    iX,
-                    ArrayUtil.reverseCopy(arrayField.getInput().getShape()),
-                    OpState.OpType.SHAPE,
-                    null) {
-
-                @Override
-                public ArrayField doGetValue() {
-                    return sameDiff.getArrayFactory().permute((ArrayField) arg().getValue(true),dimensions);
-                }
-
-                @Override
-                public double getReal() {
-                    return Math.tan(arg().getReal());
-                }
-
-                @Override
-                public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                    return this;
-                }
-
-
-
-                @Override
-                public String functionName() {
-                    return "permute";
-                }
-            };
-        }
-
-        throw new IllegalStateException("Need the shape. This is only possible with ArrayField");
+        return new Permute(sameDiff,iX,dimensions);
     }
 
 
     @Override
     public DifferentialFunction<ArrayField> transpose(DifferentialFunction<ArrayField> iX) {
-        if(iX.getValue(true) instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) iX.getValue(true);
-            return new AbstractUnaryFunction<ArrayField> (sameDiff,
-                    iX,ArrayUtil.reverseCopy(arrayField.getInput().getShape()),
-                    OpState.OpType.SHAPE,null) {
-
-                @Override
-                public ArrayField doGetValue() {
-                    return sameDiff.getArrayFactory().transpose((ArrayField) arg().getValue(true));
-                }
-
-                @Override
-                public double getReal() {
-                    return Math.tan(arg().getReal());
-                }
-
-                @Override
-                public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                    return this;
-                }
-
-
-
-                @Override
-                public String functionName() {
-                    return "transpose";
-                }
-            };
-        }
-
-        throw new IllegalStateException("Need the shape. This is only possible with ArrayField");
+        return new Transpose(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> acos(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().acos((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.acos(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return one(getResultShape()).div(DifferentialFunctionFactory.this.sqrt(one(getResultShape()).sub(arg().pow(2)))).negate();
-            }
-
-
-            @Override
-            public String functionName() {
-                return new ACos().name();
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.unary.transform.ACos(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> asin(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().asin((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.asin(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return one(getResultShape()).div(DifferentialFunctionFactory.this.sqrt(one(getResultShape()).sub(arg().pow(2))));
-            }
-
-
-
-            @Override
-            public String functionName() {
-                return new ASin().name();
-            }
-        };
+        return new ASin(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> atan(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new ATan(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().atan((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.atan(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return one(getResultShape()).div(one(getResultShape()).add(arg().pow(2)));
-            }
-
-            @Override
-            public String functionName() {
-                return new ATan().name();
-            }
-        };
     }
 
     @Override
     public DifferentialFunction<ArrayField> cosh(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Cosh(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().cosh((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.cosh(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return DifferentialFunctionFactory.this.sinh(arg());
-            }
-
-            @Override
-            public String functionName() {
-                return new Cosh().name();
-            }
-        };
     }
 
     @Override
     public DifferentialFunction<ArrayField> sinh(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().sinh((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.sinh(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return DifferentialFunctionFactory.this.cosh(arg());
-            }
-
-
-            @Override
-            public String functionName() {
-                return new Sinh().name();
-            }
-        };
+        return new Sinh(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> tanh(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().tanh((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.tanh(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return DifferentialFunctionFactory.this.one(getResultShape()).div(DifferentialFunctionFactory.this.cosh(arg())).pow(2);
-            }
-
-            @Override
-            public String functionName() {
-                return new Tanh().name();
-            }
-        };
+        return new Tanh(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> acosh(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().acosh((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                throw new IllegalStateException("");
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return DifferentialFunctionFactory.this.one(getResultShape()).div(DifferentialFunctionFactory.this.sqrt(arg().sub(one(getResultShape()))).mul(DifferentialFunctionFactory.this.sqrt(arg().add(one(getResultShape())))));
-            }
-
-            @Override
-            public String functionName() {
-                return new ACosh().name();
-            }
-        };
+        return new ACosh(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> asinh(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().asinh((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                throw new IllegalStateException();
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return DifferentialFunctionFactory.this.one(getResultShape()).div(DifferentialFunctionFactory.this.sqrt(arg().pow(2).add(one(getResultShape()))));
-            }
-
-
-            @Override
-            public String functionName() {
-                return new ASinh().name();
-            }
-        };
+        return new  org.nd4j.autodiff.functions.impl.unary.transform.ASinh(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> atanh(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().atanh((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                throw new IllegalStateException();
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return one(getResultShape()).div(one(getResultShape()).sub(arg().pow(2)));
-            }
-
-
-            @Override
-            public String functionName() {
-                return new ATanh().name();
-            }
-        };
+        return new ATanh(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> exp(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().exp((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.exp(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return DifferentialFunctionFactory.this.exp(arg()).mul(arg().diff(i_v));
-            }
-
-
-            @Override
-            public String functionName() {
-                return new Exp().name();
-            }
-        };
+        return new Exp(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> log(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().log((ArrayField) arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.log(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return new Inverse<>(sameDiff,arg()).mul(arg().diff(i_v));
-            }
-
-            @Override
-            public String functionName() {
-                return new Log().name();
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Log(sameDiff,iX,null);
     }
 
 
 
     @Override
     public DifferentialFunction<ArrayField> or(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y) {
-        return new AbstractBinaryFunction<ArrayField> (sameDiff,iX, i_y) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().or(larg().getValue(true), rarg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.pow(larg().getReal(), rarg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                Constant<ArrayField>  ym1 = DifferentialFunctionFactory.this
-                        .val(rarg().getValue(true).sub(sameDiff.getArrayFactory().one(getResultShape())));
-                return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
-                        .mul(larg().diff(i_v));
-            }
-
-            @Override
-            public String toString() {
-                return "or(" + larg().toString() + ", " + rarg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<ArrayField> > variables) {
-                return "or(" + larg().doGetFormula(variables) + ","
-                        + rarg().doGetFormula(variables) + ")";
-            }
-
-            @Override
-            public String functionName() {
-                return new Or().name();
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.binary.transform.Or(sameDiff,iX,i_y);
     }
 
 
     @Override
     public DifferentialFunction<ArrayField> eq(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y) {
-        return new AbstractBinaryFunction<ArrayField> (sameDiff,iX, i_y) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().eq(larg().getValue(true), rarg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.pow(larg().getReal(), rarg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                Constant<ArrayField>  ym1 = DifferentialFunctionFactory.this
-                        .val(rarg().getValue(true).sub(sameDiff.getArrayFactory().one(getResultShape())));
-                return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
-                        .mul(larg().diff(i_v));
-            }
-
-            @Override
-            public String toString() {
-                return "eq(" + larg().toString() + ", " + rarg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<ArrayField> > variables) {
-                return "eq(" + larg().doGetFormula(variables) + ","
-                        + rarg().doGetFormula(variables) + ")";
-            }
-
-            @Override
-            public String functionName() {
-                return new Not().name();
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.binary.transform.Eq(sameDiff,iX,i_y);
     }
 
     @Override
     public DifferentialFunction<ArrayField> neq(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y) {
-        return new AbstractBinaryFunction<ArrayField> (sameDiff,iX, i_y) {
+        return new org.nd4j.autodiff.functions.impl.binary.transform.Neq(sameDiff,iX,i_y);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().neq(larg().getValue(true), rarg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.pow(larg().getReal(), rarg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                Constant<ArrayField>  ym1 = DifferentialFunctionFactory.this
-                        .val(rarg().getValue(true).sub(sameDiff.getArrayFactory().one(getResultShape())));
-                return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
-                        .mul(larg().diff(i_v));
-            }
-
-            @Override
-            public String toString() {
-                return "neq(" + larg().toString() + ", " + rarg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<ArrayField> > variables) {
-                return "neq(" + larg().doGetFormula(variables) + ","
-                        + rarg().doGetFormula(variables) + ")";
-            }
-
-            @Override
-            public String functionName() {
-                return new Not().name();
-            }
-        };
     }
 
     @Override
     public DifferentialFunction<ArrayField> pow(DifferentialFunction<ArrayField> iX, Constant<ArrayField>  i_y) {
-        return new AbstractBinaryFunction<ArrayField> (sameDiff,iX, i_y) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().pow(larg().getValue(true), rarg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.pow(larg().getReal(), rarg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                Constant<ArrayField>  ym1 = DifferentialFunctionFactory.this
-                        .val(rarg().getValue(true).sub(sameDiff.getArrayFactory().one(getResultShape())));
-                return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
-                        .mul(larg().diff(i_v));
-            }
-
-            @Override
-            public String toString() {
-                return "pow(" + larg().toString() + ", " + rarg().toString() + ")";
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<ArrayField> > variables) {
-                return "pow(" + larg().doGetFormula(variables) + ","
-                        + rarg().doGetFormula(variables) + ")";
-            }
-
-            @Override
-            public String functionName() {
-                return new Pow().name();
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.binary.transform.Pow(sameDiff,iX,i_y);
     }
 
     @Override
     public DifferentialFunction<ArrayField> sqrt(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().sqrt(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.sqrt(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return ((DifferentialFunctionFactory.this.sqrt(arg()).inverse())
-                        .div(val(sameDiff.getArrayFactory().one(getResultShape()).mul(2L))))
-                        .mul(arg().diff(i_v));
-            }
-
-
-            @Override
-            public String functionName() {
-                return new Sqrt().name();
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Sqrt(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> square(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().square(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.pow(arg().getReal(), 2);
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return arg().mul(val(sameDiff.getArrayFactory().one(getResultShape()).mul(2L)))
-                        .mul(arg().diff(i_v));
-            }
-
-
-            @Override
-            public String functionName() {
-                return new Pow().name();
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Square(sameDiff,iX,null);
     }
 
     @Override
     public DifferentialFunction<ArrayField> floor(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Floor(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().floor(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                throw new RuntimeException("not allowed");
-            }
-
-            @Override
-            public String functionName() {
-                return new Floor().name();
-            }
-        };
     }
 
     @Override
-    public DifferentialFunction<ArrayField> relu(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+    public DifferentialFunction<ArrayField> relu(DifferentialFunction<ArrayField> iX, double cutoff) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Floor(sameDiff,iX,new Object[]{cutoff});
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().relu(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return val(sameDiff.getArrayFactory().step(arg().getValue(true))).mul(arg().diff(i_v));
-            }
-
-            @Override
-            public String functionName() {
-                return new RectifedLinear().name();
-            }
-        };
     }
 
 
 
     @Override
     public DifferentialFunction<ArrayField> softmax(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Softmax(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().softmax(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                DifferentialFunction<ArrayField> val = val(getValue(true));
-                return val.mul(one(getResultShape()).sub(val)).mul(arg().diff(i_v));
-            }
-
-            @Override
-            public String functionName() {
-                return new SoftMax().name();
-            }
-        };
     }
 
     @Override
     public DifferentialFunction<ArrayField> hardTanh(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.HardTanh(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().hardTanh(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return DifferentialFunctionFactory.this.hardTanhDerivative(val(getValue(true))).mul(arg().diff(i_v));
-            }
-
-            @Override
-            public String functionName() {
-                return new HardTanh().name();
-            }
-        };
     }
 
 
 
     @Override
     public DifferentialFunction<ArrayField> hardTanhDerivative(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.HardTanhDerivative(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().hardTanhDerivative(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return one(getResultShape()).mul(arg().diff(i_v));
-            }
-
-
-            @Override
-            public String functionName() {
-                return new HardTanhDerivative().name();
-            }
-        };
     }
 
 
@@ -1311,190 +384,47 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
 
     @Override
     public DifferentialFunction<ArrayField> sigmoid(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Sigmoid(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().sigmoid(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return DifferentialFunctionFactory.this.sigmoidDerivative(arg()).mul(arg().diff(i_v));
-            }
-
-            @Override
-            public String functionName() {
-                return new Sigmoid().name();
-            }
-        };
     }
 
 
 
     @Override
     public DifferentialFunction<ArrayField> sigmoidDerivative(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.SigmoidDerivative(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().sigmoidDerivative(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return one(getResultShape()).mul(arg().diff(i_v));
-            }
-
-
-            @Override
-            public String functionName() {
-                return new SigmoidDerivative().name();
-            }
-        };
     }
 
 
     @Override
     public DifferentialFunction<ArrayField> sign(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Sign(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().sign(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return zero(getResultShape());
-            }
-
-            @Override
-            public String functionName() {
-                return new Sign().name();
-            }
-        };
     }
 
 
     @Override
     public DifferentialFunction<ArrayField> broadcast(DifferentialFunction<ArrayField> iX, int... shape) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().broadcast(arg().getValue(true),shape);
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public String functionName() {
-                return "broadcast";
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.unary.transform.shape.Broadcast(sameDiff,iX,shape);
     }
 
     @Override
     public DifferentialFunction<ArrayField> repeat(DifferentialFunction<ArrayField> iX, int axis) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.shape.Repeat(sameDiff,iX,axis);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().repeat(arg().getValue(true),axis);
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public String functionName() {
-                return "repeat";
-            }
-        };
     }
 
     @Override
     public DifferentialFunction<ArrayField> softsign(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.SoftSign(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().softsign(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return softsignDerivative().mul(arg().diff(i_v));
-            }
-
-            @Override
-            public String functionName() {
-                return new SoftSign().name();
-            }
-        };
     }
 
     @Override
     public DifferentialFunction<ArrayField> softsignDerivative(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.SoftSignDerivative(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().softsignDeriviative(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return zero(getResultShape());
-            }
-
-
-            @Override
-            public String functionName() {
-                return new SoftSignDerivative().name();
-            }
-        };
     }
 
 
@@ -1503,84 +433,23 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
 
     @Override
     public DifferentialFunction<ArrayField> softplus(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.SoftPlus(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().softplus(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return DifferentialFunctionFactory.this.sigmoid(arg()).mul(arg().diff(i_v));
-            }
-
-            @Override
-            public String functionName() {
-                return new SoftPlus().name();
-            }
-        };
     }
 
 
     @Override
     public DifferentialFunction<ArrayField> elu(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.Elu(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().elu(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return DifferentialFunctionFactory.this.eluDerivative(arg()).mul(arg().diff(i_v));
-            }
-
-
-            @Override
-            public String functionName() {
-                return new ELU().name();
-            }
-        };
     }
 
 
 
     @Override
     public DifferentialFunction<ArrayField> eluDerivative(DifferentialFunction<ArrayField> iX) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.EluDerivative(sameDiff,iX,null);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().eluDerivative(arg().getValue(true));
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return zero(getResultShape());
-            }
-
-            @Override
-            public String functionName() {
-                return new ELUDerivative().name();
-            }
-        };
     }
 
 
@@ -1588,213 +457,50 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
 
     @Override
     public DifferentialFunction<ArrayField> leakyRelu(DifferentialFunction<ArrayField> iX, double cutoff) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,new Object[]{cutoff}) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.LeakyRelu(sameDiff,iX,cutoff);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().leakyRelu(arg().getValue(true),cutoff);
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return DifferentialFunctionFactory.this.leakyReluDerivative(arg(),cutoff).mul(arg().diff(i_v));
-            }
-
-
-            @Override
-            public String functionName() {
-                return new LeakyReLU().name();
-            }
-        };
     }
 
 
 
     @Override
     public DifferentialFunction<ArrayField> leakyReluDerivative(DifferentialFunction<ArrayField> iX, double cutoff) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,new Object[]{cutoff}) {
+        return new org.nd4j.autodiff.functions.impl.unary.transform.LeakyReluDerivative(sameDiff,iX,cutoff);
 
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().leakyReluDerivative((ArrayField) arg().getValue(true),cutoff);
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return zero(getResultShape());
-            }
-
-            @Override
-            public String functionName() {
-                return new LeakyReLUDerivative().name();
-            }
-        };
     }
 
     @Override
     public DifferentialFunction<ArrayField> reshape(DifferentialFunction<ArrayField> iX, int[] shape) {
-        shape = Shape.resolveNegativeShapeIfNeccessary(shape);
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,shape, OpState.OpType.SHAPE,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().reshape((ArrayField) arg().getValue(true),shape);
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return this;
-            }
-
-            @Override
-            public String functionName() {
-                return "reshape";
-            }
-        };
+        return new Reshape(sameDiff,iX,shape);
     }
 
     @Override
     public DifferentialFunction<ArrayField> rollAxis(Variable<ArrayField>  iX, int axis) {
-        return new AbstractUnaryFunction<ArrayField> (sameDiff,iX,null, OpState.OpType.SHAPE,null) {
-
-            @Override
-            public ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().rollAxis((ArrayField) arg().getValue(true),axis);
-            }
-
-            @Override
-            public double getReal() {
-                return Math.floor(arg().getReal());
-            }
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-                return this;
-            }
-
-            @Override
-            public String functionName() {
-                return "rollAxis";
-            }
-        };
+        return new RollAxis(sameDiff,iX,axis);
     }
 
     @Override
     public DifferentialFunction<ArrayField> cosineSimilarity(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
-        return new AbstractBinaryReduceFunction<ArrayField> (sameDiff, iX, i_y, dimensions) {
-            @Override
-            protected ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().cosineSimilarity(iX, i_y, dimensions);
-            }
-
-            private DifferentialFunction<ArrayField> formula() {
-                DifferentialFunction<ArrayField> numerator = larg().mul(rarg());
-                DifferentialFunction<ArrayField> denom = DifferentialFunctionFactory.this.sqrt(larg().pow(2).mul(rarg().pow(2)));
-
-                return numerator.div(denom);
-            }
-
-            @Override
-            public double getReal() {
-                return formula().getReal();
-            }
-
-            @Override
-            public String doGetFormula(List<Variable<ArrayField> > variables) {
-                return larg().doGetFormula(variables) + " * " + rarg().doGetFormula(variables) + "/" +
-                        "sqrt(pow(" + larg().doGetFormula(variables) + ", 2) * pow(" + rarg().doGetFormula(variables) + ", 2))";
-            }
-
-            @Override
-            public String functionName() {
-                return new CosineSimilarity().name();
-            }
-
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-                return formula().diff(i_v1);
-            }
-        };
+        return new org.nd4j.autodiff.functions.impl.binary.reduce.CosineSimilarity(sameDiff,iX,i_y,dimensions);
     }
 
     @Override
     public DifferentialFunction<ArrayField> euclideanDistance(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
-        return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
-            @Override
-            protected ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().euclideanDistance(iX,i_y,dimensions);
-            }
-
-
-
-            @Override
-            public String doGetFormula(List<Variable<ArrayField> > variables) {
-                return null;
-            }
-
-            @Override
-            public String functionName() {
-                return "euclideanDistance";
-            }
-
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-                return null;
-            }
-        };
+        return new EuclideanDistance(sameDiff,iX,i_y,dimensions);
     }
 
     @Override
     public DifferentialFunction<ArrayField> manhattanDistance(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
-        return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
-            @Override
-            protected ArrayField doGetValue() {
-                return sameDiff.getArrayFactory().manhattanDistance(iX,i_y,dimensions);
-            }
-
-
-            @Override
-            public String doGetFormula(List<Variable<ArrayField> > variables) {
-                return null;
-            }
-
-            @Override
-            public String functionName() {
-                return "manhattanDistance";
-            }
-
-
-            @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-                return null;
-            }
-        };
+        return new ManhattanDistance(sameDiff,iX,i_y,dimensions);
     }
 
     @Override
     public DifferentialFunction<ArrayField> lossBinaryXENT(DifferentialFunction<ArrayField> iX,
-                                                  DifferentialFunction<ArrayField> i_y,
-                                                  int... dimensions) {
+                                                           DifferentialFunction<ArrayField> i_y,
+                                                           int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField>(sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossBinaryXENT(iX,i_y,dimensions);
             }
 
@@ -1858,7 +564,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     public DifferentialFunction<ArrayField> lossCosineSimilarity(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossCosineSimilarity(iX,i_y,dimensions);
             }
 
@@ -1884,7 +590,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     public DifferentialFunction<ArrayField> lossHinge(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossHinge(iX,i_y,dimensions);
             }
 
@@ -1911,7 +617,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     public DifferentialFunction<ArrayField> lossKLD(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossKLD(iX,i_y,dimensions);
             }
 
@@ -1938,7 +644,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     public DifferentialFunction<ArrayField> lossL1(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossL1(iX,i_y,dimensions);
             }
 
@@ -1965,7 +671,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     public DifferentialFunction<ArrayField> lossL2(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossL2(iX,i_y,dimensions);
             }
 
@@ -1992,7 +698,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     public DifferentialFunction<ArrayField> lossMAE(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossMAE(iX,i_y,dimensions);
             }
 
@@ -2019,7 +725,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     public DifferentialFunction<ArrayField> lossMAPE(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossMAPE(iX,i_y,dimensions);
             }
 
@@ -2047,7 +753,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     public DifferentialFunction<ArrayField> lossMSE(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossMSE(iX,i_y,dimensions);
             }
 
@@ -2075,7 +781,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     public DifferentialFunction<ArrayField> lossMCXENT(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossMCXENT(iX,i_y,dimensions);
             }
 
@@ -2102,7 +808,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     public DifferentialFunction<ArrayField> lossMSLE(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossMSLE(iX,i_y,dimensions);
             }
 
@@ -2130,7 +836,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     public DifferentialFunction<ArrayField> lossNegativeLogLikelihood(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossNegativeLogLikelihood(iX,i_y,dimensions);
             }
 
@@ -2157,7 +863,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     public DifferentialFunction<ArrayField> lossPoisson(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossPoisson(iX,i_y,dimensions);
             }
 
@@ -2183,7 +889,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     public DifferentialFunction<ArrayField> lossSquaredHinge(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return new AbstractBinaryReduceFunction<ArrayField> (sameDiff,iX,i_y,dimensions) {
             @Override
-            protected ArrayField doGetValue() {
+            public ArrayField doGetValue() {
                 return sameDiff.getArrayFactory().lossSquaredHinge(iX,i_y,dimensions);
             }
 
@@ -2208,8 +914,8 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
 
     @Override
     public DifferentialFunction<ArrayField> mmul(int argNum,
-                                        DifferentialFunction<ArrayField> x,
-                                        DifferentialFunction<ArrayField> y) {
+                                                 DifferentialFunction<ArrayField> x,
+                                                 DifferentialFunction<ArrayField> y) {
         validateDifferentialFunctionsameDiff(x);
         validateDifferentialFunctionsameDiff(y);
         return new Mmul<>(sameDiff,x,y,argNum);
@@ -2217,9 +923,9 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
 
     @Override
     public DifferentialFunction<ArrayField> tensorMmul(DifferentialFunction<ArrayField> x,
-                                              DifferentialFunction<ArrayField> y,
-                                              int[][] dimensions,
-                                              int argNum) {
+                                                       DifferentialFunction<ArrayField> y,
+                                                       int[][] dimensions,
+                                                       int argNum) {
         validateDifferentialFunctionsameDiff(x);
         validateDifferentialFunctionsameDiff(y);
         return new TensorMmul<>(sameDiff,x,y,dimensions,argNum);
@@ -2227,7 +933,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
 
 
 
-    private int getInputLength(DifferentialFunction<ArrayField> func) {
+    public int getInputLength(DifferentialFunction<ArrayField> func) {
         validateDifferentialFunctionsameDiff(func);
         if(func.getValue(true) instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) func.getValue(true);
@@ -2238,8 +944,9 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
         throw new IllegalStateException("Only able to compute on array field");
     }
 
-    private DifferentialFunction<ArrayField> doGradChoose(DifferentialFunction<ArrayField> func,
-                                                 DifferentialFunction<ArrayField> input,int...axes) {
+
+    public DifferentialFunction<ArrayField> doGradChoose(DifferentialFunction<ArrayField> func,
+                                                         DifferentialFunction<ArrayField> input,int...axes) {
         if(input.getValue(true) instanceof ArrayField) {
             validateDifferentialFunctionsameDiff(func);
             validateDifferentialFunctionsameDiff(input);
@@ -2255,9 +962,9 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     }
 
 
-    private DifferentialFunction<ArrayField> doRepeat(DifferentialFunction<ArrayField> func,
-                                             DifferentialFunction<ArrayField> input,
-                                             int...axes) {
+    public  DifferentialFunction<ArrayField> doRepeat(DifferentialFunction<ArrayField> func,
+                                                      DifferentialFunction<ArrayField> input,
+                                                      int...axes) {
         if(input.getValue(true) instanceof ArrayField) {
             ArrayField arrayField = input.getValue(true);
             int[] inputShape = arrayField.getInput().getShape();
