@@ -25,8 +25,8 @@ public class GradCheckUtilTest {
         SameDiff sameDiff = SameDiff.create();
         INDArray scalar = Nd4j.ones(1);
         SDVariable var = sameDiff.var("x",scalar);
-        SDVariable sigmooid = sameDiff.sigmoid(var);
-        assertTrue(GradCheckUtil.checkGradients(sigmooid,var,1e-6,1e-6,false,
+        SDVariable sigmoid = sameDiff.sigmoid(var);
+        assertTrue(GradCheckUtil.checkGradients(sigmoid,var,1e-6,1e-6,false,
                 Collections.singletonMap("x",scalar)));
 
 

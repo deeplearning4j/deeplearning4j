@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
@@ -146,11 +147,6 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
 
     @Override
-    public String toString() {
-        return getName() + ":" + getValue(true);
-    }
-
-    @Override
     public String doGetFormula(List<Variable<X>> variables) {
         variables.add(this);
         return getName();
@@ -172,5 +168,12 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
                 m_x);
     }
 
-
+    @Override
+    public String toString() {
+        return "Variable{" +
+                "m_name='" + m_name + '\'' +
+                ", vertexId=" + vertexId +
+                ", extraArgs=" + Arrays.toString(extraArgs) +
+                '}';
+    }
 }

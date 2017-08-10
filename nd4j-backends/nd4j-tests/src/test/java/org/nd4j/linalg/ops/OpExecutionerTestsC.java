@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
@@ -72,6 +73,15 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
     public OpExecutionerTestsC(Nd4jBackend backend) {
         super(backend);
+    }
+
+    @Test
+    public void testScalarReverseSub() {
+        INDArray input = Nd4j.valueArrayOf(4,2.0);
+        INDArray result= Nd4j.zeros(4);
+        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(input,null,result,input.length(),1.0));
+        INDArray assertion = Nd4j.valueArrayOf(4,-1.0);
+        assertEquals(assertion,result);
     }
 
 

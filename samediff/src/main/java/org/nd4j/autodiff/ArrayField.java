@@ -1125,7 +1125,7 @@ public class ArrayField implements Field<ArrayField> {
         if(ArrayUtil.prod(getInput().getShape()) == 1) {
             if(this.getInput().getScalarValue() != null)
                 return this.getInput().getScalarValue().doubleValue();
-            else if(this.getInput().getOwner().getScalarValue() != null)
+            else if(this.getInput().getOwner() != null && this.getInput().getOwner().getScalarValue() != null)
                 return this.getInput().getOwner().getScalarValue().doubleValue();
 
             else if(ops.getVertexToArray().get(input.getArrId()) != null) {
@@ -1155,7 +1155,10 @@ public class ArrayField implements Field<ArrayField> {
         else if(ArrayUtil.prod(other.getInput().getShape()) != 1 &&
                 ArrayUtil.prod(getInput().getShape()) == 1)
             return other.getInput();
-        throw new IllegalArgumentException("Neither this element nor the other input is a scalar");
+        //both scalar
+        else {
+            return other.getInput();
+        }
 
     }
     private int[] getNonScalarShape(ArrayField other) {
@@ -1165,8 +1168,9 @@ public class ArrayField implements Field<ArrayField> {
         else if(ArrayUtil.prod(other.getInput().getShape()) != 1 &&
                 ArrayUtil.prod(getInput().getShape()) == 1)
             return other.getInput().getShape();
-        throw new IllegalArgumentException("Neither this element nor" +
-                " the other input is a scalar");
+        else
+            return new int[] {1,1};
+
 
     }
 

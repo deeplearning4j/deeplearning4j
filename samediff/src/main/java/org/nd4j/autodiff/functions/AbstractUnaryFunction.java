@@ -83,7 +83,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                             String opName,
                             int...shape) {
         if(i_v1.getValue(true) instanceof ArrayField) {
-            ArrayField v1 = (ArrayField) i_v1.getValue(false);
+            ArrayField v1 = (ArrayField) i_v1.getValue(true);
             NDArrayInformation information =    NDArrayInformation.builder()
                     .arrId(UUID.randomUUID().toString())
                     .id(opName + "(" + v1.getInput().getId() + " -> " +
