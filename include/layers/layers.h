@@ -292,10 +292,10 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
 template <typename T>
 int INativeLayer<T>::configureLayerBP(T *output, int *outputShapeInfo, T* gradientW, int *gradientWShapeInfo, T* gradientB, int *gradientBShapeInfo, T *epsilonPrev, int *epsilonShapeInfo) {
-    this->_output->replacePointers(output, outputShapeInfo);
-    this->_gradientW->replacePointers(gradientW, gradientWShapeInfo);
-    this->_gradientB->replacePointers(gradientB, gradientBShapeInfo);
-    this->_epsilon->replacePointers(epsilonPrev, epsilonShapeInfo);
+    _output->replacePointers(output, outputShapeInfo);
+    _gradientW->replacePointers(gradientW, gradientWShapeInfo);
+    _gradientB->replacePointers(gradientB, gradientBShapeInfo);
+    _epsilon->replacePointers(epsilonPrev, epsilonShapeInfo);
 
     // TODO: add gradient/epsilon valdiation here
     if (validateGradients() != ND4J_STATUS_OK)
@@ -312,25 +312,25 @@ template <typename T>
 int INativeLayer<T>::configureLayerFF(T *input, int *inputShapeInfo, T *output, int *outputShapeInfo, T pDropOut, T pDropConnect, Nd4jPointer ptrRng) {
 
     if (ptrRng != nullptr)
-        this->_rng = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRng);
+        _rng = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRng);
 
-    this->_pDropOut = pDropOut > (T) 0.0f ? pDropOut : (T) 0.0f;
-    this->_pDropConnect = pDropConnect > (T) 0.0f ? pDropConnect : (T) 0.0f;
+    _pDropOut = pDropOut > (T) 0.0f ? pDropOut : (T) 0.0f;
+    _pDropConnect = pDropConnect > (T) 0.0f ? pDropConnect : (T) 0.0f;
 
-    this->_dropOut = this->_pDropOut > (T) 0.0f;
-    this->_dropConnect = this->_pDropConnect > (T) 0.0f;
+    _dropOut = _pDropOut > (T) 0.0f;
+    _dropConnect = _pDropConnect > (T) 0.0f;
 
-    if ((this->_dropOut || this->_dropConnect) && this->_rng == nullptr)
+    if ((_dropOut || _dropConnect) && _rng == nullptr)
         return ND4J_STATUS_BAD_RNG;
 
-    this->_input->replacePointers(input, inputShapeInfo);
+    _input->replacePointers(input, inputShapeInfo);
 
 
     if (validateInput() != ND4J_STATUS_OK)
         return ND4J_STATUS_BAD_INPUT;
 
 
-    this->_output->replacePointers(output, outputShapeInfo);
+    _output->replacePointers(output, outputShapeInfo);
 
     if (validateOutput() != ND4J_STATUS_OK)
         return ND4J_STATUS_BAD_OUTPUT;

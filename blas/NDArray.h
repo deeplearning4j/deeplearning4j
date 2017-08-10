@@ -71,7 +71,7 @@ template <typename T> class NDArray
 
         // print information about array shape
         void printShapeInfo() const {
-            //shape::printShapeInfo(this->_shapeInfo);
+            //shape::printShapeInfo(_shapeInfo);
             shape::printShapeInfoLinear(_shapeInfo);
         }
 

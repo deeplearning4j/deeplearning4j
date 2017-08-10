@@ -74,15 +74,15 @@ template<typename T, typename AF> Pooling2DLayer<T,AF>::Pooling2DLayer() {
 template<typename T, typename AF> 
 int Pooling2DLayer<T,AF>::configurePooling2D(const int poolingMode, const int kernelHeight, const int kernelWidth, const int strideHeight, const int strideWidth, const int padHeight, const int padWidth, const int outH, const int outW) {
 
-    this->_poolingMode = poolingMode;
-    this->_kernelHeight = kernelHeight;
-    this->_kernelWidth = kernelWidth;
-    this->_strideX = strideWidth;
-    this->_strideY = strideHeight;
-    this->_padHeight = padHeight;
-    this->_padWidth = padWidth;
-    this->_heightCol = outH;
-    this->_widthCol = outW;
+    _poolingMode = poolingMode;
+    _kernelHeight = kernelHeight;
+    _kernelWidth = kernelWidth;
+    _strideX = strideWidth;
+    _strideY = strideHeight;
+    _padHeight = padHeight;
+    _padWidth = padWidth;
+    _heightCol = outH;
+    _widthCol = outW;
     
     int *shape = new int[6];
     shape[0] = this->inputShapeInfo[0];
