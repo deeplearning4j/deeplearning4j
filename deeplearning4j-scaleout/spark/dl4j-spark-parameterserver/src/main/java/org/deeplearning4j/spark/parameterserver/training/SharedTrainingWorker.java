@@ -2,7 +2,7 @@ package org.deeplearning4j.spark.parameterserver.training;
 
 import lombok.Getter;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;

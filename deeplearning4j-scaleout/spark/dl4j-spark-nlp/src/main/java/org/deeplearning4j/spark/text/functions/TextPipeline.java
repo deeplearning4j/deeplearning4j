@@ -18,12 +18,13 @@
 
 package org.deeplearning4j.spark.text.functions;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -152,16 +153,16 @@ public class TextPipeline {
                             "IllegalStateException: wordFreqCounter has nothing. Check accumulator updating");
         }
 
-        for (Entry<String, Float> entry : wordFreq.entrySet()) {
+        for (Entry<String, AtomicDouble> entry : wordFreq.entrySet()) {
             String stringToken = entry.getKey();
-            Float tokenCount = entry.getValue();
+            Double tokenCount = entry.getValue().doubleValue();
 
             // Turn words below min count to UNK
             stringToken = filterMinWord(stringToken, tokenCount);
             if (!useUnk && stringToken.equals("UNK")) {
                 // Turn tokens to vocab and add to vocab cache
             } else
-                addTokenToVocabCache(stringToken, tokenCount);
+                addTokenToVocabCache(stringToken, tokenCount.floatValue());
         }
     }
 
