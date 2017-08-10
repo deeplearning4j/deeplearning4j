@@ -641,6 +641,7 @@ public class ParagraphVectorsTest {
         Word2Vec wordVectors = new Word2Vec.Builder().seed(119).minWordFrequency(1).batchSize(250).iterations(1).epochs(3)
                         .learningRate(0.025).layerSize(150).minLearningRate(0.001)
                         .elementsLearningAlgorithm(new SkipGram<VocabWord>()).useHierarchicSoftmax(true).windowSize(5)
+                        .workers(2)
                         .iterate(iter).tokenizerFactory(t).build();
 
         wordVectors.fit();
@@ -664,6 +665,7 @@ public class ParagraphVectorsTest {
         ParagraphVectors paragraphVectors = new ParagraphVectors.Builder().seed(119).iterate(labelAwareIterator)
                         .learningRate(0.025).minLearningRate(0.001).iterations(10).epochs(1).layerSize(150)
                         .tokenizerFactory(t).sequenceLearningAlgorithm(new DBOW<VocabWord>()).useHierarchicSoftmax(true)
+                        .workers(2)
                         .trainWordVectors(false).useExistingWordVectors(wordVectors).build();
 
         paragraphVectors.fit();
