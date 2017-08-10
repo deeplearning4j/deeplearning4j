@@ -19,7 +19,7 @@
 
 package org.nd4j.linalg.jcublas;
 
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.jita.allocator.enums.CudaConstants;

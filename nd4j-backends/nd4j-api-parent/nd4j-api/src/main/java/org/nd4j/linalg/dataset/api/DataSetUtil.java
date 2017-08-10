@@ -2,7 +2,7 @@ package org.nd4j.linalg.dataset.api;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.shape.Shape;

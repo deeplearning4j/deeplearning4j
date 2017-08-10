@@ -3,7 +3,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;

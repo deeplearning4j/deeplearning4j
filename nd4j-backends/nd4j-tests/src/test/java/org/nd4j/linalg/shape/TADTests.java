@@ -2,7 +2,7 @@ package org.nd4j.linalg.shape;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

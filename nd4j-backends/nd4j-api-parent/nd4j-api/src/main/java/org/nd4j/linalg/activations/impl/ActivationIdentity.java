@@ -2,7 +2,7 @@ package org.nd4j.linalg.activations.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 

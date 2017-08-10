@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;

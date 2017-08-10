@@ -1,6 +1,6 @@
 package org.nd4j.linalg.dataset;
 
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.DataSetUtil;

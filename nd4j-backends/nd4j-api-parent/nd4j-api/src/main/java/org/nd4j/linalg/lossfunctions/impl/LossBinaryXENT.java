@@ -2,7 +2,7 @@ package org.nd4j.linalg.lossfunctions.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;

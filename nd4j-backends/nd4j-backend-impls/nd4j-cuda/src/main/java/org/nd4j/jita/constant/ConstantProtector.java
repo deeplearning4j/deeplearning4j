@@ -1,6 +1,6 @@
 package org.nd4j.jita.constant;
 
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.shape.ShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;

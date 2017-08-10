@@ -1,6 +1,6 @@
 package jcuda.jcublas.ops;
 
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
