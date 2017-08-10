@@ -730,7 +730,7 @@ public class ParagraphVectorsTest {
         }
 
         String topPrediction = paragraphVectors.predict(document);
-        assertEquals("Zfinance", topPrediction);
+        assertEquals(document.getLabel(), topPrediction);
     }
 
     /*
