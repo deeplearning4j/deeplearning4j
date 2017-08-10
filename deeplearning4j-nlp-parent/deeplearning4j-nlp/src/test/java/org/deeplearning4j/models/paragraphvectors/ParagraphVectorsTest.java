@@ -49,6 +49,7 @@ import org.deeplearning4j.util.SerializationUtils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -625,7 +626,6 @@ public class ParagraphVectorsTest {
     */
     @Test
     public void testParagraphVectorsOverExistingWordVectorsModel() throws Exception {
-
 
         // we build w2v from multiple sources, to cover everything
         ClassPathResource resource_sentences = new ClassPathResource("/big/raw_sentences.txt");

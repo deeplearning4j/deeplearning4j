@@ -95,12 +95,14 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                 case FORWARD_ONLY:
                 case FORWARD_UNIQUE:
                 case FORWARD_PREFERRED: {
-                    // we get  popularity of each node connected to the current node.
-                    PriorityQueue<Node<T>> queue = new PriorityQueue<>();
 
                     // ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), visitedHops);
                     int[] connections = ArrayUtils.removeElements(
                                     sourceGraph.getConnectedVertexIndices(vertex.vertexID()), visitedHops);
+
+                    // we get  popularity of each node connected to the current node.
+                    PriorityQueue<Node<T>> queue = new PriorityQueue<>(Math.max(10, connections.length), new NodeComparator());
+
                     int start = 0;
                     int stop = 0;
                     int cnt = 0;
