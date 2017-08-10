@@ -533,6 +533,12 @@ var PAGES = [{
 "tags": ["源代码", "source", "github", "deeplearning4j", "maven", "mac", "window", "贡献", "lombok","dl4j","nd4j","datavec","mvn","git"]
 },
 {
+"url": "https://deeplearning4j.org/cn/skynet",
+"title": "天网问题：如何管控人工智能？",
+"description": "从本质上看，人工智能是很难监管的，因为它其实只是在一些芯片上运行的数学算法和程序代码，任何程序员都可以在自家车库里随意使用这些算法和代码工作，推动人工智能不断进步。",
+"tags": ["cpu", "skynet", "terminator", "天网", "终结者", "人工智能"]
+},
+{
 "url": "https://deeplearning4j.org/cn/native",
 "title": "Deeplearning4j的本机CPU优化",
 "description": "本页指南将介绍在DL4J和ND4J上调试或提升CPU系统性能的几种方法",
