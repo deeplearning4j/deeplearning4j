@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -5167,6 +5168,20 @@ public class Nd4jTestsC extends BaseNd4jTest {
         matrix.putiColumnVector(row);
 
         assertEquals(exp, matrix);
+    }
+
+    @Test
+    public void testRsub1() throws Exception {
+        INDArray arr = Nd4j.ones(5).assign(2.0);
+        INDArray exp_0 = Nd4j.ones(5).assign(2.0);
+        INDArray exp_1 = Nd4j.create(5).assign(-1);
+
+        Nd4j.getExecutioner().commit();
+
+        INDArray res = arr.rsub(1.0);
+
+        assertEquals(exp_0, arr);
+        assertEquals(exp_1, res);
     }
 
     @Override
