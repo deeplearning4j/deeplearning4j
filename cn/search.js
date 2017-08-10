@@ -545,8 +545,20 @@ var PAGES = [{
 "tags": ["优化", "github", "openm", "内核", "超线程", "simd", "jvm", "本机", "gpu","并行","pcie","ram","内存","性能","调试","并行计算","omp","OMP_NUM_THREADS","NativeOpsHolder","intel","mkl","spark","源码","故障排除","后端","回退模式","INDArray","ND4J_FALLBACK","nd4j","fallback","native"]
 },
 {
-"url": "https://deeplearning4j.org/cn/build_vgg_webapp",
+"url": "https://deeplearning4j.org/cn/build_vgg_webapp",	
 "title": "如何用VGG-16构建识别图像的网页应用",
 "description": "神经网络不断刷新着图像识别的准确率纪录。本页主要介绍如何构建一个基于网页的应用程序，用著名的VGG-16网络实现推断，对用户上传的图像进行分类。",
 "tags": ["vgg", "图像", "例子", "用例", "猫", "狗", "imagenet", "预测", "加载", "测试","模型","ModelSerializer","代码","配置","训练","模型","model","照片","识别","ImageRecordReader","ModelSerializer"]
+},
+{
+"url": "https://deeplearning4j.org/cn/toyproblems",	
+"title": "玩具问题",
+"description": "人们经常向我们提及教科书中出现的样例数量很少的玩具示例。",
+"tags": ["玩具", "示例", "例子", "用例", "Deeplearning4j", "minibatch", "双精度", "sgd", "优化"]
+},
+{
+"url": "https://deeplearning4j.org/cn/gpu",	
+"title": "用GPU运行Deeplearning4j",
+"description": "Deeplearning4j同时支持分布式和本机GPU。用户可以用NVIDIA Tesla、Titan、GeForce GTX等单个本地GPU运行DL4J，也可以使用云端的NVIDIA GRID GPU来运行。",
+"tags": ["gpu", "显示卡", "cuda", "cudnn", "ParallelWrapper"]
 }];

@@ -1,0 +1,12 @@
+---
+title: 玩具问题
+layout: cn-default
+---
+<h1>玩具问题</h1>
+<p>人们经常向我们提及教科书中出现的样例数量很少的&ldquo;玩具&rdquo;示例。</p>
+<p>Deeplearning4j在默认情况下假设数据量很大，初学者常会因此感到迷惑。以下的调试建议可以确保您在刚开始探索玩具问题时能获得良好的体验。我们经常提倡初学者学习Python或者Matlab，因为Deeplearning4j主要面向的是完全不同的用户群。</p>
+<ol>
+  <li>配置中设置minibatch(false)－这将避免梯度被标准化。微批次学习会将学习到的梯度标准化，即除以微批次大小。如果整个问题都在内存中，就没有理由这样做。</li>
+	<li>双精度：如果数据量大，神经网络可以进行32位数据的学习。一般请使用64位数据（双精度型结果更好）：<a href="http://nd4j.org/userguide#miscdatatype" target="_blank"	>http://nd4j.org/userguide#miscdatatype</a></li>
+  <li>请使用基于SGD优化算法的SGD更新器，避免启用线搜索等比较复杂的功能。 </li>
+</ol>
