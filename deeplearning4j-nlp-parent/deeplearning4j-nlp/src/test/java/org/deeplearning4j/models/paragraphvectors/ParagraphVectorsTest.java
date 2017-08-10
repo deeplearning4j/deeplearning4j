@@ -22,7 +22,6 @@ package org.deeplearning4j.models.paragraphvectors;
 import lombok.NonNull;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
@@ -50,7 +49,6 @@ import org.deeplearning4j.util.SerializationUtils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -730,7 +728,7 @@ public class ParagraphVectorsTest {
         }
 
         String topPrediction = paragraphVectors.predict(document);
-        assertEquals(document.getLabel(), topPrediction);
+        assertEquals("Z"+document.getLabel(), topPrediction);
     }
 
     /*
