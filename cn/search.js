@@ -561,4 +561,10 @@ var PAGES = [{
 "title": "用GPU运行Deeplearning4j",
 "description": "Deeplearning4j同时支持分布式和本机GPU。用户可以用NVIDIA Tesla、Titan、GeForce GTX等单个本地GPU运行DL4J，也可以使用云端的NVIDIA GRID GPU来运行。",
 "tags": ["gpu", "显示卡", "cuda", "cudnn", "ParallelWrapper"]
+},
+{
+"url": "https://deeplearning4j.org/cn/thoughtvectors",	
+"title": "思维向量、深度学习与人工智能的未来",
+"description": "思维向量”是一个由现在谷歌任职的著名深度学习研究者Geoffrey Hinton发扬光大的术语，目前谷歌正在使用基于自然语言的向量来改善其搜索结果。",
+"tags": ["思维向量", "thoughtvectors", "Hinton", "doc2vec", "nlp", "自然语言", "词向量", "循环神经网络"]
 }];
