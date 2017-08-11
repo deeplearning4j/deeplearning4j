@@ -19,10 +19,10 @@
 package org.deeplearning4j.clustering.kdtree;
 
 import com.google.common.primitives.Doubles;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
