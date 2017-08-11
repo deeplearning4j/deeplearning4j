@@ -22,6 +22,14 @@ public class Pair<K, V> implements Serializable {
     protected K key;
     protected V value;
 
+    public K getLeft() {
+        return key;
+    }
+
+    public V getRight() {
+        return value;
+    }
+
     public K getFirst() {
         return key;
     }
@@ -36,6 +44,10 @@ public class Pair<K, V> implements Serializable {
 
     public void setSecond(V second) {
         value = second;
+    }
+
+    public static <T, E> Pair<T,E> of(T key, E value) {
+        return new Pair<T, E>(key, value);
     }
 
     public static <T, E> Pair<T,E> makePair(T key, E value) {
