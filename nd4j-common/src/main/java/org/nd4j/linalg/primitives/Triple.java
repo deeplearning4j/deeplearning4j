@@ -22,7 +22,24 @@ public class Triple<F, S, T> implements Serializable {
     protected S second;
     protected T third;
 
+
+    public F getLeft() {
+        return first;
+    }
+
+    public S getMiddle() {
+        return second;
+    }
+
+    public T getRight() {
+        return third;
+    }
+
     public static <F, S, T> Triple<F, S,T> tripleOf(F first, S second, T third) {
+        return new Triple<>(first, second, third);
+    }
+
+    public static <F, S, T> Triple<F, S,T> of(F first, S second, T third) {
         return new Triple<>(first, second, third);
     }
 }
