@@ -27,6 +27,10 @@ public abstract class AbstractBinaryReduceFunction<X extends  Field<ArrayField>>
                                         int...dimensions) {
         super(sameDiff, i_v1, i_v2);
         this.dimensions = dimensions;
+        //note that the below won't trigger if dimensions are null
+        //please don't remove this
+        addEdges(sameDiff,i_v1,
+                i_v2,functionName());
     }
 
     public AbstractBinaryReduceFunction(SameDiff sameDiff) {

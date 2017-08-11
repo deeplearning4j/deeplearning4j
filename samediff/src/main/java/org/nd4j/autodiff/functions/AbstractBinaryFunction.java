@@ -35,6 +35,7 @@ public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extend
     }
 
 
+
     @Override
     public DifferentialFunction<ArrayField>[] args() {
         return new DifferentialFunction[] {larg(),rarg()};
