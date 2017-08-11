@@ -674,6 +674,12 @@ public class ArrayField implements Field<ArrayField> {
                 OpState.OpType.BROADCAST);
     }
 
+
+    @Override
+    public ArrayField set(ArrayField value1) {
+        return addPairTransformOp("set",value1);
+    }
+
     @Override
     public ArrayField broadcast(int[] shape) {
         return addArrayOp("broadcast",null,shape,null, OpState.OpType.BROADCAST);
@@ -1155,12 +1161,13 @@ public class ArrayField implements Field<ArrayField> {
         else if(ArrayUtil.prod(other.getInput().getShape()) != 1 &&
                 ArrayUtil.prod(getInput().getShape()) == 1)
             return other.getInput();
-        //both scalar
+            //both scalar
         else {
             return other.getInput();
         }
 
     }
+
     private int[] getNonScalarShape(ArrayField other) {
         if(ArrayUtil.prod(getInput().getShape()) != 1 && ArrayUtil.prod(
                 other.getInput().getShape()) == 1)
@@ -1198,6 +1205,7 @@ public class ArrayField implements Field<ArrayField> {
                         dimensions),new Object[]{dimensions});
 
     }
+
 
 
 }

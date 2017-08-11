@@ -23,20 +23,20 @@ public class InvertMatrix {
         }
 
         //FIX ME: Please
-        int[] IPIV = new int[arr.length() + 1];
+       /* int[] IPIV = new int[arr.length() + 1];
         int LWORK = arr.length() * arr.length();
         INDArray WORK = Nd4j.create(new double[LWORK]);
         INDArray inverse = inPlace ? arr : arr.dup();
         Nd4j.getBlasWrapper().lapack().getrf(arr);
-        Nd4j.getBlasWrapper().lapack().getri(arr.size(0),inverse,arr.size(0),IPIV,WORK,LWORK,0);
+        Nd4j.getBlasWrapper().lapack().getri(arr.size(0),inverse,arr.size(0),IPIV,WORK,LWORK,0);*/
 
-     /*   RealMatrix rm = CheckUtil.convertToApacheMatrix(arr);
+        RealMatrix rm = CheckUtil.convertToApacheMatrix(arr);
         RealMatrix rmInverse = new LUDecomposition(rm).getSolver().getInverse();
 
 
         INDArray inverse = CheckUtil.convertFromApacheMatrix(rmInverse);
         if (inPlace)
-            arr.assign(inverse);*/
+            arr.assign(inverse);
         return inverse;
 
     }

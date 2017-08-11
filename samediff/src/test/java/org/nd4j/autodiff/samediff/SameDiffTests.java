@@ -281,6 +281,53 @@ public class SameDiffTests {
 
 
     @Test
+    public void testLogGrad() {
+        SameDiff sameDiff = SameDiff.create();
+        SDVariable input = sameDiff.var("x",Nd4j.linspace(1,4,4));
+        SDVariable log = sameDiff.log(input);
+        SDVariable grad = sameDiff.grad(log,input);
+        INDArray gradResult = sameDiff.execAndEndResult();
+        INDArray assertion = Nd4j.create(new double[]{1,0.5,0.33,0.25});
+        assertTrue(assertion.equalsWithEps(gradResult,1e-2));
+    }
+
+
+    @Test
+    public void testElementWiseDivAndRDiv() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray ones = Nd4j.ones(4);
+        INDArray toDivBy = Nd4j.valueArrayOf(4,0.25);
+        Map<String,INDArray> xAndY = new HashMap<>();
+        xAndY.put("x",ones);
+        xAndY.put("y",toDivBy);
+        sameDiff.defineFunction("div", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable x = sameDiff.var("x",inputs.get("x"));
+                SDVariable y = sameDiff.var("y",inputs.get("y"));
+                return x.div(y);
+            }
+        },xAndY);
+
+        sameDiff.defineFunction("rdiv", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable x = sameDiff.var("x",inputs.get("x"));
+                SDVariable y = sameDiff.var("y",inputs.get("y"));
+                return x.rdiv(y);
+            }
+        },xAndY);
+
+
+        INDArray assertionForDiv = Nd4j.valueArrayOf(4,4.0);
+        INDArray assertionForRDiv = Nd4j.valueArrayOf(4,0.25);
+        assertEquals(assertionForDiv,sameDiff.getFunction("div").execAndEndResult());
+        assertEquals(assertionForRDiv,sameDiff.getFunction("rdiv").execAndEndResult());
+
+    }
+
+
+    @Test
     public void testGradCheck() {
         SameDiff sameDiff = SameDiff.create();
         Map<String,INDArray> inputs = variablesForInput();

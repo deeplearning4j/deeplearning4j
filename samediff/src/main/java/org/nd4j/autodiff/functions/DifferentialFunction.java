@@ -244,7 +244,13 @@ public abstract class DifferentialFunction<X extends Field<X>>
         return this.rdivi(constant);
     }
 
+    @Override
+    public DifferentialFunction<X> set(DifferentialFunction<X> i_v) {
+        validateDifferentialFunctionGraph(i_v);
+        X ret = getValue(true).set(i_v.getValue(true));
+        return new Constant<>(sameDiff, ret, i_v.getResultShape());
 
+    }
 
 
     @Override

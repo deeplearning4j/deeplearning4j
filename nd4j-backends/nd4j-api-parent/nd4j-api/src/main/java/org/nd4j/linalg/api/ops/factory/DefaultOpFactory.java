@@ -270,6 +270,9 @@ public class DefaultOpFactory implements OpFactory {
                                        Object[] extraArgs) {
         TransformOp op = null;
         switch (name) {
+            case "set":
+                op = new org.nd4j.linalg.api.ops.impl.transforms.Set(x,y,z,z.length());
+                break;
             case "relu":
                 op = new RectifedLinear(x, z, x.length(),extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);
                 break;
