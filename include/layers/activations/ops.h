@@ -29,14 +29,14 @@ namespace activations
 
         // This method applies activation for FF pass        
         inline static T ffActivation(T value) {
-            // FIXME: ultra-bad. should consider conigurable extra params here
+            // FIXME: ultra-bad. should consider configurable extra params here
             T extra[] = {(T) 0.0f};
             return simdOps::RELU<T>::template op(value, extra);
         }
 
         // This method applies activation for BP pass
         inline static T bpActivation(T value, T epsilon) {
-            // FIXME: ultra-bad. should consider conigurable extra params here
+            // FIXME: ultra-bad. should consider configurable extra params here
             T extra[] = {(T) 0.0f};
             return simdOps::Step<T>::template op(value, extra) * epsilon;
         }

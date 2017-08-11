@@ -66,6 +66,7 @@ template<typename T, typename AF> int DenseLayer<T,AF>::backPropagate() {
     this->gemmHelper(iT, delta, this->_gradientW, (T) 1.0f, (T) 0.0f);
     // gradient_on_bias = delta
 
+    // calculate biases gradients
     NDArray<T> *sumArr = delta->sum({0}); 
     this->_gradientB->assign(sumArr);
     // calculate next epsilon
