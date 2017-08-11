@@ -81,6 +81,9 @@ Finally, install prerequisite tools:
 brew update
 brew install maven gcc5
 ```
+Note: You can *not* use clang. You also can *not* use a new version of gcc. If you have a newer version of gcc, please
+switch versions with [this link](https://apple.stackexchange.com/questions/190684/homebrew-how-to-switch-between-gcc-versions-gcc49-and-gcc)
+
 
 #### Windows
 
