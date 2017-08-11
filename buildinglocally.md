@@ -41,7 +41,7 @@ CPU options:
 GPU options:
 
 - CUDA
-- JOCL (coming soon)
+
 
 IDE-specific requirements:
 
@@ -79,7 +79,7 @@ Finally, install prerequisite tools:
 
 ```
 brew update
-brew install maven clang-omp
+brew install maven gcc5
 ```
 
 #### Windows
@@ -137,7 +137,8 @@ For more complete instructions, [go here](http://www.cyberciti.biz/faq/centos-li
 
 ##### OS X
 
-You can install OpenBLAS on OS X with Homebrew Science:
+You can install OpenBLAS on OS X with Home
+Science:
 
 ```
 brew install homebrew/science/openblas
