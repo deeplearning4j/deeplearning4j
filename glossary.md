@@ -502,7 +502,7 @@ Two vectors can relate to one another mathematically, and similarities between t
 As you can see, these vectors differ from one another in both their length, or magnitude, and in their angle, or direction. The angle is what concerns us here. 
 
 ### <a name="vgg">VGG</a>
-VGG is a deep convolutional architecture that won the benchmark ImageNet competition in 2014. A VGG architecture is composed of 16–19 weight layers and uses small convolutional filters. [Deeplearning4j's implementations of two VGG architecturs are here](https://github.com/deeplearning4j/ImageNet-Example/tree/master/src/main/java/imagenet/Models).
+VGG is a deep convolutional architecture that won the benchmark ImageNet competition in 2014. A VGG architecture is composed of 16–19 weight layers and uses small convolutional filters. [Deeplearning4j's implementations of two VGG architectures are here](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model).
 
 * [Very Deep Convolutional Networks for Large-Scale Image Recognition](http://arxiv.org/abs/1409.1556)
 
