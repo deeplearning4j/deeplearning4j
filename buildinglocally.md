@@ -281,6 +281,9 @@ Use the build script below for CPU architectures:
 ```
 ./build-dl4j-stack.sh
 ```
+Make sure to read this if you are on OS X (ensure gcc 5.x is setup and you aren't using clang):
+https://github.com/deeplearning4j/deeplearning4j/issues/2668
+
 
 If you are using a GPU backend, use this instead:
 
