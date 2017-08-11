@@ -1,0 +1,32 @@
+namespace nd4j.graph;
+
+enum OpType:byte {
+    TRANSFORM = 0,
+    ACCUMULATION = 1,
+    INDEX_ACCUMULATION = 2,
+    SCALAR = 3,
+    BROADCAST = 4
+}
+
+table Variable {
+    id:ulong;
+    name:string;
+    shape:[int];
+    values:[float];
+}
+
+struct Operands {
+  x:ulong;
+  z:ulong;
+  y:ulong;
+}
+
+table Node {
+    type:OpType;
+    opNum:short;
+    name:string;
+    operands:Operands; // op either have operands as input
+    input:[Node]; // or other nodes (or both)
+}
+
+root_type Node;
