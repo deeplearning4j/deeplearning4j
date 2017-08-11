@@ -5,6 +5,7 @@
 #include "testlayers.h"
 #include "DenseLayerTests.cpp"
 #include "NDArrayTests.cpp"
+#include "FlatBuffersTests.cpp"
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);

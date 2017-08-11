@@ -13,7 +13,7 @@ struct Variable;
 
 struct Operands;
 
-struct Node;
+struct FlatNode;
 
 enum OpType {
   OpType_TRANSFORM = 0,
@@ -51,6 +51,41 @@ inline const char **EnumNamesOpType() {
 inline const char *EnumNameOpType(OpType e) {
   const size_t index = static_cast<int>(e);
   return EnumNamesOpType()[index];
+}
+
+enum DataType {
+  DataType_INHERIT = 0,
+  DataType_HALF = 1,
+  DataType_FLOAT = 2,
+  DataType_DOUBLE = 3,
+  DataType_MIN = DataType_INHERIT,
+  DataType_MAX = DataType_DOUBLE
+};
+
+inline DataType (&EnumValuesDataType())[4] {
+  static DataType values[] = {
+    DataType_INHERIT,
+    DataType_HALF,
+    DataType_FLOAT,
+    DataType_DOUBLE
+  };
+  return values;
+}
+
+inline const char **EnumNamesDataType() {
+  static const char *names[] = {
+    "INHERIT",
+    "HALF",
+    "FLOAT",
+    "DOUBLE",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameDataType(DataType e) {
+  const size_t index = static_cast<int>(e);
+  return EnumNamesDataType()[index];
 }
 
 MANUALLY_ALIGNED_STRUCT(8) Operands FLATBUFFERS_FINAL_CLASS {
@@ -170,16 +205,20 @@ inline flatbuffers::Offset<Variable> CreateVariableDirect(
       values ? _fbb.CreateVector<float>(*values) : 0);
 }
 
-struct Node FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
-    VT_TYPE = 4,
-    VT_OPNUM = 6,
-    VT_NAME = 8,
-    VT_OPERANDS = 10,
-    VT_INPUT = 12
+    VT_DATATYPE = 4,
+    VT_OPTYPE = 6,
+    VT_OPNUM = 8,
+    VT_NAME = 10,
+    VT_OPERANDS = 12,
+    VT_INPUT = 14
   };
-  OpType type() const {
-    return static_cast<OpType>(GetField<int8_t>(VT_TYPE, 0));
+  DataType dataType() const {
+    return static_cast<DataType>(GetField<int8_t>(VT_DATATYPE, 0));
+  }
+  OpType opType() const {
+    return static_cast<OpType>(GetField<int8_t>(VT_OPTYPE, 0));
   }
   int16_t opNum() const {
     return GetField<int16_t>(VT_OPNUM, 0);
@@ -190,12 +229,13 @@ struct Node FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const Operands *operands() const {
     return GetStruct<const Operands *>(VT_OPERANDS);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<Node>> *input() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<Node>> *>(VT_INPUT);
+  const flatbuffers::Vector<flatbuffers::Offset<FlatNode>> *input() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<FlatNode>> *>(VT_INPUT);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int8_t>(verifier, VT_TYPE) &&
+           VerifyField<int8_t>(verifier, VT_DATATYPE) &&
+           VerifyField<int8_t>(verifier, VT_OPTYPE) &&
            VerifyField<int16_t>(verifier, VT_OPNUM) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.Verify(name()) &&
@@ -207,80 +247,87 @@ struct Node FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
 };
 
-struct NodeBuilder {
+struct FlatNodeBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_type(OpType type) {
-    fbb_.AddElement<int8_t>(Node::VT_TYPE, static_cast<int8_t>(type), 0);
+  void add_dataType(DataType dataType) {
+    fbb_.AddElement<int8_t>(FlatNode::VT_DATATYPE, static_cast<int8_t>(dataType), 0);
+  }
+  void add_opType(OpType opType) {
+    fbb_.AddElement<int8_t>(FlatNode::VT_OPTYPE, static_cast<int8_t>(opType), 0);
   }
   void add_opNum(int16_t opNum) {
-    fbb_.AddElement<int16_t>(Node::VT_OPNUM, opNum, 0);
+    fbb_.AddElement<int16_t>(FlatNode::VT_OPNUM, opNum, 0);
   }
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
-    fbb_.AddOffset(Node::VT_NAME, name);
+    fbb_.AddOffset(FlatNode::VT_NAME, name);
   }
   void add_operands(const Operands *operands) {
-    fbb_.AddStruct(Node::VT_OPERANDS, operands);
+    fbb_.AddStruct(FlatNode::VT_OPERANDS, operands);
   }
-  void add_input(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Node>>> input) {
-    fbb_.AddOffset(Node::VT_INPUT, input);
+  void add_input(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatNode>>> input) {
+    fbb_.AddOffset(FlatNode::VT_INPUT, input);
   }
-  NodeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  FlatNodeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  NodeBuilder &operator=(const NodeBuilder &);
-  flatbuffers::Offset<Node> Finish() {
-    const auto end = fbb_.EndTable(start_, 5);
-    auto o = flatbuffers::Offset<Node>(end);
+  FlatNodeBuilder &operator=(const FlatNodeBuilder &);
+  flatbuffers::Offset<FlatNode> Finish() {
+    const auto end = fbb_.EndTable(start_, 6);
+    auto o = flatbuffers::Offset<FlatNode>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Node> CreateNode(
+inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     flatbuffers::FlatBufferBuilder &_fbb,
-    OpType type = OpType_TRANSFORM,
+    DataType dataType = DataType_INHERIT,
+    OpType opType = OpType_TRANSFORM,
     int16_t opNum = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     const Operands *operands = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Node>>> input = 0) {
-  NodeBuilder builder_(_fbb);
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatNode>>> input = 0) {
+  FlatNodeBuilder builder_(_fbb);
   builder_.add_input(input);
   builder_.add_operands(operands);
   builder_.add_name(name);
   builder_.add_opNum(opNum);
-  builder_.add_type(type);
+  builder_.add_opType(opType);
+  builder_.add_dataType(dataType);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Node> CreateNodeDirect(
+inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    OpType type = OpType_TRANSFORM,
+    DataType dataType = DataType_INHERIT,
+    OpType opType = OpType_TRANSFORM,
     int16_t opNum = 0,
     const char *name = nullptr,
     const Operands *operands = 0,
-    const std::vector<flatbuffers::Offset<Node>> *input = nullptr) {
-  return nd4j::graph::CreateNode(
+    const std::vector<flatbuffers::Offset<FlatNode>> *input = nullptr) {
+  return nd4j::graph::CreateFlatNode(
       _fbb,
-      type,
+      dataType,
+      opType,
       opNum,
       name ? _fbb.CreateString(name) : 0,
       operands,
-      input ? _fbb.CreateVector<flatbuffers::Offset<Node>>(*input) : 0);
+      input ? _fbb.CreateVector<flatbuffers::Offset<FlatNode>>(*input) : 0);
 }
 
-inline const nd4j::graph::Node *GetNode(const void *buf) {
-  return flatbuffers::GetRoot<nd4j::graph::Node>(buf);
+inline const nd4j::graph::FlatNode *GetFlatNode(const void *buf) {
+  return flatbuffers::GetRoot<nd4j::graph::FlatNode>(buf);
 }
 
-inline bool VerifyNodeBuffer(
+inline bool VerifyFlatNodeBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<nd4j::graph::Node>(nullptr);
+  return verifier.VerifyBuffer<nd4j::graph::FlatNode>(nullptr);
 }
 
-inline void FinishNodeBuffer(
+inline void FinishFlatNodeBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::Node> root) {
+    flatbuffers::Offset<nd4j::graph::FlatNode> root) {
   fbb.Finish(root);
 }
 

@@ -949,7 +949,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return 1;
+			return (T) 1.0f;
 		}
 	};
 

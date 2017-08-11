@@ -8,6 +8,13 @@ enum OpType:byte {
     BROADCAST = 4
 }
 
+enum DataType:byte {
+    INHERIT,
+    HALF,
+    FLOAT,
+    DOUBLE,
+}
+
 table Variable {
     id:ulong;
     name:string;
@@ -21,12 +28,13 @@ struct Operands {
   y:ulong;
 }
 
-table Node {
-    type:OpType;
+table FlatNode {
+    dataType:DataType;
+    opType:OpType;
     opNum:short;
     name:string;
     operands:Operands; // op either have operands as input
-    input:[Node]; // or other nodes (or both)
+    input:[FlatNode]; // or other nodes (or both)
 }
 
-root_type Node;
+root_type FlatNode;
