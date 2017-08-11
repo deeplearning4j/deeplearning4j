@@ -95,6 +95,24 @@ public class Hdf5Archive {
     }
 
     /**
+     * Read string attribute from group path.
+     *
+     * @param attributeName     Name of attribute
+     * @param groups            Array of zero or more ancestor groups from root to parent.
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public String readAttributeAsString(String attributeName, String... groups)
+        throws UnsupportedKerasConfigurationException {
+        if (groups.length == 0)
+            return readAttributeAsString(this.file.openAttribute(attributeName));
+        hdf5.Group group = this.file.asCommonFG().openGroup(groups[0]);
+        for (int i = 1; i < groups.length; i++)
+            group = group.asCommonFG().openGroup(groups[i]);
+        return readAttributeAsString(group.openAttribute(attributeName));
+    }
+
+    /**
      * Check whether group path contains string attribute.
      *
      * @param attributeName     Name of attribute
@@ -262,6 +280,45 @@ public class Hdf5Archive {
                 throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
             }
         }
+        return s;
+    }
+
+    /**
+     * Read attribute as string.
+     *
+     * @param attribute     HDF5 attribute to read as string.
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    private String readAttributeAsString(hdf5.Attribute attribute) throws UnsupportedKerasConfigurationException {
+        hdf5.VarLenType vl = attribute.getVarLenType();
+        int bufferSizeMult = 1;
+        String s = null;
+        /* TODO: find a less hacky way to do this.
+         * Reading variable length strings (from attributes) is a giant
+         * pain. There does not appear to be any way to determine the
+         * length of the string in advance, so we use a hack: choose a
+         * buffer size and read the config, increase buffer and repeat
+         * until the buffer ends with \u0000
+         */
+        while (true) {
+            byte[] attrBuffer = new byte[bufferSizeMult * 2000];
+            BytePointer attrPointer = new BytePointer(attrBuffer);
+            attribute.read(vl, attrPointer);
+            attrPointer.get(attrBuffer);
+            s = new String(attrBuffer);
+
+            if (s.endsWith("\u0000")) {
+                s = s.replace("\u0000", "");
+                break;
+            }
+
+            bufferSizeMult++;
+            if (bufferSizeMult > 100) {
+                throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
+            }
+        }
+
         return s;
     }
 }

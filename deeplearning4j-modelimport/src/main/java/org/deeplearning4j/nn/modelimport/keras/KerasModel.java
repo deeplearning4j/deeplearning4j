@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.modelimport.keras;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -322,19 +323,42 @@ public class KerasModel {
             // there's a bug where if a layer name contains a forward slash, the first fragment must be appended
             // to the name of the dataset...it appears h5 interprets the forward slash as a data group
             String[] layerFragments = layerName.split("/");
+
+            // If the keras network definition is mixed with tensorflow scope, the group maybe nested,
+            // we have to get
+            List<String> attributeStrParts = new ArrayList<>();
+            String attributeStr = weightsRoot != null
+                                ? weightsArchive.readAttributeAsString("weight_names", weightsRoot + "/" + layerName)
+                                : weightsArchive.readAttributeAsString("weight_names", layerName);
+            for (String part: attributeStr.split("/")) {
+                part = part.trim();
+
+                if (part.length() == 0) {
+                    break;
+                }
+
+                Matcher tfSuffixMatcher = Pattern.compile(":\\d+").matcher(part);
+                if (tfSuffixMatcher.find())
+                    break;
+
+                attributeStrParts.add(part);
+            }
+
+            String attributeJoinStr = String.join("/", attributeStrParts); // FIXME: what if attributeJoinStr is null or empty ???
+
             if (layerFragments.length > 1) {
                 try {
                     layerParamNames = weightsRoot != null
-                                    ? weightsArchive.getDataSets(weightsRoot, layerName + "/" + layerFragments[0])
-                                    : weightsArchive.getDataSets(layerName + "/" + layerFragments[0]);
+                                    ? weightsArchive.getDataSets(weightsRoot, layerName + "/" + attributeJoinStr)
+                                    : weightsArchive.getDataSets(layerName + "/" + attributeJoinStr);
                 } catch (Exception e) {
                     // TODO: fix this horrible ugliness
                     layerParamNames = weightsRoot != null ? weightsArchive.getDataSets(weightsRoot, layerName)
                                     : weightsArchive.getDataSets(layerName);
                 }
             } else {
-                layerParamNames = weightsRoot != null ? weightsArchive.getDataSets(weightsRoot, layerName)
-                                : weightsArchive.getDataSets(layerName);
+                layerParamNames = weightsRoot != null ? weightsArchive.getDataSets(weightsRoot, layerName + "/" + attributeJoinStr)
+                                : weightsArchive.getDataSets(layerName + "/" + attributeJoinStr);
             }
             if (layerParamNames.isEmpty())
                 continue;
@@ -387,12 +411,12 @@ public class KerasModel {
                 INDArray paramValue;
                 if (layerFragments.length > 1) {
                     paramValue = weightsRoot != null ? weightsArchive
-                                    .readDataSet(layerFragments[0] + "/" + layerParamName, weightsRoot, layerName)
-                                    : weightsArchive.readDataSet(layerParamName, layerName);
+                                    .readDataSet(layerParamName, weightsRoot + "/" + layerName + "/" + attributeJoinStr)
+                                    : weightsArchive.readDataSet(layerParamName, layerName + "/" + attributeJoinStr);
                 } else {
                     paramValue = weightsRoot != null
-                                    ? weightsArchive.readDataSet(layerParamName, weightsRoot, layerName)
-                                    : weightsArchive.readDataSet(layerParamName, layerName);
+                                    ? weightsArchive.readDataSet(layerParamName, weightsRoot + "/" + layerName + "/" + attributeJoinStr)
+                                    : weightsArchive.readDataSet(layerParamName, layerName + "/" + attributeJoinStr);
                 }
                 weights.put(paramName, paramValue);
             }
