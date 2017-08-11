@@ -83,11 +83,13 @@ public abstract class DifferentialFunction<X extends Field<X>>
         }
 
         X val = doGetValue();
-        if(val instanceof ArrayField) {
+        if(val instanceof ArrayField && !freeze) {
             ArrayField arrayField = (ArrayField) val;
             NDArrayVertex vertex = (NDArrayVertex) getSameDiff().getGraph().getVertex(getVertexId());
             arrayField.setVertex(vertex);
             arrayField.setOps(this.sameDiff);
+            Preconditions.checkState(vertex != null,"Vertex " + getVertexId() + " was null.");
+            Preconditions.checkState(vertex.getValue() != null,"Vertex did not have a value set.");
             arrayField.getInput().setScalarValue(vertex.getValue().getScalarValue());
             arrayField.setInput(vertex.getValue());
             Preconditions.checkState(sameDiff == arrayField.getOps(),"Passed in array factory != the passed in graph. Unable to instantiate.");

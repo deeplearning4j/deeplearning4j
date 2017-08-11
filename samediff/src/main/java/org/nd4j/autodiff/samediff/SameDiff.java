@@ -1417,7 +1417,6 @@ public class SameDiff {
                 .varName("cosineSimilarity(" + iX.getVarName() + "," + i_y.getVarName() +  ")")
                 .sameDiff(this).shape(arrayReduceShape)
                 .build();
-        Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
     }

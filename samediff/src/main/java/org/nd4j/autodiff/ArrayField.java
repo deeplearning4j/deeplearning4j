@@ -1006,7 +1006,7 @@ public class ArrayField implements Field<ArrayField> {
 
 
     private ArrayField addPairTransformOp(String name,ArrayField i_v,Object[] extraArgs) {
-        if(ArrayUtil.prod(getInput().getShape()) == 1) {
+        if(ArrayUtil.prod(getInput().getShape()) == 1 || ArrayUtil.prod(i_v.getInput().getShape()) == 1) {
             return addFirstScalarTransformOp(name + "_scalar",
                     i_v,extraArgs);
         }
