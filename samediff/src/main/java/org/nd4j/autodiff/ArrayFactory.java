@@ -635,4 +635,9 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
                 "methodNames=" + methodNames +
                 '}';
     }
+
+    @Override
+    public ArrayField set(ArrayField value, ArrayField value1) {
+        return value.set(value1);
+    }
 }

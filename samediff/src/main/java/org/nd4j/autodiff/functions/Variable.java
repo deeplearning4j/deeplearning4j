@@ -10,6 +10,7 @@ import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
 
@@ -115,20 +116,15 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
     @Override
-    public Constant<X> diff(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
         if(m_x instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) m_x;
-            Constant<X> ret =  (this.equals(i_v) ? new One<>(sameDiff,
-                    arrayField.getInput().getShape()) : new Zero<>(sameDiff,
-                    arrayField.getInput().getShape()));
+            if (this.equals(i_v)) {
+                return i_v.mul(0.0).add(1.0);
 
-            /*addEdges(graph,
-                    this,ret,
-                    "diff",
-                    OpState.OpType.TRANSFORM,
-                    arrayField.getInput().getShape());*/
-            return ret;
-
+            }
+            else {
+                return mul(0.0);
+            }
         }
 
         throw new IllegalStateException("Illegal type for variable. Should be ArrayField");
@@ -159,7 +155,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public DifferentialFunction<X> div(DifferentialFunction<X> i_v) {
-        return (i_v == this) ? new One<>(sameDiff,i_v.getResultShape()) : super.mul(i_v.inverse());
+        return (i_v == this) ? new One<>(sameDiff,i_v.getResultShape()) : super.div(i_v);
     }
 
     @Override

@@ -26,9 +26,8 @@ public class Log extends AbstractUnaryFunction<ArrayField> {
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
         validateDifferentialFunctionsameDiff(arg());
-        DifferentialFunction<ArrayField> toInverse = arg().mul(arg().diff(i_v));
-        validateDifferentialFunctionsameDiff(toInverse);
-        return new Inverse<>(sameDiff,i_v);
+        DifferentialFunction<ArrayField> toInverse = i_v.div(arg().diff(i_v));
+        return toInverse;
     }
 
     @Override

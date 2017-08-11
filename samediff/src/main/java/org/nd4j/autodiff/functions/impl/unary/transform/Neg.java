@@ -25,8 +25,7 @@ public class Neg extends AbstractUnaryFunction<ArrayField> {
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
         validateDifferentialFunctionsameDiff(arg());
-
-        return i_v.negate().mul(arg().diff(i_v));
+        return arg().negate().mul(arg().diff(i_v));
     }
 
 

@@ -551,7 +551,7 @@ public class SameDiff {
                 .differentialFunction(arrField)
                 .varName("grad(" + iX.getVarName() + ")").sameDiff(this)
                 .build();
-        Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
+        //Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
     }

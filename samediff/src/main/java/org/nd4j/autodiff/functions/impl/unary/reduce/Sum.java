@@ -28,6 +28,6 @@ public class Sum extends AbstractReduceUnaryFunction<ArrayField> {
     @Override
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
-        return sameDiff.getFunctionFactory().doRepeat(this,i_v1,dimensions).mul(arg().diff(i_v1));
+        return sameDiff.getFunctionFactory().doRepeat(this,arg(),dimensions).mul(arg().diff(i_v1));
     }
 }
