@@ -222,8 +222,27 @@ template <typename T> template <typename OpName> void NDArray<T>::applyTransform
 }
 
 // perform array transformation
-template <typename T> template <typename OpName> void NDArray<T>::applyTransform(T *extraParams) {
-    functions::transform::Transform<T>::template exec<OpName>(_buffer, _shapeInfo, _buffer, _shapeInfo, extraParams, nullptr, nullptr);
+template <typename T> template <typename OpName>
+void NDArray<T>::applyTransform(NDArray<T> *target, T *extraParams) {
+    functions::transform::Transform<T>::template exec<OpName>(this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams, nullptr, nullptr);
+}
+
+// perform array transformation
+template <typename T> template <typename OpName>
+void NDArray<T>::applyTransform(T *extraParams) {
+    applyTransform<OpName>(this, extraParams);
+}
+
+// perform pairwise transformation
+template <typename T> template<typename OpName>
+void NDArray<T>::applyPairwiseTransform(NDArray<T> *other, T *extraParams) {
+    applyPairwiseTransform<OpName>(other, this, extraParams);
+}
+
+// perform pairwise transformation
+template <typename T> template<typename OpName>
+void NDArray<T>::applyPairwiseTransform(NDArray<T> *other, NDArray<T> *target, T *extraParams) {
+    functions::pairwise_transforms::PairWiseTransform<T>::template exec<OpName>(this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams);
 }
 
 

@@ -111,6 +111,15 @@ template <typename T> class NDArray
         // perform array transformation
         template<typename OpName> void applyTransform(T *extraParams);
 
+        // perform array transformation
+        template<typename OpName> void applyTransform(NDArray<T> *target, T *extraParams);
+
+        // perform pairwise transformation
+        template<typename OpName> void applyPairwiseTransform(NDArray<T> *other, T *extraParams);
+
+        // perform pairwise transformation
+        template<typename OpName> void applyPairwiseTransform(NDArray<T> *other, NDArray<T> *target, T *extraParams);
+
         // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
         NDArray<T> *transpose() const;
 

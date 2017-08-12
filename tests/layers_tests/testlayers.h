@@ -9,6 +9,7 @@
 #include <NativeOps.h>
 #include <NDArray.h>
 #include <cnpy.h>
+#include <ops/ops.h>
 #include <helpers/shape.h>
 #include <ops/gemm.h>
 #include <layers/layers_factory.h>
