@@ -10,7 +10,9 @@ import org.deeplearning4j.ui.stats.api.StatsUpdateConfiguration;
 @AllArgsConstructor
 public class DefaultStatsUpdateConfiguration implements StatsUpdateConfiguration {
 
-    private int reportingFrequency = 1;
+    public static final int DEFAULT_REPORTING_FREQUENCY = 10;
+
+    private int reportingFrequency = DEFAULT_REPORTING_FREQUENCY;
     private boolean collectPerformanceStats = true;
     private boolean collectMemoryStats = true;
     private boolean collectGarbageCollectionStats = true;
@@ -149,7 +151,7 @@ public class DefaultStatsUpdateConfiguration implements StatsUpdateConfiguration
     }
 
     public static class Builder {
-        private int reportingFrequency = 1;
+        private int reportingFrequency = DEFAULT_REPORTING_FREQUENCY;
         private boolean collectPerformanceStats = true;
         private boolean collectMemoryStats = true;
         private boolean collectGarbageCollectionStats = true;

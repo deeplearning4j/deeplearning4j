@@ -1,6 +1,6 @@
 package org.deeplearning4j.convolution;
 
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;

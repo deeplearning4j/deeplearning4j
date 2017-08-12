@@ -19,7 +19,7 @@
 package org.deeplearning4j.nn.api;
 
 
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.IterationListener;

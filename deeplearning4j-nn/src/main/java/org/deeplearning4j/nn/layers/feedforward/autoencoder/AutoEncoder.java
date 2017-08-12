@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;

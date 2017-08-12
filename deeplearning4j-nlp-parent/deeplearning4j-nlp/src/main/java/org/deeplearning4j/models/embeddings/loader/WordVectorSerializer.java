@@ -27,7 +27,7 @@ import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.io.output.CloseShieldOutputStream;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;

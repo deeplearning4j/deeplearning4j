@@ -79,6 +79,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         return configuration.getUNK();
     }
 
+    @Override
+    public void setUNK(String UNK) {
+        configuration.setUNK(UNK);
+        super.setUNK(UNK);
+    }
+
     public double getElementsScore() {
         return scoreElements.get();
     }

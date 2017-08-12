@@ -21,7 +21,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.function.Function2;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 

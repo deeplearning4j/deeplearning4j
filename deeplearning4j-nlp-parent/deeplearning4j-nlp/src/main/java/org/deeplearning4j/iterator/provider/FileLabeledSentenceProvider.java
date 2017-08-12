@@ -3,7 +3,7 @@ package org.deeplearning4j.iterator.provider;
 import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.util.RandomUtils;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.iterator.LabeledSentenceProvider;
 import org.nd4j.linalg.collection.CompactHeapStringList;
 

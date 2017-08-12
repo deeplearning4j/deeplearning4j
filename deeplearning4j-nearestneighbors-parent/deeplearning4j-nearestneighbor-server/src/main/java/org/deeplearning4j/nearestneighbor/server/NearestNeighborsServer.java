@@ -154,9 +154,15 @@ public class NearestNeighborsServer {
 
                 }
 
+                if (results.size() != distances.size()) {
+                    return internalServerError(
+                            String.format("results.size == %d != %d == distances.size",
+                                    results.size(), distances.size()));
+                }
+
                 List<NearestNeighborsResult> nnResult = new ArrayList<>();
-                for (DataPoint dataPoint : results) {
-                    nnResult.add(new NearestNeighborsResult(dataPoint.getIndex()));
+                for (int i=0; i<results.size(); i++) {
+                    nnResult.add(new NearestNeighborsResult(results.get(i).getIndex(), distances.get(i)));
                 }
 
                 NearstNeighborsResults results2 = NearstNeighborsResults.builder().results(nnResult).build();

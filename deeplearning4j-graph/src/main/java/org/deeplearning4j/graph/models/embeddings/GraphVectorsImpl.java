@@ -2,7 +2,7 @@ package org.deeplearning4j.graph.models.embeddings;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.models.GraphVectors;

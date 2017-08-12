@@ -21,13 +21,15 @@ public class SymmetricTrainer extends DefaultTrainer implements CommunicativeTra
     protected GradientsAccumulator accumulator;
 
     public SymmetricTrainer(@NonNull Model originalModel, int threadIdx, @NonNull WorkspaceMode mode,
-                    @NonNull ParallelWrapper wrapper) {
+                    @NonNull ParallelWrapper wrapper, boolean useMDS) {
         super();
+        this.useMDS = useMDS;
         this.originalModel = originalModel;
         this.threadId = threadIdx;
         this.workspaceMode = mode;
         this.parallelWrapper = wrapper;
         this.accumulator = wrapper.getGradientsAccumulator();
+
     }
 
     // FIXME: delete this method, it's not needed anymore

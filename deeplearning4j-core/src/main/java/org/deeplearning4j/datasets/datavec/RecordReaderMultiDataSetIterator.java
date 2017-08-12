@@ -31,7 +31,7 @@ import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
 import org.deeplearning4j.exception.DL4JException;
 import org.nd4j.linalg.api.ndarray.INDArray;
