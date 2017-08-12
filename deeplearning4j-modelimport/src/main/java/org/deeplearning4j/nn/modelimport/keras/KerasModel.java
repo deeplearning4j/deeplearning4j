@@ -21,7 +21,6 @@ package org.deeplearning4j.nn.modelimport.keras;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -34,6 +33,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLoss;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLstm;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.util.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -344,7 +344,7 @@ public class KerasModel {
                 attributeStrParts.add(part);
             }
 
-            String attributeJoinStr = String.join("/", attributeStrParts); // FIXME: what if attributeJoinStr is null or empty ???
+            String attributeJoinStr = StringUtils.join("/", attributeStrParts); // FIXME: what if attributeJoinStr is null or empty ???
 
             if (layerFragments.length > 1) {
                 try {
