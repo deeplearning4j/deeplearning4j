@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
+import org.nd4j.linalg.api.ops.impl.shape.Broadcast;
 import org.nd4j.linalg.api.ops.impl.shape.Permute;
 import org.nd4j.linalg.api.ops.impl.shape.Reshape;
 import org.nd4j.linalg.api.ops.impl.shape.Transpose;
@@ -99,6 +100,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Reshape(x,z);
             case "permute":
                 return new Permute(x,z);
+            case "broadcast":
+                return new Broadcast(x,z);
         }
 
         throw new IllegalArgumentException("Illegal name for create shape op" + name);

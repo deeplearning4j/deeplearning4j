@@ -545,7 +545,7 @@ public class SameDiff {
      */
     public SDVariable grad(SDVariable iX, SDVariable wrt) {
         Preconditions.checkState(iX.getSameDiff() == wrt.getSameDiff(),"Same diff instances must be the same.");
-        DifferentialFunction<ArrayField> arrField = getFunctionInput(iX).diff(wrt.getArrayField());
+        DifferentialFunction<ArrayField> arrField = getFunctionInput(iX).diff(getFunctionInput(wrt));
         SDVariable ret = SDVariable.builder()
                 .arr(null).shape(wrt.getShape())
                 .differentialFunction(arrField)

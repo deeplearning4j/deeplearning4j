@@ -10,6 +10,7 @@ public class Broadcast extends AbstractUnaryFunction<ArrayField> {
 
     public Broadcast(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape) {
         super(sameDiff, i_v, shape,OpState.OpType.SHAPE,new Object[]{shape});
+        this.shape = shape;
     }
 
     @Override

@@ -360,6 +360,28 @@ public class SameDiffTests {
     }
 
 
+    @Test
+    @Ignore
+    public void testSumGradient() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
+        Map<String,INDArray> inputs = new HashMap<>();
+        inputs.put("x",sumInput);
+        sameDiff.defineFunction("sumWithGradient", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable sum = sameDiff.sum(input,1);
+                SDVariable grad = sameDiff.grad(sum,sum);
+                return grad;
+            }
+        },inputs);
+
+        INDArray assertion = sumInput.sum(1);
+        List<Op> executions = sameDiff.exec("sumWithGradient");
+
+    }
+
 
     @Test
     public void testNestedExecution() {
