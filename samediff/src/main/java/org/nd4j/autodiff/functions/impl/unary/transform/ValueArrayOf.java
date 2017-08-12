@@ -3,6 +3,7 @@ package org.nd4j.autodiff.functions.impl.unary.transform;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.functions.One;
 import org.nd4j.autodiff.samediff.SameDiff;
 
 public class ValueArrayOf extends AbstractUnaryFunction<ArrayField> {
@@ -22,12 +23,12 @@ public class ValueArrayOf extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        throw new UnsupportedOperationException();
+        return new One<>(sameDiff,i_v.getResultShape());
     }
 
 
     @Override
     public String functionName() {
-        return "valueArray";
+        return "identity";
     }
 }

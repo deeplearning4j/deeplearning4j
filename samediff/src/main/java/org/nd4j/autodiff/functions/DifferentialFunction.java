@@ -83,8 +83,15 @@ public abstract class DifferentialFunction<X extends Field<X>>
         }
 
         X val = doGetValue();
+        if(val instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) val;
+            Preconditions.checkState(arrayField.getOps() == this.sameDiff,"Same diff instances for get value not the same.");
+
+        }
+
         if(val instanceof ArrayField && !freeze) {
             ArrayField arrayField = (ArrayField) val;
+            Preconditions.checkState(arrayField.getOps() == this.sameDiff,"Same diff instances for get value not the same.");
             NDArrayVertex vertex = (NDArrayVertex) getSameDiff().getGraph().getVertex(getVertexId());
             arrayField.setVertex(vertex);
             arrayField.setOps(this.sameDiff);
@@ -810,6 +817,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
         if(i_v1.getValue(true) instanceof ArrayField) {
             validateDifferentialFunctionGraph(i_v1);
             validateDifferentialFunctionGraph(i_v2);
+            validateDifferentialFunctionsameDiff((ArrayField) i_v1.getValue(true));
+
 
             /**
              * getValue() generates invalid vertex ids
@@ -826,6 +835,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
             int v1VertexId = i_v1.resultVertexId();
             ArrayField v2 = (ArrayField) i_v2.getValue(true);
             int v2VertexId = i_v2.resultVertexId();
+            validateDifferentialFunctionsameDiff(v1);
+            validateDifferentialFunctionsameDiff(v2);
 
             NDArrayInformation arrInfo = NDArrayInformation.builder()
                     .arrId(UUID.randomUUID().toString())
@@ -948,8 +959,33 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     protected void validateDifferentialFunctionsameDiff(
-            DifferentialFunction<X> function) {
+            ArrayField function) {
+        if(sameDiff.getGraph().isFrozen())
+            return;
         Preconditions.checkState(function != null,"Passed in function was null.");
+        Preconditions.checkState(function.getOps() ==
+                        this.getSameDiff(),
+                "Function applications must be contained " +
+                        "in same sameDiff. The left " + function +"" +
+                        " must match this function " + this);
+        Preconditions.checkState(sameDiff ==
+                this.getSameDiff(),"Function applications m" +
+                "ust be " +
+                "contained in same sameDiff. The left " + function +" " +
+                "must " +
+                "match this function " + this);
+
+    }
+
+
+    protected void validateDifferentialFunctionsameDiff(
+            DifferentialFunction<X> function) {
+
+        Preconditions.checkState(function != null,"Passed in function was null.");
+        ArrayField a = (ArrayField)  getValue(true);
+        Preconditions.checkState(a.getOps() == sameDiff);
+        Preconditions.checkState(a.getOps() == function.getSameDiff());
+
         Preconditions.checkState(function.getSameDiff() ==
                         this.getSameDiff(),
                 "Function applications must be contained " +

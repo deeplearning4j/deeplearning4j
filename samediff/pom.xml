@@ -47,6 +47,10 @@
 </build>
     <dependencies>
         <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
             <version>${project.version}</version>

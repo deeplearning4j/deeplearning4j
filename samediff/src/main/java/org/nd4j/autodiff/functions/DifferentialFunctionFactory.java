@@ -68,7 +68,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     @Override
     public Constant<ArrayField>  val(ArrayField iX) {
         if(iX instanceof ArrayField) {
-
+            Preconditions.checkArgument(iX.getOps() == sameDiff,"Same diff must be the same.");
             return new Constant<>(sameDiff, iX,
                     iX.getInput().getShape());
         }
@@ -79,11 +79,13 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
 
     @Override
     public Variable<ArrayField>  var(String iName, ArrayField iX, PreEvaluator<ArrayField>  preEvaluator) {
+        Preconditions.checkArgument(iX.getOps() == sameDiff,"Same diff must be the same.");
         return new Variable<>(sameDiff,iName, iX, preEvaluator);
     }
 
     @Override
     public Variable<ArrayField>  var(String iName, ArrayField iX) {
+        Preconditions.checkArgument(iX.getOps() == sameDiff,"Same diff must be the same.");
         return new Variable<>(sameDiff,iName, iX);
     }
 
@@ -965,16 +967,8 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
         if(input.getValue(true) instanceof ArrayField) {
             ArrayField arrayField = input.getValue(true);
             int[] inputShape = arrayField.getInput().getShape();
-            if(Shape.isWholeArray(inputShape,axes)) {
-                validateDifferentialFunctionsameDiff(func);
-                validateDifferentialFunctionsameDiff(input);
-                return valueArrayOf(input,inputShape);
-            }
-
-            for(int i = 0; i < axes.length; i++) {
-                inputShape[axes[i]] = 1;
-            }
-
+            validateDifferentialFunctionsameDiff(func);
+            validateDifferentialFunctionsameDiff(input);
             return broadcast(func,inputShape);
 
         }

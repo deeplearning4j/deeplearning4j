@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions;
 
+import com.google.common.base.Preconditions;
 import com.rits.cloning.Cloner;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -30,6 +31,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                                  Object[] extraArgs) {
         super(sameDiff,extraArgs);
         this.opType = opType;
+        this.shape = shape;
 
         if (i_v != null) {
             m_x = i_v;
@@ -51,14 +53,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
     public AbstractUnaryFunction(SameDiff sameDiff,
                                  DifferentialFunction<X> i_v,
                                  Object[] extraArgs) {
-        super(sameDiff,extraArgs);
-        if (i_v != null) {
-            m_x = i_v;
-            validateDifferentialFunctionsameDiff(i_v);
-            addEdges(sameDiff,m_x,functionName());
-        } else {
-            throw new IllegalArgumentException("Input not null variable.");
-        }
+     this(sameDiff,i_v,i_v.getResultShape(), OpState.OpType.TRANSFORM,extraArgs);
     }
 
 
@@ -84,6 +79,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                             int...shape) {
         if(i_v1.getValue(true) instanceof ArrayField) {
             ArrayField v1 = (ArrayField) i_v1.getValue(true);
+            validateDifferentialFunctionsameDiff(v1);
             NDArrayInformation information =    NDArrayInformation.builder()
                     .arrId(UUID.randomUUID().toString())
                     .id(opName + "(" + v1.getInput().getId() + " -> " +
@@ -92,7 +88,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
             //result
             NDArrayVertex newVertex = new NDArrayVertex(sameDiff.getGraph().nextVertexId(), information);
             this.vertexId = newVertex.vertexID();
-
+            Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");
             sameDiff.getGraph().addVertex(newVertex);
             OpState owner =  OpState.builder()
                     .opType(opType)

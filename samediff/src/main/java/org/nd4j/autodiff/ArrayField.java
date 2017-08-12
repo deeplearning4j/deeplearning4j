@@ -45,6 +45,8 @@ public class ArrayField implements Field<ArrayField> {
                       SameDiff ops) {
         this.input = ndArrayVertex.getValue();
         this.vertex = ndArrayVertex;
+        if(ops.getGraph().getVertex(vertex.getIdx()) == null)
+            ops.getGraph().addVertex(ndArrayVertex);
         this.ops = ops;
     }
 
@@ -644,6 +646,7 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField valueArrayOf(int[] shape) {
+         Preconditions.checkArgument(shape != null,"Passed in shape must not be null.");
         return addArrayOp(
                 "full",
                 null,
@@ -682,7 +685,7 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField broadcast(int[] shape) {
-        return addArrayOp("broadcast",null,shape,null, OpState.OpType.BROADCAST);
+        return addArrayOp("broadcast",null,shape,null, OpState.OpType.SHAPE);
     }
 
 
@@ -812,7 +815,7 @@ public class ArrayField implements Field<ArrayField> {
     private ArrayField addFirstScalarTransformOp(String name,
                                                  ArrayField i_v,
                                                  Object[] extraArgs) {
-        Preconditions.checkState(this.ops.getGraph() == i_v.ops.getGraph(), "If adding a field. Must be apart of the same graph.");
+        Preconditions.checkState(this.ops == i_v.ops, "If adding a field. Must be apart of the same graph.");
 
         NDArrayInformation ndArrayInformation =  NDArrayInformation.builder()
                 .id(name + "(" + input.getId() + ")").scalarValue(this.getInput().getScalarValue())
@@ -851,7 +854,6 @@ public class ArrayField implements Field<ArrayField> {
                                             NDArrayInformation input,
                                             int[] nonScalarShape,
                                             Number scalarValue,
-
                                             boolean inPlace) {
         //for the purpose of the graph, we only need the scalar
         //value, therefore the input should be the
@@ -912,11 +914,12 @@ public class ArrayField implements Field<ArrayField> {
                 extraArgs);
     }
 
-    private ArrayField addPairReduceOp(String name,ArrayField i_v,
+    private ArrayField addPairReduceOp(String name,
+                                       ArrayField i_v,
                                        int[] dimensions,
                                        int[] resultShape,
                                        Object[] extraArgs) {
-        Preconditions.checkState(this.ops.getGraph() == i_v.ops.getGraph(), "If adding a field. Must be apart of the same graph.");
+        Preconditions.checkState(this.ops == i_v.ops, "If adding a field. Must be apart of the same graph.");
 
         NDArrayInformation information =   NDArrayInformation.builder()
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
@@ -930,7 +933,7 @@ public class ArrayField implements Field<ArrayField> {
 
         //map x -> z
         OpState xToz = OpState.builder()
-                .n(ArrayUtil.prod(resultShape))
+                .n(ArrayUtil.prod(resultShape)).axes(dimensions)
                 .opName(name).extraArgs(extraArgs)
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
@@ -959,50 +962,6 @@ public class ArrayField implements Field<ArrayField> {
 
 
 
-    private ArrayField addPairReduceOp(String name,
-                                       ArrayField i_v,
-                                       Object[] extraArgs) {
-
-        Preconditions.checkState(this.ops.getGraph() == i_v.ops.getGraph(), "If adding a field. Must be apart of the same graph.");
-
-        //result
-        NDArrayInformation resultInfo =  NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
-                .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
-                .shape(input.getShape()).build();
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getGraph().nextVertexId(), resultInfo);
-
-        //add the result vertex to the graph
-        this.ops.getGraph().addVertex(newVertex);
-
-        //map x -> z
-        OpState xToZ = OpState.builder()
-                .n(ArrayUtil.prod(input.getShape()))
-                .opName(name).extraArgs(extraArgs)
-                .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
-                .opType(OpState.OpType.ACCUMULATION).build();
-        xToZ.setResult(resultInfo);
-        this.ops.getGraph().addEdge(vertex.getIdx(),
-                newVertex.vertexID(),xToZ,true);
-        //map y -> z
-        OpState yToZ = OpState.builder()
-                .n(ArrayUtil.prod(input.getShape()))
-                .opName(name).extraArgs(extraArgs)
-                .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                .opType(OpState.OpType.ACCUMULATION).build();
-        yToZ.setResult(resultInfo);
-        this.ops.getGraph().addEdge(i_v.getVertex().getIdx(),
-                newVertex.vertexID(),yToZ,true);
-        resultInfo.setOwner(yToZ);
-
-        if(xToZ.isInPlace()) {
-            resultInfo.setArrId(input.getArrId());
-        }
-
-
-        return new ArrayField(newVertex,ops);
-    }
 
 
     private ArrayField addPairTransformOp(String name,ArrayField i_v,Object[] extraArgs) {
@@ -1011,7 +970,7 @@ public class ArrayField implements Field<ArrayField> {
                     i_v,extraArgs);
         }
 
-        Preconditions.checkState(this.ops.getGraph() == i_v.ops.getGraph(), "If adding a field. Must be apart of the same graph.");
+        Preconditions.checkState(this.ops == i_v.ops, "If adding a field. Must be apart of the same graph.");
         //result
         NDArrayInformation resultInfo =  NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")

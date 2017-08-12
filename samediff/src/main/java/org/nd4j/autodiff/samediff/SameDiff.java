@@ -7,10 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.functions.AbstractBinaryFunction;
-import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.functions.Variable;
+import org.nd4j.autodiff.functions.*;
+import org.nd4j.autodiff.functions.impl.unary.transform.shape.Broadcast;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.opstate.*;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
@@ -20,6 +18,9 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.BroadcastOp;
+import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -167,27 +168,7 @@ public class SameDiff {
             }
             else if(variable.getDifferentialFunction() != null) {
                 DifferentialFunction<ArrayField> val = deepClone.getDifferentialFunction();
-                if(val instanceof Variable) {
-                    Variable<ArrayField> variable1 = (Variable<ArrayField>) val;
-                    variable1.setSameDiff(sameDiff);
-                    variable1.setVertexId(val.getVertexId());
-                    variable1.getM_x().setOps(sameDiff);
-
-
-                }
-
-                else {
-                    int vertexId = val.getVertexId();
-                    val.setVertexId(vertexId);
-                    val.setSameDiff(sameDiff);
-                }
-
-                if(val.args() != null) {
-                    for(DifferentialFunction<ArrayField> equation  : val.args()) {
-                        equation.setSameDiff(sameDiff);
-                    }
-                }
-
+                ensureSameDiffInstance(sameDiff,val);
 
             }
 
@@ -199,6 +180,33 @@ public class SameDiff {
         return sameDiff.variables().get(sameDiff.variables().size() - 1);
 
     }
+
+
+    private void ensureSameDiffInstance(SameDiff sameDiff,DifferentialFunction<ArrayField> val) {
+        val.setSameDiff(sameDiff);
+        if(val instanceof Variable) {
+            Variable<ArrayField> variable1 = (Variable<ArrayField>) val;
+            variable1.setSameDiff(sameDiff);
+            variable1.setVertexId(val.getVertexId());
+            variable1.getM_x().setOps(sameDiff);
+
+
+        }
+        else if(val instanceof Constant) {
+            Constant<ArrayField> constant = (Constant<ArrayField>) val;
+            constant.setSameDiff(sameDiff);
+            constant.getM_x().setOps(sameDiff);
+        }
+
+        //recursive case
+        else if(val.args() != null) {
+            for(DifferentialFunction<ArrayField> equation  : val.args()) {
+                ensureSameDiffInstance(sameDiff,equation);
+            }
+        }
+
+    }
+
 
     /**
      * Invoke an op by name
@@ -545,7 +553,12 @@ public class SameDiff {
      */
     public SDVariable grad(SDVariable iX, SDVariable wrt) {
         Preconditions.checkState(iX.getSameDiff() == wrt.getSameDiff(),"Same diff instances must be the same.");
+        Preconditions.checkArgument(getFunctionInput(iX).getSameDiff() == this);
+        Preconditions.checkArgument(getFunctionInput(wrt).getSameDiff() == this);
+
         DifferentialFunction<ArrayField> arrField = getFunctionInput(iX).diff(getFunctionInput(wrt));
+        Preconditions.checkArgument(arrField.getSameDiff() == this);
+
         SDVariable ret = SDVariable.builder()
                 .arr(null).shape(wrt.getShape())
                 .differentialFunction(arrField)
@@ -993,8 +1006,12 @@ public class SameDiff {
     }
 
     private DifferentialFunction<ArrayField> getFunctionInput(SDVariable iX) {
-        return iX.getDifferentialFunction() != null ?
+        DifferentialFunction<ArrayField> ret =  iX.getDifferentialFunction() != null ?
                 iX.getDifferentialFunction() : iX.getArrayField();
+        Preconditions.checkState(ret.getSameDiff() == ret.getValue(true).getOps(),"Function input does not have same samediff instance as get value");
+        Preconditions.checkState(ret.getSameDiff() == functionFactory.getSameDiff(),"Function input does not have same samediff instance as get value");
+
+        return ret;
     }
 
     /**
@@ -1966,6 +1983,16 @@ public class SameDiff {
 
     }
 
+    /**
+     * Exec a given function
+     * @param functionName the name of the function
+     *                     to invoke
+     * @return
+     */
+    public INDArray execAndEndResult(String functionName) {
+        return sameDiffFunctionInstances.get(functionName).execAndEndResult();
+    }
+
 
     /**
      * Exec a given function
@@ -2003,12 +2030,36 @@ public class SameDiff {
             Op op = createOp(
                     opExecAction.getOpState().getOpType(),
                     opExecAction);
+
             ops.add(op);
+
+            if(opExecAction.getOpState().getAxes() == null)
+                Nd4j.getExecutioner().exec(op);
+
+            else {
+                int[] axes = opExecAction.getOpState().getAxes();
+                if(op instanceof Accumulation) {
+                    Accumulation accumulation = (Accumulation) op;
+                    Nd4j.getExecutioner().exec(accumulation,axes);
+
+                }
+
+                else if(op instanceof BroadcastOp) {
+                    BroadcastOp broadcastOp = (BroadcastOp) op;
+                    Nd4j.getExecutioner().exec(broadcastOp,axes);
+                }
+                else if(op instanceof IndexAccumulation) {
+                    IndexAccumulation indexAccumulation = (IndexAccumulation) op;
+                    Nd4j.getExecutioner().exec(indexAccumulation,axes);
+
+                }
+            }
+
         }
 
 
 
-        return exec(ops);
+        return ops;
     }
 
 }

@@ -328,7 +328,26 @@ public class SameDiffTests {
 
 
     @Test
-    @Ignore
+    public void testNegativeGradient() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray ones = Nd4j.ones(4);
+        Map<String,INDArray> xAndY = new HashMap<>();
+        xAndY.put("x",ones);
+        sameDiff.defineFunction("neg", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable x = sameDiff.var("x",inputs.get("x"));
+                return sameDiff.neg(x);
+            }
+        },xAndY);
+
+        INDArray assertionForDiv = Nd4j.valueArrayOf(4,-1);
+        assertEquals(assertionForDiv,sameDiff.getFunction("neg").execAndEndResult());
+
+    }
+
+
+    @Test
     public void testGradCheck() {
         SameDiff sameDiff = SameDiff.create();
         Map<String,INDArray> inputs = variablesForInput();
@@ -349,19 +368,39 @@ public class SameDiffTests {
         assertEquals(3,sameDiff.graph().getEdges().size());
         //    label_probabilities = preds * targets + (1 - preds) * (1 - targets)
         SDVariable outputTimesY = outputs.mul(y);
-        SDVariable oneMinusOutput = outputs.rsub(sameDiff.scalar("one",1.0));
-        SDVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(sameDiff.scalar("onetwo",1.0))));
+        SDVariable oneMinusOutput = outputs.rsub(1.0);
+        SDVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(1.0)));
         SDVariable logProbs = sameDiff.log(probs);
         SDVariable sum = sameDiff.sum(logProbs,Integer.MAX_VALUE);
         //ensure the output is scalar shape
         assertEquals(1,ArrayUtil.prod(sum.getShape()));
         SDVariable negSum = sameDiff.neg(sum);
-        GradCheckUtil.checkGradients(negSum,w,1e-3,1e-3,true,inputs);
+        GradCheckUtil.checkGradients(negSum,y,1e-3,1e-3,true,inputs);
     }
 
 
+
     @Test
-    @Ignore
+    public void testSumOp() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
+        Map<String,INDArray> inputs = new HashMap<>();
+        inputs.put("x",sumInput);
+        sameDiff.defineFunction("sum", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable sum = sameDiff.sum(input,1);
+                return sum;
+            }
+        },inputs);
+
+        INDArray assertion = sumInput.sum(1);
+        INDArray executions = sameDiff.execAndEndResult("sum");
+        assertEquals(assertion,executions);
+    }
+
+    @Test
     public void testSumGradient() {
         SameDiff sameDiff = SameDiff.create();
         INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
@@ -372,14 +411,15 @@ public class SameDiffTests {
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable input = sameDiff.var("x",inputs.get("x"));
                 SDVariable sum = sameDiff.sum(input,1);
-                SDVariable grad = sameDiff.grad(sum,sum);
+                //original shape ends up being 2,2
+                SDVariable grad = sameDiff.grad(sum,sameDiff.var("grad",Nd4j.valueArrayOf(4,1.0).reshape(2,2)));
                 return grad;
             }
         },inputs);
 
-        INDArray assertion = sumInput.sum(1);
-        List<Op> executions = sameDiff.exec("sumWithGradient");
-
+        INDArray executions = sameDiff.execAndEndResult("sumWithGradient");
+        assertArrayEquals(sumInput.shape(),executions.shape());
+        assertEquals(Nd4j.ones(2,2),executions);
     }
 
 
@@ -665,7 +705,6 @@ public class SameDiffTests {
     }
 
     @Test
-    @Ignore
     public void testLogisticTestOutput() {
         SameDiff sameDiffOuter = SameDiff.create();
         Map<String,INDArray> inputs = variablesForInput();
@@ -706,19 +745,13 @@ public class SameDiffTests {
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable outputs = sameDiffOuter.invokeFunctionOn("loss",sameDiff);
                 SDVariable wrtWeights = sameDiff.var("w",inputs.get("w"));
-                SDVariable grad = sameDiff.grad(outputs,wrtWeights);
+                SDVariable y2 = sameDiff.var("y2",inputs.get("y"));
+                SDVariable grad = sameDiff.grad(outputs,y2);
                 return grad;
             }
         },inputs);
 
-
-        SameDiff logisticGraph = sameDiffOuter.getFunction("lossGrad");
-        for(int i = 0; i < 5; i++) {
-            INDArray[] outputs = logisticGraph.eval(inputs);
-            inputs.get("w").subi(outputs[outputs.length - 1].mul(0.01));
-            System.out.println(inputs.get("w"));
-        }
-
+        
 
     }
 
