@@ -751,14 +751,7 @@ public class SameDiffTests {
             }
         },inputs);
 
-
-        SameDiff logisticGraph = sameDiffOuter.getFunction("lossGrad");
-        for(int i = 0; i < 5; i++) {
-            INDArray[] outputs = logisticGraph.eval(inputs);
-            inputs.get("w").subi(outputs[outputs.length - 1].mul(0.01));
-            System.out.println(inputs.get("w"));
-        }
-
+        
 
     }
 
