@@ -5,7 +5,7 @@
     <parent>
         <artifactId>spark_2.11</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.9.1_spark_1</version>
+        <version>0.9.2_spark_1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>dl4j-spark-ml_2.11</artifactId>
