@@ -705,7 +705,6 @@ public class SameDiffTests {
     }
 
     @Test
-    @Ignore
     public void testLogisticTestOutput() {
         SameDiff sameDiffOuter = SameDiff.create();
         Map<String,INDArray> inputs = variablesForInput();
@@ -746,7 +745,8 @@ public class SameDiffTests {
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable outputs = sameDiffOuter.invokeFunctionOn("loss",sameDiff);
                 SDVariable wrtWeights = sameDiff.var("w",inputs.get("w"));
-                SDVariable grad = sameDiff.grad(outputs,wrtWeights);
+                SDVariable y2 = sameDiff.var("y2",inputs.get("y"));
+                SDVariable grad = sameDiff.grad(outputs,y2);
                 return grad;
             }
         },inputs);

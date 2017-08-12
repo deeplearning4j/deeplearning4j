@@ -41,6 +41,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
         if(i_v instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) i_v;
+            validateDifferentialFunctionsameDiff(arrayField);
             this.vertexId = arrayField.getVertex().vertexID();
         }
 

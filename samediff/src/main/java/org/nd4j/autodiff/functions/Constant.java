@@ -2,6 +2,7 @@ package org.nd4j.autodiff.functions;
 
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import lombok.Data;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
@@ -28,6 +29,7 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
 
         if(i_v instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) i_v;
+            Preconditions.checkArgument(arrayField.getOps() == sameDiff,"Constant instantiated with wrong samediff from arrayfield.");
             this.vertexId = arrayField.getVertex().vertexID();
             if(sameDiff.getGraph().getVertex(this.vertexId) == null)
                 sameDiff.getGraph().addVertex(arrayField.getVertex());
@@ -41,8 +43,7 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
         this(sameDiff,i_v,shape,false);
     }
 
-    public Constant(SameDiff sameDiff, ArrayField one) {
-    }
+
 
     /**
      * Get the result shape for this function
@@ -81,6 +82,7 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
+        validateDifferentialFunctionsameDiff(i_v);
         return new Zero<>(sameDiff,shape);
     }
 
@@ -110,6 +112,7 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
     @Override
     public Constant<X> negate() {
         Constant<X> ret =  new Constant<>(sameDiff, m_x.negate(),shape);
+        validateDifferentialFunctionsameDiff(ret);
         return ret;
     }
 
