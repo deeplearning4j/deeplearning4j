@@ -949,6 +949,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     protected void validateDifferentialFunctionsameDiff(
             DifferentialFunction<X> function) {
+        Preconditions.checkState(function != null,"Passed in function was null.");
         Preconditions.checkState(function.getSameDiff() ==
                         this.getSameDiff(),
                 "Function applications must be contained " +
