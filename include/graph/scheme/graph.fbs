@@ -1,0 +1,11 @@
+include "node.fbs";
+
+namespace nd4j.graph;
+
+
+table FlatGraph {
+    id:int;
+    nodes:[FlatNode]; // list of nodes
+}
+
+root_type FlatGraph;

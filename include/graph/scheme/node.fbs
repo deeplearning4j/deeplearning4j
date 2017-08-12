@@ -29,12 +29,12 @@ struct Operands {
 }
 
 table FlatNode {
-    dataType:DataType;
+    id:int; // unique id for this node
     opType:OpType;
     opNum:short;
-    name:string;
-    operands:Operands; // op either have operands as input
-    input:[FlatNode]; // or other nodes (or both)
+    input:[int]; // ID's of input nodes for this node
+    dataType:DataType;
+    output:[int]; // // ID's of connected nodes for this node
 }
 
 root_type FlatNode;
