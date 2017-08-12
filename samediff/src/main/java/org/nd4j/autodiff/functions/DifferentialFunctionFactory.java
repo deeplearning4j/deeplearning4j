@@ -68,7 +68,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     @Override
     public Constant<ArrayField>  val(ArrayField iX) {
         if(iX instanceof ArrayField) {
-
+            Preconditions.checkArgument(iX.getOps() == sameDiff,"Same diff must be the same.");
             return new Constant<>(sameDiff, iX,
                     iX.getInput().getShape());
         }
@@ -79,11 +79,13 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
 
     @Override
     public Variable<ArrayField>  var(String iName, ArrayField iX, PreEvaluator<ArrayField>  preEvaluator) {
+        Preconditions.checkArgument(iX.getOps() == sameDiff,"Same diff must be the same.");
         return new Variable<>(sameDiff,iName, iX, preEvaluator);
     }
 
     @Override
     public Variable<ArrayField>  var(String iName, ArrayField iX) {
+        Preconditions.checkArgument(iX.getOps() == sameDiff,"Same diff must be the same.");
         return new Variable<>(sameDiff,iName, iX);
     }
 

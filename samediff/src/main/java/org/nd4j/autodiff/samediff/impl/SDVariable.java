@@ -118,7 +118,7 @@ public class SDVariable  implements Serializable {
                 .arrayField(arrayField)
                 .varName(varName)
                 .sameDiff(sameDiff)
-                .arr(arr.dup())
+                .arr(arr != null ? arr.dup() : null)
                 .build();
     }
 
