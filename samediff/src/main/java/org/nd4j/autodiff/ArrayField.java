@@ -682,7 +682,7 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField broadcast(int[] shape) {
-        return addArrayOp("broadcast",null,shape,null, OpState.OpType.BROADCAST);
+        return addArrayOp("broadcast",null,shape,null, OpState.OpType.SHAPE);
     }
 
 

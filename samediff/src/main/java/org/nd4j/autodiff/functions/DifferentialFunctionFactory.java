@@ -971,9 +971,6 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
                 return valueArrayOf(input,inputShape);
             }
 
-            for(int i = 0; i < axes.length; i++) {
-                inputShape[axes[i]] = 1;
-            }
 
             return broadcast(func,inputShape);
 
