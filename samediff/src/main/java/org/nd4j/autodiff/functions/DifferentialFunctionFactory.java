@@ -965,13 +965,8 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
         if(input.getValue(true) instanceof ArrayField) {
             ArrayField arrayField = input.getValue(true);
             int[] inputShape = arrayField.getInput().getShape();
-            if(Shape.isWholeArray(inputShape,axes)) {
-                validateDifferentialFunctionsameDiff(func);
-                validateDifferentialFunctionsameDiff(input);
-                return valueArrayOf(input,inputShape);
-            }
-
-
+            validateDifferentialFunctionsameDiff(func);
+            validateDifferentialFunctionsameDiff(input);
             return broadcast(func,inputShape);
 
         }

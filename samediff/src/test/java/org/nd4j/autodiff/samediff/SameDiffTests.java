@@ -328,7 +328,26 @@ public class SameDiffTests {
 
 
     @Test
-    @Ignore
+    public void testNegativeGradient() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray ones = Nd4j.ones(4);
+        Map<String,INDArray> xAndY = new HashMap<>();
+        xAndY.put("x",ones);
+        sameDiff.defineFunction("neg", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable x = sameDiff.var("x",inputs.get("x"));
+                return sameDiff.neg(x);
+            }
+        },xAndY);
+
+        INDArray assertionForDiv = Nd4j.valueArrayOf(4,-1);
+        assertEquals(assertionForDiv,sameDiff.getFunction("neg").execAndEndResult());
+
+    }
+
+
+    @Test
     public void testGradCheck() {
         SameDiff sameDiff = SameDiff.create();
         Map<String,INDArray> inputs = variablesForInput();
@@ -349,14 +368,14 @@ public class SameDiffTests {
         assertEquals(3,sameDiff.graph().getEdges().size());
         //    label_probabilities = preds * targets + (1 - preds) * (1 - targets)
         SDVariable outputTimesY = outputs.mul(y);
-        SDVariable oneMinusOutput = outputs.rsub(sameDiff.scalar("one",1.0));
-        SDVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(sameDiff.scalar("onetwo",1.0))));
+        SDVariable oneMinusOutput = outputs.rsub(1.0);
+        SDVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(1.0)));
         SDVariable logProbs = sameDiff.log(probs);
         SDVariable sum = sameDiff.sum(logProbs,Integer.MAX_VALUE);
         //ensure the output is scalar shape
         assertEquals(1,ArrayUtil.prod(sum.getShape()));
         SDVariable negSum = sameDiff.neg(sum);
-        GradCheckUtil.checkGradients(negSum,w,1e-3,1e-3,true,inputs);
+        GradCheckUtil.checkGradients(negSum,y,1e-3,1e-3,true,inputs);
     }
 
 

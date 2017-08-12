@@ -79,6 +79,11 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         nextVertexId = vertices.size();
     }
 
+    /**
+     * Add a vertex to the graph
+     * (no effect when frozen)
+     * @param vVertex
+     */
     public void addVertex(Vertex<V> vVertex) {
 
         if(frozen) {

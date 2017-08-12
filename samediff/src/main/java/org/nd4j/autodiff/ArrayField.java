@@ -644,6 +644,7 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField valueArrayOf(int[] shape) {
+         Preconditions.checkArgument(shape != null,"Passed in shape must not be null.");
         return addArrayOp(
                 "full",
                 null,

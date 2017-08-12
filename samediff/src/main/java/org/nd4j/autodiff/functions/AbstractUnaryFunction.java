@@ -30,6 +30,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                                  Object[] extraArgs) {
         super(sameDiff,extraArgs);
         this.opType = opType;
+        this.shape = shape;
 
         if (i_v != null) {
             m_x = i_v;
