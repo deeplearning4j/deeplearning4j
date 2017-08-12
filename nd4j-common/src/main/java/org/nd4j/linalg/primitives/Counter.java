@@ -1,12 +1,12 @@
 package org.nd4j.linalg.primitives;
 
+
 import com.google.common.util.concurrent.AtomicDouble;
 
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Simple counter implementation
