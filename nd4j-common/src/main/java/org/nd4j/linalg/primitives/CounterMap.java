@@ -1,8 +1,5 @@
 package org.nd4j.linalg.primitives;
 
-
-import com.google.common.util.concurrent.AtomicDouble;
-
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map;
