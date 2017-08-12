@@ -90,10 +90,10 @@ public class OpState implements Serializable {
     }
 
     public Object[] getExtraArgs() {
-        if(extraArgs == null)
+        if(extraArgs == null || extraArgs.length <= 0)
             return null;
-        if(extraArgsWithoutInPlace == null) {
-            extraArgsWithoutInPlace = new Object[extraArgs.length - 1];
+        if(extraArgsWithoutInPlace == null || extraArgsWithoutInPlace.length <= 0) {
+            extraArgsWithoutInPlace = new Object[extraArgs.length > 1 ? extraArgs.length - 1 : 1];
             int count = 0;
             for(int i = 0; i < extraArgs.length; i++) {
                 if(!(extraArgs[i] instanceof Boolean))
