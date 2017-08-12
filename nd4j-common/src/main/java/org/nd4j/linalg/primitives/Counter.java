@@ -4,7 +4,6 @@ package org.nd4j.linalg.primitives;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Simple counter implementation
