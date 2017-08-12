@@ -2,7 +2,7 @@ package org.nd4j.aeron.ipc;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.apache.commons.lang3.tuple.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
