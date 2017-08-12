@@ -11,7 +11,7 @@
   <parent>
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j-serde</artifactId>
-    <version>0.9.1-SNAPSHOT</version>
+    <version>0.9.1</version>
   </parent>
   <properties>
     <sbe.version>1.5.4</sbe.version>
