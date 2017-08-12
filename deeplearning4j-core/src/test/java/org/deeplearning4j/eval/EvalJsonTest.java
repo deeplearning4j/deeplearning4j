@@ -29,9 +29,9 @@ public class EvalJsonTest {
             if (print) {
                 System.out.println(e.getClass() + "\n" + json + "\n\n");
             }
+
             IEvaluation fromJson = BaseEvaluation.fromJson(json, BaseEvaluation.class);
-            assertEquals(e, fromJson);
-            assertEquals(stats, fromJson.stats());
+            assertEquals(e.toJson(), fromJson.toJson());
         }
     }
 
@@ -76,13 +76,12 @@ public class EvalJsonTest {
 
         for (IEvaluation e : arr) {
             String json = e.toJson();
-            String stats = e.stats();
             if (print) {
                 System.out.println(e.getClass() + "\n" + json + "\n\n");
             }
+
             IEvaluation fromJson = BaseEvaluation.fromJson(json, BaseEvaluation.class);
-            assertEquals(e, fromJson);
-            assertEquals(stats, fromJson.stats());
+            assertEquals(e.toJson(), fromJson.toJson());
         }
     }
 

@@ -98,6 +98,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     // Empty constructor
     public Evaluation() {
         this.topN = 1;
+        confusion = new ConfusionMatrix<>();
     }
 
     /**
