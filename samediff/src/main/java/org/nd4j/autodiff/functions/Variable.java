@@ -25,7 +25,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
                        String i_name,
                        X i_v) {
         this(sameDiff,i_name, i_v, null);
-     }
+    }
 
     protected Variable(SameDiff sameDiff,
                        String i_name,
@@ -118,13 +118,8 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     @Override
     public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
         if(m_x instanceof ArrayField) {
-            if (this.equals(i_v)) {
-                return i_v.mul(0.0).add(1.0);
-
-            }
-            else {
-                return mul(0.0);
-            }
+            //default value is 1.0 (constant)
+            return i_v.mul(0.0).add(1.0);
         }
 
         throw new IllegalStateException("Illegal type for variable. Should be ArrayField");

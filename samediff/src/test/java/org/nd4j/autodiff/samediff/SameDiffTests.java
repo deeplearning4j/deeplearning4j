@@ -360,8 +360,28 @@ public class SameDiffTests {
     }
 
 
+
     @Test
-    @Ignore
+    public void testSumOp() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
+        Map<String,INDArray> inputs = new HashMap<>();
+        inputs.put("x",sumInput);
+        sameDiff.defineFunction("sum", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable sum = sameDiff.sum(input,1);
+                return sum;
+            }
+        },inputs);
+
+        INDArray assertion = sumInput.sum(1);
+        INDArray executions = sameDiff.execAndEndResult("sum");
+        assertEquals(assertion,executions);
+    }
+
+    @Test
     public void testSumGradient() {
         SameDiff sameDiff = SameDiff.create();
         INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
@@ -372,14 +392,15 @@ public class SameDiffTests {
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable input = sameDiff.var("x",inputs.get("x"));
                 SDVariable sum = sameDiff.sum(input,1);
-                SDVariable grad = sameDiff.grad(sum,sum);
+                //original shape ends up being 2,2
+                SDVariable grad = sameDiff.grad(sum,sameDiff.var("grad",Nd4j.valueArrayOf(4,1.0).reshape(2,2)));
                 return grad;
             }
         },inputs);
 
-        INDArray assertion = sumInput.sum(1);
-        List<Op> executions = sameDiff.exec("sumWithGradient");
-
+        INDArray executions = sameDiff.execAndEndResult("sumWithGradient");
+        assertArrayEquals(sumInput.shape(),executions.shape());
+        assertEquals(Nd4j.ones(2,2),executions);
     }
 
 

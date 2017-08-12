@@ -15,6 +15,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
@@ -70,6 +71,7 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
             int[] resultShape = Shape.getReducedShape(v1.getInput().getShape(),dimensions);
             //result
             NDArrayInformation information =  NDArrayInformation.builder()
+                    .arrId(UUID.randomUUID().toString())
                     .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
                     .shape(resultShape).build();
             NDArrayVertex newVertex = new NDArrayVertex(sameDiff.getGraph().nextVertexId(), information);

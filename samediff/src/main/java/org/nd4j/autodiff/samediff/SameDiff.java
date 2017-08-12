@@ -11,6 +11,7 @@ import org.nd4j.autodiff.functions.AbstractBinaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.functions.Variable;
+import org.nd4j.autodiff.functions.impl.unary.transform.shape.Broadcast;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.opstate.*;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
@@ -20,6 +21,9 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.BroadcastOp;
+import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -1966,6 +1970,16 @@ public class SameDiff {
 
     }
 
+    /**
+     * Exec a given function
+     * @param functionName the name of the function
+     *                     to invoke
+     * @return
+     */
+    public INDArray execAndEndResult(String functionName) {
+        return sameDiffFunctionInstances.get(functionName).execAndEndResult();
+    }
+
 
     /**
      * Exec a given function
@@ -2003,12 +2017,36 @@ public class SameDiff {
             Op op = createOp(
                     opExecAction.getOpState().getOpType(),
                     opExecAction);
+
             ops.add(op);
+
+            if(opExecAction.getOpState().getAxes() == null)
+                Nd4j.getExecutioner().exec(op);
+
+            else {
+                int[] axes = opExecAction.getOpState().getAxes();
+                if(op instanceof Accumulation) {
+                    Accumulation accumulation = (Accumulation) op;
+                    Nd4j.getExecutioner().exec(accumulation,axes);
+
+                }
+
+                else if(op instanceof BroadcastOp) {
+                    BroadcastOp broadcastOp = (BroadcastOp) op;
+                    Nd4j.getExecutioner().exec(broadcastOp,axes);
+                }
+                else if(op instanceof IndexAccumulation) {
+                    IndexAccumulation indexAccumulation = (IndexAccumulation) op;
+                    Nd4j.getExecutioner().exec(indexAccumulation,axes);
+
+                }
+            }
+
         }
 
 
 
-        return exec(ops);
+        return ops;
     }
 
 }
