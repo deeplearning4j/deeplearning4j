@@ -3,7 +3,7 @@
     <parent>
         <artifactId>datavec-spark-inference-parent</artifactId>
         <groupId>org.datavec</groupId>
-        <version>0.9.1-SNAPSHOT</version>
+        <version>0.9.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -28,7 +28,7 @@
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-spark-inference-server_2.11</artifactId>
-            <version>0.9.1_spark_1-SNAPSHOT</version>
+            <version>0.9.1_spark_1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
