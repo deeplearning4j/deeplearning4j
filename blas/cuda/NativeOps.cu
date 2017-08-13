@@ -1531,7 +1531,7 @@ void   NativeOps::execTransformDouble(
 			switch (opNum) {
 				case 40: // LogSoftMax
 				case 39: // SoftMax Derivative
-				case 38: {// SoftMax
+				case 38: {// softmax
 					Nd4jPointer tempPointers[16];
 					tempPointers[0] = extraPointers[0];
 					tempPointers[1] = extraPointers[1];
@@ -1581,7 +1581,7 @@ void   NativeOps::execTransformDouble(
 									   maxShapeBuffer, result, resultShapeInfo, dimension, 1);
 
 					// exp 3
-					execTransformDouble(extraPointers, 3, result, resultShapeInfo, dx, xShapeInfo, extraParams);
+					execTransformDouble(extraPointers, 3, result, resultShapeInfo, result, resultShapeInfo, extraParams);
 
 					tempPointers[8] = tempPointers[7];
 					tempPointers[9] = extraPointers[12];
@@ -3968,7 +3968,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					// exp 3
-					execTransformHalf(extraPointers, 3, result, resultShapeInfo, dx, resultShapeInfo, extraParams);
+					execTransformHalf(extraPointers, 3, result, resultShapeInfo, result, resultShapeInfo, extraParams);
 
 					if (debug)
 						checkCudaErrors(cudaStreamSynchronize(*stream));
