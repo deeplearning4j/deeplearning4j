@@ -134,6 +134,17 @@ export MKL_THREADING_LAYER=GNU
 export LD_PRELOAD=/usr/lib64/libgomp.so.1
 ```
 
+##Troubleshooting MKL
+
+Sometimes the above steps might not be all you need to do. Another additional step might be the need to 
+add:
+
+```bash
+export LD_LIBRARY_PATH=/opt/intel/lib/intel64/:/opt/intel/mkl/lib/intel64
+```
+This ensures that mkl will be found first and liked to.
+
+
 ## Packaging
 
 If on Ubuntu (14.04 or above) or CentOS (6 or above), this repository is also
