@@ -162,5 +162,7 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> mmul(int argNum, DifferentialFunction<X> x, DifferentialFunction<X> y);
     DifferentialFunction<X> tensorMmul(DifferentialFunction<X> x, DifferentialFunction<X> y, int[][] dimensions, int argNum);
 
-    DifferentialFunction<ArrayField> softmaxDerivative(DifferentialFunction<ArrayField> functionInput);
+    DifferentialFunction<X> softmaxDerivative(DifferentialFunction<X> functionInput);
+
+    DifferentialFunction<X> logSoftmax(DifferentialFunction<X> i_v);
 }

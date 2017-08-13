@@ -924,14 +924,21 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
 
     @Override
     public DifferentialFunction<ArrayField> softmaxDerivative(DifferentialFunction<ArrayField> functionInput) {
+        validateDifferentialFunctionsameDiff(functionInput);
         return new SoftMaxDerivative(sameDiff,functionInput,null);
     }
 
+    @Override
+    public DifferentialFunction<ArrayField> logSoftmax(DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(i_v);
+        return new LogSoftMax(sameDiff,i_v,null);
+
+    }
 
     public int getInputLength(DifferentialFunction<ArrayField> func) {
         validateDifferentialFunctionsameDiff(func);
         if(func.getValue(true) instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) func.getValue(true);
+            ArrayField arrayField = func.getValue(true);
             int[] inputShape = arrayField.getInput().getShape();
             return ArrayUtil.prod(inputShape);
         }
@@ -996,6 +1003,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
                 "match this function " + this);
 
     }
+
 
 
 }
