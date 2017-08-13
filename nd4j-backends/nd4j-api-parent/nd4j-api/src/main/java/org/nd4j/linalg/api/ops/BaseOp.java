@@ -104,10 +104,12 @@ public abstract class BaseOp implements Op {
                 double extraz[] = new double[extraArgs.length];
                 for (int i = 0; i < extraArgs.length; i++) {
                     Number arg = (Number) extraArgs[i];
+                    if(arg == null)
+                        arg = 0.0;
                     double val = arg.doubleValue();
                     extraz[i] = val;
                 }
-                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz);;
+                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz);
                 return extraArgz;
             }
         }
