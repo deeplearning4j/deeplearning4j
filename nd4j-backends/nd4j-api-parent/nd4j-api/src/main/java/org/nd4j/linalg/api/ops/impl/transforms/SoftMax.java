@@ -54,10 +54,6 @@ public class SoftMax extends BaseTransformOp {
 
     public SoftMax(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
-        //ensure the result is the same
-        //do a reference check here because it's cheaper
-        if(x != z)
-            z.assign(x);
     }
 
     public SoftMax(INDArray x, INDArray y, INDArray z) {

@@ -13,6 +13,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
 import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -537,10 +539,39 @@ public class SameDiffTests {
         },inputs);
 
         INDArray executions = sameDiff.execAndEndResult("softmaxGradient");
+        INDArray assertion = Nd4j.getExecutioner().execAndReturn(new SoftMaxDerivative(sumInput));
         assertArrayEquals(sumInput.shape(),executions.shape());
+        assertEquals(assertion,executions);
         System.out.println(executions);
         //assertEquals(Nd4j.ones(2,2),executions);
     }
+
+
+    @Test
+    public void testTanhGradient() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
+        Map<String,INDArray> inputs = new HashMap<>();
+        inputs.put("x",sumInput);
+        sameDiff.defineFunction("tanhGradient", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable tanh = sameDiff.tanh(input);
+                //original shape ends up being 2,2
+                SDVariable grad = sameDiff.grad(tanh,sameDiff.var("grad",sumInput.dup()));
+                return grad;
+            }
+        },inputs);
+
+        INDArray executions = sameDiff.execAndEndResult("tanhGradient");
+        INDArray assertion = Nd4j.getExecutioner().execAndReturn(new TanhDerivative(sumInput));
+        assertArrayEquals(sumInput.shape(),executions.shape());
+        assertEquals(assertion,executions);
+        System.out.println(executions);
+        //assertEquals(Nd4j.ones(2,2),executions);
+    }
+
 
 
     @Test

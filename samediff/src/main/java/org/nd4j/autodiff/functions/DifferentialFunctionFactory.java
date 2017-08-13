@@ -273,6 +273,12 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
         return new Tanh(sameDiff,iX,null);
     }
 
+
+    @Override
+    public DifferentialFunction<ArrayField> tanhDerivative(DifferentialFunction<ArrayField> iX) {
+        return new TanhDerivative(sameDiff,iX,null);
+    }
+
     @Override
     public DifferentialFunction<ArrayField> acosh(DifferentialFunction<ArrayField> iX) {
         return new ACosh(sameDiff,iX,null);

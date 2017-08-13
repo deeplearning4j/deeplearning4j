@@ -79,6 +79,8 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> tanh(DifferentialFunction<X> iX);
 
+    DifferentialFunction<ArrayField> tanhDerivative(DifferentialFunction<ArrayField> iX);
+
     DifferentialFunction<X> acosh(DifferentialFunction<X> iX);
 
     DifferentialFunction<X> asinh(DifferentialFunction<X> iX);

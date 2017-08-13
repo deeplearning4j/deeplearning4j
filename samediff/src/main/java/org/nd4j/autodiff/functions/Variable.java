@@ -120,7 +120,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
         if(m_x instanceof ArrayField) {
             //default value is 1.0 (constant)
-            return i_v.mul(0.0).add(1.0);
+            return i_v.mul(0.0).addi(1.0);
         }
 
         throw new IllegalStateException("Illegal type for variable. Should be ArrayField");

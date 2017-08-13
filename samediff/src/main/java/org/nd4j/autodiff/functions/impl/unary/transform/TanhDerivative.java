@@ -28,6 +28,6 @@ public class TanhDerivative extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public String functionName() {
-        return new org.nd4j.linalg.api.ops.impl.transforms.Tanh().name();
+        return new org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative().name();
     }
 }
