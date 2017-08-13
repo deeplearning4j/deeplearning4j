@@ -2,8 +2,11 @@ package org.nd4j.linalg.cpu.nativecpu.workspace;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.LongPointer;
+import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.LocationPolicy;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
@@ -19,6 +22,9 @@ import org.nd4j.nativeblas.NativeOpsHolder;
  */
 @Slf4j
 public class CpuWorkspace extends Nd4jWorkspace {
+
+    protected LongPointer mmap;
+
     public CpuWorkspace(@NonNull WorkspaceConfiguration configuration) {
         super(configuration);
     }
@@ -36,14 +42,25 @@ public class CpuWorkspace extends Nd4jWorkspace {
     protected void init() {
         super.init();
 
-        if (currentSize.get() > 0) {
-            isInit.set(true);
+        if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.RAM) {
+
+            if (currentSize.get() > 0) {
+                isInit.set(true);
 
 
-            if (isDebug.get())
-                log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
+                if (isDebug.get())
+                    log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
 
-            workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
+                workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
+            }
+        } else if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {
+            long flen = tempFile.length();
+            mmap = NativeOpsHolder.getInstance().getDeviceNativeOps().mmapFile(null, tempFile.getAbsolutePath(), flen);
+
+            if (mmap == null)
+                throw new RuntimeException("MMAP failed");
+
+            workspace.setHostPointer(new PagedPointer(mmap.get(0)));
         }
     }
 
@@ -105,8 +122,13 @@ public class CpuWorkspace extends Nd4jWorkspace {
 
         clearPinnedAllocations(extended);
 
-        if (workspace.getHostPointer() != null)
-            NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
+        if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.RAM) {
+            if (workspace.getHostPointer() != null)
+                NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
+        } else if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {
+            if (workspace.getHostPointer() != null)
+                NativeOpsHolder.getInstance().getDeviceNativeOps().munmapFile(null, mmap, tempFile.length());
+        }
 
         workspace.setDevicePointer(null);
         workspace.setHostPointer(null);

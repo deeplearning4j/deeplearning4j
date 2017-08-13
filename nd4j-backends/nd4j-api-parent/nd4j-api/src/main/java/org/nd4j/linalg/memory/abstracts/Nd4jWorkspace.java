@@ -17,6 +17,9 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -96,6 +99,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     protected String guid;
 
+    protected File tempFile;
+
     // this memory manager implementation will be used to allocate real memory for this workspace
 
     public Nd4jWorkspace(@NonNull WorkspaceConfiguration configuration) {
@@ -124,7 +129,56 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         //if (workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME && workspaceConfiguration.getCyclesBeforeInitialization() < 1)
             //log.warn("Workspace [{}]: initialization OVER_TIME was selected, but number of cycles isn't positive value!", id);
 
+        // validate mmap option
+        if (configuration.getPolicyLocation() == LocationPolicy.MMAP) {
+            // file path should be either non-null
+            if (configuration.getTempFilePath() != null) {
+                    tempFile = new File(configuration.getTempFilePath());
+
+                    if (tempFile.length() == 0 || tempFile.length() < configuration.getInitialSize()) {
+                        if (configuration.getInitialSize() > 0) {
+                            try {
+                                fillFile(tempFile, configuration.getInitialSize());
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        } else {
+                            throw new ND4JIllegalStateException("Memory-mapped file should have positive length.");
+                        }
+                    } else {
+                        configuration.setInitialSize(tempFile.length());
+                    }
+            } else if (configuration.getInitialSize() > 0) {
+                try {
+                    tempFile = File.createTempFile("workspace", "tempMMAP");
+                    tempFile.deleteOnExit();
+
+                    // fill temp file with zeroes, up to initialSize bytes
+                    fillFile(tempFile, configuration.getInitialSize());
+
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            } else
+                throw new ND4JIllegalStateException("MMAP target file path should be non-null or workspace initialSize should be >0 for temp file");
+        }
+
         init();
+    }
+
+    public static void fillFile(File file, long length) throws Exception {
+        byte[] buffer = new byte[16384];
+        for (int i = 0; i < buffer.length; i++) {
+            buffer[i] = (byte) 0;
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(file); BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+            long written = 0;
+            while (written < length) {
+                fos.write(buffer);
+                written += buffer.length;
+            }
+        }
     }
 
     /**
