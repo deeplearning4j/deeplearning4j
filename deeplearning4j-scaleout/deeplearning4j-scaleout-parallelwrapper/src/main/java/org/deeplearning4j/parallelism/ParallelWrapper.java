@@ -156,6 +156,9 @@ public class ParallelWrapper implements AutoCloseable {
             executorService.shutdown();
             executorService = null;
         }
+
+        if (gradientsAccumulator != null)
+            gradientsAccumulator.reset();
     }
 
     /**
