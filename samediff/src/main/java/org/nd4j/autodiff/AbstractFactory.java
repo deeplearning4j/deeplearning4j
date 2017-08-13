@@ -213,5 +213,7 @@ public interface AbstractFactory<X extends Field<X>>
      */
     X permute(X value, int[] dimensions);
 
-    ArrayField set(ArrayField value, ArrayField value1);
+    X set(ArrayField value, ArrayField value1);
+
+    X softmaxDerivative(ArrayField value);
 }

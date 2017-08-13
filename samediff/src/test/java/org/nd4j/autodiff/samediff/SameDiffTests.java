@@ -531,7 +531,7 @@ public class SameDiffTests {
                 SDVariable input = sameDiff.var("x",inputs.get("x"));
                 SDVariable softmax = sameDiff.softmax(input);
                 //original shape ends up being 2,2
-                SDVariable grad = sameDiff.grad(softmax,sameDiff.var("grad",Nd4j.valueArrayOf(4,1.0).reshape(2,2)));
+                SDVariable grad = sameDiff.grad(softmax,sameDiff.var("grad",sumInput.dup()));
                 return grad;
             }
         },inputs);

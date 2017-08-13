@@ -132,6 +132,8 @@ public interface Field<X> extends CommutativeRing<X> {
 
     X softmax();
 
+    X softmaxDerivative();
+
     X softplus();
 
     X reshape(int[] shape);

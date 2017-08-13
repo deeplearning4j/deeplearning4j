@@ -366,6 +366,9 @@ public class DefaultOpFactory implements OpFactory {
             case "timesoneminus":
                 op = new TimesOneMinus(x, z);
                 break;
+            case "softmaxderivative":
+                op = new SoftMaxDerivative(x, z);
+                break;
             case "softmax":
                 op = new SoftMax(x, z);
                 break;

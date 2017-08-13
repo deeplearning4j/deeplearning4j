@@ -640,4 +640,9 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     public ArrayField set(ArrayField value, ArrayField value1) {
         return value.set(value1);
     }
+
+    @Override
+    public ArrayField softmaxDerivative(ArrayField value) {
+        return value.softmaxDerivative();
+    }
 }

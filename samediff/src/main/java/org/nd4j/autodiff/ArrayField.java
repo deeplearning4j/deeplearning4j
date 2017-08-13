@@ -492,6 +492,11 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
+    public ArrayField softmaxDerivative() {
+        return addTransformOp(new SoftMaxDerivative().name());
+    }
+
+    @Override
     public ArrayField softplus() {
         return addTransformOp(new SoftPlus().name());
     }
