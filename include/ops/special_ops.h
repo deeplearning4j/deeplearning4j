@@ -1480,18 +1480,9 @@ namespace simdOps {
 							max = nd4j::math::nd4j_max<T>(max, dx[i]);
 						}
 
-#pragma omp simd
+#pragma omp parallel for simd reduction(+:sum)
 						for (int i = 0; i < length; i++) {
-							result[i] = dx[i] - max;
-						}
-
-#pragma omp simd
-						for (int i = 0; i < length; i++) {
-							result[i] = nd4j::math::nd4j_exp<T>(result[i]);
-						}
-
-#pragma omp simd reduction(+:sum)
-						for (int i = 0; i < length; i++) {
+                            result[i] = nd4j::math::nd4j_exp<T>(dx[i] - max);
 							sum += result[i];
 						}
 
@@ -1507,19 +1498,11 @@ namespace simdOps {
 							max = nd4j::math::nd4j_max<T>(max, dx[i * elementWiseStride]);
 						}
 
-#pragma omp simd
+#pragma omp parallel for simd reduction(+:sum)
 						for (int i = 0; i < length; i++) {
-							result[i * resultElementWiseStride] = dx[i * elementWiseStride] - max;
-						}
-
-#pragma omp simd
-						for (int i = 0; i < length; i++) {
-							result[i * resultElementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * resultElementWiseStride]);
-						}
-
-#pragma omp simd reduction(+:sum)
-						for (int i = 0; i < length; i++) {
-							sum += result[i * resultElementWiseStride];
+                            T r = nd4j::math::nd4j_exp<T>(dx[i * elementWiseStride] - max);
+                            result[i * resultElementWiseStride] = r;
+							sum += r;
 						}
 
 #pragma omp simd
