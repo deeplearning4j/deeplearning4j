@@ -165,4 +165,8 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> softmaxDerivative(DifferentialFunction<X> functionInput);
 
     DifferentialFunction<X> logSoftmax(DifferentialFunction<X> i_v);
+
+    DifferentialFunction<X> selu(DifferentialFunction<X> arg);
+
+    DifferentialFunction<X> seluDerivative(DifferentialFunction<X> arg);
 }

@@ -932,6 +932,18 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
 
     }
 
+    @Override
+    public DifferentialFunction<ArrayField> selu(DifferentialFunction<ArrayField> arg) {
+        validateDifferentialFunctionsameDiff(arg);
+        return new SELU(sameDiff,arg,null);
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> seluDerivative(DifferentialFunction<ArrayField> arg) {
+        validateDifferentialFunctionsameDiff(arg);
+        return new SELUDerivative(sameDiff,arg,null);
+    }
+
     public int getInputLength(DifferentialFunction<ArrayField> func) {
         validateDifferentialFunctionsameDiff(func);
         if(func.getValue(true) instanceof ArrayField) {

@@ -25,6 +25,8 @@ public interface AbstractFactory<X extends Field<X>>
     X invoke(String name,Object[] args);
 
 
+    ArrayField selu(ArrayField value);
+
     X eq(X i_x, X i_y);
 
     X neq(X i_x, X i_y);
@@ -213,7 +215,11 @@ public interface AbstractFactory<X extends Field<X>>
      */
     X permute(X value, int[] dimensions);
 
-    X set(ArrayField value, ArrayField value1);
+    X set(X value, X value1);
 
-    X softmaxDerivative(ArrayField value);
+    X softmaxDerivative(X value);
+
+    X seluDerivative(X value);
+
+    X tanhDerivative(X value);
 }
