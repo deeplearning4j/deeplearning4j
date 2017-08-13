@@ -1449,7 +1449,7 @@ namespace simdOps {
 					nullptr, nullptr);
 
 				//subtract max of each row
-				functions::broadcast::Broadcast<T>::template exec<simdOps::Subtract<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
+				functions::broadcast::Broadcast<T>::template exec<simdOps::Subtract<T>>(dx, xShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
 					nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
@@ -1622,7 +1622,7 @@ namespace simdOps {
 					nullptr, nullptr);
 
 				//subtract max of each row
-				functions::broadcast::Broadcast<T>::template exec<simdOps::Subtract<T>>(result, resultShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
+				functions::broadcast::Broadcast<T>::template exec<simdOps::Subtract<T>>(dx, xShapeBuffer, maxResult.data(), maxResultShapeBuffer, result, resultShapeBuffer, dimension, 1,
 					nullptr, nullptr, nullptr, nullptr);
 
 				//after subtracting the row wise maxes take the exp
@@ -1655,8 +1655,7 @@ namespace simdOps {
 
 #pragma omp simd reduction(+:sum)
 					for (int i = 0; i < length; i++) {
-						result[i] -= max;
-						result[i] = nd4j::math::nd4j_exp<T>(result[i]);
+						result[i] = nd4j::math::nd4j_exp<T>(dx[i] - max);
 						sum += result[i];
 					}
 
@@ -1674,8 +1673,7 @@ namespace simdOps {
 
 #pragma omp simd reduction(+:sum)
 					for (int i = 0; i < length; i++) {
-						result[i * elementWiseStride] -= max;
-						result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(result[i * elementWiseStride]);
+						result[i * elementWiseStride] = nd4j::math::nd4j_exp<T>(dx[i * elementWiseStride] - max);
 						sum += result[i * elementWiseStride];
 					}
 
