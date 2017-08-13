@@ -90,28 +90,41 @@ void concatCpuGeneric(
     int resultStride = shape::elementWiseStride(resultShapeInfo);
     //vector case
     if(shape::isVector(resultShapeInfo)) {
+        int coordsUse[MAX_RANK];
         Nd4jIndex idx = 0;
         if(resultStride == 1) {
             for(int i = 0; i < numArrays; i++) {
                 if(shape::isVector(inputShapeInfoPointers[i]) || shape::order(inputShapeInfoPointers[i]) == shape::order(resultShapeInfo)) {
-                    Nd4jIndex  currArrLength = shape::length(inputShapeInfoPointers[i]);
+                    int  currArrLength = shape::length(inputShapeInfoPointers[i]);
                     Nd4jIndex eleStride = shape::elementWiseStride(inputShapeInfoPointers[i]);
+
+                    // calculate early termination
+                    if (currArrLength + idx >= length)
+                        currArrLength -= ( (currArrLength + idx) - length);
+
                     if(eleStride == 1) {
-                        for(Nd4jIndex arrIdx = 0; arrIdx < currArrLength; arrIdx++) {
-                            if(idx >= shape::length(resultShapeInfo)) {
-                                break;
+
+                        // specially for @firasib from @raver119
+                        if (length < 2100000000) {
+#pragma omp simd
+                            for (int arrIdx = 0; arrIdx < currArrLength; arrIdx++) {
+                                result[idx] = dataBuffers[i][arrIdx];
+                                idx++;
                             }
-                            result[idx] = dataBuffers[i][arrIdx];
-                            idx++;
+                        } else {
+                            for (Nd4jIndex arrIdx = 0; arrIdx < currArrLength; arrIdx++) {
+                                result[idx] = dataBuffers[i][arrIdx];
+                                idx++;
+                            }
                         }
                     }
                     else {
                         for(Nd4jIndex arrIdx = 0; arrIdx < currArrLength; arrIdx++) {
-                            result[idx] = dataBuffers[i][arrIdx * eleStride];
-                            if(idx >= shape::length(resultShapeInfo)) {
+                            if(idx >= length) {
                                 break;
                             }
 
+                            result[idx] = dataBuffers[i][arrIdx * eleStride];
                             idx++;
 
                         }
@@ -119,21 +132,18 @@ void concatCpuGeneric(
                 }
                     //non vector or different order (element wise stride can't be used)
                 else {
-                    int *coordsUse = new int[shape::rank(inputShapeInfoPointers[i])];
+
                     Nd4jIndex  currArrLength = shape::length(inputShapeInfoPointers[i]);
                     for(Nd4jIndex arrIdx = 0; arrIdx < currArrLength; arrIdx++) {
                         shape::ind2subC(shape::rank(inputShapeInfoPointers[i]),shape::shapeOf(inputShapeInfoPointers[i]),arrIdx,coordsUse);
                         Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(inputShapeInfoPointers[i]),shape::stride(inputShapeInfoPointers[i]),coordsUse,shape::rank(inputShapeInfoPointers[i]));
                         result[idx] = dataBuffers[i][offset];
-                        if(idx >= shape::length(resultShapeInfo)) {
-                            break;
-                        }
 
                         idx++;
 
+                        if(idx >= shape::length(resultShapeInfo))
+                            break;
                     }
-
-                    delete[] coordsUse;
                 }
 
 
