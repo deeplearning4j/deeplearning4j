@@ -497,6 +497,53 @@ public class SameDiffTests {
 
 
     @Test
+    public void testSoftmax() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
+        Map<String,INDArray> inputs = new HashMap<>();
+        inputs.put("x",sumInput);
+        sameDiff.defineFunction("softmax", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x").dup());
+                SDVariable softmax = sameDiff.softmax(input);
+                //original shape ends up being 2,2
+                return softmax;
+            }
+        },inputs);
+
+        INDArray assertions = Transforms.softmax(sumInput);
+        INDArray executions = sameDiff.execAndEndResult("softmax");
+        assertArrayEquals(sumInput.shape(),executions.shape());
+        System.out.println(executions);
+        assertEquals(assertions,executions);
+    }
+
+    @Test
+    public void testSoftmaxGradient() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
+        Map<String,INDArray> inputs = new HashMap<>();
+        inputs.put("x",sumInput);
+        sameDiff.defineFunction("softmaxGradient", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable softmax = sameDiff.softmax(input);
+                //original shape ends up being 2,2
+                SDVariable grad = sameDiff.grad(softmax,sameDiff.var("grad",Nd4j.valueArrayOf(4,1.0).reshape(2,2)));
+                return grad;
+            }
+        },inputs);
+
+        INDArray executions = sameDiff.execAndEndResult("softmaxGradient");
+        assertArrayEquals(sumInput.shape(),executions.shape());
+        System.out.println(executions);
+        //assertEquals(Nd4j.ones(2,2),executions);
+    }
+
+
+    @Test
     public void testRsubScalar() {
         SameDiff sameDiff = SameDiff.create();
         Map<String,INDArray> params = new HashMap<>();

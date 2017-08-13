@@ -12,16 +12,7 @@ import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.functions.impl.binary.reduce.EuclideanDistance;
 import org.nd4j.autodiff.functions.impl.binary.reduce.ManhattanDistance;
 import org.nd4j.autodiff.functions.impl.unary.reduce.Prod;
-import org.nd4j.autodiff.functions.impl.unary.transform.ACosh;
-import org.nd4j.autodiff.functions.impl.unary.transform.ASin;
-import org.nd4j.autodiff.functions.impl.unary.transform.ATan;
-import org.nd4j.autodiff.functions.impl.unary.transform.ATanh;
-import org.nd4j.autodiff.functions.impl.unary.transform.Exp;
-import org.nd4j.autodiff.functions.impl.unary.transform.ExpandDims;
-import org.nd4j.autodiff.functions.impl.unary.transform.Sinh;
-import org.nd4j.autodiff.functions.impl.unary.transform.Tanh;
-import org.nd4j.autodiff.functions.impl.unary.transform.Tile;
-import org.nd4j.autodiff.functions.impl.unary.transform.ValueArrayOf;
+import org.nd4j.autodiff.functions.impl.unary.transform.*;
 import org.nd4j.autodiff.functions.impl.unary.transform.shape.Permute;
 import org.nd4j.autodiff.functions.impl.unary.transform.shape.Reshape;
 import org.nd4j.autodiff.functions.impl.unary.transform.shape.RollAxis;
@@ -930,6 +921,11 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
         return new TensorMmul<>(sameDiff,x,y,dimensions,argNum);
     }
 
+
+    @Override
+    public DifferentialFunction<ArrayField> softmaxDerivative(DifferentialFunction<ArrayField> functionInput) {
+        return new SoftMaxDerivative(sameDiff,functionInput,null);
+    }
 
 
     public int getInputLength(DifferentialFunction<ArrayField> func) {

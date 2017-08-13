@@ -956,6 +956,21 @@ public class SameDiff {
         return ret;
     }
 
+    /**
+     *
+     * @param iX
+     * @return
+     */
+    public SDVariable softmaxDerivative(SDVariable iX) {
+        SDVariable ret = SDVariable.builder()
+                .arr(null).shape(iX.getShape())
+                .differentialFunction(functionFactory.softmaxDerivative(getFunctionInput(iX)))
+                .varName("softmax(" + iX.getVarName() + ")").sameDiff(this)
+                .build();
+        Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
+        addVariable(ret);
+        return ret;
+    }
 
     /**
      *
