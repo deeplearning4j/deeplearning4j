@@ -17,8 +17,7 @@
 package org.datavec.nlp.movingwindow;
 
 
-import org.datavec.api.berkeley.Counter;
-import org.datavec.api.berkeley.MapFactory;
+import org.nd4j.linalg.primitives.Counter;
 
 import java.util.List;
 import java.util.Map;
@@ -34,18 +33,7 @@ public class Util {
      * @return
      */
     public static Counter<String> parallelCounter() {
-        MapFactory<String, Double> factory = new MapFactory<String, Double>() {
-
-            private static final long serialVersionUID = 5447027920163740307L;
-
-            @Override
-            public Map<String, Double> buildMap() {
-                return new java.util.concurrent.ConcurrentHashMap<>();
-            }
-
-        };
-
-        return new Counter<>(factory);
+        return new Counter<>();
     }
 
     public static boolean matchesAnyStopWord(List<String> stopWords, String word) {

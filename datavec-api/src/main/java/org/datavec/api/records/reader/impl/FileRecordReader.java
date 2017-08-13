@@ -197,8 +197,12 @@ public class FileRecordReader extends BaseRecordReader {
     protected void advanceToNextLocation () {
         //File file;
         String path = locationsIterator.next(); // should always have file:// preceding
-        System.out.print("Adv : ");
-        System.out.println(path);
+        if(!path.startsWith("file:")){
+            path = "file:///" + path;
+        }
+        if(path.contains("\\")){
+            path = path.replaceAll("\\\\","/");
+        }
         File file = new File(URI.create(path));
         if (file.isDirectory())
             iter = FileUtils.iterateFiles(file, null, true);

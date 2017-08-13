@@ -58,7 +58,8 @@ public abstract class BaseSparkTest implements Serializable {
         if (sc != null)
             return sc;
 
-        SparkConf sparkConf = new SparkConf().setMaster("local[*]").set("spark.driverEnv.SPARK_LOCAL_IP", "127.0.0.1")
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]").set("spark.driver.host", "localhost")
+                        .set("spark.driverEnv.SPARK_LOCAL_IP", "127.0.0.1")
                         .set("spark.executorEnv.SPARK_LOCAL_IP", "127.0.0.1").setAppName("sparktest");
 
 

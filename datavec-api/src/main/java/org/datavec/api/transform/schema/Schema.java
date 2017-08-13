@@ -385,7 +385,7 @@ public class Schema implements Serializable {
         List<ColumnMetaData> columnMetaData = new ArrayList<>();
 
         /**
-         * Add a Double column with no restrictions on the allowable values, except for no NaN/infinite values allowed
+         * Add a Float column with no restrictions on the allowable values, except for no NaN/infinite values allowed
          *
          * @param name Name of the column
          */
@@ -415,7 +415,7 @@ public class Schema implements Serializable {
         }
 
         /**
-         * Add a double column with the specified restrictions
+         * Add a Double column with the specified restrictions
          *
          * @param name            Name of the column
          * @param minAllowedValue Minimum allowed value (inclusive). If null: no restriction
@@ -429,7 +429,7 @@ public class Schema implements Serializable {
         }
 
         /**
-         * Add multiple columns with no restrictions on the allowable values of the columns (other than no NaN/Infinite)
+         * Add multiple Double columns with no restrictions on the allowable values of the columns (other than no NaN/Infinite)
          *
          * @param columnNames Names of the columns to add
          */
@@ -440,7 +440,7 @@ public class Schema implements Serializable {
         }
 
         /**
-         * A convenience method for adding multiple double columns.
+         * A convenience method for adding multiple Double columns.
          * For example, to add columns "myDoubleCol_0", "myDoubleCol_1", "myDoubleCol_2", use
          * {@code addColumnsDouble("myDoubleCol_%d",0,2)}
          *
@@ -453,7 +453,7 @@ public class Schema implements Serializable {
         }
 
         /**
-         * A convenience method for adding multiple double columns, with additional restrictions that apply to all columns
+         * A convenience method for adding multiple Double columns, with additional restrictions that apply to all columns
          * For example, to add columns "myDoubleCol_0", "myDoubleCol_1", "myDoubleCol_2", use
          * {@code addColumnsDouble("myDoubleCol_%d",0,2,null,null,false,false)}
          *
@@ -474,7 +474,7 @@ public class Schema implements Serializable {
         }
 
         /**
-         * Add an integer column with no restrictions on the allowable values
+         * Add an Integer column with no restrictions on the allowable values
          *
          * @param name Name of the column
          */
@@ -483,7 +483,7 @@ public class Schema implements Serializable {
         }
 
         /**
-         * Add an integer column with the specified min/max allowable values
+         * Add an Integer column with the specified min/max allowable values
          *
          * @param name            Name of the column
          * @param minAllowedValue Minimum allowed value (inclusive). If null: no restriction
@@ -566,7 +566,7 @@ public class Schema implements Serializable {
         }
 
         /**
-         * Add an Long column with the specified min/max allowable values
+         * Add a Long column with the specified min/max allowable values
          *
          * @param name            Name of the column
          * @param minAllowedValue Minimum allowed value (inclusive). If null: no restriction
@@ -577,7 +577,7 @@ public class Schema implements Serializable {
         }
 
         /**
-         * Add multiple long columns, with no restrictions on the allowable values
+         * Add multiple Long columns, with no restrictions on the allowable values
          *
          * @param names Names of the Long columns to add
          */
@@ -640,7 +640,7 @@ public class Schema implements Serializable {
         }
 
         /**
-         * Add String columns with no restrictions on the allowable values
+         * Add multiple String columns with no restrictions on the allowable values
          *
          * @param columnNames Names of the String columns to add
          */
@@ -736,7 +736,7 @@ public class Schema implements Serializable {
         }
 
         /**
-         * Add an NDArray column
+         * Add a NDArray column
          *
          * @param columnName Name of the column
          * @param shape      shape of the NDArray column. Use -1 in entries to specify as "variable length" in that dimension

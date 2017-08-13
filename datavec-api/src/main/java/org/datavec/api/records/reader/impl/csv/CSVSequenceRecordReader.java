@@ -28,10 +28,7 @@ import org.datavec.api.writable.Writable;
 
 import java.io.*;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * CSV Sequence Record Reader
@@ -72,6 +69,9 @@ public class CSVSequenceRecordReader extends FileRecordReader implements Sequenc
 
     @Override
     public SequenceRecord nextSequence() {
+        if(!hasNext()){
+            throw new NoSuchElementException("No next element");
+        }
         File next = iter.next();
         invokeListeners(next);
 

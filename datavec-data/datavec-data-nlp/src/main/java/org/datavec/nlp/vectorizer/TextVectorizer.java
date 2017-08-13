@@ -16,7 +16,7 @@
 
 package org.datavec.nlp.vectorizer;
 
-import org.datavec.api.berkeley.Counter;
+import org.nd4j.linalg.primitives.Counter;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.reader.RecordReader;

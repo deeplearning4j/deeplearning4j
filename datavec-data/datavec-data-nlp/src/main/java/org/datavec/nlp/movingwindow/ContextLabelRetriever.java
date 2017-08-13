@@ -17,8 +17,8 @@
 package org.datavec.nlp.movingwindow;
 
 
-import org.datavec.api.berkeley.Pair;
-import org.datavec.api.berkeley.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.nd4j.linalg.primitives.Pair;
 import org.datavec.api.util.MultiDimensionalMap;
 import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
 import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;

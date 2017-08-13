@@ -18,8 +18,10 @@ package org.datavec.api.records.reader.impl;
 
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.NumberedFileInputSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.WritableType;
@@ -212,5 +214,26 @@ public class CSVSequenceRecordReaderTest {
         public WritableType getType() {
             throw new UnsupportedOperationException();
         }
+    }
+
+
+    @Test
+    public void testCsvSeqAndNumberedFileSplit() throws Exception {
+        //Simple sanity check unit test
+        for (int i = 0; i < 3; i++) {
+            new org.nd4j.linalg.io.ClassPathResource(String.format("csvsequence_%d.txt", i)).getTempFileFromArchive();
+        }
+
+        //Load time series from CSV sequence files; compare to SequenceRecordReaderDataSetIterator
+        org.nd4j.linalg.io.ClassPathResource resource = new org.nd4j.linalg.io.ClassPathResource("csvsequence_0.txt");
+        String featuresPath = resource.getTempFileFromArchive().getAbsolutePath().replaceAll("0", "%d");
+
+        SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
+        featureReader.initialize(new NumberedFileInputSplit(featuresPath, 0, 2));
+
+        while(featureReader.hasNext()){
+            featureReader.nextSequence();
+        }
+
     }
 }

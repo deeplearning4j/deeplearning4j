@@ -20,6 +20,7 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.impl.misc.LibSvmRecordReader;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
+import org.datavec.api.records.writer.impl.misc.SVMLightRecordWriter;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.DoubleWritable;
@@ -85,7 +86,7 @@ public class SVMLightRecordReaderTest {
     }
 
     @Test
-    public void testNoLabel() throws IOException, InterruptedException {
+    public void testNoAppendLabel() throws IOException, InterruptedException {
         Map<Integer, List<Writable>> correct = new HashMap<>();
         // 7 2:1 4:2 6:3 8:4 10:5
         correct.put(0, Arrays.asList(ZERO, ONE,
@@ -112,6 +113,49 @@ public class SVMLightRecordReaderTest {
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         config.setBoolean(SVMLightRecordReader.APPEND_LABEL, false);
         rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        int i = 0;
+        while (rr.hasNext()) {
+            List<Writable> record = rr.next();
+            assertEquals(correct.get(i), record);
+            i++;
+        }
+        assertEquals(i, correct.size());
+    }
+
+    @Test
+    public void testNoLabel() throws IOException, InterruptedException {
+        Map<Integer, List<Writable>> correct = new HashMap<>();
+        //  2:1 4:2 6:3 8:4 10:5
+        correct.put(0, Arrays.asList(ZERO, ONE,
+                ZERO, new DoubleWritable(2),
+                ZERO, new DoubleWritable(3),
+                ZERO, new DoubleWritable(4),
+                ZERO, new DoubleWritable(5)));
+        //  qid:42 1:0.1 2:2 6:6.6 8:80
+        correct.put(1, Arrays.asList(new DoubleWritable(0.1), new DoubleWritable(2),
+                ZERO, ZERO,
+                ZERO, new DoubleWritable(6.6),
+                ZERO, new DoubleWritable(80),
+                ZERO, ZERO));
+        //  1:1.0
+        correct.put(2, Arrays.asList(new DoubleWritable(1.0), ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO));
+        //
+        correct.put(3, Arrays.asList(ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO));
+
+        SVMLightRecordReader rr = new SVMLightRecordReader();
+        Configuration config = new Configuration();
+        config.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
+        config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
+        config.setBoolean(SVMLightRecordReader.APPEND_LABEL, true);
+        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/noLabels.txt").getFile()));
         int i = 0;
         while (rr.hasNext()) {
             List<Writable> record = rr.next();
@@ -191,6 +235,22 @@ public class SVMLightRecordReaderTest {
                                     ZERO, ZERO,
                                     LABEL_ONE, LABEL_ONE,
                                     LABEL_ZERO, LABEL_ONE));
+        //  1:1.0
+        correct.put(3, Arrays.asList(new DoubleWritable(1.0), ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                LABEL_ZERO, LABEL_ZERO,
+                LABEL_ZERO, LABEL_ZERO));
+        //
+        correct.put(4, Arrays.asList(ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                LABEL_ZERO, LABEL_ZERO,
+                LABEL_ZERO, LABEL_ZERO));
 
         SVMLightRecordReader rr = new SVMLightRecordReader();
         Configuration config = new Configuration();
@@ -241,10 +301,31 @@ public class SVMLightRecordReaderTest {
                                     LABEL_ZERO,
                                     LABEL_ONE, LABEL_ONE,
                                     LABEL_ZERO, LABEL_ONE));
+        //  1:1.0
+        correct.put(3, Arrays.asList(ZERO,
+                new DoubleWritable(1.0), ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                LABEL_ZERO,
+                LABEL_ZERO, LABEL_ZERO,
+                LABEL_ZERO, LABEL_ZERO));
+        //
+        correct.put(4, Arrays.asList(ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                ZERO, ZERO,
+                LABEL_ZERO,
+                LABEL_ZERO, LABEL_ZERO,
+                LABEL_ZERO, LABEL_ZERO));
 
         SVMLightRecordReader rr = new SVMLightRecordReader();
         Configuration config = new Configuration();
         // Zero-based indexing is default
+        config.setBoolean(SVMLightRecordReader.ZERO_BASED_LABEL_INDEXING, true); // NOT STANDARD!
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 11);
         config.setBoolean(SVMLightRecordReader.MULTILABEL, true);
         config.setInt(SVMLightRecordReader.NUM_LABELS, 5);
@@ -330,7 +411,6 @@ public class SVMLightRecordReaderTest {
     public void testZeroIndexLabelWithoutUsingZeroIndexing() throws Exception {
         SVMLightRecordReader rr = new SVMLightRecordReader();
         Configuration config = new Configuration();
-        config.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         config.setBoolean(SVMLightRecordReader.MULTILABEL, true);
         config.setInt(SVMLightRecordReader.NUM_LABELS, 2);
