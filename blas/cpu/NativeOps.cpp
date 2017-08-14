@@ -3043,7 +3043,7 @@ void NativeOps::decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex
 Nd4jIndex* NativeOps::mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jIndex length) {
     Nd4jIndex * result = new Nd4jIndex[2];
     int fd = open(fileName, O_RDWR, 0);
-    void * ptr = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, fd, 0);
+    void * ptr = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
     // check for failed allocation
     if (ptr == MAP_FAILED)
