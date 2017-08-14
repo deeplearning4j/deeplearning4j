@@ -50,6 +50,14 @@ TEST_F(FlatBuffersTest, BasicTest1) {
 TEST_F(FlatBuffersTest, FlatGraphTest1) {
     flatbuffers::FlatBufferBuilder builder(4096);
 
+    NDArray<float> *array = new NDArray<float>(5, 5, 'c');
+    array->assign(-2.0f);
+
+    auto fShape = builder.CreateVector(array->getShapeAsVector());
+    auto fBuffer = builder.CreateVector(array->getBufferAsVector());
+
+    auto fVar = CreateFlatVariable(builder, -1, 0, fShape, fBuffer);
+
     std::vector<int> outputs1, outputs2;
     outputs1.push_back(2);
     outputs2.push_back(0);
@@ -60,6 +68,9 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto node1 = CreateFlatNode(builder, 1, OpType_TRANSFORM, 26, {0}, DataType_INHERIT, vec1);
     auto node2 = CreateFlatNode(builder, 2, OpType_TRANSFORM, 6, {1}, DataType_INHERIT, vec2);
 
+    std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
+    variables_vector.push_back(fVar);
+
     std::vector<flatbuffers::Offset<FlatNode>> nodes_vector;
 
     nodes_vector.push_back(node1);
@@ -67,8 +78,11 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 
     auto nodes = builder.CreateVector(nodes_vector);
 
+    auto variables = builder.CreateVector(variables_vector);
+
     FlatGraphBuilder graphBuilder(builder);
 
+    graphBuilder.add_variables(variables);
     graphBuilder.add_id(119);
     graphBuilder.add_nodes(nodes);
 
@@ -85,15 +99,26 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     ASSERT_EQ(119, restoredGraph->id());
     ASSERT_EQ(2, restoredGraph->nodes()->size());
 
+    // checking op nodes
     ASSERT_EQ(26, restoredGraph->nodes()->Get(0)->opNum());
     ASSERT_EQ(6, restoredGraph->nodes()->Get(1)->opNum());
     ASSERT_EQ(26, restoredGraph->nodes()->Get(0)->opNum());
 
+    // checking variables
+    ASSERT_EQ(1, restoredGraph->variables()->size());
+    ASSERT_EQ(-1, restoredGraph->variables()->Get(0)->id());
 
     Graph graph(restoredGraph);
 
     ASSERT_EQ(2, graph.totalNodes());
     ASSERT_EQ(1, graph.rootNodes());
+
+
+    auto vs = graph.getVariableSpace();
+
+    ASSERT_EQ(1, vs->totalEntries());
+    ASSERT_EQ(1, vs->externalEntries());
+    ASSERT_EQ(0, vs->internalEntries());
 
     graph.execute();
 }

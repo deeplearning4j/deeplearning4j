@@ -155,6 +155,12 @@ template <typename T> class NDArray
         // This method adds given row to all rows in this NDArray, that is this array becomes affected
         void addiRowVector(const NDArray<T> *row);
 
+        // this method returns number of bytes used by buffer & shapeInfo
+        Nd4jIndex memoryFootprint();
+
+        // these methods suited for FlatBuffers use.
+        std::vector<T> getBufferAsVector();
+        std::vector<int32_t> getShapeAsVector();
 
     // default destructor
     ~NDArray();
@@ -162,6 +168,13 @@ template <typename T> class NDArray
 };
 
 
+template <typename T>
+Nd4jIndex inline NDArray<T>::memoryFootprint() {
+    Nd4jIndex size = this->lengthOf() * this->sizeOfT();
+    size += (this->rankOf() * 2 + 4) * sizeof(int);
+
+    return size;
+}
 
 
 // returns true if these two NDArrays have same shape

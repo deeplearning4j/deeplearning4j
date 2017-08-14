@@ -55,6 +55,30 @@ template <typename T> NDArray<T>::NDArray(const int length, const char order) {
     delete[] shape;
 }
 
+template <typename T>
+std::vector<T> NDArray<T>::getBufferAsVector() {
+    std::vector<T> vector;
+
+#pragma omp simd
+    for (int e = 0; e < this->lengthOf(); e++) {
+        vector.push_back(this->getScalar(e));
+    }
+
+    return vector;
+}
+
+template <typename T>
+std::vector<int32_t> NDArray<T>::getShapeAsVector() {
+    std::vector<int32_t> vector;
+
+    int magicNumber = this->rankOf() * 2 + 4;
+#pragma omp simd
+    for (int e = 0; e < magicNumber; e++) {
+        vector.push_back(this->_shapeInfo[e]);
+    }
+
+    return vector;
+}
 
 // creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
 template <typename T> NDArray<T>::NDArray(const NDArray<T> *other) {

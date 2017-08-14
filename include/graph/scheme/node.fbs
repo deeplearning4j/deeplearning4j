@@ -29,7 +29,8 @@ table FlatNode {
     opNum:short;
     input:[int]; // ID's of input nodes for this node
     dataType:DataType;
-    output:[int]; // // ID's of connected nodes for this node
+    output:[int]; // ID's of connected nodes for this node
+    extraParams:[float]; // extra params for this op (if any)
 }
 
 root_type FlatNode;

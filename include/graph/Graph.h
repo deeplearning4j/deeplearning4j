@@ -17,11 +17,16 @@ namespace nd4j {
     namespace graph {
         class Graph {
         protected:
+            VariableSpace<float> *_variableSpace;
+
             // vector holds ID's of top nodes only
             std::vector<int32_t > *_nodes;
-
             std::map<int32_t, const nd4j::graph::FlatNode *> *_mapped;
+
+
             const FlatGraph *_flatGraph;
+
+
 
             Nd4jStatus executeFlatNode(const nd4j::graph::FlatNode *node);
 
@@ -37,23 +42,32 @@ namespace nd4j {
             Nd4jStatus validate();
 
             int rootNodes();
-
             int totalNodes();
+
+            nd4j::graph::VariableSpace<float> *getVariableSpace();
         };
     }
+}
+
+
+nd4j::graph::VariableSpace<float> * nd4j::graph::Graph::getVariableSpace() {
+    return _variableSpace;
 }
 
 nd4j::graph::Graph::~Graph() {
     delete _mapped;
     delete _nodes;
+    delete _variableSpace;
 }
 
 nd4j::graph::Graph::Graph(const FlatGraph *flatGraph) {
     this->_flatGraph = flatGraph;
     this->_mapped = new std::map<int32_t, const nd4j::graph::FlatNode *> ();
     this->_nodes = new std::vector<int32_t>();
+    this->_variableSpace = new VariableSpace<float>();
 
-    if (this->_flatGraph != nullptr && this->_flatGraph->nodes()->size() > 0) {
+    // rolling through nodes
+    if (this->_flatGraph != nullptr && this->_flatGraph->nodes() != nullptr && this->_flatGraph->nodes()->size() > 0) {
 
         // flag to be raised if there's nodes without output being set
         bool outputPassNeeded = false;
@@ -79,6 +93,16 @@ nd4j::graph::Graph::Graph(const FlatGraph *flatGraph) {
             for (int e = 0; e < this->_flatGraph->nodes()->size(); e++) {
 
             }
+        }
+    }
+
+
+    if (this->_flatGraph != nullptr && this->_flatGraph->variables() != nullptr && this->_flatGraph->variables()->size() > 0) {
+        for (int e = 0; e < this->_flatGraph->variables()->size(); e++) {
+            auto flatVar = this->_flatGraph->variables()->Get(e);
+
+            auto var = new Variable<float>(flatVar);
+            _variableSpace->putVariable(flatVar->id(), var);
         }
     }
 }

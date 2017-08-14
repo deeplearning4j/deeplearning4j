@@ -258,3 +258,23 @@ TEST_F(NDArrayTest, TestApplyTransform1) {
 
     ASSERT_TRUE(exp->equalsTo(array));
 }
+
+TEST_F(NDArrayTest, TestVectors1) {
+    float *c = new float[4]{-1, -2, -3, -4};
+    auto *array = new NDArray<float>(c, cShape);
+
+
+    auto vecShape = array->getShapeAsVector();
+    auto vecBuffer = array->getBufferAsVector();
+
+    ASSERT_EQ(8, vecShape.size());
+    ASSERT_EQ(4, vecBuffer.size());
+
+    for (int e = 0; e < vecBuffer.size(); e++) {
+        ASSERT_NEAR(c[e], vecBuffer.at(e), 1e-5);
+    }
+
+    for (int e = 0; e < vecShape.size(); e++) {
+        ASSERT_EQ(cShape[e], vecShape.at(e));
+    }
+}

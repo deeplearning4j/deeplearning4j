@@ -15,6 +15,7 @@ namespace nd4j {
         template <typename T>
         class Variable {
         protected:
+            int32_t _id;
             NDArray<T> * _ndarray;
 
             bool _external;
@@ -25,22 +26,48 @@ namespace nd4j {
 
             Variable(const nd4j::graph::FlatVariable *flatVariable);
             ~Variable();
+
+
+            NDArray<T> *getNDArray();
+            bool isExternal();
+            bool isReadOnly();
+
+            void markExternal(bool reallyExternal);
+            void markReadOnly(bool reallyReadOnly);
         };
     }
 }
 
 template <typename T>
-nd4j::graph::Variable<T>::Variable(NDArray<T> *array) {
-    _ndarray = array;
+bool nd4j::graph::Variable<T>::isExternal() {
+    return _external;
+}
 
-    _external = false;
-    _readOnly = false;
+template <typename T>
+bool nd4j::graph::Variable<T>::isReadOnly() {
+    return _readOnly;
+}
+
+template <typename T>
+void nd4j::graph::Variable<T>::markExternal(bool reallyExternal) {
+    this->_external = reallyExternal;
+}
+
+template <typename T>
+void nd4j::graph::Variable<T>::markReadOnly(bool reallyReadOnly) {
+   this->_readOnly = reallyReadOnly;
+}
+
+template <typename T>
+NDArray<T> * nd4j::graph::Variable<T>::getNDArray() {
+    return this->_ndarray;
 }
 
 template <typename T>
 nd4j::graph::Variable<T>::Variable(const nd4j::graph::FlatVariable *flatVariable) {
     int shapeLen = flatVariable->shape()->Length();
     int *shape = new int[shapeLen];
+    this->_id = flatVariable->id();
 
     _external = true;
     _readOnly = false;
@@ -60,6 +87,15 @@ nd4j::graph::Variable<T>::Variable(const nd4j::graph::FlatVariable *flatVariable
 
     _ndarray = new NDArray<T>(buffer, shape);
     _ndarray->_allocated = true;
+}
+
+template <typename T>
+nd4j::graph::Variable<T>::Variable(NDArray<T> *array) {
+    _ndarray = array;
+
+    _external = false;
+    _readOnly = false;
+    _id = 0;
 }
 
 template <typename T>

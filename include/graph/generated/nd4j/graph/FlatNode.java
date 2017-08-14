@@ -24,6 +24,9 @@ public final class FlatNode extends Table {
   public int output(int j) { int o = __offset(14); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
   public int outputLength() { int o = __offset(14); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer outputAsByteBuffer() { return __vector_as_bytebuffer(14, 4); }
+  public float extraParams(int j) { int o = __offset(16); return o != 0 ? bb.getFloat(__vector(o) + j * 4) : 0; }
+  public int extraParamsLength() { int o = __offset(16); return o != 0 ? __vector_len(o) : 0; }
+  public ByteBuffer extraParamsAsByteBuffer() { return __vector_as_bytebuffer(16, 4); }
 
   public static int createFlatNode(FlatBufferBuilder builder,
       int id,
@@ -31,8 +34,10 @@ public final class FlatNode extends Table {
       short opNum,
       int inputOffset,
       byte dataType,
-      int outputOffset) {
-    builder.startObject(6);
+      int outputOffset,
+      int extraParamsOffset) {
+    builder.startObject(7);
+    FlatNode.addExtraParams(builder, extraParamsOffset);
     FlatNode.addOutput(builder, outputOffset);
     FlatNode.addInput(builder, inputOffset);
     FlatNode.addId(builder, id);
@@ -42,7 +47,7 @@ public final class FlatNode extends Table {
     return FlatNode.endFlatNode(builder);
   }
 
-  public static void startFlatNode(FlatBufferBuilder builder) { builder.startObject(6); }
+  public static void startFlatNode(FlatBufferBuilder builder) { builder.startObject(7); }
   public static void addId(FlatBufferBuilder builder, int id) { builder.addInt(0, id, 0); }
   public static void addOpType(FlatBufferBuilder builder, byte opType) { builder.addByte(1, opType, 0); }
   public static void addOpNum(FlatBufferBuilder builder, short opNum) { builder.addShort(2, opNum, 0); }
@@ -53,6 +58,9 @@ public final class FlatNode extends Table {
   public static void addOutput(FlatBufferBuilder builder, int outputOffset) { builder.addOffset(5, outputOffset, 0); }
   public static int createOutputVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
   public static void startOutputVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addExtraParams(FlatBufferBuilder builder, int extraParamsOffset) { builder.addOffset(6, extraParamsOffset, 0); }
+  public static int createExtraParamsVector(FlatBufferBuilder builder, float[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addFloat(data[i]); return builder.endVector(); }
+  public static void startExtraParamsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static int endFlatNode(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;
