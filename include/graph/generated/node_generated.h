@@ -19,18 +19,20 @@ enum OpType {
   OpType_INDEX_ACCUMULATION = 2,
   OpType_SCALAR = 3,
   OpType_BROADCAST = 4,
+  OpType_PAIRWISE = 5,
   OpType_VARIABLE = 119,
   OpType_MIN = OpType_TRANSFORM,
   OpType_MAX = OpType_VARIABLE
 };
 
-inline OpType (&EnumValuesOpType())[6] {
+inline OpType (&EnumValuesOpType())[7] {
   static OpType values[] = {
     OpType_TRANSFORM,
     OpType_ACCUMULATION,
     OpType_INDEX_ACCUMULATION,
     OpType_SCALAR,
     OpType_BROADCAST,
+    OpType_PAIRWISE,
     OpType_VARIABLE
   };
   return values;

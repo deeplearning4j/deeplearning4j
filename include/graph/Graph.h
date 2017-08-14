@@ -112,6 +112,8 @@ nd4j::graph::Graph::Graph(const FlatGraph *flatGraph) {
  * @return
  */
 Nd4jStatus nd4j::graph::Graph::execute() {
+
+#pragma omp parallel for
     for (int e = 0; e < _nodes->size(); e++) {
         auto n = _nodes->at(e);
 
@@ -172,7 +174,6 @@ Nd4jStatus nd4j::graph::Graph::validateNode(nd4j::graph::Node *node) {
 }
 
 Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
-    // TODO: put execution code here
     OpType opType = node->opType();
     int opNum = node->opNum();
 
@@ -205,6 +206,25 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
             if (out->getNDArray() != x->getNDArray())
                 out->getNDArray()->assign(x->getNDArray());
         }
+    } else if (opType == OpType_PAIRWISE) {
+
+        printf("PWT> x: %i; y: %i\n", node->input()->at(0), node->input()->at(1));
+
+        auto x = _variableSpace->getVariable(node->input()->at(0));
+        auto y = _variableSpace->getVariable(node->input()->at(1));
+
+        auto z = x;
+        if (node->output()->size() > 0) {
+            z = new Variable<float>(new NDArray<float>(x->getNDArray()));
+        }
+
+
+        functions::pairwise_transforms::PairWiseTransform<float>:: template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
+                                                                                 z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo, node->extraParams());
+        if (node->output()->size() == 1 && node->output()->at(0) < 0) {
+            f_variableSpace->getVariable(node->output()->at(0))->getNDArray()->assign(z->getNDArray());
+        } else
+            _variableSpace->putVariable(node->id(), z);
     }
 
     // going down to next node here

@@ -6,6 +6,7 @@ enum OpType:byte {
     INDEX_ACCUMULATION = 2,
     SCALAR = 3,
     BROADCAST = 4,
+    PAIRWISE = 5,
     VARIABLE = 119,
 }
 
