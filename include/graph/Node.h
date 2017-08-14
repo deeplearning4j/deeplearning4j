@@ -75,7 +75,7 @@ nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<
 
 
     for (auto o: output)
-        _output.push_back(0);
+        _output.push_back(o);
 
 };
 

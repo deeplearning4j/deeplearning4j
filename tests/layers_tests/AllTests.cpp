@@ -7,6 +7,7 @@
 #include "NDArrayTests.cpp"
 #include "FlatBuffersTests.cpp"
 #include "VariableSpaceTests.cpp"
+#include "GraphTests.cpp"
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);

@@ -58,6 +58,11 @@ nd4j::graph::Graph::~Graph() {
 }
 
 void nd4j::graph::Graph::addNode(Node *node) {
+    // checking for root node
+    if (node->input() == nullptr || (node->input()->size() == 1 && node->input()->at(0) < 0)) {
+        _nodes->push_back(node->id());
+    }
+
     std::pair<int32_t, nd4j::graph::Node *> pair(node->id(), node);
     _mapped->insert(pair);
 }
@@ -75,11 +80,6 @@ nd4j::graph::Graph::Graph(const FlatGraph *flatGraph) {
 
         for (int e = 0; e < flatGraph->nodes()->size(); e++) {
             auto node = flatGraph->nodes()->Get(e);
-
-            // checking for root node
-            if (node->input() == nullptr || (node->input()->size() == 1 && node->input()->Get(0) < 0)) {
-                _nodes->push_back(node->id());
-            }
 
             if (node->output() == nullptr || node->output()->size() == 0) {
                 outputPassNeeded = true;
@@ -197,6 +197,14 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
                                                                   nullptr);
 
         _variableSpace->putVariable(node->id(), x);
+
+        if (node->output()->size() == 1 && node->output()->at(0) < 0) {
+            auto out = _variableSpace->getVariable(node->output()->at(0));
+
+            // assign output
+            if (out->getNDArray() != x->getNDArray())
+                out->getNDArray()->assign(x->getNDArray());
+        }
     }
 
     // going down to next node here
@@ -205,7 +213,7 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
             auto n = node->output()->at(e);
 
             // we skip non-positive values here
-            if (n > 0)
+            if (n != 0 && _mapped->count(n) != 0)
                 executeFlatNode(_mapped->at(n));
         }
     }
