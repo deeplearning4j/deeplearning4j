@@ -5,12 +5,27 @@ layout: default
 
 **Contents**
 
+* <a href="#zeronineone">Version 0.9.1</a>
 * <a href="#zeroninezero">Version 0.9.0</a>
 * <a href="#zeroeightzero">Version 0.8.0</a>
 * <a href="#zeroseventwo">Version 0.7.2</a>
 * <a href="#six">Version 0.6.0</a>
 * <a href="#five">Version 0.5.0</a>
 * <a href="#four">Version 0.4.0</a>
+
+# <a name="zeronineone">Release Notes for Version 0.9.1</a>
+
+**Deeplearning4J**
+
+- Fixed issue with incorrect version dependencies in 0.9.0
+- Added EmnistDataSetIterator [Link](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/iterator/impl/EmnistDataSetIterator.java#L32)
+- Numerical stability improvements to LossMCXENT / LossNegativeLogLikelihood with softmax (should reduce NaNs with very large activations)
+
+**ND4J**
+
+- Added runtime version checking for ND4J, DL4J, RL4J, Arbiter, DataVec [Link](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/versioncheck/VersionCheck.java)
+
+
 
 # <a name="zeroninezero">Release Notes for Version 0.9.0</a>
 
