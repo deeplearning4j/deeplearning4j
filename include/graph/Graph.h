@@ -21,21 +21,16 @@ namespace nd4j {
 
             // vector holds ID's of top nodes only
             std::vector<int32_t > *_nodes;
-            std::map<int32_t, const nd4j::graph::FlatNode *> *_mapped;
+            std::map<int32_t, nd4j::graph::Node *> *_mapped;
 
-
-            const FlatGraph *_flatGraph;
-
-
-
-            Nd4jStatus executeFlatNode(const nd4j::graph::FlatNode *node);
-
-            Nd4jStatus validateNode(const FlatNode *node);
+            Nd4jStatus executeFlatNode(nd4j::graph::Node *node);
+            Nd4jStatus validateNode(nd4j::graph::Node *node);
         public:
             Graph(const FlatGraph *flatGraph = nullptr);
 
             ~Graph();
 
+            // this method executes graph with current state of VariableSpace
             Nd4jStatus execute();
 
             // method that'll print out graph
@@ -45,6 +40,8 @@ namespace nd4j {
             int totalNodes();
 
             nd4j::graph::VariableSpace<float> *getVariableSpace();
+
+            void addNode(Node *node);
         };
     }
 }
@@ -60,20 +57,24 @@ nd4j::graph::Graph::~Graph() {
     delete _variableSpace;
 }
 
+void nd4j::graph::Graph::addNode(Node *node) {
+    std::pair<int32_t, nd4j::graph::Node *> pair(node->id(), node);
+    _mapped->insert(pair);
+}
+
 nd4j::graph::Graph::Graph(const FlatGraph *flatGraph) {
-    this->_flatGraph = flatGraph;
-    this->_mapped = new std::map<int32_t, const nd4j::graph::FlatNode *> ();
+    this->_mapped = new std::map<int32_t, nd4j::graph::Node *> ();
     this->_nodes = new std::vector<int32_t>();
     this->_variableSpace = new VariableSpace<float>();
 
     // rolling through nodes
-    if (this->_flatGraph != nullptr && this->_flatGraph->nodes() != nullptr && this->_flatGraph->nodes()->size() > 0) {
+    if (flatGraph != nullptr && flatGraph->nodes() != nullptr && flatGraph->nodes()->size() > 0) {
 
         // flag to be raised if there's nodes without output being set
         bool outputPassNeeded = false;
 
-        for (int e = 0; e < this->_flatGraph->nodes()->size(); e++) {
-            auto node = this->_flatGraph->nodes()->Get(e);
+        for (int e = 0; e < flatGraph->nodes()->size(); e++) {
+            auto node = flatGraph->nodes()->Get(e);
 
             // checking for root node
             if (node->input() == nullptr || (node->input()->size() == 1 && node->input()->Get(0) < 0)) {
@@ -85,21 +86,20 @@ nd4j::graph::Graph::Graph(const FlatGraph *flatGraph) {
                 printf("Orphan node detected: %i\n", node->id());
             }
 
-            std::pair<int32_t, const nd4j::graph::FlatNode*> pair(node->id(), node);
-            _mapped->insert(pair);
+            this->addNode(new Node(node));
         }
 
         if (outputPassNeeded) {
-            for (int e = 0; e < this->_flatGraph->nodes()->size(); e++) {
+            for (int e = 0; e < flatGraph->nodes()->size(); e++) {
 
             }
         }
     }
 
-
-    if (this->_flatGraph != nullptr && this->_flatGraph->variables() != nullptr && this->_flatGraph->variables()->size() > 0) {
-        for (int e = 0; e < this->_flatGraph->variables()->size(); e++) {
-            auto flatVar = this->_flatGraph->variables()->Get(e);
+    // parsing variables here
+    if (flatGraph != nullptr && flatGraph->variables() != nullptr && flatGraph->variables()->size() > 0) {
+        for (int e = 0; e < flatGraph->variables()->size(); e++) {
+            auto flatVar = flatGraph->variables()->Get(e);
 
             auto var = new Variable<float>(flatVar);
             _variableSpace->putVariable(flatVar->id(), var);
@@ -149,7 +149,7 @@ Nd4jStatus nd4j::graph::Graph::validate() {
     return ND4J_STATUS_OK;
 };
 
-Nd4jStatus nd4j::graph::Graph::validateNode(const FlatNode *node) {
+Nd4jStatus nd4j::graph::Graph::validateNode(nd4j::graph::Node *node) {
 
     if (node->input()->size() > 0) {
         for (int e = 0; e < node->input()->size(); e++) {
@@ -160,7 +160,7 @@ Nd4jStatus nd4j::graph::Graph::validateNode(const FlatNode *node) {
 
     if (node->output()->size() > 0) {
         for (int e = 0; e < node->output()->size(); e++) {
-            int n = node->output()->Get(e);
+            int n = node->output()->at(e);
 
             // output can be either id of other node, or -1 in case of variable output
             if (n >= 0 && _mapped->count(n) == 0)
@@ -171,7 +171,7 @@ Nd4jStatus nd4j::graph::Graph::validateNode(const FlatNode *node) {
     }
 }
 
-Nd4jStatus nd4j::graph::Graph::executeFlatNode(const nd4j::graph::FlatNode *node) {
+Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
     // TODO: put execution code here
     OpType opType = node->opType();
     int opNum = node->opNum();
@@ -179,29 +179,30 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(const nd4j::graph::FlatNode *node
     printf("Executing node_%i: opNum: %i;\n", node->id(), opNum);
 
     if (opType == OpType_TRANSFORM) {
-        int in = node->input()->Get(0);
-        if (in > 0) {
-            // using output from other node here. need to rollback and find Variable used here
-            // TODO: assume different target option here
-            auto var = _variableSpace->getVariable(in);
+        int in = node->input()->at(0);
 
-            functions::transform::Transform<float>::template exec(opNum, var->getNDArray()->_buffer, var->getNDArray()->_shapeInfo, var->getNDArray()->_buffer, var->getNDArray()->_shapeInfo, nullptr, nullptr, nullptr);
+        auto x = _variableSpace->getVariable(in);
 
-            _variableSpace->putVariable(node->id(), var);
-        } else {
-            // TODO: assume different target option here
-            auto var = _variableSpace->getVariable(in);
+        // if output of previous node is used in different code branches - duplicate it
+        if (in > 0)
+            if (_mapped->at(in)->output()->size() > 1) {
+                auto array = x->getNDArray()->dup(x->getNDArray()->ordering());
+                x = new Variable<float>(array);
+            };
 
-            functions::transform::Transform<float>::template exec(opNum, var->getNDArray()->_buffer, var->getNDArray()->_shapeInfo, var->getNDArray()->_buffer, var->getNDArray()->_shapeInfo, nullptr, nullptr, nullptr);
+        functions::transform::Transform<float>::template exec(opNum, x->getNDArray()->_buffer,
+                                                                  x->getNDArray()->_shapeInfo,
+                                                                  x->getNDArray()->_buffer,
+                                                                  x->getNDArray()->_shapeInfo, node->extraParams(), nullptr,
+                                                                  nullptr);
 
-            _variableSpace->putVariable(node->id(), var);
-        }
+        _variableSpace->putVariable(node->id(), x);
     }
 
     // going down to next node here
     if (node->output() != nullptr && node->output()->size() > 0) {
         for (int e = 0; e < node->output()->size(); e++) {
-            auto n = node->output()->Get(e);
+            auto n = node->output()->at(e);
 
             // we skip non-positive values here
             if (n > 0)
