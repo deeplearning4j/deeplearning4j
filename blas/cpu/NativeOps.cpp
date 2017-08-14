@@ -17,6 +17,8 @@
 #include <helpers/logger.h>
 #ifndef _WIN32
 #include <sys/mman.h>
+#else
+#include <helpers/mman.h>
 #endif
 #include <sys/types.h>
 #include <fcntl.h>
@@ -3043,7 +3045,6 @@ void NativeOps::decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex
 }
 
 Nd4jIndex* NativeOps::mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jIndex length) {
-#ifndef _WIN32
     Nd4jIndex * result = new Nd4jIndex[2];
     int fd = open(fileName, O_RDWR, 0);
     void * ptr = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -3056,18 +3057,13 @@ Nd4jIndex* NativeOps::mmapFile(Nd4jPointer *extraPointers, const char *fileName,
     result[1] = fd;
 
     return result;
-#else
-    return nullptr;
-#endif
+
 
 }
 
 void NativeOps::munmapFile(Nd4jPointer *extraPointers, Nd4jIndex *ptrMap, Nd4jIndex length) {
-#ifndef _WIN32
     munmap((Nd4jPointer) ptrMap[0], length);
     close((int) ptrMap[1]);
-#else
 
-#endif
     delete[] ptrMap;
 }
