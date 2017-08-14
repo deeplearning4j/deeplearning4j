@@ -93,7 +93,7 @@ public class ReshapeVertex extends GraphVertex {
             case 3:
                 return InputType.recurrent(newShape[1]);
             case 4:
-                return InputType.convolutional(newShape[1], newShape[2], newShape[0]); //[mb,d,h,w] for activations
+                return InputType.convolutional(newShape[2], newShape[3], newShape[1]); //[mb,d,h,w] for activations
             default:
                 throw new UnsupportedOperationException(
                                 "Cannot infer input type for reshape array " + Arrays.toString(newShape));
