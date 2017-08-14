@@ -19,11 +19,11 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import org.apache.spark.api.java.function.Function;
-import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Triple;
 
 import java.util.ArrayList;
 import java.util.List;

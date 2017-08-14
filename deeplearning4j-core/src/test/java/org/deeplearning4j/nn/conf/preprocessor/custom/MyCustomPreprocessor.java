@@ -1,7 +1,7 @@
 package org.deeplearning4j.nn.conf.preprocessor.custom;
 
 import lombok.EqualsAndHashCode;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;

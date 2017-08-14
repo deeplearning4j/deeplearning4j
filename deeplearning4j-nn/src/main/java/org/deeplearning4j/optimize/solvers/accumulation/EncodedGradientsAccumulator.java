@@ -531,6 +531,9 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         // resetting this counter too
         workersCounter.set(0);
 
+        // reset indexes too
+        index = new ThreadLocal<>();
+
         // throw away message queues
         for (int i = 0; i < parties; i++) {
             messages.get(i).clear();

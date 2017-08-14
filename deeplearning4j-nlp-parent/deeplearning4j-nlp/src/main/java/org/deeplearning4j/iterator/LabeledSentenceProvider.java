@@ -1,6 +1,6 @@
 package org.deeplearning4j.iterator;
 
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.List;
 

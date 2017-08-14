@@ -2,7 +2,7 @@ package org.deeplearning4j.eval;
 
 import lombok.*;
 import org.apache.commons.lang3.ArrayUtils;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
 import org.deeplearning4j.eval.serde.ROCSerializer;

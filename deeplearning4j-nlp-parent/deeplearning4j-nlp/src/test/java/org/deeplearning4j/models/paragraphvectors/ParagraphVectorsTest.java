@@ -626,7 +626,6 @@ public class ParagraphVectorsTest {
     @Test
     public void testParagraphVectorsOverExistingWordVectorsModel() throws Exception {
 
-
         // we build w2v from multiple sources, to cover everything
         ClassPathResource resource_sentences = new ClassPathResource("/big/raw_sentences.txt");
         ClassPathResource resource_mixed = new ClassPathResource("/paravec");
@@ -637,9 +636,10 @@ public class ParagraphVectorsTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        Word2Vec wordVectors = new Word2Vec.Builder().minWordFrequency(1).batchSize(250).iterations(1).epochs(3)
+        Word2Vec wordVectors = new Word2Vec.Builder().seed(119).minWordFrequency(1).batchSize(250).iterations(1).epochs(3)
                         .learningRate(0.025).layerSize(150).minLearningRate(0.001)
                         .elementsLearningAlgorithm(new SkipGram<VocabWord>()).useHierarchicSoftmax(true).windowSize(5)
+                        .workers(2)
                         .iterate(iter).tokenizerFactory(t).build();
 
         wordVectors.fit();
@@ -660,9 +660,10 @@ public class ParagraphVectorsTest {
 
 
         // we're building classifier now, with pre-built w2v model passed in
-        ParagraphVectors paragraphVectors = new ParagraphVectors.Builder().iterate(labelAwareIterator)
-                        .learningRate(0.025).minLearningRate(0.001).iterations(5).epochs(1).layerSize(150)
+        ParagraphVectors paragraphVectors = new ParagraphVectors.Builder().seed(119).iterate(labelAwareIterator)
+                        .learningRate(0.025).minLearningRate(0.001).iterations(10).epochs(1).layerSize(150)
                         .tokenizerFactory(t).sequenceLearningAlgorithm(new DBOW<VocabWord>()).useHierarchicSoftmax(true)
+                        .workers(2)
                         .trainWordVectors(false).useExistingWordVectors(wordVectors).build();
 
         paragraphVectors.fit();
@@ -683,7 +684,7 @@ public class ParagraphVectorsTest {
         log.info("Day1: " + vector_day1);
         log.info("Day2: " + vector_day2);
         log.info("Cross-Day similarity: " + crossDay);
-        log.info("Cross-Day similiarity 2: " + Transforms.cosineSim(vector_day1, vector_day2));
+        log.info("Cross-Day similiarity 2: " + Transforms.cosineSim(Transforms.unitVec(vector_day1), Transforms.unitVec(vector_day2)));
 
         assertTrue(crossDay > 0.9d);
 
@@ -727,7 +728,7 @@ public class ParagraphVectorsTest {
         }
 
         String topPrediction = paragraphVectors.predict(document);
-        assertEquals("Zfinance", topPrediction);
+        assertEquals("Z"+document.getLabel(), topPrediction);
     }
 
     /*
@@ -744,7 +745,7 @@ public class ParagraphVectorsTest {
         if (vector == null || vector2 == null)
             return -1;
 
-        return Nd4j.getBlasWrapper().dot(vector, vector2);
+        return Transforms.cosineSim(vector, vector2);
 
     }
 

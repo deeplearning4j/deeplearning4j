@@ -19,8 +19,8 @@
 package org.deeplearning4j.clustering.cluster;
 
 import lombok.Data;
-import org.apache.commons.lang3.tuple.Pair;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.Serializable;
 import java.util.*;

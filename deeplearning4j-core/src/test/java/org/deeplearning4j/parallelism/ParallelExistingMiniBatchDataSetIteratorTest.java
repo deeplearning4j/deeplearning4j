@@ -2,7 +2,7 @@ package org.deeplearning4j.parallelism;
 
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.datasets.iterator.callbacks.DataSetDeserializer;
 import org.deeplearning4j.datasets.iterator.parallel.FileSplitParallelDataSetIterator;
 import org.junit.Before;
