@@ -227,22 +227,9 @@ NDArray<T>* NDArray<T>::reduceAlongDimension(const std::initializer_list<int>& d
     return result;
 }
 
-
 //
-template <typename T> template<typename OpName> T NDArray<T>::reduceNumber() const {
-    return reduceNumber(nullptr);
-}
-
-
-//
-template <typename T> template<typename OpName> T NDArray<T>::reduceNumber(T *extraParams) const {
+template <typename T> template<typename OpName> T NDArray<T>::reduceNumber(T *extraParams)  {
     return functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extraParams);
-}
-
-
-// perform array transformation
-template <typename T> template <typename OpName> void NDArray<T>::applyTransform() {
-    applyTransform<OpName>(nullptr);
 }
 
 // perform array transformation

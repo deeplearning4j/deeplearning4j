@@ -99,17 +99,12 @@ template <typename T> class NDArray
         // eventually this method reduces this array to 1xN row 
         template<typename OpName> NDArray<T>* reduceAlongDimension(const std::initializer_list<int>& dimensions) const;
 
-        //
-        template<typename OpName> T reduceNumber() const;
-
         // 
-        template<typename OpName> T reduceNumber(T* extraParams) const;
+        template<typename OpName> T reduceNumber(T* extraParams = nullptr);
         
+
         // perform array transformation
-        template<typename OpName> void applyTransform();
-        
-        // perform array transformation
-        template<typename OpName> void applyTransform(T *extraParams);
+        template<typename OpName> void applyTransform(T *extraParams = nullptr);
 
         // perform array transformation
         template<typename OpName> void applyTransform(NDArray<T> *target, T *extraParams);

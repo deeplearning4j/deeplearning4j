@@ -76,7 +76,7 @@ nd4j::graph::Graph::Graph(const FlatGraph *flatGraph) {
             auto node = this->_flatGraph->nodes()->Get(e);
 
             // checking for root node
-            if (node->input() == nullptr || (node->input()->size() == 1 && node->input()->Get(0) == 0)) {
+            if (node->input() == nullptr || (node->input()->size() == 1 && node->input()->Get(0) < 0)) {
                 _nodes->push_back(node->id());
             }
 
@@ -169,15 +169,34 @@ Nd4jStatus nd4j::graph::Graph::validateNode(const FlatNode *node) {
             // we also want to see data type here to match the next node
         }
     }
-
-
 }
 
 Nd4jStatus nd4j::graph::Graph::executeFlatNode(const nd4j::graph::FlatNode *node) {
-    printf("Executing node_%i\n", node->id());
-
     // TODO: put execution code here
+    OpType opType = node->opType();
+    int opNum = node->opNum();
 
+    printf("Executing node_%i: opNum: %i;\n", node->id(), opNum);
+
+    if (opType == OpType_TRANSFORM) {
+        int in = node->input()->Get(0);
+        if (in > 0) {
+            // using output from other node here. need to rollback and find Variable used here
+            // TODO: assume different target option here
+            auto var = _variableSpace->getVariable(in);
+
+            functions::transform::Transform<float>::template exec(opNum, var->getNDArray()->_buffer, var->getNDArray()->_shapeInfo, var->getNDArray()->_buffer, var->getNDArray()->_shapeInfo, nullptr, nullptr, nullptr);
+
+            _variableSpace->putVariable(node->id(), var);
+        } else {
+            // TODO: assume different target option here
+            auto var = _variableSpace->getVariable(in);
+
+            functions::transform::Transform<float>::template exec(opNum, var->getNDArray()->_buffer, var->getNDArray()->_shapeInfo, var->getNDArray()->_buffer, var->getNDArray()->_shapeInfo, nullptr, nullptr, nullptr);
+
+            _variableSpace->putVariable(node->id(), var);
+        }
+    }
 
     // going down to next node here
     if (node->output() != nullptr && node->output()->size() > 0) {

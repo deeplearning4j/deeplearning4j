@@ -49,7 +49,7 @@ TEST_F(VariableSpaceTest, SettersGettersTest2) {
 
     varA->markExternal(true);
 
-    space1->putVariable(1, varA);
+    space1->putVariable(-1, varA);
     space1->putVariable(2, varB);
 
     Nd4jIndex expExternal = (25 * 4) + (8 * 4);
@@ -57,4 +57,6 @@ TEST_F(VariableSpaceTest, SettersGettersTest2) {
 
     ASSERT_EQ(expExternal, space1->externalMemory());
     ASSERT_EQ(expInternal, space1->internalMemory());
+
+    delete space1;
 }
