@@ -9,9 +9,7 @@
 namespace nd4j {
 namespace graph {
 
-struct Variable;
-
-struct Operands;
+struct FlatVariable;
 
 struct FlatNode;
 
@@ -21,36 +19,21 @@ enum OpType {
   OpType_INDEX_ACCUMULATION = 2,
   OpType_SCALAR = 3,
   OpType_BROADCAST = 4,
+  OpType_VARIABLE = 119,
   OpType_MIN = OpType_TRANSFORM,
-  OpType_MAX = OpType_BROADCAST
+  OpType_MAX = OpType_VARIABLE
 };
 
-inline OpType (&EnumValuesOpType())[5] {
+inline OpType (&EnumValuesOpType())[6] {
   static OpType values[] = {
     OpType_TRANSFORM,
     OpType_ACCUMULATION,
     OpType_INDEX_ACCUMULATION,
     OpType_SCALAR,
-    OpType_BROADCAST
+    OpType_BROADCAST,
+    OpType_VARIABLE
   };
   return values;
-}
-
-inline const char **EnumNamesOpType() {
-  static const char *names[] = {
-    "TRANSFORM",
-    "ACCUMULATION",
-    "INDEX_ACCUMULATION",
-    "SCALAR",
-    "BROADCAST",
-    nullptr
-  };
-  return names;
-}
-
-inline const char *EnumNameOpType(OpType e) {
-  const size_t index = static_cast<int>(e);
-  return EnumNamesOpType()[index];
 }
 
 enum DataType {
@@ -88,45 +71,15 @@ inline const char *EnumNameDataType(DataType e) {
   return EnumNamesDataType()[index];
 }
 
-MANUALLY_ALIGNED_STRUCT(8) Operands FLATBUFFERS_FINAL_CLASS {
- private:
-  uint64_t x_;
-  uint64_t z_;
-  uint64_t y_;
-
- public:
-  Operands() {
-    memset(this, 0, sizeof(Operands));
-  }
-  Operands(const Operands &_o) {
-    memcpy(this, &_o, sizeof(Operands));
-  }
-  Operands(uint64_t _x, uint64_t _z, uint64_t _y)
-      : x_(flatbuffers::EndianScalar(_x)),
-        z_(flatbuffers::EndianScalar(_z)),
-        y_(flatbuffers::EndianScalar(_y)) {
-  }
-  uint64_t x() const {
-    return flatbuffers::EndianScalar(x_);
-  }
-  uint64_t z() const {
-    return flatbuffers::EndianScalar(z_);
-  }
-  uint64_t y() const {
-    return flatbuffers::EndianScalar(y_);
-  }
-};
-STRUCT_END(Operands, 24);
-
-struct Variable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_ID = 4,
     VT_NAME = 6,
     VT_SHAPE = 8,
     VT_VALUES = 10
   };
-  uint64_t id() const {
-    return GetField<uint64_t>(VT_ID, 0);
+  int32_t id() const {
+    return GetField<int32_t>(VT_ID, 0);
   }
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -139,7 +92,7 @@ struct Variable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint64_t>(verifier, VT_ID) &&
+           VerifyField<int32_t>(verifier, VT_ID) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.Verify(name()) &&
            VerifyOffset(verifier, VT_SHAPE) &&
@@ -150,54 +103,54 @@ struct Variable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
 };
 
-struct VariableBuilder {
+struct FlatVariableBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_id(uint64_t id) {
-    fbb_.AddElement<uint64_t>(Variable::VT_ID, id, 0);
+  void add_id(int32_t id) {
+    fbb_.AddElement<int32_t>(FlatVariable::VT_ID, id, 0);
   }
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
-    fbb_.AddOffset(Variable::VT_NAME, name);
+    fbb_.AddOffset(FlatVariable::VT_NAME, name);
   }
   void add_shape(flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape) {
-    fbb_.AddOffset(Variable::VT_SHAPE, shape);
+    fbb_.AddOffset(FlatVariable::VT_SHAPE, shape);
   }
   void add_values(flatbuffers::Offset<flatbuffers::Vector<float>> values) {
-    fbb_.AddOffset(Variable::VT_VALUES, values);
+    fbb_.AddOffset(FlatVariable::VT_VALUES, values);
   }
-  VariableBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  FlatVariableBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  VariableBuilder &operator=(const VariableBuilder &);
-  flatbuffers::Offset<Variable> Finish() {
+  FlatVariableBuilder &operator=(const FlatVariableBuilder &);
+  flatbuffers::Offset<FlatVariable> Finish() {
     const auto end = fbb_.EndTable(start_, 4);
-    auto o = flatbuffers::Offset<Variable>(end);
+    auto o = flatbuffers::Offset<FlatVariable>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Variable> CreateVariable(
+inline flatbuffers::Offset<FlatVariable> CreateFlatVariable(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint64_t id = 0,
+    int32_t id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape = 0,
     flatbuffers::Offset<flatbuffers::Vector<float>> values = 0) {
-  VariableBuilder builder_(_fbb);
-  builder_.add_id(id);
+  FlatVariableBuilder builder_(_fbb);
   builder_.add_values(values);
   builder_.add_shape(shape);
   builder_.add_name(name);
+  builder_.add_id(id);
   return builder_.Finish();
 }
 
-inline flatbuffers::Offset<Variable> CreateVariableDirect(
+inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    uint64_t id = 0,
+    int32_t id = 0,
     const char *name = nullptr,
     const std::vector<int32_t> *shape = nullptr,
     const std::vector<float> *values = nullptr) {
-  return nd4j::graph::CreateVariable(
+  return nd4j::graph::CreateFlatVariable(
       _fbb,
       id,
       name ? _fbb.CreateString(name) : 0,

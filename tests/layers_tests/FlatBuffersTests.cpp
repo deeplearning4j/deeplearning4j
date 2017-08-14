@@ -58,7 +58,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto vec2 = builder.CreateVector(outputs2);
 
     auto node1 = CreateFlatNode(builder, 1, OpType_TRANSFORM, 26, {0}, DataType_INHERIT, vec1);
-    auto node2 = CreateFlatNode(builder, 2, OpType_TRANSFORM, 23, {1}, DataType_INHERIT, vec2);
+    auto node2 = CreateFlatNode(builder, 2, OpType_TRANSFORM, 6, {1}, DataType_INHERIT, vec2);
 
     std::vector<flatbuffers::Offset<FlatNode>> nodes_vector;
 
@@ -86,7 +86,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     ASSERT_EQ(2, restoredGraph->nodes()->size());
 
     ASSERT_EQ(26, restoredGraph->nodes()->Get(0)->opNum());
-    ASSERT_EQ(23, restoredGraph->nodes()->Get(1)->opNum());
+    ASSERT_EQ(6, restoredGraph->nodes()->Get(1)->opNum());
     ASSERT_EQ(26, restoredGraph->nodes()->Get(0)->opNum());
 
 

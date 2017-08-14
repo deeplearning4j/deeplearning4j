@@ -9,9 +9,6 @@ public final class OpType {
   public static final byte INDEX_ACCUMULATION = 2;
   public static final byte SCALAR = 3;
   public static final byte BROADCAST = 4;
-
-  public static final String[] names = { "TRANSFORM", "ACCUMULATION", "INDEX_ACCUMULATION", "SCALAR", "BROADCAST", };
-
-  public static String name(int e) { return names[e]; }
+  public static final byte VARIABLE = 119;
 }
 

@@ -5,6 +5,7 @@ namespace nd4j.graph;
 
 table FlatGraph {
     id:int;
+    variables:[FlatVariable]; // list of variables
     nodes:[FlatNode]; // list of nodes
 }
 

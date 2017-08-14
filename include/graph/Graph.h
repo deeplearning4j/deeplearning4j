@@ -9,6 +9,7 @@
 #include <map>
 #include <NDArray.h>
 #include <graph/Node.h>
+#include <graph/VariableSpace.h>
 #include <graph/generated/node_generated.h>
 #include <graph/generated/graph_generated.h>
 

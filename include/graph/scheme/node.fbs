@@ -5,7 +5,8 @@ enum OpType:byte {
     ACCUMULATION = 1,
     INDEX_ACCUMULATION = 2,
     SCALAR = 3,
-    BROADCAST = 4
+    BROADCAST = 4,
+    VARIABLE = 119,
 }
 
 enum DataType:byte {
@@ -15,17 +16,11 @@ enum DataType:byte {
     DOUBLE,
 }
 
-table Variable {
-    id:ulong;
+table FlatVariable {
+    id:int;
     name:string;
     shape:[int];
     values:[float];
-}
-
-struct Operands {
-  x:ulong;
-  z:ulong;
-  y:ulong;
 }
 
 table FlatNode {
