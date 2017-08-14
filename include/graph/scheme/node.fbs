@@ -31,6 +31,7 @@ table FlatNode {
     dataType:DataType;
     output:[int]; // ID's of connected nodes for this node
     extraParams:[float]; // extra params for this op (if any)
+    dimensions:[int]; // dimension for this operation
 }
 
 root_type FlatNode;

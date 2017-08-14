@@ -166,7 +166,8 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_INPUT = 10,
     VT_DATATYPE = 12,
     VT_OUTPUT = 14,
-    VT_EXTRAPARAMS = 16
+    VT_EXTRAPARAMS = 16,
+    VT_DIMENSIONS = 18
   };
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
@@ -189,6 +190,9 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<float> *extraParams() const {
     return GetPointer<const flatbuffers::Vector<float> *>(VT_EXTRAPARAMS);
   }
+  const flatbuffers::Vector<int32_t> *dimensions() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_DIMENSIONS);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
@@ -201,6 +205,8 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.Verify(output()) &&
            VerifyOffset(verifier, VT_EXTRAPARAMS) &&
            verifier.Verify(extraParams()) &&
+           VerifyOffset(verifier, VT_DIMENSIONS) &&
+           verifier.Verify(dimensions()) &&
            verifier.EndTable();
   }
 };
@@ -229,13 +235,16 @@ struct FlatNodeBuilder {
   void add_extraParams(flatbuffers::Offset<flatbuffers::Vector<float>> extraParams) {
     fbb_.AddOffset(FlatNode::VT_EXTRAPARAMS, extraParams);
   }
+  void add_dimensions(flatbuffers::Offset<flatbuffers::Vector<int32_t>> dimensions) {
+    fbb_.AddOffset(FlatNode::VT_DIMENSIONS, dimensions);
+  }
   FlatNodeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   FlatNodeBuilder &operator=(const FlatNodeBuilder &);
   flatbuffers::Offset<FlatNode> Finish() {
-    const auto end = fbb_.EndTable(start_, 7);
+    const auto end = fbb_.EndTable(start_, 8);
     auto o = flatbuffers::Offset<FlatNode>(end);
     return o;
   }
@@ -249,8 +258,10 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> input = 0,
     DataType dataType = DataType_INHERIT,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> output = 0,
-    flatbuffers::Offset<flatbuffers::Vector<float>> extraParams = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<float>> extraParams = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> dimensions = 0) {
   FlatNodeBuilder builder_(_fbb);
+  builder_.add_dimensions(dimensions);
   builder_.add_extraParams(extraParams);
   builder_.add_output(output);
   builder_.add_input(input);
@@ -269,7 +280,8 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     const std::vector<int32_t> *input = nullptr,
     DataType dataType = DataType_INHERIT,
     const std::vector<int32_t> *output = nullptr,
-    const std::vector<float> *extraParams = nullptr) {
+    const std::vector<float> *extraParams = nullptr,
+    const std::vector<int32_t> *dimensions = nullptr) {
   return nd4j::graph::CreateFlatNode(
       _fbb,
       id,
@@ -278,7 +290,8 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
       input ? _fbb.CreateVector<int32_t>(*input) : 0,
       dataType,
       output ? _fbb.CreateVector<int32_t>(*output) : 0,
-      extraParams ? _fbb.CreateVector<float>(*extraParams) : 0);
+      extraParams ? _fbb.CreateVector<float>(*extraParams) : 0,
+      dimensions ? _fbb.CreateVector<int32_t>(*dimensions) : 0);
 }
 
 inline const nd4j::graph::FlatNode *GetFlatNode(const void *buf) {

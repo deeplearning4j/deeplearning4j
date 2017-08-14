@@ -72,7 +72,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto in1 = builder.CreateVector(inputs1);
     auto in2 = builder.CreateVector(inputs2);
 
-    auto node1 = CreateFlatNode(builder, 1, OpType_TRANSFORM, 26, in1, DataType_INHERIT, vec1);
+    auto node1 = CreateFlatNode(builder, 1, OpType_TRANSFORM, 0, in1, DataType_INHERIT, vec1);
     auto node2 = CreateFlatNode(builder, 2, OpType_TRANSFORM, 2, in2, DataType_INHERIT, vec2);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
@@ -107,9 +107,9 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     ASSERT_EQ(2, restoredGraph->nodes()->size());
 
     // checking op nodes
-    ASSERT_EQ(26, restoredGraph->nodes()->Get(0)->opNum());
+    ASSERT_EQ(0, restoredGraph->nodes()->Get(0)->opNum());
     ASSERT_EQ(2, restoredGraph->nodes()->Get(1)->opNum());
-    ASSERT_EQ(26, restoredGraph->nodes()->Get(0)->opNum());
+    ASSERT_EQ(0, restoredGraph->nodes()->Get(0)->opNum());
 
     // checking variables
     ASSERT_EQ(1, restoredGraph->variables()->size());
@@ -132,7 +132,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 
     graph.execute();
 
-    ASSERT_NEAR(0.9993908, var->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(-0.4161468, var->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
 
 TEST_F(FlatBuffersTest, ExecutionTest1) {
