@@ -23,10 +23,7 @@ import java.util.Set;
 public class KerasDense extends KerasLayer {
 
     /* Keras layer parameter names. */
-    public static final int NUM_TRAINABLE_PARAMS = 2;
-    public static final String KERAS_PARAM_NAME_W = "W";
-    public static final String KERAS_PARAM_NAME_B = "b";
-
+    private final int NUM_TRAINABLE_PARAMS = 2;
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
@@ -100,20 +97,20 @@ public class KerasDense extends KerasLayer {
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
         this.weights = new HashMap<String, INDArray>();
-        if (weights.containsKey(KERAS_PARAM_NAME_W))
-            this.weights.put(DefaultParamInitializer.WEIGHT_KEY, weights.get(KERAS_PARAM_NAME_W));
+        if (weights.containsKey(conf.getKERAS_PARAM_NAME_W()))
+            this.weights.put(DefaultParamInitializer.WEIGHT_KEY, weights.get(conf.getKERAS_PARAM_NAME_W()));
         else
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + KERAS_PARAM_NAME_W + " does not exist in weights");
-        if (weights.containsKey(KERAS_PARAM_NAME_B))
-            this.weights.put(DefaultParamInitializer.BIAS_KEY, weights.get(KERAS_PARAM_NAME_B));
+                            "Parameter " + conf.getKERAS_PARAM_NAME_W() + " does not exist in weights");
+        if (weights.containsKey(conf.getKERAS_PARAM_NAME_B()))
+            this.weights.put(DefaultParamInitializer.BIAS_KEY, weights.get(conf.getKERAS_PARAM_NAME_B()));
         else
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + KERAS_PARAM_NAME_B + " does not exist in weights");
+                            "Parameter " + conf.getKERAS_PARAM_NAME_B() + " does not exist in weights");
         if (weights.size() > 2) {
             Set<String> paramNames = weights.keySet();
-            paramNames.remove(KERAS_PARAM_NAME_W);
-            paramNames.remove(KERAS_PARAM_NAME_B);
+            paramNames.remove(conf.getKERAS_PARAM_NAME_W());
+            paramNames.remove(conf.getKERAS_PARAM_NAME_B());
             String unknownParamNames = paramNames.toString();
             log.warn("Attemping to set weights for unknown parameters: "
                             + unknownParamNames.substring(1, unknownParamNames.length() - 1));

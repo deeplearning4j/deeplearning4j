@@ -25,11 +25,7 @@ import java.util.Set;
 public class KerasEmbedding extends KerasLayer {
 
     public static final String LAYER_FIELD_INPUT_DIM = "input_dim";
-
-    /* Keras layer parameter names. */
     public static final int NUM_TRAINABLE_PARAMS = 1;
-    public static final String KERAS_PARAM_NAME_W = "W";
-    public static final String KERAS_PARAM_NAME_B = "b";
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -119,20 +115,20 @@ public class KerasEmbedding extends KerasLayer {
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
         this.weights = new HashMap<String, INDArray>();
-        if (!weights.containsKey(KERAS_PARAM_NAME_W))
+        if (!weights.containsKey(conf.getKERAS_PARAM_NAME_W()))
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + KERAS_PARAM_NAME_W + " does not exist in weights");
-        INDArray W = weights.get(KERAS_PARAM_NAME_W);
-        if (!weights.containsKey(KERAS_PARAM_NAME_B)) {
+                            "Parameter " + conf.getKERAS_PARAM_NAME_W() + " does not exist in weights");
+        INDArray W = weights.get(conf.getKERAS_PARAM_NAME_W());
+        if (!weights.containsKey(conf.getKERAS_PARAM_NAME_B())) {
             log.warn("Setting DL4J EmbeddingLayer bias to zero.");
-            weights.put(KERAS_PARAM_NAME_B, Nd4j.zeros(W.size(1)));
+            weights.put(conf.getKERAS_PARAM_NAME_B(), Nd4j.zeros(W.size(1)));
         }
         this.weights.put(DefaultParamInitializer.WEIGHT_KEY, W);
-        this.weights.put(DefaultParamInitializer.BIAS_KEY, weights.get(KERAS_PARAM_NAME_B));
+        this.weights.put(DefaultParamInitializer.BIAS_KEY, weights.get(conf.getKERAS_PARAM_NAME_B()));
 
         if (weights.size() > 2) {
             Set<String> paramNames = weights.keySet();
-            paramNames.remove(KERAS_PARAM_NAME_W);
+            paramNames.remove(conf.getKERAS_PARAM_NAME_W());
             String unknownParamNames = paramNames.toString();
             log.warn("Attemping to set weights for unknown parameters: "
                             + unknownParamNames.substring(1, unknownParamNames.length() - 1));

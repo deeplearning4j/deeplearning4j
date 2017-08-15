@@ -49,7 +49,6 @@ public class KerasLstm extends KerasLayer {
     public static final String KERAS_PARAM_NAME_B_F = "b_f";
     public static final String KERAS_PARAM_NAME_B_I = "b_i";
     public static final String KERAS_PARAM_NAME_B_O = "b_o";
-
     public static final int NUM_WEIGHTS_IN_KERAS_LSTM = 12;
 
     protected boolean unroll = false; // whether to unroll LSTM

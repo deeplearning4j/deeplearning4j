@@ -40,7 +40,6 @@ public class KerasLayerConfiguration {
     // Conv1D, Conv3D, SeparableConv2D, Deconvolution2D/Conv2DTranspose, Cropping1D-3D, UpSampling1D-3D,
     // ZeroPadding3D, LocallyConnected1D-2D
     // Missing layers from keras 1: AtrousConvolution1D-2D, Highway, MaxoutDense
-
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
     private final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
@@ -76,6 +75,8 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_OUTPUT_DIM = ""; // 1: output_dim, 2: units
     private final String LAYER_FIELD_DROPOUT_RATE = ""; // 1: p, 2: rate
     private final String LAYER_FIELD_USE_BIAS = ""; // 1: bias, 2: use_bias
+    private final String KERAS_PARAM_NAME_W = ""; // 1: W, 2: kernel
+    private final String KERAS_PARAM_NAME_B = ""; // 1: b, 2: bias
 
     /* Keras dimension ordering for, e.g., convolutional layersOrdered. */
     private final String LAYER_FIELD_DIM_ORDERING = ""; // 1: dim_ordering, 2: data_format

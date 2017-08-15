@@ -36,6 +36,8 @@ public class Keras1LayerConfiguration extends KerasLayerConfiguration {
     private final String LAYER_FIELD_OUTPUT_DIM = "output_dim";
     private final String LAYER_FIELD_DROPOUT_RATE = "p";
     private final String LAYER_FIELD_USE_BIAS = "bias";
+    private final String KERAS_PARAM_NAME_W = "W";
+    private final String KERAS_PARAM_NAME_B = "b";
 
     /* Keras dimension ordering for, e.g., convolutional layersOrdered. */
     private final String LAYER_FIELD_DIM_ORDERING = "dim_ordering";
