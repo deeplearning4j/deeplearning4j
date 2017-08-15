@@ -119,7 +119,8 @@ Nd4jStatus nd4j::graph::Graph::execute() {
                    it->second->prepare();
     }
 
-#pragma omp parallel for
+#pragma omp parallel for if (_nodes->size()>1) schedule(guided) proc_bind(spread)
+//#pragma omp parallel for schedule(dynamic) proc_bind(spread)
     for (int e = 0; e < _nodes->size(); e++) {
         auto n = _nodes->at(e);
 
@@ -255,17 +256,27 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
 
         // if next node is multi-output, only 0 thread goes in
         if (!node->isMultiInput() || omp_get_thread_num() == 0) {
-            for (int e = 0; e < node->output()->size(); e++) {
+            int s = node->output()->size();
+//#pragma omp parallel for if (s>1) schedule(dynamic, 1) proc_bind(spread)
+            for (int e = 0; e < s; e++) {
                 auto n = node->output()->at(e);
 
                 // we skip non-positive values here
                 if (n != 0 && _mapped->count(n) != 0) {
+                    auto nextNode = _mapped->at(n);
+                    printf("Op: %i; N: %i; S: %i\n", _mapped->at(n)->opNum(), omp_get_thread_num(), s);
+
+                    // last input node continues here
+                    bool m = false;
+                    if (nextNode->isMultiInput())
+                        m = nextNode->input()->at(nextNode->input()->size()-1) == node->id();
+
 
                     // only tid_0 invokes multi-input node, block will happen right there
-                    if (_mapped->at(n)->isMultiInput() && omp_get_thread_num() != 0)
+                    if (nextNode->isMultiInput() && m )
                         continue;
                     else
-                        executeFlatNode(_mapped->at(n));
+                        executeFlatNode(nextNode);
                 }
             }
         }
