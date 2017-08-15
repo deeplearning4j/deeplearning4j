@@ -106,7 +106,7 @@ public class TransformProcess implements Serializable {
     private static ObjectMapper yamlMapper = initMapperYaml();
 
     public TransformProcess(@JsonProperty("initialSchema") Schema initialSchema,
-                    @JsonProperty("actionList") List<DataAction> actionList) {
+                            @JsonProperty("actionList") List<DataAction> actionList) {
         this.initialSchema = initialSchema;
         this.actionList = actionList;
 
@@ -123,7 +123,7 @@ public class TransformProcess implements Serializable {
             } else if (d.getConvertToSequence() != null) {
                 if (currInputSchema instanceof SequenceSchema) {
                     throw new RuntimeException("Cannot convert to sequence: schema is already a sequence schema: "
-                                    + currInputSchema);
+                            + currInputSchema);
                 }
                 ConvertToSequence cts = d.getConvertToSequence();
                 cts.setInputSchema(currInputSchema);
@@ -132,7 +132,7 @@ public class TransformProcess implements Serializable {
                 ConvertFromSequence cfs = d.getConvertFromSequence();
                 if (!(currInputSchema instanceof SequenceSchema)) {
                     throw new RuntimeException("Cannot convert from sequence: schema is not a sequence schema: "
-                                    + currInputSchema);
+                            + currInputSchema);
                 }
                 cfs.setInputSchema((SequenceSchema) currInputSchema);
                 currInputSchema = cfs.transform((SequenceSchema) currInputSchema);
@@ -190,7 +190,7 @@ public class TransformProcess implements Serializable {
             } else if (d.getConvertToSequence() != null) {
                 if (currInputSchema instanceof SequenceSchema) {
                     throw new RuntimeException("Cannot convert to sequence: schema is already a sequence schema: "
-                                    + currInputSchema);
+                            + currInputSchema);
                 }
                 ConvertToSequence cts = d.getConvertToSequence();
                 currInputSchema = cts.transform(currInputSchema);
@@ -198,7 +198,7 @@ public class TransformProcess implements Serializable {
                 ConvertFromSequence cfs = d.getConvertFromSequence();
                 if (!(currInputSchema instanceof SequenceSchema)) {
                     throw new RuntimeException("Cannot convert from sequence: schema is not a sequence schema: "
-                                    + currInputSchema);
+                            + currInputSchema);
                 }
                 currInputSchema = cfs.transform((SequenceSchema) currInputSchema);
             } else if (d.getSequenceSplit() != null) {
@@ -241,13 +241,13 @@ public class TransformProcess implements Serializable {
                     return null;
             } else if (d.getConvertToSequence() != null) {
                 throw new RuntimeException(
-                                "Cannot execute examples individually: TransformProcess contains a ConvertToSequence operation");
+                        "Cannot execute examples individually: TransformProcess contains a ConvertToSequence operation");
             } else if (d.getConvertFromSequence() != null) {
                 throw new RuntimeException(
-                                "Unexpected operation: TransformProcess contains a ConvertFromSequence operation");
+                        "Unexpected operation: TransformProcess contains a ConvertFromSequence operation");
             } else if (d.getSequenceSplit() != null) {
                 throw new RuntimeException(
-                                "Cannot execute examples individually: TransformProcess contains a SequenceSplit operation");
+                        "Cannot execute examples individually: TransformProcess contains a SequenceSplit operation");
             } else {
                 throw new RuntimeException("Unknown action: " + d);
             }
@@ -275,13 +275,13 @@ public class TransformProcess implements Serializable {
                 }
             } else if (d.getConvertToSequence() != null) {
                 throw new RuntimeException(
-                                "Cannot execute examples individually: TransformProcess contains a ConvertToSequence operation");
+                        "Cannot execute examples individually: TransformProcess contains a ConvertToSequence operation");
             } else if (d.getConvertFromSequence() != null) {
                 throw new RuntimeException(
-                                "Unexpected operation: TransformProcess contains a ConvertFromSequence operation");
+                        "Unexpected operation: TransformProcess contains a ConvertFromSequence operation");
             } else if (d.getSequenceSplit() != null) {
                 throw new RuntimeException(
-                                "Cannot execute examples individually: TransformProcess contains a SequenceSplit operation");
+                        "Cannot execute examples individually: TransformProcess contains a SequenceSplit operation");
             } else {
                 throw new RuntimeException("Unknown or not supported action: " + d);
             }
@@ -383,7 +383,7 @@ public class TransformProcess implements Serializable {
 
     private static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper) {
         return reinitializeMapperWithSubtypes(mapper, Arrays.<Class<?>>asList(Transform.class, Condition.class,
-                        Filter.class, IAssociativeReducer.class));
+                Filter.class, IAssociativeReducer.class));
     }
 
     public static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper, List<Class<?>> classes) {
@@ -397,7 +397,7 @@ public class TransformProcess implements Serializable {
 
         if (subtypesClassCache == null) {
             List<Class<?>> interfaces = Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class,
-                            IAssociativeReducer.class);
+                    IAssociativeReducer.class);
             List<Class<?>> classesList = Arrays.<Class<?>>asList();
 
             Collection<URL> urls = ClasspathHelper.forClassLoader();
@@ -410,16 +410,16 @@ public class TransformProcess implements Serializable {
             }
 
             Reflections reflections = new Reflections(
-                            new ConfigurationBuilder().filterInputsBy(new FilterBuilder().exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                                            //Exclude the following: the assumption here is that no custom functionality will ever be present
-                                            // under these package name prefixes.
-                                            .exclude("^org.nd4j.*").exclude("^org.bytedeco.*") //JavaCPP
-                                            .exclude("^com.fasterxml.*")//Jackson
-                                            .exclude("^org.apache.*") //Apache commons, Spark, log4j etc
-                                            .exclude("^org.projectlombok.*").exclude("^com.twelvemonkeys.*")
-                                            .exclude("^org.joda.*").exclude("^org.slf4j.*").exclude("^com.google.*")
-                                            .exclude("^org.reflections.*").exclude("^ch.qos.*") //Logback
-                            ).addUrls(scanUrls).setScanners(new DataVecSubTypesScanner(interfaces, classesList)));
+                    new ConfigurationBuilder().filterInputsBy(new FilterBuilder().exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                            //Exclude the following: the assumption here is that no custom functionality will ever be present
+                            // under these package name prefixes.
+                            .exclude("^org.nd4j.*").exclude("^org.bytedeco.*") //JavaCPP
+                            .exclude("^com.fasterxml.*")//Jackson
+                            .exclude("^org.apache.*") //Apache commons, Spark, log4j etc
+                            .exclude("^org.projectlombok.*").exclude("^com.twelvemonkeys.*")
+                            .exclude("^org.joda.*").exclude("^org.slf4j.*").exclude("^com.google.*")
+                            .exclude("^org.reflections.*").exclude("^ch.qos.*") //Logback
+                    ).addUrls(scanUrls).setScanners(new DataVecSubTypesScanner(interfaces, classesList)));
             org.reflections.Store store = reflections.getStore();
 
             Iterable<String> subtypesByName = store.getAll(DataVecSubTypesScanner.class.getSimpleName(), classNames);
@@ -439,10 +439,10 @@ public class TransformProcess implements Serializable {
         Set<Class<?>> registeredSubtypes = new HashSet<>();
         for (Class<?> c : classes) {
             AnnotatedClass ac = AnnotatedClass.construct(c, mapper.getSerializationConfig().getAnnotationIntrospector(),
-                            null);
+                    null);
             Collection<NamedType> types =
-                            mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(),
-                                            mapper.getSerializationConfig().getAnnotationIntrospector());
+                    mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(),
+                            mapper.getSerializationConfig().getAnnotationIntrospector());
             for (NamedType nt : types) {
                 registeredSubtypes.add(nt.getType());
             }
@@ -470,7 +470,7 @@ public class TransformProcess implements Serializable {
                     for (Class<?> baseClass : classes) {
                         if (baseClass.isAssignableFrom(c)) {
                             log.debug("Registering class for JSON serialization: {} as subtype of {}", c.getName(),
-                                            baseClass.getName());
+                                    baseClass.getName());
                             break;
                         }
                     }
@@ -505,6 +505,66 @@ public class TransformProcess implements Serializable {
 
 
     /**
+     * Transforms a sequence
+     * of strings in to a sequence of writables
+     * (very similar to {@link #transformRawStringsToInput(String...)}
+     * for sequences
+     * @param sequence the sequence to transform
+     * @return the transformed input
+     */
+    public List<List<Writable>> transformRawStringsToInputSequence(List<List<String>> sequence) {
+        List<List<Writable>> ret = new ArrayList<>();
+        for(List<String> input : sequence)
+            ret.add(transformRawStringsToInputList(input));
+        return ret;
+    }
+
+
+    /**
+     * Based on the input schema,
+     * map raw string values to the appropriate
+     * writable
+     * @param values the values to convert
+     * @return the transformed values based on the schema
+     */
+    public List<Writable> transformRawStringsToInputList(List<String> values) {
+        List<Writable> ret = new ArrayList<>();
+        if (values.size() != initialSchema.numColumns())
+            throw new IllegalArgumentException(
+                    String.format("Number of values %d does not match the number of input columns %d for schema",
+                            values.size(), initialSchema.numColumns()));
+        for (int i = 0; i < values.size(); i++) {
+            switch (initialSchema.getType(i)) {
+                case String:
+                    ret.add(new Text(values.get(i)));
+                    break;
+                case Integer:
+                    ret.add(new IntWritable(Integer.parseInt(values.get(i))));
+                    break;
+                case Double:
+                    ret.add(new DoubleWritable(Double.parseDouble(values.get(i))));
+                    break;
+                case Float:
+                    ret.add(new FloatWritable(Float.parseFloat(values.get(i))));
+                    break;
+                case Categorical:
+                    ret.add(new Text(values.get(i)));
+                    break;
+                case Boolean:
+                    ret.add(new BooleanWritable(Boolean.parseBoolean(values.get(i))));
+                    break;
+                case Time:
+
+                    break;
+                case Long:
+                    ret.add(new LongWritable(Long.parseLong(values.get(i))));
+            }
+        }
+        return ret;
+    }
+
+
+    /**
      * Based on the input schema,
      * map raw string values to the appropriate
      * writable
@@ -512,39 +572,7 @@ public class TransformProcess implements Serializable {
      * @return the transformed values based on the schema
      */
     public List<Writable> transformRawStringsToInput(String... values) {
-        List<Writable> ret = new ArrayList<>();
-        if (values.length != initialSchema.numColumns())
-            throw new IllegalArgumentException(
-                            String.format("Number of values %d does not match the number of input columns %d for schema",
-                                            values.length, initialSchema.numColumns()));
-        for (int i = 0; i < values.length; i++) {
-            switch (initialSchema.getType(i)) {
-                case String:
-                    ret.add(new Text(values[i]));
-                    break;
-                case Integer:
-                    ret.add(new IntWritable(Integer.parseInt(values[i])));
-                    break;
-                case Double:
-                    ret.add(new DoubleWritable(Double.parseDouble(values[i])));
-                    break;
-                case Float:
-                    ret.add(new FloatWritable(Float.parseFloat(values[i])));
-                    break;
-                case Categorical:
-                    ret.add(new Text(values[i]));
-                    break;
-                case Boolean:
-                    ret.add(new BooleanWritable(Boolean.parseBoolean(values[i])));
-                    break;
-                case Time:
-
-                    break;
-                case Long:
-                    ret.add(new LongWritable(Long.parseLong(values[i])));
-            }
-        }
-        return ret;
+        return transformRawStringsToInputList(Arrays.asList(values));
     }
 
     /**
@@ -664,7 +692,7 @@ public class TransformProcess implements Serializable {
          */
         public Builder duplicateColumn(String column, String newName) {
             return transform(new DuplicateColumnsTransform(Collections.singletonList(column),
-                            Collections.singletonList(newName)));
+                    Collections.singletonList(newName)));
         }
 
 
@@ -914,7 +942,7 @@ public class TransformProcess implements Serializable {
             ColumnAnalysis ca = da.getColumnAnalysis(column);
             if (!(ca instanceof NumericalColumnAnalysis))
                 throw new IllegalStateException(
-                                "Column \"" + column + "\" analysis is not numerical. " + "Column is not numerical?");
+                        "Column \"" + column + "\" analysis is not numerical. " + "Column is not numerical?");
 
             NumericalColumnAnalysis nca = (NumericalColumnAnalysis) ca;
             double min = nca.getMinDouble();
@@ -1033,9 +1061,9 @@ public class TransformProcess implements Serializable {
          * @param operationType   Whether the offset should be done in-place or by adding a new column
          */
         public Builder offsetSequence(List<String> columnsToOffset, int offsetAmount,
-                        SequenceOffsetTransform.OperationType operationType) {
+                                      SequenceOffsetTransform.OperationType operationType) {
             return transform(new SequenceOffsetTransform(columnsToOffset, offsetAmount, operationType,
-                            SequenceOffsetTransform.EdgeHandling.TrimSequence, null));
+                    SequenceOffsetTransform.EdgeHandling.TrimSequence, null));
         }
 
 
@@ -1129,7 +1157,7 @@ public class TransformProcess implements Serializable {
          * @param ascending     If true: sort ascending. False: descending
          */
         public Builder calculateSortedRank(String newColumnName, String sortOnColumn, WritableComparator comparator,
-                        boolean ascending) {
+                                           boolean ascending) {
             actionList.add(new DataAction(new CalculateSortedRank(newColumnName, sortOnColumn, comparator, ascending)));
             return this;
         }
@@ -1298,7 +1326,7 @@ public class TransformProcess implements Serializable {
          * @param secondCol     second column to use in the distance calculation
          */
         public Builder ndArrayDistanceTransform(String newColumnName, Distance distance, String firstCol,
-                        String secondCol) {
+                                                String secondCol) {
             return transform(new NDArrayDistanceTransform(newColumnName, distance, firstCol, secondCol));
         }
 

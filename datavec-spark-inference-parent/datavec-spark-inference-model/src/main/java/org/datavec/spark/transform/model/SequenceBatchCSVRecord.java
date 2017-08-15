@@ -9,6 +9,8 @@ import org.nd4j.linalg.dataset.MultiDataSet;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -29,6 +31,24 @@ public class SequenceBatchCSVRecord implements Serializable {
         if (records == null)
             records = new ArrayList<>();
         records.add(record);
+    }
+
+    /**
+     * Get the records as a list of strings directly
+     * (this basically "unpacks" the objects)
+     * @return
+     */
+    public List<List<String>> getRecordsAsString() {
+        if(records == null)
+            Collections.emptyList();
+        List<List<String>> ret = new ArrayList<>(records.size());
+        for(BatchCSVRecord record : records) {
+            for(SingleCSVRecord singleCSVRecord : record.getRecords()) {
+                ret.add(singleCSVRecord.getValues());
+            }
+        }
+
+        return ret;
     }
 
 

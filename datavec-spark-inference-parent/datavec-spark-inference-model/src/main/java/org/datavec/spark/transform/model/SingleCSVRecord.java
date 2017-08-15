@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by agibsonccc on 12/24/16.
@@ -14,7 +16,15 @@ import java.io.Serializable;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SingleCSVRecord implements Serializable {
-    private String[] values;
+    private List<String> values;
+
+    /**
+     * Create from an array of values uses list internally)
+     * @param values
+     */
+    public SingleCSVRecord(String...values) {
+        this.values = Arrays.asList(values);
+    }
 
     /**
      * Instantiate a csv record from a vector
