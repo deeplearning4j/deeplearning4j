@@ -18,11 +18,11 @@
 
 package org.deeplearning4j.spark.text.functions;
 
-import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
+import org.nd4j.linalg.primitives.AtomicDouble;
 import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;

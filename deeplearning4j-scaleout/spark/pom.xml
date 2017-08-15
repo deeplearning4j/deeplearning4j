@@ -20,11 +20,11 @@
     <parent>
         <artifactId>deeplearning4j-scaleout</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.9.1-SNAPSHOT</version>
+        <version>0.9.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>spark_2.11</artifactId>
-    <version>0.9.1_spark_1-SNAPSHOT</version>
+    <version>0.9.2_spark_1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>org.deeplearning4j.spark</name>
@@ -45,7 +45,7 @@
           (in different pom files) instead of a single global property -->
         <spark.version>1.6.3</spark.version>
         <spark.major.version>1</spark.major.version>
-        <datavec.spark.version>0.9.1_spark_1-SNAPSHOT</datavec.spark.version>
+        <datavec.spark.version>0.9.2_spark_1-SNAPSHOT</datavec.spark.version>
     </properties>
 
 
@@ -81,7 +81,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <scalaVersion>2.11.7</scalaVersion>
+                    <scalaVersion>2.11.8</scalaVersion>
                 </configuration>
             </plugin>
         </plugins>
@@ -104,7 +104,7 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.11.7</version>
+            <version>2.11.8</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>

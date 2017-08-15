@@ -86,7 +86,7 @@ public abstract class BaseSparkTest implements Serializable {
         if (sc != null)
             return sc;
         // set to test mode
-        SparkConf sparkConf = new SparkConf().setMaster("local[" + numExecutors() + "]").setAppName("sparktest");
+        SparkConf sparkConf = new SparkConf().setMaster("local[" + numExecutors() + "]").set("spark.driver.host", "localhost").setAppName("sparktest");
 
 
         sc = new JavaSparkContext(sparkConf);
