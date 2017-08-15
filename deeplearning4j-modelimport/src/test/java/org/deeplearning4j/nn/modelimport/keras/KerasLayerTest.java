@@ -195,23 +195,25 @@ public class KerasLayerTest {
         String lstmForgetBiasString = "one";
         boolean lstmUnroll = true;
 
+        KerasLstm lstm = new KerasLstm(kerasVersion);
+
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LSTM());
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
-        config.put(LAYER_FIELD_INNER_ACTIVATION, innerActivation); // keras linear -> dl4j identity
+        config.put(lstm.getLAYER_FIELD_INNER_ACTIVATION(), innerActivation); // keras linear -> dl4j identity
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
-        config.put(LAYER_FIELD_INNER_INIT, INIT_KERAS);
+        config.put(lstm.getLAYER_FIELD_INNER_INIT(), INIT_KERAS);
         Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
         config.put(conf.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
-        config.put(LAYER_FIELD_DROPOUT_U, 0.0);
-        config.put(LAYER_FIELD_FORGET_BIAS_INIT, lstmForgetBiasString);
+        config.put(lstm.getLAYER_FIELD_DROPOUT_U(), 0.0);
+        config.put(lstm.getLAYER_FIELD_FORGET_BIAS_INIT(), lstmForgetBiasString);
         config.put(conf.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
-        config.put(LAYER_FIELD_UNROLL, lstmUnroll);
+        config.put(lstm.getLAYER_FIELD_UNROLL(), lstmUnroll);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
@@ -230,16 +232,18 @@ public class KerasLayerTest {
         double epsilon = 1E-5;
         double momentum = 0.99;
 
+        KerasBatchNormalization batchNormalization = new KerasBatchNormalization(kerasVersion);
+
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_BATCHNORMALIZATION());
         Map<String, Object> config = new HashMap<String, Object>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        config.put(LAYER_FIELD_EPSILON, epsilon);
-        config.put(LAYER_FIELD_MOMENTUM, momentum);
-        config.put(LAYER_FIELD_GAMMA_REGULARIZER, null);
-        config.put(LAYER_FIELD_BETA_REGULARIZER, null);
-        config.put(LAYER_FIELD_MODE, 0);
-        config.put(LAYER_FIELD_AXIS, 3);
+        config.put(batchNormalization.getLAYER_FIELD_EPSILON(), epsilon);
+        config.put(batchNormalization.getLAYER_FIELD_MOMENTUM(), momentum);
+        config.put(batchNormalization.getLAYER_FIELD_GAMMA_REGULARIZER(), null);
+        config.put(batchNormalization.getLAYER_FIELD_BETA_REGULARIZER(), null);
+        config.put(batchNormalization.getLAYER_FIELD_MODE(), 0);
+        config.put(batchNormalization.getLAYER_FIELD_AXIS(), 3);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 

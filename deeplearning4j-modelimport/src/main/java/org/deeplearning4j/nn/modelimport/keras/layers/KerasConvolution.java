@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -21,10 +22,20 @@ import java.util.Set;
  * @author dave@skymind.io
  */
 @Slf4j
+@Data
 public class KerasConvolution extends KerasLayer {
 
     /* Keras layer parameter names. */
     private final int NUM_TRAINABLE_PARAMS = 2;
+
+    /**
+     * Pass-through constructor from KerasLayer
+     * @param kerasVersion major keras version
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public KerasConvolution(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+        super(kerasVersion);
+    }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.

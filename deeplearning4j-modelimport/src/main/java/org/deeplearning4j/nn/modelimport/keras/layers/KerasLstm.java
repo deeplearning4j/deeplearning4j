@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
@@ -24,34 +25,44 @@ import java.util.Set;
  * @author dave@skymind.io
  */
 @Slf4j
+@Data
 public class KerasLstm extends KerasLayer {
 
     /* Keras layer configuration fields. */
-    public static final String LAYER_FIELD_INNER_INIT = "inner_init";
-    public static final String LAYER_FIELD_INNER_ACTIVATION = "inner_activation";
-    public static final String LAYER_FIELD_FORGET_BIAS_INIT = "forget_bias_init";
-    public static final String LAYER_FIELD_DROPOUT_U = "dropout_U";
-    public static final String LAYER_FIELD_UNROLL = "unroll";
-    public static final String LSTM_FORGET_BIAS_INIT_ZERO = "zero";
-    public static final String LSTM_FORGET_BIAS_INIT_ONE = "one";
+    private final String LAYER_FIELD_INNER_INIT = "inner_init";
+    private final String LAYER_FIELD_INNER_ACTIVATION = "inner_activation";
+    private final String LAYER_FIELD_FORGET_BIAS_INIT = "forget_bias_init";
+    private final String LAYER_FIELD_DROPOUT_U = "dropout_U";
+    private final String LAYER_FIELD_UNROLL = "unroll";
+    private final String LSTM_FORGET_BIAS_INIT_ZERO = "zero";
+    private final String LSTM_FORGET_BIAS_INIT_ONE = "one";
 
     /* Keras layer parameter names. */
-    public static final int NUM_TRAINABLE_PARAMS = 12;
-    public static final String KERAS_PARAM_NAME_W_C = "W_c";
-    public static final String KERAS_PARAM_NAME_W_F = "W_f";
-    public static final String KERAS_PARAM_NAME_W_I = "W_i";
-    public static final String KERAS_PARAM_NAME_W_O = "W_o";
-    public static final String KERAS_PARAM_NAME_U_C = "U_c";
-    public static final String KERAS_PARAM_NAME_U_F = "U_f";
-    public static final String KERAS_PARAM_NAME_U_I = "U_i";
-    public static final String KERAS_PARAM_NAME_U_O = "U_o";
-    public static final String KERAS_PARAM_NAME_B_C = "b_c";
-    public static final String KERAS_PARAM_NAME_B_F = "b_f";
-    public static final String KERAS_PARAM_NAME_B_I = "b_i";
-    public static final String KERAS_PARAM_NAME_B_O = "b_o";
-    public static final int NUM_WEIGHTS_IN_KERAS_LSTM = 12;
+    private final int NUM_TRAINABLE_PARAMS = 12;
+    private final String KERAS_PARAM_NAME_W_C = "W_c";
+    private final String KERAS_PARAM_NAME_W_F = "W_f";
+    private final String KERAS_PARAM_NAME_W_I = "W_i";
+    private final String KERAS_PARAM_NAME_W_O = "W_o";
+    private final String KERAS_PARAM_NAME_U_C = "U_c";
+    private final String KERAS_PARAM_NAME_U_F = "U_f";
+    private final String KERAS_PARAM_NAME_U_I = "U_i";
+    private final String KERAS_PARAM_NAME_U_O = "U_o";
+    private final String KERAS_PARAM_NAME_B_C = "b_c";
+    private final String KERAS_PARAM_NAME_B_F = "b_f";
+    private final String KERAS_PARAM_NAME_B_I = "b_i";
+    private final String KERAS_PARAM_NAME_B_O = "b_o";
+    private final int NUM_WEIGHTS_IN_KERAS_LSTM = 12;
 
     protected boolean unroll = false; // whether to unroll LSTM
+
+    /**
+     * Pass-through constructor from KerasLayer
+     * @param kerasVersion major keras version
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public KerasLstm(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+        super(kerasVersion);
+    }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.

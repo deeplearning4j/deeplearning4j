@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
@@ -19,18 +20,28 @@ import java.util.Map;
  * @author dave@skymind.io
  */
 @Slf4j
+@Data
 public class KerasMerge extends KerasLayer {
 
-    public static final String LAYER_FIELD_MODE = "mode";
-    public static final String LAYER_MERGE_MODE_SUM = "sum";
-    public static final String LAYER_MERGE_MODE_MUL = "mul";
-    public static final String LAYER_MERGE_MODE_CONCAT = "concat";
-    public static final String LAYER_MERGE_MODE_AVE = "ave";
-    public static final String LAYER_MERGE_MODE_COS = "cos";
-    public static final String LAYER_MERGE_MODE_DOT = "dot";
-    public static final String LAYER_MERGE_MODE_MAX = "max";
+    private final String LAYER_FIELD_MODE = "mode";
+    private final String LAYER_MERGE_MODE_SUM = "sum";
+    private final String LAYER_MERGE_MODE_MUL = "mul";
+    private final String LAYER_MERGE_MODE_CONCAT = "concat";
+    private final String LAYER_MERGE_MODE_AVE = "ave";
+    private final String LAYER_MERGE_MODE_COS = "cos";
+    private final String LAYER_MERGE_MODE_DOT = "dot";
+    private final String LAYER_MERGE_MODE_MAX = "max";
 
     private ElementWiseVertex.Op mergeMode = null;
+
+    /**
+     * Pass-through constructor from KerasLayer
+     * @param kerasVersion major keras version
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public KerasMerge(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+        super(kerasVersion);
+    }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.

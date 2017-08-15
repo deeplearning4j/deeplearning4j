@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
@@ -17,9 +18,10 @@ import java.util.Map;
  * @author dave@skymind.io
  */
 @Slf4j
+@Data
 public class KerasLoss extends KerasLayer {
 
-    public static final String KERAS_CLASS_NAME_LOSS = "Loss";
+    private final String KERAS_CLASS_NAME_LOSS = "Loss";
 
     /**
      * Constructor from layer name and input shape.

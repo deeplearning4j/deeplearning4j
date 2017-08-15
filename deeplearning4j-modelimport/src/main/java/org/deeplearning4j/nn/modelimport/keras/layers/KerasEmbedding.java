@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -22,10 +23,11 @@ import java.util.Set;
  * @author dave@skymind.io
  */
 @Slf4j
+@Data
 public class KerasEmbedding extends KerasLayer {
 
-    public static final String LAYER_FIELD_INPUT_DIM = "input_dim";
-    public static final int NUM_TRAINABLE_PARAMS = 1;
+    private final String LAYER_FIELD_INPUT_DIM = "input_dim";
+    private final int NUM_TRAINABLE_PARAMS = 1;
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
