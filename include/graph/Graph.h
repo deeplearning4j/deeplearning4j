@@ -119,7 +119,7 @@ Nd4jStatus nd4j::graph::Graph::execute() {
                    it->second->prepare();
     }
 
-#pragma omp parallel for if (_nodes->size()>1) schedule(guided) proc_bind(spread)
+#pragma omp parallel for if (_nodes->size()>1) num_threads(_nodes->size()) schedule(guided) proc_bind(spread)
 //#pragma omp parallel for schedule(dynamic) proc_bind(spread)
     for (int e = 0; e < _nodes->size(); e++) {
         auto n = _nodes->at(e);
