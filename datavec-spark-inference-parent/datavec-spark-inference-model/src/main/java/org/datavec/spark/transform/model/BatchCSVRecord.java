@@ -23,6 +23,23 @@ public class BatchCSVRecord implements Serializable {
 
 
     /**
+     * Get the records as a list of strings
+     * (basically the underlying values for
+     * {@link SingleCSVRecord})
+     * @return
+     */
+    public List<List<String>> getRecordsAsString() {
+        if(records == null)
+            records = new ArrayList<>();
+        List<List<String>> ret = new ArrayList<>();
+        for(SingleCSVRecord csvRecord : records) {
+            ret.add(csvRecord.getValues());
+        }
+        return ret;
+    }
+
+
+    /**
      * Create a batch csv record
      * from a list of writables.
      * @param batch

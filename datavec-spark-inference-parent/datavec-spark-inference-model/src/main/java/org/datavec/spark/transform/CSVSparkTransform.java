@@ -2,6 +2,7 @@ package org.datavec.spark.transform;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.datavec.api.records.impl.Record;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.Writable;
@@ -10,6 +11,7 @@ import org.datavec.spark.transform.model.BatchCSVRecord;
 import org.datavec.spark.transform.model.SequenceBatchCSVRecord;
 import org.datavec.spark.transform.model.SingleCSVRecord;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.base64.Nd4jBase64;
 
 import java.io.IOException;
@@ -124,10 +126,15 @@ public class CSVSparkTransform {
      */
     public SequenceBatchCSVRecord transformSequence(SequenceBatchCSVRecord batchCSVRecordSequence) {
         SequenceBatchCSVRecord ret = new SequenceBatchCSVRecord();
-        for(BatchCSVRecord batchCSVRecord : batchCSVRecordSequence.getRecords()) {
-            ret.add(BatchCSVRecord.fromWritables(transformProcess.transformRawStringsToInputSequence(batchCSVRecordSequence.getRecordsAsString())));
+        for(List<BatchCSVRecord> batchCSVRecord : batchCSVRecordSequence.getRecords()) {
+            List<BatchCSVRecord> add = new ArrayList<>();
+            for(BatchCSVRecord batchRecord : batchCSVRecord) {
+                add.add(BatchCSVRecord.fromWritables(transformProcess.transformRawStringsToInputSequence(
+                        batchRecord.getRecordsAsString())));
+            }
         }
-        return null;
+
+        return ret;
     }
 
     /**
@@ -136,6 +143,21 @@ public class CSVSparkTransform {
      * @return
      */
     public Base64NDArrayBody transformSequenceArray(SequenceBatchCSVRecord batchCSVRecordSequence) {
+        List<List<List<String>>> strings = batchCSVRecordSequence.getRecordsAsString();
+        INDArray arr = Nd4j.create(strings.size(),strings.get(0).size(),strings.get(0).get(0).size());
+
+        try {
+            int slice = 0;
+            for(List<List<String>> sequence : strings) {
+                List<List<Writable>> transormed = transformProcess.transformRawStringsToInputSequence(sequence);
+                INDArray matrix = RecordConverter.toMatrix(transormed);
+                arr.putSlice(slice++,matrix);
+            }
+            return new Base64NDArrayBody(Nd4jBase64.base64String(arr));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return null;
     }
 
@@ -145,6 +167,15 @@ public class CSVSparkTransform {
      * @return
      */
     public Base64NDArrayBody transformSequenceArrayIncremental(BatchCSVRecord singleCsvRecord) {
+        try {
+            return new Base64NDArrayBody(Nd4jBase64
+                    .base64String(RecordConverter
+                    .toMatrix(transformProcess.transformRawStringsToInputSequence(
+                            singleCsvRecord.getRecordsAsString()))));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return null;
     }
 }

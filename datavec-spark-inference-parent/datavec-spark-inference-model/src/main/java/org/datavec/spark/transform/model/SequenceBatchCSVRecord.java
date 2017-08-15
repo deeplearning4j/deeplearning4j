@@ -21,13 +21,13 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 public class SequenceBatchCSVRecord implements Serializable {
-    private List<BatchCSVRecord> records;
+    private List<List<BatchCSVRecord>> records;
 
     /**
      * Add a record
      * @param record
      */
-    public void add(BatchCSVRecord record) {
+    public void add(List<BatchCSVRecord> record) {
         if (records == null)
             records = new ArrayList<>();
         records.add(record);
@@ -38,14 +38,19 @@ public class SequenceBatchCSVRecord implements Serializable {
      * (this basically "unpacks" the objects)
      * @return
      */
-    public List<List<String>> getRecordsAsString() {
+    public List<List<List<String>>> getRecordsAsString() {
         if(records == null)
             Collections.emptyList();
-        List<List<String>> ret = new ArrayList<>(records.size());
-        for(BatchCSVRecord record : records) {
-            for(SingleCSVRecord singleCSVRecord : record.getRecords()) {
-                ret.add(singleCSVRecord.getValues());
+        List<List<List<String>>> ret = new ArrayList<>(records.size());
+        for(List<BatchCSVRecord> record : records) {
+            List<List<String>> add = new ArrayList<>();
+            for(BatchCSVRecord batchCSVRecord : record) {
+                for (SingleCSVRecord singleCSVRecord : batchCSVRecord.getRecords()) {
+                    add.add(singleCSVRecord.getValues());
+                }
             }
+
+            ret.add(add);
         }
 
         return ret;
@@ -60,7 +65,7 @@ public class SequenceBatchCSVRecord implements Serializable {
     public static SequenceBatchCSVRecord fromDataSet(MultiDataSet dataSet) {
         SequenceBatchCSVRecord batchCSVRecord = new SequenceBatchCSVRecord();
         for (int i = 0; i < dataSet.numFeatureArrays(); i++) {
-            batchCSVRecord.add(BatchCSVRecord.fromDataSet(new DataSet(dataSet.getFeatures(i),dataSet.getLabels(i))));
+            batchCSVRecord.add(Arrays.asList(BatchCSVRecord.fromDataSet(new DataSet(dataSet.getFeatures(i),dataSet.getLabels(i)))));
         }
 
         return batchCSVRecord;
