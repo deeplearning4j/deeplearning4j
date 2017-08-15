@@ -113,6 +113,12 @@ nd4j::graph::Graph::Graph(const FlatGraph *flatGraph) {
  */
 Nd4jStatus nd4j::graph::Graph::execute() {
 
+    // FIXME: this is bad!!!11oneoneleven
+    std::map<int32_t, nd4j::graph::Node *>::iterator it;
+    for ( it = _mapped->begin(); it != _mapped->end(); it++ ) {
+                   it->second->prepare();
+    }
+
 #pragma omp parallel for
     for (int e = 0; e < _nodes->size(); e++) {
         auto n = _nodes->at(e);
@@ -177,7 +183,20 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
     OpType opType = node->opType();
     int opNum = node->opNum();
 
-    printf("Executing node_%i: opNum: %i;\n", node->id(), opNum);
+    printf("Executing node_%i: opNum: %i; tid: %i;\n", node->id(), opNum, omp_get_thread_num());
+
+    // if we have multiple input nodes - we have to wait till input nodes are done
+    if (node->isMultiInput()) {
+        for (int e = 0; e < node->input()->size(); e++) {
+            int in = node->input()->at(e);
+
+            // we don't wait on external variables
+            if (in < 0)
+                continue;
+
+            _mapped->at(in)->waitTillFinished();
+        }
+    }
 
     if (opType == OpType_TRANSFORM) {
         int in = node->input()->at(0);
@@ -213,6 +232,8 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
         auto x = _variableSpace->getVariable(node->input()->at(0));
         auto y = _variableSpace->getVariable(node->input()->at(1));
 
+        printf("X: %f; Y: %f\n", x->getNDArray()->getScalar(0), y->getNDArray()->getScalar(0));
+
         auto z = x;
         if (node->output()->size() > 0) {
             z = new Variable<float>(new NDArray<float>(x->getNDArray()));
@@ -222,19 +243,31 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
         functions::pairwise_transforms::PairWiseTransform<float>:: template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
                                                                                  z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo, node->extraParams());
         if (node->output()->size() == 1 && node->output()->at(0) < 0) {
-            f_variableSpace->getVariable(node->output()->at(0))->getNDArray()->assign(z->getNDArray());
+            _variableSpace->getVariable(node->output()->at(0))->getNDArray()->assign(z->getNDArray());
         } else
             _variableSpace->putVariable(node->id(), z);
     }
 
+    node->finished();
+
     // going down to next node here
     if (node->output() != nullptr && node->output()->size() > 0) {
-        for (int e = 0; e < node->output()->size(); e++) {
-            auto n = node->output()->at(e);
 
-            // we skip non-positive values here
-            if (n != 0 && _mapped->count(n) != 0)
-                executeFlatNode(_mapped->at(n));
+        // if next node is multi-output, only 0 thread goes in
+        if (!node->isMultiInput() || omp_get_thread_num() == 0) {
+            for (int e = 0; e < node->output()->size(); e++) {
+                auto n = node->output()->at(e);
+
+                // we skip non-positive values here
+                if (n != 0 && _mapped->count(n) != 0) {
+
+                    // only tid_0 invokes multi-input node, block will happen right there
+                    if (_mapped->at(n)->isMultiInput() && omp_get_thread_num() != 0)
+                        continue;
+                    else
+                        executeFlatNode(_mapped->at(n));
+                }
+            }
         }
     }
 

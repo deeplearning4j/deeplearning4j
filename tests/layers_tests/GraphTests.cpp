@@ -59,7 +59,7 @@ TEST_F(GraphTests, SingleInput2) {
     graph->getVariableSpace()->putVariable(-3, z);
 
     auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {3});
-    auto nodeB = new Node(OpType_TRANSFORM, 2, 2, {-2}, {3});
+    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {-2}, {3});
     auto nodeC = new Node(OpType_PAIRWISE, 0, 3, {1, 2}, {-3});
 
     graph->addNode(nodeA);
