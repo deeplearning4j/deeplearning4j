@@ -68,4 +68,12 @@ public class CSVSparkTransformTest {
         assertTrue(fromBase64.isMatrix());
         System.out.println("Base 64ed array " + fromBase64);
     }
+
+
+
+    @Test
+    public void testSingleBatchSequence() {
+
+    }
+
 }

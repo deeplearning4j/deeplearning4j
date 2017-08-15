@@ -26,7 +26,7 @@ public class SingleCSVRecordTest {
 
         //assert
         SingleCSVRecord singleCsvRecord = SingleCSVRecord.fromRow(dataSet.get(0));
-        assertEquals(3, singleCsvRecord.getValues().length);
+        assertEquals(3, singleCsvRecord.getValues().size());
 
     }
 
@@ -36,7 +36,7 @@ public class SingleCSVRecordTest {
 
         //assert
         SingleCSVRecord singleCsvRecord = SingleCSVRecord.fromRow(dataSet.get(0));
-        assertEquals(4, singleCsvRecord.getValues().length);
+        assertEquals(4, singleCsvRecord.getValues().size());
 
     }
 
