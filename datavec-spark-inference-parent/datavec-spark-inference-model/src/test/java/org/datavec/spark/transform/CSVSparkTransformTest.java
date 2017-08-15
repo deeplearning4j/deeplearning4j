@@ -19,6 +19,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeNotNull;
 
 /**
  * Created by agibsonccc on 12/24/16.
@@ -108,6 +109,11 @@ public class CSVSparkTransformTest {
         sequenceBatchCSVRecord.add(Arrays.asList(batchCSVRecord));
         sequenceArray = csvSparkTransform.transformSequenceArray(sequenceBatchCSVRecord);
         assertArrayEquals(new int[]{2,3,2},Nd4jBase64.fromBase64(sequenceArray.getNdarray()).shape());
+
+        SequenceBatchCSVRecord transformed = csvSparkTransform.transformSequence(sequenceBatchCSVRecord);
+        assumeNotNull(transformed.getRecords());
+        System.out.println(transformed);
+
 
     }
 

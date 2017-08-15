@@ -132,6 +132,8 @@ public class CSVSparkTransform {
                 add.add(BatchCSVRecord.fromWritables(transformProcess.transformRawStringsToInputSequence(
                         batchRecord.getRecordsAsString())));
             }
+
+            ret.add(add);
         }
 
         return ret;
