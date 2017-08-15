@@ -92,51 +92,110 @@ public class CSVSparkTransformServer extends SparkTransformServer {
 
         //return the host information for a given id
         routingDsl.POST("/transformincremental").routeTo(FunctionUtil.function0((() -> {
-            try {
-                SingleCSVRecord record = objectMapper.readValue(getJsonText(), SingleCSVRecord.class);
-                if (record == null)
-                    return badRequest();
-                return ok(Json.toJson(transformIncremental(record)));
-            } catch (Exception e) {
-                e.printStackTrace();
-                return internalServerError();
+            if(isSequence()) {
+                try {
+                    BatchCSVRecord record = objectMapper.readValue(getJsonText(), BatchCSVRecord.class);
+                    if (record == null)
+                        return badRequest();
+                    return ok(Json.toJson(transformSequenceIncremental(record)));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return internalServerError();
+                }
+            }
+            else {
+                try {
+                    SingleCSVRecord record = objectMapper.readValue(getJsonText(), SingleCSVRecord.class);
+                    if (record == null)
+                        return badRequest();
+                    return ok(Json.toJson(transformIncremental(record)));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return internalServerError();
+                }
             }
         })));
 
         //return the host information for a given id
         routingDsl.POST("/transform").routeTo(FunctionUtil.function0((() -> {
-            try {
-                BatchCSVRecord batch = transform(objectMapper.readValue(getJsonText(), BatchCSVRecord.class));
-                if (batch == null)
-                    return badRequest();
-                return ok(Json.toJson(batch));
-            } catch (Exception e) {
-                e.printStackTrace();
-                return internalServerError();
+            if(isSequence()) {
+                try {
+                    SequenceBatchCSVRecord batch = transformSequence(objectMapper.readValue(getJsonText(), SequenceBatchCSVRecord.class));
+                    if (batch == null)
+                        return badRequest();
+                    return ok(Json.toJson(batch));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return internalServerError();
+                }
             }
+            else {
+                try {
+                    BatchCSVRecord batch = transform(objectMapper.readValue(getJsonText(), BatchCSVRecord.class));
+                    if (batch == null)
+                        return badRequest();
+                    return ok(Json.toJson(batch));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return internalServerError();
+                }
+            }
+
+
         })));
 
         routingDsl.POST("/transformincrementalarray").routeTo(FunctionUtil.function0((() -> {
-            try {
-                SingleCSVRecord record = objectMapper.readValue(getJsonText(), SingleCSVRecord.class);
-                if (record == null)
-                    return badRequest();
-                return ok(Json.toJson(transformArrayIncremental(record)));
-            } catch (Exception e) {
-                return internalServerError();
-            }
+           if(isSequence()) {
+               try {
+                   BatchCSVRecord record = objectMapper.readValue(getJsonText(), BatchCSVRecord.class);
+                   if (record == null)
+                       return badRequest();
+                   return ok(Json.toJson(transformSequenceArrayIncremental(record)));
+               } catch (Exception e) {
+                   return internalServerError();
+               }
+           }
+           else {
+               try {
+                   SingleCSVRecord record = objectMapper.readValue(getJsonText(), SingleCSVRecord.class);
+                   if (record == null)
+                       return badRequest();
+                   return ok(Json.toJson(transformArrayIncremental(record)));
+               } catch (Exception e) {
+                   return internalServerError();
+               }
+           }
+
         })));
 
         routingDsl.POST("/transformarray").routeTo(FunctionUtil.function0((() -> {
-            try {
-                BatchCSVRecord batchCSVRecord = objectMapper.readValue(getJsonText(), BatchCSVRecord.class);
-                if (batchCSVRecord == null)
-                    return badRequest();
-                return ok(Json.toJson(transformArray(batchCSVRecord)));
-            } catch (Exception e) {
-                return internalServerError();
-            }
+           if(isSequence()) {
+               try {
+                   SequenceBatchCSVRecord batchCSVRecord = objectMapper.readValue(getJsonText(), SequenceBatchCSVRecord.class);
+                   if (batchCSVRecord == null)
+                       return badRequest();
+                   return ok(Json.toJson(transformSequenceArray(batchCSVRecord)));
+               } catch (Exception e) {
+                   return internalServerError();
+               }
+           }
+           else {
+               try {
+                   BatchCSVRecord batchCSVRecord = objectMapper.readValue(getJsonText(), BatchCSVRecord.class);
+                   if (batchCSVRecord == null)
+                       return badRequest();
+                   return ok(Json.toJson(transformArray(batchCSVRecord)));
+               } catch (Exception e) {
+                   return internalServerError();
+               }
+           }
         })));
+
+
+
+
+
+
 
         server = Server.forRouter(routingDsl.build(), Mode.DEV, port);
     }
@@ -171,6 +230,49 @@ public class CSVSparkTransformServer extends SparkTransformServer {
         throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
     }
 
+
+    /**
+     *
+     */
+    /**
+     * @param transform
+     * @return
+     */
+    @Override
+    public BatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform) {
+        return this.transform.transformSequenceIncremental(transform);
+    }
+
+    /**
+     * @param batchCSVRecord
+     * @return
+     */
+    @Override
+    public SequenceBatchCSVRecord transformSequence(SequenceBatchCSVRecord batchCSVRecord) {
+        return transform.transformSequence(batchCSVRecord);
+    }
+
+    /**
+     * @param batchCSVRecord
+     * @return
+     */
+    @Override
+    public Base64NDArrayBody transformSequenceArray(SequenceBatchCSVRecord batchCSVRecord) {
+        return this.transform.transformSequenceArray(batchCSVRecord);
+    }
+
+    /**
+     * @param singleCsvRecord
+     * @return
+     */
+    @Override
+    public Base64NDArrayBody transformSequenceArrayIncremental(BatchCSVRecord singleCsvRecord) {
+        return this.transform.transformSequenceArrayIncremental(singleCsvRecord);
+    }
+
+
+
+    //**********
     /**
      * @param transform
      * @return

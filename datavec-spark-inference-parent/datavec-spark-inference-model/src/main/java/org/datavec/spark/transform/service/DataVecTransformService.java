@@ -78,4 +78,12 @@ public interface DataVecTransformService {
      * @throws IOException
      */
     Base64NDArrayBody transformArray(BatchImageRecord batchImageRecord) throws IOException;
+
+    Base64NDArrayBody transformSequenceArrayIncremental(BatchCSVRecord singleCsvRecord);
+
+    Base64NDArrayBody transformSequenceArray(SequenceBatchCSVRecord batchCSVRecord);
+
+    SequenceBatchCSVRecord transformSequence(SequenceBatchCSVRecord batchCSVRecord);
+
+    BatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform);
 }
