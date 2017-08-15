@@ -21,7 +21,6 @@ package org.deeplearning4j.nn.modelimport.keras;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -330,21 +329,24 @@ public class KerasModel {
             String attributeStr = weightsRoot != null
                                 ? weightsArchive.readAttributeAsString("weight_names", weightsRoot + "/" + layerName)
                                 : weightsArchive.readAttributeAsString("weight_names", layerName);
-            for (String part: attributeStr.split("/")) {
-                part = part.trim();
 
-                if (part.length() == 0) {
-                    break;
-                }
+            // Get nested groups
+            if (!org.apache.commons.lang3.StringUtils.isEmpty(attributeStr)) {
+                // First we have to get first half of attributeStr
+                // e.g. for attributeStr = "global/shared/dense_1/xxx/yyy_W:0global/shared/dense_1/xxx/yyy_b:0"
+                //      we will get "global/shared/dense_1/xxx/yyy_W:0"
+                // This is not a graceful way to get the nested groups string, but we find no certain separator
+                // between "global/shared/dense_1/xxx/yyy_W:0" and "global/shared/dense_1/xxx/yyy_b:0"
+                // Maybe you will find another way and fix this.
+                String firstHalfStr = attributeStr.substring(0, attributeStr.length() / 2);
 
-                Matcher tfSuffixMatcher = Pattern.compile(":\\d+").matcher(part);
-                if (tfSuffixMatcher.find())
-                    break;
-
-                attributeStrParts.add(part);
+                // get nested groups from "global/shared/dense_1/xxx"
+                attributeStrParts.addAll(Arrays.asList(firstHalfStr.split("/")));
+                attributeStrParts.remove(attributeStrParts.size()-1);
             }
 
-            String attributeJoinStr = String.join("/", attributeStrParts); // FIXME: what if attributeJoinStr is null or empty ???
+            // NOTE: attributeJoinStr is null or empty only when layerFragments.length <= 1
+            String attributeJoinStr = String.join("/", attributeStrParts);
 
             if (layerFragments.length > 1) {
                 try {
