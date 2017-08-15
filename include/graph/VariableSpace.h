@@ -7,6 +7,7 @@
 
 #include <string>
 #include <map>
+#include <mutex>
 #include <NDArray.h>
 #include <graph/Variable.h>
 
@@ -19,6 +20,8 @@ namespace nd4j {
             std::map<const int32_t, nd4j::graph::Variable<T> *> _variables;
             std::list<nd4j::graph::Variable<T> *> _external;
             std::list<nd4j::graph::Variable<T> *> _internal;
+
+            std::mutex _varmap;
 
             std::map<const int32_t, nd4j::graph::Variable<T> *> _temporary;
         public:
@@ -83,6 +86,9 @@ Nd4jIndex nd4j::graph::VariableSpace<T>::totalMemory() {
 
 template <typename T>
 void nd4j::graph::VariableSpace<T>::putVariable(const int32_t id, Variable<T> *variable) {
+
+    _varmap.lock();
+
     // we have special list for external variables to ensure graph completeness
     if (id < 0) {
         if (variable->isExternal())
@@ -96,6 +102,8 @@ void nd4j::graph::VariableSpace<T>::putVariable(const int32_t id, Variable<T> *v
         std::pair<const int32_t, nd4j::graph::Variable<T> *> pair(id, variable);
         _temporary.insert(pair);
     }
+
+    _varmap.unlock();
 }
 
 template <typename T>
@@ -106,10 +114,19 @@ void nd4j::graph::VariableSpace<T>::putVariable(const int32_t id, NDArray<T> *ar
 
 template <typename T>
 nd4j::graph::Variable<T> * nd4j::graph::VariableSpace<T>::getVariable(const int32_t id) {
-    if (id < 0)
-        return _variables.at(id);
-    else
-        return _temporary.at(id);
+    _varmap.lock();
+
+    if (id < 0) {
+        auto  v = _variables.at(id);
+        _varmap.unlock();
+
+        return v;
+    } else {
+        auto v = _temporary.at(id);
+        _varmap.unlock();
+
+        return v;
+    }
 }
 
 /*

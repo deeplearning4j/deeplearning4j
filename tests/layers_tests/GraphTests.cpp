@@ -146,3 +146,57 @@ TEST_F(GraphTests, DoubleInput2) {
     ASSERT_NEAR(-1.4142135, z0->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(-1.0, z1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
+
+
+TEST_F(GraphTests, DoubleInput3) {
+    Graph *graph = new Graph();
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0);
+
+    auto y = new NDArray<float>(5, 5, 'c');
+    y->assign(-1.0);
+
+    auto z0 = new NDArray<float>(5, 5, 'c');
+    auto z1 = new NDArray<float>(5, 5, 'c');
+
+
+    auto w = new NDArray<float>(5, 5, 'c');
+
+    graph->getVariableSpace()->putVariable(-1, x);
+    graph->getVariableSpace()->putVariable(-2, y);
+    graph->getVariableSpace()->putVariable(-3, z0);
+    graph->getVariableSpace()->putVariable(-4, z1);
+    graph->getVariableSpace()->putVariable(-5, w);
+
+
+    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {3});
+    auto nodeC = new Node(OpType_TRANSFORM, 6, 3, {2}, {-3, 21});
+
+    auto nodeT = new Node(OpType_TRANSFORM, 0, 11, {-2}, {12});
+    auto nodeU = new Node(OpType_TRANSFORM, 14, 12, {11}, {13});
+    auto nodeV = new Node(OpType_TRANSFORM, 6, 13, {12}, {-4, 21});
+
+    auto nodeW = new Node(OpType_PAIRWISE, 0, 21, {3, 13}, {22});
+    auto nodeZ = new Node(OpType_TRANSFORM, 0, 22, {21}, {-5});
+
+    graph->addNode(nodeA);
+    graph->addNode(nodeB);
+    graph->addNode(nodeC);
+    graph->addNode(nodeT);
+    graph->addNode(nodeU);
+    graph->addNode(nodeV);
+    graph->addNode(nodeW);
+    graph->addNode(nodeZ);
+
+    ASSERT_EQ(2, graph->rootNodes());
+    ASSERT_EQ(8, graph->totalNodes());
+
+    graph->execute();
+
+    ASSERT_NEAR(-1.4142135, z0->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(-1.0, z1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    ASSERT_NEAR(2.4142135, w->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+}

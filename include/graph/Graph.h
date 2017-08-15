@@ -184,10 +184,13 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
     OpType opType = node->opType();
     int opNum = node->opNum();
 
-    printf("Executing node_%i: opNum: %i; tid: %i;\n", node->id(), opNum, omp_get_thread_num());
+    //printf("Executing node_%i: opNum: %i; tid: %i;\n", node->id(), opNum, omp_get_thread_num());
+    //fflush(stdout);
 
     // if we have multiple input nodes - we have to wait till input nodes are done
     if (node->isMultiInput()) {
+        //printf("Blocking in node_%i\n", node->id());
+        //fflush(stdout);
         for (int e = 0; e < node->input()->size(); e++) {
             int in = node->input()->at(e);
 
@@ -204,6 +207,9 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
 
         auto x = _variableSpace->getVariable(in);
 
+        //printf("Node: %i; Op: %i; BEFORE X: %f\n", node->id(), opNum, x->getNDArray()->getScalar(0));
+        //fflush(stdout);
+
         // if output of previous node is used in different code branches - duplicate it
         if (in > 0)
             if (_mapped->at(in)->output()->size() > 1) {
@@ -219,21 +225,31 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
 
         _variableSpace->putVariable(node->id(), x);
 
-        if (node->output()->size() == 1 && node->output()->at(0) < 0) {
-            auto out = _variableSpace->getVariable(node->output()->at(0));
+        //printf("Node: %i; Op: %i; AFTER X: %f\n", node->id(), opNum, x->getNDArray()->getScalar(0));
+        //fflush(stdout);
 
-            // assign output
-            if (out->getNDArray() != x->getNDArray())
-                out->getNDArray()->assign(x->getNDArray());
+        if (node->hasExternalOutputs()) {
+            for (int e = 0; e < node->output()->size(); e++) {
+                if (node->output()->at(e) > 0)
+                    continue;
+
+                auto out = _variableSpace->getVariable(node->output()->at(e));
+
+                // assign output
+                if (out->getNDArray() != x->getNDArray())
+                    out->getNDArray()->assign(x->getNDArray());
+            }
         }
     } else if (opType == OpType_PAIRWISE) {
 
-        printf("PWT> x: %i; y: %i\n", node->input()->at(0), node->input()->at(1));
+        //printf("PWT> x: %i; y: %i\n", node->input()->at(0), node->input()->at(1));
+        //fflush(stdout);
 
         auto x = _variableSpace->getVariable(node->input()->at(0));
         auto y = _variableSpace->getVariable(node->input()->at(1));
 
-        printf("X: %f; Y: %f\n", x->getNDArray()->getScalar(0), y->getNDArray()->getScalar(0));
+        //printf("PWT> X: %f; Y: %f\n", x->getNDArray()->getScalar(0), y->getNDArray()->getScalar(0));
+        //fflush(stdout);
 
         auto z = x;
         if (node->output()->size() > 0) {
@@ -243,10 +259,25 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
 
         functions::pairwise_transforms::PairWiseTransform<float>:: template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
                                                                                  z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo, node->extraParams());
-        if (node->output()->size() == 1 && node->output()->at(0) < 0) {
-            _variableSpace->getVariable(node->output()->at(0))->getNDArray()->assign(z->getNDArray());
-        } else
-            _variableSpace->putVariable(node->id(), z);
+
+        _variableSpace->putVariable(node->id(), z);
+
+
+        //printf("PWT> z: %f;\n", z->getNDArray()->getScalar(0));
+        //fflush(stdout);
+
+        if (node->hasExternalOutputs()) {
+            for (int e = 0; e < node->output()->size(); e++) {
+                if (node->output()->at(e) > 0)
+                    continue;
+
+                auto out = _variableSpace->getVariable(node->output()->at(e));
+
+                // assign output
+                if (out->getNDArray() != z->getNDArray())
+                    out->getNDArray()->assign(z->getNDArray());
+            }
+        }
     }
 
     node->finished();
@@ -255,16 +286,16 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
     if (node->output() != nullptr && node->output()->size() > 0) {
 
         // if next node is multi-output, only 0 thread goes in
-        if (!node->isMultiInput() || omp_get_thread_num() == 0) {
+        //if (!node->isMultiInput() || omp_get_thread_num() == 0) {
             int s = node->output()->size();
 //#pragma omp parallel for if (s>1) schedule(dynamic, 1) proc_bind(spread)
             for (int e = 0; e < s; e++) {
                 auto n = node->output()->at(e);
 
                 // we skip non-positive values here
-                if (n != 0 && _mapped->count(n) != 0) {
+                if (n != 0 && _mapped->count(n) > 0) {
                     auto nextNode = _mapped->at(n);
-                    printf("Op: %i; N: %i; S: %i\n", _mapped->at(n)->opNum(), omp_get_thread_num(), s);
+                  //  printf("Op: %i; N: %i; S: %i\n", nextNode->opNum(), omp_get_thread_num(), s);
 
                     // last input node continues here
                     bool m = false;
@@ -277,9 +308,10 @@ Nd4jStatus nd4j::graph::Graph::executeFlatNode(nd4j::graph::Node *node) {
                         continue;
                     else
                         executeFlatNode(nextNode);
-                }
+                } // else
+                  //  printf("Skipping node_%i\n", n);
             }
-        }
+       // }
     }
 
     return ND4J_STATUS_OK;

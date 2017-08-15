@@ -26,6 +26,8 @@ namespace nd4j {
             // many ops require extra parameters to run
             float *_extraParams;
 
+            bool _hasExternalOutputs;
+
             bool _eI;
             bool _eO;
         public:
@@ -46,6 +48,7 @@ namespace nd4j {
             bool isMultiInput();
             bool isMultiOutput();
 
+            bool hasExternalOutputs();
 
             void prepare();
             void finished();
@@ -54,11 +57,13 @@ namespace nd4j {
     }
 }
 
+bool nd4j::graph::Node::hasExternalOutputs() {
+    return _hasExternalOutputs;
+}
 
 void nd4j::graph::Node::finished() {
     _finished.store(1);
 }
-
 
 void nd4j::graph::Node::prepare() {
     _finished.store(0);
@@ -112,15 +117,18 @@ nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<
 
     for (auto i: input) {
         _input.push_back(i);
-        if (i < 0)
+        if (i < 0) {
             _eI = false;
+        }
     }
 
 
     for (auto o: output) {
         _output.push_back(o);
-        if (o < 0)
+        if (o < 0) {
             _eO = false;
+            _hasExternalOutputs = true;
+        }
     }
 
 };
@@ -142,6 +150,9 @@ nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
         if (node->output() != nullptr)
             for (int e = 0; e < node->output()->size(); e++) {
                 _output.push_back(node->output()->Get(e));
+
+                if (node->output()->Get(e) < 0)
+                    _hasExternalOutputs = true;
             }
 
         if (node->extraParams() != nullptr && node->extraParams()->size()) {
