@@ -126,12 +126,11 @@ public class CSVSparkTransform {
      * @return
      */
     public SequenceBatchCSVRecord transformSequence(SequenceBatchCSVRecord batchCSVRecordSequence) {
-        SequenceBatchCSVRecord ret = new SequenceBatchCSVRecord();
         List<List<Writable>> transform = transformProcess.transformRawStringsToInputSequence(batchCSVRecordSequence.getRecordsAsString().get(0));
         List<List<Writable>> transformed = transformProcess.executeSequenceToSequence(transform);
         SequenceBatchCSVRecord sequenceBatchCSVRecord = new SequenceBatchCSVRecord();
         sequenceBatchCSVRecord.add(Arrays.asList(BatchCSVRecord.fromWritables(transformed)));
-        return ret;
+        return sequenceBatchCSVRecord;
     }
 
     /**
