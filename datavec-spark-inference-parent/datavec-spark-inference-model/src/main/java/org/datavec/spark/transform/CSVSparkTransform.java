@@ -129,8 +129,9 @@ public class CSVSparkTransform {
         for(List<BatchCSVRecord> batchCSVRecord : batchCSVRecordSequence.getRecords()) {
             List<BatchCSVRecord> add = new ArrayList<>();
             for(BatchCSVRecord batchRecord : batchCSVRecord) {
-                add.add(BatchCSVRecord.fromWritables(transformProcess.transformRawStringsToInputSequence(
-                        batchRecord.getRecordsAsString())));
+                add.add(BatchCSVRecord.fromWritables(transformProcess.executeSequenceToSequence(
+                        transformProcess.transformRawStringsToInputSequence(
+                        batchRecord.getRecordsAsString()))));
             }
 
             ret.add(add);
