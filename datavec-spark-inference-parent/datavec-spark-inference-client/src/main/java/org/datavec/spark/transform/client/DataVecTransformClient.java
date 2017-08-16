@@ -163,4 +163,40 @@ public class DataVecTransformClient implements DataVecTransformService {
     public Base64NDArrayBody transformArray(BatchImageRecord batchImageRecord) throws IOException {
         throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
     }
+
+    /**
+     * @param singleCsvRecord
+     * @return
+     */
+    @Override
+    public Base64NDArrayBody transformSequenceArrayIncremental(BatchCSVRecord singleCsvRecord) {
+        return null;
+    }
+
+    /**
+     * @param batchCSVRecord
+     * @return
+     */
+    @Override
+    public Base64NDArrayBody transformSequenceArray(SequenceBatchCSVRecord batchCSVRecord) {
+        return null;
+    }
+
+    /**
+     * @param batchCSVRecord
+     * @return
+     */
+    @Override
+    public SequenceBatchCSVRecord transformSequence(SequenceBatchCSVRecord batchCSVRecord) {
+        return null;
+    }
+
+    /**
+     * @param transform
+     * @return
+     */
+    @Override
+    public BatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform) {
+        return null;
+    }
 }
