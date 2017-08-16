@@ -743,6 +743,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         public GraphBuilder setOutputs(String... outputNames) {
             networkOutputs.clear();
             Collections.addAll(networkOutputs, outputNames);
+
             return this;
         }
 
