@@ -22,6 +22,7 @@ table FlatVariable {
     name:string;
     shape:[int];
     values:[float];
+    device:int; // default is -1, which means _auto_
 }
 
 table FlatNode {
@@ -33,6 +34,7 @@ table FlatNode {
     output:[int]; // ID's of connected nodes for this node
     extraParams:[float]; // extra params for this op (if any)
     dimensions:[int]; // dimension for this operation
+    device:int; // default is -1, which means _auto_
 }
 
 root_type FlatNode;

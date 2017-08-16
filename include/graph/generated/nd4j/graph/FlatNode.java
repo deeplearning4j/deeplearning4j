@@ -30,6 +30,7 @@ public final class FlatNode extends Table {
   public int dimensions(int j) { int o = __offset(18); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
   public int dimensionsLength() { int o = __offset(18); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer dimensionsAsByteBuffer() { return __vector_as_bytebuffer(18, 4); }
+  public int device() { int o = __offset(20); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
 
   public static int createFlatNode(FlatBufferBuilder builder,
       int id,
@@ -39,8 +40,10 @@ public final class FlatNode extends Table {
       byte dataType,
       int outputOffset,
       int extraParamsOffset,
-      int dimensionsOffset) {
-    builder.startObject(8);
+      int dimensionsOffset,
+      int device) {
+    builder.startObject(9);
+    FlatNode.addDevice(builder, device);
     FlatNode.addDimensions(builder, dimensionsOffset);
     FlatNode.addExtraParams(builder, extraParamsOffset);
     FlatNode.addOutput(builder, outputOffset);
@@ -52,7 +55,7 @@ public final class FlatNode extends Table {
     return FlatNode.endFlatNode(builder);
   }
 
-  public static void startFlatNode(FlatBufferBuilder builder) { builder.startObject(8); }
+  public static void startFlatNode(FlatBufferBuilder builder) { builder.startObject(9); }
   public static void addId(FlatBufferBuilder builder, int id) { builder.addInt(0, id, 0); }
   public static void addOpType(FlatBufferBuilder builder, byte opType) { builder.addByte(1, opType, 0); }
   public static void addOpNum(FlatBufferBuilder builder, short opNum) { builder.addShort(2, opNum, 0); }
@@ -69,6 +72,7 @@ public final class FlatNode extends Table {
   public static void addDimensions(FlatBufferBuilder builder, int dimensionsOffset) { builder.addOffset(7, dimensionsOffset, 0); }
   public static int createDimensionsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
   public static void startDimensionsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addDevice(FlatBufferBuilder builder, int device) { builder.addInt(8, device, 0); }
   public static int endFlatNode(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

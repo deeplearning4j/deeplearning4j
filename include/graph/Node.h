@@ -27,6 +27,7 @@ namespace nd4j {
             float *_extraParams;
 
             bool _hasExternalOutputs;
+            bool _hasExternalInputs;
 
             bool _eI;
             bool _eO;
@@ -119,6 +120,7 @@ nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<
         _input.push_back(i);
         if (i < 0) {
             _eI = false;
+            _hasExternalInputs = true;
         }
     }
 
@@ -145,6 +147,10 @@ nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
         if (node->input() != nullptr)
             for (int e = 0; e < node->input()->size(); e++) {
                 _input.push_back(node->input()->Get(e));
+
+                if (node->input()->Get(e) < 0)
+                    _hasExternalInputs = true;
+
             }
 
         if (node->output() != nullptr)

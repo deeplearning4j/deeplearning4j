@@ -23,13 +23,16 @@ public final class FlatVariable extends Table {
   public float values(int j) { int o = __offset(10); return o != 0 ? bb.getFloat(__vector(o) + j * 4) : 0; }
   public int valuesLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer valuesAsByteBuffer() { return __vector_as_bytebuffer(10, 4); }
+  public int device() { int o = __offset(12); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
 
   public static int createFlatVariable(FlatBufferBuilder builder,
       int id,
       int nameOffset,
       int shapeOffset,
-      int valuesOffset) {
-    builder.startObject(4);
+      int valuesOffset,
+      int device) {
+    builder.startObject(5);
+    FlatVariable.addDevice(builder, device);
     FlatVariable.addValues(builder, valuesOffset);
     FlatVariable.addShape(builder, shapeOffset);
     FlatVariable.addName(builder, nameOffset);
@@ -37,7 +40,7 @@ public final class FlatVariable extends Table {
     return FlatVariable.endFlatVariable(builder);
   }
 
-  public static void startFlatVariable(FlatBufferBuilder builder) { builder.startObject(4); }
+  public static void startFlatVariable(FlatBufferBuilder builder) { builder.startObject(5); }
   public static void addId(FlatBufferBuilder builder, int id) { builder.addInt(0, id, 0); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(1, nameOffset, 0); }
   public static void addShape(FlatBufferBuilder builder, int shapeOffset) { builder.addOffset(2, shapeOffset, 0); }
@@ -46,6 +49,7 @@ public final class FlatVariable extends Table {
   public static void addValues(FlatBufferBuilder builder, int valuesOffset) { builder.addOffset(3, valuesOffset, 0); }
   public static int createValuesVector(FlatBufferBuilder builder, float[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addFloat(data[i]); return builder.endVector(); }
   public static void startValuesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addDevice(FlatBufferBuilder builder, int device) { builder.addInt(4, device, 0); }
   public static int endFlatVariable(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;
