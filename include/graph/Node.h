@@ -23,14 +23,17 @@ namespace nd4j {
 
             std::atomic<int> _finished;
 
+            // this variable points to onion layer within graph
+            int _layer = -1;
+
             // many ops require extra parameters to run
             float *_extraParams;
 
             bool _hasExternalOutputs;
             bool _hasExternalInputs;
+            bool _hasInternalOutputs;
+            bool _hasInternalInputs;
 
-            bool _eI;
-            bool _eO;
         public:
             Node(OpType opType = OpType_TRANSFORM, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {});
             Node(const nd4j::graph::FlatNode *node);
@@ -49,7 +52,13 @@ namespace nd4j {
             bool isMultiInput();
             bool isMultiOutput();
 
+            int getLayer();
+            void setLayer(int layer);
+
             bool hasExternalOutputs();
+            bool hasExternalInputs();
+            bool hasInternalOutputs();
+            bool hasInternalInputs();
 
             void prepare();
             void finished();
@@ -58,8 +67,27 @@ namespace nd4j {
     }
 }
 
+int nd4j::graph::Node::getLayer() {
+    return _layer;
+}
+void nd4j::graph::Node::setLayer(int layer) {
+    _layer = layer;
+}
+
 bool nd4j::graph::Node::hasExternalOutputs() {
     return _hasExternalOutputs;
+}
+
+bool nd4j::graph::Node::hasExternalInputs() {
+    return _hasExternalInputs;
+}
+
+bool nd4j::graph::Node::hasInternalOutputs() {
+    return _hasInternalOutputs;
+}
+
+bool nd4j::graph::Node::hasInternalInputs() {
+    return _hasInternalInputs;
 }
 
 void nd4j::graph::Node::finished() {
@@ -113,30 +141,38 @@ nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<
     this->_id = id;
     this->_opNum = opNum;
 
-    _eO = true;
-    _eI = true;
+    _hasExternalInputs = false;
+    _hasExternalOutputs = false;
+    _hasInternalInputs = false;
+    _hasInternalOutputs = false;
 
     for (auto i: input) {
         _input.push_back(i);
-        if (i < 0) {
-            _eI = false;
+        if (i < 0)
             _hasExternalInputs = true;
-        }
+        else
+            _hasInternalInputs = true;
+
     }
 
 
     for (auto o: output) {
         _output.push_back(o);
-        if (o < 0) {
-            _eO = false;
+        if (o < 0)
             _hasExternalOutputs = true;
-        }
+        else
+            _hasInternalOutputs = true;
     }
 
 };
 
 nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
     _finished.store(0);
+
+    _hasExternalInputs = false;
+    _hasExternalOutputs = false;
+    _hasInternalInputs = false;
+    _hasInternalOutputs = false;
 
     if (node != nullptr) {
         this->_id = node->id();
@@ -150,7 +186,8 @@ nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
 
                 if (node->input()->Get(e) < 0)
                     _hasExternalInputs = true;
-
+                else
+                    _hasInternalInputs = true;
             }
 
         if (node->output() != nullptr)
@@ -159,6 +196,8 @@ nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
 
                 if (node->output()->Get(e) < 0)
                     _hasExternalOutputs = true;
+                else
+                    _hasInternalOutputs = true;
             }
 
         if (node->extraParams() != nullptr && node->extraParams()->size()) {
