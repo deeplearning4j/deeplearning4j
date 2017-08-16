@@ -286,3 +286,49 @@ TEST_F(GraphTests, QuadInput1) {
 
     ASSERT_NEAR(6.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
+
+TEST_F(GraphTests, InternalBranching1) {
+    Graph *graph = new Graph();
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(0.0);
+
+    auto z = new NDArray<float>(5, 5, 'c');
+
+    graph->getVariableSpace()->putVariable(-1, x);
+    graph->getVariableSpace()->putVariable(-2, z);
+
+    // 1.0
+    auto nodeA = new Node(OpType_TRANSFORM, 26, 1, {-1}, {11, 21});
+
+    // -1
+    auto nodeK = new Node(OpType_TRANSFORM, 6, 11, {1}, {12});
+
+    // 2.0
+    auto nodeL = new Node(OpType_TRANSFORM, 35, 12, {11}, {31});
+
+    // -1
+    auto nodeR = new Node(OpType_TRANSFORM, 6, 21, {1}, {22});
+
+    // 1
+    auto nodeS = new Node(OpType_TRANSFORM, 6, 22, {21}, {31});
+
+    // 1.0
+    auto nodeZ = new Node(OpType_PAIRWISE, 0, 31, {12, 22}, {-2});
+
+    graph->addNode(nodeA);
+    graph->addNode(nodeK);
+    graph->addNode(nodeL);
+    graph->addNode(nodeR);
+    graph->addNode(nodeS);
+    graph->addNode(nodeZ);
+
+    ASSERT_EQ(1, graph->rootNodes());
+    ASSERT_EQ(6, graph->totalNodes());
+
+    graph->execute();
+
+    ASSERT_EQ(3, nodeZ->getLayer());
+
+    ASSERT_NEAR(3.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+}
