@@ -65,6 +65,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_CONVOLUTION_2D = ""; // 1: Convolution2D, 2: Conv2D
 
     /* Partially shared layer configurations. */
+    private final String LAYER_FIELD_INPUT_SHAPE = "input_shape";
     private final String LAYER_FIELD_CONFIG = "config";
     private final String LAYER_FIELD_NAME = "name";
     private final String LAYER_FIELD_BATCH_INPUT_SHAPE = "batch_input_shape";
@@ -92,6 +93,7 @@ public class KerasLayerConfiguration {
 
 
     /* Embedding layer properties */
+    private final String LAYER_FIELD_INPUT_DIM = "input_dim";
     private final String LAYER_FIELD_EMBEDDINGS_REGULARIZER = ""; // 1: W_regularizer, 2: embeddings_regularizer
     private final String LAYER_FIELD_EMBEDDINGS_CONSTRAINT = ""; // 1: W_constraint, 2: embeddings_constraint
     private final String LAYER_FIELD_MASK_ZERO = "mask_zero";

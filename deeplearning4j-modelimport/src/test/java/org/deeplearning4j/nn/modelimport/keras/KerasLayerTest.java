@@ -37,12 +37,13 @@ public class KerasLayerTest {
     private final double L2_REGULARIZATION = 0.02;
     private final double DROPOUT_KERAS = 0.3;
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
-    private final int[] KERNEL_SIZE = new int[] {1, 2};
-    private final int[] STRIDE = new int[] {3, 4};
+    private final int[] KERNEL_SIZE = new int[]{1, 2};
+    private final int[] INPUT_SHAPE = new int[]{100, 20};
+    private final int[] STRIDE = new int[]{3, 4};
     private final PoolingType POOLING_TYPE = PoolingType.MAX;
     private final int N_OUT = 13;
     private final String BORDER_MODE_VALID = "valid";
-    private final int[] VALID_PADDING = new int[] {0, 0};
+    private final int[] VALID_PADDING = new int[]{0, 0};
 
     Integer keras1 = 1;
     Integer keras2 = 2;
@@ -50,6 +51,12 @@ public class KerasLayerTest {
     Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     public KerasLayerTest() throws UnsupportedKerasConfigurationException {
+    }
+
+    @Test
+    public void testEmbeddingLayer() throws Exception {
+        buildEmbeddingLayer(conf1, keras1);
+        buildEmbeddingLayer(conf2, keras2);
     }
 
     @Test
@@ -92,6 +99,37 @@ public class KerasLayerTest {
     public void testBatchnormLayer() throws Exception {
         buildBatchNormalizationLayer(conf1, keras1);
         buildBatchNormalizationLayer(conf2, keras2);
+    }
+
+    public void buildEmbeddingLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_EMBEDDING());
+        Map<String, Object> config = new HashMap<String, Object>();
+        Integer inputDim = 10;
+        Integer outputDim = 10;
+        config.put(conf.getLAYER_FIELD_INPUT_DIM(), inputDim);
+        config.put(conf.getLAYER_FIELD_OUTPUT_DIM(), outputDim);
+
+        ArrayList inputShape = new ArrayList<Integer>() {{
+            for (int i : INPUT_SHAPE) add(i);
+        }};
+        config.put(conf.getLAYER_FIELD_BATCH_INPUT_SHAPE(), inputShape);
+        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+        if (kerasVersion == 1) {
+            config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
+        } else {
+            Map<String, Object> init = new HashMap<String, Object>();
+            init.put("class_name", conf.getINIT_GLOROT_NORMAL());
+            config.put(conf.getLAYER_FIELD_INIT(), init);
+        }
+        KerasEmbedding kerasEmbedding = new KerasEmbedding(layerConfig, false);
+        assertEquals(kerasEmbedding.getNumParams(), 1);
+
+        EmbeddingLayer layer = kerasEmbedding.getEmbeddingLayer();
+        assertEquals(LAYER_NAME, layer.getLayerName());
+
     }
 
     public void buildActivationLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
@@ -167,7 +205,8 @@ public class KerasLayerTest {
             Map<String, Object> init = new HashMap<String, Object>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
             config.put(conf.getLAYER_FIELD_INIT(), init);
-        }        Map<String, Object> W_reg = new HashMap<String, Object>();
+        }
+        Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
@@ -176,7 +215,9 @@ public class KerasLayerTest {
             config.put(conf.getLAYER_FIELD_NB_ROW(), KERNEL_SIZE[0]);
             config.put(conf.getLAYER_FIELD_NB_COL(), KERNEL_SIZE[1]);
         } else {
-            ArrayList kernel = new ArrayList<Integer>() {{ for (int i : KERNEL_SIZE) add(i); }};
+            ArrayList kernel = new ArrayList<Integer>() {{
+                for (int i : KERNEL_SIZE) add(i);
+            }};
             config.put(conf.getLAYER_FIELD_KERNEL_SIZE(), kernel);
         }
         List<Integer> subsampleList = new ArrayList<>();
@@ -249,7 +290,8 @@ public class KerasLayerTest {
             Map<String, Object> init = new HashMap<String, Object>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
             config.put(conf.getLAYER_FIELD_INIT(), init);
-        }        config.put(lstm.getLAYER_FIELD_INNER_INIT(), INIT_KERAS);
+        }
+        config.put(lstm.getLAYER_FIELD_INNER_INIT(), INIT_KERAS);
         Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);

@@ -26,7 +26,6 @@ import java.util.Set;
 @Data
 public class KerasEmbedding extends KerasLayer {
 
-    private final String LAYER_FIELD_INPUT_DIM = "input_dim";
     private final int NUM_TRAINABLE_PARAMS = 1;
 
     /**
@@ -120,13 +119,14 @@ public class KerasEmbedding extends KerasLayer {
         if (!weights.containsKey(conf.getKERAS_PARAM_NAME_W()))
             throw new InvalidKerasConfigurationException(
                             "Parameter " + conf.getKERAS_PARAM_NAME_W() + " does not exist in weights");
-        INDArray W = weights.get(conf.getKERAS_PARAM_NAME_W());
+        INDArray kernel = weights.get(conf.getKERAS_PARAM_NAME_W());
         if (!weights.containsKey(conf.getKERAS_PARAM_NAME_B())) {
             log.warn("Setting DL4J EmbeddingLayer bias to zero.");
-            weights.put(conf.getKERAS_PARAM_NAME_B(), Nd4j.zeros(W.size(1)));
+            weights.put(conf.getKERAS_PARAM_NAME_B(), Nd4j.zeros(kernel.size(1)));
         }
-        this.weights.put(DefaultParamInitializer.WEIGHT_KEY, W);
-        this.weights.put(DefaultParamInitializer.BIAS_KEY, weights.get(conf.getKERAS_PARAM_NAME_B()));
+        INDArray bias = weights.get(conf.getKERAS_PARAM_NAME_B());
+        this.weights.put(DefaultParamInitializer.WEIGHT_KEY, kernel);
+        this.weights.put(DefaultParamInitializer.BIAS_KEY, bias);
 
         if (weights.size() > 2) {
             Set<String> paramNames = weights.keySet();
@@ -145,9 +145,9 @@ public class KerasEmbedding extends KerasLayer {
      */
     private int getInputDimFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(LAYER_FIELD_INPUT_DIM))
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_INPUT_DIM()))
             throw new InvalidKerasConfigurationException(
-                            "Keras Embedding layer config missing " + LAYER_FIELD_INPUT_DIM + " field");
-        return (int) innerConfig.get(LAYER_FIELD_INPUT_DIM);
+                            "Keras Embedding layer config missing " + conf.getLAYER_FIELD_INPUT_DIM() + " field");
+        return (int) innerConfig.get(conf.getLAYER_FIELD_INPUT_DIM());
     }
 }
