@@ -146,64 +146,46 @@ Nd4jStatus nd4j::graph::Graph::buildGraph() {
             if (node->input()->size() == 1) {
 
                 printf("Trying SI Node_%i\n", node->id());
+                fflush(stdout);
 
-                if (node->output()->size() <= 1) {
-                    // single-output node
+                int iNode = node->input()->at(0);
+                if (_mapped->count(iNode) > 0) {
+                    int maxLayer = _mapped->at(iNode)->getLayer() + 1;
 
-                    // in this case we just move this one to the bottom
-                    //if (node->output()->size() == 0 || (node->hasExternalOutputs() && !node->hasInternalOutputs())) {
+                    node->setLayer(maxLayer);
+                    if (_onion->count(maxLayer) == 0)
+                        expandOnion(maxLayer);
 
-                        int iNode = node->input()->at(0);
-                        if (_mapped->count(iNode) > 0) {
-                            int maxLayer = _mapped->at(iNode)->getLayer();
-
-                            node->setLayer(maxLayer);
-                            if (_onion->count(maxLayer) == 0)
-                                expandOnion(maxLayer);
-
-                            this->injectNode(node);
-                        } else
-                            continue;
-                    //}
-                } else {
-                    // multi-output node
-
+                    this->injectNode(node);
+                } else
                     continue;
-                }
 
                 _unmapped.erase(node->id());
             } else {
                 // multi-input node
                 printf("Trying MI Node_%i\n", node->id());
+                fflush(stdout);
 
-                // single output node
-                if (node->output()->size() <= 1) {
+                int maxLayer = 0;
+                for (int e = 0; e < node->input()->size(); e++) {
+                    int nodeId = node->input()->at(e);
 
-                    int maxLayer = 0;
-                    for (int e = 0; e < node->input()->size(); e++) {
-                        int nodeId = node->input()->at(e);
+                    // if input node wasn't mapped yet - we'll have skip it in this round
+                    if (_mapped->count(nodeId) == 1) {
+                        auto iNode = _mapped->at(nodeId);
 
-                        // if input node wasn't mapped yet - we'll have skip it in this round
-                        if (_mapped->count(nodeId) == 1) {
-                            auto iNode = _mapped->at(nodeId);
-
-                            if (maxLayer < iNode->getLayer())
-                                maxLayer = iNode->getLayer();
-                        } else
-                            continue;
-                    }
-
-                    maxLayer++;
-                    if (_onion->count(maxLayer) == 0)
-                        expandOnion(maxLayer);
-
-                    node->setLayer(maxLayer);
-                    injectNode(node);
-                } else {
-                    // multi-output node
-
-                    continue;
+                        if (maxLayer < iNode->getLayer())
+                            maxLayer = iNode->getLayer();
+                    } else
+                        continue;
                 }
+
+                maxLayer++;
+                if (_onion->count(maxLayer) == 0)
+                    expandOnion(maxLayer);
+
+                node->setLayer(maxLayer);
+                injectNode(node);
 
                 _unmapped.erase(node->id());
             }
@@ -274,29 +256,16 @@ Nd4jStatus nd4j::graph::Graph::execute() {
 
 // we loop through op layers here
     for (int l = 0; l < _onion->size(); l++) {
+        int layerSize = _onion->count(l) == 1 ? _onion->at(l)->size() : 0;
 
-        for (int n = 0; n < _onion->at(l)->size(); n++) {
+#pragma omp parallel for if (layerSize > 1) schedule(dynamic) proc_bind(spread)
+        for (int n = 0; n < layerSize; n++) {
             auto node = _onion->at(l)->at(n);
 
             executeFlatNode(node);
         }
     }
 
-/*
-    // FIXME: this is bad!!!11oneoneleven
-    std::map<int32_t, nd4j::graph::Node *>::iterator it;
-    for ( it = _mapped->begin(); it != _mapped->end(); it++ ) {
-                   it->second->prepare();
-    }
-
-#pragma omp parallel for if (_nodes->size()>1) num_threads(_nodes->size()) schedule(guided) proc_bind(spread)
-//#pragma omp parallel for schedule(dynamic) proc_bind(spread)
-    for (int e = 0; e < _nodes->size(); e++) {
-        auto n = _nodes->at(e);
-
-        executeFlatNode(_mapped->at(n));
-    }
-*/
     return ND4J_STATUS_OK;
 }
 
