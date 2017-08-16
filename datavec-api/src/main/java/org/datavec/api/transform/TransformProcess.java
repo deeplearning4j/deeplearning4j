@@ -62,6 +62,7 @@ import org.datavec.api.util.reflections.DataVecSubTypesScanner;
 import org.datavec.api.writable.*;
 import org.datavec.api.writable.comparator.WritableComparator;
 import org.joda.time.DateTimeZone;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.PropertyAccessor;
@@ -295,6 +296,80 @@ public class TransformProcess implements Serializable {
      */
     public List<List<Writable>> executeSequence(List<List<Writable>> inputSequence) {
         return executeSequenceToSequence(inputSequence);
+    }
+
+
+    /**
+     * Execute a TransformProcess that starts with a single (non-sequence) record, and converts it to a sequence record.
+     * <b>NOTE</b>: This method has the following significant limitation: if it contains a ConvertToSequence op,
+     * it MUST be using singleStepSequencesMode - see {@link ConvertToSequence} for details.<br>
+     * This restriction is necessary, as ConvertToSequence.singleStepSequencesMode is false, this requires a group by
+     * operation - i.e., we need to group multiple independent records together by key(s) - this isn't possible here,
+     * when providing a single example as input
+     *
+     * @param inputExample Input example
+     * @return Sequence, after processing (or null, if it was filtered out)
+     */
+    public List<List<Writable>> executeToSequence(List<Writable> inputExample){
+        return execute(inputExample, null).getRight();
+    }
+
+    /**
+     * Execute a TransformProcess that starts with a seque record, and converts it to a single (non-sequence) record
+     *
+     * @param inputSequence Input sequence
+     * @return Record after processing (or null if filtered out)
+     */
+    public List<Writable> executeSequenceToSingle(List<List<Writable>> inputSequence){
+        return execute(null, inputSequence).getLeft();
+    }
+
+    private Pair<List<Writable>, List<List<Writable>>> execute(List<Writable> currEx, List<List<Writable>> currSeq){
+        for (DataAction d : actionList) {
+            if (d.getTransform() != null) {
+                Transform t = d.getTransform();
+
+                if(currEx != null){
+                    currEx = t.map(currEx);
+                    currSeq = null;
+                } else {
+                    currEx = null;
+                    currSeq = t.mapSequence(currSeq);
+                }
+            } else if (d.getFilter() != null) {
+                if( (currEx != null && d.getFilter().removeExample(currEx)) || d.getFilter().removeSequence(currEx)){
+                    return new Pair<>(null, null);
+                }
+            } else if (d.getConvertToSequence() != null) {
+
+                if(d.getConvertToSequence().isSingleStepSequencesMode()){
+                    if(currSeq != null){
+                        throw new RuntimeException("Cannot execute ConvertToSequence op: current records are already a sequence");
+                    } else {
+                        currSeq = Collections.singletonList(currEx);
+                        currEx = null;
+                    }
+                } else {
+                    //Can't execute this - would require a group-by operation, and we only have 1 example!
+                    throw new RuntimeException( "Cannot execute examples individually: TransformProcess contains a" +
+                            " ConvertToSequence operation, with singleStepSequnceeMode == false. Only " +
+                            " ConvertToSequence operations with singleStepSequnceeMode == true can be executed individually " +
+                            "as other types require a groupBy operation (which cannot be executed when only a sinlge record) " +
+                            "is provided as input");
+                }
+            } else if (d.getConvertFromSequence() != null) {
+                throw new RuntimeException("Unexpected operation: TransformProcess contains a ConvertFromSequence" +
+                        " operation. This would produce multiple output records, which cannot be executed using this method");
+            } else if (d.getSequenceSplit() != null) {
+                throw new RuntimeException( "Cannot execute examples individually: TransformProcess contains a" +
+                        " SequenceSplit operation. This would produce multiple output records, which cannot be executed" +
+                        " using this method");
+            } else {
+                throw new RuntimeException("Unknown or not supported action: " + d);
+            }
+        }
+
+        return new Pair<>(currEx, currSeq);
     }
 
     /**
