@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
@@ -43,6 +44,8 @@ import static play.mvc.Results.*;
 public class NearestNeighborsServer {
     @Parameter(names = {"--ndarrayPath"}, arity = 1, required = true)
     private String ndarrayPath = null;
+    @Parameter(names = {"--labelsPath"}, arity = 1, required = false)
+    private String labelsPath = null;
     @Parameter(names = {"--nearestNeighborsPort"}, arity = 1)
     private int port = 9000;
     @Parameter(names = {"--similarityFunction"}, arity = 1)
@@ -91,6 +94,16 @@ public class NearestNeighborsServer {
                 throw new DL4JInvalidInputException(
                                 "NearestNeighborsServer requires equal 2D chunks. Got columns mismatch.");
         }
+
+        final List<String> labels = new ArrayList<>();
+        if (labelsPath != null) {
+            String[] labelsPathArr = labelsPath.split(",");
+            for (int i = 0; i < labelsPathArr.length; i++) {
+                labels.addAll(FileUtils.readLines(new File(labelsPathArr[i]), "utf-8"));
+            }
+        }
+        if (labels.size() > 0 && labels.size() != rows)
+            throw new DL4JInvalidInputException(String.format("Number of labels must match number of rows in points matrix (expected %d, found %d)", rows, labels.size()));
 
         final INDArray points = Nd4j.createUninitialized(rows, cols);
 
@@ -150,8 +163,6 @@ public class NearestNeighborsServer {
                     results = new ArrayList<>();
                     distances = new ArrayList<>();
                     tree.search(arr, record.getK(), results, distances);
-
-
                 }
 
                 if (results.size() != distances.size()) {
@@ -162,7 +173,10 @@ public class NearestNeighborsServer {
 
                 List<NearestNeighborsResult> nnResult = new ArrayList<>();
                 for (int i=0; i<results.size(); i++) {
-                    nnResult.add(new NearestNeighborsResult(results.get(i).getIndex(), distances.get(i)));
+                    if (labels.size() > 0)
+                        nnResult.add(new NearestNeighborsResult(results.get(i).getIndex(), distances.get(i), labels.get(results.get(i).getIndex())));
+                    else
+                        nnResult.add(new NearestNeighborsResult(results.get(i).getIndex(), distances.get(i)));
                 }
 
                 NearstNeighborsResults results2 = NearstNeighborsResults.builder().results(nnResult).build();
