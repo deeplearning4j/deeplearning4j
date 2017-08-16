@@ -1,7 +1,7 @@
 package org.datavec.local.transforms.tablefunctions;
 
 import org.datavec.api.transform.Transform;
-import org.datavec.dataframe.api.Table;
+import tech.tablesaw.api.Table;
 
 /**
  * A function for transforming a given input table

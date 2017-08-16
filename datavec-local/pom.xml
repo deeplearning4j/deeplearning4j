@@ -41,9 +41,9 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-dataframe</artifactId>
-            <version>${project.version}</version>
+            <groupId>tech.tablesaw</groupId>
+            <artifactId>tablesaw-core</artifactId>
+            <version>${tablesaw.version}</version>
         </dependency>
     </dependencies>
 </project>
