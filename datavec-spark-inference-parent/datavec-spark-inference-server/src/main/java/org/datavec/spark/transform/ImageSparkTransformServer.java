@@ -51,7 +51,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
             transform = new ImageSparkTransform(transformProcess);
         } else {
             log.warn("Server started with no json for transform process. Please ensure you specify a transform process via sending a post request with raw json"
-                            + "to /transformprocess");
+                    + "to /transformprocess");
         }
 
         //return the host information for a given id
@@ -107,6 +107,29 @@ public class ImageSparkTransformServer extends SparkTransformServer {
         })));
 
         server = Server.forRouter(routingDsl.build(), Mode.DEV, port);
+    }
+
+    @Override
+    public Base64NDArrayBody transformSequenceArrayIncremental(BatchCSVRecord singleCsvRecord) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Base64NDArrayBody transformSequenceArray(SequenceBatchCSVRecord batchCSVRecord) {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public SequenceBatchCSVRecord transformSequence(SequenceBatchCSVRecord batchCSVRecord) {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public BatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform) {
+        throw new UnsupportedOperationException();
+
     }
 
     @Override

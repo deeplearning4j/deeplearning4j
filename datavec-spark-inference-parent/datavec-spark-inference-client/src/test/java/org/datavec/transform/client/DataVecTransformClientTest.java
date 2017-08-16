@@ -7,6 +7,7 @@ import org.datavec.spark.transform.CSVSparkTransformServer;
 import org.datavec.spark.transform.client.DataVecTransformClient;
 import org.datavec.spark.transform.model.Base64NDArrayBody;
 import org.datavec.spark.transform.model.BatchCSVRecord;
+import org.datavec.spark.transform.model.SequenceBatchCSVRecord;
 import org.datavec.spark.transform.model.SingleCSVRecord;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -17,7 +18,9 @@ import org.nd4j.serde.base64.Nd4jBase64;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -32,7 +35,7 @@ public class DataVecTransformClientTest {
     private static DataVecTransformClient client;
     private static Schema schema = new Schema.Builder().addColumnDouble("1.0").addColumnDouble("2.0").build();
     private static TransformProcess transformProcess =
-                    new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
+            new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
     private static File fileSave = new File(UUID.randomUUID().toString() + ".json");
 
     @BeforeClass
@@ -51,11 +54,38 @@ public class DataVecTransformClientTest {
         server.stop();
     }
 
+
+    @Test
+    public void testSequenceClient() {
+        SequenceBatchCSVRecord sequenceBatchCSVRecord = new SequenceBatchCSVRecord();
+        SingleCSVRecord singleCsvRecord = new SingleCSVRecord(new String[] {"0", "0"});
+
+        BatchCSVRecord batchCSVRecord = new BatchCSVRecord(Arrays.asList(singleCsvRecord, singleCsvRecord));
+        List<BatchCSVRecord> batchCSVRecordList = new ArrayList<>();
+        for(int i = 0; i < 5; i++) {
+             batchCSVRecordList.add(batchCSVRecord);
+        }
+
+        sequenceBatchCSVRecord.add(batchCSVRecordList);
+
+        SequenceBatchCSVRecord sequenceBatchCSVRecord1 = client.transformSequence(sequenceBatchCSVRecord);
+        assumeNotNull(sequenceBatchCSVRecord1);
+
+        Base64NDArrayBody array = client.transformSequenceArray(sequenceBatchCSVRecord);
+        assumeNotNull(array);
+
+        Base64NDArrayBody incrementalBody = client.transformSequenceArrayIncremental(batchCSVRecord);
+        assumeNotNull(incrementalBody);
+
+        Base64NDArrayBody incrementalSequenceBody = client.transformSequenceArrayIncremental(batchCSVRecord);
+        assumeNotNull(incrementalSequenceBody);
+    }
+
     @Test
     public void testRecord() throws Exception {
         SingleCSVRecord singleCsvRecord = new SingleCSVRecord(new String[] {"0", "0"});
         SingleCSVRecord transformed = client.transformIncremental(singleCsvRecord);
-        assertEquals(singleCsvRecord.getValues().length, transformed.getValues().length);
+        assertEquals(singleCsvRecord.getValues().size(), transformed.getValues().size());
         Base64NDArrayBody body = client.transformArrayIncremental(singleCsvRecord);
         INDArray arr = Nd4jBase64.fromBase64(body.getNdarray());
         assumeNotNull(arr);

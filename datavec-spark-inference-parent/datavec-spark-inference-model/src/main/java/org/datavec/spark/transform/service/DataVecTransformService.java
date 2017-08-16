@@ -11,6 +11,9 @@ import java.io.IOException;
  */
 public interface DataVecTransformService {
 
+    String SEQUENCE_OR_NOT_HEADER = "Sequence";
+
+
     /**
      *
      * @param transformProcess
@@ -78,4 +81,32 @@ public interface DataVecTransformService {
      * @throws IOException
      */
     Base64NDArrayBody transformArray(BatchImageRecord batchImageRecord) throws IOException;
+
+    /**
+     *
+     * @param singleCsvRecord
+     * @return
+     */
+    Base64NDArrayBody transformSequenceArrayIncremental(BatchCSVRecord singleCsvRecord);
+
+    /**
+     *
+     * @param batchCSVRecord
+     * @return
+     */
+    Base64NDArrayBody transformSequenceArray(SequenceBatchCSVRecord batchCSVRecord);
+
+    /**
+     *
+     * @param batchCSVRecord
+     * @return
+     */
+    SequenceBatchCSVRecord transformSequence(SequenceBatchCSVRecord batchCSVRecord);
+
+    /**
+     *
+     * @param transform
+     * @return
+     */
+    BatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform);
 }
