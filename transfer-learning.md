@@ -1,6 +1,7 @@
 ---
 title: Transfer Learning in Deeplearning4j
 layout: default
+redirect_from: transferlearning
 ---
 
 # DL4J’s transfer learning API
