@@ -5,8 +5,8 @@ import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTrans
 import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
-import org.datavec.dataframe.api.CategoryColumn;
-import org.datavec.dataframe.api.Table;
+import tech.tablesaw.api.CategoryColumn;
+import tech.tablesaw.api.Table;
 
 /**
  * Created by agibsonccc on 11/11/16.

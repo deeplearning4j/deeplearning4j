@@ -4,7 +4,7 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
-import org.datavec.dataframe.api.Table;
+import tech.tablesaw.api.Table;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
