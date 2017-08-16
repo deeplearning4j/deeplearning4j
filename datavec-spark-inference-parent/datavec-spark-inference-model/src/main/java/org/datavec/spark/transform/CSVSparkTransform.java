@@ -16,6 +16,7 @@ import org.nd4j.serde.base64.Nd4jBase64;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -126,17 +127,10 @@ public class CSVSparkTransform {
      */
     public SequenceBatchCSVRecord transformSequence(SequenceBatchCSVRecord batchCSVRecordSequence) {
         SequenceBatchCSVRecord ret = new SequenceBatchCSVRecord();
-        for(List<BatchCSVRecord> batchCSVRecord : batchCSVRecordSequence.getRecords()) {
-            List<BatchCSVRecord> add = new ArrayList<>();
-            for(BatchCSVRecord batchRecord : batchCSVRecord) {
-                add.add(BatchCSVRecord.fromWritables(transformProcess.executeSequenceToSequence(
-                        transformProcess.transformRawStringsToInputSequence(
-                        batchRecord.getRecordsAsString()))));
-            }
-
-            ret.add(add);
-        }
-
+        List<List<Writable>> transform = transformProcess.transformRawStringsToInputSequence(batchCSVRecordSequence.getRecordsAsString().get(0));
+        List<List<Writable>> transformed = transformProcess.executeSequenceToSequence(transform);
+        SequenceBatchCSVRecord sequenceBatchCSVRecord = new SequenceBatchCSVRecord();
+        sequenceBatchCSVRecord.add(Arrays.asList(BatchCSVRecord.fromWritables(transformed)));
         return ret;
     }
 
