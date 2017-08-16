@@ -11,10 +11,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
-import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -540,6 +537,33 @@ public class SameDiffTests {
 
         INDArray executions = sameDiff.execAndEndResult("softmaxGradient");
         INDArray assertion = Nd4j.getExecutioner().execAndReturn(new SoftMaxDerivative(sumInput));
+        assertArrayEquals(sumInput.shape(),executions.shape());
+        assertEquals(assertion,executions);
+        System.out.println(executions);
+        //assertEquals(Nd4j.ones(2,2),executions);
+    }
+
+
+
+    @Test
+    public void testExpGradient() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
+        Map<String,INDArray> inputs = new HashMap<>();
+        inputs.put("x",sumInput);
+        sameDiff.defineFunction("expGradient", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable softmax = sameDiff.exp(input);
+                //original shape ends up being 2,2
+                SDVariable grad = sameDiff.grad(softmax,sameDiff.var("grad",sumInput.dup()));
+                return grad;
+            }
+        },inputs);
+
+        INDArray executions = sameDiff.execAndEndResult("expGradient");
+        INDArray assertion = Nd4j.getExecutioner().execAndReturn(new Exp(sumInput));
         assertArrayEquals(sumInput.shape(),executions.shape());
         assertEquals(assertion,executions);
         System.out.println(executions);
