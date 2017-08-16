@@ -1,33 +1,33 @@
 #ifndef NDARRAY_H
 #define NDARRAY_H
 
-#include <shape.h>
+namespace nd4j {
 
-template <typename T> class NDArray 
-{ 
+    template<typename T>
+    class NDArray {
     public:
-        T    *_buffer;                   // pointer on flattened data array in memory
-        int  *_shapeInfo;                // contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
-        bool  _allocated;                // indicates whether user allocates memory for array by himself, in opposite case the memory must be allocated from outside 
+        T *_buffer;                   // pointer on flattened data array in memory
+        int *_shapeInfo;                // contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
+        bool _allocated;                // indicates whether user allocates memory for array by himself, in opposite case the memory must be allocated from outside
 
-        
+
         // default constructor, do not allocate memory, memory for array is passed from outside 
         NDArray(T *buffer = nullptr, int *shapeInfo = nullptr);
 
         // this constructor creates 2D NDArray, memory for array is allocated in constructor 
         NDArray(const int rows, const int columns, const char order);
-        
+
         // this constructor creates NDArray as single row (dimension is 1xlength), memory for array is allocated in constructor 
         NDArray(const int length, const char order);
-        
+
         // this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
         NDArray(const NDArray<T> *other);
 
         // this constructor creates new array using shape information contained in initializer_list argument
-        NDArray(const char order, const std::initializer_list<int>& shape);
+        NDArray(const char order, const std::initializer_list<int> &shape);
 
         // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
-        void replacePointers(T* buffer, int* shapeInfo, const bool releaseExisting = true);
+        void replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting = true);
 
         // This method returns order of this NDArray
         char ordering() const {
@@ -82,7 +82,7 @@ template <typename T> class NDArray
         void assign(const T value);
 
         // This method returns new copy of this NDArray, optionally in different order
-        NDArray<T>* dup(const char newOrder);
+        NDArray<T> *dup(const char newOrder);
 
         // Returns true if these two NDArrays have same shape
         inline bool isSameShape(const NDArray<T> *other) const;
@@ -94,41 +94,47 @@ template <typename T> class NDArray
         T meanNumber() const;
 
         // method calculates sum along dimension(s) in this array and save it to row: as new NDArray with dimensions 1xN
-        NDArray<T>* sum(const std::initializer_list<int>& dimensions) const;
+        NDArray<T> *sum(const std::initializer_list<int> &dimensions) const;
 
         // eventually this method reduces this array to 1xN row 
-        template<typename OpName> NDArray<T>* reduceAlongDimension(const std::initializer_list<int>& dimensions) const;
+        template<typename OpName>
+        NDArray<T> *reduceAlongDimension(const std::initializer_list<int> &dimensions) const;
 
         // 
-        template<typename OpName> T reduceNumber(T* extraParams = nullptr);
-        
+        template<typename OpName>
+        T reduceNumber(T *extraParams = nullptr);
+
 
         // perform array transformation
-        template<typename OpName> void applyTransform(T *extraParams = nullptr);
+        template<typename OpName>
+        void applyTransform(T *extraParams = nullptr);
 
         // perform array transformation
-        template<typename OpName> void applyTransform(NDArray<T> *target, T *extraParams);
+        template<typename OpName>
+        void applyTransform(NDArray<T> *target, T *extraParams);
 
         // perform pairwise transformation
-        template<typename OpName> void applyPairwiseTransform(NDArray<T> *other, T *extraParams);
+        template<typename OpName>
+        void applyPairwiseTransform(NDArray<T> *other, T *extraParams);
 
         // perform pairwise transformation
-        template<typename OpName> void applyPairwiseTransform(NDArray<T> *other, NDArray<T> *target, T *extraParams);
+        template<typename OpName>
+        void applyPairwiseTransform(NDArray<T> *other, NDArray<T> *target, T *extraParams);
 
         // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
         NDArray<T> *transpose() const;
 
         // This method applies in-place transpose to this array, so this array becomes transposed 
         void transposei();
-        
+
         // This method returns true if buffer && shapeInfo were defined
         bool nonNull() const {
             return this->_buffer != nullptr && this->_shapeInfo != nullptr;
         }
-  
+
         // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
         bool equalsTo(const NDArray<T> *other, T eps = (T) 1e-5f) const;
-   
+
         // Return value from linear buffer
         T getScalar(const Nd4jIndex i) const;
 
@@ -155,35 +161,38 @@ template <typename T> class NDArray
 
         // these methods suited for FlatBuffers use.
         std::vector<T> getBufferAsVector();
+
         std::vector<int32_t> getShapeAsVector();
 
-    // default destructor
-    ~NDArray();
+        // default destructor
+        ~NDArray();
 
-};
+    };
 
 
-template <typename T>
-Nd4jIndex inline NDArray<T>::memoryFootprint() {
-    Nd4jIndex size = this->lengthOf() * this->sizeOfT();
-    size += (this->rankOf() * 2 + 4) * sizeof(int);
+    template<typename T>
+    Nd4jIndex inline NDArray<T>::memoryFootprint() {
+        Nd4jIndex size = this->lengthOf() * this->sizeOfT();
+        size += (this->rankOf() * 2 + 4) * sizeof(int);
 
-    return size;
-}
+        return size;
+    }
 
 
 // returns true if these two NDArrays have same shape
 // still the definition of inline function must be in header file
-template <typename T> inline bool NDArray<T>::isSameShape(const NDArray<T> *other) const {
-    
-    if (this->rankOf() != other->rankOf())
-        return false;
-    
-    for (int e = 0; e < this->rankOf(); e++)
-        if (this->shapeOf()[e] != other->shapeOf()[e]) 
-            return false;
-    
-    return true;
-}
+    template<typename T>
+    inline bool NDArray<T>::isSameShape(const NDArray<T> *other) const {
 
+        if (this->rankOf() != other->rankOf())
+            return false;
+
+        for (int e = 0; e < this->rankOf(); e++)
+            if (this->shapeOf()[e] != other->shapeOf()[e])
+                return false;
+
+        return true;
+    }
+
+}
 #endif

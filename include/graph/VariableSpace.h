@@ -6,6 +6,7 @@
 #define LIBND4J_VARIABLESPACE_H
 
 #include <string>
+#include <list>
 #include <map>
 #include <mutex>
 #include <NDArray.h>

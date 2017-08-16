@@ -7,6 +7,8 @@
 
 #include <layers/activations.h>
 
+using namespace nd4j;
+
 template <typename T> class ActivationsExecutioner {
 
     public: 

@@ -38,7 +38,7 @@ TEST_F(GraphTests, SingleInput1) {
     ASSERT_EQ(1, graph->rootNodes());
     ASSERT_EQ(3, graph->totalNodes());
 
-    graph->execute();
+    GraphExecutioner::execute(graph);
 
     ASSERT_NEAR(0.4161468, x->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
@@ -69,7 +69,7 @@ TEST_F(GraphTests, DoubleInput1) {
     ASSERT_EQ(2, graph->rootNodes());
     ASSERT_EQ(3, graph->totalNodes());
 
-    graph->execute();
+    GraphExecutioner::execute(graph);
 
     ASSERT_NEAR(3.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
@@ -98,7 +98,7 @@ TEST_F(GraphTests, SingleInput3) {
     ASSERT_EQ(1, graph->rootNodes());
     ASSERT_EQ(3, graph->totalNodes());
 
-    graph->execute();
+    GraphExecutioner::execute(graph);
 
     ASSERT_NEAR(1.4142135, v0->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(1.0, v1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
@@ -133,7 +133,7 @@ TEST_F(GraphTests, SingleInput4) {
     ASSERT_EQ(1, graph->rootNodes());
     ASSERT_EQ(5, graph->totalNodes());
 
-    graph->execute();
+    GraphExecutioner::execute(graph);
 
     ASSERT_NEAR(1.0, v0->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(-1.4142135, v1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
@@ -176,7 +176,7 @@ TEST_F(GraphTests, DoubleInput2) {
     ASSERT_EQ(2, graph->rootNodes());
     ASSERT_EQ(6, graph->totalNodes());
 
-    graph->execute();
+    GraphExecutioner::execute(graph);
 
     ASSERT_NEAR(-1.4142135, z0->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(-1.0, z1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
@@ -228,7 +228,7 @@ TEST_F(GraphTests, DoubleInput3) {
     ASSERT_EQ(2, graph->rootNodes());
     ASSERT_EQ(8, graph->totalNodes());
 
-    graph->execute();
+    GraphExecutioner::execute(graph);
 
     ASSERT_NEAR(-1.4142135, z0->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(-1.0, z1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
@@ -282,7 +282,7 @@ TEST_F(GraphTests, QuadInput1) {
     ASSERT_EQ(4, graph->rootNodes());
     ASSERT_EQ(7, graph->totalNodes());
 
-    graph->execute();
+    GraphExecutioner::execute(graph);
 
     ASSERT_NEAR(6.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
@@ -326,7 +326,7 @@ TEST_F(GraphTests, InternalBranching1) {
     ASSERT_EQ(1, graph->rootNodes());
     ASSERT_EQ(6, graph->totalNodes());
 
-    graph->execute();
+    GraphExecutioner::execute(graph);
 
     ASSERT_EQ(3, nodeZ->getLayer());
 

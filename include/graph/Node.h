@@ -21,8 +21,6 @@ namespace nd4j {
             std::vector<int> _input;
             std::vector<int> _output;
 
-            std::atomic<int> _finished;
-
             // this variable points to onion layer within graph
             int _layer = -1;
 
@@ -59,10 +57,6 @@ namespace nd4j {
             bool hasExternalInputs();
             bool hasInternalOutputs();
             bool hasInternalInputs();
-
-            void prepare();
-            void finished();
-            void waitTillFinished();
         };
     }
 }
@@ -88,19 +82,6 @@ bool nd4j::graph::Node::hasInternalOutputs() {
 
 bool nd4j::graph::Node::hasInternalInputs() {
     return _hasInternalInputs;
-}
-
-void nd4j::graph::Node::finished() {
-    _finished.store(1);
-}
-
-void nd4j::graph::Node::prepare() {
-    _finished.store(0);
-}
-
-void nd4j::graph::Node::waitTillFinished() {
-    while (_finished != 1)
-        usleep(10);
 }
 
 bool nd4j::graph::Node::isMultiInput() {
@@ -136,7 +117,6 @@ std::vector<int> *nd4j::graph::Node::output() {
 }
 
 nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output) {
-    this->_finished.store(0);
     this->_opType = opType;
     this->_id = id;
     this->_opNum = opNum;
@@ -167,8 +147,6 @@ nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<
 };
 
 nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
-    _finished.store(0);
-
     _hasExternalInputs = false;
     _hasExternalOutputs = false;
     _hasInternalInputs = false;

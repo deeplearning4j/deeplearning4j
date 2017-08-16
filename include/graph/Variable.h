@@ -16,19 +16,19 @@ namespace nd4j {
         class Variable {
         protected:
             int32_t _id;
-            NDArray<T> * _ndarray;
+            nd4j::NDArray<T> * _ndarray;
 
             bool _external;
             bool _readOnly;
 
         public:
-            Variable(NDArray<T> *array);
+            Variable(nd4j::NDArray<T> *array);
 
             Variable(const nd4j::graph::FlatVariable *flatVariable);
             ~Variable();
 
 
-            NDArray<T> *getNDArray();
+            nd4j::NDArray<T> *getNDArray();
             bool isExternal();
             bool isReadOnly();
 
@@ -59,7 +59,7 @@ void nd4j::graph::Variable<T>::markReadOnly(bool reallyReadOnly) {
 }
 
 template <typename T>
-NDArray<T> * nd4j::graph::Variable<T>::getNDArray() {
+nd4j::NDArray<T> * nd4j::graph::Variable<T>::getNDArray() {
     return this->_ndarray;
 }
 

@@ -7,6 +7,8 @@
 
 #include <op_boilerplate.h>
 #include <NativeOps.h>
+#include <Variable.h>
+#include <VariableSpace.h>
 #include <NDArray.h>
 #include <cnpy.h>
 #include <ops/ops.h>
@@ -19,5 +21,6 @@
 
 // meh
 #include <../blas/cpu/NDArray.cpp>
+#include <../blas/cpu/GraphExecutioner.cpp>
 
 #endif //LIBND4J_TESTLAYERS_H
