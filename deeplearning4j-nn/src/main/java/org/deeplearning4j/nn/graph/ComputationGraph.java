@@ -580,6 +580,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             gv.setOutputVertices(outputIndices);
         }
 
+        //Mark any output vertices as outputs:
+        for(String s : configuration.getNetworkOutputs()){
+            GraphVertex gv = verticesMap.get(s);
+            gv.setOutputVertex(true);
+        }
+
         // now we init solver & optimizer
         if (solver == null) {
             try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -1464,7 +1470,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         out = current.doForward(train).leverageTo(workspaceExternal);
                     }
 
-                    if (includeNonLayerVertexActivations || current.hasLayer()) {
+                    if (includeNonLayerVertexActivations || current.hasLayer() || current.isOutputVertex()) {
                         layerActivations.put(current.getVertexName(), out);
                     }
 

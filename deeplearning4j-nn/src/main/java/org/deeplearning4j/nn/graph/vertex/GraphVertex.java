@@ -85,6 +85,9 @@ public interface GraphVertex extends Serializable {
     /** Whether the GraphVertex is an output vertex */
     boolean isOutputVertex();
 
+    /** Set the GraphVertex to be an output vertex */
+    void setOutputVertex(boolean outputVertex);
+
     /** Get the Layer (if any). Returns null if {@link #hasLayer()} == false */
     Layer getLayer();
 

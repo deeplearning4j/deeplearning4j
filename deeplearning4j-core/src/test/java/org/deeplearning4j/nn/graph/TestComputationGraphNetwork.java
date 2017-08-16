@@ -1048,6 +1048,37 @@ public class TestComputationGraphNetwork {
                 fail("Network did not add merge vertex for vertex " + gv.getClass());
             }
         }
+    }
+
+
+    @Test
+    public void testVertexAsOutput(){
+        //Simple sanity check: vertex is the last output...
+
+        int minibatch = 10;
+        int height = 24;
+        int width = 24;
+        int depth = 3;
+
+        INDArray img = Nd4j.ones(minibatch, depth, height, width);
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("L1", new ConvolutionLayer.Builder(new int[]{1,1}, new int[]{1,1}, new int[]{0,0}).nIn(depth).nOut(depth)
+                        .build(), "input")
+                .addVertex("L2", new ReshapeVertex(minibatch, 1, 36, 48), "L1")
+                .setOutputs("L2")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();;
+        INDArray[] out = net.output(img);
+
+        assertNotNull(out);
+        assertEquals(1, out.length);
+        assertNotNull(out[0]);
+
+        assertArrayEquals(new int[]{minibatch, 1, 36, 48}, out[0].shape());
 
     }
 }
