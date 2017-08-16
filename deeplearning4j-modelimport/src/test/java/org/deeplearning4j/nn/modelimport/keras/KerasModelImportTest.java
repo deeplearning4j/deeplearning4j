@@ -2,50 +2,43 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.layers.custom.KerasLRN;
-import org.deeplearning4j.nn.modelimport.keras.layers.custom.KerasPoolHelper;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 
 /**
  * Test import of Keras models.
  *
- * @author Justin Long (crockpotveggies)
  */
 @Slf4j
 public class KerasModelImportTest {
     @Test
     public void testH5WithoutTensorflowScope() throws Exception {
-        MultiLayerNetwork model = loadModel("model.h5");
+        MultiLayerNetwork model = loadModel("tfscope/model.h5");
         System.out.println(model.params());
         assert (model != null);
     }
 
     @Test
     public void testH5WithTensorflowScope() throws Exception {
-        MultiLayerNetwork model = loadModel("model.h5.with.tensorflow.scope");
+        MultiLayerNetwork model = loadModel("tfscope/model.h5.with.tensorflow.scope");
         System.out.println(model.params());
         assert (model != null);
     }
 
     @Test
     public void testWeightAndJsonWithoutTensorflowScope() throws Exception {
-        MultiLayerNetwork model = loadModel("model.json", "model.weight");
+        MultiLayerNetwork model = loadModel("tfscope/model.json", "tfscope/model.weight");
         System.out.println(model.params());
         assert (model != null);
     }
 
     @Test
     public void testWeightAndJsonWithTensorflowScope() throws Exception {
-        MultiLayerNetwork model = loadModel("model.json.with.tensorflow.scope", "model.weight.with.tensorflow.scope");
+        MultiLayerNetwork model = loadModel("tfscope/model.json.with.tensorflow.scope", "tfscope/model.weight.with.tensorflow.scope");
         System.out.println(model.params());
         assert (model != null);
     }

@@ -151,7 +151,7 @@ public class KerasLayerConfiguration {
 
 
     /* Keras weight initializers. */
-    private final String LAYER_FIELD_INIT = "init"; // 1: init, 2: kernel_initializer
+    private final String LAYER_FIELD_INIT = ""; // 1: init, 2: kernel_initializer
     private final String LAYER_FIELD_BIAS_INIT = "bias_initializer"; // keras 2 only
 
     private final String INIT_UNIFORM = "uniform"; // keras 2 aliases: random_uniform, RandomUniform

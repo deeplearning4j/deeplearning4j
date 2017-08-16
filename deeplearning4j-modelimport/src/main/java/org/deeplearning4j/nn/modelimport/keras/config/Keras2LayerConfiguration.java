@@ -83,4 +83,7 @@ public class Keras2LayerConfiguration extends KerasLayerConfiguration {
     /* Keras constraints */
     private final String LAYER_FIELD_W_CONSTRAINT = "kernel_constraint";
     private final String LAYER_FIELD_B_CONSTRAINT = "bias_constraint";
+
+    /* Keras weight initializers. */
+    private final String LAYER_FIELD_INIT = "kernel_initializer";
 }

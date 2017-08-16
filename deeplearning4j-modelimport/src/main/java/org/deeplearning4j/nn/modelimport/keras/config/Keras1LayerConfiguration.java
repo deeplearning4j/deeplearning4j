@@ -85,4 +85,7 @@ public class Keras1LayerConfiguration extends KerasLayerConfiguration {
     private final String LAYER_FIELD_W_CONSTRAINT = "W_constraint";
     private final String LAYER_FIELD_B_CONSTRAINT = "b_constraint";
 
+    /* Keras weight initializers. */
+    private final String LAYER_FIELD_INIT = "init";
+
 }

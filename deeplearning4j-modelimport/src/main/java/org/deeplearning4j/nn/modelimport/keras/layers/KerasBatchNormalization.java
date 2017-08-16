@@ -232,10 +232,12 @@ public class KerasBatchNormalization extends KerasLayer {
     protected int getBatchNormMode(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(LAYER_FIELD_MODE))
+        int batchNormMode = 0;
+        if (this.kerasMajorVersion == 1 & !innerConfig.containsKey(LAYER_FIELD_MODE))
             throw new InvalidKerasConfigurationException(
                             "Keras BatchNorm layer config missing " + LAYER_FIELD_MODE + " field");
-        int batchNormMode = (int) innerConfig.get(LAYER_FIELD_MODE);
+        if (this.kerasMajorVersion == 1)
+            batchNormMode = (int) innerConfig.get(LAYER_FIELD_MODE);
         switch (batchNormMode) {
             case LAYER_BATCHNORM_MODE_1:
                 throw new UnsupportedKerasConfigurationException("Keras BatchNormalization mode "
