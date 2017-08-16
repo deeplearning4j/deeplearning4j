@@ -2,6 +2,8 @@
 // Created by agibsonccc on 2/21/16.
 //
 
+#ifndef NATIVEOPS_CPP
+#define NATIVEOPS_CPP
 
 #define __STDC_CONSTANT_MACROS
 
@@ -15,6 +17,7 @@
 #include <loops/aggregates.h>
 #include <helpers/helper_ptrmap.h>
 #include <helpers/logger.h>
+#include "NDArray.cpp"
 
 
 #include "../NDArray.h"
@@ -3039,3 +3042,5 @@ void NativeOps::decodeBitmapDouble(Nd4jPointer *extraPointers, void *dx, Nd4jInd
 void NativeOps::decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float16 *dz) {
     //NativeOpExcutioner<float16>::decodeBitmap(dx, N, dz);
 }
+
+#endif

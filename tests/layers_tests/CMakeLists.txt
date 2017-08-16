@@ -1,5 +1,5 @@
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
-include_directories(../../include ../../layers ../../include/helpers ../../include/loops ../../include/ops ../../include/types ../../include/cnpy ../../blas)
+include_directories(../../include ../../layers ../../include/helpers ../../include/loops ../../include/graph ../../include/ops ../../include/types ../../include/cnpy ../../blas)
 if(LINUX)
     link_directories(/usr/local/lib)
     link_directories(/usr/lib)
@@ -45,7 +45,7 @@ ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 message("CPU BLAS")
 add_definitions(-D__CPUBLAS__=true)
-add_library(nd4jcpu SHARED ../../blas/cpu/NativeOps.cpp ../../blas/cpu/NDArray.cpp ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h)
+add_library(nd4jcpu SHARED ../../blas/cpu/NativeOps.cpp ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
     message(FATAL_ERROR "You need at least GCC 4.9")

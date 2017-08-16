@@ -1,7 +1,7 @@
 #ifndef NDARRAY_CPP
 #define NDARRAY_CPP
 
-#include <NativeOpExcutioner.h>
+#include "../NDArray.h"
 #include <stdexcept>
 
 

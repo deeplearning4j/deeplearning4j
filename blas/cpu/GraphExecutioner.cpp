@@ -5,6 +5,9 @@
 #include <graph/generated/node_generated.h>
 #include <graph/generated/graph_generated.h>
 
+#include <Variable.h>
+#include <VariableSpace.h>
+#include <Node.h>
 #include <GraphExecutioner.h>
 #include <loops/pairwise_transform.h>
 #include <loops/transform.h>
@@ -12,27 +15,14 @@
 namespace nd4j{
     namespace graph {
 
-        Nd4jStatus nd4j::graph::GraphExecutioner::execute(nd4j::graph::Graph *graph) {
-
-            auto __variableSpace = graph->getVariableSpace();
-
-            // we loop through op layers here
-            for (int l = 0; l < graph->getOnion()->size(); l++) {
-                int layerSize = graph->getOnion()->count(l) == 1 ? graph->getOnion()->at(l)->size() : 0;
-
-#pragma omp parallel for if (layerSize > 1) schedule(dynamic) proc_bind(spread)
-                for (int n = 0; n < layerSize; n++) {
-                    auto node = graph->getOnion()->at(l)->at(n);
-
-                    GraphExecutioner::executeFlatNode(graph, node, __variableSpace);
-                }
-            }
-
-            return ND4J_STATUS_OK;
-        }
-
-
-        Nd4jStatus executeFlatNode(nd4j::graph::Graph *graph, nd4j::graph::Node *node, nd4j::graph::VariableSpace<float> *variableSpace) {
+        /**
+         *
+         * @param graph
+         * @param node
+         * @param variableSpace
+         * @return
+         */
+        static Nd4jStatus executeFlatNode(nd4j::graph::Graph *graph, nd4j::graph::Node *node, nd4j::graph::VariableSpace<float> *variableSpace) {
             OpType opType = node->opType();
             int opNum = node->opNum();
 
@@ -102,6 +92,30 @@ namespace nd4j{
                         if (out->getNDArray() != z->getNDArray())
                             out->getNDArray()->assign(z->getNDArray());
                     }
+                }
+            }
+
+            return ND4J_STATUS_OK;
+        }
+
+
+        /**
+         *
+         * @param graph
+         * @return
+         */
+        Nd4jStatus nd4j::graph::GraphExecutioner::execute(nd4j::graph::Graph *graph) {
+            auto __variableSpace = graph->getVariableSpace();
+
+            // we loop through op layers here
+            for (int l = 0; l < graph->getOnion()->size(); l++) {
+                int layerSize = graph->getOnion()->count(l) == 1 ? graph->getOnion()->at(l)->size() : 0;
+
+#pragma omp parallel for if (layerSize > 1) schedule(dynamic) proc_bind(spread)
+                for (int n = 0; n < layerSize; n++) {
+                    auto node = graph->getOnion()->at(l)->at(n);
+
+                    executeFlatNode(graph, node, __variableSpace);
                 }
             }
 

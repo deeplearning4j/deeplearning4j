@@ -1,6 +1,12 @@
 #ifndef NDARRAY_H
 #define NDARRAY_H
 
+
+#include <initializer_list>
+#include "NativeOps.h"
+#include <shape.h>
+#include "NativeOpExcutioner.h"
+
 namespace nd4j {
 
     template<typename T>

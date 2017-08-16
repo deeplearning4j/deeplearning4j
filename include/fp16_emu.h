@@ -49,7 +49,7 @@
 
 // Conversion from/to 16-bit floating point (half-precision).
 
-#if !defined(_FP16_EMU_H_)
+#ifndef _FP16_EMU_H_
 #define _FP16_EMU_H_
 
 #ifdef __CUDACC__

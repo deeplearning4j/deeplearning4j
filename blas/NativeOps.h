@@ -28,7 +28,6 @@
 #include <pointercast.h>
 #include <types/float16.h>
 #include <cnpy.h>
-#include <GraphExecutioner.h>
 
 //DO NOT REMOVE: THIS IS AN EDITOR SEMANTICS THING FOR CLION
 //IT DEFINES THE EXPORT MACRO FOR THE EDITOR AND THEN

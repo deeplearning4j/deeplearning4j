@@ -7,6 +7,7 @@
 
 #include <op_boilerplate.h>
 #include <NativeOps.h>
+#include <Node.h>
 #include <Variable.h>
 #include <VariableSpace.h>
 #include <NDArray.h>
@@ -17,6 +18,7 @@
 #include <layers/layers_factory.h>
 #include <layers/layers.h>
 #include <layers/generic/available.h>
+#include <GraphExecutioner.h>
 #include <gtest/gtest.h>
 
 // meh

@@ -8,7 +8,7 @@
 #include <graph/generated/graph_generated.h>
 #include <graph/Node.h>
 #include <graph/Graph.h>
-#include <graph/NodeFactory.h>
+#include <GraphExecutioner.h>
 
 using namespace nd4j::graph;
 
@@ -130,7 +130,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto var = vs->getVariable(-1)->getNDArray();
     ASSERT_EQ(-2.0, var->reduceNumber<simdOps::Mean<float>>());
 
-    GraphExecutioner::execute(graph);
+    nd4j::graph::GraphExecutioner::execute(&graph);
 
     ASSERT_NEAR(-0.4161468, var->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
