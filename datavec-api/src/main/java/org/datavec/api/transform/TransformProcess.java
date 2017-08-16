@@ -343,8 +343,8 @@ public class TransformProcess implements Serializable {
             } else if (d.getConvertToSequence() != null) {
 
                 if(d.getConvertToSequence().isSingleStepSequencesMode()){
-                    if(currSeq == null){
-                        throw new RuntimeException("Cannot execute ConvertToSequence op: current records are not a sequence");
+                    if(currSeq != null){
+                        throw new RuntimeException("Cannot execute ConvertToSequence op: current records are already a sequence");
                     } else {
                         currSeq = Collections.singletonList(currEx);
                         currEx = null;
