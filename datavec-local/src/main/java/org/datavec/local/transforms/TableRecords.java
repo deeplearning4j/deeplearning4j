@@ -15,18 +15,15 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
-import org.datavec.dataframe.api.*;
-import org.datavec.dataframe.columns.Column;
-import org.datavec.dataframe.columns.ColumnReference;
-import org.datavec.dataframe.filtering.*;
-import org.datavec.dataframe.filtering.doubles.*;
-import org.datavec.dataframe.filtering.ints.IntNotEqualTo;
-import org.datavec.dataframe.filtering.longs.*;
-import org.datavec.dataframe.filtering.times.IsAfter;
-import org.datavec.dataframe.filtering.times.IsBefore;
-import org.datavec.dataframe.reducing.NumericReduceFunction;
-import org.datavec.dataframe.reducing.NumericReduceUtils;
-import org.datavec.dataframe.store.ColumnMetadata;
+import tech.tablesaw.api.*;
+import tech.tablesaw.columns.Column;
+import tech.tablesaw.columns.ColumnReference;
+import tech.tablesaw.filtering.*;
+import tech.tablesaw.filtering.times.IsAfter;
+import tech.tablesaw.filtering.times.IsBefore;
+import tech.tablesaw.reducing.NumericReduceFunction;
+import tech.tablesaw.reducing.NumericReduceUtils;
+import tech.tablesaw.store.ColumnMetadata;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -139,7 +136,7 @@ public class TableRecords {
                 Condition conditionToFilter = pair.getValue().getCondition();
                 String inputColumnName = pair.getKey();
                 Schema output = reducer.transform(reducer.getInputSchema());
-                org.datavec.dataframe.filtering.Filter filter =
+                tech.tablesaw.filtering.Filter filter =
                                 mapFilterFromCondition(conditionToFilter, inputColumnName, output);
                 reduce = runReduce(reduce.selectWhere(filter), pair.getValue().getReductions().get(0), inputColumnName);
             }
@@ -172,22 +169,22 @@ public class TableRecords {
                 switch (reduce.column(columnNameToReduce).type()) {
                     case FLOAT:
                         double val = reduce.reduce(columnNameToReduce, reduceFunction);
-                        FloatColumn floatColumn = FloatColumn.create(columnNameToReduce,
+                        FloatColumn floatColumn = new FloatColumn(columnNameToReduce,
                                         new FloatArrayList(new float[] {(float) val}));
                         return Table.create(outputName, floatColumn);
                     case LONG_INT:
                         long longVal = (long) reduce.reduce(columnNameToReduce, reduceFunction);
                         LongColumn longColumn =
-                                        LongColumn.create(columnNameToReduce, new LongArrayList(new long[] {longVal}));
+                                        new LongColumn(columnNameToReduce, new LongArrayList(new long[] {longVal}));
                         return Table.create(outputName, longColumn);
                     case INTEGER:
                         int intVal = (int) reduce.reduce(columnNameToReduce, reduceFunction);
                         IntColumn intColumn =
-                                        IntColumn.create(columnNameToReduce, new IntArrayList(new int[] {intVal}));
+                                        new IntColumn(columnNameToReduce, new IntArrayList(new int[] {intVal}));
                         return Table.create(outputName, intColumn);
                     case DOUBLE:
                         double doubleVal = reduce.reduce(columnNameToReduce, reduceFunction);
-                        DoubleColumn doubleColumn = DoubleColumn.create(columnNameToReduce,
+                        DoubleColumn doubleColumn = new DoubleColumn(columnNameToReduce,
                                         new DoubleArrayList(new double[] {doubleVal}));
                         return Table.create(outputName, doubleColumn);
                     default:
@@ -209,7 +206,7 @@ public class TableRecords {
         Table clone = toRank.fullCopy();
         LongColumn longColumn = new LongColumn(rank.outputColumnName(), toRank.rowCount());
         for (int i = 0; i < toRank.rowCount(); i++) {
-            longColumn.add(i);
+            longColumn.append(i);
         }
 
         clone.addColumn(longColumn);
@@ -237,7 +234,7 @@ public class TableRecords {
      * @param output the output schema to infer the type
      * @return the appropriate dataframe filter
      */
-    public static org.datavec.dataframe.filtering.Filter mapFilterFromCondition(Condition condition, String columnName,
+    public static tech.tablesaw.filtering.Filter mapFilterFromCondition(Condition condition, String columnName,
                     Schema output) {
         //map to proper column condition for the filter to apply
         if (condition instanceof ColumnCondition) {
@@ -253,9 +250,9 @@ public class TableRecords {
                         case NotEqual:
                             return new StringNotEqualTo(columnReference, categoricalColumnCondition.getValue());
                         case InSet:
-                            return new StringInSet(columnReference, categoricalColumnCondition.getSet());
+                            return new StringIsIn(columnReference, categoricalColumnCondition.getSet());
                         case NotInSet:
-                            return new StringNotInSet(columnReference, categoricalColumnCondition.getSet());
+                            return new StringIsNotIn(columnReference, categoricalColumnCondition.getSet());
 
                     }
                 case Long:
@@ -287,9 +284,9 @@ public class TableRecords {
                         case NotEqual:
                             return new StringNotEqualTo(columnReference, categoricalColumnCondition2.getValue());
                         case InSet:
-                            return new StringInSet(columnReference, categoricalColumnCondition2.getSet());
+                            return new StringIsIn(columnReference, categoricalColumnCondition2.getSet());
                         case NotInSet:
-                            return new StringNotInSet(columnReference, categoricalColumnCondition2.getSet());
+                            return new StringIsNotIn(columnReference, categoricalColumnCondition2.getSet());
 
                     }
                 case Float:
@@ -388,10 +385,10 @@ public class TableRecords {
      * Map a given filter
      * to a dataframe filter
      * @param toMap the filter to map
-     * @return an apporiate {@link org.datavec.dataframe.filtering.Filter}
+     * @return an apporiate {@link tech.tablesaw.filtering.Filter}
      * mapping from the datavec api
      */
-    public static org.datavec.dataframe.filtering.Filter mapToFilter(Filter toMap) {
+    public static tech.tablesaw.filtering.Filter mapToFilter(Filter toMap) {
         ConditionFilter conditionFilter = (ConditionFilter) toMap;
         Condition condition = conditionFilter.getCondition();
         Schema output = toMap.transform(toMap.getInputSchema());
@@ -417,7 +414,7 @@ public class TableRecords {
             }
         }
 
-        ret = toFilter.drop(indicesToRemove);
+        ret = toFilter.dropRows(indicesToRemove);
 
         return ret;
 
@@ -821,11 +818,11 @@ public class TableRecords {
                 if (arr.columns() != schema.numColumns())
                     throw new IllegalArgumentException("Found ndarray writable of illegal size " + arr.columns());
                 for (int j = 0; j < arr.length(); j++) {
-                    table.floatColumn(j).add(arr.getDouble(j));
+                    table.floatColumn(j).append(arr.getDouble(j));
                 }
             } else if (row.size() == schema.numColumns()) {
                 for (int j = 0; j < row.size(); j++) {
-                    table.floatColumn(j).add(row.get(j).toDouble());
+                    table.floatColumn(j).append(row.get(j).toDouble());
                 }
             } else
                 throw new IllegalArgumentException("Illegal writable list of size " + row.size() + " at index " + i);
