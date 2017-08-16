@@ -25,7 +25,6 @@ public abstract class SparkTransformServer implements DataVecTransformService {
     protected Server server;
     protected static ObjectMapper objectMapper = new ObjectMapper();
 
-    public final static String SEQUENCE_OR_NOT_HEADER = "Sequence";
 
     public abstract void runMain(String[] args) throws Exception;
 

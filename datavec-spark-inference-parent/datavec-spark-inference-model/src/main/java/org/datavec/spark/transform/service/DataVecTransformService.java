@@ -11,6 +11,9 @@ import java.io.IOException;
  */
 public interface DataVecTransformService {
 
+    String SEQUENCE_OR_NOT_HEADER = "Sequence";
+
+
     /**
      *
      * @param transformProcess
