@@ -18,6 +18,7 @@ package org.datavec.hadoop.records.reader.mapfile.index;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.MapFile;
+import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.nd4j.linalg.primitives.Pair;
@@ -50,22 +51,32 @@ public class LongIndexToKey implements IndexToKey {
             long first = -1;
             long last = -1;
 
-            //Last key: easy
+            //First key: no method for this for some inexplicable reason :/
             LongWritable k = new LongWritable();
+            Writable v = ReflectionUtils.newInstance(valueClass, null);
+            boolean hasNext = r.next(k, v);
+            if(!hasNext){
+                //This map file is empty - no data
+                l.add(new Pair<>(-1L, -1L));
+                continue;
+            }
+            first = k.get();
+
+            //Last key: easy
+            r.reset();
             r.finalKey(k);
             last = k.get();
-
-            //First key: no method for this for some inexplicable reason :/
-            r.reset();
-            Writable v = ReflectionUtils.newInstance(valueClass, null);
-            r.next(k, v);
-            first = k.get();
 
             l.add(new Pair<>(first, last));
         }
 
         //Check that things are actually contiguous:
-        List<Pair<Long, Long>> sorted = new ArrayList<>(l);
+        List<Pair<Long, Long>> sorted = new ArrayList<>(l.size());
+        for(Pair<Long,Long> p : l){
+            if(p.getLeft() >= 0){
+                sorted.add(p);
+            }
+        }
         Collections.sort(sorted, new Comparator<Pair<Long, Long>>() {
             @Override
             public int compare(Pair<Long, Long> o1, Pair<Long, Long> o2) {
@@ -73,6 +84,9 @@ public class LongIndexToKey implements IndexToKey {
             }
         });
 
+        if (sorted.size() == 0){
+            throw new IllegalStateException("Map file is empty - no data available");
+        }
         if (sorted.get(0).getFirst() != 0L) {
             throw new UnsupportedOperationException("Minimum key value is not 0: got " + sorted.get(0).getFirst());
         }
@@ -80,6 +94,12 @@ public class LongIndexToKey implements IndexToKey {
         for (int i = 0; i < sorted.size() - 1; i++) {
             long currLast = sorted.get(i).getSecond();
             long nextFirst = sorted.get(i + 1).getFirst();
+
+            if(nextFirst == -1){
+                //Skip empty map file
+                continue;
+            }
+
             if (currLast + 1 != nextFirst) {
                 throw new IllegalStateException(
                                 "Keys are not contiguous between readers: first/last indices (inclusive) " + "are "
