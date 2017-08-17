@@ -300,8 +300,30 @@ public class TransformProcess implements Serializable {
 
 
     /**
-     * Execute a TransformProcess that starts with a single (non-sequence) record, and converts it to a sequence record.
-     * <b>NOTE</b>: This method has the following significant limitation: if it contains a ConvertToSequence op,
+     * Execute a TransformProcess that starts with a single (non-sequence) record,
+     * and converts it to a sequence record.
+     * <b>NOTE</b>: This method has the following significant limitation:
+     * if it contains a ConvertToSequence op,
+     * it MUST be using singleStepSequencesMode - see {@link ConvertToSequence} for details.<br>
+     * This restriction is necessary, as ConvertToSequence.singleStepSequencesMode is false, this requires a group by
+     * operation - i.e., we need to group multiple independent records together by key(s) - this isn't possible here,
+     * when providing a single example as input
+     *
+     * @param inputExample Input example
+     * @return Sequence, after processing (or null, if it was filtered out)
+     */
+    public List<List<List<Writable>>> executeToSequenceBatch(List<List<Writable>> inputExample){
+        List<List<List<Writable>>> ret = new ArrayList<>();
+        for(List<Writable> record : inputExample)
+            ret.add(execute(record, null).getRight());
+        return ret;
+    }
+
+    /**
+     * Execute a TransformProcess that starts with a single (non-sequence) record,
+     * and converts it to a sequence record.
+     * <b>NOTE</b>: This method has the following significant limitation:
+     * if it contains a ConvertToSequence op,
      * it MUST be using singleStepSequencesMode - see {@link ConvertToSequence} for details.<br>
      * This restriction is necessary, as ConvertToSequence.singleStepSequencesMode is false, this requires a group by
      * operation - i.e., we need to group multiple independent records together by key(s) - this isn't possible here,
@@ -315,7 +337,8 @@ public class TransformProcess implements Serializable {
     }
 
     /**
-     * Execute a TransformProcess that starts with a seque record, and converts it to a single (non-sequence) record
+     * Execute a TransformProcess that starts with a sequence
+     * record, and converts it to a single (non-sequence) record
      *
      * @param inputSequence Input sequence
      * @return Record after processing (or null if filtered out)

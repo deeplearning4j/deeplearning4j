@@ -56,7 +56,7 @@ public class CSVSparkTransform {
      * the {@link TransformProcess}
      * to a base 64ed ndarray
      * @param record the record to convert
-     * @return teh base 64ed ndarray
+     * @return the base 64ed ndarray
      * @throws IOException
      */
     public Base64NDArrayBody toArray(SingleCSVRecord record) throws IOException {
@@ -106,15 +106,13 @@ public class CSVSparkTransform {
      * @param transform
      * @return
      */
-    public BatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform) {
-        BatchCSVRecord batchCSVRecord = new BatchCSVRecord();
+    public SequenceBatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform) {
+        SequenceBatchCSVRecord batchCSVRecord = new SequenceBatchCSVRecord();
         for (SingleCSVRecord record : transform.getRecords()) {
             List<Writable> record2 = transformProcess.transformRawStringsToInputList(record.getValues());
-            List<Writable> finalRecord = transformProcess.execute(record2);
-            String[] values = new String[finalRecord.size()];
-            for (int i = 0; i < values.length; i++)
-                values[i] = finalRecord.get(i).toString();
-            batchCSVRecord.add(new SingleCSVRecord(values));
+            List<List<Writable>> finalRecord = transformProcess.executeToSequence(record2);
+            BatchCSVRecord batchCSVRecord1 = BatchCSVRecord.fromWritables(finalRecord);
+            batchCSVRecord.add(Arrays.asList(batchCSVRecord1));
         }
 
         return batchCSVRecord;
@@ -166,8 +164,9 @@ public class CSVSparkTransform {
         try {
             return new Base64NDArrayBody(Nd4jBase64
                     .base64String(RecordConverter
-                    .toMatrix(transformProcess.transformRawStringsToInputSequence(
-                            singleCsvRecord.getRecordsAsString()))));
+                            .toTensor(transformProcess.executeToSequenceBatch(
+                                    transformProcess.transformRawStringsToInputSequence(
+                                    singleCsvRecord.getRecordsAsString())))));
         } catch (IOException e) {
             e.printStackTrace();
         }

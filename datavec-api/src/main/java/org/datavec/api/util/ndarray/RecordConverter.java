@@ -59,6 +59,38 @@ public class RecordConverter {
         return ret;
     }
 
+
+    /**
+     * Convert a set of records in to a matrix
+     * @param records the records ot convert
+     * @return the matrix for the records
+     */
+    public static INDArray toTensor(List<List<List<Writable>>> records) {
+        List<INDArray> toStack = new ArrayList<>();
+        int maxLength = 0;
+
+        for(List<List<Writable>> matrixRecords : records) {
+            INDArray matrix = Nd4j.create(matrixRecords.size(),matrixRecords.get(0).size());
+            for(int i = 0; i < matrix.rows(); i++) {
+                matrix.putRow(i,toArray(matrixRecords.get(i)));
+            }
+
+            maxLength = Math.max(maxLength,matrixRecords.size());
+            toStack.add(matrix);
+
+        }
+
+        //
+        INDArray ret = Nd4j.create(records.size(),maxLength,records.get(0).get(0).size());
+        for(int i = 0; i < toStack.size(); i++) {
+            INDArray slice = ret.slice(i);
+            INDArray toPut = toStack.get(i);
+            slice.put(new INDArrayIndex[]{NDArrayIndex.interval(0,toPut.rows()),NDArrayIndex.interval(0,toPut.columns())},
+                    toPut);
+        }
+        return ret;
+    }
+
     /**
      * Convert a set of records in to a matrix
      * @param records the records ot convert
