@@ -3,6 +3,83 @@ title: Release Notes
 layout: cn-default
 ---
 <p><h1>Deeplearning4j 最新更新</h1></p><br>
+<p><h2>Release Notes for Version 0.9.1</h2>
+<p><strong>Deeplearning4J</strong></p>
+<ul>
+  <li>Fixed issue with incorrect version dependencies in 0.9.0</li>
+  <li>Added EmnistDataSetIterator <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/iterator/impl/EmnistDataSetIterator.java#L32">Link</a></li>
+  <li>Numerical stability improvements to LossMCXENT / LossNegativeLogLikelihood with softmax (should reduce NaNs with very large activations)</li>
+</ul>
+<p><strong>ND4J</strong></p>
+<ul>
+  <li>Added runtime version checking for ND4J, DL4J, RL4J, Arbiter, DataVec <a href="https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/versioncheck/VersionCheck.java">Link</a></li>
+</ul>
+<p><strong>Known Issues</strong></p>
+<ul>
+  <li>Deeplearning4j: Use of Evaluation class no-arg constructor (i.e., new Evaluation()) can result in accuracy/stats being reported as 0.0. Other Evaluation class constructors, and ComputationGraph/MultiLayerNetwork.evaluate(DataSetIterator) methods work as expected.</li>
+</ul>
+<br>
+<br>
+<p><h2>Release Notes for Version 0.9.0</h2>
+<p><strong>Deeplearning4J</strong></p>
+<ul>
+  <li>Workspaces feature added (faster training performance + less memory) <a href="https://deeplearning4j.org/workspaces">Link</a></li>
+  <li>SharedTrainingMaster added for Spark network training (improved performance) <a href="https://deeplearning4j.org/distributed">Link 1</a>, <a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/mlp/MnistMLPDistributedExample.java">Link 2</a></li>
+  <li>ParallelInference added - wrapper that server inference requests using internal batching and queues <a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/inference/ParallelInferenceExample.java">Link</a></li>
+  <li>ParallelWrapper now able to work with gradients sharing, in addition to existing parameters averaging mode <a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-cuda-specific-examples/src/main/java/org/deeplearning4j/examples/multigpu/GradientsSharingLenetMnistExample.java">Link</a></li>
+  <li>VPTree performance significantly improved</li>
+  <li>CacheMode network configuration option added - improved CNN and LSTM performance at the expense of additional memory use <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/CacheMode.java">Link</a></li>
+  <li>LSTM layer added, with CuDNN support <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/LSTM.java">Link</a> (Note that the existing GravesLSTM implementation does not support CuDNN)</li>
+  <li>New native model zoo with pretrained ImageNet, MNIST, and VGG-Face weights <a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo">Link</a></li>
+  <li>Convolution performance improvements, including activation caching</li>
+  <li>Custom/user defined updaters are now supported <a href="https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/learning/config/IUpdater.java">Link</a></li>
+  <li>Evaluation improvements
+    <ul>
+      <li>EvaluationBinary, ROCBinary classes added: for evaluation of binary multi-class networks (sigmoid + xent output layers) <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/eval/EvaluationBinary.java">Link</a></li>
+      <li>Evaluation and others now have G-Measure and Matthews Correlation Coefficient support; also macro + micro-averaging support for Evaluation class metrics <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/eval/EvaluationAveraging.java">Link</a></li>
+      <li>ComputationGraph and SparkComputationGraph evaluation convenience methods added (evaluateROC, etc)</li>
+      <li>ROC and ROCMultiClass support exact calculation (previous: thresholded calculation was used) <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/eval/ROC.java#L78-L81">Link</a></li>
+      <li>ROC classes now support area under precision-recall curve calculation; getting precision/recall/confusion matrix at specified thresholds (via PrecisionRecallCurve class) <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/eval/curves/PrecisionRecallCurve.java#L102-L193">Link</a></li>
+      <li>RegressionEvaluation, ROCBinary etc now support per-output masking (in addition to per-example/per-time-step masking)</li>
+      <li>EvaluationCalibration added (residual plots, reliability diagrams, histogram of probabilities) <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/eval/EvaluationCalibration.java">Link 1</a> <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/evaluation/EvaluationTools.java#L180-L188">Link 2</a></li>
+      <li>Evaluation and EvaluationBinary: now supports custom classification threshold or cost array <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/eval/Evaluation.java#L150-L170">Link</a></li>
+    </ul>
+  </li>
+  <li>Optimizations: updaters, bias calculation</li>
+  <li>Network memory estimation functionality added. Memory requirements can be estimated from configuration without instantiating networks <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/MultiLayerConfiguration.java#L310-L317">Link 1</a> <a href="https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/ComputationGraphConfiguration.java#L451-L458">Link 2</a></li>
+  <li>New loss functions:
+    <ul>
+      <li>Mixture density loss function <a href="https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/lossfunctions/impl/LossMixtureDensity.java">Link</a></li>
+      <li>F-Measure loss function <a href="https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/lossfunctions/impl/LossFMeasure.java">Link</a></li>
+    </ul>
+  </li>
+</ul>
+<p><strong>ND4J</strong></p>
+<ul>
+  <li>Workspaces feature added <a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/nd4j-examples/src/main/java/org/nd4j/examples/Nd4jEx15_Workspaces.java">Link</a></li>
+  <li>Native parallel sort was added</li>
+  <li>New ops added: SELU/SELUDerivative, TAD-based comparisons, percentile/median, Reverse, Tan/TanDerivative, SinH, CosH, Entropy, ShannonEntropy, LogEntropy, AbsoluteMin/AbsoluteMax/AbsoluteSum, Atan2</li>
+  <li>New distance functions added: CosineDistance, HammingDistance, JaccardDistance</li>
+</ul>
+<p><strong>DataVec</strong></p>
+<ul>
+  <li>MapFileRecordReader and MapFileSequenceRecordReader added <a href="https://github.com/deeplearning4j/DataVec/blob/master/datavec-hadoop/src/main/java/org/datavec/hadoop/records/reader/mapfile/MapFileRecordReader.java">Link 1</a> <a href="https://github.com/deeplearning4j/DataVec/blob/master/datavec-hadoop/src/main/java/org/datavec/hadoop/records/reader/mapfile/MapFileSequenceRecordReader.java">Link 2</a></li>
+  <li>Spark: Utilities to save and load JavaRDD&lt;List&lt;Writable&gt;&gt; and JavaRDD&lt;List&lt;List&lt;Writable&gt;&gt; data to Hadoop MapFile and SequenceFile formats <a href="https://github.com/deeplearning4j/DataVec/blob/master/datavec-spark/src/main/java/org/datavec/spark/storage/SparkStorageUtils.java">Link</a></li>
+  <li>TransformProcess and Transforms now support NDArrayWritables and NDArrayWritable columns</li>
+  <li>Multiple new Transform classes</li>
+</ul>
+<p><strong>Arbiter</strong></p>
+<ul>
+  <li>Arbiter UI: <a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/arbiter/BasicHyperparameterOptimizationExample.java">Link</a>
+    <ul>
+      <li>UI now uses Play framework, integrates with DL4J UI (replaces Dropwizard backend). Dependency issues/clashing versions fixed.</li>
+      <li>Supports DL4J StatsStorage and StatsStorageRouter mechanisms (FileStatsStorage, Remote UI via RemoveUIStatsStorageRouter)</li>
+      <li>General UI improvements (additional information, formatting fixes)</li>
+    </ul>
+  </li>
+</ul>
+<br>
+<br>
 <p><h2>Release Notes for Version 0.8.0</h2>
 <ul>
   <li>Added transfer learning API <a href="https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/transferlearning/vgg16">Link</a></li>
