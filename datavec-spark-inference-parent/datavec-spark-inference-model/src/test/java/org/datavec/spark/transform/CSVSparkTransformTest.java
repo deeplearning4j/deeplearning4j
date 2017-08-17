@@ -19,6 +19,7 @@ import org.nd4j.serde.base64.Nd4jBase64;
 import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
 
@@ -119,7 +120,7 @@ public class CSVSparkTransformTest {
     }
 
     @Test
-    public void testSpecificSequence() {
+    public void testSpecificSequence() throws Exception {
         final Schema schema = new Schema.Builder()
                 .addColumnsString("action")
                 .build();
@@ -142,6 +143,8 @@ public class CSVSparkTransformTest {
 
         final CSVSparkTransform transform = new CSVSparkTransform(transformProcess);
         System.out.println(transform.transformSequenceIncremental(batchCsvRecord));
+        assertEquals(3,Nd4jBase64.fromBase64(transform.transformSequenceArrayIncremental(batchCsvRecord).getNdarray()).rank());
+
     }
 
     private static Map<Character,Integer> defaultCharIndex() {
