@@ -14,10 +14,16 @@ With DL4j/ND4j you can control both memory limits: JVM heap limit, and off-heap 
 
 `-Xmx` - this option allows you to specify JVM heap memory limit.
 `-Dorg.bytedeco.javacpp.maxbytes`  - this option allows you to specify off-heap memory limit.
+`-Dorg.bytedeco.javacpp.maxPhysicalBytes`  - this option usually should be set equal to `maxbytes` 
 
 
-PLEASE NOTE: If you don't specify JVM heap limit, it will use 1/4 of your total system RAM as limit.
-PLEASE NOTE: If you don't specify off-heap memory limit, x2 of JVM heap limit will be considered. i.e. `-Xmx8G` will mean that 8GB can be used by JVM heap, and 16GB can be used by ND4j in off-heap.
+
+**PLEASE NOTE**: If you don't specify JVM heap limit, it will use 1/4 of your total system RAM as limit.
+
+**PLEASE NOTE**: If you don't specify off-heap memory limit, x2 of JVM heap limit will be considered. i.e. `-Xmx8G` will mean that 8GB can be used by JVM heap, and 16GB can be used by ND4j in off-heap.
+
+**PLEASE NOTE**: In limited memory environments it's usually bad idea to use high `-Xmx` value together with `-Xms` option.
+
 
 # Memory-mapped files
 
