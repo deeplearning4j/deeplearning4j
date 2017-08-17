@@ -122,6 +122,13 @@ void nd4j::graph::Graph::addNode(nd4j::graph::Node *node) {
         node->pickOutput(var->id());
 
         this->_output.push_back(var->id());
+    } else if (node->hasExternalOutputs()) {
+        // TODO: we might want this behavior configurable!
+
+        for (int e = 0; e < node->output()->size(); e++) {
+            if (node->output()->at(e) < 0)
+                this->_output.push_back(node->output()->at(e));
+        }
     }
 
     std::pair<int32_t, nd4j::graph::Node *> pair(node->id(), node);

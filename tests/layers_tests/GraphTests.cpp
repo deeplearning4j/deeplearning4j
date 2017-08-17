@@ -392,4 +392,43 @@ TEST_F(GraphTests, AutoOutput1) {
     ASSERT_EQ(1, outputs->size());
 
     ASSERT_TRUE(outputs->at(0) != nullptr);
+
+    ASSERT_NEAR(-1.0, outputs->at(0)->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+}
+
+
+TEST_F(GraphTests, AutoOutput2) {
+    Graph *graph = new Graph();
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0);
+
+    graph->getVariableSpace()->putVariable(-1, x);
+
+    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2, 3, -1});
+    auto nodeB = new Node(OpType_TRANSFORM, 35, 2, {1}, {});
+    auto nodeC = new Node(OpType_TRANSFORM, 6, 3, {1}, {});
+
+    graph->addNode(nodeA);
+    graph->addNode(nodeB);
+    graph->addNode(nodeC);
+
+    ASSERT_EQ(1, graph->rootNodes());
+    ASSERT_EQ(3, graph->totalNodes());
+
+    graph->buildGraph();
+
+    ASSERT_TRUE(graph->getVariableSpace()->getVariable(-2) != nullptr);
+    ASSERT_TRUE(graph->getVariableSpace()->getVariable(-3) != nullptr);
+
+    GraphExecutioner::execute(graph);
+
+    auto outputs = graph->fetchOutputs();
+
+    ASSERT_EQ(3, outputs->size());
+
+    ASSERT_TRUE(outputs->at(0) != nullptr);
+
+    ASSERT_NEAR(2.0, outputs->at(0)->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(-1.0, outputs->at(1)->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(-2.0, outputs->at(2)->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }

@@ -26,7 +26,7 @@ namespace nd4j{
             OpType opType = node->opType();
             int opNum = node->opNum();
 
-            printf("Executing node_%i\n", opNum);
+            printf("Executing node_%i{%i}\n", node->id(), opNum);
             fflush(stdout);
 
             if (opType == OpType_TRANSFORM) {
