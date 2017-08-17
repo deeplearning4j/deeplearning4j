@@ -26,6 +26,9 @@ namespace nd4j{
             OpType opType = node->opType();
             int opNum = node->opNum();
 
+            printf("Executing node_%i\n", opNum);
+            fflush(stdout);
+
             if (opType == OpType_TRANSFORM) {
                 int in = node->input()->at(0);
 
@@ -53,9 +56,13 @@ namespace nd4j{
 
                         auto out = variableSpace->getVariable(node->output()->at(e));
 
-                        // assign output
-                        if (out->getNDArray() != x->getNDArray())
-                            out->getNDArray()->assign(x->getNDArray());
+                        if (out->isEmpty()) {
+                            out->setNDArray(x->getNDArray()->dup(x->getNDArray()->ordering()));
+                        } else {
+                            // assign output
+                            if (out->getNDArray() != x->getNDArray())
+                                out->getNDArray()->assign(x->getNDArray());
+                        }
                     }
                 }
             } else if (opType == OpType_PAIRWISE) {
@@ -81,9 +88,13 @@ namespace nd4j{
 
                         auto out = variableSpace->getVariable(node->output()->at(e));
 
-                        // assign output
-                        if (out->getNDArray() != z->getNDArray())
-                            out->getNDArray()->assign(z->getNDArray());
+                        if (out->isEmpty()) {
+                            out->setNDArray(z->getNDArray()->dup(z->getNDArray()->ordering()));
+                        } else {
+                            // assign output
+                            if (out->getNDArray() != z->getNDArray())
+                                out->getNDArray()->assign(z->getNDArray());
+                        }
                     }
                 }
             } else if (opType == OpType_SCALAR) {
@@ -125,9 +136,13 @@ namespace nd4j{
 
                         auto out = variableSpace->getVariable(node->output()->at(e));
 
-                        // assign output
-                        if (out->getNDArray() != z->getNDArray())
-                            out->getNDArray()->assign(z->getNDArray());
+                        if (out->isEmpty()) {
+                            out->setNDArray(z->getNDArray()->dup(z->getNDArray()->ordering()));
+                        } else {
+                            // assign output
+                            if (out->getNDArray() != z->getNDArray())
+                                out->getNDArray()->assign(z->getNDArray());
+                        }
                     }
                 }
             } else if (opType == OpType_INDEX_ACCUMULATION) {

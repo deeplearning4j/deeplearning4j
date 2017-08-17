@@ -22,20 +22,42 @@ namespace nd4j {
             bool _readOnly;
 
         public:
-            Variable(nd4j::NDArray<T> *array);
-
+            Variable(nd4j::NDArray<T> *array = nullptr);
             Variable(const nd4j::graph::FlatVariable *flatVariable);
             ~Variable();
 
 
             nd4j::NDArray<T> *getNDArray();
+            void setNDArray(nd4j::NDArray<T> * array);
             bool isExternal();
             bool isReadOnly();
+            bool isEmpty();
 
             void markExternal(bool reallyExternal);
             void markReadOnly(bool reallyReadOnly);
+
+            int32_t id();
+            void setId(int32_t id);
+
+
         };
     }
+}
+
+
+template <typename T>
+int32_t nd4j::graph::Variable<T>::id() {
+    return _id;
+}
+
+template <typename T>
+void nd4j::graph::Variable<T>::setId(int32_t id) {
+    _id = id;
+}
+
+template <typename T>
+bool nd4j::graph::Variable<T>::isEmpty() {
+    return _ndarray == nullptr || !_ndarray->nonNull();
 }
 
 template <typename T>
@@ -61,6 +83,11 @@ void nd4j::graph::Variable<T>::markReadOnly(bool reallyReadOnly) {
 template <typename T>
 nd4j::NDArray<T> * nd4j::graph::Variable<T>::getNDArray() {
     return this->_ndarray;
+}
+
+template <typename T>
+void nd4j::graph::Variable<T>::setNDArray(nd4j::NDArray<T> * array) {
+    this->_ndarray = array;
 }
 
 template <typename T>

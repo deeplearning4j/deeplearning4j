@@ -29,7 +29,8 @@ namespace nd4j {
             std::mutex _mutexPreprocessing;
             std::atomic<bool> _built;
 
-            std::vector<NDArray<float> *> _output;
+
+            std::vector<int32_t> _output;
 
             Nd4jStatus validateNode(nd4j::graph::Node *node);
 
@@ -63,7 +64,13 @@ namespace nd4j {
 }
 
 std::vector<NDArray<float> *> * nd4j::graph::Graph::fetchOutputs() {
-    return &_output;
+    auto res = new std::vector<NDArray<float> *>();
+
+    for (int e = 0; e < _output.size(); e++) {
+        res->push_back(_variableSpace->getVariable(_output.at(e))->getNDArray());
+    }
+
+    return res;
 }
 
 std::map<int32_t, nd4j::graph::Node *> * nd4j::graph::Graph::getMapped() {
@@ -107,6 +114,15 @@ nd4j::graph::Graph::~Graph() {
 
 void nd4j::graph::Graph::addNode(nd4j::graph::Node *node) {
     _built.store(false);
+
+    // if outputs are undefined, we have to auto-create variable
+    if (node->output()->size() == 0){
+        auto var = new Variable<float>();
+        _variableSpace->putOutputVariable(var);
+        node->pickOutput(var->id());
+
+        this->_output.push_back(var->id());
+    }
 
     std::pair<int32_t, nd4j::graph::Node *> pair(node->id(), node);
     // if model has only external variables as input - it goes to first layer, no matter what.

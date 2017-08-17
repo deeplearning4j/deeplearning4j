@@ -22,6 +22,8 @@ namespace nd4j {
             std::list<nd4j::graph::Variable<T> *> _external;
             std::list<nd4j::graph::Variable<T> *> _internal;
 
+            int _auto_counter = -1;
+
             std::mutex _varmap;
 
             std::map<const int32_t, nd4j::graph::Variable<T> *> _temporary;
@@ -33,6 +35,8 @@ namespace nd4j {
             void putVariable(int32_t id, Variable<T> *variable);
             void putVariable(int32_t id, NDArray<T> *array);
 
+            void putOutputVariable(Variable<T> *variable);
+
             // memory-related statistics
             Nd4jIndex externalMemory();
             Nd4jIndex internalMemory();
@@ -43,6 +47,11 @@ namespace nd4j {
             int totalEntries();
         };
     }
+}
+
+template <typename T>
+void nd4j::graph::VariableSpace<T>::putOutputVariable(Variable<T> *variable) {
+    putVariable(_auto_counter--, variable);
 }
 
 template <typename T>
@@ -89,6 +98,11 @@ template <typename T>
 void nd4j::graph::VariableSpace<T>::putVariable(const int32_t id, Variable<T> *variable) {
 
     _varmap.lock();
+
+    if (_auto_counter >= id)
+        _auto_counter = id - 1;
+
+    variable->setId(id);
 
     // we have special list for external variables to ensure graph completeness
     if (id < 0) {

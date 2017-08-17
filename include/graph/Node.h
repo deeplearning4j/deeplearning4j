@@ -65,8 +65,30 @@ namespace nd4j {
 
             std::vector<int> * getDimensions();
             int * getDimensionsPtr();
+
+
+            void pickOutput(int outputId);
+            void pickInput(int inputId);
         };
     }
+}
+
+void nd4j::graph::Node::pickInput(int inputId) {
+    _input.push_back(inputId);
+
+    if (inputId < 0)
+        _hasExternalInputs = true;
+    else
+        _hasInternalInputs = true;
+}
+
+void nd4j::graph::Node::pickOutput(int outputId) {
+    _output.push_back(outputId);
+
+    if (outputId < 0)
+        _hasExternalOutputs = true;
+    else
+        _hasInternalOutputs = true;
 }
 
 int * nd4j::graph::Node::getDimensionsPtr() {
@@ -142,22 +164,12 @@ nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<
     _hasInternalInputs = false;
     _hasInternalOutputs = false;
 
-    for (auto i: input) {
-        _input.push_back(i);
-        if (i < 0)
-            _hasExternalInputs = true;
-        else
-            _hasInternalInputs = true;
+    for (auto i: input)
+        pickInput(i);
 
-    }
+    for (auto o: output)
+        pickOutput(o);
 
-    for (auto o: output) {
-        _output.push_back(o);
-        if (o < 0)
-            _hasExternalOutputs = true;
-        else
-            _hasInternalOutputs = true;
-    }
 
     if (dimensions.size() > 0) {
         _dim = new int[dimensions.size()];
@@ -183,24 +195,13 @@ nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
         this->_opType = node->opType();
 
         if (node->input() != nullptr)
-            for (int e = 0; e < node->input()->size(); e++) {
-                _input.push_back(node->input()->Get(e));
-
-                if (node->input()->Get(e) < 0)
-                    _hasExternalInputs = true;
-                else
-                    _hasInternalInputs = true;
-            }
+            for (int e = 0; e < node->input()->size(); e++)
+                pickInput(node->input()->Get(e));
 
         if (node->output() != nullptr)
-            for (int e = 0; e < node->output()->size(); e++) {
-                _output.push_back(node->output()->Get(e));
+            for (int e = 0; e < node->output()->size(); e++)
+                pickOutput(node->output()->Get(e));
 
-                if (node->output()->Get(e) < 0)
-                    _hasExternalOutputs = true;
-                else
-                    _hasInternalOutputs = true;
-            }
 
         if (node->extraParams() != nullptr && node->extraParams()->size() > 0) {
             _extraParams = new float[node->extraParams()->size()];

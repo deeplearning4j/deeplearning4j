@@ -363,3 +363,33 @@ TEST_F(GraphTests, ReductionsTest1) {
 
     ASSERT_NEAR(2.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
+
+
+TEST_F(GraphTests, AutoOutput1) {
+    Graph *graph = new Graph();
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0);
+
+    graph->getVariableSpace()->putVariable(-1, x);
+
+    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM, 35, 2, {1}, {});
+
+    graph->addNode(nodeA);
+    graph->addNode(nodeB);
+
+    ASSERT_EQ(1, graph->rootNodes());
+    ASSERT_EQ(2, graph->totalNodes());
+
+    graph->buildGraph();
+
+    ASSERT_TRUE(graph->getVariableSpace()->getVariable(-2) != nullptr);
+
+    GraphExecutioner::execute(graph);
+
+    auto outputs = graph->fetchOutputs();
+
+    ASSERT_EQ(1, outputs->size());
+
+    ASSERT_TRUE(outputs->at(0) != nullptr);
+}
