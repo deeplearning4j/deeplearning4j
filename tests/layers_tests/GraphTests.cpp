@@ -365,6 +365,37 @@ TEST_F(GraphTests, ReductionsTest1) {
 }
 
 
+TEST_F(GraphTests, IndexReductionsTest1) {
+    Graph *graph = new Graph();
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    for (int r = 0; r < x->rows(); r++) {
+        for (int c = 0; c < x->columns(); c++) {
+            x->putScalar(r, c, -c);
+        }
+    }
+
+    auto z = new NDArray<float>(1, 5, 'c');
+
+    graph->getVariableSpace()->putVariable(-1, x);
+    graph->getVariableSpace()->putVariable(-2, z);
+
+
+    auto nodeA = new Node(OpType_INDEX_ACCUMULATION, 1, 1, {-1}, {2}, {1});
+    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {1}, {-2});
+
+    graph->addNode(nodeA);
+    graph->addNode(nodeB);
+
+    ASSERT_EQ(1, graph->rootNodes());
+    ASSERT_EQ(2, graph->totalNodes());
+
+    GraphExecutioner::execute(graph);
+
+    ASSERT_NEAR(4.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+}
+
+
 TEST_F(GraphTests, AutoOutput1) {
     Graph *graph = new Graph();
     auto x = new NDArray<float>(5, 5, 'c');

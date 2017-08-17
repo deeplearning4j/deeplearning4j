@@ -149,7 +149,49 @@ namespace nd4j{
                 }
             } else if (opType == OpType_INDEX_ACCUMULATION) {
 
-                //
+                auto x = variableSpace->getVariable(node->input()->at(0));
+
+                auto z = x;
+                // if there's no dimensions set - it's reduceToScalar
+                if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
+                    z = new Variable<float>(new NDArray<float>(1,1, 'c'));
+                    z->getNDArray()->_buffer[0] = (float) functions::indexreduce::IndexReduce<float>::template execScalar(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
+
+                } else {
+                    // dimensional reduction
+                    shape::TAD *tad = new shape::TAD(x->getNDArray()->_shapeInfo, node->getDimensionsPtr(), node->getDimensions()->size());
+                    tad->createTadOnlyShapeInfo();
+                    tad->createOffsets();
+
+                    int resultLength = x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
+
+                    z = new Variable<float>(new NDArray<float>(1, resultLength, 'c'));
+
+                    functions::indexreduce::IndexReduce<float>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
+                                                                            node->getDimensionsPtr() , node->getDimensions()->size(),
+                                                                            tad->tadOnlyShapeInfo, tad->tadOffsets);
+
+                    delete tad;
+                }
+
+                variableSpace->putVariable(node->id(), z);
+
+                if (node->hasExternalOutputs()) {
+                    for (int e = 0; e < node->output()->size(); e++) {
+                        if (node->output()->at(e) > 0)
+                            continue;
+
+                        auto out = variableSpace->getVariable(node->output()->at(e));
+
+                        if (out->isEmpty()) {
+                            out->setNDArray(z->getNDArray()->dup(z->getNDArray()->ordering()));
+                        } else {
+                            // assign output
+                            if (out->getNDArray() != z->getNDArray())
+                                out->getNDArray()->assign(z->getNDArray());
+                        }
+                    }
+                }
 
             } else if (opType == OpType_BROADCAST) {
                 auto x = variableSpace->getVariable(node->input()->at(0));
