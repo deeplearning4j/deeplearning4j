@@ -89,6 +89,7 @@ public class EvalCustomThreshold {
 
         int nExamples = 20;
         int nOut = 3;
+        Nd4j.getRandom().setSeed(12345);
         INDArray probs = Nd4j.rand(nExamples, nOut);
         probs.diviColumnVector(probs.sum(1));
         INDArray labels = Nd4j.create(nExamples, nOut);
@@ -96,7 +97,6 @@ public class EvalCustomThreshold {
         for (int j = 0; j < nExamples; j++) {
             labels.putScalar(j, r.nextInt(2), 1.0);
         }
-
 
         Evaluation e = new Evaluation();
         e.eval(labels, probs);
