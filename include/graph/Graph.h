@@ -29,10 +29,11 @@ namespace nd4j {
             std::mutex _mutexPreprocessing;
             std::atomic<bool> _built;
 
+            std::vector<NDArray<float> *> _output;
+
             Nd4jStatus validateNode(nd4j::graph::Node *node);
 
             void expandOnion(int newLayer);
-
 
             void injectNode(nd4j::graph::Node *node);
         public:
@@ -55,8 +56,14 @@ namespace nd4j {
 
             std::map<int, std::vector<nd4j::graph::Node *> *> *getOnion();
             std::map<int32_t, nd4j::graph::Node *> *getMapped();
+
+            std::vector<NDArray<float> *> *fetchOutputs();
         };
     }
+}
+
+std::vector<NDArray<float> *> * nd4j::graph::Graph::fetchOutputs() {
+    return &_output;
 }
 
 std::map<int32_t, nd4j::graph::Node *> * nd4j::graph::Graph::getMapped() {
