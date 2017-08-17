@@ -5,7 +5,7 @@ layout: default
 
 # Distributed Training: Gradients Sharing
 
-As of release 0.9.0 (or the 0.8.1-SNAPSHOT), DeepLearning4j supports distributed training in the Apache Spark environment and [Aeron](https://github.com/real-logic/Aeron) for high performance inter-node communication outside of Spark.
+As of release 0.9.1 (or the 0.9.2-SNAPSHOT), DeepLearning4j supports distributed training in the Apache Spark environment and [Aeron](https://github.com/real-logic/Aeron) for high performance inter-node communication outside of Spark.
 
 The idea is relatively simple: individual workers calculate gradients on their DataSets. 
 Before gradients are applied to the network weights, they are accumulated in an intermediate storage mechanism (one for each machine). 
@@ -16,6 +16,9 @@ naive approach of sending the entire (dense) update or parameter vector while ma
 For more details on the thresholding approach, see [Strom, 2015 - Scalable Distributed DNN Training using Commodity GPU Cloud Computing](http://nikkostrom.com/publications/interspeech2015/strom_interspeech2015.pdf) and [Distributed Deep Learning, Part 1: An Introduction to Distributed Training of Neural Networks](http://engineering.skymind.io/distributed-deep-learning-part-1-an-introduction-to-distributed-training-of-neural-networks).
  
 ![Two phases within the cluster](./img/distributed.png)
+
+Note here, that using spark HAS over head. In order to determine whether spark is good for you or not, consider using the [Performance Listener](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/listeners/PerformanceListener.java) and look at the millisecond iteration time.
+If it's <= 150ms, spark may not be worth it for you.
 
 
 # Setting up Your Cluster
@@ -49,7 +52,7 @@ In example:
 <dependency>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>dl4j-spark-parameterserver_2.11</artifactId>
-    <version>0.9.0_spark_2</version>
+    <version>0.9.1_spark_2</version>
 </dependency>
 ```
 
