@@ -130,5 +130,5 @@ Of course, performance depends on the network size and the amount of computation
 ### UDP Unicast vs UDP Broadcast
 To ensure maximum compatibility (for example, with cloud computing environments such as AWS and Azure which do not support multicast), only UDP unicast is currently utilized in DL4J. UDP Broadcast transfers should be faster but for training performance, the difference should not be noticeable (except perhaps for very small workloads). By design, each worker sends 1 updates message per iteration and this won’t change regardless of UDP transport type. Since message retransmission in UDP Unicast transport is handled by the Master node (which typically has low utilization) and message passing is asynchronous, we simply require that update communication time is less than network iteration time for performance - which is usually the case.
 
-### Multi-GPU Cnvironments
+### Multi-GPU Environments
 The best results are to be expected on boxes with PCIe/NVLink P2P connectivity between devices available. However, everything will still work fine even without P2P. Just "a bit" slower :)
