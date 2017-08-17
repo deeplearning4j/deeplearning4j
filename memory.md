@@ -13,7 +13,7 @@ To manage memory allocations we use two approaches:
 - JVM Garbage Collector and WeakReference tracking
 - MemoryWorkspaces [Workspaces guide](https://deeplearning4j.org/workspaces)
 
-Despite differences between these two approaches, idea stays the same: once on Java side some NDArray leaves scope, off-heap memory should be released so it could be reused later  
+Despite differences between these two approaches, idea stays the same: once on Java side some NDArray leaves scope, off-heap memory should be released so it could be reused later.
 
 # Configuring limits
 
