@@ -30,6 +30,7 @@ public class VersionCheck {
     private static final String SPARK_2_VER_STRING = "spark_2";
 
     private static final String UNKNOWN_VERSION = "(Unknown, pre-0.9.1)";
+    private static final String UNKNOWN_VERSION_2 = "(Unknown)";
 
     private static final String DL4J_GROUPID = "org.deeplearning4j";
     private static final String DL4J_ARTIFACT = "deeplearning4j-nn";
@@ -86,17 +87,41 @@ public class VersionCheck {
             System.exit(1);
         }
 
-        List<VersionInfo> repos = getVersionInfos();
+        List<VersionInfo> dependencies = getVersionInfos();
+        if(dependencies.size() <= 2){
 
-        if (getVersionInfos().size() == 0) {
             //No -properties.git files were found on the classpath. This may be due to a misconfigured uber-jar
             // or maybe running in IntelliJ with "dynamic.classpath" set to true (in workspace.xml). Either way,
             // we can't check versions and don't want to log an error, which will more often than not be wrong
-            return;
+            if(dependencies.size() == 0){
+                return;
+            }
+
+            //Another edge case: no -properties.git files were found, but DL4J and/or DataVec were inferred
+            // by class names. If these "inferred by name" versions were the only things found, we should also
+            // not log a warning, as we can't check versions in this case
+
+            boolean dl4jViaClass = false;
+            boolean datavecViaClass = false;
+            for(VersionInfo vi : dependencies ){
+                if(DL4J_GROUPID.equals(vi.getGroupId()) && DL4J_ARTIFACT.equals(vi.getArtifactId())
+                        && (UNKNOWN_VERSION.equals(vi.getBuildVersion()) || UNKNOWN_VERSION_2.equals(vi.getBuildVersion()))){
+                    dl4jViaClass = true;
+                } else if(DATAVEC_GROUPID.equals(vi.getGroupId()) && DATAVEC_ARTIFACT.equals(vi.getArtifactId())
+                        && (UNKNOWN_VERSION.equals(vi.getBuildVersion()) || UNKNOWN_VERSION_2.equals(vi.getBuildVersion()))){
+                    datavecViaClass = true;
+                }
+            }
+
+            if(dependencies.size() == 1 && (dl4jViaClass || datavecViaClass)){
+                return;
+            } else if(dependencies.size() == 2 && dl4jViaClass && datavecViaClass){
+                return;
+            }
         }
 
         Set<String> foundVersions = new HashSet<>();
-        for (VersionInfo vi : repos) {
+        for(VersionInfo vi : dependencies){
             String g = vi.getGroupId();
             if (g != null && GROUPIDS_TO_CHECK.contains(g)) {
                 String version = vi.getBuildVersion();
@@ -132,7 +157,8 @@ public class VersionCheck {
         boolean scala211 = false;
         boolean spark1 = false;
         boolean spark2 = false;
-        for (VersionInfo vi : repos) {
+
+        for(VersionInfo vi : dependencies){
             String artifact = vi.getArtifactId();
             if (!scala210 && artifact.contains(SCALA_210_SUFFIX)) {
                 scala210 = true;
@@ -213,11 +239,17 @@ public class VersionCheck {
             }
         }
 
-        if (!dl4jFound) {
+
+        //Note that if NO git.properties files were found, it's still possible that the DL4J/DataVec versions found
+        // by their class names are correct. Consequently, only call them "pre-0.9.1" if we can be sure that's the case,
+        // otherwise just call them "Unknown"
+        String unknownVersionString = repState.size() == 0 ? UNKNOWN_VERSION_2 : UNKNOWN_VERSION;
+
+        if(!dl4jFound){
             //See if pre-0.9.1 DL4J is present on classpath;
             if (classExists(DL4J_CLASS)) {
                 List<VersionInfo> temp = new ArrayList<>();
-                temp.add(new VersionInfo(DL4J_GROUPID, DL4J_ARTIFACT, UNKNOWN_VERSION));
+                temp.add(new VersionInfo(DL4J_GROUPID, DL4J_ARTIFACT, unknownVersionString));
                 temp.addAll(repState);
                 repState = temp;
             }
@@ -227,7 +259,7 @@ public class VersionCheck {
             //See if pre-0.9.1 DataVec is present on classpath
             if (classExists(DATAVEC_CLASS)) {
                 List<VersionInfo> temp = new ArrayList<>();
-                temp.add(new VersionInfo(DATAVEC_GROUPID, DATAVEC_ARTIFACT, UNKNOWN_VERSION));
+                temp.add(new VersionInfo(DATAVEC_GROUPID, DATAVEC_ARTIFACT, unknownVersionString));
                 temp.addAll(repState);
                 repState = temp;
             }

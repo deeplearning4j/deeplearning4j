@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.graph;
 
+import com.google.common.base.Preconditions;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.Label;
@@ -8,6 +9,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.graph.api.BaseGraph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.IGraph;
@@ -79,6 +81,11 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         nextVertexId = vertices.size();
     }
 
+    /**
+     * Add a vertex to the graph
+     * (no effect when frozen)
+     * @param vVertex
+     */
     public void addVertex(Vertex<V> vVertex) {
 
         if(frozen) {
@@ -98,6 +105,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         // the graph
         if(graphApply != null) {
             log.trace("Adding to another graph instead " + vVertex);
+            ArrayField arrayField = (ArrayField) vVertex.getValue();
             graphApply.addVertex(vVertex);
         }
         else

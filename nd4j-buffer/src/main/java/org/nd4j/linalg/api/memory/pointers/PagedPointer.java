@@ -23,6 +23,17 @@ public class PagedPointer extends Pointer {
 
     }
 
+
+    public PagedPointer(long address) {
+        this.originalPointer = null;
+
+        this.address = address;
+
+        this.capacity = 0;
+        this.limit = 0;
+        this.position = 0;
+    }
+
     public PagedPointer(Pointer pointer) {
         this.originalPointer = pointer;
 

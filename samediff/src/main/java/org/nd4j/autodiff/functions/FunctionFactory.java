@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions;
 
+import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 
 /**
@@ -102,7 +103,7 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> floor(DifferentialFunction<X> iX);
 
-    DifferentialFunction<X> relu(DifferentialFunction<X> iX);
+    DifferentialFunction<X> relu(DifferentialFunction<X> iX, double cutoff);
 
     DifferentialFunction<X> softmax(DifferentialFunction<X> iX);
 
@@ -142,7 +143,7 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> cosineSimilarity(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int...dimensions);
     DifferentialFunction<X> euclideanDistance(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
     DifferentialFunction<X> manhattanDistance(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossBinaryXENT(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossBinaryXENT(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int...dimensions);
     DifferentialFunction<X> lossCosineSimilarity(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
     DifferentialFunction<X> lossHinge(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
     DifferentialFunction<X> lossKLD(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);

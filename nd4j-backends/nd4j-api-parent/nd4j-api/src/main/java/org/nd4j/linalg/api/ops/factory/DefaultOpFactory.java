@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
+import org.nd4j.linalg.api.ops.impl.shape.Broadcast;
 import org.nd4j.linalg.api.ops.impl.shape.Permute;
 import org.nd4j.linalg.api.ops.impl.shape.Reshape;
 import org.nd4j.linalg.api.ops.impl.shape.Transpose;
@@ -98,7 +99,9 @@ public class DefaultOpFactory implements OpFactory {
             case "reshape":
                 return new Reshape(x, z);
             case "permute":
-                return new Permute(x, z);
+                return new Permute(x,z);
+            case "broadcast":
+                return new Broadcast(x,z);
         }
 
         throw new IllegalArgumentException("Illegal name for create shape op" + name);
@@ -262,6 +265,9 @@ public class DefaultOpFactory implements OpFactory {
     public TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs) {
         TransformOp op = null;
         switch (name) {
+            case "set":
+                op = new org.nd4j.linalg.api.ops.impl.transforms.Set(x,y,z,z.length());
+                break;
             case "relu":
                 op = new RectifedLinear(x, z, x.length(),
                                 extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);

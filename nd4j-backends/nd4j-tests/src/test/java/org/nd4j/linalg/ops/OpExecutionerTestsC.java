@@ -21,7 +21,7 @@
 package org.nd4j.linalg.ops;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
@@ -74,6 +75,15 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         super(backend);
     }
 
+    @Test
+    public void testScalarReverseSub() {
+        INDArray input = Nd4j.valueArrayOf(4,2.0);
+        INDArray result= Nd4j.zeros(4);
+        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(input,null,result,input.length(),1.0));
+        INDArray assertion = Nd4j.valueArrayOf(4,-1.0);
+        assertEquals(assertion,result);
+    }
+
 
     @Test
     public void testBroadcastMultiDim() {
@@ -94,6 +104,15 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray vec2 = Nd4j.create(new float[] {1, 2, 3, 4, 5});
         double sim = Transforms.cosineSim(vec1, vec2);
         assertEquals(getFailureMessage(), 1, sim, 1e-1);
+    }
+
+    @Test
+    public void testCosineDistance(){
+        INDArray vec1 = Nd4j.create(new float[] {1, 2, 3});
+        INDArray vec2 = Nd4j.create(new float[] {3, 5, 7});
+        // 1-17*sqrt(2/581)
+        double distance = Transforms.cosineDistance(vec1, vec2);
+        assertEquals(getFailureMessage(), 0.0025851, distance, 1e-7);
     }
 
     @Test

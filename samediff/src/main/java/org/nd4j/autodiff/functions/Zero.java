@@ -5,6 +5,7 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 
@@ -12,8 +13,10 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 public class Zero<X extends Field<X>> extends Constant<X> {
 
 
-    public Zero(SDGraph graph, int[] shape, AbstractIdentityFactory<X> i_factory) {
-        super(graph,i_factory.zero(shape),shape, i_factory);
+    public Zero(SameDiff sameDiff, int[] shape) {
+        super(sameDiff, (X) sameDiff.getArrayFactory().zero(shape),shape);
+        ArrayField arrayField = (ArrayField) m_x;
+        arrayField.getInput().setScalarValue(0.0);
     }
 
     @Override
@@ -48,7 +51,7 @@ public class Zero<X extends Field<X>> extends Constant<X> {
     private void addEdge(String opName,DifferentialFunction<X> i_v) {
         if(i_v.getValue(true) instanceof ArrayField) {
             ArrayField x = (ArrayField) i_v.getValue(true);
-            addEdges(graph,
+            addEdges(sameDiff,
                     this,
                     i_v,
                     opName,
@@ -62,6 +65,6 @@ public class Zero<X extends Field<X>> extends Constant<X> {
 
     @Override
     public DifferentialFunction<X> dup() {
-        return new Zero<>(graph,shape, getM_factory());
+        return new Zero<>(sameDiff,shape);
     }
 }

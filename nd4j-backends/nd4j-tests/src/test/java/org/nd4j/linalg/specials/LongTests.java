@@ -1,7 +1,7 @@
 package org.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.IntPointer;
 import org.junit.Ignore;
 import org.junit.Test;

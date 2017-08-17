@@ -8,7 +8,10 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.shape.Shape;
+
+import java.lang.reflect.Array;
 
 /**
  *  Specialized matrix multiply operations.
@@ -17,18 +20,16 @@ import org.nd4j.linalg.api.shape.Shape;
  *
  */
 
-public class Mmul<X extends Field<X>> extends TensorMmul<X> {
+public class Mmul extends TensorMmul<ArrayField> {
 
 
-    public Mmul(SDGraph graph,
-                DifferentialFunction<X> i_v1,
-                DifferentialFunction<X> i_v2,
-                DifferentialFunctionFactory<X> differentialFunctionFactory,
+    public Mmul(SameDiff sameDiff,
+                DifferentialFunction<ArrayField> i_v1,
+                DifferentialFunction<ArrayField> i_v2,
                 int argNum) {
-        super(graph,
+        super(sameDiff,
                 i_v1,
-                i_v2,
-                differentialFunctionFactory,new int[][] {
+                i_v2, new int[][] {
                 {1},{0}
         },argNum);
     }
@@ -36,15 +37,15 @@ public class Mmul<X extends Field<X>> extends TensorMmul<X> {
 
 
     @Override
-    protected void addEdges(Graph<NDArrayInformation,OpState> graph,
-                            DifferentialFunction<X> i_v1,
-                            DifferentialFunction<X> i_v2,
+    protected void addEdges(SameDiff sameDiff,
+                            DifferentialFunction<ArrayField> i_v1,
+                            DifferentialFunction<ArrayField> i_v2,
                             String opName) {
         if(i_v1.getValue(true) instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) i_v1.getValue(true);
-            ArrayField secondVal = (ArrayField) i_v2.getValue(true);
+            ArrayField arrayField = i_v1.getValue(true);
+            ArrayField secondVal = i_v2.getValue(true);
             //skip empty dimensions
-            addEdges(graph,i_v1,i_v2,opName,
+            addEdges(sameDiff,i_v1,i_v2,opName,
                     OpState.OpType.ACCUMULATION,
                     Shape.getMatrixMultiplyShape(arrayField.getInput().getShape(),secondVal.getInput().getShape()));
 
@@ -62,8 +63,8 @@ public class Mmul<X extends Field<X>> extends TensorMmul<X> {
      * @return
      */
     @Override
-    protected X doGetValue() {
-        return differentialFunctionFactory.getMFactory().mmul(larg(),rarg());
+    public ArrayField doGetValue() {
+        return sameDiff.getArrayFactory().mmul(larg(),rarg());
     }
 
 

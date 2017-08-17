@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -140,7 +140,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1, 1}
-                        : ArrayUtil.removeIndex(op.x().shape(), dimension);
+                : ArrayUtil.removeIndex(op.x().shape(), dimension);
 
         // This is obviously wrong for IndexReduce, op.x has no real value as return
         // if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
@@ -188,37 +188,37 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op.z().isScalar()) {
                 int res = (int) loop.execIndexReduceScalarDouble(dummy, op.opNum(),
-                                (DoublePointer) op.x().data().addressPointer(),
-                                (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer) getPointerForExtraArgs(op));
+                        (DoublePointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) getPointerForExtraArgs(op));
 
 
                 op.setFinalResult(res);
                 op.z().putScalar(0, (float) res);
             } else {
                 loop.execIndexReduceDouble(dummy, op.opNum(), (DoublePointer) x,
-                                (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer) getPointerForExtraArgs(op), (DoublePointer) z,
-                                (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                (IntPointer) dimensionAddress, dimension.length);
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) getPointerForExtraArgs(op), (DoublePointer) z,
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (IntPointer) dimensionAddress, dimension.length);
             }
 
         } else {
             if (op.z().isScalar()) {
                 int res = (int) loop.execIndexReduceScalarFloat(dummy, op.opNum(),
-                                (FloatPointer) op.x().data().addressPointer(),
-                                (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer) getPointerForExtraArgs(op));
+                        (FloatPointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) getPointerForExtraArgs(op));
 
                 op.setFinalResult(res);
                 op.z().putScalar(0, (float) res);
             } else {
                 loop.execIndexReduceFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                                (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer) getPointerForExtraArgs(op),
-                                (FloatPointer) op.z().data().addressPointer(),
-                                (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                (IntPointer) dimensionAddress, dimension.length);
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) getPointerForExtraArgs(op),
+                        (FloatPointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (IntPointer) dimensionAddress, dimension.length);
             }
 
         }
@@ -241,7 +241,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
                 throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
-                                + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
+                        + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
 
         for (int i = 0; i < dimension.length; i++) {
             if (dimension[i] < 0)
@@ -368,17 +368,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if (op instanceof Variance) {
                 if (ret.isScalar()) {
                     ret.putScalar(0, loop.execSummaryStatsScalarDouble(dummy, op.opNum(),
-                                    (DoublePointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) getPointerForExtraArgs(op), true));
+                            (DoublePointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) getPointerForExtraArgs(op), true));
                 } else {
                     Variance var = (Variance) op;
                     loop.execSummaryStatsDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) getPointerForExtraArgs(op),
-                                    (DoublePointer) op.z().data().addressPointer(),
-                                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    (IntPointer) dimensionAddress, dimension.length, var.isBiasCorrected());
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) getPointerForExtraArgs(op),
+                            (DoublePointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (IntPointer) dimensionAddress, dimension.length, var.isBiasCorrected());
                 }
 
             }
@@ -397,38 +397,38 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
                             (IntPointer) yTadBuffers.getFirst().addressPointer(),
                             new LongPointerWrapper(yTadBuffers.getSecond().addressPointer())
-                            );
+                    );
                 } else if (ret.isScalar()) {
                     ret.putScalar(0, loop.execReduce3ScalarDouble(dummy, op.opNum(),
-                                    (DoublePointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) getPointerForExtraArgs(op),
-                                    (DoublePointer) op.y().data().addressPointer(),
-                                    (IntPointer) op.y().shapeInfoDataBuffer().addressPointer()));
+                            (DoublePointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) getPointerForExtraArgs(op),
+                            (DoublePointer) op.y().data().addressPointer(),
+                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer()));
                 } else {
                     loop.execReduce3Double(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) getPointerForExtraArgs(op),
-                                    (DoublePointer) op.y().data().addressPointer(),
-                                    (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) op.z().data().addressPointer(),
-                                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    (IntPointer) dimensionAddress, dimension.length);
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) getPointerForExtraArgs(op),
+                            (DoublePointer) op.y().data().addressPointer(),
+                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (IntPointer) dimensionAddress, dimension.length);
                 }
 
             } else {
                 if (ret.isScalar()) {
                     ret.putScalar(0, loop.execReduceScalarDouble(dummy, op.opNum(),
-                                    (DoublePointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) getPointerForExtraArgs(op)));
+                            (DoublePointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) getPointerForExtraArgs(op)));
                 } else {
                     loop.execReduceDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) getPointerForExtraArgs(op),
-                                    (DoublePointer) op.z().data().addressPointer(),
-                                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    (IntPointer) dimensionAddress, dimension.length);
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) getPointerForExtraArgs(op),
+                            (DoublePointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (IntPointer) dimensionAddress, dimension.length);
                 }
 
             }
@@ -437,16 +437,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 Variance variance = (Variance) op;
                 if (ret.isScalar()) {
                     ret.putScalar(0, loop.execSummaryStatsScalarFloat(dummy, op.opNum(),
-                                    (FloatPointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) getPointerForExtraArgs(op), variance.isBiasCorrected()));
+                            (FloatPointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) getPointerForExtraArgs(op), variance.isBiasCorrected()));
                 } else {
                     loop.execSummaryStatsFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) getPointerForExtraArgs(op),
-                                    (FloatPointer) op.z().data().addressPointer(),
-                                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    (IntPointer) dimensionAddress, dimension.length, variance.isBiasCorrected());
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) getPointerForExtraArgs(op),
+                            (FloatPointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (IntPointer) dimensionAddress, dimension.length, variance.isBiasCorrected());
                 }
 
             }
@@ -469,35 +469,35 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     );
                 } else if (ret.isScalar()) {
                     ret.putScalar(0, loop.execReduce3ScalarFloat(dummy, op.opNum(),
-                                    (FloatPointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) getPointerForExtraArgs(op),
-                                    (FloatPointer) op.y().data().addressPointer(),
-                                    (IntPointer) op.y().shapeInfoDataBuffer().addressPointer()));
+                            (FloatPointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) getPointerForExtraArgs(op),
+                            (FloatPointer) op.y().data().addressPointer(),
+                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer()));
                 } else {
                     loop.execReduce3Float(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) getPointerForExtraArgs(op),
-                                    (FloatPointer) op.y().data().addressPointer(),
-                                    (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) op.z().data().addressPointer(),
-                                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    (IntPointer) dimensionAddress, dimension.length);
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) getPointerForExtraArgs(op),
+                            (FloatPointer) op.y().data().addressPointer(),
+                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (IntPointer) dimensionAddress, dimension.length);
                 }
 
             } else {
                 if (ret.isScalar()) {
                     ret.putScalar(0, loop.execReduceScalarFloat(dummy, op.opNum(),
-                                    (FloatPointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) getPointerForExtraArgs(op)));
+                            (FloatPointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) getPointerForExtraArgs(op)));
                 } else {
                     loop.execReduceFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) getPointerForExtraArgs(op),
-                                    (FloatPointer) op.z().data().addressPointer(),
-                                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    (IntPointer) dimensionAddress, dimension.length);
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) getPointerForExtraArgs(op),
+                            (FloatPointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (IntPointer) dimensionAddress, dimension.length);
                 }
 
             }
@@ -549,18 +549,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
             loop.execScalarFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) op.z().data().addressPointer(),
-                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) op.y().data().addressPointer(), (FloatPointer) getPointerForExtraArgs(op),
-                            (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(), dimension.length);
+                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.z().data().addressPointer(),
+                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.y().data().addressPointer(), (FloatPointer) getPointerForExtraArgs(op),
+                    (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(), dimension.length);
         } else if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             loop.execScalarDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) op.z().data().addressPointer(),
-                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) op.y().data().addressPointer(), (DoublePointer) getPointerForExtraArgs(op),
-                            (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(), dimension.length);
+                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                    (DoublePointer) op.z().data().addressPointer(),
+                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                    (DoublePointer) op.y().data().addressPointer(), (DoublePointer) getPointerForExtraArgs(op),
+                    (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension).addressPointer(), dimension.length);
         }
     }
 
@@ -574,8 +574,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (op.x().lengthLong() != op.z().lengthLong())
                 throw new ND4JIllegalStateException("op.X length should be equal to op.Y length: ["
-                                + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "] != ["
-                                + Arrays.toString(op.z().shapeInfoDataBuffer().asInt()) + "]");
+                        + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "] != ["
+                        + Arrays.toString(op.z().shapeInfoDataBuffer().asInt()) + "]");
 
             if (op.getDimension() != null) {
                 invoke(op, op.getDimension());
@@ -584,30 +584,33 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1
-                                && !op.isExecSpecial()) {
+                        && !op.isExecSpecial()) {
                     loop.execScalarDouble(null, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                                    op.x().elementWiseStride(), (DoublePointer) op.z().data().addressPointer(),
-                                    op.z().elementWiseStride(), op.scalar().doubleValue(),
-                                    (DoublePointer) getPointerForExtraArgs(op), op.n());
+                            op.x().elementWiseStride(), (DoublePointer) op.z().data().addressPointer(),
+                            op.z().elementWiseStride(), op.scalar().doubleValue(),
+                            (DoublePointer) getPointerForExtraArgs(op), op.n());
                 } else
-                    loop.execScalarDouble(null, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) op.z().data().addressPointer(),
-                                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    op.scalar().doubleValue(), (DoublePointer) getPointerForExtraArgs(op));
+                    loop.execScalarDouble(null,
+                            op.opNum(),
+                            (DoublePointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            op.scalar().doubleValue(),
+                            (DoublePointer) getPointerForExtraArgs(op));
             } else {
                 if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1
-                                && !op.isExecSpecial()) {
+                        && !op.isExecSpecial()) {
                     loop.execScalarFloat(null, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                                    op.x().elementWiseStride(), (FloatPointer) op.z().data().addressPointer(),
-                                    op.z().elementWiseStride(), op.scalar().floatValue(),
-                                    (FloatPointer) getPointerForExtraArgs(op), op.n());
+                            op.x().elementWiseStride(), (FloatPointer) op.z().data().addressPointer(),
+                            op.z().elementWiseStride(), op.scalar().floatValue(),
+                            (FloatPointer) getPointerForExtraArgs(op), op.n());
                 } else
                     loop.execScalarFloat(null, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) op.z().data().addressPointer(),
-                                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    op.scalar().floatValue(), (FloatPointer) getPointerForExtraArgs(op));
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            op.scalar().floatValue(), (FloatPointer) getPointerForExtraArgs(op));
 
             }
 
@@ -685,35 +688,35 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 boolean zRow = op.z().isRowVector();
 
                 if ((xEWS >= 1 && yEWS >= 1
-                                && xEWS == yEWS && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
+                        && xEWS == yEWS && !op.isExecSpecial()
+                        && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     loop.execPairwiseTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                                    xEWS, (DoublePointer) op.y().data().addressPointer(),
-                                    yEWS, (DoublePointer) op.z().data().addressPointer(),
-                                    zEWS, (DoublePointer) getPointerForExtraArgs(op), op.n());
+                            xEWS, (DoublePointer) op.y().data().addressPointer(),
+                            yEWS, (DoublePointer) op.z().data().addressPointer(),
+                            zEWS, (DoublePointer) getPointerForExtraArgs(op), op.n());
 
                 } else {
                     loop.execPairwiseTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) op.y().data().addressPointer(),
-                                    (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) op.z().data().addressPointer(),
-                                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) getPointerForExtraArgs(op));
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) op.y().data().addressPointer(),
+                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) getPointerForExtraArgs(op));
                 }
 
             } else {
                 if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && !op.isExecSpecial()
-                                && op.x().ordering() == op.z().ordering()) {
+                        && op.x().ordering() == op.z().ordering()) {
                     loop.execTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                                    op.x().elementWiseStride(), (DoublePointer) op.z().data().addressPointer(),
-                                    op.z().elementWiseStride(), (DoublePointer) getPointerForExtraArgs(op), op.n());
+                            op.x().elementWiseStride(), (DoublePointer) op.z().data().addressPointer(),
+                            op.z().elementWiseStride(), (DoublePointer) getPointerForExtraArgs(op), op.n());
                 } else {
                     loop.execTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) op.z().data().addressPointer(),
-                                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) getPointerForExtraArgs(op));
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) getPointerForExtraArgs(op));
                 }
 
             }
@@ -728,34 +731,34 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 boolean zRow = op.z().isRowVector();
 
                 if ((xEWS >= 1 && yEWS >= 1
-                                && xEWS == yEWS && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
+                        && xEWS == yEWS && !op.isExecSpecial()
+                        && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                                    xEWS, (FloatPointer) op.y().data().addressPointer(),
-                                    yEWS, (FloatPointer) op.z().data().addressPointer(),
-                                    zEWS, (FloatPointer) getPointerForExtraArgs(op), op.n());
+                            xEWS, (FloatPointer) op.y().data().addressPointer(),
+                            yEWS, (FloatPointer) op.z().data().addressPointer(),
+                            zEWS, (FloatPointer) getPointerForExtraArgs(op), op.n());
 
                 } else {
                     loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) op.y().data().addressPointer(),
-                                    (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) op.z().data().addressPointer(),
-                                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) getPointerForExtraArgs(op));
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) op.y().data().addressPointer(),
+                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) getPointerForExtraArgs(op));
                 }
 
             } else {
                 if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.x().ordering() == op.z().ordering()) {
                     loop.execTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                                    op.x().elementWiseStride(), (FloatPointer) op.z().data().addressPointer(),
-                                    op.z().elementWiseStride(), (FloatPointer) getPointerForExtraArgs(op), op.n());
+                            op.x().elementWiseStride(), (FloatPointer) op.z().data().addressPointer(),
+                            op.z().elementWiseStride(), (FloatPointer) getPointerForExtraArgs(op), op.n());
                 } else {
                     loop.execTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) op.z().data().addressPointer(),
-                                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) getPointerForExtraArgs(op));
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) getPointerForExtraArgs(op));
                 }
 
             }
@@ -774,7 +777,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
                 throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
-                                + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
+                        + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
          * and the associated offsets for each {@link INDArray#tensorAlongDimension(int, int...)}
@@ -811,20 +814,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             loop.execBroadcastDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) op.y().data().addressPointer(),
-                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) op.z().data().addressPointer(),
-                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(), (IntPointer) dimensionAddress,
-                            dimension.length);
+                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                    (DoublePointer) op.y().data().addressPointer(),
+                    (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                    (DoublePointer) op.z().data().addressPointer(),
+                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(), (IntPointer) dimensionAddress,
+                    dimension.length);
         } else {
             loop.execBroadcastFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) op.y().data().addressPointer(),
-                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                            (FloatPointer) op.z().data().addressPointer(),
-                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(), (IntPointer) dimensionAddress,
-                            dimension.length);
+                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.y().data().addressPointer(),
+                    (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                    (FloatPointer) op.z().data().addressPointer(),
+                    (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(), (IntPointer) dimensionAddress,
+                    dimension.length);
         }
 
         return op.z();
@@ -846,15 +849,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 op.setFinalResult((int) loop.execIndexReduceScalarDouble(null, op.opNum(),
-                                (DoublePointer) op.x().data().addressPointer(),
-                                (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer) getPointerForExtraArgs(op)));
+                        (DoublePointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) getPointerForExtraArgs(op)));
 
             } else {
                 op.setFinalResult((int) loop.execIndexReduceScalarFloat(null, op.opNum(),
-                                (FloatPointer) op.x().data().addressPointer(),
-                                (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer) getPointerForExtraArgs(op)));
+                        (FloatPointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) getPointerForExtraArgs(op)));
             }
 
             op.z().assign(op.getFinalResult());
@@ -882,41 +885,41 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if (op instanceof Variance) {
                     op.setFinalResult(loop.execSummaryStatsScalarDouble(null, op.opNum(),
-                                    (DoublePointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) getPointerForExtraArgs(op), true));
+                            (DoublePointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) getPointerForExtraArgs(op), true));
                 } else if (op.y() != null) {
                     op.setFinalResult(loop.execReduce3ScalarDouble(null, op.opNum(),
-                                    (DoublePointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) getPointerForExtraArgs(op),
-                                    (DoublePointer) op.y().data().addressPointer(),
-                                    (IntPointer) op.y().shapeInfoDataBuffer().addressPointer()));
+                            (DoublePointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) getPointerForExtraArgs(op),
+                            (DoublePointer) op.y().data().addressPointer(),
+                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer()));
                 } else {
                     op.setFinalResult(loop.execReduceScalarDouble(null, op.opNum(),
-                                    (DoublePointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (DoublePointer) getPointerForExtraArgs(op)));
+                            (DoublePointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) getPointerForExtraArgs(op)));
                 }
             } else {
                 if (op instanceof Variance) {
                     Variance variance = (Variance) op;
                     op.setFinalResult(loop.execSummaryStatsScalarFloat(null, op.opNum(),
-                                    (FloatPointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) getPointerForExtraArgs(op), variance.isBiasCorrected()));
+                            (FloatPointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) getPointerForExtraArgs(op), variance.isBiasCorrected()));
                 } else if (op.y() != null) {
                     op.setFinalResult(loop.execReduce3ScalarFloat(null, op.opNum(),
-                                    (FloatPointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) getPointerForExtraArgs(op),
-                                    (FloatPointer) op.y().data().addressPointer(),
-                                    (IntPointer) op.y().shapeInfoDataBuffer().addressPointer()));
+                            (FloatPointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) getPointerForExtraArgs(op),
+                            (FloatPointer) op.y().data().addressPointer(),
+                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer()));
                 } else {
                     op.setFinalResult(loop.execReduceScalarFloat(null, op.opNum(),
-                                    (FloatPointer) op.x().data().addressPointer(),
-                                    (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    (FloatPointer) getPointerForExtraArgs(op)));
+                            (FloatPointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) getPointerForExtraArgs(op)));
                 }
             }
 
@@ -963,9 +966,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int indexPos = maxTypes * Batch.getBatchLimit();
         int intArraysPos = indexPos + (batch.getSample().maxIndexArguments() * Batch.getBatchLimit());
         int realPos = (intArraysPos + (maxIntArrays * maxArraySize * Batch.getBatchLimit()))
-                        / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 2 : 1);
+                / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 2 : 1);
         int argsPos = (realPos + ((batch.getSample().maxRealArguments() * Batch.getBatchLimit())))
-                        / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 1 : 2);
+                / (Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 1 : 2);
         int shapesPos = argsPos + (batch.getSample().maxArguments() * Batch.getBatchLimit());
         for (int i = 0; i < batch.getNumAggregates(); i++) {
             T op = batch.getAggregates().get(i);
@@ -1040,14 +1043,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             loop.execAggregateBatchFloat(null, batch.getNumAggregates(), batch.opNum(),
-                            batch.getSample().maxArguments(), batch.getSample().maxShapes(),
-                            batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
-                            batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer);
+                    batch.getSample().maxArguments(), batch.getSample().maxShapes(),
+                    batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
+                    batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             loop.execAggregateBatchDouble(null, batch.getNumAggregates(), batch.opNum(),
-                            batch.getSample().maxArguments(), batch.getSample().maxShapes(),
-                            batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
-                            batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer);
+                    batch.getSample().maxArguments(), batch.getSample().maxShapes(),
+                    batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
+                    batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer);
         } else {
             throw new UnsupportedOperationException("Half precision isn't supported on CPU");
         }
@@ -1106,7 +1109,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         for (int x = 0; x < numArguments; x++) {
             arguments.put(x, op.getArguments().get(x) == null ? null
-                            : op.getArguments().get(x).data().addressPointer());
+                    : op.getArguments().get(x).data().addressPointer());
         }
 
         PointerPointer shapes = block.getShapesPointer(); //new PointerPointer(numShapes);
@@ -1147,12 +1150,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             loop.execAggregateFloat(null, op.opNum(), arguments, numArguments, shapes, numShapes, pointer,
-                            numIndexArguments, intArrays, numIntArrays, (FloatPointer) block.getRealArgumentsPointer(),
-                            numRealArguments);
+                    numIndexArguments, intArrays, numIntArrays, (FloatPointer) block.getRealArgumentsPointer(),
+                    numRealArguments);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             loop.execAggregateDouble(null, op.opNum(), arguments, numArguments, shapes, numShapes, pointer,
-                            numIndexArguments, intArrays, numIntArrays, (DoublePointer) block.getRealArgumentsPointer(),
-                            numRealArguments);
+                    numIndexArguments, intArrays, numIntArrays, (DoublePointer) block.getRealArgumentsPointer(),
+                    numRealArguments);
         } else {
             throw new UnsupportedOperationException("Half precision isn't supported on CPU");
         }
@@ -1198,7 +1201,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public INDArray exec(RandomOp op, Random rng) {
         if (rng.getStateBuffer() == null)
             throw new IllegalStateException(
-                            "You should use one of NativeRandom classes for NativeOperations execution");
+                    "You should use one of NativeRandom classes for NativeOperations execution");
 
         long st = profilingHookIn(op);
 
@@ -1208,39 +1211,39 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             // triple arg call
             if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
                 loop.execRandomFloat(null, op.opNum(), rng.getStatePointer(), // rng state ptr
-                                (FloatPointer) op.x().data().addressPointer(),
-                                (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer) op.y().data().addressPointer(),
-                                (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer) op.z().data().addressPointer(),
-                                (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer) op.extraArgsDataBuff().addressPointer());
+                        (FloatPointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.y().data().addressPointer(),
+                        (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.extraArgsDataBuff().addressPointer());
             } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
                 loop.execRandomDouble(null, op.opNum(), rng.getStatePointer(), // rng state ptr
-                                (DoublePointer) op.x().data().addressPointer(),
-                                (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer) op.y().data().addressPointer(),
-                                (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer) op.z().data().addressPointer(),
-                                (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer) op.extraArgsDataBuff().addressPointer());
+                        (DoublePointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.y().data().addressPointer(),
+                        (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.extraArgsDataBuff().addressPointer());
             }
         } else if (op.x() != null && op.z() != null) {
             //double arg call
             if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
                 loop.execRandomFloat(null, op.opNum(), rng.getStatePointer(), // rng state ptr
-                                (FloatPointer) op.x().data().addressPointer(),
-                                (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer) op.z().data().addressPointer(),
-                                (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer) op.extraArgsDataBuff().addressPointer());
+                        (FloatPointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.extraArgsDataBuff().addressPointer());
             } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
                 loop.execRandomDouble(null, op.opNum(), rng.getStatePointer(), // rng state ptr
-                                (DoublePointer) op.x().data().addressPointer(),
-                                (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer) op.z().data().addressPointer(),
-                                (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer) op.extraArgsDataBuff().addressPointer());
+                        (DoublePointer) op.x().data().addressPointer(),
+                        (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.extraArgsDataBuff().addressPointer());
             }
 
         } else {
@@ -1248,14 +1251,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
                 loop.execRandomFloat(null, op.opNum(), rng.getStatePointer(), // rng state ptr
-                                (FloatPointer) op.z().data().addressPointer(),
-                                (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                (FloatPointer) op.extraArgsDataBuff().addressPointer());
+                        (FloatPointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (FloatPointer) op.extraArgsDataBuff().addressPointer());
             } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
                 loop.execRandomDouble(null, op.opNum(), rng.getStatePointer(), // rng state ptr
-                                (DoublePointer) op.z().data().addressPointer(),
-                                (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                (DoublePointer) op.extraArgsDataBuff().addressPointer());
+                        (DoublePointer) op.z().data().addressPointer(),
+                        (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        (DoublePointer) op.extraArgsDataBuff().addressPointer());
             }
         }
 
@@ -1298,7 +1301,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             // allocating chunk for RealArguments
             realArgumentsPointer = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(op.maxRealArguments())
-                            : new FloatPointer(op.maxRealArguments());
+                    : new FloatPointer(op.maxRealArguments());
 
             // allocating chunk for shapesPointer
             shapesPointer = new PointerPointer(op.maxShapes());

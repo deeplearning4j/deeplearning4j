@@ -21,7 +21,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -685,18 +685,21 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             nativeOps.concatDouble(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     (DoublePointer) ret.data().addressPointer(),
                     (IntPointer) ret.shapeInfoDataBuffer().addressPointer(),
-                    new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
+                    //new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
+                    null, null);
         } else if (ret.data().dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.concatFloat(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     (FloatPointer) ret.data().addressPointer(),
                     (IntPointer) ret.shapeInfoDataBuffer().addressPointer(),
-                    new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
+                    //new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
+                    null, null);
 
         } else if (ret.data().dataType() == DataBuffer.Type.HALF) {
             nativeOps.concatHalf(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     (ShortPointer) ret.data().addressPointer(),
                     (IntPointer) ret.shapeInfoDataBuffer().addressPointer(),
-                    new PointerPointer(new Pointer[]{null}), new PointerPointer(new Pointer[]{null}));
+                    //new PointerPointer(new Pointer[]{null}), new PointerPointer(new Pointer[]{null}));
+                    null, null);
         } else {
             throw new ND4JIllegalStateException("Unknown dataType: " + ret.data().dataType());
         }

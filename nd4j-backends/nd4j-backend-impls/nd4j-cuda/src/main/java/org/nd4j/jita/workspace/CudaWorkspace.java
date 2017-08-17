@@ -7,10 +7,7 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.MemoryKind;
-import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
-import org.nd4j.linalg.api.memory.enums.ResetPolicy;
-import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -44,6 +41,10 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     protected void init() {
+        if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {
+            throw new ND4JIllegalStateException("CUDA do not support MMAP workspaces yet");
+        }
+
         super.init();
 
         if (currentSize.get() > 0) {

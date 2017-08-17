@@ -172,6 +172,8 @@ public interface Field<X> extends CommutativeRing<X> {
 
     X repeat(int axis);
 
+    X set(X value1);
+
     X broadcast(int[] shape);
 
     X eq(X i_y);

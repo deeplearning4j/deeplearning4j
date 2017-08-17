@@ -15,6 +15,6 @@ public interface Differential<X extends Field<X>, D> {
      * @param i_v
      * @return
      */
-    D diff(Variable<X> i_v);
+    D diff(DifferentialFunction<X> i_v);
 
 }

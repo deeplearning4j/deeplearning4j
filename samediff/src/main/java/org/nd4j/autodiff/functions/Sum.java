@@ -2,19 +2,21 @@ package org.nd4j.autodiff.functions;
 
 import java.util.List;
 
+import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 
 
-public class Sum<X extends Field<X>> extends AbstractBinaryFunction<X> {
+public class Sum<X extends Field<ArrayField>> extends AbstractBinaryFunction<ArrayField> {
 
-    public Sum(SDGraph graph, DifferentialFunction<X> i_v1, DifferentialFunction<X> i_v2) {
-        super(graph,i_v1, i_v2);
+    public Sum(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
+        super(sameDiff,i_v1, i_v2);
     }
 
     @Override
-    public X doGetValue() {
+    public ArrayField doGetValue() {
         return larg().getValue(true).add(rarg().getValue(true));
     }
 
@@ -24,7 +26,7 @@ public class Sum<X extends Field<X>> extends AbstractBinaryFunction<X> {
     }
 
     @Override
-    public DifferentialFunction<X> diff(Variable<X> i_v1) {
+    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
         return (larg() == rarg()) ? larg().diff(i_v1).mul(2L) // Field is
                                                               // commutative
                                                               // with respect to
@@ -38,7 +40,7 @@ public class Sum<X extends Field<X>> extends AbstractBinaryFunction<X> {
     }
 
     @Override
-    public String doGetFormula(List<Variable<X>> variables) {
+    public String doGetFormula(List<Variable<ArrayField>> variables) {
         return "(" + larg().doGetFormula(variables) + "+" + rarg().doGetFormula(variables) + ")";
     }
 

@@ -7,11 +7,11 @@ import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.functions.AbstractBinaryReduceFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.functions.Variable;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
@@ -23,55 +23,53 @@ import java.util.List;
  * @author Adam Gibson
  */
 @NoArgsConstructor
-public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction<X> {
+public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduceFunction<X> {
     private int argNum;
     private int[][] axes;
-    protected DifferentialFunctionFactory<X> differentialFunctionFactory;
-    private boolean addedEdges = false;
+    protected boolean addedEdges;
 
-    public TensorMmul(SDGraph graph,
-                      DifferentialFunction<X> i_v1,
-                      DifferentialFunction<X> i_v2,
-                      DifferentialFunctionFactory<X> differentialFunctionFactory,
+    public TensorMmul(SameDiff sameDiff,
+                      DifferentialFunction<ArrayField> i_v1,
+                      DifferentialFunction<ArrayField> i_v2,
                       int[][] dimensions,
                       int argNum) {
-        super(graph);
-        this.graph = graph;
-        this.differentialFunctionFactory = differentialFunctionFactory;
+        super(sameDiff);
+        this.sameDiff = sameDiff;
         this.axes = dimensions;
         this.argNum = argNum;
-        this.differentialFunctionFactory = differentialFunctionFactory;
         this.extraArgs = new Object[] {axes};
         this.m_x1 = i_v1;
         this.m_x2 = i_v2;
-
         if(!addedEdges) {
-            ArrayField a = (ArrayField) i_v1.getValue(true);
-            ArrayField b = (ArrayField) i_v2.getValue(true);
+            ArrayField a = i_v1.getValue(true);
+            ArrayField b = i_v2.getValue(true);
 
-            addEdges(graph,
+            addEdges(sameDiff,
                     i_v1,
                     i_v2,
                     functionName(),
                     OpState.OpType.ACCUMULATION,
                     ArrayUtil.getTensorMmulShape(a.getInput().getShape(), b.getInput().getShape(), dimensions));
+            addedEdges = true;
         }
     }
 
 
     @Override
-    protected void addEdges(Graph<NDArrayInformation,OpState> graph,
-                            DifferentialFunction<X> i_v1,
-                            DifferentialFunction<X> i_v2,
+    protected void addEdges(SameDiff sameDiff,
+                            DifferentialFunction<ArrayField> i_v1,
+                            DifferentialFunction<ArrayField> i_v2,
                             String opName) {
-        if(i_v1.getValue(true) instanceof ArrayField && axes != null && !addedEdges) {
+        if(i_v1.getValue(true) instanceof ArrayField && axes != null
+                && !addedEdges) {
             addedEdges = true;
             ArrayField arrayField = (ArrayField) i_v1.getValue(true);
             ArrayField secondVal = (ArrayField) i_v2.getValue(true);
 
-            addEdges(graph,i_v1,i_v2,opName,
+            addEdges(sameDiff,i_v1,i_v2,opName,
                     OpState.OpType.ACCUMULATION,
-                    ArrayUtil.getTensorMmulShape(arrayField.getInput().getShape(),
+                    ArrayUtil.getTensorMmulShape(arrayField.getInput()
+                                    .getShape(),
                             secondVal.getInput().getShape(),
                             axes),new Object[]{argNum});
 
@@ -85,8 +83,8 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
      * @return
      */
     @Override
-    protected X doGetValue() {
-        return differentialFunctionFactory.getMFactory().tensorMmul(larg(),rarg(),axes);
+    public ArrayField doGetValue() {
+        return sameDiff.getArrayFactory().tensorMmul(larg(),rarg(),axes);
     }
 
 
@@ -99,16 +97,16 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
 
 
     @Override
-    public DifferentialFunction<X> diff(Variable<X> i_v1) {
+    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
         return doTensorMmul(argNum,larg(),rarg());
     }
 
 
 
 
-    private DifferentialFunction<X> doTensorMmul(int argNum,
-                                                 DifferentialFunction<X> a,
-                                                 DifferentialFunction<X> b) {
+    private DifferentialFunction<ArrayField> doTensorMmul(int argNum,
+                                                          DifferentialFunction<ArrayField> a,
+                                                          DifferentialFunction<ArrayField> b) {
         if (a.getValue(true) instanceof ArrayField) {
             ArrayField xField = (ArrayField) a.getValue(true);
             ArrayField yField = (ArrayField) b.getValue(true);
@@ -176,15 +174,17 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
             }
 
 
-            DifferentialFunction<X> at = differentialFunctionFactory
-                    .reshape(differentialFunctionFactory.permute
-                    (a,newAxesA),newShapeA);
-            DifferentialFunction<X> bt = differentialFunctionFactory.reshape(differentialFunctionFactory
-                    .permute(b,newAxesB),newShapeB);
+            DifferentialFunction<ArrayField> at = getSameDiff()
+                    .getFunctionFactory()
+                    .reshape(getSameDiff().getFunctionFactory().permute
+                            (a,newAxesA),newShapeA);
+            DifferentialFunction<ArrayField> bt = getSameDiff().getFunctionFactory()
+                    .reshape(getSameDiff().getFunctionFactory()
+                            .permute(b,newAxesB),newShapeB);
 
-            DifferentialFunction<X> ret = differentialFunctionFactory.mmul(argNum,at,bt);
+            DifferentialFunction<ArrayField> ret = getSameDiff().getFunctionFactory().mmul(argNum,at,bt);
             int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
-            return differentialFunctionFactory.reshape(ret,aPlusB);
+            return getSameDiff().getFunctionFactory().reshape(ret,aPlusB);
 
         }
 

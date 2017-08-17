@@ -2,7 +2,7 @@ package org.nd4j.autodiff;
 
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
@@ -18,7 +18,7 @@ public interface AbstractFactory<X extends Field<X>>
      *
      * @return
      */
-    SDGraph graph();
+    SameDiff sameDiff();
 
     List<String> methodNames();
 
@@ -212,4 +212,6 @@ public interface AbstractFactory<X extends Field<X>>
 
      */
     X permute(X value, int[] dimensions);
+
+    ArrayField set(ArrayField value, ArrayField value1);
 }

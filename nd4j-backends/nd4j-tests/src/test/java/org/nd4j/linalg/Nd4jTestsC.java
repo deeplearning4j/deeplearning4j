@@ -24,7 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
+import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -710,9 +711,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         if (blockIdx.x == 0) {
             printf("original Z shape: \n");
             shape::printShapeInfoLinear(zShapeInfo);
-        
+
             printf("Target dimension: [%i], dimensionLength: [%i]\n", dimension[0], dimensionLength);
-        
+
             printf("TAD shape: \n");
             shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
         }
@@ -868,7 +869,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 INDArray inC = Nd4j.linspace(1, length, length).reshape('c', shape);
                 System.out.println("TAD shape");
                 System.out.println(Arrays.toString((inC.tensorAlongDimension(0,dims).shape())));
-        
+
                 INDArray inF = inC.dup('f');
                 System.out.println("C stride " + Arrays.toString(inC.tensorAlongDimension(0,dims).stride()) + " and f stride " + Arrays.toString(inF.tensorAlongDimension(0,dims).stride()));
                 for(int i = 0; i < inC.tensorssAlongDimension(dims); i++) {
@@ -4324,6 +4325,27 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testNewBroadcastComparison4() throws Exception {
+        INDArray initial = Nd4j.create(3, 5);
+        INDArray mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
+        INDArray exp = Nd4j.create(new double[] {0, 0, 1, 0, 0});
+
+        for (int i = 0; i < initial.columns(); i++) {
+            initial.getColumn(i).assign(i+1);
+        }
+
+        Nd4j.getExecutioner().commit();
+
+
+        Nd4j.getExecutioner().exec(new BroadcastEqualTo(initial, mask, initial, 1 ));
+
+
+        for (int i = 0; i < initial.rows(); i++) {
+            assertEquals(exp, initial.getRow(i));
+        }
+    }
+
+    @Test
     public void testTadReduce3_0() throws Exception {
         INDArray haystack = Nd4j.create(new double[] {-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527,
                         -0.77555125951, -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130,
@@ -5177,6 +5199,20 @@ public class Nd4jTestsC extends BaseNd4jTest {
         matrix.putiColumnVector(row);
 
         assertEquals(exp, matrix);
+    }
+
+    @Test
+    public void testRsub1() throws Exception {
+        INDArray arr = Nd4j.ones(5).assign(2.0);
+        INDArray exp_0 = Nd4j.ones(5).assign(2.0);
+        INDArray exp_1 = Nd4j.create(5).assign(-1);
+
+        Nd4j.getExecutioner().commit();
+
+        INDArray res = arr.rsub(1.0);
+
+        assertEquals(exp_0, arr);
+        assertEquals(exp_1, res);
     }
 
     @Override

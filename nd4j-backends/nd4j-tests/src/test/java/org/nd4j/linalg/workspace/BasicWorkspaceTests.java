@@ -9,6 +9,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -16,10 +17,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.enums.LearningPolicy;
-import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
-import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+
+import java.io.File;
 
 import static org.junit.Assert.*;
 
@@ -873,6 +872,63 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         assertEquals(6.0, array.getFloat(3), 0.01);
         assertEquals(6.0, array.getFloat(4), 0.01);
     }
+
+
+    @Test
+    public void testMmap1() throws Exception {
+        // we don't support MMAP on cuda yet
+        if (Nd4j.getExecutioner().getClass().getName().toLowerCase().contains("cuda"))
+            return;
+
+        WorkspaceConfiguration mmap = WorkspaceConfiguration.builder()
+                .initialSize(1000000)
+                .policyLocation(LocationPolicy.MMAP)
+                .build();
+
+        MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2");
+
+        INDArray mArray = Nd4j.create(100);
+        mArray.assign(10f);
+
+        assertEquals(1000f, mArray.sumNumber().floatValue(), 1e-5);
+
+        ws.close();
+
+
+        ws.notifyScopeEntered();
+
+        INDArray mArrayR = Nd4j.createUninitialized(100);
+        assertEquals(1000f, mArrayR.sumNumber().floatValue(), 1e-5);
+
+        ws.close();
+    }
+
+
+    @Test
+    public void testMmap2() throws Exception {
+        // we don't support MMAP on cuda yet
+        if (Nd4j.getExecutioner().getClass().getName().toLowerCase().contains("cuda"))
+            return;
+
+        File tmp = File.createTempFile("tmp", "fdsfdf");
+        tmp.deleteOnExit();
+        Nd4jWorkspace.fillFile(tmp, 100000);
+
+        WorkspaceConfiguration mmap = WorkspaceConfiguration.builder()
+                .policyLocation(LocationPolicy.MMAP)
+                .tempFilePath(tmp.getAbsolutePath())
+                .build();
+
+        MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M3");
+
+        INDArray mArray = Nd4j.create(100);
+        mArray.assign(10f);
+
+        assertEquals(1000f, mArray.sumNumber().floatValue(), 1e-5);
+
+        ws.notifyScopeLeft();
+    }
+
 
     @Override
     public char ordering() {

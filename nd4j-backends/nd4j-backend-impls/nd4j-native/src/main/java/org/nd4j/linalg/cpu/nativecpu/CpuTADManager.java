@@ -1,7 +1,7 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.NonNull;
-import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
