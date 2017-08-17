@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.modelimport.keras.layers.*;
+import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
@@ -68,6 +69,8 @@ public class KerasLayer {
     public static final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D = "GlobalMaxPooling2D";
     public static final String LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D = "GlobalAveragePooling1D";
     public static final String LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D = "GlobalAveragePooling2D";
+    /* Keras advanced activation types. */
+    public static final String LAYER_CLASS_NAME_LEAKY_RELU = "LeakyReLU";
 
     /* Keras layer configurations. */
     public static final String LAYER_FIELD_CONFIG = "config";
@@ -201,6 +204,9 @@ public class KerasLayer {
         switch (layerClassName) {
             case LAYER_CLASS_NAME_ACTIVATION:
                 layer = new KerasActivation(layerConfig, enforceTrainingConfig);
+                break;
+            case LAYER_CLASS_NAME_LEAKY_RELU:
+                layer = new KerasLeakyReLU(layerConfig, enforceTrainingConfig);
                 break;
             case LAYER_CLASS_NAME_DROPOUT:
                 layer = new KerasDropout(layerConfig, enforceTrainingConfig);
