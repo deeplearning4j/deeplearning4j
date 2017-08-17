@@ -2,6 +2,8 @@ package org.datavec.spark.transform;
 
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.transform.integer.BaseIntegerTransform;
+import org.datavec.api.transform.transform.nlp.TextToCharacterIndexTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
@@ -11,11 +13,10 @@ import org.datavec.spark.transform.model.SequenceBatchCSVRecord;
 import org.datavec.spark.transform.model.SingleCSVRecord;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.serde.base64.Nd4jBase64;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
@@ -117,4 +118,79 @@ public class CSVSparkTransformTest {
 
     }
 
+    @Test
+    public void testSpecificSequence() {
+        final Schema schema = new Schema.Builder()
+                .addColumnsString("action")
+                .build();
+
+        final TransformProcess transformProcess = new TransformProcess.Builder(schema)
+                .removeAllColumnsExceptFor("action")
+                .transform(new ConverToLowercase("action"))
+                .convertToSequence()
+                .transform(new TextToCharacterIndexTransform("action", "action_sequence", defaultCharIndex(), false))
+                .integerToOneHot("action_sequence",0,29)
+                .build();
+
+        final String[] data1 = new String[] { "test1" };
+        final String[] data2 = new String[] { "test2" };
+        final BatchCSVRecord batchCsvRecord = new BatchCSVRecord(
+                Arrays.asList(
+                        new SingleCSVRecord(data1),
+                        new SingleCSVRecord(data2)));
+
+        final CSVSparkTransform transform = new CSVSparkTransform(transformProcess);
+        System.out.println(transform.transform(batchCsvRecord));
+    }
+
+    private static Map<Character,Integer> defaultCharIndex() {
+        Map<Character,Integer> ret = new TreeMap<>();
+
+        ret.put('a',0);
+        ret.put('b',1);
+        ret.put('c',2);
+        ret.put('d',3);
+        ret.put('e',4);
+        ret.put('f',5);
+        ret.put('g',6);
+        ret.put('h',7);
+        ret.put('i',8);
+        ret.put('j',9);
+        ret.put('k',10);
+        ret.put('l',11);
+        ret.put('m',12);
+        ret.put('n',13);
+        ret.put('o',14);
+        ret.put('p',15);
+        ret.put('q',16);
+        ret.put('r',17);
+        ret.put('s',18);
+        ret.put('t',19);
+        ret.put('u',20);
+        ret.put('v',21);
+        ret.put('w',22);
+        ret.put('x',23);
+        ret.put('y',24);
+        ret.put('z',25);
+        ret.put('/',26);
+        ret.put(' ',27);
+        ret.put('(',28);
+        ret.put(')',29);
+
+        return ret;
+    }
+
+    public static class ConverToLowercase extends BaseIntegerTransform {
+        public ConverToLowercase(String column) {
+            super(column);
+        }
+
+        public Text map(Writable writable) {
+            return new Text(writable.toString().toLowerCase());
+        }
+
+        public Object map(Object input) {
+            return new Text(input.toString().toLowerCase());
+        }
+    }
 }
