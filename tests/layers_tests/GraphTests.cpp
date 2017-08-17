@@ -433,3 +433,32 @@ TEST_F(GraphTests, AutoOutput2) {
     ASSERT_NEAR(-1.0, outputs->at(1)->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(-2.0, outputs->at(2)->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
+
+
+TEST_F(GraphTests, BroadcastTest1) {
+    Graph *graph = new Graph();
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(0.0);
+
+    auto y = new NDArray<float>(1, 5, 'c');
+    for (int e = 0; e < y->columns(); e++) {
+        y->putScalar(e, e);
+    }
+
+    auto z = new NDArray<float>(5, 5, 'c');
+
+    graph->getVariableSpace()->putVariable(-1, x);
+    graph->getVariableSpace()->putVariable(-2, y);
+    graph->getVariableSpace()->putVariable(-3, z);
+
+    auto nodeA = new Node(OpType_BROADCAST, 0, 1, {-1, -2}, {2}, {1});
+    auto nodeB = new Node(OpType_TRANSFORM, 6, 2, {1}, {-3});
+
+    graph->addNode(nodeA);
+    graph->addNode(nodeB);
+
+    GraphExecutioner::execute(graph);
+
+    ASSERT_NEAR(-2.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+}

@@ -45,8 +45,9 @@ namespace nd4j{
                 functions::transform::Transform<float>::template exec(opNum, x->getNDArray()->_buffer,
                                                                       x->getNDArray()->_shapeInfo,
                                                                       z->getNDArray()->_buffer,
-                                                                      z->getNDArray()->_shapeInfo, node->extraParams(), nullptr,
-                                                                      nullptr);
+                                                                      z->getNDArray()->_shapeInfo, node->extraParams(),
+                                                                      // FIXME: for some cases we NEED these vars
+                                                                      nullptr, nullptr);
 
                 variableSpace->putVariable(node->id(), z);
 
@@ -154,7 +155,43 @@ namespace nd4j{
                 auto x = variableSpace->getVariable(node->input()->at(0));
                 auto y = variableSpace->getVariable(node->input()->at(1));
 
+                auto z = x;
 
+                auto tad = new shape::TAD(x->getNDArray()->_shapeInfo, node->getDimensionsPtr(), node->getDimensions()->size());
+                tad->createTadOnlyShapeInfo();
+                tad->createOffsets();
+
+                functions::broadcast::Broadcast<float>::exec(opNum,
+                                                             x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo,
+                                                             y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
+                                                             z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
+                                                             node->getDimensionsPtr(), node->getDimensions()->size(),
+                                                             tad->tadOnlyShapeInfo, tad->tadOffsets,
+
+                                                             // FIXME: this is bad. We have use case of different tads for broadcast
+                                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
+
+
+                delete tad;
+
+                variableSpace->putVariable(node->id(), z);
+
+                if (node->hasExternalOutputs()) {
+                    for (int e = 0; e < node->output()->size(); e++) {
+                        if (node->output()->at(e) > 0)
+                            continue;
+
+                        auto out = variableSpace->getVariable(node->output()->at(e));
+
+                        if (out->isEmpty()) {
+                            out->setNDArray(z->getNDArray()->dup(z->getNDArray()->ordering()));
+                        } else {
+                            // assign output
+                            if (out->getNDArray() != z->getNDArray())
+                                out->getNDArray()->assign(z->getNDArray());
+                        }
+                    }
+                }
             }
 
             return ND4J_STATUS_OK;
