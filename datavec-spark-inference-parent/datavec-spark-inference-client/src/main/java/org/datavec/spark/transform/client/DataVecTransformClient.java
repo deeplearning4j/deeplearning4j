@@ -235,11 +235,11 @@ public class DataVecTransformClient implements DataVecTransformService {
     @Override
     public SequenceBatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform) {
         try {
-            BatchCSVRecord singleCsvRecord = Unirest.post(url + "/transformincremental")
+            SequenceBatchCSVRecord singleCsvRecord = Unirest.post(url + "/transformincremental")
                     .header("accept", "application/json")
                     .header("Content-Type", "application/json")
                     .header(SEQUENCE_OR_NOT_HEADER,"true")
-                    .body(transform).asObject(BatchCSVRecord.class).getBody();
+                    .body(transform).asObject(SequenceBatchCSVRecord.class).getBody();
             return singleCsvRecord;
         } catch (UnirestException e) {
             e.printStackTrace();
