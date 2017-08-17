@@ -35,19 +35,20 @@ namespace nd4j{
                 auto x = variableSpace->getVariable(in);
 
                 // if output of previous node is used in different code branches - duplicate it
+                auto z = x;
                 if (in > 0)
                     if (graph->getMapped()->at(in)->output()->size() > 1) {
-                        auto array = x->getNDArray()->dup(x->getNDArray()->ordering());
-                        x = new Variable<float>(array);
+                        auto array = new NDArray<float>(x->getNDArray());
+                        z = new Variable<float>(array);
                     };
 
                 functions::transform::Transform<float>::template exec(opNum, x->getNDArray()->_buffer,
                                                                       x->getNDArray()->_shapeInfo,
-                                                                      x->getNDArray()->_buffer,
-                                                                      x->getNDArray()->_shapeInfo, node->extraParams(), nullptr,
+                                                                      z->getNDArray()->_buffer,
+                                                                      z->getNDArray()->_shapeInfo, node->extraParams(), nullptr,
                                                                       nullptr);
 
-                variableSpace->putVariable(node->id(), x);
+                variableSpace->putVariable(node->id(), z);
 
                 if (node->hasExternalOutputs()) {
                     for (int e = 0; e < node->output()->size(); e++) {
@@ -57,11 +58,11 @@ namespace nd4j{
                         auto out = variableSpace->getVariable(node->output()->at(e));
 
                         if (out->isEmpty()) {
-                            out->setNDArray(x->getNDArray()->dup(x->getNDArray()->ordering()));
+                            out->setNDArray(z->getNDArray()->dup(z->getNDArray()->ordering()));
                         } else {
                             // assign output
-                            if (out->getNDArray() != x->getNDArray())
-                                out->getNDArray()->assign(x->getNDArray());
+                            if (out->getNDArray() != z->getNDArray())
+                                out->getNDArray()->assign(z->getNDArray());
                         }
                     }
                 }
@@ -104,7 +105,7 @@ namespace nd4j{
             } else if (opType == OpType_ACCUMULATION) {
                 auto x = variableSpace->getVariable(node->input()->at(0));
 
-                auto *z = x;
+                auto z = x;
                 // if there's no dimensions set - it's reduceToScalar
                 if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
                     z = new Variable<float>(new NDArray<float>(1,1, 'c'));
@@ -172,7 +173,7 @@ namespace nd4j{
             for (int l = 0; l < graph->getOnion()->size(); l++) {
                 int layerSize = graph->getOnion()->count(l) == 1 ? graph->getOnion()->at(l)->size() : 0;
 
-#pragma omp parallel for if (layerSize > 1) schedule(dynamic) proc_bind(spread)
+//#pragma omp parallel for if (layerSize > 1) schedule(dynamic) proc_bind(spread)
                 for (int n = 0; n < layerSize; n++) {
                     auto node = graph->getOnion()->at(l)->at(n);
 

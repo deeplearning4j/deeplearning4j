@@ -417,6 +417,7 @@ TEST_F(GraphTests, AutoOutput2) {
 
     graph->buildGraph();
 
+    ASSERT_TRUE(graph->getVariableSpace()->getVariable(-1) != nullptr);
     ASSERT_TRUE(graph->getVariableSpace()->getVariable(-2) != nullptr);
     ASSERT_TRUE(graph->getVariableSpace()->getVariable(-3) != nullptr);
 
