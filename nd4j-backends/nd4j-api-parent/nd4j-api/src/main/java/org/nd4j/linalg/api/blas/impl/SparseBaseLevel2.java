@@ -1,7 +1,7 @@
 package org.nd4j.linalg.api.blas.impl;
 
 import org.nd4j.linalg.api.blas.Level2;
-import org.nd4j.linalg.api.blas.params.SparseGemvParameters;
+import org.nd4j.linalg.api.blas.params.SparseCOOGemvParameters;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -22,7 +22,7 @@ public abstract class SparseBaseLevel2 extends SparseBaseLevel implements Level2
         checkArgument(X.isVector());
         checkArgument(Y.isVector());
 
-        SparseGemvParameters parameters = new SparseGemvParameters(A, X, Y);
+        SparseCOOGemvParameters parameters = new SparseCOOGemvParameters(A, X, Y);
 
 
         switch (A.data().dataType()) {

@@ -865,16 +865,15 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         int size = newAxis.length + hiddenDimensions().length;
         int[] newHiddenDim = new int[size];
         int newDim = 0;
-        int i = 0;
+        int actualArrayIdx = 0;
         for (int oldDim = 0; oldDim < getNumHiddenDimension(); oldDim++) {
-            int j = 0;
-            while (newAxis[newDim] <= hiddenDimensions()[i]) {
-                newHiddenDim[i] = newAxis[newDim];
-                i++;
-                j++;
+            while ((newDim < newAxis.length) && (oldDim >=getNumHiddenDimension() || newAxis[newDim] <= hiddenDimensions()[oldDim])) {
+                newHiddenDim[actualArrayIdx] = newAxis[newDim] + oldDim;
+                actualArrayIdx++;
+                newDim++;
             }
-            newHiddenDim[i] = hiddenDimensions()[oldDim] + j;
-            i++;
+            newHiddenDim[actualArrayIdx] = hiddenDimensions()[oldDim] + newDim;
+            actualArrayIdx++;
         }
         return newHiddenDim;
     }
@@ -940,9 +939,14 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * */
     public DataBuffer getUnderlyingIndicesOf(int i) {
         int from = underlyingRank() * i;
-        int to = from + underlyingRank();
-        int[] arr = Arrays.copyOfRange(indices.asInt(), from, to);
-        return Nd4j.getDataBufferFactory().createInt(arr);
+        //int to = from + underlyingRank();
+        int[] res = new int[underlyingRank()];
+        for(int j = 0; j< underlyingRank(); j++){
+            res[j] = from + j;
+        }
+
+        ///int[] arr = Arrays.copyOfRange(indices.asInt(), from, to);
+        return Nd4j.getDataBufferFactory().createInt(res);
     }
 
     /**

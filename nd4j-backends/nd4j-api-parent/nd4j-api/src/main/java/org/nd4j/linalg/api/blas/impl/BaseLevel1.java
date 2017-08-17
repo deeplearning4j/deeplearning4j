@@ -297,6 +297,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
 
         if (x.isSparse() || y.isSparse()) {
             Nd4j.getSparseBlasWrapper().level1().swap(x, y);
+            return;
         }
 
         if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
@@ -330,6 +331,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
 
         if (x.isSparse() || y.isSparse()) {
             Nd4j.getSparseBlasWrapper().level1().copy(x, y);
+            return;
         }
         if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, x, y);

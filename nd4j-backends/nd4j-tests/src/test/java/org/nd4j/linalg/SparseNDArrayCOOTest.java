@@ -3,6 +3,7 @@ package org.nd4j.linalg;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.*;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -75,6 +76,7 @@ public class SparseNDArrayCOOTest {
         assertArrayEquals(values, currentValues, 1e-5);
         assertArrayEquals(ArrayUtil.flatten(indices), sparseView.getUnderlyingIndices().asInt());
         assertEquals(0, sparseView.nnz());
+        System.out.println(sparseView.sparseInfoDataBuffer());
     }
 
     @Test
@@ -89,6 +91,8 @@ public class SparseNDArrayCOOTest {
         assertEquals(1, sparseView.nnz());
         assertArrayEquals(new double[] {3}, sparseView.getIncludedValues().asDouble(), 1e-1);
         assertArrayEquals(new int[] {0, 1}, sparseView.getIncludedIndices().asInt());
+
+        System.out.println(sparseView.sparseInfoDataBuffer());
     }
 
     @Test
@@ -103,6 +107,7 @@ public class SparseNDArrayCOOTest {
         assertArrayEquals(new double[] {1, 2}, sparseView.getIncludedValues().asDouble(), 1e-1);
         assertArrayEquals(new int[] {0, 1, 1, 0}, sparseView.getIncludedIndices().asInt());
 
+        System.out.println(sparseView.sparseInfoDataBuffer());
     }
 
     @Test
@@ -116,6 +121,7 @@ public class SparseNDArrayCOOTest {
         assertArrayEquals(new double[] {2, 3}, sparseView.getIncludedValues().asDouble(), 1e-1);
         assertArrayEquals(new int[] {0, 1, 1, 0}, sparseView.getIncludedIndices().asInt());
 
+        System.out.println(sparseView.sparseInfoDataBuffer());
     }
 
     @Test
@@ -126,6 +132,8 @@ public class SparseNDArrayCOOTest {
         BaseSparseNDArrayCOO sparseView =
                         (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.all(), NDArrayIndex.point(0));
         assertEquals(0, sparseView.nnz());
+
+        System.out.println(sparseView.sparseInfoDataBuffer());
     }
 
     @Test
@@ -139,6 +147,7 @@ public class SparseNDArrayCOOTest {
         assertArrayEquals(new int[] {0, 1}, sparseView.getIncludedIndices().asInt());
         assertArrayEquals(new double[] {3}, sparseView.getIncludedValues().asDouble(), 1e-1);
 
+        System.out.println(sparseView.sparseInfoDataBuffer());
     }
 
     @Test
@@ -167,6 +176,8 @@ public class SparseNDArrayCOOTest {
         assertArrayEquals(new int[] {2, 2}, view.shape());
         assertArrayEquals(new int[] {0, 0, 1, 1}, view.getIncludedIndices().asInt());
         assertArrayEquals(new double[] {2, 1}, view.getIncludedValues().asDouble(), 1e-1);
+
+        System.out.println(view.sparseInfoDataBuffer());
     }
 
     @Test
@@ -542,6 +553,33 @@ public class SparseNDArrayCOOTest {
         assertEquals(0, array.reverseIndexes(new int[] {0, 0, 2}));
         assertEquals(7, array.reverseIndexes(new int[] {3, 0, 2}));
         assertEquals(8, array.reverseIndexes(new int[] {3, 1, 0}));
+    }
+
+    @Test
+    public void rdmTest(){
+        INDArray i = Nd4j.rand(new int[]{3, 3, 3});
+        INDArray ii = i.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all());
+        System.out.println(ii);
+        System.out.println(ii.shapeInfoDataBuffer());
+
+    }
+
+    @Test
+    public void tryToFindABugWithHiddenDim(){
+
+        int[] shape = new int[] {1, 4, 2, 3};
+        double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
+        int[][] indices = new int[][] {{0, 0, 0, 2}, {0, 0, 1, 1}, {0, 1, 0, 0}, {0, 1, 0, 1}, {0, 1, 1, 2}, {0, 2, 0, 1}, {0, 2, 1, 2},
+                {0, 3, 0, 2}, {0, 3, 1, 0}};
+        BaseSparseNDArrayCOO array = (BaseSparseNDArrayCOO) Nd4j.createSparseCOO(values, indices, shape);
+
+        BaseSparseNDArrayCOO view1 = (BaseSparseNDArrayCOO) array.get( NDArrayIndex.point(0), NDArrayIndex.newAxis(), NDArrayIndex.newAxis(),  NDArrayIndex.point(0));
+        System.out.println(view1.shapeInfoDataBuffer());
+        System.out.println(view1.sparseInfoDataBuffer());
+
+        BaseSparseNDArrayCOO view2 = (BaseSparseNDArrayCOO) view1.get( NDArrayIndex.point(0), NDArrayIndex.newAxis(),NDArrayIndex.newAxis(),  NDArrayIndex.point(0));
+        System.out.println(view2.shapeInfoDataBuffer());
+        System.out.println(view2.sparseInfoDataBuffer());
     }
 }
 

@@ -5031,6 +5031,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void sortCooIndicesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntPointer indices, @Cast("float16*") ShortPointer values, @Cast("Nd4jIndex") long length, int rank);
     public native void sortCooIndicesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntBuffer indices, @Cast("float16*") ShortBuffer values, @Cast("Nd4jIndex") long length, int rank);
     public native void sortCooIndicesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, int[] indices, @Cast("float16*") short[] values, @Cast("Nd4jIndex") long length, int rank);
+
+
+    public native @Cast("Nd4jIndex*") LongPointer mmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, String fileName, @Cast("Nd4jIndex") long length);
+    public native @Cast("Nd4jIndex*") LongBuffer mmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("const char*") BytePointer fileName, @Cast("Nd4jIndex") long length);
+
+    public native void munmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex*") LongPointer ptrMap, @Cast("Nd4jIndex") long length);
+    public native void munmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex*") LongBuffer ptrMap, @Cast("Nd4jIndex") long length);
+    public native void munmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex*") long[] ptrMap, @Cast("Nd4jIndex") long length);
 }
 
 

@@ -31,6 +31,10 @@ import static org.nd4j.linalg.factory.Nd4j.createUninitialized;
 @Slf4j
 public abstract class BaseSparseNDArray implements ISparseNDArray {
 
+    /*
+    * TODO: extends baseNdArray
+    * */
+
     protected static final double THRESHOLD_MEMORY_ALLOCATION = 2;
     protected int rows, columns, rank;
     protected Boolean isVector = null;

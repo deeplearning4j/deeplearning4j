@@ -20,7 +20,7 @@ public class SparseCpuLevel2 extends SparseBaseLevel2 {
     // Mapping with Sparse Blas calls
 
     public void scoomv(char transA, int M, DataBuffer values, DataBuffer rowInd, DataBuffer colInd, int nnz, INDArray x, INDArray y){
-        mkl_scoogemv(
+        mkl_cspblas_scoogemv(
                 Character.toString(transA),
                 (IntPointer) Nd4j.createBuffer(new int[]{M}).addressPointer(),
                 (FloatPointer) values.addressPointer(),
@@ -31,7 +31,7 @@ public class SparseCpuLevel2 extends SparseBaseLevel2 {
                 (FloatPointer)y.data().addressPointer());
     }
     public void dcoomv(char transA, int M, DataBuffer values, DataBuffer rowInd, DataBuffer colInd, int nnz, INDArray x, INDArray y){
-        mkl_dcoogemv(
+        mkl_cspblas_dcoogemv(
                 Character.toString(transA),
                 (IntPointer) Nd4j.createBuffer(new int[]{M}).addressPointer(),
                 (DoublePointer) values.addressPointer(),
