@@ -4,9 +4,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.*;
+import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 
+import javax.print.DocFlavor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -70,6 +72,7 @@ public class KerasLayerTest {
     public static final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
     public static final double EPSILON = 1E-5;
     public static final double MOMENTUM = 0.99;
+    public static final String LAYER_FIELD_LEAKY_RELU_ALPHA = "alpha";
 
     @Test
     public void testBuildActivationLayer() throws Exception {
@@ -82,6 +85,20 @@ public class KerasLayerTest {
 
         ActivationLayer layer = new KerasActivation(layerConfig).getActivationLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
+        assertEquals(LAYER_NAME, layer.getLayerName());
+    }
+
+    @Test
+    public void testBuildLeakyReLULayer() throws Exception {
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_LEAKY_RELU);
+        Map<String, Object> config = new HashMap<String, Object>();
+        config.put(LAYER_FIELD_LEAKY_RELU_ALPHA, 0.3); // set leaky ReLU alpha
+        config.put(LAYER_FIELD_NAME, LAYER_NAME);
+        layerConfig.put(LAYER_FIELD_CONFIG, config);
+
+        ActivationLayer layer = new KerasLeakyReLU(layerConfig).getActivationLayer();
+        assertEquals("leakyrelu(a=0.3)", layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
     }
 
