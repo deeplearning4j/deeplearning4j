@@ -20,12 +20,14 @@ enum OpType {
   OpType_SCALAR = 3,
   OpType_BROADCAST = 4,
   OpType_PAIRWISE = 5,
+  OpType_ACCUMULATION3 = 6,
+  OpType_SUMMARYSTATS = 7,
   OpType_VARIABLE = 119,
   OpType_MIN = OpType_TRANSFORM,
   OpType_MAX = OpType_VARIABLE
 };
 
-inline OpType (&EnumValuesOpType())[7] {
+inline OpType (&EnumValuesOpType())[9] {
   static OpType values[] = {
     OpType_TRANSFORM,
     OpType_ACCUMULATION,
@@ -33,6 +35,8 @@ inline OpType (&EnumValuesOpType())[7] {
     OpType_SCALAR,
     OpType_BROADCAST,
     OpType_PAIRWISE,
+    OpType_ACCUMULATION3,
+    OpType_SUMMARYSTATS,
     OpType_VARIABLE
   };
   return values;
@@ -182,7 +186,8 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_OUTPUT = 14,
     VT_EXTRAPARAMS = 16,
     VT_DIMENSIONS = 18,
-    VT_DEVICE = 20
+    VT_DEVICE = 20,
+    VT_SCALAR = 22
   };
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
@@ -211,6 +216,9 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t device() const {
     return GetField<int32_t>(VT_DEVICE, 0);
   }
+  float scalar() const {
+    return GetField<float>(VT_SCALAR, 0.0f);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
@@ -226,6 +234,7 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_DIMENSIONS) &&
            verifier.Verify(dimensions()) &&
            VerifyField<int32_t>(verifier, VT_DEVICE) &&
+           VerifyField<float>(verifier, VT_SCALAR) &&
            verifier.EndTable();
   }
 };
@@ -260,13 +269,16 @@ struct FlatNodeBuilder {
   void add_device(int32_t device) {
     fbb_.AddElement<int32_t>(FlatNode::VT_DEVICE, device, 0);
   }
+  void add_scalar(float scalar) {
+    fbb_.AddElement<float>(FlatNode::VT_SCALAR, scalar, 0.0f);
+  }
   FlatNodeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
   FlatNodeBuilder &operator=(const FlatNodeBuilder &);
   flatbuffers::Offset<FlatNode> Finish() {
-    const auto end = fbb_.EndTable(start_, 9);
+    const auto end = fbb_.EndTable(start_, 10);
     auto o = flatbuffers::Offset<FlatNode>(end);
     return o;
   }
@@ -282,8 +294,10 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> output = 0,
     flatbuffers::Offset<flatbuffers::Vector<float>> extraParams = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> dimensions = 0,
-    int32_t device = 0) {
+    int32_t device = 0,
+    float scalar = 0.0f) {
   FlatNodeBuilder builder_(_fbb);
+  builder_.add_scalar(scalar);
   builder_.add_device(device);
   builder_.add_dimensions(dimensions);
   builder_.add_extraParams(extraParams);
@@ -306,7 +320,8 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     const std::vector<int32_t> *output = nullptr,
     const std::vector<float> *extraParams = nullptr,
     const std::vector<int32_t> *dimensions = nullptr,
-    int32_t device = 0) {
+    int32_t device = 0,
+    float scalar = 0.0f) {
   return nd4j::graph::CreateFlatNode(
       _fbb,
       id,
@@ -317,7 +332,8 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
       output ? _fbb.CreateVector<int32_t>(*output) : 0,
       extraParams ? _fbb.CreateVector<float>(*extraParams) : 0,
       dimensions ? _fbb.CreateVector<int32_t>(*dimensions) : 0,
-      device);
+      device,
+      scalar);
 }
 
 inline const nd4j::graph::FlatNode *GetFlatNode(const void *buf) {

@@ -9,6 +9,7 @@
 #include <VariableSpace.h>
 #include <Node.h>
 #include <GraphExecutioner.h>
+#include <loops/scalar.h>
 #include <loops/pairwise_transform.h>
 #include <loops/transform.h>
 
@@ -77,7 +78,7 @@ namespace nd4j{
                 }
 
 
-                functions::pairwise_transforms::PairWiseTransform<float>:: template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
+                functions::pairwise_transforms::PairWiseTransform<float>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
                                                                                          z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo, node->extraParams());
 
                 variableSpace->putVariable(node->id(), z);
@@ -100,9 +101,87 @@ namespace nd4j{
                     }
                 }
             } else if (opType == OpType_SCALAR) {
+                int in = node->input()->at(0);
 
-                //
+                auto x = variableSpace->getVariable(in);
 
+                // if output of previous node is used in different code branches - duplicate it
+                auto z = x;
+                if (in > 0)
+                    if (graph->getMapped()->at(in)->output()->size() > 1) {
+                        auto array = new NDArray<float>(x->getNDArray());
+                        z = new Variable<float>(array);
+                    };
+
+                functions::scalar::ScalarTransform<float>::transform(opNum, x->getNDArray()->_buffer,
+                                                                      x->getNDArray()->_shapeInfo,
+                                                                      z->getNDArray()->_buffer,
+                                                                      z->getNDArray()->_shapeInfo,
+                                                                      node->scalar(),
+                                                                      node->extraParams());
+
+                variableSpace->putVariable(node->id(), z);
+
+                if (node->hasExternalOutputs()) {
+                    for (int e = 0; e < node->output()->size(); e++) {
+                        if (node->output()->at(e) > 0)
+                            continue;
+
+                        auto out = variableSpace->getVariable(node->output()->at(e));
+
+                        if (out->isEmpty()) {
+                            out->setNDArray(z->getNDArray()->dup(z->getNDArray()->ordering()));
+                        } else {
+                            // assign output
+                            if (out->getNDArray() != z->getNDArray())
+                                out->getNDArray()->assign(z->getNDArray());
+                        }
+                    }
+                }
+            }else if (opType == OpType_SUMMARYSTATS) {
+                auto x = variableSpace->getVariable(node->input()->at(0));
+
+                auto z = x;
+                // if there's no dimensions set - it's reduceToScalar
+                if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
+                    z = new Variable<float>(new NDArray<float>(1,1, 'c'));
+                    z->getNDArray()->_buffer[0] = functions::summarystats::SummaryStatsReduce<float>::template execScalar(opNum, node->scalar() != 0.0, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
+
+                } else {
+                    // dimensional reduction
+                    shape::TAD *tad = new shape::TAD(x->getNDArray()->_shapeInfo, node->getDimensionsPtr(), node->getDimensions()->size());
+                    tad->createTadOnlyShapeInfo();
+                    tad->createOffsets();
+
+                    int resultLength = x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
+
+                    z = new Variable<float>(new NDArray<float>(1, resultLength, 'c'));
+
+
+                    functions::summarystats::SummaryStatsReduce<float>::template exec(opNum, node->scalar() != 0.0, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
+                                                                            node->getDimensionsPtr() , node->getDimensions()->size());
+
+                    delete tad;
+                }
+
+                variableSpace->putVariable(node->id(), z);
+
+                if (node->hasExternalOutputs()) {
+                    for (int e = 0; e < node->output()->size(); e++) {
+                        if (node->output()->at(e) > 0)
+                            continue;
+
+                        auto out = variableSpace->getVariable(node->output()->at(e));
+
+                        if (out->isEmpty()) {
+                            out->setNDArray(z->getNDArray()->dup(z->getNDArray()->ordering()));
+                        } else {
+                            // assign output
+                            if (out->getNDArray() != z->getNDArray())
+                                out->getNDArray()->assign(z->getNDArray());
+                        }
+                    }
+                }
             } else if (opType == OpType_ACCUMULATION) {
                 auto x = variableSpace->getVariable(node->input()->at(0));
 

@@ -7,6 +7,8 @@ enum OpType:byte {
     SCALAR = 3,
     BROADCAST = 4,
     PAIRWISE = 5,
+    ACCUMULATION3 = 6,
+    SUMMARYSTATS = 7,
     VARIABLE = 119,
 }
 
@@ -35,6 +37,7 @@ table FlatNode {
     extraParams:[float]; // extra params for this op (if any)
     dimensions:[int]; // dimension for this operation
     device:int; // default is -1, which means _auto_
+    scalar:float; // optional scalar. used in scalar ops & SummaryStats
 }
 
 root_type FlatNode;

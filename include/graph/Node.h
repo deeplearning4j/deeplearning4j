@@ -31,13 +31,16 @@ namespace nd4j {
             // many ops require extra parameters to run
             float *_extraParams;
 
+            // optional scalar. used in scalar ops and in summary stats
+            float _scalar;
+
             bool _hasExternalOutputs;
             bool _hasExternalInputs;
             bool _hasInternalOutputs;
             bool _hasInternalInputs;
 
         public:
-            Node(OpType opType = OpType_TRANSFORM, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {});
+            Node(OpType opType = OpType_TRANSFORM, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f);
             Node(const nd4j::graph::FlatNode *node);
             ~Node();
 
@@ -62,6 +65,7 @@ namespace nd4j {
             bool hasInternalOutputs();
             bool hasInternalInputs();
 
+            float scalar();
 
             std::vector<int> * getDimensions();
             int * getDimensionsPtr();
@@ -72,6 +76,10 @@ namespace nd4j {
         };
     }
 }
+
+float nd4j::graph::Node::scalar() {
+    return _scalar;
+};
 
 void nd4j::graph::Node::pickInput(int inputId) {
     _input.push_back(inputId);
@@ -154,7 +162,7 @@ std::vector<int> *nd4j::graph::Node::output() {
     return &_output;
 }
 
-nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions) {
+nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar) {
     this->_opType = opType;
     this->_id = id;
     this->_opNum = opNum;
@@ -163,6 +171,8 @@ nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<
     _hasExternalOutputs = false;
     _hasInternalInputs = false;
     _hasInternalOutputs = false;
+
+    _scalar = scalar;
 
     for (auto i: input)
         pickInput(i);
@@ -187,6 +197,8 @@ nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
     _hasExternalOutputs = false;
     _hasInternalInputs = false;
     _hasInternalOutputs = false;
+
+    _scalar = node->scalar();
 
     if (node != nullptr) {
         this->_id = node->id();

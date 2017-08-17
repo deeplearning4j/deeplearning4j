@@ -493,3 +493,32 @@ TEST_F(GraphTests, BroadcastTest1) {
     ASSERT_NEAR(-2.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 
 }
+
+
+TEST_F(GraphTests, ScalarTest1) {
+    Graph *graph = new Graph();
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0);
+
+    auto z = new NDArray<float>(5, 5, 'c');
+
+    graph->getVariableSpace()->putVariable(-1, x);
+    graph->getVariableSpace()->putVariable(-2, z);
+
+    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {3});
+    auto nodeE = new Node(OpType_SCALAR, 0, 3, {2}, {-2}, {}, 1.3f);
+
+    graph->addNode(nodeA);
+    graph->addNode(nodeB);
+    graph->addNode(nodeE);
+
+    ASSERT_EQ(1, graph->rootNodes());
+    ASSERT_EQ(3, graph->totalNodes());
+
+    GraphExecutioner::execute(graph);
+
+    ASSERT_NEAR(2.714213, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+}
