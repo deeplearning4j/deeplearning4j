@@ -11,13 +11,15 @@ Basically, on Java side we only hold pointers to off-heap memory.
 To manage memory allocations we use two approaches:
 
 - JVM Garbage Collector and WeakReference tracking
-- Workspaces [LINK](https://deeplearning4j.org/workspaces)
+- MemoryWorkspaces [Workspaces guide](https://deeplearning4j.org/workspaces)
 
 Despite differences between these two approaches, idea stays the same: once on Java side some NDArray leaves scope, off-heap memory should be released so it could be reused later  
 
 # Configuring limits
 
 With DL4j/ND4j you can control both memory limits: JVM heap limit, and off-heap limit. Both are controlled via Java command line arguments:
+
+`-Xms` - this option defines how much memory JVM heap will use at application start.
 
 `-Xmx` - this option allows you to specify JVM heap memory limit.
 
