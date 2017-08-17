@@ -9,6 +9,8 @@ Deep learning is computationally intensive, so on very large datasets, speed mat
 
 Data parallelism shards large datasets and hands those pieces to separate neural networks, say, each on its own core. Deeplearning4j relies on Spark for this, training models in parallel and [iteratively averages](./iterativereduce.html) the parameters they produce in a central model. (Model parallelism, [discussed here by Jeff Dean et al](https://static.googleusercontent.com/media/research.google.com/en//archive/large_deep_networks_nips2012.pdf), allows models to specialize on separate patches of a large dataset without averaging.)
 
+Note that if you want a parameter server based approach (requires more setup!), please look at our new [distributed page](http://deeplearning4j.org/distributed])
+
 **Contents**
 
 * [Overview](#overview)
