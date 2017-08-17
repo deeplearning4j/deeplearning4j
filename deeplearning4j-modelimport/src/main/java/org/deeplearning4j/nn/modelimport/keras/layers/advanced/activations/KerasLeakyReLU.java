@@ -33,7 +33,7 @@ import java.util.Map;
  *
  * @author Max Pumperla
  */
-public class KerasLeakyReLU  extends KerasLayer {
+public class KerasLeakyReLU extends KerasLayer {
 
     /* Keras layer parameter names. */
     public static final String LAYER_FIELD_LEAKY_RELU_ALPHA = "alpha";
@@ -42,7 +42,7 @@ public class KerasLeakyReLU  extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig   dictionary containing Keras layer configuration
+     * @param layerConfig dictionary containing Keras layer configuration
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
@@ -54,8 +54,8 @@ public class KerasLeakyReLU  extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig               dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig     whether to enforce training-related configuration options
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
@@ -75,8 +75,8 @@ public class KerasLeakyReLU  extends KerasLayer {
     /**
      * Get layer output type.
      *
-     * @param  inputType    Array of InputTypes
-     * @return              output type as InputType
+     * @param inputType Array of InputTypes
+     * @return output type as InputType
      * @throws InvalidKerasConfigurationException
      */
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
@@ -89,14 +89,10 @@ public class KerasLeakyReLU  extends KerasLayer {
     /**
      * Get DL4J ActivationLayer.
      *
-     * @return  ActivationLayer
+     * @return ActivationLayer
      */
     public ActivationLayer getActivationLayer() {
         return (ActivationLayer) this.layer;
     }
-
-//    public ActivationLReLU(double alpha) {
-//        this.alpha = alpha;
-//    }
 
 }
