@@ -127,7 +127,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
     }
 
     @Override
-    public BatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform) {
+    public SequenceBatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform) {
         throw new UnsupportedOperationException();
 
     }

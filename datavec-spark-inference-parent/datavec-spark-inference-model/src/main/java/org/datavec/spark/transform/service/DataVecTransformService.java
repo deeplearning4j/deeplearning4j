@@ -108,5 +108,5 @@ public interface DataVecTransformService {
      * @param transform
      * @return
      */
-    BatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform);
+    SequenceBatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform);
 }

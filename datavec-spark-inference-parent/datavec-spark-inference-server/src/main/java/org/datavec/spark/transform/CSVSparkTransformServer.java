@@ -239,7 +239,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
      * @return
      */
     @Override
-    public BatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform) {
+    public SequenceBatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform) {
         return this.transform.transformSequenceIncremental(transform);
     }
 

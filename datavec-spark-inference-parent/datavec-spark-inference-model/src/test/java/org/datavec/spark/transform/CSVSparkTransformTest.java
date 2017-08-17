@@ -128,7 +128,8 @@ public class CSVSparkTransformTest {
                 .removeAllColumnsExceptFor("action")
                 .transform(new ConverToLowercase("action"))
                 .convertToSequence()
-                .transform(new TextToCharacterIndexTransform("action", "action_sequence", defaultCharIndex(), false))
+                .transform(new TextToCharacterIndexTransform("action", "action_sequence",
+                        defaultCharIndex(), false))
                 .integerToOneHot("action_sequence",0,29)
                 .build();
 
@@ -140,7 +141,7 @@ public class CSVSparkTransformTest {
                         new SingleCSVRecord(data2)));
 
         final CSVSparkTransform transform = new CSVSparkTransform(transformProcess);
-        System.out.println(transform.transform(batchCsvRecord));
+        System.out.println(transform.transformSequenceIncremental(batchCsvRecord));
     }
 
     private static Map<Character,Integer> defaultCharIndex() {

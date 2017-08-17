@@ -233,7 +233,7 @@ public class DataVecTransformClient implements DataVecTransformService {
      * @return
      */
     @Override
-    public BatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform) {
+    public SequenceBatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform) {
         try {
             BatchCSVRecord singleCsvRecord = Unirest.post(url + "/transformincremental")
                     .header("accept", "application/json")
