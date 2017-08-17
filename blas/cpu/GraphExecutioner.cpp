@@ -59,15 +59,8 @@ namespace nd4j{
                     }
                 }
             } else if (opType == OpType_PAIRWISE) {
-
-                //printf("PWT> x: %i; y: %i\n", node->input()->at(0), node->input()->at(1));
-                //fflush(stdout);
-
                 auto x = variableSpace->getVariable(node->input()->at(0));
                 auto y = variableSpace->getVariable(node->input()->at(1));
-
-                //printf("PWT> X: %f; Y: %f\n", x->getNDArray()->getScalar(0), y->getNDArray()->getScalar(0));
-                //fflush(stdout);
 
                 auto z = x;
                 if (node->output()->size() > 0) {
@@ -93,6 +86,59 @@ namespace nd4j{
                             out->getNDArray()->assign(z->getNDArray());
                     }
                 }
+            } else if (opType == OpType_SCALAR) {
+
+                //
+
+            } else if (opType == OpType_ACCUMULATION) {
+                auto x = variableSpace->getVariable(node->input()->at(0));
+
+                auto *z = x;
+                // if there's no dimensions set - it's reduceToScalar
+                if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
+                    z = new Variable<float>(new NDArray<float>(1,1, 'c'));
+                    z->getNDArray()->_buffer[0] = functions::reduce::ReduceFunction<float>::template execScalar(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
+
+                } else {
+                    // dimensional reduction
+                    shape::TAD *tad = new shape::TAD(x->getNDArray()->_shapeInfo, node->getDimensionsPtr(), node->getDimensions()->size());
+                    tad->createTadOnlyShapeInfo();
+                    tad->createOffsets();
+
+                    int resultLength = x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
+
+                    z = new Variable<float>(new NDArray<float>(1, resultLength, 'c'));
+
+                    functions::reduce::ReduceFunction<float>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
+                                                                            node->getDimensionsPtr() , node->getDimensions()->size(),
+                                                                            tad->tadOnlyShapeInfo, tad->tadOffsets);
+
+                    delete tad;
+                }
+
+                variableSpace->putVariable(node->id(), z);
+
+                if (node->hasExternalOutputs()) {
+                    for (int e = 0; e < node->output()->size(); e++) {
+                        if (node->output()->at(e) > 0)
+                            continue;
+
+                        auto out = variableSpace->getVariable(node->output()->at(e));
+
+                        // assign output
+                        if (out->getNDArray() != z->getNDArray())
+                            out->getNDArray()->assign(z->getNDArray());
+                    }
+                }
+            } else if (opType == OpType_INDEX_ACCUMULATION) {
+
+                //
+
+            } else if (opType == OpType_BROADCAST) {
+                auto x = variableSpace->getVariable(node->input()->at(0));
+                auto y = variableSpace->getVariable(node->input()->at(1));
+
+
             }
 
             return ND4J_STATUS_OK;

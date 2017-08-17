@@ -20,6 +20,10 @@ namespace nd4j {
             int _id;
             std::vector<int> _input;
             std::vector<int> _output;
+            std::vector<int> _dimensions;
+
+            int * _dim;
+
 
             // this variable points to onion layer within graph
             int _layer = -1;
@@ -33,7 +37,7 @@ namespace nd4j {
             bool _hasInternalInputs;
 
         public:
-            Node(OpType opType = OpType_TRANSFORM, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {});
+            Node(OpType opType = OpType_TRANSFORM, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {});
             Node(const nd4j::graph::FlatNode *node);
             ~Node();
 
@@ -57,8 +61,20 @@ namespace nd4j {
             bool hasExternalInputs();
             bool hasInternalOutputs();
             bool hasInternalInputs();
+
+
+            std::vector<int> * getDimensions();
+            int * getDimensionsPtr();
         };
     }
+}
+
+int * nd4j::graph::Node::getDimensionsPtr() {
+    return _dim;
+}
+
+std::vector<int> * nd4j::graph::Node::getDimensions() {
+    return &_dimensions;
 }
 
 int nd4j::graph::Node::getLayer() {
@@ -116,7 +132,7 @@ std::vector<int> *nd4j::graph::Node::output() {
     return &_output;
 }
 
-nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output) {
+nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions) {
     this->_opType = opType;
     this->_id = id;
     this->_opNum = opNum;
@@ -135,13 +151,21 @@ nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<
 
     }
 
-
     for (auto o: output) {
         _output.push_back(o);
         if (o < 0)
             _hasExternalOutputs = true;
         else
             _hasInternalOutputs = true;
+    }
+
+    if (dimensions.size() > 0) {
+        _dim = new int[dimensions.size()];
+        int cnt = 0;
+        for (auto d: dimensions) {
+            _dimensions.push_back(d);
+            _dim[cnt++] = d;
+        }
     }
 
 };
@@ -178,14 +202,20 @@ nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
                     _hasInternalOutputs = true;
             }
 
-        if (node->extraParams() != nullptr && node->extraParams()->size()) {
+        if (node->extraParams() != nullptr && node->extraParams()->size() > 0) {
             _extraParams = new float[node->extraParams()->size()];
             for (int e = 0; e < node->extraParams()->size(); e++) {
                 _extraParams[e] = node->extraParams()->Get(e);
             }
         }
 
-
+        if (node->dimensions() != nullptr && node->dimensions()->size() > 0) {
+            _dim = new int[node->dimensions()->size()];
+            for (int e = 0; e < node->dimensions()->size(); e++) {
+                _dimensions.push_back(node->dimensions()->Get(e));
+                _dim[e] = node->dimensions()->Get(e);
+            }
+        }
     } else {
         // empty dynamic node, tests probably
     }
@@ -194,6 +224,9 @@ nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
 nd4j::graph::Node::~Node() {
     if (_extraParams != nullptr)
         delete[] _extraParams;
+
+    if (_dim != nullptr)
+        delete[] _dim;
 }
 
 bool nd4j::graph::Node::equals(Node *other) {
