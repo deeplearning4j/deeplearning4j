@@ -23,7 +23,8 @@ namespace nd4j{
          * @param variableSpace
          * @return
          */
-        static Nd4jStatus executeFlatNode(nd4j::graph::Graph *graph, nd4j::graph::Node *node, nd4j::graph::VariableSpace<float> *variableSpace) {
+        template <typename T>
+        static Nd4jStatus executeFlatNode(nd4j::graph::Graph<T> *graph, nd4j::graph::Node<T> *node, nd4j::graph::VariableSpace<T> *variableSpace) {
             OpType opType = node->opType();
             int opNum = node->opNum();
 
@@ -39,11 +40,11 @@ namespace nd4j{
                 auto z = x;
                 if (in > 0)
                     if (graph->getMapped()->at(in)->output()->size() > 1) {
-                        auto array = new NDArray<float>(x->getNDArray());
-                        z = new Variable<float>(array);
+                        auto array = new NDArray<T>(x->getNDArray());
+                        z = new Variable<T>(array);
                     };
 
-                functions::transform::Transform<float>::template exec(opNum, x->getNDArray()->_buffer,
+                functions::transform::Transform<T>::template exec(opNum, x->getNDArray()->_buffer,
                                                                       x->getNDArray()->_shapeInfo,
                                                                       z->getNDArray()->_buffer,
                                                                       z->getNDArray()->_shapeInfo, node->extraParams(),
@@ -74,11 +75,11 @@ namespace nd4j{
 
                 auto z = x;
                 if (node->output()->size() > 0) {
-                    z = new Variable<float>(new NDArray<float>(x->getNDArray()));
+                    z = new Variable<T>(new NDArray<T>(x->getNDArray()));
                 }
 
 
-                functions::pairwise_transforms::PairWiseTransform<float>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
+                functions::pairwise_transforms::PairWiseTransform<T>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
                                                                                          z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo, node->extraParams());
 
                 variableSpace->putVariable(node->id(), z);
@@ -109,11 +110,11 @@ namespace nd4j{
                 auto z = x;
                 if (in > 0)
                     if (graph->getMapped()->at(in)->output()->size() > 1) {
-                        auto array = new NDArray<float>(x->getNDArray());
-                        z = new Variable<float>(array);
+                        auto array = new NDArray<T>(x->getNDArray());
+                        z = new Variable<T>(array);
                     };
 
-                functions::scalar::ScalarTransform<float>::transform(opNum, x->getNDArray()->_buffer,
+                functions::scalar::ScalarTransform<T>::transform(opNum, x->getNDArray()->_buffer,
                                                                       x->getNDArray()->_shapeInfo,
                                                                       z->getNDArray()->_buffer,
                                                                       z->getNDArray()->_shapeInfo,
@@ -144,8 +145,8 @@ namespace nd4j{
                 auto z = x;
                 // if there's no dimensions set - it's reduceToScalar
                 if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
-                    z = new Variable<float>(new NDArray<float>(1,1, 'c'));
-                    z->getNDArray()->_buffer[0] = functions::summarystats::SummaryStatsReduce<float>::template execScalar(opNum, node->scalar() != 0.0, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
+                    z = new Variable<T>(new NDArray<T>(1,1, 'c'));
+                    z->getNDArray()->_buffer[0] = functions::summarystats::SummaryStatsReduce<T>::template execScalar(opNum, node->scalar() != 0.0, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
 
                 } else {
                     // dimensional reduction
@@ -155,10 +156,10 @@ namespace nd4j{
 
                     int resultLength = x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
 
-                    z = new Variable<float>(new NDArray<float>(1, resultLength, 'c'));
+                    z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
 
 
-                    functions::summarystats::SummaryStatsReduce<float>::template exec(opNum, node->scalar() != 0.0, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
+                    functions::summarystats::SummaryStatsReduce<T>::template exec(opNum, node->scalar() != 0.0, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
                                                                             node->getDimensionsPtr() , node->getDimensions()->size());
 
                     delete tad;
@@ -188,8 +189,8 @@ namespace nd4j{
                 auto z = x;
                 // if there's no dimensions set - it's reduceToScalar
                 if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
-                    z = new Variable<float>(new NDArray<float>(1,1, 'c'));
-                    z->getNDArray()->_buffer[0] = functions::reduce::ReduceFunction<float>::template execScalar(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
+                    z = new Variable<T>(new NDArray<T>(1,1, 'c'));
+                    z->getNDArray()->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
 
                 } else {
                     // dimensional reduction
@@ -199,9 +200,9 @@ namespace nd4j{
 
                     int resultLength = x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
 
-                    z = new Variable<float>(new NDArray<float>(1, resultLength, 'c'));
+                    z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
 
-                    functions::reduce::ReduceFunction<float>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
+                    functions::reduce::ReduceFunction<T>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
                                                                             node->getDimensionsPtr() , node->getDimensions()->size(),
                                                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
 
@@ -233,8 +234,8 @@ namespace nd4j{
                 auto z = x;
                 // if there's no dimensions set - it's reduceToScalar
                 if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
-                    z = new Variable<float>(new NDArray<float>(1,1, 'c'));
-                    z->getNDArray()->_buffer[0] = (float) functions::indexreduce::IndexReduce<float>::template execScalar(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
+                    z = new Variable<T>(new NDArray<T>(1,1, 'c'));
+                    z->getNDArray()->_buffer[0] = (T) functions::indexreduce::IndexReduce<T>::template execScalar(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
 
                 } else {
                     // dimensional reduction
@@ -244,9 +245,9 @@ namespace nd4j{
 
                     int resultLength = x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
 
-                    z = new Variable<float>(new NDArray<float>(1, resultLength, 'c'));
+                    z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
 
-                    functions::indexreduce::IndexReduce<float>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
+                    functions::indexreduce::IndexReduce<T>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
                                                                             node->getDimensionsPtr() , node->getDimensions()->size(),
                                                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
 
@@ -282,7 +283,7 @@ namespace nd4j{
                 tad->createTadOnlyShapeInfo();
                 tad->createOffsets();
 
-                functions::broadcast::Broadcast<float>::exec(opNum,
+                functions::broadcast::Broadcast<T>::exec(opNum,
                                                              x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo,
                                                              y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
                                                              z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
@@ -324,7 +325,8 @@ namespace nd4j{
          * @param graph
          * @return
          */
-        Nd4jStatus nd4j::graph::GraphExecutioner::execute(nd4j::graph::Graph *graph) {
+        template <typename T>
+        Nd4jStatus nd4j::graph::GraphExecutioner<T>::execute(nd4j::graph::Graph<T> *graph) {
             auto __variableSpace = graph->getVariableSpace();
 
             // we loop through op layers here

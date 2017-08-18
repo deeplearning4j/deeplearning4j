@@ -13,18 +13,25 @@
 #include <graph/generated/node_generated.h>
 #include <graph/generated/graph_generated.h>
 
+/*
+template<typename K, typename V>
+using MapIterator = typename std::map<K,V>::iterator;
+*/
+
 namespace nd4j {
     namespace graph {
+
+        template <typename T>
         class Graph {
         protected:
-            VariableSpace<float> *_variableSpace;
+            VariableSpace<T> *_variableSpace;
 
             // vector holds ID's of top nodes only
             std::vector<int32_t > *_nodes;
-            std::map<int32_t, nd4j::graph::Node *> *_mapped;
+            std::map<int32_t, nd4j::graph::Node<T> *> *_mapped;
 
-            std::map<int, std::vector<nd4j::graph::Node *> *> *_onion;
-            std::map<int32_t, nd4j::graph::Node *> _unmapped;
+            std::map<int, std::vector<nd4j::graph::Node<T> *> *> *_onion;
+            std::map<int32_t, nd4j::graph::Node<T> *> _unmapped;
 
             std::mutex _mutexPreprocessing;
             std::atomic<bool> _built;
@@ -32,11 +39,11 @@ namespace nd4j {
 
             std::vector<int32_t> _output;
 
-            Nd4jStatus validateNode(nd4j::graph::Node *node);
+            Nd4jStatus validateNode(nd4j::graph::Node<T> *node);
 
             void expandOnion(int newLayer);
 
-            void injectNode(nd4j::graph::Node *node);
+            void injectNode(nd4j::graph::Node<T> *node);
         public:
             Graph(const FlatGraph *flatGraph = nullptr);
 
@@ -51,20 +58,21 @@ namespace nd4j {
             int rootNodes();
             int totalNodes();
 
-            nd4j::graph::VariableSpace<float> *getVariableSpace();
+            nd4j::graph::VariableSpace<T> *getVariableSpace();
 
-            void addNode(nd4j::graph::Node *node);
+            void addNode(nd4j::graph::Node<T> *node);
 
-            std::map<int, std::vector<nd4j::graph::Node *> *> *getOnion();
-            std::map<int32_t, nd4j::graph::Node *> *getMapped();
+            std::map<int, std::vector<nd4j::graph::Node<T> *> *> *getOnion();
+            std::map<int32_t, nd4j::graph::Node<T> *> *getMapped();
 
-            std::vector<NDArray<float> *> *fetchOutputs();
+            std::vector<NDArray<T> *> *fetchOutputs();
         };
     }
 }
 
-std::vector<NDArray<float> *> * nd4j::graph::Graph::fetchOutputs() {
-    auto res = new std::vector<NDArray<float> *>();
+template <typename T>
+std::vector<NDArray<T> *> * nd4j::graph::Graph<T>::fetchOutputs() {
+    auto res = new std::vector<NDArray<T> *>();
 
     for (int e = 0; e < _output.size(); e++) {
         res->push_back(_variableSpace->getVariable(_output.at(e))->getNDArray());
@@ -73,37 +81,43 @@ std::vector<NDArray<float> *> * nd4j::graph::Graph::fetchOutputs() {
     return res;
 }
 
-std::map<int32_t, nd4j::graph::Node *> * nd4j::graph::Graph::getMapped() {
+template <typename T>
+std::map<int32_t, nd4j::graph::Node<T> *> * nd4j::graph::Graph<T>::getMapped() {
     return _mapped;
-};
+}
 
-std::map<int, std::vector<nd4j::graph::Node *> *>* nd4j::graph::Graph::getOnion() {
+template <typename T>
+std::map<int, std::vector<nd4j::graph::Node<T> *> *>* nd4j::graph::Graph<T>::getOnion() {
     return _onion;
 }
 
-void nd4j::graph::Graph::injectNode(nd4j::graph::Node *node) {
+template <typename T>
+void nd4j::graph::Graph<T>::injectNode(nd4j::graph::Node<T> *node) {
     if (node->getLayer() < 0)
         throw std::runtime_error("Only nodes with non-negative layer defined can be inserted");
 
     printf("Node_%i mapped to layer_%i\n", node->id(), node->getLayer());
     fflush(stdout);
 
-    std::pair<int32_t, nd4j::graph::Node *> pair(node->id(), node);
+    std::pair<int32_t, nd4j::graph::Node<T> *> pair(node->id(), node);
     _onion->at(node->getLayer())->push_back(node);
     _mapped->insert(pair);
 }
 
-void nd4j::graph::Graph::expandOnion(int newLayer) {
-    std::vector<nd4j::graph::Node *> *rootList = new std::vector<nd4j::graph::Node *>();
-    std::pair<int, std::vector<nd4j::graph::Node *>*> pair(newLayer, rootList);
+template <typename T>
+void nd4j::graph::Graph<T>::expandOnion(int newLayer) {
+    std::vector<nd4j::graph::Node<T> *> *rootList = new std::vector<nd4j::graph::Node<T> *>();
+    std::pair<int, std::vector<nd4j::graph::Node<T> *>*> pair(newLayer, rootList);
     _onion->insert(pair);
 }
 
-nd4j::graph::VariableSpace<float> * nd4j::graph::Graph::getVariableSpace() {
+template <typename T>
+nd4j::graph::VariableSpace<T> * nd4j::graph::Graph<T>::getVariableSpace() {
     return _variableSpace;
 }
 
-nd4j::graph::Graph::~Graph() {
+template <typename T>
+nd4j::graph::Graph<T>::~Graph() {
     delete _mapped;
     delete _nodes;
     delete _variableSpace;
@@ -112,12 +126,13 @@ nd4j::graph::Graph::~Graph() {
     // delete _onion content here
 }
 
-void nd4j::graph::Graph::addNode(nd4j::graph::Node *node) {
+template <typename T>
+void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
     _built.store(false);
 
     // if outputs are undefined, we have to auto-create variable
     if (node->output()->size() == 0){
-        auto var = new Variable<float>();
+        auto var = new Variable<T>();
         _variableSpace->putOutputVariable(var);
         node->pickOutput(var->id());
 
@@ -131,7 +146,7 @@ void nd4j::graph::Graph::addNode(nd4j::graph::Node *node) {
         }
     }
 
-    std::pair<int32_t, nd4j::graph::Node *> pair(node->id(), node);
+    std::pair<int32_t, nd4j::graph::Node<T> *> pair(node->id(), node);
     // if model has only external variables as input - it goes to first layer, no matter what.
     if (node->hasExternalInputs() && !node->hasInternalInputs()) {
         node->setLayer(0);
@@ -168,11 +183,12 @@ void nd4j::graph::Graph::addNode(nd4j::graph::Node *node) {
     }
 }
 
-Nd4jStatus nd4j::graph::Graph::buildGraph() {
+template <typename T>
+Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
     while (_unmapped.size() > 0) {
 
         // first pass for unmapped nodes, we try to build tale here
-        std::map<int32_t, nd4j::graph::Node *>::iterator it;
+        typename std::map<int32_t, nd4j::graph::Node<T> *>::iterator it;
         for ( it = _unmapped.begin(); it != _unmapped.end(); it++ ) {
             auto node = it->second;
 
@@ -233,11 +249,12 @@ Nd4jStatus nd4j::graph::Graph::buildGraph() {
         _built.store(true);
 }
 
-nd4j::graph::Graph::Graph(const FlatGraph *flatGraph) {
-    this->_onion = new std::map<int, std::vector<nd4j::graph::Node *> *>();
-    this->_mapped = new std::map<int32_t, nd4j::graph::Node *> ();
+template <typename T>
+nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
+    this->_onion = new std::map<int, std::vector<nd4j::graph::Node<T> *> *>();
+    this->_mapped = new std::map<int32_t, nd4j::graph::Node<T> *> ();
     this->_nodes = new std::vector<int32_t>();
-    this->_variableSpace = new VariableSpace<float>();
+    this->_variableSpace = new VariableSpace<T>();
 
     // add 0 layer
     this->expandOnion(0);
@@ -257,7 +274,7 @@ nd4j::graph::Graph::Graph(const FlatGraph *flatGraph) {
                 printf("Orphan node detected: %i\n", node->id());
             }
 
-            this->addNode(new Node(node));
+            this->addNode(new Node<T>(node));
         }
     }
 
@@ -266,7 +283,7 @@ nd4j::graph::Graph::Graph(const FlatGraph *flatGraph) {
         for (int e = 0; e < flatGraph->variables()->size(); e++) {
             auto flatVar = flatGraph->variables()->Get(e);
 
-            auto var = new Variable<float>(flatVar);
+            auto var = new Variable<T>(flatVar);
             _variableSpace->putVariable(flatVar->id(), var);
         }
     }
@@ -277,7 +294,8 @@ nd4j::graph::Graph::Graph(const FlatGraph *flatGraph) {
  * This method returns number of root nodes in this graph
  * @return
  */
-int nd4j::graph::Graph::rootNodes() {
+template <typename T>
+int nd4j::graph::Graph<T>::rootNodes() {
     return this->_onion->at(0)->size();
 }
 
@@ -285,15 +303,16 @@ int nd4j::graph::Graph::rootNodes() {
  * This method returns total number of nodes in this graph
  * @return
  */
-int nd4j::graph::Graph::totalNodes() {
+template <typename T>
+int nd4j::graph::Graph<T>::totalNodes() {
     if (_built != true)
         buildGraph();
 
     return _mapped->size();
 }
 
-
-Nd4jStatus nd4j::graph::Graph::validate() {
+template <typename T>
+Nd4jStatus nd4j::graph::Graph<T>::validate() {
     if (!_built) {
         _mutexPreprocessing.lock();
         if (!_built) {
@@ -308,7 +327,8 @@ Nd4jStatus nd4j::graph::Graph::validate() {
     return ND4J_STATUS_OK;
 };
 
-Nd4jStatus nd4j::graph::Graph::validateNode(nd4j::graph::Node *node) {
+template <typename T>
+Nd4jStatus nd4j::graph::Graph<T>::validateNode(nd4j::graph::Node<T> *node) {
     // TODO: to be implemented
 }
 

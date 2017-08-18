@@ -12,6 +12,8 @@
 
 namespace nd4j {
     namespace graph {
+
+        template <typename T>
         class Node {
         protected:
             DataType _dataType;
@@ -29,7 +31,7 @@ namespace nd4j {
             int _layer = -1;
 
             // many ops require extra parameters to run
-            float *_extraParams;
+            T *_extraParams;
 
             // optional scalar. used in scalar ops and in summary stats
             float _scalar;
@@ -52,7 +54,7 @@ namespace nd4j {
             std::vector<int> *input();
             std::vector<int> *output();
 
-            float *extraParams();
+            T *extraParams();
 
             bool isMultiInput();
             bool isMultiOutput();
@@ -65,7 +67,7 @@ namespace nd4j {
             bool hasInternalOutputs();
             bool hasInternalInputs();
 
-            float scalar();
+            T scalar();
 
             std::vector<int> * getDimensions();
             int * getDimensionsPtr();
@@ -77,11 +79,13 @@ namespace nd4j {
     }
 }
 
-float nd4j::graph::Node::scalar() {
-    return _scalar;
+template <typename T>
+T nd4j::graph::Node<T>::scalar() {
+    return (T) _scalar;
 };
 
-void nd4j::graph::Node::pickInput(int inputId) {
+template <typename T>
+void nd4j::graph::Node<T>::pickInput(int inputId) {
     _input.push_back(inputId);
 
     if (inputId < 0)
@@ -90,7 +94,8 @@ void nd4j::graph::Node::pickInput(int inputId) {
         _hasInternalInputs = true;
 }
 
-void nd4j::graph::Node::pickOutput(int outputId) {
+template <typename T>
+void nd4j::graph::Node<T>::pickOutput(int outputId) {
     _output.push_back(outputId);
 
     if (outputId < 0)
@@ -99,70 +104,88 @@ void nd4j::graph::Node::pickOutput(int outputId) {
         _hasInternalOutputs = true;
 }
 
-int * nd4j::graph::Node::getDimensionsPtr() {
+template <typename T>
+int * nd4j::graph::Node<T>::getDimensionsPtr() {
     return _dim;
 }
 
-std::vector<int> * nd4j::graph::Node::getDimensions() {
+template <typename T>
+std::vector<int> * nd4j::graph::Node<T>::getDimensions() {
     return &_dimensions;
 }
 
-int nd4j::graph::Node::getLayer() {
+template <typename T>
+int nd4j::graph::Node<T>::getLayer() {
     return _layer;
 }
-void nd4j::graph::Node::setLayer(int layer) {
+
+template <typename T>
+void nd4j::graph::Node<T>::setLayer(int layer) {
     _layer = layer;
 }
 
-bool nd4j::graph::Node::hasExternalOutputs() {
+template <typename T>
+bool nd4j::graph::Node<T>::hasExternalOutputs() {
     return _hasExternalOutputs;
 }
 
-bool nd4j::graph::Node::hasExternalInputs() {
+template <typename T>
+bool nd4j::graph::Node<T>::hasExternalInputs() {
     return _hasExternalInputs;
 }
 
-bool nd4j::graph::Node::hasInternalOutputs() {
+template <typename T>
+bool nd4j::graph::Node<T>::hasInternalOutputs() {
     return _hasInternalOutputs;
 }
 
-bool nd4j::graph::Node::hasInternalInputs() {
+template <typename T>
+bool nd4j::graph::Node<T>::hasInternalInputs() {
     return _hasInternalInputs;
 }
 
-bool nd4j::graph::Node::isMultiInput() {
+template <typename T>
+bool nd4j::graph::Node<T>::isMultiInput() {
     return _input.size() > 1;
 }
 
-bool nd4j::graph::Node::isMultiOutput() {
+template <typename T>
+bool nd4j::graph::Node<T>::isMultiOutput() {
     return _output.size() > 1;
 }
 
-float * nd4j::graph::Node::extraParams() {
+template <typename T>
+T * nd4j::graph::Node<T>::extraParams() {
     return _extraParams;
 }
 
-nd4j::graph::OpType nd4j::graph::Node::opType() {
+template <typename T>
+nd4j::graph::OpType nd4j::graph::Node<T>::opType() {
     return _opType;
 }
 
-int nd4j::graph::Node::id() {
+template <typename T>
+int nd4j::graph::Node<T>::id() {
     return _id;
 }
 
-int nd4j::graph::Node::opNum() {
+template <typename T>
+int nd4j::graph::Node<T>::opNum() {
     return _opNum;
 }
 
-std::vector<int> *nd4j::graph::Node::input() {
+template <typename T>
+std::vector<int> *nd4j::graph::Node<T>::input() {
     return &_input;
 }
 
-std::vector<int> *nd4j::graph::Node::output() {
+template <typename T>
+std::vector<int> *nd4j::graph::Node<T>::output() {
     return &_output;
 }
 
-nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar) {
+template <typename T>
+nd4j::graph::Node<T>::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar) {
     this->_opType = opType;
     this->_id = id;
     this->_opNum = opNum;
@@ -192,7 +215,8 @@ nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<
 
 };
 
-nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
+template <typename T>
+nd4j::graph::Node<T>::Node(const nd4j::graph::FlatNode *node) {
     _hasExternalInputs = false;
     _hasExternalOutputs = false;
     _hasInternalInputs = false;
@@ -216,9 +240,9 @@ nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
 
 
         if (node->extraParams() != nullptr && node->extraParams()->size() > 0) {
-            _extraParams = new float[node->extraParams()->size()];
+            _extraParams = new T[node->extraParams()->size()];
             for (int e = 0; e < node->extraParams()->size(); e++) {
-                _extraParams[e] = node->extraParams()->Get(e);
+                _extraParams[e] = (T) node->extraParams()->Get(e);
             }
         }
 
@@ -234,7 +258,8 @@ nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
     }
 }
 
-nd4j::graph::Node::~Node() {
+template <typename T>
+nd4j::graph::Node<T>::~Node() {
     if (_extraParams != nullptr)
         delete[] _extraParams;
 
@@ -242,7 +267,8 @@ nd4j::graph::Node::~Node() {
         delete[] _dim;
 }
 
-bool nd4j::graph::Node::equals(Node *other) {
+template <typename T>
+bool nd4j::graph::Node<T>::equals(Node *other) {
     if (_opType == other->_opType && _dataType == other->_dataType && _opNum == other->_opNum)
         return true;
 

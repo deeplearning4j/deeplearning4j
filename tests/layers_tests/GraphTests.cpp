@@ -20,16 +20,16 @@ public:
 };
 
 TEST_F(GraphTests, SingleInput1) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
 
     auto x = new NDArray<float>(5, 5, 'c');
     x->assign(-2.0);
 
     graph->getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 2, 2, {1}, {3});
-    auto nodeC = new Node(OpType_TRANSFORM, 0, 3, {2}, {});
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 2, 2, {1}, {3});
+    auto nodeC = new Node<float>(OpType_TRANSFORM, 0, 3, {2}, {});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -38,13 +38,13 @@ TEST_F(GraphTests, SingleInput1) {
     ASSERT_EQ(1, graph->rootNodes());
     ASSERT_EQ(3, graph->totalNodes());
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(0.4161468, x->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
 
 TEST_F(GraphTests, DoubleInput1) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
 
     auto x = new NDArray<float>(5, 5, 'c');
     x->assign(-2.0);
@@ -58,9 +58,9 @@ TEST_F(GraphTests, DoubleInput1) {
     graph->getVariableSpace()->putVariable(-2, y);
     graph->getVariableSpace()->putVariable(-3, z);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {3});
-    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {-2}, {3});
-    auto nodeC = new Node(OpType_PAIRWISE, 0, 3, {1, 2}, {-3});
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {3});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 0, 2, {-2}, {3});
+    auto nodeC = new Node<float>(OpType_PAIRWISE, 0, 3, {1, 2}, {-3});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -69,13 +69,13 @@ TEST_F(GraphTests, DoubleInput1) {
     ASSERT_EQ(2, graph->rootNodes());
     ASSERT_EQ(3, graph->totalNodes());
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(3.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
 
 TEST_F(GraphTests, SingleInput3) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
 
     auto x = new NDArray<float>(5, 5, 'c');
     x->assign(-2.0);
@@ -87,9 +87,9 @@ TEST_F(GraphTests, SingleInput3) {
     graph->getVariableSpace()->putVariable(-2, v0);
     graph->getVariableSpace()->putVariable(-3, v1);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2, 3});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {-2});
-    auto nodeC = new Node(OpType_TRANSFORM, 26, 3, {1}, {-3});
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2, 3});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {-2});
+    auto nodeC = new Node<float>(OpType_TRANSFORM, 26, 3, {1}, {-3});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -98,14 +98,14 @@ TEST_F(GraphTests, SingleInput3) {
     ASSERT_EQ(1, graph->rootNodes());
     ASSERT_EQ(3, graph->totalNodes());
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(1.4142135, v0->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(1.0, v1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
 
 TEST_F(GraphTests, SingleInput4) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
 
     auto x = new NDArray<float>(5, 5, 'c');
     x->assign(-2.0);
@@ -117,12 +117,12 @@ TEST_F(GraphTests, SingleInput4) {
     graph->getVariableSpace()->putVariable(-2, v0);
     graph->getVariableSpace()->putVariable(-3, v1);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {3});
-    auto nodeC = new Node(OpType_TRANSFORM, 6, 3, {2}, {4, 5});
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {3});
+    auto nodeC = new Node<float>(OpType_TRANSFORM, 6, 3, {2}, {4, 5});
 
-    auto nodeS = new Node(OpType_TRANSFORM, 26, 4, {3}, {-2});
-    auto nodeE = new Node(OpType_TRANSFORM, 27, 5, {3}, {-3});
+    auto nodeS = new Node<float>(OpType_TRANSFORM, 26, 4, {3}, {-2});
+    auto nodeE = new Node<float>(OpType_TRANSFORM, 27, 5, {3}, {-3});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -133,7 +133,7 @@ TEST_F(GraphTests, SingleInput4) {
     ASSERT_EQ(1, graph->rootNodes());
     ASSERT_EQ(5, graph->totalNodes());
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(1.0, v0->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(-1.4142135, v1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
@@ -141,7 +141,7 @@ TEST_F(GraphTests, SingleInput4) {
 
 
 TEST_F(GraphTests, DoubleInput2) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
 
     auto x = new NDArray<float>(5, 5, 'c');
     x->assign(-2.0);
@@ -158,13 +158,13 @@ TEST_F(GraphTests, DoubleInput2) {
     graph->getVariableSpace()->putVariable(-4, z1);
 
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {3});
-    auto nodeC = new Node(OpType_TRANSFORM, 6, 3, {2}, {-3});
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {3});
+    auto nodeC = new Node<float>(OpType_TRANSFORM, 6, 3, {2}, {-3});
 
-    auto nodeT = new Node(OpType_TRANSFORM, 0, 11, {-2}, {12});
-    auto nodeU = new Node(OpType_TRANSFORM, 14, 12, {11}, {13});
-    auto nodeV = new Node(OpType_TRANSFORM, 6, 13, {12}, {-4});
+    auto nodeT = new Node<float>(OpType_TRANSFORM, 0, 11, {-2}, {12});
+    auto nodeU = new Node<float>(OpType_TRANSFORM, 14, 12, {11}, {13});
+    auto nodeV = new Node<float>(OpType_TRANSFORM, 6, 13, {12}, {-4});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -176,7 +176,7 @@ TEST_F(GraphTests, DoubleInput2) {
     ASSERT_EQ(2, graph->rootNodes());
     ASSERT_EQ(6, graph->totalNodes());
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(-1.4142135, z0->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(-1.0, z1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
@@ -184,7 +184,7 @@ TEST_F(GraphTests, DoubleInput2) {
 
 
 TEST_F(GraphTests, DoubleInput3) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
 
     auto x = new NDArray<float>(5, 5, 'c');
     x->assign(-2.0);
@@ -205,16 +205,16 @@ TEST_F(GraphTests, DoubleInput3) {
     graph->getVariableSpace()->putVariable(-5, w);
 
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {3});
-    auto nodeC = new Node(OpType_TRANSFORM, 6, 3, {2}, {-3, 21});
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {3});
+    auto nodeC = new Node<float>(OpType_TRANSFORM, 6, 3, {2}, {-3, 21});
 
-    auto nodeT = new Node(OpType_TRANSFORM, 0, 11, {-2}, {12});
-    auto nodeU = new Node(OpType_TRANSFORM, 14, 12, {11}, {13});
-    auto nodeV = new Node(OpType_TRANSFORM, 6, 13, {12}, {-4, 21});
+    auto nodeT = new Node<float>(OpType_TRANSFORM, 0, 11, {-2}, {12});
+    auto nodeU = new Node<float>(OpType_TRANSFORM, 14, 12, {11}, {13});
+    auto nodeV = new Node<float>(OpType_TRANSFORM, 6, 13, {12}, {-4, 21});
 
-    auto nodeW = new Node(OpType_PAIRWISE, 0, 21, {3, 13}, {22});
-    auto nodeZ = new Node(OpType_TRANSFORM, 0, 22, {21}, {-5});
+    auto nodeW = new Node<float>(OpType_PAIRWISE, 0, 21, {3, 13}, {22});
+    auto nodeZ = new Node<float>(OpType_TRANSFORM, 0, 22, {21}, {-5});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -228,7 +228,7 @@ TEST_F(GraphTests, DoubleInput3) {
     ASSERT_EQ(2, graph->rootNodes());
     ASSERT_EQ(8, graph->totalNodes());
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(-1.4142135, z0->reduceNumber<simdOps::Mean<float>>(), 1e-5);
     ASSERT_NEAR(-1.0, z1->reduceNumber<simdOps::Mean<float>>(), 1e-5);
@@ -238,7 +238,7 @@ TEST_F(GraphTests, DoubleInput3) {
 
 
 TEST_F(GraphTests, QuadInput1) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
 
     auto x0 = new NDArray<float>(5, 5, 'c');
     x0->assign(0.0);
@@ -261,15 +261,15 @@ TEST_F(GraphTests, QuadInput1) {
     graph->getVariableSpace()->putVariable(-4, x3);
     graph->getVariableSpace()->putVariable(-5, z);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {11});
-    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {-2}, {11});
-    auto nodeC = new Node(OpType_TRANSFORM, 0, 3, {-3}, {21});
-    auto nodeD = new Node(OpType_TRANSFORM, 0, 4, {-4}, {21});
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {11});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 0, 2, {-2}, {11});
+    auto nodeC = new Node<float>(OpType_TRANSFORM, 0, 3, {-3}, {21});
+    auto nodeD = new Node<float>(OpType_TRANSFORM, 0, 4, {-4}, {21});
 
-    auto nodeP1 = new Node(OpType_PAIRWISE, 0, 11, {1, 2}, {31});
-    auto nodeP2 = new Node(OpType_PAIRWISE, 0, 21, {3, 4}, {31});
+    auto nodeP1 = new Node<float>(OpType_PAIRWISE, 0, 11, {1, 2}, {31});
+    auto nodeP2 = new Node<float>(OpType_PAIRWISE, 0, 21, {3, 4}, {31});
 
-    auto nodeZ = new Node(OpType_PAIRWISE, 0, 31, {11, 21}, {-5});
+    auto nodeZ = new Node<float>(OpType_PAIRWISE, 0, 31, {11, 21}, {-5});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -282,13 +282,13 @@ TEST_F(GraphTests, QuadInput1) {
     ASSERT_EQ(4, graph->rootNodes());
     ASSERT_EQ(7, graph->totalNodes());
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(6.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
 
 TEST_F(GraphTests, InternalBranching1) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
 
     auto x = new NDArray<float>(5, 5, 'c');
     x->assign(0.0);
@@ -299,22 +299,22 @@ TEST_F(GraphTests, InternalBranching1) {
     graph->getVariableSpace()->putVariable(-2, z);
 
     // 1.0
-    auto nodeA = new Node(OpType_TRANSFORM, 26, 1, {-1}, {11, 21});
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 26, 1, {-1}, {11, 21});
 
     // -1
-    auto nodeK = new Node(OpType_TRANSFORM, 6, 11, {1}, {12});
+    auto nodeK = new Node<float>(OpType_TRANSFORM, 6, 11, {1}, {12});
 
     // 2.0
-    auto nodeL = new Node(OpType_TRANSFORM, 35, 12, {11}, {31});
+    auto nodeL = new Node<float>(OpType_TRANSFORM, 35, 12, {11}, {31});
 
     // -1
-    auto nodeR = new Node(OpType_TRANSFORM, 6, 21, {1}, {22});
+    auto nodeR = new Node<float>(OpType_TRANSFORM, 6, 21, {1}, {22});
 
     // 1
-    auto nodeS = new Node(OpType_TRANSFORM, 6, 22, {21}, {31});
+    auto nodeS = new Node<float>(OpType_TRANSFORM, 6, 22, {21}, {31});
 
     // 1.0
-    auto nodeZ = new Node(OpType_PAIRWISE, 0, 31, {12, 22}, {-2});
+    auto nodeZ = new Node<float>(OpType_PAIRWISE, 0, 31, {12, 22}, {-2});
 
     graph->addNode(nodeA);
     graph->addNode(nodeK);
@@ -326,7 +326,7 @@ TEST_F(GraphTests, InternalBranching1) {
     ASSERT_EQ(1, graph->rootNodes());
     ASSERT_EQ(6, graph->totalNodes());
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     ASSERT_EQ(3, nodeZ->getLayer());
 
@@ -335,7 +335,7 @@ TEST_F(GraphTests, InternalBranching1) {
 
 
 TEST_F(GraphTests, ReductionsTest1) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
 
     auto x = new NDArray<float>(5, 5, 'c');
     for (int r = 0; r < x->rows(); r++) {
@@ -350,8 +350,8 @@ TEST_F(GraphTests, ReductionsTest1) {
     graph->getVariableSpace()->putVariable(-2, z);
 
 
-    auto nodeA = new Node(OpType_ACCUMULATION, 0, 1, {-1}, {2}, {1});
-    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {1}, {-2});
+    auto nodeA = new Node<float>(OpType_ACCUMULATION, 0, 1, {-1}, {2}, {1});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {-2});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -359,14 +359,14 @@ TEST_F(GraphTests, ReductionsTest1) {
     ASSERT_EQ(1, graph->rootNodes());
     ASSERT_EQ(2, graph->totalNodes());
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(2.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
 
 
 TEST_F(GraphTests, IndexReductionsTest1) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
 
     auto x = new NDArray<float>(5, 5, 'c');
     for (int r = 0; r < x->rows(); r++) {
@@ -381,8 +381,8 @@ TEST_F(GraphTests, IndexReductionsTest1) {
     graph->getVariableSpace()->putVariable(-2, z);
 
 
-    auto nodeA = new Node(OpType_INDEX_ACCUMULATION, 1, 1, {-1}, {2}, {1});
-    auto nodeB = new Node(OpType_TRANSFORM, 0, 2, {1}, {-2});
+    auto nodeA = new Node<float>(OpType_INDEX_ACCUMULATION, 1, 1, {-1}, {2}, {1});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {-2});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -390,21 +390,21 @@ TEST_F(GraphTests, IndexReductionsTest1) {
     ASSERT_EQ(1, graph->rootNodes());
     ASSERT_EQ(2, graph->totalNodes());
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(4.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
 
 
 TEST_F(GraphTests, AutoOutput1) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
     auto x = new NDArray<float>(5, 5, 'c');
     x->assign(-2.0);
 
     graph->getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 35, 2, {1}, {});
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 35, 2, {1}, {});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -416,7 +416,7 @@ TEST_F(GraphTests, AutoOutput1) {
 
     ASSERT_TRUE(graph->getVariableSpace()->getVariable(-2) != nullptr);
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     auto outputs = graph->fetchOutputs();
 
@@ -429,15 +429,15 @@ TEST_F(GraphTests, AutoOutput1) {
 
 
 TEST_F(GraphTests, AutoOutput2) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
     auto x = new NDArray<float>(5, 5, 'c');
     x->assign(-2.0);
 
     graph->getVariableSpace()->putVariable(-1, x);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2, 3, -1});
-    auto nodeB = new Node(OpType_TRANSFORM, 35, 2, {1}, {});
-    auto nodeC = new Node(OpType_TRANSFORM, 6, 3, {1}, {});
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2, 3, -1});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 35, 2, {1}, {});
+    auto nodeC = new Node<float>(OpType_TRANSFORM, 6, 3, {1}, {});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -452,7 +452,7 @@ TEST_F(GraphTests, AutoOutput2) {
     ASSERT_TRUE(graph->getVariableSpace()->getVariable(-2) != nullptr);
     ASSERT_TRUE(graph->getVariableSpace()->getVariable(-3) != nullptr);
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     auto outputs = graph->fetchOutputs();
 
@@ -467,7 +467,7 @@ TEST_F(GraphTests, AutoOutput2) {
 
 
 TEST_F(GraphTests, BroadcastTest1) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
     auto x = new NDArray<float>(5, 5, 'c');
     x->assign(0.0);
 
@@ -482,13 +482,13 @@ TEST_F(GraphTests, BroadcastTest1) {
     graph->getVariableSpace()->putVariable(-2, y);
     graph->getVariableSpace()->putVariable(-3, z);
 
-    auto nodeA = new Node(OpType_BROADCAST, 0, 1, {-1, -2}, {2}, {1});
-    auto nodeB = new Node(OpType_TRANSFORM, 6, 2, {1}, {-3});
+    auto nodeA = new Node<float>(OpType_BROADCAST, 0, 1, {-1, -2}, {2}, {1});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 6, 2, {1}, {-3});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(-2.0, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 
@@ -496,7 +496,7 @@ TEST_F(GraphTests, BroadcastTest1) {
 
 
 TEST_F(GraphTests, ScalarTest1) {
-    Graph *graph = new Graph();
+    auto graph = new Graph<float>();
 
     auto x = new NDArray<float>(5, 5, 'c');
     x->assign(-2.0);
@@ -506,9 +506,9 @@ TEST_F(GraphTests, ScalarTest1) {
     graph->getVariableSpace()->putVariable(-1, x);
     graph->getVariableSpace()->putVariable(-2, z);
 
-    auto nodeA = new Node(OpType_TRANSFORM, 0, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM, 14, 2, {1}, {3});
-    auto nodeE = new Node(OpType_SCALAR, 0, 3, {2}, {-2}, {}, 1.3f);
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {3});
+    auto nodeE = new Node<float>(OpType_SCALAR, 0, 3, {2}, {-2}, {}, 1.3f);
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -517,7 +517,7 @@ TEST_F(GraphTests, ScalarTest1) {
     ASSERT_EQ(1, graph->rootNodes());
     ASSERT_EQ(3, graph->totalNodes());
 
-    GraphExecutioner::execute(graph);
+    GraphExecutioner<float>::execute(graph);
 
     ASSERT_NEAR(2.714213, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 

@@ -40,8 +40,8 @@ TEST_F(FlatBuffersTest, BasicTest1) {
 
     auto restored = GetFlatNode(buf);
 
-    auto gA = new Node(restored);
-    auto gB = new Node(restored);
+    auto gA = new Node<float>(restored);
+    auto gB = new Node<float>(restored);
 
     ASSERT_TRUE(gA->equals(gB));
 }
@@ -115,7 +115,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     ASSERT_EQ(1, restoredGraph->variables()->size());
     ASSERT_EQ(-1, restoredGraph->variables()->Get(0)->id());
 
-    Graph graph(restoredGraph);
+    Graph<float> graph(restoredGraph);
 
     ASSERT_EQ(2, graph.totalNodes());
     ASSERT_EQ(1, graph.rootNodes());
@@ -130,13 +130,13 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto var = vs->getVariable(-1)->getNDArray();
     ASSERT_EQ(-2.0, var->reduceNumber<simdOps::Mean<float>>());
 
-    nd4j::graph::GraphExecutioner::execute(&graph);
+    nd4j::graph::GraphExecutioner<float>::execute(&graph);
 
     ASSERT_NEAR(-0.4161468, var->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
 
 TEST_F(FlatBuffersTest, ExecutionTest1) {
-    auto gA = new Node(OpType_TRANSFORM);
+    auto gA = new Node<float>(OpType_TRANSFORM);
 
     float *c = new float[4] {-1, -2, -3, -4};
     auto *array = new NDArray<float>(c, cShape);

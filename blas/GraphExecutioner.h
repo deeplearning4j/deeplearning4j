@@ -16,6 +16,7 @@
 
 namespace nd4j {
     namespace graph {
+        template <typename T>
         class GraphExecutioner {
         protected:
 
@@ -28,7 +29,7 @@ namespace nd4j {
              * This method executes given Graph
              * @return
              */
-            static Nd4jStatus execute(nd4j::graph::Graph *graph);
+            static Nd4jStatus execute(nd4j::graph::Graph<T> *graph);
         };
     }
 }
