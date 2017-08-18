@@ -12,7 +12,7 @@ import org.nd4j.linalg.io.ClassPathResource;
 /**
  * Unit tests for Keras1 model configuration import.
  *
- * @author dave@skymind.io
+ * @author Max Pumperla
  */
 
 @Slf4j
@@ -21,9 +21,62 @@ public class Keras1ModelConfigurationTest {
     private ClassLoader classLoader = getClass().getClassLoader();
 
     @Test
-    public void importKerasMlpSequentialConfigTest() throws Exception {
-        ClassPathResource configResource = new ClassPathResource(
-                "configs/keras1/mlp_config.json", classLoader);
+    public void mlpSequentialConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras1/mlp_config.json");
+    }
+
+    @Test
+    public void reshapeMlpConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras1/mnist_mlp_reshape_tf_keras_1_config.json");
+    }
+
+    @Test
+    public void reshapeCnnConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras1/mnist_cnn_reshape_tf_keras_1_config.json");
+    }
+
+    @Test
+    public void mlpFapiConfigTest() throws Exception {
+        runModelConfigTest("configs/keras1/mlp_fapi_config.json");
+    }
+
+    @Test
+    public void mlpFapiMultiLossConfigTest() throws Exception {
+        runModelConfigTest("configs/keras1/mlp_fapi_multiloss_config.json");
+    }
+
+    @Test
+    public void yoloConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras1/yolo_model.json");
+    }
+
+    @Test
+    public void cnnTfTest() throws Exception {
+        runSequentialConfigTest("configs/keras1/cnn_tf_config.json");
+    }
+
+    @Test
+    public void cnnThTest() throws Exception {
+        runSequentialConfigTest("configs/keras1/cnn_th_config.json");
+    }
+
+    @Test
+    public void lstmFixedLenTest() throws Exception {
+        runSequentialConfigTest("configs/keras1/lstm_tddense_config.json");
+    }
+
+    @Test
+    public void mnistCnnTfTest() throws Exception {
+        runSequentialConfigTest("configs/keras1/mnist_cnn_tf_config.json");
+    }
+
+    @Test
+    public void mnistMlpTfTest() throws Exception {
+        runSequentialConfigTest("configs/keras1/mnist_mlp_tf_config.json");
+    }
+
+    void runSequentialConfigTest(String path) throws Exception {
+        ClassPathResource configResource = new ClassPathResource(path, classLoader);
         MultiLayerConfiguration config =
                 new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
                         .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
@@ -31,114 +84,12 @@ public class Keras1ModelConfigurationTest {
         model.init();
     }
 
-    @Test
-    public void importKerasReshapeConfigTest() throws Exception {
-        ClassPathResource configResource = new ClassPathResource(
-                "configs/keras1/mnist_mlp_reshape_tf_keras_1_config.json", classLoader);
-        MultiLayerConfiguration config =
-                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
-        MultiLayerNetwork model = new MultiLayerNetwork(config);
-        model.init();
-    }
-
-    @Test
-    public void importKerasReshapeCnnConfigTest() throws Exception {
-        ClassPathResource configResource = new ClassPathResource(
-                "configs/keras1/mnist_cnn_reshape_tf_keras_1_config.json", classLoader);
-        MultiLayerConfiguration config =
-                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
-        MultiLayerNetwork model = new MultiLayerNetwork(config);
-        model.init();
-    }
-
-
-    @Test
-    public void importKerasYoloConfigTest() throws Exception {
-        ClassPathResource configResource = new ClassPathResource(
-                "configs/keras1/yolo_model.json", classLoader);
-        MultiLayerConfiguration config =
-                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
-        MultiLayerNetwork model = new MultiLayerNetwork(config);
-        model.init();
-    }
-
-    @Test
-    public void importKerasMlpModelConfigTest() throws Exception {
-        ClassPathResource configResource = new ClassPathResource(
-                "configs/keras1/mlp_fapi_config.json", classLoader);
+    void runModelConfigTest(String path) throws Exception {
+        ClassPathResource configResource = new ClassPathResource(path, classLoader);
         ComputationGraphConfiguration config =
                 new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
                         .enforceTrainingConfig(true).buildModel().getComputationGraphConfiguration();
         ComputationGraph model = new ComputationGraph(config);
-        model.init();
-    }
-
-    @Test
-    public void importKerasMlpModelMultilossConfigTest() throws Exception {
-        ClassPathResource configResource = new ClassPathResource(
-                "configs/keras1/mlp_fapi_multiloss_config.json", classLoader);
-        ComputationGraphConfiguration config =
-                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).buildModel().getComputationGraphConfiguration();
-        ComputationGraph model = new ComputationGraph(config);
-        model.init();
-    }
-
-    @Test
-    public void importKerasConvnetTensorflowConfigTest() throws Exception {
-        ClassPathResource configResource = new ClassPathResource(
-                "configs/keras1/cnn_tf_config.json", classLoader);
-        MultiLayerConfiguration config =
-                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
-        MultiLayerNetwork model = new MultiLayerNetwork(config);
-        model.init();
-    }
-
-    @Test
-    public void importKerasConvnetTheanoConfigTest() throws Exception {
-        ClassPathResource configResource = new ClassPathResource(
-                "configs/keras1/cnn_th_config.json", classLoader);
-        MultiLayerConfiguration config =
-                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
-        MultiLayerNetwork model = new MultiLayerNetwork(config);
-        model.init();
-    }
-
-    @Test
-    public void importKerasLstmFixedLenConfigTest() throws Exception {
-        ClassPathResource configResource = new ClassPathResource(
-                "configs/keras1/lstm_tddense_config.json", classLoader);
-        MultiLayerConfiguration config =
-                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
-        MultiLayerNetwork model = new MultiLayerNetwork(config);
-        model.init();
-    }
-
-    @Test
-    public void importMnistCnnTensorFlowConfigurationTest() throws Exception {
-        ClassPathResource configResource = new ClassPathResource(
-                "configs/keras1/mnist_cnn_tf_config.json", classLoader);
-        MultiLayerConfiguration config =
-                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
-        MultiLayerNetwork model = new MultiLayerNetwork(config);
-        model.init();
-    }
-
-    @Test
-    public void importMnistMlpTensorFlowConfigurationTest() throws Exception {
-        ClassPathResource configResource = new ClassPathResource(
-                "configs/keras1/mnist_mlp_tf_config.json", classLoader);
-        MultiLayerConfiguration config =
-                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
-        MultiLayerNetwork model = new MultiLayerNetwork(config);
         model.init();
     }
 }
