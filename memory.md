@@ -1,41 +1,48 @@
 ---
-title: Memory management in DL4j and ND4j
+title: Memory management in DL4J and ND4J
 layout: default
 ---
 
-# How it works?
+# Memory Management for ND4J/DL4J: How does it work?
 
-ND4j uses off-heap memory to store NDArrays, to provide better performance while working with NDArrays from native code via JNI.
-Basically, on Java side we only hold pointers to off-heap memory. 
+ND4J uses off-heap memory to store NDArrays, to provide better performance while working with NDArrays from native code (such as BLAS and CUDA libraries).
+Off-heap means that the memory is allocated outside of the JVM (Java Virtual Machine) and hence isn't managed by the JVM's garbage collection (GC). On the Java/JVM side we only hold pointers to the off-heap memory, which can be passed to the underlying C++ code (via JNI) for use in ND4J operations.
 
 To manage memory allocations we use two approaches:
 
-- JVM Garbage Collector and WeakReference tracking
-- MemoryWorkspaces [Workspaces guide](https://deeplearning4j.org/workspaces)
+- JVM Garbage Collector (GC) and WeakReference tracking
+- MemoryWorkspaces - see [Workspaces guide](https://deeplearning4j.org/workspaces) for details
 
-Despite differences between these two approaches, idea stays the same: once on Java side some NDArray leaves scope, off-heap memory should be released so it could be reused later.
+Despite the differences between these two approaches, the idea stays the same: once (on the Java side) some NDArray is no longer required, the off-heap associated with it should be released so it can be later reused. The difference between the GC and MemoryWorkspaces approaches is in when and how the memory is released.
 
-# Configuring limits
+- For JVM/GC memory: whenever an INDArray is collected by the garbage collector, its off-heap memory (assuming it is not used elsewhere) will be deallocated
+- For MemoryWorksaces: whenever an INDArray leaves the workspace scope (for example, when a layer finished forward pass/predictions) its memory may be reused, without deallocation and reallocation. This results in better performance for cyclical workloads.
 
-With DL4j/ND4j you can control both memory limits: JVM heap limit, and off-heap limit. Both are controlled via Java command line arguments:
+
+# Configuring Memory Limits
+
+With DL4J/ND4J, there are two types of memory limits to be aware of and configure: The on-heap JVM memory limit, and the off-heap memory limit. Both limits are controlled via Java command line arguments:
 
 `-Xms` - this option defines how much memory JVM heap will use at application start.
 
-`-Xmx` - this option allows you to specify JVM heap memory limit.
+`-Xmx` - this option allows you to specify JVM heap memory limit (maximum, at any point). Only allocated up to this amount (at the discretion of the JVM) if required.
 
-`-Dorg.bytedeco.javacpp.maxbytes`  - this option allows you to specify off-heap memory limit.
+`-Dorg.bytedeco.javacpp.maxbytes`  - this option allows you to specify the off-heap memory limit.
 
-`-Dorg.bytedeco.javacpp.maxPhysicalBytes`  - this option usually should be set equal to `maxbytes`
+`-Dorg.bytedeco.javacpp.maxPhysicalBytes`  - also for off-heap, this option usually should be set equal to `maxbytes`
 
- 
-Usually you want less RAM to be used in JVM heap, and more RAM to be used in off-heap, since all NDArrays are stored there.
+Example: Configuring 1GB initial on-heap, 2GB max on-heap, 8GB off-heap:
+
+```-Xms1G -Xmx2G -Dorg.bytedeco.javacpp.maxbytes=8G -Dorg.bytedeco.javacpp.maxPhysicalBytes=8G```
+
+**Best practice**: for many applications, you want less RAM to be used in JVM heap, and more RAM to be used in off-heap, since all NDArrays are stored there. If you allocate too much to the JVM heap, there will not be enough memory left for the off-heap memory.
 
 
-**PLEASE NOTE**: If you don't specify JVM heap limit, it will use 1/4 of your total system RAM as limit.
+**PLEASE NOTE**: If you don't specify JVM heap limit, it will use 1/4 of your total system RAM as the limit, by default.
 
-**PLEASE NOTE**: If you don't specify off-heap memory limit, x2 of JVM heap limit will be considered. i.e. `-Xmx8G` will mean that 8GB can be used by JVM heap, and 16GB can be used by ND4j in off-heap.
+**PLEASE NOTE**: If you don't specify off-heap memory limit, x2 of JVM heap limit (Xmx) will be used by default. i.e. `-Xmx8G` will mean that 8GB can be used by JVM heap, and 16GB can be used by ND4j in off-heap.
 
-**PLEASE NOTE**: In limited memory environments it's usually bad idea to use high `-Xmx` value together with `-Xms` option.
+**PLEASE NOTE**: In limited memory environments it's usually a bad idea to use high `-Xmx` value together with `-Xms` option. Again: this won't leave enough off-heap memory. Consider a 16GB system. Suppose you set `-Xms14G`, this means 14 of 16GB will be allocated to the JVM, leaving only 2GB for the off-heap memory (and the OS and all other programs).
 
 
 # Memory-mapped files
