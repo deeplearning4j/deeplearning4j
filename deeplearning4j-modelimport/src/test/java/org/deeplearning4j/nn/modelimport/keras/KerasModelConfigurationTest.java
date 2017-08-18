@@ -29,6 +29,40 @@ public class KerasModelConfigurationTest {
     }
 
     @Test
+    public void importKerasReshapeConfigTest() throws Exception {
+        ClassPathResource configResource = new ClassPathResource("modelimport/keras/examples/mnist_mlp_reshape/mnist_mlp_reshape_tf_keras_1_config.json",
+                KerasModelConfigurationTest.class.getClassLoader());
+        MultiLayerConfiguration config =
+                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
+                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
+        MultiLayerNetwork model = new MultiLayerNetwork(config);
+        model.init();
+    }
+
+    @Test
+    public void importKerasReshapeCnnConfigTest() throws Exception {
+        ClassPathResource configResource = new ClassPathResource("modelimport/keras/examples/mnist_cnn_reshape/mnist_cnn_reshape_tf_keras_1_config.json",
+                KerasModelConfigurationTest.class.getClassLoader());
+        MultiLayerConfiguration config =
+                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
+                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
+        MultiLayerNetwork model = new MultiLayerNetwork(config);
+        model.init();
+    }
+
+
+    @Test
+    public void importKerasYoloConfigTest() throws Exception {
+        ClassPathResource configResource = new ClassPathResource("modelimport/keras/configs/yolo_model.json",
+                KerasModelConfigurationTest.class.getClassLoader());
+        MultiLayerConfiguration config =
+                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
+                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
+        MultiLayerNetwork model = new MultiLayerNetwork(config);
+        model.init();
+    }
+
+    @Test
     public void importKerasMlpModelConfigTest() throws Exception {
         ClassPathResource configResource = new ClassPathResource("modelimport/keras/configs/mlp_fapi_config.json",
                         KerasModelConfigurationTest.class.getClassLoader());

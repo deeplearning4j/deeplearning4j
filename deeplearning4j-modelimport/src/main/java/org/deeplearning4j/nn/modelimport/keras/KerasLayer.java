@@ -61,6 +61,7 @@ public class KerasLayer {
     public static final String LAYER_CLASS_NAME_ZERO_PADDING_1D = "ZeroPadding1D";
     public static final String LAYER_CLASS_NAME_ZERO_PADDING_2D = "ZeroPadding2D";
     public static final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
+    public static final String LAYER_CLASS_NAME_RESHAPE = "Reshape";
     public static final String LAYER_CLASS_NAME_MERGE = "Merge";
     public static final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
     public static final String LAYER_CLASS_NAME_TIME_DISTRIBUTED = "TimeDistributed";
@@ -251,6 +252,9 @@ public class KerasLayer {
                 break;
             case LAYER_CLASS_NAME_FLATTEN:
                 layer = new KerasFlatten(layerConfig, enforceTrainingConfig);
+                break;
+            case LAYER_CLASS_NAME_RESHAPE:
+                layer = new KerasReshape(layerConfig, enforceTrainingConfig);
                 break;
             case LAYER_CLASS_NAME_ZERO_PADDING_2D:
                 layer = new KerasZeroPadding(layerConfig, enforceTrainingConfig);
@@ -477,8 +481,9 @@ public class KerasLayer {
                 throw new InvalidKerasConfigurationException(msg + "(found no parameter named " + paramName + ")");
 
             /* Copy weights. */
-            for (String paramName : layer.paramTable().keySet())
+            for (String paramName : layer.paramTable().keySet()) {
                 layer.setParam(paramName, this.weights.get(paramName));
+            }
         }
     }
 

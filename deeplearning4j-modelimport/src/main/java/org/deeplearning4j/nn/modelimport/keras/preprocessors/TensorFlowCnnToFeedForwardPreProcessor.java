@@ -38,11 +38,6 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
          * TensorFlow convolutional input: # rows, # cols, # channels
          * Theano convolutional input:     # channels, # rows, # cols
          */
-
-        /* TODO: remove the extra copies of the input. These are only
-         * used for debugging purposes during development and testing.
-         */
-        INDArray flatInput = super.preProcess(input, miniBatchSize);
         INDArray permuted = input.permute(0, 2, 3, 1);
         INDArray flatPermuted = super.preProcess(permuted, miniBatchSize);
         return flatPermuted;

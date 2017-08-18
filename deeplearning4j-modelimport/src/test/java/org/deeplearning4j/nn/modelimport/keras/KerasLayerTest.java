@@ -2,13 +2,14 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 
-import javax.print.DocFlavor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -73,6 +74,7 @@ public class KerasLayerTest {
     public static final double EPSILON = 1E-5;
     public static final double MOMENTUM = 0.99;
     public static final String LAYER_FIELD_LEAKY_RELU_ALPHA = "alpha";
+    public static final String LAYER_FIELD_TARGET_SHAPE = "target_shape";
 
     @Test
     public void testBuildActivationLayer() throws Exception {
@@ -100,6 +102,26 @@ public class KerasLayerTest {
         ActivationLayer layer = new KerasLeakyReLU(layerConfig).getActivationLayer();
         assertEquals("leakyrelu(a=0.3)", layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
+    }
+
+    @Test
+    public void testBuildLReshapeLayer() throws Exception {
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        layerConfig.put(LAYER_FIELD_CLASS_NAME, LAYER_CLASS_NAME_RESHAPE);
+        Map<String, Object> config = new HashMap<String, Object>();
+        int[] targetShape = new int[] {10, 5};
+        List<Integer> targetShapeList = new ArrayList<>();
+        targetShapeList.add(targetShape[0]);
+        targetShapeList.add(targetShape[1]);
+        config.put(LAYER_FIELD_TARGET_SHAPE, targetShapeList);
+        config.put(LAYER_FIELD_NAME, LAYER_NAME);
+        layerConfig.put(LAYER_FIELD_CONFIG, config);
+
+        InputType inputType = InputType.InputTypeFeedForward.feedForward(20);
+        ReshapePreprocessor preProcessor =
+                (ReshapePreprocessor) new KerasReshape(layerConfig).getInputPreprocessor(inputType);
+        assertEquals(preProcessor.getTargetShape()[0], targetShape[0]);
+        assertEquals(preProcessor.getTargetShape()[1], targetShape[1]);
     }
 
     @Test
