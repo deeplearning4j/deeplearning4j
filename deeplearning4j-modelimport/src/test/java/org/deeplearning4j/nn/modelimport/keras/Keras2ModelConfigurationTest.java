@@ -20,6 +20,39 @@ public class Keras2ModelConfigurationTest {
 
     ClassLoader classLoader = getClass().getClassLoader();
 
+//    @Test
+//    public void imdbLstmTfSequentialConfigTest() throws Exception {
+//        runSequentialConfigTest("configs/keras2/imdb_lstm_tf_keras_2_config.json");
+//    }
+//
+//    @Test
+//    public void imdbLstmThSequentialConfigTest() throws Exception {
+//        runSequentialConfigTest("configs/keras2/imdb_lstm_th_keras_2_config.json");
+//    }
+
+    @Test
+    public void mnistMlpTfSequentialConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/mnist_mlp_tf_keras_2_config.json");
+    }
+
+    @Test
+    public void mnistMlpThSequentialConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/mnist_mlp_th_keras_2_config.json");
+    }
+
+    @Test
+    public void mnistCnnTfSequentialConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/mnist_cnn_tf_keras_2_config.json");
+    }
+
+    @Test
+    public void mnistCnnThSequentialConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/mnist_cnn_th_keras_2_config.json");
+    }
+
+
+
+
     @Test
     public void mlpSequentialConfigTest() throws Exception {
         runSequentialConfigTest("configs/keras2/keras2_mlp_config.json");
