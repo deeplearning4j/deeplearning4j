@@ -119,7 +119,8 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     @Override
     public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
         //default value is 1.0 (constant)
-        return (DifferentialFunction<X>) sameDiff.getFunctionFactory().one(i_v.getResultShape());
+        return (DifferentialFunction<X>) (i_v == this ? sameDiff.getFunctionFactory().one(i_v.getResultShape()) :
+                sameDiff.getFunctionFactory().zero(i_v.getResultShape()));
 
     }
 

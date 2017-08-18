@@ -529,8 +529,9 @@ public class SameDiffTests {
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable input = sameDiff.var("x",inputs.get("x"));
                 SDVariable softmax = sameDiff.softmax(input);
+                SDVariable sum = sameDiff.sum(softmax,Integer.MAX_VALUE);
                 //original shape ends up being 2,2
-                SDVariable grad = sameDiff.grad(softmax,sameDiff.var("grad",sumInput.dup()));
+                SDVariable grad = sameDiff.grad(sum,softmax);
                 return grad;
             }
         },inputs);

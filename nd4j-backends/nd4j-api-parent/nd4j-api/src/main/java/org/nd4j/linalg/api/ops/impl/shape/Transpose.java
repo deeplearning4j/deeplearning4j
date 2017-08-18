@@ -54,6 +54,27 @@ public class Transpose extends ShapeOp {
 
 
     @Override
+    public void exec(int... dimensions) {
+        exec();
+    }
+
+    @Override
+    public boolean isExecSpecial() {
+        return true;
+    }
+
+    @Override
+    public void exec() {
+        if(x != z) {
+            z.assign(x.transpose());
+        }
+        else {
+            this.z = x.transpose();
+        }
+
+    }
+
+    @Override
     public int opNum() {
         return 0;
     }
@@ -109,7 +130,7 @@ public class Transpose extends ShapeOp {
 
         if (y() != null)
             return new Transpose(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+                    z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Transpose(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -126,7 +147,7 @@ public class Transpose extends ShapeOp {
 
         if (y() != null)
             return new Transpose(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+                    z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Transpose(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
