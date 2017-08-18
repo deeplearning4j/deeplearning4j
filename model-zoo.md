@@ -139,7 +139,7 @@ zooModel.setInputShape(new int[]{3,28,28});
 
 ### Transfer Learning
 
-Pretrained models are perfect for transfer learning! You can read more about transfer learning using DL4J [here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/transferlearning/vgg16/TransferLearning.md).
+Pretrained models are perfect for transfer learning! You can read more about transfer learning using DL4J [here](https://deeplearning4j.org/transfer-learning).
 
 ### Workspaces
 
