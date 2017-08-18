@@ -111,6 +111,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             BroadcastOp broadcastOp = (BroadcastOp) op;
             exec(broadcastOp, broadcastOp.getDimension());
         }
+        else if(op instanceof ShapeOp) {
+            ShapeOp shapeOp = (ShapeOp) op;
+            exec(shapeOp);
+        }
 
         return op;
     }

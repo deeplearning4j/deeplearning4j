@@ -11,8 +11,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
-import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -497,6 +496,110 @@ public class SameDiffTests {
 
 
     @Test
+    public void testSoftmax() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
+        Map<String,INDArray> inputs = new HashMap<>();
+        inputs.put("x",sumInput);
+        sameDiff.defineFunction("softmax", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x").dup());
+                SDVariable softmax = sameDiff.softmax(input);
+                //original shape ends up being 2,2
+                return softmax;
+            }
+        },inputs);
+
+        INDArray assertions = Transforms.softmax(sumInput);
+        INDArray executions = sameDiff.execAndEndResult("softmax");
+        assertArrayEquals(sumInput.shape(),executions.shape());
+        System.out.println(executions);
+        assertEquals(assertions,executions);
+    }
+
+    @Test
+    public void testSoftmaxGradient() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
+        Map<String,INDArray> inputs = new HashMap<>();
+        inputs.put("x",sumInput);
+        sameDiff.defineFunction("softmaxGradient", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable softmax = sameDiff.softmax(input);
+                SDVariable sum = sameDiff.sum(softmax,Integer.MAX_VALUE);
+                //original shape ends up being 2,2
+                SDVariable grad = sum.backward();
+                return grad;
+            }
+        },inputs);
+
+        INDArray executions = sameDiff.execAndEndResult("softmaxGradient");
+        INDArray assertion = Nd4j.getExecutioner().execAndReturn(new SoftMaxDerivative(sumInput));
+        assertArrayEquals(sumInput.shape(),executions.shape());
+        assertEquals(assertion,executions);
+        System.out.println(executions);
+        //assertEquals(Nd4j.ones(2,2),executions);
+    }
+
+
+
+    @Test
+    public void testExpGradient() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
+        Map<String,INDArray> inputs = new HashMap<>();
+        inputs.put("x",sumInput);
+        sameDiff.defineFunction("expGradient", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable softmax = sameDiff.exp(input);
+                //original shape ends up being 2,2
+                SDVariable grad = sameDiff.grad(softmax,sameDiff.var("grad",sumInput.dup()));
+                return grad;
+            }
+        },inputs);
+
+        INDArray executions = sameDiff.execAndEndResult("expGradient");
+        INDArray assertion = Nd4j.getExecutioner().execAndReturn(new Exp(sumInput));
+        assertArrayEquals(sumInput.shape(),executions.shape());
+        assertEquals(assertion,executions);
+        System.out.println(executions);
+        //assertEquals(Nd4j.ones(2,2),executions);
+    }
+
+
+    @Test
+    public void testTanhGradient() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
+        Map<String,INDArray> inputs = new HashMap<>();
+        inputs.put("x",sumInput);
+        sameDiff.defineFunction("tanhGradient", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable tanh = sameDiff.tanh(input);
+                //original shape ends up being 2,2
+                SDVariable grad = sameDiff.grad(tanh,sameDiff.var("grad",sumInput.dup()));
+                return grad;
+            }
+        },inputs);
+
+        INDArray executions = sameDiff.execAndEndResult("tanhGradient");
+        INDArray assertion = Nd4j.getExecutioner().execAndReturn(new TanhDerivative(sumInput));
+        assertArrayEquals(sumInput.shape(),executions.shape());
+        assertEquals(assertion,executions);
+        System.out.println(executions);
+        //assertEquals(Nd4j.ones(2,2),executions);
+    }
+
+
+
+    @Test
     public void testRsubScalar() {
         SameDiff sameDiff = SameDiff.create();
         Map<String,INDArray> params = new HashMap<>();
@@ -597,12 +700,9 @@ public class SameDiffTests {
             }
         },inputs);
 
-        sameDiffOuter.defineFunction("loss", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                SDVariable outputs = sameDiffOuter.invokeFunctionOn("logisticPredictions",sameDiff);
-                return outputs;
-            }
+        sameDiffOuter.defineFunction("loss", (sameDiff, inputs1) -> {
+            SDVariable outputs = sameDiffOuter.invokeFunctionOn("logisticPredictions",sameDiff);
+            return outputs;
         },inputs);
 
 

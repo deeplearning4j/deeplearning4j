@@ -349,8 +349,8 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField asinh() {
-        //  return new ArrayField(OpState.fromOp(new INDArray(Math.log(Math.sqrt(Math.pow(x, 2) + 1) + x)),ops);
-        throw new UnsupportedOperationException();
+        return addTransformOp(new ASinh().name());
+
 
     }
 
@@ -368,6 +368,12 @@ public class ArrayField implements Field<ArrayField> {
     public ArrayField tanh() {
         return addTransformOp(new Tanh().name());
     }
+
+    @Override
+    public ArrayField tanhDerivative() {
+        return addTransformOp(new TanhDerivative().name());
+    }
+
 
     @Override
     public ArrayField atanh() {
@@ -460,6 +466,17 @@ public class ArrayField implements Field<ArrayField> {
         return addTransformOp(new LeakyReLUDerivative().name(),new Object[]{cutoff});
     }
 
+    @Override
+    public ArrayField selu() {
+        return addTransformOp(new SELU().name());
+    }
+
+
+    @Override
+    public ArrayField seluDerivative() {
+        return addTransformOp(new SELUDerivative().name());
+    }
+
 
     @Override
     public ArrayField sigmoid() {
@@ -489,6 +506,11 @@ public class ArrayField implements Field<ArrayField> {
     @Override
     public ArrayField softmax() {
         return addTransformOp(new SoftMax().name());
+    }
+
+    @Override
+    public ArrayField softmaxDerivative() {
+        return addTransformOp(new SoftMaxDerivative().name());
     }
 
     @Override
@@ -805,6 +827,7 @@ public class ArrayField implements Field<ArrayField> {
     public DifferentialFunction arg() {
         throw new UnsupportedOperationException();
     }
+
 
 
     private ArrayField addTransformOp(String name) {

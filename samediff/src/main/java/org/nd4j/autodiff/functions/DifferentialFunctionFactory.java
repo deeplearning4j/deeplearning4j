@@ -12,20 +12,8 @@ import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.functions.impl.binary.reduce.EuclideanDistance;
 import org.nd4j.autodiff.functions.impl.binary.reduce.ManhattanDistance;
 import org.nd4j.autodiff.functions.impl.unary.reduce.Prod;
-import org.nd4j.autodiff.functions.impl.unary.transform.ACosh;
-import org.nd4j.autodiff.functions.impl.unary.transform.ASin;
-import org.nd4j.autodiff.functions.impl.unary.transform.ATan;
-import org.nd4j.autodiff.functions.impl.unary.transform.ATanh;
-import org.nd4j.autodiff.functions.impl.unary.transform.Exp;
-import org.nd4j.autodiff.functions.impl.unary.transform.ExpandDims;
-import org.nd4j.autodiff.functions.impl.unary.transform.Sinh;
-import org.nd4j.autodiff.functions.impl.unary.transform.Tanh;
-import org.nd4j.autodiff.functions.impl.unary.transform.Tile;
-import org.nd4j.autodiff.functions.impl.unary.transform.ValueArrayOf;
-import org.nd4j.autodiff.functions.impl.unary.transform.shape.Permute;
-import org.nd4j.autodiff.functions.impl.unary.transform.shape.Reshape;
-import org.nd4j.autodiff.functions.impl.unary.transform.shape.RollAxis;
-import org.nd4j.autodiff.functions.impl.unary.transform.shape.Transpose;
+import org.nd4j.autodiff.functions.impl.unary.transform.*;
+import org.nd4j.autodiff.functions.impl.unary.transform.shape.*;
 import org.nd4j.autodiff.functions.mmul.Mmul;
 import org.nd4j.autodiff.functions.mmul.TensorMmul;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -283,6 +271,12 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     @Override
     public DifferentialFunction<ArrayField> tanh(DifferentialFunction<ArrayField> iX) {
         return new Tanh(sameDiff,iX,null);
+    }
+
+
+    @Override
+    public DifferentialFunction<ArrayField> tanhDerivative(DifferentialFunction<ArrayField> iX) {
+        return new TanhDerivative(sameDiff,iX,null);
     }
 
     @Override
@@ -931,11 +925,40 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     }
 
 
+    @Override
+    public DifferentialFunction<ArrayField> softmaxDerivative(DifferentialFunction<ArrayField> functionInput) {
+        validateDifferentialFunctionsameDiff(functionInput);
+        return new SoftMaxDerivative(sameDiff,functionInput,null);
+    }
 
+    @Override
+    public DifferentialFunction<ArrayField> logSoftmax(DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(i_v);
+        return new LogSoftMax(sameDiff,i_v,null);
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> selu(DifferentialFunction<ArrayField> arg) {
+        validateDifferentialFunctionsameDiff(arg);
+        return new SELU(sameDiff,arg,null);
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> seluDerivative(DifferentialFunction<ArrayField> arg) {
+        validateDifferentialFunctionsameDiff(arg);
+        return new SELUDerivative(sameDiff,arg,null);
+    }
+
+    /**
+     *
+     * @param func
+     * @return
+     */
     public int getInputLength(DifferentialFunction<ArrayField> func) {
         validateDifferentialFunctionsameDiff(func);
         if(func.getValue(true) instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) func.getValue(true);
+            ArrayField arrayField = func.getValue(true);
             int[] inputShape = arrayField.getInput().getShape();
             return ArrayUtil.prod(inputShape);
         }
@@ -944,37 +967,44 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     }
 
 
+    /**
+     *
+     * @param func
+     * @param input
+     * @param axes
+     * @return
+     */
     public DifferentialFunction<ArrayField> doGradChoose(DifferentialFunction<ArrayField> func,
                                                          DifferentialFunction<ArrayField> input,int...axes) {
-        if(input.getValue(true) instanceof ArrayField) {
-            validateDifferentialFunctionsameDiff(func);
-            validateDifferentialFunctionsameDiff(input);
+        validateDifferentialFunctionsameDiff(func);
+        validateDifferentialFunctionsameDiff(input);
 
-            DifferentialFunction<ArrayField> repeatedGrad = doRepeat(func,input,axes);
-            DifferentialFunction<ArrayField> resultRepeated = doRepeat(func.args()[0],input,axes);
-            DifferentialFunction<ArrayField> argMaxLocations = eq(input,resultRepeated);
-            return argMaxLocations.mul(repeatedGrad).div(sum(argMaxLocations,axes));
-        }
+        DifferentialFunction<ArrayField> repeatedGrad = doRepeat(func,input,axes);
+        DifferentialFunction<ArrayField> resultRepeated = doRepeat(func.args()[0],input,axes);
+        DifferentialFunction<ArrayField> argMaxLocations = eq(input,resultRepeated);
+        return argMaxLocations.mul(repeatedGrad).div(sum(argMaxLocations,axes));
 
-        throw new UnsupportedOperationException("Must be an ArrayField argument");
 
     }
 
 
+    /**
+     *
+     * @param func
+     * @param input
+     * @param axes
+     * @return
+     */
     public  DifferentialFunction<ArrayField> doRepeat(DifferentialFunction<ArrayField> func,
                                                       DifferentialFunction<ArrayField> input,
                                                       int...axes) {
-        if(input.getValue(true) instanceof ArrayField) {
-            ArrayField arrayField = input.getValue(true);
-            int[] inputShape = arrayField.getInput().getShape();
-            validateDifferentialFunctionsameDiff(func);
-            validateDifferentialFunctionsameDiff(input);
-            return broadcast(func,inputShape);
+        ArrayField arrayField = input.getValue(true);
+        int[] inputShape = arrayField.getInput().getShape();
+        validateDifferentialFunctionsameDiff(func);
+        validateDifferentialFunctionsameDiff(input);
+        return broadcast(func,inputShape);
 
-        }
 
-        throw new UnsupportedOperationException("Must be an ArrayField " +
-                "argument");
 
     }
 
@@ -1000,6 +1030,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
                 "match this function " + this);
 
     }
+
 
 
 }

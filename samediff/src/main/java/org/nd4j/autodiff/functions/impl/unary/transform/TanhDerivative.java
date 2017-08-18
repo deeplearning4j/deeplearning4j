@@ -5,15 +5,15 @@ import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-public class Tanh extends AbstractUnaryFunction<ArrayField> {
+public class TanhDerivative extends AbstractUnaryFunction<ArrayField> {
 
-    public Tanh(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public TanhDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().tanh(arg().getValue(true));
+        return sameDiff.getArrayFactory().tanhDerivative(arg().getValue(true));
     }
 
     @Override
@@ -23,11 +23,11 @@ public class Tanh extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().tanhDerivative(i_v);
+        return sameDiff.getFunctionFactory().one(getResultShape()).div(sameDiff.getFunctionFactory().cosh(arg())).pow(2);
     }
 
     @Override
     public String functionName() {
-        return new org.nd4j.linalg.api.ops.impl.transforms.Tanh().name();
+        return new org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative().name();
     }
 }

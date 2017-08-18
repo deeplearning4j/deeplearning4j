@@ -374,6 +374,21 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
+    public DifferentialFunction<X> tanhDerivative() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> seluDerivative() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> softmaxDerivative() {
+        return null;
+    }
+
+    @Override
     public DifferentialFunction<X>[] args() {
         return new DifferentialFunction[0];
     }
@@ -567,7 +582,10 @@ public abstract class DifferentialFunction<X extends Field<X>>
     public DifferentialFunction<X> leakyReluDerivative(double cutoff) {
         return null;
     }
-
+    @Override
+    public DifferentialFunction<X> selu() {
+        return null;
+    }
     @Override
     public DifferentialFunction<X> sigmoid() {
         return null;

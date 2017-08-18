@@ -2,10 +2,7 @@ package org.nd4j.autodiff.samediff.impl;
 
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.functions.Constant;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.Variable;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
@@ -72,8 +69,21 @@ public class SDVariable  implements Serializable {
         }
     }
 
+
     /**
-     *
+     * Invokes this wrt itself starting as 1.
+     * @return
+     */
+    public SDVariable backward() {
+        if(ArrayUtil.prod(getShape()) != 1) {
+            throw new IllegalStateException("Backward invocations must involve calling a scalar.");
+        }
+
+        return sameDiff.grad(this,this);
+    }
+
+    /**
+     * Returns the shape of this variable
      * @return
      */
     public int[] getShape() {
@@ -471,6 +481,11 @@ public class SDVariable  implements Serializable {
                 .build();
     }
 
+    /**
+     *
+     * @param sameDiffVariable
+     * @return
+     */
     public SDVariable addi(SDVariable sameDiffVariable) {
         assertShapeEquals(sameDiffVariable);
 
@@ -481,6 +496,11 @@ public class SDVariable  implements Serializable {
                 .build();
     }
 
+    /**
+     *
+     * @param sameDiffVariable
+     * @return
+     */
     public SDVariable subi(SDVariable sameDiffVariable) {
         assertShapeEquals(sameDiffVariable);
 
@@ -494,6 +514,11 @@ public class SDVariable  implements Serializable {
                 .build();
     }
 
+    /**
+     *
+     * @param sameDiffVariable
+     * @return
+     */
     public SDVariable divi(SDVariable sameDiffVariable) {
         assertShapeEquals(sameDiffVariable);
 
@@ -504,6 +529,11 @@ public class SDVariable  implements Serializable {
                 .build();
     }
 
+    /**
+     *
+     * @param sameDiffVariable
+     * @return
+     */
     public SDVariable muli(SDVariable sameDiffVariable) {
         assertShapeEquals(sameDiffVariable);
 
@@ -547,6 +577,13 @@ public class SDVariable  implements Serializable {
     }
 
 
+    /**
+     * Return the underlying differential
+     * function
+     * or array field.
+     * @param variable
+     * @return
+     */
     public static DifferentialFunction<ArrayField> getFunction(SDVariable variable) {
         if(variable == null)
             throw new IllegalArgumentException("Unable to get function for null variable");

@@ -132,6 +132,8 @@ public interface Field<X> extends CommutativeRing<X> {
 
     X softmax();
 
+    X softmaxDerivative();
+
     X softplus();
 
     X reshape(int[] shape);
@@ -219,4 +221,10 @@ public interface Field<X> extends CommutativeRing<X> {
     X lossSquaredHinge(X i_y, int... dimensions);
 
     DifferentialFunction arg();
+
+    X selu();
+
+    X tanhDerivative();
+
+    X seluDerivative();
 }

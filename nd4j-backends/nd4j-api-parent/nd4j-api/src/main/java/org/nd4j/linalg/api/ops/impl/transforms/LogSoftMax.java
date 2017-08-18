@@ -35,19 +35,23 @@ public class LogSoftMax extends BaseTransformOp {
     public LogSoftMax() {}
 
     public LogSoftMax(INDArray x, INDArray z) {
-        super(x, z);
+        this(x,null,z);
     }
 
     public LogSoftMax(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+        this(x,null,z,n);
     }
 
     public LogSoftMax(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
+        //ensure the result is the same
+        //do a reference check here because it's cheaper
+        if(x != z)
+            z.assign(x);
     }
 
     public LogSoftMax(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+        this(x, y, z, x.lengthLong());
     }
 
     public LogSoftMax(INDArray x) {
@@ -111,7 +115,7 @@ public class LogSoftMax extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
             return new LogSoftMax(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+                    z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new LogSoftMax(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -122,7 +126,7 @@ public class LogSoftMax extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
             return new LogSoftMax(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+                    z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new LogSoftMax(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

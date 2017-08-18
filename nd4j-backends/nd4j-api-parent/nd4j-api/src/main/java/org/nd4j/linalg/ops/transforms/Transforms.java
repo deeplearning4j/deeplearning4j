@@ -468,12 +468,18 @@ public class Transforms {
     }
 
 
+    /**
+     *
+     * @param in
+     * @param copy
+     * @return
+     */
     public static INDArray softmax(INDArray in, boolean copy) {
         return Nd4j.getExecutioner().execAndReturn(new SoftMax(((copy ? in.dup() : in))));
     }
 
     /**
-     * Abs funciton
+     * Abs function
      *
      * @param ndArray
      * @return
@@ -483,6 +489,11 @@ public class Transforms {
     }
 
 
+    /**
+     * Run the exp operation
+     * @param ndArray
+     * @return
+     */
     public static INDArray exp(INDArray ndArray) {
         return exp(ndArray, Nd4j.copyOnOps);
     }

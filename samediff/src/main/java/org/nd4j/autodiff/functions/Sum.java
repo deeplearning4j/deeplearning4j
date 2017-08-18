@@ -9,7 +9,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 
 
-public class Sum<X extends Field<ArrayField>> extends AbstractBinaryFunction<ArrayField> {
+public class Sum extends AbstractBinaryFunction<ArrayField> {
 
     public Sum(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
         super(sameDiff,i_v1, i_v2);

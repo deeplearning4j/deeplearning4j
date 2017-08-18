@@ -52,6 +52,28 @@ public class Reshape extends ShapeOp {
         super(x);
     }
 
+    @Override
+    public void exec(int... dimensions) {
+        exec();
+    }
+
+    @Override
+    public boolean isExecSpecial() {
+        return true;
+    }
+
+    @Override
+    public void exec() {
+        int[] shape = (int[]) extraArgs[0];
+        if(x != z) {
+            z.assign(x.permute(shape));
+        }
+        else {
+            this.z = x.reshape(shape);
+        }
+
+    }
+
 
     @Override
     public int opNum() {

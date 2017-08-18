@@ -51,6 +51,36 @@ public class Broadcast extends ShapeOp {
         super(x);
     }
 
+    @Override
+    public void exec(int... dimensions) {
+        exec();
+    }
+
+    @Override
+    public boolean isExecSpecial() {
+        return true;
+    }
+
+    @Override
+    public void exec() {
+        int[] permuteDims = extraArgs == null ? z().shape() : (int[]) extraArgs[0];
+        if(x != z) {
+            if(x.isScalar() && !z.isScalar()) {
+                z.assign(x.getDouble(0));
+            }
+            else
+                z.assign(x.broadcast(permuteDims));
+        }
+        else {
+            if(x.isScalar() && !z.isScalar()) {
+                z.assign(x.getDouble(0));
+            }
+            else
+                this.z = x.broadcast(permuteDims);
+        }
+
+    }
+
 
     @Override
     public int opNum() {
@@ -108,7 +138,7 @@ public class Broadcast extends ShapeOp {
 
         if (y() != null)
             return new Broadcast(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+                    z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Broadcast(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -125,7 +155,7 @@ public class Broadcast extends ShapeOp {
 
         if (y() != null)
             return new Broadcast(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+                    z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Broadcast(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

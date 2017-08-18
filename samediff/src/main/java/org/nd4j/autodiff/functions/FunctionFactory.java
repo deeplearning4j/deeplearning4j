@@ -79,6 +79,8 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> tanh(DifferentialFunction<X> iX);
 
+    DifferentialFunction<ArrayField> tanhDerivative(DifferentialFunction<ArrayField> iX);
+
     DifferentialFunction<X> acosh(DifferentialFunction<X> iX);
 
     DifferentialFunction<X> asinh(DifferentialFunction<X> iX);
@@ -161,4 +163,12 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> mmul(int argNum, DifferentialFunction<X> x, DifferentialFunction<X> y);
     DifferentialFunction<X> tensorMmul(DifferentialFunction<X> x, DifferentialFunction<X> y, int[][] dimensions, int argNum);
+
+    DifferentialFunction<X> softmaxDerivative(DifferentialFunction<X> functionInput);
+
+    DifferentialFunction<X> logSoftmax(DifferentialFunction<X> i_v);
+
+    DifferentialFunction<X> selu(DifferentialFunction<X> arg);
+
+    DifferentialFunction<X> seluDerivative(DifferentialFunction<X> arg);
 }

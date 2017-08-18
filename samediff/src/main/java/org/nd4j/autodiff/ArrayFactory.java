@@ -47,6 +47,16 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
+    public ArrayField selu(ArrayField value) {
+        return value.selu();
+    }
+
+    @Override
+    public ArrayField seluDerivative(ArrayField value) {
+        return value.seluDerivative();
+    }
+
+    @Override
     public ArrayField eq(ArrayField i_x, ArrayField i_y) {
         return i_x.eq(i_y);
     }
@@ -282,6 +292,11 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     @Override
     public ArrayField tanh(ArrayField x) {
         return x.tanh();
+    }
+
+    @Override
+    public ArrayField tanhDerivative(ArrayField x) {
+        return x.tanhDerivative();
     }
 
     @Override
@@ -640,4 +655,11 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     public ArrayField set(ArrayField value, ArrayField value1) {
         return value.set(value1);
     }
+
+    @Override
+    public ArrayField softmaxDerivative(ArrayField value) {
+        return value.softmaxDerivative();
+    }
+
+
 }

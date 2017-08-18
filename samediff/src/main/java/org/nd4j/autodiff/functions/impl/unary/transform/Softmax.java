@@ -23,8 +23,7 @@ public class Softmax extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        DifferentialFunction<ArrayField> val = sameDiff.getFunctionFactory().val(getValue(true));
-        return val.mul(sameDiff.getFunctionFactory().one(getResultShape()).sub(val)).mul(arg().diff(i_v));
+        return sameDiff.getFunctionFactory().softmaxDerivative(i_v).mul(arg().diff(i_v));
     }
 
     @Override
