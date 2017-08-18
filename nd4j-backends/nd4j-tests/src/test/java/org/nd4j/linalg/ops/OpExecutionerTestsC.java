@@ -129,6 +129,15 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testCosineDistance(){
+        INDArray vec1 = Nd4j.create(new float[] {1, 2, 3});
+        INDArray vec2 = Nd4j.create(new float[] {3, 5, 7});
+        // 1-17*sqrt(2/581)
+        double distance = Transforms.cosineDistance(vec1, vec2);
+        assertEquals(getFailureMessage(), 0.0025851, distance, 1e-7);
+    }
+
+    @Test
     public void testLog() {
         INDArray log = Nd4j.linspace(1, 6, 6);
         INDArray transformed = Transforms.log(log);
