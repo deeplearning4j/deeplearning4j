@@ -90,10 +90,12 @@ done
 # default for chip
 if [[ -z "$CHIP" ]]; then
     # test for cuda libraries
-    if (ldconfig -p | grep -q libcuda\.so) then
-        CHIP="cuda"
-    else
-        CHIP="cpu"
+    if (type ldconfig &> /dev/null); then
+       if (ldconfig -p | grep -q libcuda\.so); then
+           CHIP="cuda"
+       else
+           CHIP="cpu"
+        fi
     fi
 fi
 

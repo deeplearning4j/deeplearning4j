@@ -52,6 +52,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_ZERO_PADDING_1D = "ZeroPadding1D";
     private final String LAYER_CLASS_NAME_ZERO_PADDING_2D = "ZeroPadding2D";
     private final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
+    private final String LAYER_CLASS_NAME_RESHAPE = "Reshape";
     private final String LAYER_CLASS_NAME_MERGE = "Merge";
     private final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
     private final String LAYER_CLASS_NAME_TIME_DISTRIBUTED = "TimeDistributed";
@@ -63,6 +64,8 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE = "TimeDistributedDense"; // Keras 1 only
     private final String LAYER_CLASS_NAME_CONVOLUTION_1D = ""; // 1: Convolution1D, 2: Conv1D
     private final String LAYER_CLASS_NAME_CONVOLUTION_2D = ""; // 1: Convolution2D, 2: Conv2D
+    private final String LAYER_CLASS_NAME_LEAKY_RELU = "LeakyReLU";
+
 
     /* Partially shared layer configurations. */
     private final String LAYER_FIELD_INPUT_SHAPE = "input_shape";

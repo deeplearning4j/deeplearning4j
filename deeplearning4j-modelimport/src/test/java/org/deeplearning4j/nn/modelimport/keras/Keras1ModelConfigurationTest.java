@@ -18,12 +18,46 @@ import org.nd4j.linalg.io.ClassPathResource;
 @Slf4j
 public class Keras1ModelConfigurationTest {
 
-    ClassLoader classLoader = getClass().getClassLoader();
+    private ClassLoader classLoader = getClass().getClassLoader();
 
     @Test
     public void importKerasMlpSequentialConfigTest() throws Exception {
         ClassPathResource configResource = new ClassPathResource(
                 "configs/keras1/mlp_config.json", classLoader);
+        MultiLayerConfiguration config =
+                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
+                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
+        MultiLayerNetwork model = new MultiLayerNetwork(config);
+        model.init();
+    }
+
+    @Test
+    public void importKerasReshapeConfigTest() throws Exception {
+        ClassPathResource configResource = new ClassPathResource(
+                "configs/keras1/mnist_mlp_reshape_tf_keras_1_config.json", classLoader);
+        MultiLayerConfiguration config =
+                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
+                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
+        MultiLayerNetwork model = new MultiLayerNetwork(config);
+        model.init();
+    }
+
+    @Test
+    public void importKerasReshapeCnnConfigTest() throws Exception {
+        ClassPathResource configResource = new ClassPathResource(
+                "configs/keras1/mnist_cnn_reshape_tf_keras_1_config.json", classLoader);
+        MultiLayerConfiguration config =
+                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
+                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
+        MultiLayerNetwork model = new MultiLayerNetwork(config);
+        model.init();
+    }
+
+
+    @Test
+    public void importKerasYoloConfigTest() throws Exception {
+        ClassPathResource configResource = new ClassPathResource(
+                "configs/keras1/yolo_model.json", classLoader);
         MultiLayerConfiguration config =
                 new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
                         .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();

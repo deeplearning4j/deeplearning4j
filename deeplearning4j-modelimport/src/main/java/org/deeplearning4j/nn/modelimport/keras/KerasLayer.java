@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfigurationFac
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.*;
+import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
@@ -105,6 +106,8 @@ public class KerasLayer {
         KerasLayer layer = null;
         if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ACTIVATION())) {
             layer = new KerasActivation(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LEAKY_RELU())) {
+            layer = new KerasLeakyReLU(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DROPOUT())) {
             layer = new KerasDropout(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DENSE()) ||
@@ -132,6 +135,8 @@ public class KerasLayer {
             layer = new KerasMerge(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_FLATTEN())) {
             layer = new KerasFlatten(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_RESHAPE())) {
+            layer = new KerasReshape(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ZERO_PADDING_2D())) {
             layer = new KerasZeroPadding(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_1D()) ||
@@ -385,8 +390,9 @@ public class KerasLayer {
                 throw new InvalidKerasConfigurationException(msg + "(found no parameter named " + paramName + ")");
 
             /* Copy weights. */
-            for (String paramName : layer.paramTable().keySet())
+            for (String paramName : layer.paramTable().keySet()) {
                 layer.setParam(paramName, this.weights.get(paramName));
+            }
         }
     }
 

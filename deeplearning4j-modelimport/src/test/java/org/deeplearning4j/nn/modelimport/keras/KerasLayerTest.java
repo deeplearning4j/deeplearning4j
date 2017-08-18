@@ -2,12 +2,15 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.*;
+import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 
@@ -44,6 +47,11 @@ public class KerasLayerTest {
     private final int N_OUT = 13;
     private final String BORDER_MODE_VALID = "valid";
     private final int[] VALID_PADDING = new int[]{0, 0};
+
+    public static final String LAYER_FIELD_LEAKY_RELU_ALPHA = "alpha";
+    public static final String LAYER_FIELD_TARGET_SHAPE = "target_shape";
+    public static final double EPSILON = 1E-5;
+    public static final double MOMENTUM = 0.99;
 
     Integer keras1 = 1;
     Integer keras2 = 2;
@@ -101,6 +109,18 @@ public class KerasLayerTest {
         buildBatchNormalizationLayer(conf2, keras2);
     }
 
+    @Test
+    public void testLeakyReLULayer() throws Exception {
+        buildLeakyReLULayer(conf1, keras1);
+        buildLeakyReLULayer(conf2, keras2);
+    }
+
+    @Test
+    public void testReshapeLayer() throws Exception {
+        buildLReshapeLayer(conf1, keras1);
+        buildLReshapeLayer(conf2, keras2);
+    }
+
     public void buildEmbeddingLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_EMBEDDING());
@@ -144,6 +164,40 @@ public class KerasLayerTest {
         ActivationLayer layer = new KerasActivation(layerConfig).getActivationLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
+    }
+
+    public void buildLeakyReLULayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LEAKY_RELU());
+        Map<String, Object> config = new HashMap<String, Object>();
+        config.put(LAYER_FIELD_LEAKY_RELU_ALPHA, 0.3); // set leaky ReLU alpha
+        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+
+        ActivationLayer layer = new KerasLeakyReLU(layerConfig).getActivationLayer();
+        assertEquals("leakyrelu(a=0.3)", layer.getActivationFn().toString());
+        assertEquals(LAYER_NAME, layer.getLayerName());
+    }
+
+    public void buildLReshapeLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_RESHAPE());
+        Map<String, Object> config = new HashMap<String, Object>();
+        int[] targetShape = new int[] {10, 5};
+        List<Integer> targetShapeList = new ArrayList<>();
+        targetShapeList.add(targetShape[0]);
+        targetShapeList.add(targetShape[1]);
+        config.put(LAYER_FIELD_TARGET_SHAPE, targetShapeList);
+        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+
+        InputType inputType = InputType.InputTypeFeedForward.feedForward(20);
+        ReshapePreprocessor preProcessor =
+                (ReshapePreprocessor) new KerasReshape(layerConfig).getInputPreprocessor(inputType);
+        assertEquals(preProcessor.getTargetShape()[0], targetShape[0]);
+        assertEquals(preProcessor.getTargetShape()[1], targetShape[1]);
     }
 
     public void buildDropoutLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {

@@ -10,6 +10,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NearestNeighborsResult {
+    public NearestNeighborsResult(int index, double distance) {
+        this(index, distance, null);
+    }
+
     private int index;
     private double distance;
+    private String label;
 }
