@@ -94,7 +94,7 @@ public class SparseCOOLevel1Test extends BaseNd4jTest {
         assertEquals(getFailureMessage(), expectedSparseVec.data(), sparseVec.data());
 
         assertEquals(getFailureMessage(), expectedVec, vec);
-        // TODO fix it
+        // TODO FIXME
     }
 
     @Test
@@ -128,7 +128,6 @@ public class SparseCOOLevel1Test extends BaseNd4jTest {
             assertEquals(getFailureMessage(), vec2.getVectorCoordinates(), vecSparse2);
         }
     }
-
 
     @Override
     public char ordering() {

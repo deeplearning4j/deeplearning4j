@@ -107,7 +107,6 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
         return this;
     }
 
-
     /**
      * Returns a subset of this array based on the specified
      * indexes
@@ -178,10 +177,6 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
 
     public SparseFormat getFormat() {
         return format;
-    }
-
-    private void add(DataBuffer buffer, int value) {
-        // TODO add value and the end of the array
     }
 
     public DataBuffer getPointerB() {
@@ -350,7 +345,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
 
     @Override
     public int underlyingRank() {
-        throw new UnsupportedOperationException("Not a COO array");
+        return rank;
     }
 
     @Override

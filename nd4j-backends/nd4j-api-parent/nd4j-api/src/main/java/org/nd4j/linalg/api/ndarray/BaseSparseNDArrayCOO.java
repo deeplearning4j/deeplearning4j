@@ -26,21 +26,16 @@ import org.nd4j.linalg.util.LongUtils;
 
 /*
 * TODO :
-* - Implement equals()
+* - Implement the INDArray methods
 * - Sort the databuffers
 * - Check at the creation if there are any 0 values and remove them
-* - get / put with SpecifiedIndex
-* - NewAxis support
-* - add ordering argument for indices in constructor
+* - add indexesOrdering in constructor
+* - BaseSparseNDArray should extend from BaseNDArray : remove the duplicate methods
 * */
 public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     protected static final SparseFormat format = SparseFormat.COO;
     protected transient volatile DataBuffer values;
     protected transient volatile DataBuffer indices;
-    // protected transient volatile DataBuffer flags; // 0 = dimension is active, 1 = hidden
-    //protected transient volatile DataBuffer hiddenDimension; // contains position of the hidden dim.
-    //protected transient volatile int numHiddenDimension = 0;
-    //protected transient volatile DataBuffer  sparseOffsets;
     protected transient volatile boolean isSorted = false;
 
 
@@ -177,12 +172,14 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return this;
     }
 
+    /**
+     * Sort the indexes and the values buffers
+     * */
     public void sort() {
         if (!isSorted) {
             Nd4j.sparseFactory().sortCooIndices(this);
             isSorted = true;
         }
-
     }
 
     /**
@@ -214,11 +211,12 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     /**
-     * Return if a given dimension is flags in the view.
+     * Return if the dimension in argument is a fixed dimension.
      * */
     public boolean isDimensionFixed(int i) {
         return flags()[i] == 1;
     }
+
 
     @Override
     public INDArray putScalar(int i, double value) {
@@ -288,7 +286,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
-    public INDArray putRow(int row, INDArray toPut) { // todo move in base ?
+    public INDArray putRow(int row, INDArray toPut) {
         if (isRowVector() && toPut.isVector()) {
             return assign(toPut);
         }
@@ -296,7 +294,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
-    public INDArray putColumn(int column, INDArray toPut) { // todo move in base ?
+    public INDArray putColumn(int column, INDArray toPut) {
         if (isColumnVector() && toPut.isVector()) {
             return assign(toPut);
         }
@@ -351,7 +349,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
-    public INDArray put(int i, INDArray element) { // TODO in base
+    public INDArray put(int i, INDArray element) { // TODO remove and use basendarray method
         if (!element.isScalar())
             throw new IllegalArgumentException("Element must be a scalar");
         return putScalar(i, element.getDouble(0));
@@ -543,25 +541,33 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return indexesBinarySearch(0, length(), idx);
     }
 
-    public int indexesBinarySearch(int lowerBound, int upperBound, int[] indexes) {
+    /**
+     * Return the position of the idx array into the indexes buffer between the lower and upper bound.
+     * @param idx a set of coordinates
+     * @param lowerBound the lower bound of the position
+     * @param upperBound the upper bound of the position
+     * @return the position of the idx array into the indexes buffers, which corresponds to the position of
+     * the corresponding value in the values data.
+     * */
+    public int indexesBinarySearch(int lowerBound, int upperBound, int[] idx) {
         int min = lowerBound;
         int max = upperBound;
 
         int mid = (max + min) / 2;
         int[] midIdx = getUnderlyingIndicesOf(mid).asInt();
-        if (Arrays.equals(indexes, midIdx)) {
+        if (Arrays.equals(idx, midIdx)) {
             return mid;
         }
-        if (ArrayUtil.lessThan(indexes, midIdx)) {
+        if (ArrayUtil.lessThan(idx, midIdx)) {
             max = mid;
         }
-        if (ArrayUtil.greaterThan(indexes, midIdx)) {
+        if (ArrayUtil.greaterThan(idx, midIdx)) {
             min = mid;
         }
         if (min == max) {
             return -1;
         }
-        return indexesBinarySearch(min, max, indexes);
+        return indexesBinarySearch(min, max, idx);
     }
 
     @Override
@@ -635,14 +641,19 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return values;
     }
 
+    /**
+     * Return the indices buffer
+     * @return indices
+     * */
     public DataBuffer getUnderlyingIndices() {
         return indices;
     }
 
-    /*
-    * Return a copy of the indices in the context of the view.
-    * Change this DataBuffer won't change the ndarray!
-    *  */
+    /**
+    * Return a copy of the indices included in the view.
+    * /!\ Change this DataBuffer won't change the ndarray!
+    * @return an array containing the virtual indexes of the values (think about views).
+    * */
     public DataBuffer getIncludedIndices() {
 
         if (isScalar()) {
@@ -689,12 +700,19 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return Nd4j.createBuffer(Ints.toArray(ind));
     }
 
+    /**
+     * Return the values buffer
+     * @return values
+     * */
     public DataBuffer getUnderlyingValues() {
         return values;
     }
 
-    /*
-    * */
+    /**
+     * Return a copy of the values included in the array.
+     * /!\ Change this DataBuffer won't change the ndarray!
+     * @return an array containing the values
+     * */
     public DataBuffer getIncludedValues() {
         List<Double> val = new ArrayList<>();
 
@@ -942,7 +960,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         //int to = from + underlyingRank();
         int[] res = new int[underlyingRank()];
         for(int j = 0; j< underlyingRank(); j++){
-            res[j] = from + j;
+            res[j] = indices.getInt(from + j);
         }
 
         ///int[] arr = Arrays.copyOfRange(indices.asInt(), from, to);
