@@ -39,6 +39,17 @@ public class KerasModelConfigurationTest {
         model.init();
     }
 
+    @Test
+    public void importKerasReshapeCnnConfigTest() throws Exception {
+        ClassPathResource configResource = new ClassPathResource("modelimport/keras/examples/mnist_cnn_reshape/mnist_cnn_reshape_tf_keras_1_config.json",
+                KerasModelConfigurationTest.class.getClassLoader());
+        MultiLayerConfiguration config =
+                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
+                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
+        MultiLayerNetwork model = new MultiLayerNetwork(config);
+        model.init();
+    }
+
 
     @Test
     public void importKerasYoloConfigTest() throws Exception {

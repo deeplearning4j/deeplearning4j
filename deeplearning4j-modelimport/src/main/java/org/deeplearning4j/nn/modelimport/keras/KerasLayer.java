@@ -481,8 +481,9 @@ public class KerasLayer {
                 throw new InvalidKerasConfigurationException(msg + "(found no parameter named " + paramName + ")");
 
             /* Copy weights. */
-            for (String paramName : layer.paramTable().keySet())
+            for (String paramName : layer.paramTable().keySet()) {
                 layer.setParam(paramName, this.weights.get(paramName));
+            }
         }
     }
 

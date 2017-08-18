@@ -56,11 +56,11 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
     private static int[] prependMiniBatchSize(int[] shape, int miniBatchSize) {
         int shapeLength = shape.length;
         int[] miniBatchShape = new int[shapeLength + 1];
-        for (int i : miniBatchShape) {
+        for (int i = 0; i < miniBatchShape.length; i++) {
             if (i == 0)
                 miniBatchShape[i] = miniBatchSize;
             else
-                miniBatchShape[i] = shape[i];
+                miniBatchShape[i] = shape[i-1];
         }
         return miniBatchShape;
     }
@@ -69,18 +69,15 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
     public INDArray preProcess(INDArray input, int miniBatchSize) {
         // the target shape read from a keras config does not have mini-batch size
         // included. We prepend it here dynamically.
-        if (targetShape.length + 1 == inputShape.length) {
+        if (targetShape.length + 1 == input.shape().length) {
             targetShape = prependMiniBatchSize(targetShape, miniBatchSize);
+            inputShape = prependMiniBatchSize(inputShape, miniBatchSize);
             this.hasMiniBatchDimension = true;
-        }
-        if (inputShape != input.shape()) {
-            throw new IllegalStateException("Unexpected input shape" + Arrays.toString(input.shape())
-                    + " (expected to be " + Arrays.toString(inputShape) + ")");
         }
         if (prod(input.shape()) == prod((targetShape))) {
             return input.reshape(this.targetShape);
         } else {
-            throw new IllegalStateException("Input shape" + Arrays.toString(input.shape())
+            throw new IllegalStateException("Input shape " + Arrays.toString(input.shape())
                     + " and output shape" + Arrays.toString(inputShape) + " do not match");
         }
     }
@@ -105,7 +102,6 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
         int[] shape = hasMiniBatchDimension ? targetShape : prependMiniBatchSize(targetShape, 0);
         switch (shape.length) {
             case 2:
-                System.out.println("TEST");
                 return InputType.feedForward(shape[1]);
             case 3:
                 return InputType.recurrent(shape[1]);

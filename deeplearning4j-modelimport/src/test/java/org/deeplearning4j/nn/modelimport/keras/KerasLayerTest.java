@@ -2,7 +2,7 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
@@ -10,7 +10,6 @@ import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 
-import javax.print.DocFlavor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -118,7 +117,9 @@ public class KerasLayerTest {
         config.put(LAYER_FIELD_NAME, LAYER_NAME);
         layerConfig.put(LAYER_FIELD_CONFIG, config);
 
-        ReshapePreprocessor preProcessor = (ReshapePreprocessor) new KerasReshape(layerConfig).getInputPreprocessor();
+        InputType inputType = InputType.InputTypeFeedForward.feedForward(20);
+        ReshapePreprocessor preProcessor =
+                (ReshapePreprocessor) new KerasReshape(layerConfig).getInputPreprocessor(inputType);
         assertEquals(preProcessor.getTargetShape()[0], targetShape[0]);
         assertEquals(preProcessor.getTargetShape()[1], targetShape[1]);
     }
