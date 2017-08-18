@@ -32,6 +32,7 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class ConvolutionLayer extends FeedForwardLayer {
+    protected boolean noBias;
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate; //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
     protected int[] kernelSize; // Square filter
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
@@ -88,6 +89,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
      */
     protected ConvolutionLayer(BaseConvBuilder<?> builder) {
         super(builder);
+        this.noBias = builder.noBias;
         this.convolutionMode = builder.convolutionMode;
         if (builder.kernelSize.length != 2)
             throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
@@ -606,6 +608,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     protected static abstract class BaseConvBuilder<T extends BaseConvBuilder<T>> extends FeedForwardLayer.Builder<T> {
+        protected boolean noBias = false;
         protected ConvolutionMode convolutionMode = null;
         protected int[] kernelSize = new int[] {5, 5};
         protected int[] stride = new int[] {1, 1};
@@ -632,6 +635,16 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         protected BaseConvBuilder() {}
+
+        /**
+         * If true: include no bias parameters in the model. False (default): include bias.
+         *
+         * @param noBias If true: don't include bias parameters in this model
+         */
+        public T noBias(boolean noBias){
+            this.noBias = noBias;
+            return (T)this;
+        }
 
         /**
          * Set the convolution mode for the Convolution layer.

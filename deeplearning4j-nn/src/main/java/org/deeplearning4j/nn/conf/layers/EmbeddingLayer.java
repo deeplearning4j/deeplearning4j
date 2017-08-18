@@ -32,8 +32,11 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class EmbeddingLayer extends FeedForwardLayer {
 
+    private boolean noBias = false;
+
     private EmbeddingLayer(Builder builder) {
         super(builder);
+        this.noBias = builder.noBias;
     }
 
     @Override
@@ -76,6 +79,18 @@ public class EmbeddingLayer extends FeedForwardLayer {
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
+
+        private boolean noBias = false;
+
+        /**
+         * If true: include no bias parameters in the model. False (default): include bias.
+         *
+         * @param noBias If true: don't include bias parameters in this model
+         */
+        public Builder noBias(boolean noBias){
+            this.noBias = noBias;
+            return this;
+        }
 
         @Override
         @SuppressWarnings("unchecked")
