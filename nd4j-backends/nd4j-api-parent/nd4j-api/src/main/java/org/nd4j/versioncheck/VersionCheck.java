@@ -203,7 +203,7 @@ public class VersionCheck {
      */
     public static List<String> listGitPropertiesFiles() {
         Reflections reflections = new Reflections(new ConfigurationBuilder().filterInputsBy(
-                new FilterBuilder().exclude("*").include("/ai/skymind/*")).setScanners(new ResourcesScanner()));
+                new FilterBuilder().exclude(".*").include("/ai/skymind/*")).setScanners(new ResourcesScanner()));
         Set<String> resources = reflections.getResources(Pattern.compile(".*-git.properties"));
 
         List<String> out = new ArrayList<>(resources);
