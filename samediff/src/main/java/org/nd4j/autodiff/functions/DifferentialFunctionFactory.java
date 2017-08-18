@@ -950,6 +950,11 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
         return new SELUDerivative(sameDiff,arg,null);
     }
 
+    /**
+     *
+     * @param func
+     * @return
+     */
     public int getInputLength(DifferentialFunction<ArrayField> func) {
         validateDifferentialFunctionsameDiff(func);
         if(func.getValue(true) instanceof ArrayField) {
@@ -962,37 +967,44 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
     }
 
 
+    /**
+     *
+     * @param func
+     * @param input
+     * @param axes
+     * @return
+     */
     public DifferentialFunction<ArrayField> doGradChoose(DifferentialFunction<ArrayField> func,
                                                          DifferentialFunction<ArrayField> input,int...axes) {
-        if(input.getValue(true) instanceof ArrayField) {
-            validateDifferentialFunctionsameDiff(func);
-            validateDifferentialFunctionsameDiff(input);
+        validateDifferentialFunctionsameDiff(func);
+        validateDifferentialFunctionsameDiff(input);
 
-            DifferentialFunction<ArrayField> repeatedGrad = doRepeat(func,input,axes);
-            DifferentialFunction<ArrayField> resultRepeated = doRepeat(func.args()[0],input,axes);
-            DifferentialFunction<ArrayField> argMaxLocations = eq(input,resultRepeated);
-            return argMaxLocations.mul(repeatedGrad).div(sum(argMaxLocations,axes));
-        }
+        DifferentialFunction<ArrayField> repeatedGrad = doRepeat(func,input,axes);
+        DifferentialFunction<ArrayField> resultRepeated = doRepeat(func.args()[0],input,axes);
+        DifferentialFunction<ArrayField> argMaxLocations = eq(input,resultRepeated);
+        return argMaxLocations.mul(repeatedGrad).div(sum(argMaxLocations,axes));
 
-        throw new UnsupportedOperationException("Must be an ArrayField argument");
 
     }
 
 
+    /**
+     *
+     * @param func
+     * @param input
+     * @param axes
+     * @return
+     */
     public  DifferentialFunction<ArrayField> doRepeat(DifferentialFunction<ArrayField> func,
                                                       DifferentialFunction<ArrayField> input,
                                                       int...axes) {
-        if(input.getValue(true) instanceof ArrayField) {
-            ArrayField arrayField = input.getValue(true);
-            int[] inputShape = arrayField.getInput().getShape();
-            validateDifferentialFunctionsameDiff(func);
-            validateDifferentialFunctionsameDiff(input);
-            return broadcast(func,inputShape);
+        ArrayField arrayField = input.getValue(true);
+        int[] inputShape = arrayField.getInput().getShape();
+        validateDifferentialFunctionsameDiff(func);
+        validateDifferentialFunctionsameDiff(input);
+        return broadcast(func,inputShape);
 
-        }
 
-        throw new UnsupportedOperationException("Must be an ArrayField " +
-                "argument");
 
     }
 

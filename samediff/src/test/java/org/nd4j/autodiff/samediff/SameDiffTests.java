@@ -531,7 +531,7 @@ public class SameDiffTests {
                 SDVariable softmax = sameDiff.softmax(input);
                 SDVariable sum = sameDiff.sum(softmax,Integer.MAX_VALUE);
                 //original shape ends up being 2,2
-                SDVariable grad = sameDiff.grad(sum,softmax);
+                SDVariable grad = sum.backward();
                 return grad;
             }
         },inputs);
@@ -700,12 +700,9 @@ public class SameDiffTests {
             }
         },inputs);
 
-        sameDiffOuter.defineFunction("loss", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                SDVariable outputs = sameDiffOuter.invokeFunctionOn("logisticPredictions",sameDiff);
-                return outputs;
-            }
+        sameDiffOuter.defineFunction("loss", (sameDiff, inputs1) -> {
+            SDVariable outputs = sameDiffOuter.invokeFunctionOn("logisticPredictions",sameDiff);
+            return outputs;
         },inputs);
 
 
