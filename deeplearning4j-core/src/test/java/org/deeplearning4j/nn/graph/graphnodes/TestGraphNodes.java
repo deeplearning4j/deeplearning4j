@@ -492,7 +492,7 @@ public class TestGraphNodes {
     @Test
     public void testReshapeNode() {
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex reshapeVertex = new ReshapeVertex(null, "", -1, new int[] {-1, 736});
+        GraphVertex reshapeVertex = new ReshapeVertex(null, "", -1, 'c', new int[] {-1, 736}, null);
 
         int[] inputShape = new int[] {1, 1, 1, 736};
         INDArray input = Nd4j.create(inputShape);

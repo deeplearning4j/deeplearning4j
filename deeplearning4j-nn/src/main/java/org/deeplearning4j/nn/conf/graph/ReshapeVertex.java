@@ -39,12 +39,22 @@ import java.util.Arrays;
  */
 @Data
 public class ReshapeVertex extends GraphVertex {
+    public static final char DEFAULT_RESHAPE_ORDER = 'c';
 
-    public ReshapeVertex(@JsonProperty("newShape") int... newShape) {
-        this.newShape = newShape;
+    protected char reshapeOrder = 'c';
+    protected int[] newShape;
+    protected int[] maskShape;
+
+    public ReshapeVertex(int... newShape){
+        this(DEFAULT_RESHAPE_ORDER, newShape, null);
     }
 
-    protected int[] newShape;
+    public ReshapeVertex(@JsonProperty("reshapeOrder") char reshapeOrder, @JsonProperty("newShape") int[] newShape,
+                         @JsonProperty("maskShape") int[] maskShape) {
+        this.reshapeOrder = reshapeOrder;
+        this.newShape = newShape;
+        this.maskShape = maskShape;
+    }
 
     @Override
     public ReshapeVertex clone() {
@@ -60,7 +70,7 @@ public class ReshapeVertex extends GraphVertex {
 
     @Override
     public int hashCode() {
-        return newShape.hashCode();
+        return reshapeOrder ^ Arrays.hashCode(newShape);
     }
 
     @Override
@@ -81,7 +91,7 @@ public class ReshapeVertex extends GraphVertex {
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                     INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.ReshapeVertex(graph, name, idx, newShape);
+        return new org.deeplearning4j.nn.graph.vertex.impl.ReshapeVertex(graph, name, idx, reshapeOrder, newShape, maskShape);
     }
 
     @Override
