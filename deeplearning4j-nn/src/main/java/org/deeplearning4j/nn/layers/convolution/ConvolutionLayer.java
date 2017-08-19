@@ -226,9 +226,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         Convolution.col2im(eps6d, epsNext, strides[0], strides[1], pad[0], pad[1], inH, inW);
 
         Gradient retGradient = new DefaultGradient();
-        delta2d.sum(biasGradView, 1); //biasGradView is initialized/zeroed first in sum op
-
-        retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
+        if(!layerConf().isNoBias()){
+            delta2d.sum(biasGradView, 1); //biasGradView is initialized/zeroed first in sum op
+            retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
+        }
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
 
         return new Pair<>(retGradient, epsNext);
@@ -360,7 +361,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             z = im2col2d.mmul(reshapedW);
 
         //Add biases, before reshaping. Note that biases are [1,depthOut] and currently z is [miniBatch*outH*outW,depthOut] -> addiRowVector
-        z.addiRowVector(bias);
+        if(!layerConf().isNoBias()){
+            z.addiRowVector(bias);
+        }
 
         //Now, reshape to [outW,outH,miniBatch,outDepth], and permute to have correct output order: [miniBath,outDepth,outH,outW];
         z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);

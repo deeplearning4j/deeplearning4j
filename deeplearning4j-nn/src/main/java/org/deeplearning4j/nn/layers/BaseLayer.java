@@ -508,6 +508,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                             lrPair.getValue() * (conf.getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
     }
 
+    /**
+     * Does this layer have no bias term? Many layers (dense, convolutional, output, embedding) have biases by
+     * default, but no-bias versions are possible via configuration
+     *
+     * @return True if no bias term is present, false otherwise
+     */
     public boolean noBias(){
         //Overridden by layers supporting no bias mode: dense, output, convolutional, embedding
         return false;
