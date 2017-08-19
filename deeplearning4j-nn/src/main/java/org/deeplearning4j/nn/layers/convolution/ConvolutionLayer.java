@@ -420,6 +420,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
+    public boolean noBias() {
+        return layerConf().isNoBias();
+    }
+
+    @Override
     public boolean isPretrainLayer() {
         return false;
     }

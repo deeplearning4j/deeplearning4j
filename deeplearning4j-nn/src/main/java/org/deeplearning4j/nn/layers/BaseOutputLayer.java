@@ -431,4 +431,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public boolean isPretrainLayer() {
         return false;
     }
+
+    @Override
+    public boolean noBias() {
+        return layerConf().isNoBias();
+    }
 }

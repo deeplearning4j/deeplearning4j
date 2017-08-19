@@ -101,7 +101,7 @@ public class DenseLayer extends FeedForwardLayer {
                         .build();
     }
 
-    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
         private boolean noBias = false;

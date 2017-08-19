@@ -103,11 +103,13 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY); //f order
         Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
-        INDArray biasGrad = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-        delta.sum(biasGrad, 0); //biasGrad is initialized/zeroed first
-
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
+
+        if(!noBias()){
+            INDArray biasGrad = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
+            delta.sum(biasGrad, 0); //biasGrad is initialized/zeroed first
+            ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
+        }
 
         INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
 
@@ -314,7 +316,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             W = Dropout.applyDropConnect(this, DefaultParamInitializer.WEIGHT_KEY);
         }
 
-        INDArray ret = input.mmul(W).addiRowVector(b);
+        INDArray ret = input.mmul(W);
+        if(!noBias()){
+            ret.addiRowVector(b);
+        }
 
         if (maskArray != null) {
             applyMask(ret);
@@ -326,8 +331,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public INDArray activate(boolean training) {
         INDArray z = preOutput(training);
-        //INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-        //        conf.getLayer().getActivationFunction(), z, conf.getExtraArgs() ));
         INDArray ret = layerConf().getActivationFn().getActivation(z, training);
 
         if (maskArray != null) {
@@ -348,7 +351,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             double l2Norm = getParam(DefaultParamInitializer.WEIGHT_KEY).norm2Number().doubleValue();
             l2Sum += 0.5 * conf.getL2ByParam(DefaultParamInitializer.WEIGHT_KEY) * l2Norm * l2Norm;
         }
-        if (conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
+        if (!noBias() && conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
             double l2Norm = getParam(DefaultParamInitializer.BIAS_KEY).norm2Number().doubleValue();
             l2Sum += 0.5 * conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) * l2Norm * l2Norm;
         }
@@ -364,7 +367,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             l1Sum += conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY)
                             * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
         }
-        if (conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
+        if (!noBias() && conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
             l1Sum += conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY)
                             * getParam(DefaultParamInitializer.BIAS_KEY).norm1Number().doubleValue();
         }
@@ -376,7 +379,11 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public INDArray activationMean() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        return input().mmul(W).addiRowVector(b);
+        INDArray ret = input().mmul(W);
+        if(!noBias()){
+            ret.addiRowVector(b);
+        }
+        return ret;
     }
 
     /**
@@ -499,5 +506,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         for (Map.Entry<String, Double> lrPair : conf.getLearningRateByParam().entrySet())
             conf.setLearningRateByParam(lrPair.getKey(),
                             lrPair.getValue() * (conf.getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
+    }
+
+    public boolean noBias(){
+        //Overridden by layers supporting no bias mode: dense, output, convolutional, embedding
+        return false;
     }
 }
