@@ -399,6 +399,24 @@ public class SameDiffTests {
         assertEquals(assertion,executions);
     }
 
+
+    @Test
+    public void testSumGradientScalar() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
+        SDVariable input = sameDiff.var("x",sumInput);
+        SDVariable sum = sameDiff.sum(input,Integer.MAX_VALUE);
+        //original shape ends up being 2,2
+        SDVariable grad = sameDiff.grad(sum,sum);
+        assertArrayEquals(new int[]{1,1},grad.getShape());
+        OpExecOrder opExecOrder = sameDiff.graph().getOpOrder();
+        assertArrayEquals(new int[]{2,2},opExecOrder.getActions().get(1).getOutput().getShape());
+
+        List<Op> execOps = sameDiff.exec();
+        assertEquals(Nd4j.ones(new int[]{2,2}),execOps.get(1).z());
+
+    }
+
     @Test
     public void testSumGradient() {
         SameDiff sameDiff = SameDiff.create();
@@ -517,6 +535,8 @@ public class SameDiffTests {
         System.out.println(executions);
         assertEquals(assertions,executions);
     }
+
+
 
     @Test
     public void testSoftmaxGradient() {

@@ -996,6 +996,14 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
 
+    public DifferentialFunction<ArrayField> getDiffFunctionInput(DifferentialFunction<X> other) {
+      return   other == this ?
+                sameDiff.getFunctionFactory().var(UUID.randomUUID().toString(),
+                        sameDiff.getArrayFactory().one(getResultShape())) :
+                arg();
+    }
+
+
     protected void validateDifferentialFunctionsameDiff(
             DifferentialFunction<X> function) {
 

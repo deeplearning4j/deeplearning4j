@@ -457,7 +457,13 @@ public class SameDiff {
              * and point to an actual array.
              */
             if(!vertexToArray.containsKey(info.getArrId())) {
-                vertexToArray.put(info.getArrId(), Nd4j.zeros(info.getShape()));
+                //initialize value if it's actually a scalar constant (zero or 1 typically...)
+                if(info.getScalarValue() != null && ArrayUtil.prod(info.getShape()) == 1) {
+                    vertexToArray.put(info.getArrId(), Nd4j.valueArrayOf(info.getShape(),
+                            info.getScalarValue().doubleValue()));
+                }
+                else
+                    vertexToArray.put(info.getArrId(), Nd4j.zeros(info.getShape()));
 
             }
         }
@@ -560,7 +566,7 @@ public class SameDiff {
         Preconditions.checkArgument(arrField.getSameDiff() == this);
 
         SDVariable ret = SDVariable.builder()
-                .arr(null).shape(wrt.getShape())
+                .arr(null).shape(arrField.getResultShape())
                 .differentialFunction(arrField)
                 .varName("grad(" + iX.getVarName() + ")").sameDiff(this)
                 .build();
