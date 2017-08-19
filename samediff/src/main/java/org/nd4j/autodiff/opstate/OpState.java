@@ -23,6 +23,7 @@ public class OpState implements Serializable {
     private long n;
     private OpType opType;
     private String opName;
+    private int opNum;
     private Number scalarValue;
     private String[] vertexIds;
     private String id;
@@ -45,6 +46,7 @@ public class OpState implements Serializable {
     public static OpState fromOp(Op op, Map<INDArray,Integer> arrToVertexID) {
         OpState opState = OpState.builder()
                 .extraArgs(op.extraArgs())
+                .opNum(op.opNum())
                 .n(op.n()).vertexIds(null)
                 .id(UUID.randomUUID().toString())
                 .opName(op.name()).vertexIds(new String[]{

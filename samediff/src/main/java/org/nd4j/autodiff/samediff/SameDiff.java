@@ -29,6 +29,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * SameDiff is the
@@ -61,6 +62,8 @@ public class SameDiff {
     private MemoryWorkspace workspace;
     private Map<String,SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
     private Map<String,SameDiff> sameDiffFunctionInstances;
+
+    private AtomicInteger varCounter = new AtomicInteger(-1);
     private static Cloner cloner = new Cloner();
 
     private static Map<String,Method> opMethods;
@@ -525,6 +528,7 @@ public class SameDiff {
                         arrayField(functionFactory.var(name,arrayField))
                 .shape(arr.shape())
                 .varName(name)
+                .id(varCounter.getAndDecrement())
                 .arr(arr).build();
         addVariable(ret);
         //ensure there is a reference to the array in the integer index

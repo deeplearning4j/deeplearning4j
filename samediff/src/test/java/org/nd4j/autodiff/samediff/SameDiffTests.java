@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.samediff;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.gradcheck.GradCheckUtil;
@@ -24,6 +25,7 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 4/11/17.
  */
+@Slf4j
 public class SameDiffTests {
     static {
         Nd4j.create(1);
@@ -819,9 +821,11 @@ public class SameDiffTests {
         SDVariable scalarOne = sameDiff.var("add1",Nd4j.scalar(1.0));
         SDVariable result = sdVariable.addi(scalarOne);
         SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
+        System.out.println("Ones " + ones);
         List<Op> ops = sameDiff.exec();
         INDArray output = null;
         for(int i = 0; i < 5; i++) {
+            System.out.println("Ones " + ones);
             output = sameDiff.execAndEndResult(ops);
             System.out.println("Ones " + ones);
             System.out.println(output);

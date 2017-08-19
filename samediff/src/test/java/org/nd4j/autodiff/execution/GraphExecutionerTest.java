@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.execution;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -13,6 +14,7 @@ import static org.junit.Assert.*;
  * Comparative tests for native executioner vs sequential execution
  * @author raver119@gmail.com
  */
+@Slf4j
 public class GraphExecutionerTest {
     @Before
     public void setUp() throws Exception {
@@ -31,6 +33,8 @@ public class GraphExecutionerTest {
         SDVariable scalarOne = sameDiff.var("add1",Nd4j.scalar(1.0));
         SDVariable result = sdVariable.addi(scalarOne);
         SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
+
+        log.info("ID: {}",sameDiff.getGraph().getVertex(1).getValue().getId());
 
         INDArray resA = executionerA.executeGraph(sameDiff)[0];
         INDArray resB = executionerB.executeGraph(sameDiff)[0];

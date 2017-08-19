@@ -1,8 +1,10 @@
 package org.nd4j.autodiff.execution;
 
+import com.google.common.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
@@ -16,8 +18,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author raver119@gmail.com
@@ -48,30 +49,157 @@ public class NativeGraphExecutioner implements GraphExecutioner {
      */
     @Override
     public INDArray[] executeGraph(SameDiff sd) {
-        FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(1024);
+        FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(0);
 
         SDGraph graph =  sd.getGraph();
 
         log.info("{}", sd.getSameDiffVariables());
 
+        // we use this map to convert SDVariables to op nodes for native backend
+        Map<Integer, Integer> vertexMap = new HashMap<>();
+        Map<String, Integer> vertexMapS = new HashMap<>();
+        Map<Integer, List<Integer>> useMap = new HashMap<>();
+
         List<OpExecAction> ops = graph.getOpOrder().getActions();
-        List<FlatNode> nodes = new ArrayList<>();
-        int cnt = 1;
+        List<Integer> nodes = new ArrayList<>();
+        List<Integer> variables = new ArrayList<>();
+        int nodesCount = 1;
+
+        // in first loop we build vertexMap only for output nodes
         for (OpExecAction action: ops) {
-            Triple<FlatNode, FlatVariable[], FlatVariable[]> triple = getFlatNodeFromOpState(action.getOpState());
+            log.info("Action: {}", action);
+            NDArrayInformation out = action.getOutput();
+            SDVariable sdOut = sd.getVariableMap().get(out.getId());
 
+            // output of this operation is declared variable
+            if (sdOut.getId() < 0) {
+                vertexMapS.put(out.getId(), sdOut.getId());
+                log.info("Storing [{}/{}] variable as node_{} output", action.getOutputId(), out.getId(), nodesCount);
+            } else {
+                // output of this node is internal variable, we'll assume this node everywhere
+                vertexMap.put(action.getOutputId(), nodesCount);
+                vertexMapS.put(out.getId(), nodesCount);
+                log.info("Storing [{}/{}] variable as node_{} output", action.getOutputId(), out.getId(), nodesCount);
+            }
 
-            nodes.add(triple.getFirst());
-            cnt++;
+            if (useMap.get(nodesCount) == null)
+                useMap.put(nodesCount, new ArrayList<>());
+
+            nodesCount++;
         }
 
-        FlatGraph fg = null; //FlatGraph.createFlatGraph(bufferBuilder);
+        log.info("-------------------");
+
+        // in this loop we build list of input nodes
+        nodesCount = 1;
+        for (OpExecAction action: ops) {
+
+            for (NDArrayInformation var: action.getInputs()) {
+                SDVariable sdVar = sd.getVariableMap().get(var.getId());
+
+                log.info("Var: {}; Mapping {} to node: {}", var.getId(), vertexMapS.get(var.getId()), nodesCount);
+
+                if (sdVar.getId() >= 0)
+                    useMap.get(vertexMapS.get(var.getId())).add(nodesCount);
+            }
+
+            nodesCount++;
+        }
+
+        log.info("-------------------");
+
+        // in this loop we build nodes
+        nodesCount = 1;
+        for (OpExecAction action: ops) {
+            log.info("Op: {}", action.getOpState());
+
+            int[] mappedIns = new int[action.getInputs().length];
+
+            // meh
+            int[] mappedOuts = new int[useMap.get(nodesCount).size()];
 
 
-        ByteBuffer buffer = fg.getByteBuffer();
+            int varsCount = 0;
+            // fetching input vars first
+            for (NDArrayInformation var: action.getInputs()) {
+                SDVariable sdVar = sd.getVariableMap().get(var.getId());
+
+                // negative ID assumes pre-created array
+                if (sdVar.getId() < 0) {
+                    log.info("Input varId: {}; varName: {};", sdVar.getId(), var.getId());
+
+                    INDArray arr = sdVar.getArr().isView() ? sdVar.getArr().dup(sdVar.getArr().ordering()) : sdVar.getArr();
+                    int name = bufferBuilder.createString(sdVar.getVarName());
+                    int values = FlatVariable.createValuesVector(bufferBuilder, arr.data().asFloat());
+                    int shape = FlatVariable.createShapeVector(bufferBuilder, arr.shapeInfoDataBuffer().asInt());
+
+                    int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, sdVar.getId(), name, shape, values, -1);
+                    variables.add(flatVariable);
+
+                    mappedIns[varsCount++] = sdVar.getId();
+                } else {
+                    log.info("Input varId: {}; varName: {};", vertexMapS.get(var.getId()), var.getId());
+
+                    // in all other cases - it's "virtual" array, will be created as op result instead
+                    int name = bufferBuilder.createString(sdVar.getVarName());
+
+                    // FIXME: we need auto ID here instead of 119
+                    int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, 119, name, 0, 0, -1);
+                    variables.add(flatVariable);
+
+                    mappedIns[varsCount++] = vertexMapS.get(var.getId());
+                }
+            }
+
+            int outCount = 0;
+            for (Integer o : useMap.get(nodesCount)) {
+                mappedOuts[outCount++] = o;
+            }
+
+            // make this variable
+            float[] extras = action.getOpState().getExtraArgs() != null ? new float[action.getOpState().getExtraArgs().length] : new float[0];
+            for (int e = 0; e < extras.length; e++) {
+                extras[e] = ((Number) action.getOpState().getExtraArgs()[e]).floatValue();
+            }
+
+            log.info("Node_{} inputs: {}; outputs: {}", nodesCount, Arrays.toString(mappedIns), Arrays.toString(mappedOuts));
+            int nodesIn = FlatNode.createInputVector(bufferBuilder, mappedIns);
+            int nodesOut = FlatNode.createOutputVector(bufferBuilder, mappedOuts);
+            int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
+            int dimensions = FlatNode.createDimensionsVector(bufferBuilder, action.getOpState().getAxes() != null ? action.getOpState().getAxes() : new int[]{});
+
+            int flatNode = FlatNode.createFlatNode(bufferBuilder,
+                                                   nodesCount,
+                                                   getFlatOpType(action.getOpState().getOpType()),
+                                                   (short) action.getOpState().getOpNum(),
+                                                   nodesIn,
+                                                   (byte) 0,
+                                                   nodesOut,
+                                                   extraz,
+                                                   dimensions,
+                                            -1,
+                    action.getOpState().getOpType() == OpState.OpType.SCALAR_TRANSFORM ? action.getOpState().getScalarValue().floatValue() : 0.0f);
+
+            nodes.add(flatNode);
+            nodesCount++;
+        }
+
+        int variablesOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(variables));
+        int nodesOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(variables));
+
+        int fg = FlatGraph.createFlatGraph(bufferBuilder, 119, variablesOffset, nodesOffset, 0);
+        bufferBuilder.finish(fg);
+
+        ByteBuffer buffer = bufferBuilder.dataBuffer();
         Pointer ptr = new Pointer(buffer);
 
+        log.info("Buffer length: {}", buffer.limit());
+
         return new INDArray[0];
+    }
+
+    protected byte getFlatOpType(OpState.OpType type) {
+        return (byte) 0;
     }
 
     /**

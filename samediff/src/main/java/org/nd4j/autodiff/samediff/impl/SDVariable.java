@@ -29,6 +29,7 @@ public class SDVariable  implements Serializable {
     private INDArray arr;
     private Variable<ArrayField> arrayField;
     private String varName;
+    private int id;
     private SameDiff sameDiff;
     private int[] shape;
     protected DifferentialFunction<ArrayField> differentialFunction;
@@ -39,13 +40,14 @@ public class SDVariable  implements Serializable {
                        INDArray arr,
                        SameDiff sameDiff,
                        Variable<ArrayField> arrayField,
-                       int[] shape) {
+                       int[] shape, int id) {
         this.shape = shape;
         this.differentialFunction = differentialFunction;
         this.varName = varName;
         this.arr = arr;
         this.arrayField = arrayField;
         this.sameDiff = sameDiff;
+        this.id = id;
     }
 
 
@@ -555,7 +557,7 @@ public class SDVariable  implements Serializable {
 
     @Override
     public String toString() {
-        return "SDVariable{" +
+        return "SDVariable{id:"+ id + ", " +
                 "varName='" + varName + '\'' +
                 '}';
     }
@@ -572,12 +574,14 @@ public class SDVariable  implements Serializable {
         if (arrayField != null ? !arrayField.equals(variable.arrayField) : variable.arrayField != null) return false;
         if (varName != null ? !varName.equals(variable.varName) : variable.varName != null) return false;
         if (!Arrays.equals(shape, variable.shape)) return false;
+        //if (id != variable.id) return false;
         return differentialFunction != null ? differentialFunction.equals(variable.differentialFunction) : variable.differentialFunction == null;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
+     //   result = 31 * result + id;
         result = 31 * result + (arr != null ? arr.hashCode() : 0);
         result = 31 * result + (arrayField != null ? arrayField.hashCode() : 0);
         result = 31 * result + (varName != null ? varName.hashCode() : 0);
