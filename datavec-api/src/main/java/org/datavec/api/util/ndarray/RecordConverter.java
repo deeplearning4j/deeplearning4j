@@ -67,7 +67,7 @@ public class RecordConverter {
      * @return the matrix for the records
      */
     public static INDArray toTensor(List<List<List<Writable>>> records) {
-       return TimeSeriesWritableUtils.convertWritablesSequence(records);
+       return TimeSeriesWritableUtils.convertWritablesSequence(records).getFirst();
     }
 
     /**
