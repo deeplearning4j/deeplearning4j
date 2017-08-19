@@ -56,6 +56,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected ConvolutionHelper helper = null;
     protected ConvolutionMode convolutionMode;
 
+    protected transient INDArray dummyBias;     //Used only when: noBias == true AND helpers
+    protected transient INDArray dummyBiasGrad; //As above
+
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         super(conf);
         initializeHelper();
@@ -164,6 +167,16 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         delta = afn.backprop(p.getFirst(), epsilon).getFirst(); //TODO handle activation function params
 
         if (helper != null) {
+
+            if(noBias()){
+                if(dummyBiasGrad == null){
+                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        dummyBiasGrad = Nd4j.create(1, layerConf().getNOut());
+                    }
+                }
+                biasGradView = dummyBiasGrad;
+            }
+
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad,
                             biasGradView, weightGradView, afn, layerConf().getCudnnAlgoMode(),
                             layerConf().getCudnnBwdFilterAlgo(), layerConf().getCudnnBwdDataAlgo(), convolutionMode);
@@ -318,6 +331,16 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if (helper != null) {
             if (preOutput != null && forBackprop) {
                 return new Pair<>(preOutput, null);
+            }
+
+            //For no-bias convolutional layers: use an empty (all 0s) value for biases
+            if(noBias()){
+                if(dummyBias == null){
+                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        dummyBias = Nd4j.create(1, layerConf().getNOut());
+                    }
+                }
+                bias = dummyBias;
             }
 
             INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
