@@ -80,12 +80,12 @@ public class EmbeddingLayer extends FeedForwardLayer {
     @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
-        private boolean noBias = false;
+        private boolean noBias = true;
 
         /**
-         * If true: include no bias parameters in the model. False (default): include bias.
+         * If true (default): include no bias parameters in the layer. False: include bias.
          *
-         * @param noBias If true: don't include bias parameters in this model
+         * @param noBias If true: don't include bias parameters in this layer
          */
         public Builder noBias(boolean noBias){
             this.noBias = noBias;
