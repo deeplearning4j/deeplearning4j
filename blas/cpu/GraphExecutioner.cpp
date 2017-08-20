@@ -56,7 +56,7 @@ namespace nd4j{
 
                 if (node->hasExternalOutputs()) {
                     for (int e = 0; e < node->output()->size(); e++) {
-                        if (node->output()->at(e) > 0)
+                        if (node->output()->at(e) >= 0)
                             continue;
 
                         auto out = variableSpace->getVariable(node->output()->at(e));

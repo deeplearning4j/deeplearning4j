@@ -97,6 +97,12 @@ Nd4jIndex nd4j::graph::VariableSpace<T>::totalMemory() {
 template <typename T>
 void nd4j::graph::VariableSpace<T>::putVariable(const int32_t id, Variable<T> *variable) {
 
+    // we don't want to add variables more then once
+    if (_variables.count(id) > 0)
+        return;
+
+    nd4j_verbose("Adding Variable to Space: id: %i; Array is null: %i%\n", id, variable->getNDArray() == nullptr);
+
     _varmap.lock();
 
     if (_auto_counter >= id)

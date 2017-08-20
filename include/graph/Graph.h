@@ -132,17 +132,18 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
     _built.store(false);
 
     // if outputs are undefined, we have to auto-create variable
-    if (node->output()->size() == 0){
+    if (node->output()->size() == 0 || (node->output()->size() == 1 && node->output()->at(0) == 0)){
         nd4j_verbose("Adding auto output variable; Output size: %i\n", node->output()->size());
         auto var = new Variable<T>();
         _variableSpace->putOutputVariable(var);
         node->pickOutput(var->id());
 
         this->_output.push_back(var->id());
+
+        assert(node->hasExternalOutputs());
     } else if (node->hasExternalOutputs()) {
         // TODO: we might want this behavior configurable!
         nd4j_verbose("Adding specific output variable: Outputs: %i\n", node->output()->size())
-
 
         for (int e = 0; e < node->output()->size(); e++) {
             if (node->output()->at(e) < 0)
@@ -263,6 +264,16 @@ nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
     // add 0 layer
     this->expandOnion(0);
 
+    // parsing variables here
+    if (flatGraph != nullptr && flatGraph->variables() != nullptr && flatGraph->variables()->size() > 0) {
+        for (int e = 0; e < flatGraph->variables()->size(); e++) {
+            auto flatVar = flatGraph->variables()->Get(e);
+
+            auto var = new Variable<T>(flatVar);
+            nd4j_verbose("Registering variable: %i\n", var->id());
+            _variableSpace->putVariable(flatVar->id(), var);
+        }
+    }
 
     // rolling through nodes
     if (flatGraph != nullptr && flatGraph->nodes() != nullptr && flatGraph->nodes()->size() > 0) {
@@ -279,16 +290,6 @@ nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
             }
 
             this->addNode(new Node<T>(node));
-        }
-    }
-
-    // parsing variables here
-    if (flatGraph != nullptr && flatGraph->variables() != nullptr && flatGraph->variables()->size() > 0) {
-        for (int e = 0; e < flatGraph->variables()->size(); e++) {
-            auto flatVar = flatGraph->variables()->Get(e);
-
-            auto var = new Variable<T>(flatVar);
-            _variableSpace->putVariable(flatVar->id(), var);
         }
     }
 }

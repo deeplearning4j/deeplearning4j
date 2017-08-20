@@ -116,6 +116,8 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     ASSERT_EQ(1, restoredGraph->variables()->size());
     ASSERT_EQ(-1, restoredGraph->variables()->Get(0)->id());
 
+    nd4j_printf("-------------------------\n","");
+
     Graph<float> graph(restoredGraph);
 
     ASSERT_EQ(2, graph.totalNodes());
@@ -129,6 +131,9 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     ASSERT_EQ(0, vs->internalEntries());
 
     auto var = vs->getVariable(-1)->getNDArray();
+
+    ASSERT_TRUE(var != nullptr);
+
     ASSERT_EQ(-2.0, var->reduceNumber<simdOps::Mean<float>>());
 
     nd4j::graph::GraphExecutioner<float>::execute(&graph);
@@ -141,13 +146,13 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 
     auto flatResults = GetFlatResult(result);
 
-    ASSERT_EQ(2, flatResults->variables()->size());
+    ASSERT_EQ(1, flatResults->variables()->size());
 
     auto var0 = new Variable<float>(flatResults->variables()->Get(0));
-    auto var1 = new Variable<float>(flatResults->variables()->Get(1));
+    //auto var1 = new Variable<float>(flatResults->variables()->Get(1));
 
 
-    ASSERT_TRUE(var->equalsTo(var1->getNDArray()));
+    ASSERT_TRUE(var->equalsTo(var0->getNDArray()));
 }
 
 TEST_F(FlatBuffersTest, ExecutionTest1) {

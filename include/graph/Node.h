@@ -235,8 +235,10 @@ nd4j::graph::Node<T>::Node(const nd4j::graph::FlatNode *node) {
                 pickInput(node->input()->Get(e));
 
         if (node->output() != nullptr)
-            for (int e = 0; e < node->output()->size(); e++)
+            for (int e = 0; e < node->output()->size(); e++) {
+                nd4j_verbose("Picking output: %i\n", node->output()->Get(e));
                 pickOutput(node->output()->Get(e));
+            }
 
 
         if (node->extraParams() != nullptr && node->extraParams()->size() > 0) {
