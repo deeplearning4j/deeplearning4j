@@ -2952,6 +2952,11 @@ public:
     void sortCooIndicesHalf(Nd4jPointer *extraPointers, int *indices, float16 *values, Nd4jIndex length, int rank);
 
 
+    Nd4jIndex* mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jIndex length);
+
+    void munmapFile(Nd4jPointer *extraPointers, Nd4jIndex* ptrMap, Nd4jIndex length);
+
+
     Nd4jPointer executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer);
 };
 

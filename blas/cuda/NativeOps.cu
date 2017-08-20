@@ -1531,7 +1531,7 @@ void   NativeOps::execTransformDouble(
 			switch (opNum) {
 				case 40: // LogSoftMax
 				case 39: // SoftMax Derivative
-				case 38: {// SoftMax
+				case 38: {// softmax
 					Nd4jPointer tempPointers[16];
 					tempPointers[0] = extraPointers[0];
 					tempPointers[1] = extraPointers[1];
@@ -1578,10 +1578,10 @@ void   NativeOps::execTransformDouble(
 
 					// sub 1
 					execBroadcastDouble(tempPointers, 1, dx, xShapeInfo, special,
-									   maxShapeBuffer, dx, xShapeInfo, dimension, 1);
+									   maxShapeBuffer, result, resultShapeInfo, dimension, 1);
 
 					// exp 3
-					execTransformDouble(extraPointers, 3, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+					execTransformDouble(extraPointers, 3, result, resultShapeInfo, result, resultShapeInfo, extraParams);
 
 					tempPointers[8] = tempPointers[7];
 					tempPointers[9] = extraPointers[12];
@@ -1589,7 +1589,7 @@ void   NativeOps::execTransformDouble(
 					tempPointers[11] = extraPointers[14];
 
 					//sum 1
-					execReduceDouble(tempPointers, 1, dx, xShapeInfo, extraParams, special,
+					execReduceDouble(tempPointers, 1, result, resultShapeInfo, extraParams, special,
 									maxShapeBuffer, maxDimension, 1);
 
 					tempPointers[8] = extraPointers[8];
@@ -1601,14 +1601,14 @@ void   NativeOps::execTransformDouble(
 
 
 					// divide 3
-					execBroadcastDouble(tempPointers, 3, dx, xShapeInfo, special,
-									   maxShapeBuffer, dx, xShapeInfo, dimension, 1);
+					execBroadcastDouble(tempPointers, 3, result, resultShapeInfo, special,
+									   maxShapeBuffer, result, resultShapeInfo, dimension, 1);
 
 					// log 3
 					if (opNum == 40)
-						execTransformDouble(extraPointers, 5, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+						execTransformDouble(extraPointers, 5, result, resultShapeInfo, result, resultShapeInfo, extraParams);
 					else if (opNum == 39)
-						execTransformDouble(extraPointers, 42, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+						execTransformDouble(extraPointers, 42, result, resultShapeInfo, result, resultShapeInfo, extraParams);
 
                     checkCudaErrors(cudaStreamSynchronize(*stream));
 
@@ -3714,13 +3714,13 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
 					// sub 1
 					execBroadcastFloat(tempPointers, 1, dx, xShapeInfo, special,
-									   maxShapeBuffer, dx, xShapeInfo, dimension, 1);
+									   maxShapeBuffer, result, resultShapeInfo, dimension, 1);
 
 					if (debug)
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					// exp 3
-					execTransformFloat(extraPointers, 3, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+					execTransformFloat(extraPointers, 3, result, resultShapeInfo, result, resultShapeInfo, extraParams);
 
 					if (debug)
 						checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -3732,7 +3732,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					tempPointers[11] = extraPointers[14];
 
 					//sum 1
-					execReduceFloat(tempPointers, 1, dx, xShapeInfo, extraParams, special,
+					execReduceFloat(tempPointers, 1, result, resultShapeInfo, extraParams, special,
 									maxShapeBuffer, maxDimension, 1);
 
 					if (debug)
@@ -3746,17 +3746,17 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
                     tempPointers[13] = extraPointers[11];
 
 					// divide 3
-					execBroadcastFloat(tempPointers, 3, dx, xShapeInfo, special,
-									   maxShapeBuffer, dx, xShapeInfo, dimension, 1);
+					execBroadcastFloat(tempPointers, 3, result, resultShapeInfo, special,
+									   maxShapeBuffer, result, resultShapeInfo, dimension, 1);
 
 					if (debug)
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					// log 3
 					if (opNum == 40)
-						execTransformFloat(extraPointers, 5, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+						execTransformFloat(extraPointers, 5, result, resultShapeInfo, result, resultShapeInfo, extraParams);
 					else if (opNum == 39)
-						execTransformFloat(extraPointers, 42, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+						execTransformFloat(extraPointers, 42, result, resultShapeInfo, result, resultShapeInfo, extraParams);
 
 
 					checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -3962,13 +3962,13 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 
 					// sub 1
 					execBroadcastHalf(tempPointers, 1, dx, xShapeInfo, special,
-									   maxShapeBuffer, dx, xShapeInfo, dimension, 1);
+									   maxShapeBuffer, result, resultShapeInfo, dimension, 1);
 
 					if (debug)
 						checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					// exp 3
-					execTransformHalf(extraPointers, 3, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+					execTransformHalf(extraPointers, 3, result, resultShapeInfo, result, resultShapeInfo, extraParams);
 
 					if (debug)
 						checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -3980,7 +3980,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 					tempPointers[11] = extraPointers[14];
 
 					//sum 1
-					execReduceHalf(tempPointers, 1, dx, xShapeInfo, extraParams, special,
+					execReduceHalf(tempPointers, 1, result, resultShapeInfo, extraParams, special,
 									maxShapeBuffer, maxDimension, 1);
 
 					if (debug)
@@ -3994,14 +3994,14 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
                     tempPointers[13] = extraPointers[11];
 
 					// divide 3
-					execBroadcastHalf(tempPointers, 3, dx, xShapeInfo, special,
-									   maxShapeBuffer, dx, xShapeInfo, dimension, 1);
+					execBroadcastHalf(tempPointers, 3, result, resultShapeInfo, special,
+									   maxShapeBuffer, result, resultShapeInfo, dimension, 1);
 
                     if (opNum == 40) {
                         if (debug)
                             checkCudaErrors(cudaStreamSynchronize(*stream));
 
-                        execTransformHalf(tempPointers, 47, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+                        execTransformHalf(tempPointers, 47, result, resultShapeInfo, result, resultShapeInfo, extraParams);
                     }
 
 					if (debug)
@@ -4009,9 +4009,9 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 
 					// log 3
 					if (opNum == 40)
-						execTransformHalf(extraPointers, 5, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+						execTransformHalf(extraPointers, 5, result, resultShapeInfo, result, resultShapeInfo, extraParams);
 					else if (opNum == 39)
-						execTransformHalf(extraPointers, 42, dx, xShapeInfo, dx, xShapeInfo, extraParams);
+						execTransformHalf(extraPointers, 42, result, resultShapeInfo, result, resultShapeInfo, extraParams);
 
 
 					checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -6824,6 +6824,15 @@ void NativeOps::decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
-Nd4jPointer NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+Nd4jIndex* NativeOps::mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jIndex length) {
 	return nullptr;
+}
+
+void NativeOps::munmapFile(Nd4jPointer *extraPointers, Nd4jIndex* ptrMap, Nd4jIndex length) {
+
+}
+
+
+Nd4jPointer NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+return nullptr;
 }
