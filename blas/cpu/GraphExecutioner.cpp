@@ -4,6 +4,7 @@
 
 #include <graph/generated/node_generated.h>
 #include <graph/generated/graph_generated.h>
+#include <graph/generated/result_generated.h>
 
 #include <Variable.h>
 #include <VariableSpace.h>
@@ -342,6 +343,49 @@ namespace nd4j{
             }
 
             return ND4J_STATUS_OK;
+        }
+
+
+        template <typename T>
+        Nd4jPointer nd4j::graph::GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
+            uint8_t *buffer = reinterpret_cast<uint8_t *>(pointer);
+
+            auto restoredGraph = GetFlatGraph(buffer);
+
+            // converting FlatGraph to internal representation
+            auto nativeGraph = new Graph<T>(restoredGraph);
+
+            // executing internal representation
+            GraphExecutioner<T>::execute(nativeGraph);
+
+            flatbuffers::FlatBufferBuilder builder(4096);
+
+            // copying back registered variables to FlatBuffers
+            auto outputs = nativeGraph->fetchOutputs();
+            std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
+            int cnt = 0;
+            for (int e = 0; e < outputs->size(); e++) {
+                auto var = outputs->at(e);
+
+                auto fShape = builder.CreateVector(var->getNDArray()->getShapeAsVector());
+                auto fBuffer = builder.CreateVector(var->getNDArray()->getBufferAsVector());
+
+                auto fv = CreateFlatVariable(builder, var->id(), 0, fShape, fBuffer, -1);
+
+                variables_vector.push_back(fv);
+                cnt++;
+            }
+
+            printf("Returning %i variables back\n", cnt);
+
+            auto varVectors = builder.CreateVector(variables_vector);
+            auto result = CreateFlatResult(builder, restoredGraph->id(), varVectors);
+            builder.Finish(result);
+
+            // we might want to keep this graph for future
+            delete nativeGraph;
+
+            return (Nd4jPointer) builder.GetBufferPointer();
         }
     }
 }

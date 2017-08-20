@@ -1,0 +1,10 @@
+include "node.fbs";
+
+namespace nd4j.graph;
+
+table FlatResult {
+    id:int; // ID of the graph generated this result
+    variables:[FlatVariable]; // variables with results
+}
+
+root_type FlatResult;

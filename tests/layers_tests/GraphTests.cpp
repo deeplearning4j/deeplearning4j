@@ -424,7 +424,7 @@ TEST_F(GraphTests, AutoOutput1) {
 
     ASSERT_TRUE(outputs->at(0) != nullptr);
 
-    ASSERT_NEAR(-1.0, outputs->at(0)->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(-1.0, outputs->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
 
 
@@ -460,9 +460,9 @@ TEST_F(GraphTests, AutoOutput2) {
 
     ASSERT_TRUE(outputs->at(0) != nullptr);
 
-    ASSERT_NEAR(2.0, outputs->at(0)->reduceNumber<simdOps::Mean<float>>(), 1e-5);
-    ASSERT_NEAR(-1.0, outputs->at(1)->reduceNumber<simdOps::Mean<float>>(), 1e-5);
-    ASSERT_NEAR(-2.0, outputs->at(2)->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(2.0, outputs->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(-1.0, outputs->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(-2.0, outputs->at(2)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
 
 

@@ -9,6 +9,7 @@
 #include <map>
 #include <NDArray.h>
 #include <graph/Node.h>
+#include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 #include <graph/generated/node_generated.h>
 #include <graph/generated/graph_generated.h>
@@ -65,17 +66,17 @@ namespace nd4j {
             std::map<int, std::vector<nd4j::graph::Node<T> *> *> *getOnion();
             std::map<int32_t, nd4j::graph::Node<T> *> *getMapped();
 
-            std::vector<NDArray<T> *> *fetchOutputs();
+            std::vector<nd4j::graph::Variable<T> *> *fetchOutputs();
         };
     }
 }
 
 template <typename T>
-std::vector<NDArray<T> *> * nd4j::graph::Graph<T>::fetchOutputs() {
-    auto res = new std::vector<NDArray<T> *>();
+std::vector<nd4j::graph::Variable<T> *> * nd4j::graph::Graph<T>::fetchOutputs() {
+    auto res = new std::vector<nd4j::graph::Variable<T> *>();
 
     for (int e = 0; e < _output.size(); e++) {
-        res->push_back(_variableSpace->getVariable(_output.at(e))->getNDArray());
+        res->push_back(_variableSpace->getVariable(_output.at(e)));
     }
 
     return res;
@@ -132,6 +133,7 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
 
     // if outputs are undefined, we have to auto-create variable
     if (node->output()->size() == 0){
+        nd4j_verbose("Adding auto output variable; Output size: %i\n", node->output()->size());
         auto var = new Variable<T>();
         _variableSpace->putOutputVariable(var);
         node->pickOutput(var->id());
@@ -139,6 +141,8 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
         this->_output.push_back(var->id());
     } else if (node->hasExternalOutputs()) {
         // TODO: we might want this behavior configurable!
+        nd4j_verbose("Adding specific output variable: Outputs: %i\n", node->output()->size())
+
 
         for (int e = 0; e < node->output()->size(); e++) {
             if (node->output()->at(e) < 0)
@@ -154,7 +158,7 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
         _onion->at(0)->push_back(node);
         _mapped->insert(pair);
 
-        printf("Node_%i mapped to layer_%i\n", node->id(), node->getLayer());
+        printf("A Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
         fflush(stdout);
     } else {
         // in some cases we're able to put stuff immediately
@@ -171,7 +175,7 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
                 node->setLayer(nLayer);
                 _onion->at(nLayer)->push_back(node);
                 _mapped->insert(pair);
-                printf("Node_%i mapped to layer_%i\n", node->id(), node->getLayer());
+                printf("B Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
                 fflush(stdout);
 
                 return;

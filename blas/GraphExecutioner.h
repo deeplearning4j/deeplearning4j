@@ -30,6 +30,15 @@ namespace nd4j {
              * @return
              */
             static Nd4jStatus execute(nd4j::graph::Graph<T> *graph);
+
+
+            /**
+             * This method executes graph stored at given FlatBuffers pointer
+             *
+             * @param pointer Pointer to FlatBuffer
+             * @return pointer to FlatBuffer with result
+             */
+            static Nd4jPointer executeFlatBuffer(Nd4jPointer pointer);
         };
     }
 }
