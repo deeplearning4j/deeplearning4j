@@ -9,17 +9,16 @@
 
 #include "../NativeOps.h"
 #include "../NativeOpExcutioner.h"
-#include "../GraphExecutioner.h"
 #include "../NDArray.h"
-
-#include <pointercast.h>
-#include <pairwise_util.h>
+#include "../GraphExecutioner.h"
 #include <templatemath.h>
 #include <types/float8.h>
 #include <loops/type_conversions.h>
 #include <loops/aggregates.h>
 #include <helpers/helper_ptrmap.h>
 #include <helpers/logger.h>
+#include <pointercast.h>
+#include <pairwise_util.h>
 #ifndef _WIN32
 #include <sys/mman.h>
 #else
@@ -31,8 +30,6 @@
 
 #include "NDArray.cpp"
 #include "GraphExecutioner.cpp"
-
-#include "../NDArray.h"
 #include <layers/layers_factory.h>
 
 char *name;
@@ -3081,8 +3078,6 @@ delete[] ptrMap;
 }
 
 Nd4jPointer NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
-
-
     return nd4j::graph::GraphExecutioner<float>::executeFlatBuffer(flatBufferPointer);
 }
 

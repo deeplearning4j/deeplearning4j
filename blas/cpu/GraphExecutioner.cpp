@@ -350,13 +350,21 @@ namespace nd4j{
         Nd4jPointer nd4j::graph::GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
             uint8_t *buffer = reinterpret_cast<uint8_t *>(pointer);
 
+            nd4j_printf("Trying to restore graph\n", 0);
+
             auto restoredGraph = GetFlatGraph(buffer);
+
+            nd4j_printf("Graph restored\n", 0);
 
             // converting FlatGraph to internal representation
             auto nativeGraph = new Graph<T>(restoredGraph);
 
+            nd4j_printf("Going to execute graph\n", 0);
+
             // executing internal representation
             GraphExecutioner<T>::execute(nativeGraph);
+
+            nd4j_printf("Building output...\n", 0);
 
             flatbuffers::FlatBufferBuilder builder(4096);
 
@@ -376,7 +384,7 @@ namespace nd4j{
                 cnt++;
             }
 
-            printf("Returning %i variables back\n", cnt);
+            nd4j_printf("Returning %i variables back\n", cnt);
 
             auto varVectors = builder.CreateVector(variables_vector);
             auto result = CreateFlatResult(builder, restoredGraph->id(), varVectors);
