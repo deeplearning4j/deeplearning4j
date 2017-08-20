@@ -84,6 +84,10 @@ public class PagedPointer extends Pointer {
         return new LongPointer(this);
     }
 
+    public BytePointer asBytePointer() {
+        return new BytePointer(this);
+    }
+
     @Override
     public void deallocate() {
         super.deallocate();

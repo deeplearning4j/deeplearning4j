@@ -1570,4 +1570,6 @@ public abstract class NativeOps extends Pointer {
     public abstract LongPointer mmapFile(PointerPointer extraPointers, String fileName, long length);
 
     public abstract void munmapFile(PointerPointer extraPointers, LongPointer ptrMap, long length);
+
+    public abstract Pointer executeFlatGraphFloat(PointerPointer extraPointers, Pointer flatBufferPointer);
 }

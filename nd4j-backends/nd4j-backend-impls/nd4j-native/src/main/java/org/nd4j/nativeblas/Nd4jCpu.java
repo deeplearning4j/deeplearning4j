@@ -18,6 +18,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
 // #ifndef NATIVEOPERATIONS_NATIVEOPS_H
 // #define NATIVEOPERATIONS_NATIVEOPS_H
 
+
 // #ifndef thread_local
 // # if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__
 // #  define thread_local _Thread_local
@@ -5039,6 +5040,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void munmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex*") LongPointer ptrMap, @Cast("Nd4jIndex") long length);
     public native void munmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex*") LongBuffer ptrMap, @Cast("Nd4jIndex") long length);
     public native void munmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex*") long[] ptrMap, @Cast("Nd4jIndex") long length);
+
+
+    public native @Cast("Nd4jPointer") Pointer executeFlatGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
 }
 
 

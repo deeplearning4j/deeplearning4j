@@ -307,4 +307,7 @@ public interface OpExecutioner {
     INDArray bitmapEncode(INDArray indArray, double threshold);
 
     INDArray bitmapDecode(INDArray encoded, INDArray target);
+
+
+
 }

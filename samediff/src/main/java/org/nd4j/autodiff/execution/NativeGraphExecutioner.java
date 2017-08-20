@@ -3,6 +3,7 @@ package org.nd4j.autodiff.execution;
 import com.google.common.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpExecAction;
@@ -12,10 +13,14 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.graph.FlatGraph;
 import org.nd4j.graph.FlatNode;
+import org.nd4j.graph.FlatResult;
 import org.nd4j.graph.FlatVariable;
+import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -49,7 +54,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
      */
     @Override
     public INDArray[] executeGraph(SameDiff sd) {
-        FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(0);
+        FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(2048);
 
         SDGraph graph =  sd.getGraph();
 
@@ -138,13 +143,15 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
                     mappedIns[varsCount++] = sdVar.getId();
                 } else {
-                    log.info("Input varId: {}; varName: {};", vertexMapS.get(var.getId()), var.getId());
+                    log.info("Empty Input varId: {}; varName: {};", vertexMapS.get(var.getId()), var.getId());
 
                     // in all other cases - it's "virtual" array, will be created as op result instead
                     int name = bufferBuilder.createString(sdVar.getVarName());
+                    int values = FlatVariable.createValuesVector(bufferBuilder, new float[]{});
+                    int shape = FlatVariable.createShapeVector(bufferBuilder, new int[]{});
 
                     // FIXME: we need auto ID here instead of 119
-                    int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, 119, name, 0, 0, -1);
+                    int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, 119, name, shape, values, -1);
                     variables.add(flatVariable);
 
                     mappedIns[varsCount++] = vertexMapS.get(var.getId());
@@ -184,18 +191,52 @@ public class NativeGraphExecutioner implements GraphExecutioner {
             nodesCount++;
         }
 
-        int variablesOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(variables));
-        int nodesOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(variables));
+        log.info("Variables: {}", variables);
+        log.info("Nodes: {}", nodes);
 
-        int fg = FlatGraph.createFlatGraph(bufferBuilder, 119, variablesOffset, nodesOffset, 0);
+        int outputsOffset = FlatGraph.createVariablesVector(bufferBuilder, new int[]{});
+        int variablesOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(variables));
+        int nodesOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(nodes));
+
+        int fg = FlatGraph.createFlatGraph(bufferBuilder, 119, variablesOffset, nodesOffset, outputsOffset);
         bufferBuilder.finish(fg);
 
         ByteBuffer buffer = bufferBuilder.dataBuffer();
-        Pointer ptr = new Pointer(buffer);
+        BytePointer bPtr = new BytePointer(buffer);
 
         log.info("Buffer length: {}", buffer.limit());
 
-        return new INDArray[0];
+        Pointer res  = NativeOpsHolder.getInstance().getDeviceNativeOps().executeFlatGraphFloat(null, bPtr);
+
+        PagedPointer pagedPointer = new PagedPointer(res,      1024 * 1024L);
+        FlatResult fr = FlatResult.getRootAsFlatResult(pagedPointer.asBytePointer().asByteBuffer());
+
+        INDArray[] results = new INDArray[fr.variablesLength()];
+        for (int e = 0; e < fr.variablesLength(); e++) {
+            FlatVariable var = fr.variables(e);
+            float[] values = new float[var.valuesLength()];
+            int[] shape = new int[var.shapeLength()];
+
+            for (int i = 0; i < var.valuesLength(); i++) {
+                values[i] = var.values(i);
+            }
+
+            for (int i = 0; i < var.shapeLength(); i++) {
+                shape[i] = var.shape(i);
+            }
+
+            int[] _shape = new int[shape[0]];
+            for (int i = 0; i < _shape.length; i++) {
+                _shape[i] = shape[i+1];
+            }
+
+            char _order = shape[shape[0] * 2 + 4 - 1] == 99 ? 'c' : 'f';
+
+            INDArray val = Nd4j.create(values, _shape, _order, 0);
+            results[e] = val;
+        }
+
+        return results;
     }
 
     protected byte getFlatOpType(OpState.OpType type) {
