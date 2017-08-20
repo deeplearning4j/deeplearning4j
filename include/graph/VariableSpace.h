@@ -31,6 +31,7 @@ namespace nd4j {
             VariableSpace();
             ~VariableSpace();
 
+            bool hasVariable(int32_t id);
             nd4j::graph::Variable<T> *getVariable(const int32_t id);
             void putVariable(int32_t id, Variable<T> *variable);
             void putVariable(int32_t id, NDArray<T> *array);
@@ -47,6 +48,10 @@ namespace nd4j {
             int totalEntries();
         };
     }
+}
+template <typename T>
+bool nd4j::graph::VariableSpace<T>::hasVariable(int32_t id) {
+    return _variables.count(id) == 1;
 }
 
 template <typename T>

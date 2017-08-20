@@ -168,3 +168,76 @@ TEST_F(FlatBuffersTest, ExecutionTest1) {
 
     //ASSERT_TRUE(exp->equalsTo(array));
 }
+
+
+TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
+    flatbuffers::FlatBufferBuilder builder(4096);
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0f);
+
+    auto fXShape = builder.CreateVector(x->getShapeAsVector());
+    auto fXBuffer = builder.CreateVector(x->getBufferAsVector());
+
+    auto fXVar = CreateFlatVariable(builder, -1, 0, fXShape, fXBuffer);
+
+
+    auto y = new NDArray<float>(5, 5, 'c');
+    y->assign(-1.0f);
+
+    auto fYShape = builder.CreateVector(y->getShapeAsVector());
+    auto fYBuffer = builder.CreateVector(y->getBufferAsVector());
+
+    auto fYVar = CreateFlatVariable(builder, -2, 0, fYShape, fYBuffer);
+
+
+    std::vector<int> inputs1, outputs1, outputs;
+    inputs1.push_back(-1);
+    inputs1.push_back(-2);
+
+    outputs.push_back(-1);
+    outputs.push_back(-2);
+
+    auto out1 = builder.CreateVector(outputs1);
+    auto in1 = builder.CreateVector(inputs1);
+    auto o = builder.CreateVector(outputs);
+
+    auto node1 = CreateFlatNode(builder, 1, OpType_PAIRWISE, 0, in1, DataType_FLOAT, out1);
+
+    std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
+    variables_vector.push_back(fXVar);
+    variables_vector.push_back(fYVar);
+
+    std::vector<flatbuffers::Offset<FlatNode>> nodes_vector;
+    nodes_vector.push_back(node1);
+
+
+
+    auto nodes = builder.CreateVector(nodes_vector);
+    auto variables = builder.CreateVector(variables_vector);
+
+    FlatGraphBuilder graphBuilder(builder);
+
+    graphBuilder.add_variables(variables);
+    graphBuilder.add_id(119);
+    graphBuilder.add_nodes(nodes);
+    graphBuilder.add_outputs(o);
+
+    auto flatGraph = graphBuilder.Finish();
+    builder.Finish(flatGraph);
+
+    auto restoredGraph = new Graph<float>(GetFlatGraph(builder.GetBufferPointer()));
+
+    GraphExecutioner<float>::execute(restoredGraph);
+
+    auto results = restoredGraph->fetchOutputs();
+
+    ASSERT_EQ(3, results->size());
+
+    ASSERT_NEAR(-2.0, results->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(-1.0, results->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(-3.0, results->at(2)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+    ASSERT_EQ(-1, results->at(0)->id());
+    ASSERT_EQ(-2, results->at(1)->id());
+}

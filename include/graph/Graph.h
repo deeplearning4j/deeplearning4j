@@ -39,6 +39,7 @@ namespace nd4j {
 
 
             std::vector<int32_t> _output;
+            std::vector<int32_t> _autos;
 
             Nd4jStatus validateNode(nd4j::graph::Node<T> *node);
 
@@ -139,7 +140,7 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
         node->pickOutput(var->id());
 
         this->_output.push_back(var->id());
-
+        this->_autos.push_back(var->id());
         assert(node->hasExternalOutputs());
     } else if (node->hasExternalOutputs()) {
         // TODO: we might want this behavior configurable!
@@ -275,6 +276,19 @@ nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
         }
     }
 
+    // at this point we expect all variables are already registered
+    if (flatGraph != nullptr && flatGraph->outputs() != nullptr) {
+        for (int e = 0; e < flatGraph->outputs()->size(); e++) {
+            auto out = flatGraph->outputs()->Get(e);
+            if (!_variableSpace->hasVariable(out)) {
+                nd4j_verbose("Non-existent variable requested: %i\n", out);
+                throw "Non-existent variable requested";
+            }
+
+            _output.push_back(out);
+        }
+    }
+
     // rolling through nodes
     if (flatGraph != nullptr && flatGraph->nodes() != nullptr && flatGraph->nodes()->size() > 0) {
 
@@ -286,7 +300,7 @@ nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
 
             if (node->output() == nullptr || node->output()->size() == 0) {
                 outputPassNeeded = true;
-                printf("Orphan node detected: %i\n", node->id());
+                nd4j_printf("Orphan node detected: %i; AutoOutput to be considered\n", node->id());
             }
 
             this->addNode(new Node<T>(node));
