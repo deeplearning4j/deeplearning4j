@@ -917,7 +917,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
                     .result(arrInfo)
                     .build();
             //add the first vertex no matter what as normal
-            sameDiff.getGraph().addEdge(v1VertexId,
+            sameDiff.getGraph().addEdge(
+                    v1VertexId,
                     newVertex.vertexID(),
                     opState2,true);
 
