@@ -21,7 +21,7 @@ endif()
 
 if (NOT DEFINED ENV{CLION_IDE})
     message("NOT CLION")
-    include_directories(include/ include/helpers include/loops include/graph include/ops include/types include/cnpy)
+    include_directories(blas/ include/ include/helpers include/loops include/graph include/ops include/types include/cnpy)
     add_subdirectory(blas)
 endif ()
 

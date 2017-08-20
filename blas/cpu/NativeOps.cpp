@@ -9,6 +9,9 @@
 
 #include "../NativeOps.h"
 #include "../NativeOpExcutioner.h"
+#include "../GraphExecutioner.h"
+#include "../NDArray.h"
+
 #include <pointercast.h>
 #include <pairwise_util.h>
 #include <templatemath.h>
@@ -18,7 +21,7 @@
 #include <helpers/helper_ptrmap.h>
 #include <helpers/logger.h>
 #include "NDArray.cpp"
-
+#include "GraphExecutioner.cpp"
 
 #include "../NDArray.h"
 #include <layers/layers_factory.h>
@@ -3041,6 +3044,12 @@ void NativeOps::decodeBitmapDouble(Nd4jPointer *extraPointers, void *dx, Nd4jInd
 
 void NativeOps::decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float16 *dz) {
     //NativeOpExcutioner<float16>::decodeBitmap(dx, N, dz);
+}
+
+Nd4jPointer NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+
+
+    return nd4j::graph::GraphExecutioner<float>::executeFlatBuffer(flatBufferPointer);
 }
 
 #endif

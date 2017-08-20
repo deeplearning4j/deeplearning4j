@@ -6823,3 +6823,7 @@ void NativeOps::decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
+
+Nd4jPointer NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+	return nullptr;
+}

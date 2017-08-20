@@ -9,7 +9,7 @@
 #include <list>
 #include <map>
 #include <mutex>
-#include <NDArray.h>
+//#include <NDArray.h>
 #include <graph/Variable.h>
 
 namespace nd4j {

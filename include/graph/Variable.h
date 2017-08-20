@@ -5,7 +5,6 @@
 #ifndef LIBND4J_VARIABLE_H
 #define LIBND4J_VARIABLE_H
 
-
 #include <NDArray.h>
 #include <graph/generated/node_generated.h>
 #include <graph/generated/graph_generated.h>

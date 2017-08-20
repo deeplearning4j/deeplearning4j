@@ -7,7 +7,7 @@
 
 #include <list>
 #include <map>
-#include <NDArray.h>
+//#include <NDArray.h>
 #include <graph/Node.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
