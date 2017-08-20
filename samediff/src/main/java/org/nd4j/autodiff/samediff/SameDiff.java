@@ -2038,6 +2038,28 @@ public class SameDiff {
     }
 
 
+    public List<Op> execBackwards() {
+        SameDiff outer = this;
+        defineFunction("grad", new SameDiffFunctionDefinition() {
+
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                List<OpExecAction> opOrder = outer.graph().getOpOrder().getActions();
+                Collections.reverse(opOrder);
+
+                for(OpExecAction action : opOrder) {
+                }
+
+                return null;
+            }
+        });
+
+
+        List<Op> forward = exec();
+
+        return forward;
+    }
+
     /**
      * Creates and executes a list of operations
      * @return

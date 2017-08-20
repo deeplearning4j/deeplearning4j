@@ -856,6 +856,7 @@ public class ArrayField implements Field<ArrayField> {
                 .n(ArrayUtil.prod(getInput().getShape()))
                 .opName(name).extraArgs(extraArgs)
                 .scalarValue(getInput().scalar())
+                .arrayField(this)
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .opType(OpState.OpType.SCALAR_TRANSFORM).result(newVertex.getValue())
                 .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
@@ -905,7 +906,7 @@ public class ArrayField implements Field<ArrayField> {
         OpState owner =  OpState.builder()
                 .n(ArrayUtil.prod(input.getShape()))
                 .opName(name).extraArgs(new Object[]{scalarValue,inPlace})
-                .scalarValue(scalarValue)
+                .scalarValue(scalarValue).arrayField(this)
                 .id(vertex.getValue().getId() + "-> " +
                         name + " " + newVertex.getValue().getId())
                 .opType(OpState.OpType.SCALAR_TRANSFORM)
@@ -957,7 +958,8 @@ public class ArrayField implements Field<ArrayField> {
         //map x -> z
         OpState xToz = OpState.builder()
                 .n(ArrayUtil.prod(resultShape)).axes(dimensions)
-                .opName(name).extraArgs(extraArgs)
+                .opName(name).extraArgs(extraArgs).arrayField( this)
+
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.ACCUMULATION).build();
@@ -967,7 +969,7 @@ public class ArrayField implements Field<ArrayField> {
         //map y -> z
         OpState yToZ = OpState.builder()
                 .n(ArrayUtil.prod(resultShape))
-                .opName(name).extraArgs(extraArgs)
+                .opName(name).extraArgs(extraArgs).arrayField( this)
                 .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.ACCUMULATION).build();

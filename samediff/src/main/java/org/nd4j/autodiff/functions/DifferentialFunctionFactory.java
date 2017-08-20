@@ -16,6 +16,7 @@ import org.nd4j.autodiff.functions.impl.unary.transform.*;
 import org.nd4j.autodiff.functions.impl.unary.transform.shape.*;
 import org.nd4j.autodiff.functions.mmul.Mmul;
 import org.nd4j.autodiff.functions.mmul.TensorMmul;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -25,24 +26,29 @@ import org.nd4j.linalg.util.ArrayUtil;
  * @param <X>
  */
 @Data
-public class DifferentialFunctionFactory<X extends Field<ArrayField> > implements FunctionFactory<ArrayField>  {
+public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements FunctionFactory<ArrayField>  {
 
     protected SameDiff sameDiff;
     private Map<String,Method> methodNames;
 
+    /**
+     *
+     * @param sameDiff
+     */
     public DifferentialFunctionFactory(SameDiff sameDiff) {
         if (sameDiff != null) {
             this.sameDiff = sameDiff;
             methodNames = new HashMap<>();
             Method[] methods = getClass().getDeclaredMethods();
             for(Method method : methods)
-                methodNames.put(method.getName(),method);
+                methodNames.put(method.getName().toLowerCase(),method);
         } else {
             throw new IllegalArgumentException("Input not null value.");
         }
 
 
     }
+
 
     @Override
     public DifferentialFunction<ArrayField> invoke(String name, Object[] args) {
@@ -55,14 +61,10 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
 
     @Override
     public Constant<ArrayField>  val(ArrayField iX) {
-        if(iX instanceof ArrayField) {
-            Preconditions.checkArgument(iX.getOps() == sameDiff,"Same diff must be the same.");
-            return new Constant<>(sameDiff, iX,
-                    iX.getInput().getShape());
-        }
-        else
-            throw new IllegalStateException("Illegal type. Must be ArrayField");
+        return new Constant<>(sameDiff, iX,
+                iX.getInput().getShape());
     }
+
 
 
     @Override
@@ -975,7 +977,8 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField> > implement
      * @return
      */
     public DifferentialFunction<ArrayField> doGradChoose(DifferentialFunction<ArrayField> func,
-                                                         DifferentialFunction<ArrayField> input,int...axes) {
+                                                         DifferentialFunction<ArrayField> input,
+                                                         int...axes) {
         validateDifferentialFunctionsameDiff(func);
         validateDifferentialFunctionsameDiff(input);
 

@@ -534,6 +534,11 @@ public class SameDiffTests {
         assertArrayEquals(sumInput.shape(),executions.shape());
         System.out.println(executions);
         assertEquals(assertions,executions);
+
+
+        SoftMaxDerivative softMaxDerivative = new SoftMaxDerivative(sumInput);
+        Nd4j.getExecutioner().exec(softMaxDerivative);
+        System.out.println(softMaxDerivative.z());
     }
 
 

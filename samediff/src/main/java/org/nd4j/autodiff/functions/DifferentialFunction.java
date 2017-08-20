@@ -882,6 +882,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
                 sameDiff.getGraph().addVertex(dupVertex);
                 opState = OpState.builder()
                         .opType(opType)
+                        .differentialFunction((DifferentialFunction<ArrayField>) this)
                         .opName(opName)
                         .id(opName + "(" + dupVertex.getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                         .vertexIds(new String[]{String.valueOf(v2VertexId),String.valueOf(newVertex.vertexID())})
@@ -896,6 +897,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
                 opState =  OpState.builder()
                         .opType(opType)
                         .opName(opName)
+                        .differentialFunction((DifferentialFunction<ArrayField>) this)
                         .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                         .vertexIds(new String[]{String.valueOf(v2VertexId),String.valueOf(newVertex.vertexID())})
                         .n(ArrayUtil.prod(shape))
@@ -911,6 +913,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
                     .vertexIds(new String[]{String.valueOf(v1VertexId),String.valueOf(newVertex.vertexID())})
                     .n(ArrayUtil.prod(shape))
                     .extraArgs(extraArgs)
+                    .differentialFunction((DifferentialFunction<ArrayField>) this)
                     .result(arrInfo)
                     .build();
             //add the first vertex no matter what as normal

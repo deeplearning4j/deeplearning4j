@@ -91,7 +91,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
             Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");
             sameDiff.getGraph().addVertex(newVertex);
             OpState owner =  OpState.builder()
-                    .opType(opType)
+                    .opType(opType).differentialFunction((DifferentialFunction<ArrayField>) this)
                     .opName(opName).extraArgs(extraArgs)
                     .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                     .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})

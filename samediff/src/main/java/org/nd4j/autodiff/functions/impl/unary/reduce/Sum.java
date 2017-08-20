@@ -30,8 +30,9 @@ public class Sum extends AbstractReduceUnaryFunction<ArrayField> {
     @Override
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
-        return sameDiff.getFunctionFactory().doRepeat(
+        DifferentialFunction<ArrayField> repeat =  sameDiff.getFunctionFactory().doRepeat(
                 getDiffFunctionInput(i_v1),
-               arg(),dimensions).mul(arg().diff(i_v1));
+               arg(),dimensions);
+        return repeat;
     }
 }

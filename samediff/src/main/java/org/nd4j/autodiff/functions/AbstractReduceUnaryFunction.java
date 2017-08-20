@@ -83,6 +83,7 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
                     .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                     .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                     .n(ArrayUtil.prod(Shape.getReducedShape(v1.getInput().getShape(),dimensions)))
+                    .differentialFunction((DifferentialFunction<ArrayField>) this)
                     .build();
             newVertex.setOpState(opState);
             sameDiff.getGraph().addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),opState
