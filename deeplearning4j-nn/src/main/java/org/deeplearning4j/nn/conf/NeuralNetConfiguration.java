@@ -27,6 +27,7 @@ import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
@@ -261,6 +262,19 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return layerwise;
         }
 
+        @Override
+        public ListBuilder setInputType(InputType inputType){
+            return (ListBuilder)super.setInputType(inputType);
+        }
+
+        /**
+         * A convenience method for setting input types: note that for example .inputType().convolutional(h,w,d)
+         * is equivalent to .setInputType(InputType.convolutional(h,w,d))
+         */
+        public ListBuilder.InputTypeBuilder inputType(){
+            return new InputTypeBuilder();
+        }
+
         /**
          * Build the multi layer network
          * based on this neural network and
@@ -296,6 +310,36 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                             .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
         }
 
+        /** Helper class for setting input types */
+        public class InputTypeBuilder {
+            /**
+             * See {@link InputType#convolutional(int, int, int)}
+             */
+            public ListBuilder convolutional(int height, int width, int depth){
+                return ListBuilder.this.setInputType(InputType.convolutional(height, width, depth));
+            }
+
+            /**
+             * * See {@link InputType#convolutionalFlat(int, int, int)}
+             */
+            public ListBuilder convolutionalFlat(int height, int width, int depth){
+                return ListBuilder.this.setInputType(InputType.convolutionalFlat(height, width, depth));
+            }
+
+            /**
+             * See {@link InputType#feedForward(int)}
+             */
+            public ListBuilder feedForward(int size){
+                return ListBuilder.this.setInputType(InputType.feedForward(size));
+            }
+
+            /**
+             * See {@link InputType#recurrent(int)}}
+             */
+            public ListBuilder recurrent(int size){
+                return ListBuilder.this.setInputType(InputType.recurrent(size));
+            }
+        }
     }
 
     /**
