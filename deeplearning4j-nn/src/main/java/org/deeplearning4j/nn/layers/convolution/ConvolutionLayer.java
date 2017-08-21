@@ -56,7 +56,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected ConvolutionHelper helper = null;
     protected ConvolutionMode convolutionMode;
 
-    protected transient INDArray dummyBias;     //Used only when: noBias == true AND helpers
+    protected transient INDArray dummyBias;     //Used only when: hasBias == false AND helpers are used
     protected transient INDArray dummyBiasGrad; //As above
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {
@@ -168,7 +168,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         if (helper != null) {
 
-            if(noBias()){
+            if(!hasBias()){
                 if(dummyBiasGrad == null){
                     try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         dummyBiasGrad = Nd4j.create(1, layerConf().getNOut());
@@ -239,7 +239,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         Convolution.col2im(eps6d, epsNext, strides[0], strides[1], pad[0], pad[1], inH, inW);
 
         Gradient retGradient = new DefaultGradient();
-        if(!layerConf().isNoBias()){
+        if(layerConf().hasBias()){
             delta2d.sum(biasGradView, 1); //biasGradView is initialized/zeroed first in sum op
             retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
         }
@@ -334,7 +334,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             }
 
             //For no-bias convolutional layers: use an empty (all 0s) value for biases
-            if(noBias()){
+            if(!hasBias()){
                 if(dummyBias == null){
                     try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         dummyBias = Nd4j.create(1, layerConf().getNOut());
@@ -384,7 +384,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             z = im2col2d.mmul(reshapedW);
 
         //Add biases, before reshaping. Note that biases are [1,depthOut] and currently z is [miniBatch*outH*outW,depthOut] -> addiRowVector
-        if(!layerConf().isNoBias()){
+        if(layerConf().hasBias()){
             z.addiRowVector(bias);
         }
 
@@ -446,8 +446,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public boolean noBias() {
-        return layerConf().isNoBias();
+    public boolean hasBias() {
+        return layerConf().hasBias();
     }
 
     @Override

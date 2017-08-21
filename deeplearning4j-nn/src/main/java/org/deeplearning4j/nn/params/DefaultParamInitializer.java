@@ -164,11 +164,11 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     protected boolean hasBias(Layer layer){
         if(layer instanceof BaseOutputLayer ) {
-            return !((BaseOutputLayer) layer).isNoBias();
+            return ((BaseOutputLayer) layer).hasBias();
         } else if(layer instanceof DenseLayer){
-            return !((DenseLayer)layer).isNoBias();
+            return ((DenseLayer)layer).hasBias();
         } else if(layer instanceof EmbeddingLayer){
-            return !((EmbeddingLayer)layer).isNoBias();
+            return ((EmbeddingLayer)layer).hasBias();
         }
         return true;
     }

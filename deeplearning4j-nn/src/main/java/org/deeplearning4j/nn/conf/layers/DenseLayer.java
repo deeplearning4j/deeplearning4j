@@ -41,11 +41,12 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class DenseLayer extends FeedForwardLayer {
 
-    private boolean noBias;
+    @Getter(AccessLevel.NONE)
+    private boolean hasBias;
 
     private DenseLayer(Builder builder) {
         super(builder);
-        this.noBias = builder.noBias;
+        this.hasBias = builder.hasBias;
     }
 
     @Override
@@ -101,18 +102,22 @@ public class DenseLayer extends FeedForwardLayer {
                         .build();
     }
 
+    public boolean hasBias(){
+        return hasBias;
+    }
+
     @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
-        private boolean noBias = false;
+        private boolean hasBias = false;
 
         /**
          * If true: include no bias parameters in the model. False (default): include bias.
          *
-         * @param noBias If true: don't include bias parameters in this model
+         * @param hasBias If true: don't include bias parameters in this model
          */
-        public Builder noBias(boolean noBias){
-            this.noBias = noBias;
+        public Builder hasBias(boolean hasBias){
+            this.hasBias = hasBias;
             return this;
         }
 

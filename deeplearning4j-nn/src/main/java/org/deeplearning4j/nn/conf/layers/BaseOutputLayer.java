@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -20,12 +17,17 @@ import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 @EqualsAndHashCode(callSuper = true)
 public abstract class BaseOutputLayer extends FeedForwardLayer {
     protected ILossFunction lossFn;
-    protected boolean noBias;
+    @Getter(AccessLevel.NONE)
+    protected boolean hasBias;
 
     protected BaseOutputLayer(Builder builder) {
         super(builder);
         this.lossFn = builder.lossFn;
-        this.noBias = builder.noBias;
+        this.hasBias = builder.hasBias;
+    }
+
+    public boolean hasBias(){
+        return hasBias;
     }
 
     /**
@@ -85,7 +87,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
 
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
         protected ILossFunction lossFn = new LossMCXENT();
-        private boolean noBias = false;
+        private boolean hasBias = false;
 
         public Builder() {}
 
@@ -104,10 +106,10 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
         /**
          * If true: include no bias parameters in the model. False (default): include bias.
          *
-         * @param noBias If true: don't include bias parameters in this model
+         * @param hasBias If true: don't include bias parameters in this model
          */
-        public T noBias(boolean noBias){
-            this.noBias = noBias;
+        public T hasBias(boolean hasBias){
+            this.hasBias = hasBias;
             return (T)this;
         }
 

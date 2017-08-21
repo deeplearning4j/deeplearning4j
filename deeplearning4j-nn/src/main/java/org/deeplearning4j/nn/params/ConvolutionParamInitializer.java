@@ -63,7 +63,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         int[] kernel = layerConf.getKernelSize();
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
-        return nIn * nOut * kernel[0] * kernel[1] + (!layerConf.isNoBias() ? nOut : 0);
+        return nIn * nOut * kernel[0] * kernel[1] + (layerConf.hasBias() ? nOut : 0);
     }
 
     @Override
@@ -71,18 +71,14 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         ConvolutionLayer layer = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
         if (layer.getKernelSize().length != 2) throw new IllegalArgumentException("Filter size must be == 2");
 
-        boolean noBias = layer.isNoBias();
-
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
                         (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
 
-        int[] kernel = layerConf.getKernelSize();
-        int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
 
-        if(!noBias){
+        if(layer.hasBias()){
             //Standard case
             INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
             INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, numParams(conf)));
@@ -105,13 +101,12 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
                         (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
 
-        boolean noBias = layerConf.isNoBias();
         int[] kernel = layerConf.getKernelSize();
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
 
         Map<String, INDArray> out = new LinkedHashMap<>();
-        if(!noBias){
+        if(layerConf.hasBias()){
             //Standard case
             INDArray biasGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
             INDArray weightGradientView =

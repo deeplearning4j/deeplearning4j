@@ -69,7 +69,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradients);
 
-        if(!noBias()) {
+        if(hasBias()) {
             INDArray biasGradientsView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
             delta.sum(biasGradientsView, 0); //biasGradientView is initialized/zeroed first in sum op
             ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradientsView);
@@ -96,7 +96,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
 
         INDArray rows = Nd4j.pullRows(weights, 1, indexes);
-        if(!noBias()){
+        if(hasBias()){
             rows.addiRowVector(bias);
         }
 
@@ -116,8 +116,8 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     }
 
     @Override
-    public boolean noBias() {
-        return layerConf().isNoBias();
+    public boolean hasBias() {
+        return layerConf().hasBias();
     }
 
     @Override

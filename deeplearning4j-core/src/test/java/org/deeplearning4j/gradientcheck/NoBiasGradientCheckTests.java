@@ -47,8 +47,8 @@ public class NoBiasGradientCheckTests {
                 labels.putScalar(i, i % nOut, 1.0);
             }
 
-            for (boolean denseNoBias : new boolean[]{false, true}) {
-                for (boolean outNoBias : new boolean[]{false, true}) {
+            for (boolean denseHasBias : new boolean[]{true, false}) {
+                for (boolean outHasBias : new boolean[]{true, false}) {
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
                             .updater(Updater.NONE)
@@ -58,39 +58,39 @@ public class NoBiasGradientCheckTests {
                                     .weightInit(WeightInit.DISTRIBUTION)
                                     .dist(new NormalDistribution(0, 1))
                                     .activation(Activation.TANH)
-                                    .noBias(false)  //Layer 0: Always have a bias
+                                    .hasBias(true)  //Layer 0: Always have a bias
                                     .build())
                             .layer(1, new DenseLayer.Builder().nIn(layerSize).nOut(layerSize)
                                     .weightInit(WeightInit.DISTRIBUTION)
                                     .dist(new NormalDistribution(0, 1))
                                     .activation(Activation.TANH)
-                                    .noBias(denseNoBias)
+                                    .hasBias(denseHasBias)
                                     .build())
                             .layer(2, new OutputLayer.Builder(LossFunction.MCXENT)
                                     .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                                     .weightInit(WeightInit.DISTRIBUTION)
                                     .dist(new NormalDistribution(0, 1))
-                                    .noBias(outNoBias)
+                                    .hasBias(outHasBias)
                                     .build())
                             .build();
 
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                     mln.init();
 
-                    if (denseNoBias) {
-                        assertEquals(layerSize * layerSize, mln.getLayer(1).numParams());
-                    } else {
+                    if (denseHasBias) {
                         assertEquals(layerSize * layerSize + layerSize, mln.getLayer(1).numParams());
-                    }
-
-                    if (outNoBias) {
-                        assertEquals(layerSize * nOut, mln.getLayer(2).numParams());
                     } else {
-                        assertEquals(layerSize * nOut + nOut, mln.getLayer(2).numParams());
+                        assertEquals(layerSize * layerSize, mln.getLayer(1).numParams());
                     }
 
-                    String msg = "testGradientNoBiasDenseOutput(), minibatch = " + minibatch + ", denseNoBias = "
-                            + denseNoBias + ", outNoBias = " + outNoBias + ")";
+                    if (outHasBias) {
+                        assertEquals(layerSize * nOut + nOut, mln.getLayer(2).numParams());
+                    } else {
+                        assertEquals(layerSize * nOut, mln.getLayer(2).numParams());
+                    }
+
+                    String msg = "testGradientNoBiasDenseOutput(), minibatch = " + minibatch + ", denseHasBias = "
+                            + denseHasBias + ", outHasBias = " + outHasBias + ")";
 
                     if (PRINT_RESULTS) {
                         System.out.println(msg);
@@ -118,7 +118,7 @@ public class NoBiasGradientCheckTests {
                 labels.putScalar(i, i % nOut, 1.0);
             }
 
-            for (boolean rnnOutNoBias : new boolean[]{false, true}) {
+            for (boolean rnnOutHasBias : new boolean[]{true, false}) {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
                         .updater(Updater.NONE)
@@ -133,20 +133,20 @@ public class NoBiasGradientCheckTests {
                                 .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                                 .weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new NormalDistribution(0, 1))
-                                .noBias(rnnOutNoBias)
+                                .hasBias(rnnOutHasBias)
                                 .build())
                         .build();
 
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
 
-                if (rnnOutNoBias) {
-                    assertEquals(layerSize * nOut, mln.getLayer(1).numParams());
-                } else {
+                if (rnnOutHasBias) {
                     assertEquals(layerSize * nOut + nOut, mln.getLayer(1).numParams());
+                } else {
+                    assertEquals(layerSize * nOut, mln.getLayer(1).numParams());
                 }
 
-                String msg = "testGradientNoBiasRnnOutput(), minibatch = " + minibatch + ", rnnOutNoBias = " + rnnOutNoBias + ")";
+                String msg = "testGradientNoBiasRnnOutput(), minibatch = " + minibatch + ", rnnOutHasBias = " + rnnOutHasBias + ")";
 
                 if (PRINT_RESULTS) {
                     System.out.println(msg);
@@ -176,7 +176,7 @@ public class NoBiasGradientCheckTests {
                 labels.putScalar(i, i % nOut, 1.0);
             }
 
-            for (boolean embeddingNoBias : new boolean[]{false, true}) {
+            for (boolean embeddingHasBias : new boolean[]{true, false}) {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
                         .updater(Updater.NONE)
@@ -186,7 +186,7 @@ public class NoBiasGradientCheckTests {
                                 .weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new NormalDistribution(0, 1))
                                 .activation(Activation.TANH)
-                                .noBias(embeddingNoBias)
+                                .hasBias(embeddingHasBias)
                                 .build())
                         .layer(1, new OutputLayer.Builder(LossFunction.MCXENT)
                                 .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
@@ -198,14 +198,14 @@ public class NoBiasGradientCheckTests {
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
 
-                if (embeddingNoBias) {
-                    assertEquals(nIn * layerSize, mln.getLayer(0).numParams());
-                } else {
+                if (embeddingHasBias) {
                     assertEquals(nIn * layerSize + layerSize, mln.getLayer(0).numParams());
+                } else {
+                    assertEquals(nIn * layerSize, mln.getLayer(0).numParams());
                 }
 
-                String msg = "testGradientNoBiasEmbedding(), minibatch = " + minibatch + ", embeddingNoBias = "
-                        + embeddingNoBias + ")";
+                String msg = "testGradientNoBiasEmbedding(), minibatch = " + minibatch + ", embeddingHasBias = "
+                        + embeddingHasBias + ")";
 
                 if (PRINT_RESULTS) {
                     System.out.println(msg);
@@ -239,7 +239,7 @@ public class NoBiasGradientCheckTests {
                 labels.putScalar(new int[]{i, i % nOut}, 1.0);
             }
 
-            for(boolean cnnNoBias : new boolean[]{false, true}) {
+            for(boolean cnnHasBias : new boolean[]{true, false}) {
 
                 MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder().regularization(false).learningRate(1.0)
@@ -248,13 +248,13 @@ public class NoBiasGradientCheckTests {
                                 .list().layer(0,
                                 new ConvolutionLayer.Builder(kernel,
                                         stride, padding).nIn(inputDepth)
-                                        .noBias(false)
+                                        .hasBias(false)
                                         .nOut(3).build())//output: (5-2+0)/1+1 = 4
                                 .layer(1, new SubsamplingLayer.Builder(PoolingType.MAX)
                                         .kernelSize(kernel).stride(stride).padding(padding)
                                         .pnorm(pNorm).build()) //output: (4-2+0)/1+1 =3 -> 3x3x3
                                 .layer(2, new ConvolutionLayer.Builder(kernel, stride, padding)
-                                        .noBias(cnnNoBias)
+                                        .hasBias(cnnHasBias)
                                         .nIn(3).nOut(2).build()) //Output: (3-2+0)/1+1 = 2
                                 .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(2 * 2 * 2)
@@ -265,13 +265,13 @@ public class NoBiasGradientCheckTests {
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
 
-                if(cnnNoBias){
-                    assertEquals(3 * 2 * kernel[0] * kernel[1], net.getLayer(2).numParams());
-                } else {
+                if(cnnHasBias){
                     assertEquals(3 * 2 * kernel[0] * kernel[1] + 2, net.getLayer(2).numParams());
+                } else {
+                    assertEquals(3 * 2 * kernel[0] * kernel[1], net.getLayer(2).numParams());
                 }
 
-                String msg = "testCnnWithSubsamplingNoBias(), minibatch = " + minibatchSize + ", cnnNoBias = " + cnnNoBias;
+                String msg = "testCnnWithSubsamplingNoBias(), minibatch = " + minibatchSize + ", cnnHasBias = " + cnnHasBias;
                 System.out.println(msg);
 
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
