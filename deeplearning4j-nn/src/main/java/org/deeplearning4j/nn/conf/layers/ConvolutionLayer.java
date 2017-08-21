@@ -639,7 +639,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         protected BaseConvBuilder() {}
 
         /**
-         * If true (default): include bias parameters in the model. False: include bias.
+         * If true (default): include bias parameters in the model. False: no bias.
          *
          * @param hasBias If true: include bias parameters in this model
          */
