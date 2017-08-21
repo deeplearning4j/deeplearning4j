@@ -11,10 +11,7 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
-import org.nd4j.graph.FlatGraph;
-import org.nd4j.graph.FlatNode;
-import org.nd4j.graph.FlatResult;
-import org.nd4j.graph.FlatVariable;
+import org.nd4j.graph.*;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -77,7 +74,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
             SDVariable sdOut = sd.getVariableMap().get(out.getId());
 
             // output of this operation is declared variable
-            if (sdOut.getId() < 0) {
+            if (sdOut != null && sdOut.getId() < 0) {
                 vertexMapS.put(out.getId(), sdOut.getId());
                 log.info("Storing [{}/{}] variable as node_{} output", action.getOutputId(), out.getId(), nodesCount);
             } else {
@@ -104,7 +101,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
                 log.info("Var: {}; Mapping {} to node: {}", var.getId(), vertexMapS.get(var.getId()), nodesCount);
 
-                if (sdVar.getId() >= 0)
+                if (sdVar != null && sdVar.getId() >= 0)
                     useMap.get(vertexMapS.get(var.getId())).add(nodesCount);
             }
 
@@ -130,7 +127,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                 SDVariable sdVar = sd.getVariableMap().get(var.getId());
 
                 // negative ID assumes pre-created array
-                if (sdVar.getId() < 0) {
+                if (sdVar !=  null && sdVar.getId() < 0) {
                     log.info("Input varId: {}; varName: {};", sdVar.getId(), var.getId());
 
                     INDArray arr = sdVar.getArr().isView() ? sdVar.getArr().dup(sdVar.getArr().ordering()) : sdVar.getArr();
@@ -178,7 +175,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
             int flatNode = FlatNode.createFlatNode(bufferBuilder,
                                                    nodesCount,
                                                    getFlatOpType(action.getOpState().getOpType()),
-                                                   (short) action.getOpState().getOpNum(),
+                                                   getOpNum(action.getOpState().getOpName(), action.getOpState().getOpType()),
                                                    nodesIn,
                                                    (byte) 0,
                                                    nodesOut,
@@ -239,8 +236,26 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         return results;
     }
 
+    protected short getOpNum(String name, OpState.OpType type) {
+        return (short) Nd4j.getOpFactory().getOpNumByName(name);
+    }
+
     protected byte getFlatOpType(OpState.OpType type) {
-        return (byte) 0;
+        switch (type) {
+            case SCALAR_TRANSFORM:
+                return OpType.SCALAR;
+            case BROADCAST:{
+                return OpType.BROADCAST;
+                }
+            case TRANSFORM:
+                return OpType.TRANSFORM;
+            case ACCUMULATION:
+                return OpType.ACCUMULATION;
+            case INDEX_ACCUMULATION:
+                return OpType.INDEX_ACCUMULATION;
+            default:
+                throw new UnsupportedOperationException();
+        }
     }
 
     /**

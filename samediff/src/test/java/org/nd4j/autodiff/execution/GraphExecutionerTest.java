@@ -39,6 +39,8 @@ public class GraphExecutionerTest {
         INDArray resA = executionerA.executeGraph(sameDiff)[0];
         INDArray resB = executionerB.executeGraph(sameDiff)[0];
 
+
+
         assertEquals(resA, resB);
     }
 }

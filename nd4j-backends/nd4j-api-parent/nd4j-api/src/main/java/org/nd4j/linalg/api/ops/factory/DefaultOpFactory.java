@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.factory;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.*;
@@ -56,6 +57,7 @@ import java.util.Set;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class DefaultOpFactory implements OpFactory {
     private Map<String, Class<? extends Op>> opClazzes;
 
@@ -77,7 +79,11 @@ public class DefaultOpFactory implements OpFactory {
                 continue;
 
             try {
-                opClazzes.put(clazz.newInstance().name(), clazz);
+                String name = clazz.newInstance().name();
+                if (opClazzes.containsKey(name)) {
+                    log.error("Duplicating OpName: [{}]", name);
+                } else
+                    opClazzes.put(name, clazz);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -587,5 +593,25 @@ public class DefaultOpFactory implements OpFactory {
     @Override
     public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, int... dimension) {
         return createBroadcastOp(name,x,y,x,null,dimension);
+    }
+
+
+    /**
+     * This method returns op id number for given opName
+     *
+     * @param opName
+     * @return
+     */
+    @Override
+    public int getOpNumByName(String opName) {
+        Class<? extends Op> cls = opClazzes.get(opName);
+
+        try {
+            Op op = cls.newInstance();
+
+            return op.opNum();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

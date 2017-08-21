@@ -57,7 +57,7 @@ public class Max extends BaseTransformOp {
 
     @Override
     public String name() {
-        return "max";
+        return "max_transform";
     }
 
     @Override
