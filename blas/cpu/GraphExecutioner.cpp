@@ -29,7 +29,7 @@ namespace nd4j{
             OpType opType = node->opType();
             int opNum = node->opNum();
 
-            printf("Executing node_%i{%i}\n", node->id(), opNum);
+            nd4j_printf("Executing node_%i{%i}\n", node->id(), opNum);
             fflush(stdout);
 
             if (opType == OpType_TRANSFORM) {
@@ -115,12 +115,17 @@ namespace nd4j{
                         z = new Variable<T>(array);
                     };
 
+                nd4j_verbose("xLength: %i\n", x->getNDArray()->lengthOf());
+                nd4j_verbose("SCALAR BEFORE: X[0]: %f; X[1]: %f; scalar: %f\n", x->getNDArray()->getScalar(0), x->getNDArray()->getScalar(1), node->scalar());
+
                 functions::scalar::ScalarTransform<T>::transform(opNum, x->getNDArray()->_buffer,
                                                                       x->getNDArray()->_shapeInfo,
                                                                       z->getNDArray()->_buffer,
                                                                       z->getNDArray()->_shapeInfo,
                                                                       node->scalar(),
                                                                       node->extraParams());
+
+                nd4j_verbose("SCALAR AFTER: Z[0]: %f; Z[1]: %f; scalar: %f\n", z->getNDArray()->getScalar(0), z->getNDArray()->getScalar(1), node->scalar());
 
                 variableSpace->putVariable(node->id(), z);
 
@@ -190,9 +195,12 @@ namespace nd4j{
                 auto z = x;
                 // if there's no dimensions set - it's reduceToScalar
                 if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
+                    nd4j_verbose("ACCUM SCALAR BEFORE: X[0]: %f; X[1]: %f; xLength: %f\n", x->getNDArray()->getScalar(0), x->getNDArray()->getScalar(1), x->getNDArray()->lengthOf());
+
                     z = new Variable<T>(new NDArray<T>(1,1, 'c'));
                     z->getNDArray()->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
 
+                    nd4j_verbose("ACCUM SCALAR  AFTER: Z[0]: %f; xLength: %i;\n", z->getNDArray()->getScalar(0), x->getNDArray()->lengthOf());
                 } else {
                     // dimensional reduction
                     shape::TAD *tad = new shape::TAD(x->getNDArray()->_shapeInfo, node->getDimensionsPtr(), node->getDimensions()->size());
