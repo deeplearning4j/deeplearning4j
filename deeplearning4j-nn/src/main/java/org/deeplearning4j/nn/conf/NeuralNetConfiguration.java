@@ -1008,17 +1008,23 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Dropout probability. This is the probability of <it>retaining</it> an activation. So dropOut(x) will keep an
-         * activation with probability x, and set to 0 with probability 1-x.<br>
-         * dropOut(0.0) is disabled (default).
+         * Dropout probability. This is the probability of <it>retaining</it> an input activation for a layer. So
+         * dropOut(x) will keep an input activation with probability x, and set to 0 with probability 1-x.<br>
+         * dropOut(0.0) is disabled (default). When {@link #useDropConnect(boolean)} is set to true (false by default),
+         * this method sets the drop connect probability instead.
          * <p>
-         * Note: This sets the probability per-layer. Care should be taken when setting lower values for complex networks.
+         * Note 1: This sets the probability per-layer. Care should be taken when setting lower values for
+         * complex networks (too much information may be lost with aggressive dropout values).<br>
+         * Note 2: Frequently, dropout is not applied to input (first layer) our output layer. This needs to be
+         * handled MANUALLY by the user - set .dropout(0) on those layers when using global dropout setting.<br>
+         * Note 3: Implementation detail (most users can ignore): DL4J uses inverted dropout, as described here:
+         * <a href="http://cs231n.github.io/neural-networks-2/">http://cs231n.github.io/neural-networks-2/</a>
          * </p>
          *
-         * @param dropOut Dropout probability (probability of retaining an activation)
+         * @param inputRetainFraction Dropout probability (probability of retaining an input activation for a layer)
          */
-        public Builder dropOut(double dropOut) {
-            this.dropOut = dropOut;
+        public Builder dropOut(double inputRetainFraction) {
+            this.dropOut = inputRetainFraction;
             return this;
         }
 
