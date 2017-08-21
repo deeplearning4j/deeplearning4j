@@ -58,6 +58,7 @@ import java.io.Serializable;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -213,6 +214,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      * Fluent interface for building a list of configurations
      */
     public static class ListBuilder extends MultiLayerConfiguration.Builder {
+        private AtomicInteger layerCounter = new AtomicInteger(-1); //Used only for .layer(Layer) method
         private Map<Integer, Builder> layerwise;
         private Builder globalConfig;
 
@@ -243,7 +245,16 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             } else {
                 layerwise.put(ind, globalConfig.clone().layer(layer));
             }
+            if(layerCounter.get() < ind){
+                //Edge case: user is mixing .layer(Layer) and .layer(int, Layer) calls
+                //This should allow a .layer(A, X) and .layer(Y) to work such that layer Y is index (A+1)
+                layerCounter.set(ind);
+            }
             return this;
+        }
+
+        public ListBuilder layer(Layer layer){
+            return layer(layerCounter.incrementAndGet(), layer);
         }
 
         public Map<Integer, Builder> getLayerwise() {
