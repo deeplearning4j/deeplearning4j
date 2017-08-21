@@ -322,4 +322,35 @@ public class Hdf5Archive {
 
         return s;
     }
+
+    /**
+     * Read string attribute from group path.
+     *
+     * @param attributeName     Name of attribute
+     * @param bufferSize        buffer size to read
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public String readAttributeAsFixedLengthString(String attributeName, int bufferSize)
+            throws UnsupportedKerasConfigurationException {
+        return readAttributeAsFixedLengthString(this.file.openAttribute(attributeName), bufferSize);
+    }
+
+    /**
+     * Read attribute of fixed buffer size as string.
+     *
+     * @param attribute     HDF5 attribute to read as string.
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    private String readAttributeAsFixedLengthString(hdf5.Attribute attribute, int bufferSize)
+            throws UnsupportedKerasConfigurationException {
+        hdf5.VarLenType vl = attribute.getVarLenType();
+        byte[] attrBuffer = new byte[bufferSize];
+        BytePointer attrPointer = new BytePointer(attrBuffer);
+        attribute.read(vl, attrPointer);
+        attrPointer.get(attrBuffer);
+        String s = new String(attrBuffer);
+        return s;
+    }
 }

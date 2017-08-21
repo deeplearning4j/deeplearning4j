@@ -30,20 +30,125 @@ import static org.junit.Assert.assertEquals;
  */
 @Slf4j
 public class KerasModelEndToEndTest {
-    public static final String GROUP_ATTR_INPUTS = "inputs";
-    public static final String GROUP_ATTR_OUTPUTS = "outputs";
-    public static final String GROUP_PREDICTIONS = "predictions";
-    public static final String GROUP_ACTIVATIONS = "activations";
-    public static final String TEMP_OUTPUTS_FILENAME = "tempOutputs";
-    public static final String TEMP_MODEL_FILENAME = "tempModel";
-    public static final String H5_EXTENSION = ".h5";
+    private static final String GROUP_ATTR_INPUTS = "inputs";
+    private static final String GROUP_ATTR_OUTPUTS = "outputs";
+    private static final String GROUP_PREDICTIONS = "predictions";
+    private static final String GROUP_ACTIVATIONS = "activations";
+    private static final String TEMP_OUTPUTS_FILENAME = "tempOutputs";
+    private static final String TEMP_MODEL_FILENAME = "tempModel";
+    private static final String H5_EXTENSION = ".h5";
+    private static final double EPS = 1E-6;
 
-    public static final double EPS = 1E-6;
+    /**
+     * MNIST MLP tests
+     */
+    @Test
+    public void importMnistMlpTfKeras1() throws Exception {
+        String modelPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
 
     @Test
-    public void importMnistMlpTensorFlowEndToEndModelTest() throws Exception {
+    public void importMnistMlpThKeras1() throws Exception {
+        String modelPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_th_keras_1_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_th_keras_1_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
+
+    @Test
+    public void importMnistMlpTfKeras2() throws Exception {
+        String modelPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_2_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_2_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
+
+    @Test
+    public void importMnistMlpThKeras2() throws Exception {
+        String modelPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_th_keras_2_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_th_keras_2_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
+
+    @Test
+    public void importMnistMlpReshapeTfKeras1() throws Exception {
+        String modelPath = "modelimport/keras/examples/mnist_mlp_reshape/mnist_mlp_reshape_tf_keras_1_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/mnist_mlp_reshape/mnist_mlp_reshape_tf_keras_1_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
+
+    /**
+     * MNIST CNN tests
+     */
+    @Test
+    public void importMnistCnnTfKeras1() throws Exception {
+        String modelPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_1_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_1_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
+
+    @Test
+    public void importMnistCnnThKeras1() throws Exception {
+        String modelPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_th_keras_1_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_th_keras_1_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
+    @Test
+    public void importMnistCnnTfKeras2() throws Exception {
+        String modelPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_2_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_2_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
+
+    @Test
+    public void importMnistCnnThKeras2() throws Exception {
+        String modelPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_th_keras_2_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_th_keras_2_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
+
+    @Test
+    public void importMnistCnnReshapeTfKeras1() throws Exception {
+        String modelPath = "modelimport/keras/examples/mnist_cnn_reshape/mnist_cnn_reshape_tf_keras_1_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/mnist_cnn_reshape/mnist_cnn_reshape_tf_keras_1_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
+
+    /**
+     * IMDB Embedding and LSTM test
+     */
+    @Test
+    public void importImdbLstmTfKeras1() throws Exception {
+        String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
+
+    @Test
+    public void importImdbLstmThKeras1() throws Exception {
+        String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_cnn_th_keras_1_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_1_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
+    @Test
+    public void importImdbLstmTfKeras2() throws Exception {
+        String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
+
+    @Test
+    public void importImdbLstmThKeras2() throws Exception {
+        String modelPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_th_keras_2_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_th_keras_2_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath);
+    }
+
+
+
+    void importEndModelTest(String modelPath, String inputsOutputsPath) throws Exception {
         ClassPathResource modelResource =
-                        new ClassPathResource("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_model.h5",
+                        new ClassPathResource(modelPath,
                                         KerasModelEndToEndTest.class.getClassLoader());
         File modelFile = File.createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -51,7 +156,7 @@ public class KerasModelEndToEndTest {
                         .enforceTrainingConfig(false).buildSequential().getMultiLayerNetwork();
 
         ClassPathResource outputsResource =
-                        new ClassPathResource("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_inputs_and_outputs.h5",
+                        new ClassPathResource(inputsOutputsPath,
                                         KerasModelEndToEndTest.class.getClassLoader());
         File outputsFile = File.createTempFile(TEMP_OUTPUTS_FILENAME, H5_EXTENSION);
         Files.copy(outputsResource.getInputStream(), outputsFile.toPath(), StandardCopyOption.REPLACE_EXISTING);

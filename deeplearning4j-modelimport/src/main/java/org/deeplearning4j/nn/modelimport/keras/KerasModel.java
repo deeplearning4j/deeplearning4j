@@ -620,13 +620,19 @@ public class KerasModel {
         }
 
         public ModelBuilder modelHdf5Filename(String modelHdf5Filename)
-                throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+                throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException, IOException {
             this.weightsArchive = this.trainingArchive = new Hdf5Archive(modelHdf5Filename);
             this.weightsRoot = config.getTrainingWeightsRoot();
             if (!this.weightsArchive.hasAttribute(config.getTrainingModelConfigAttribute()))
                 throw new InvalidKerasConfigurationException(
                         "Model configuration attribute missing from " + modelHdf5Filename + " archive.");
-            this.modelJson = this.weightsArchive.readAttributeAsJson(config.getTrainingModelConfigAttribute());
+            String initialModelJson = this.weightsArchive.readAttributeAsJson(
+                    config.getTrainingModelConfigAttribute());
+            String kerasVersion = this.weightsArchive.readAttributeAsFixedLengthString(
+                    config.getFieldKerasVersion(), 5);
+            Map<String, Object> modelMapper = parseJsonString(initialModelJson);
+            modelMapper.put(config.getFieldKerasVersion(), kerasVersion);
+            this.modelJson = new ObjectMapper().writeValueAsString(modelMapper);;
             if (this.trainingArchive.hasAttribute(config.getTrainingTrainingConfigAttribute()))
                 this.trainingJson = this.trainingArchive.readAttributeAsJson(config.getTrainingTrainingConfigAttribute());
             return this;
@@ -672,17 +678,17 @@ public class KerasModel {
     }
 
     /**
-     * Convenience function for parsing JSON strings.
+     * Convenience function for parsing YAML strings.
      *
-     * @param json String containing valid JSON
+     * @param yaml String containing valid YAML
      * @return Nested (key,value) map of arbitrary depth
      * @throws IOException
      */
-    public static Map<String, Object> parseYamlString(String json) throws IOException {
+    public static Map<String, Object> parseYamlString(String yaml) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {
         };
-        return mapper.readValue(json, typeRef);
+        return mapper.readValue(yaml, typeRef);
     }
 
     /**
