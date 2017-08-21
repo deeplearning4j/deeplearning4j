@@ -115,8 +115,13 @@ public abstract class BaseParallelDataSetIterator implements ParallelDataSetIter
 
     @Override
     public void reset() {
-        for (int i = 0; i < numProducers; i++)
+        for (int i = 0; i < numProducers; i++) {
             reset(i);
+            states.set(true, i);
+            resetTracker.set(false, i);
+        }
+
+        allDepleted.set(false);
     }
 
     @Override
