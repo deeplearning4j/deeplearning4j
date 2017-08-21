@@ -23,4 +23,9 @@ public class DenseLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dens
     public boolean isPretrainLayer() {
         return false;
     }
+
+    @Override
+    public boolean hasBias(){
+        return layerConf().hasBias();
+    }
 }

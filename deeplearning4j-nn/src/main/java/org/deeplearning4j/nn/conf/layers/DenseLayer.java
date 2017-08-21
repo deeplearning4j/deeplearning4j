@@ -41,8 +41,12 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class DenseLayer extends FeedForwardLayer {
 
+    @Getter(AccessLevel.NONE)
+    private boolean hasBias = true;
+
     private DenseLayer(Builder builder) {
         super(builder);
+        this.hasBias = builder.hasBias;
     }
 
     @Override
@@ -98,8 +102,24 @@ public class DenseLayer extends FeedForwardLayer {
                         .build();
     }
 
-    @AllArgsConstructor
+    public boolean hasBias(){
+        return hasBias;
+    }
+
+    @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
+
+        private boolean hasBias = true;
+
+        /**
+         * If true (default): include bias parameters in the model. False: no bias.
+         *
+         * @param hasBias If true: include bias parameters in this model
+         */
+        public Builder hasBias(boolean hasBias){
+            this.hasBias = hasBias;
+            return this;
+        }
 
         @Override
         @SuppressWarnings("unchecked")

@@ -171,13 +171,14 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         Gradient gradient = new DefaultGradient();
 
         INDArray weightGradView = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray biasGradView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-
         Nd4j.gemm(input, delta, weightGradView, true, false, 1.0, 0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
-        delta.sum(biasGradView, 0); //biasGradView is initialized/zeroed first in sum op
-
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradView);
-        gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradView);
+
+        if(hasBias()){
+            INDArray biasGradView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
+            delta.sum(biasGradView, 0); //biasGradView is initialized/zeroed first in sum op
+            gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradView);
+        }
 
         return new Pair<>(gradient, delta);
     }
@@ -430,5 +431,10 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     public boolean isPretrainLayer() {
         return false;
+    }
+
+    @Override
+    public boolean hasBias() {
+        return layerConf().hasBias();
     }
 }

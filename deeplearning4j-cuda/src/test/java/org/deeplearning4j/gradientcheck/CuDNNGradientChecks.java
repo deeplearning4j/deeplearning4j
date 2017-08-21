@@ -148,6 +148,76 @@ public class CuDNNGradientChecks {
         }
     }
 
+
+    @Test
+    public void testConvolutionalNoBias() throws Exception {
+        int[] minibatchSizes = {1, 4};
+        int width = 6;
+        int height = 6;
+        int inputDepth = 2;
+        int nOut = 3;
+
+        Field f = org.deeplearning4j.nn.layers.convolution.ConvolutionLayer.class.getDeclaredField("helper");
+        f.setAccessible(true);
+
+        Random r = new Random(12345);
+        for (int minibatchSize : minibatchSizes) {
+            for (boolean convHasBias : new boolean[]{true, false}) {
+
+                INDArray input = Nd4j.rand(new int[]{minibatchSize, inputDepth, height, width});
+                INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+                for (int i = 0; i < minibatchSize; i++) {
+                    labels.putScalar(i, r.nextInt(nOut), 1.0);
+                }
+
+                MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().regularization(false)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-1, 1))
+                        .updater(Updater.NONE).seed(12345L)
+                        .list()
+                        .layer(0, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(1, 1).nOut(3)
+                                .hasBias(convHasBias)
+                                .activation(Activation.TANH).build())
+                        .layer(1, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(0, 0).nOut(3)
+                                .hasBias(convHasBias)
+                                .activation(Activation.TANH).build())
+                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                .activation(Activation.SOFTMAX).nOut(nOut).build())
+                        .setInputType(InputType.convolutional(height, width, inputDepth)).pretrain(false)
+                        .backprop(true);
+
+                MultiLayerConfiguration conf = builder.build();
+
+                MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                mln.init();
+
+                org.deeplearning4j.nn.layers.convolution.ConvolutionLayer c0 =
+                        (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) mln.getLayer(0);
+                ConvolutionHelper ch0 = (ConvolutionHelper) f.get(c0);
+                assertTrue(ch0 instanceof CudnnConvolutionHelper);
+
+                org.deeplearning4j.nn.layers.convolution.ConvolutionLayer c1 =
+                        (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) mln.getLayer(1);
+                ConvolutionHelper ch1 = (ConvolutionHelper) f.get(c1);
+                assertTrue(ch1 instanceof CudnnConvolutionHelper);
+
+
+                String name = new Object() {}.getClass().getEnclosingMethod().getName() + ", minibatch = "
+                        + minibatchSize + ", convHasBias = " + convHasBias;
+
+                if (PRINT_RESULTS) {
+                    System.out.println(name);
+                    for (int j = 0; j < mln.getnLayers(); j++)
+                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                }
+
+                boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                assertTrue(name, gradOK);
+            }
+        }
+    }
+
     @Test
     public void testBatchNormCnn() throws Exception {
         //Note: CuDNN batch norm supports 4d only, as per 5.1 (according to api reference documentation)

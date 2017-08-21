@@ -66,12 +66,14 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             weightGradients.getRow(indexes[i]).addi(delta.getRow(i));
         }
 
-        INDArray biasGradientsView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-        delta.sum(biasGradientsView, 0); //biasGradientView is initialized/zeroed first in sum op
-
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradients);
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradientsView);
+
+        if(hasBias()) {
+            INDArray biasGradientsView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
+            delta.sum(biasGradientsView, 0); //biasGradientView is initialized/zeroed first in sum op
+            ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradientsView);
+        }
 
         return new Pair<>(ret, null); //Don't bother returning epsilons: no layer below this one...
     }
@@ -94,7 +96,9 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
 
         INDArray rows = Nd4j.pullRows(weights, 1, indexes);
-        rows.addiRowVector(bias);
+        if(hasBias()){
+            rows.addiRowVector(bias);
+        }
 
         return rows;
     }
@@ -109,6 +113,11 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             ret.muliColumnVector(maskArray);
         }
         return ret;
+    }
+
+    @Override
+    public boolean hasBias() {
+        return layerConf().hasBias();
     }
 
     @Override
