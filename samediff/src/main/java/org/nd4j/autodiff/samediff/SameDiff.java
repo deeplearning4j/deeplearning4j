@@ -129,6 +129,11 @@ public class SameDiff {
                             cloner.deepCloneDontCloneInstances(edge.getValue()),true);
                     newEdge.getValue().setVertexIds(new String[]{String.valueOf(newEdge.getFrom()),String.valueOf(newEdge.getTo())});
                     newIncomingEdges.add(newEdge);
+                    if(newEdge.getValue().getArrayField() != null)
+                        newEdge.getValue().getArrayField().setOps(sameDiff);
+
+                    if(newEdge.getValue().getDifferentialFunction() != null)
+                        newEdge.getValue().getDifferentialFunction().setSameDiff(sameDiff);
                 }
             }
 
@@ -2040,37 +2045,41 @@ public class SameDiff {
 
     public List<Op> execBackwards() {
         SameDiff outer = this;
-        defineFunction("grad", new SameDiffFunctionDefinition() {
+        if(getFunction("grad") == null)
+            defineFunction("grad", new SameDiffFunctionDefinition() {
 
-            @Override
-            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                List<OpExecAction> opOrder = outer.graph().getOpOrder().getActions();
-                Collections.reverse(opOrder);
-                DifferentialFunction<ArrayField> currentDiff = functionFactory.one(new int[]{1,1});
+                @Override
+                public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                    //propagate graph to this samediff instance
+                    //which wil also contain the backward
+                    outer.invokeGraphOn(sameDiff);
+                    List<OpExecAction> opOrder = sameDiff.graph().getOpOrder().getActions();
+                    Collections.reverse(opOrder);
+                    //start with scalar backprop
+                    DifferentialFunction<ArrayField> currentDiff = sameDiff.functionFactory.one(new int[]{1,1});
 
-                for(OpExecAction action : opOrder) {
-                    if(action.getOpState() != null) {
-                        DifferentialFunction<ArrayField> func = action.getOpState().getDifferentialFunction();
-                        if(func != null) {
-                            currentDiff = currentDiff.diff(func);
-                        }
-                        else if(action.getOpState().getArrayField() != null) {
-                            
+                    for(OpExecAction action : opOrder) {
+                        if(action.getOpState() != null) {
+                            DifferentialFunction<ArrayField> func = action.getOpState().getDifferentialFunction();
+                            if(func != null) {
+                                currentDiff = currentDiff.diff(func);
+                            }
+                            else if(action.getOpState().getArrayField() != null) {
+
+                            }
                         }
                     }
+
+                    return SDVariable.builder()
+                            .differentialFunction(currentDiff)
+                            .sameDiff(sameDiff)
+                            .varName("grad")
+                            .build();
                 }
-
-                return SDVariable.builder()
-                        .differentialFunction(currentDiff)
-                        .sameDiff(sameDiff)
-                        .varName("grad")
-                        .build();
-            }
-        });
+            });
 
 
-        List<Op> forward = exec();
-
+        List<Op> forward = exec("grad");
         return forward;
     }
 
