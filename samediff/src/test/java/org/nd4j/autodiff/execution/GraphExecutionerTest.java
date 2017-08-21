@@ -36,10 +36,9 @@ public class GraphExecutionerTest {
 
         log.info("ID: {}",sameDiff.getGraph().getVertex(1).getValue().getId());
 
+        INDArray resB = executionerB.executeGraph(sameDiff)[1];
+
         INDArray resA = executionerA.executeGraph(sameDiff)[0];
-        INDArray resB = executionerB.executeGraph(sameDiff)[0];
-
-
 
         assertEquals(resA, resB);
     }

@@ -55,7 +55,9 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
         SDGraph graph =  sd.getGraph();
 
-        log.info("{}", sd.getSameDiffVariables());
+        log.info("SameDiff variables: {}", sd.getSameDiffVariables());
+        log.info("Graph outputs: {}", graph.getOutputs());
+        log.info("--------------");
 
         // we use this map to convert SDVariables to op nodes for native backend
         Map<Integer, Integer> vertexMap = new HashMap<>();
@@ -143,7 +145,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                     log.info("Empty Input varId: {}; varName: {};", vertexMapS.get(var.getId()), var.getId());
 
                     // in all other cases - it's "virtual" array, will be created as op result instead
-                    int name = bufferBuilder.createString(sdVar.getVarName());
+                    int name = bufferBuilder.createString("auto");
                     int values = FlatVariable.createValuesVector(bufferBuilder, new float[]{});
                     int shape = FlatVariable.createShapeVector(bufferBuilder, new int[]{});
 
