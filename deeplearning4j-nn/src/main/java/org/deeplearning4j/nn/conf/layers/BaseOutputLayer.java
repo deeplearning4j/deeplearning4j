@@ -18,7 +18,7 @@ import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 public abstract class BaseOutputLayer extends FeedForwardLayer {
     protected ILossFunction lossFn;
     @Getter(AccessLevel.NONE)
-    protected boolean hasBias;
+    protected boolean hasBias = true;
 
     protected BaseOutputLayer(Builder builder) {
         super(builder);
@@ -87,7 +87,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
 
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
         protected ILossFunction lossFn = new LossMCXENT();
-        private boolean hasBias = false;
+        private boolean hasBias = true;
 
         public Builder() {}
 
@@ -104,9 +104,9 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
         }
 
         /**
-         * If true: include no bias parameters in the model. False (default): include bias.
+         * If true (default): include bias parameters in the model. False: no bias.
          *
-         * @param hasBias If true: don't include bias parameters in this model
+         * @param hasBias If true: include bias parameters in this model
          */
         public T hasBias(boolean hasBias){
             this.hasBias = hasBias;

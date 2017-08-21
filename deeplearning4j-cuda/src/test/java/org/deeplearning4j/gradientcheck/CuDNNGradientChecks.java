@@ -162,7 +162,7 @@ public class CuDNNGradientChecks {
 
         Random r = new Random(12345);
         for (int minibatchSize : minibatchSizes) {
-            for (boolean convNoBias : new boolean[]{false, true}) {
+            for (boolean convHasBias : new boolean[]{true, false}) {
 
                 INDArray input = Nd4j.rand(new int[]{minibatchSize, inputDepth, height, width});
                 INDArray labels = Nd4j.zeros(minibatchSize, nOut);
@@ -175,10 +175,10 @@ public class CuDNNGradientChecks {
                         .updater(Updater.NONE).seed(12345L)
                         .list()
                         .layer(0, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(1, 1).nOut(3)
-                                .hasBias(convNoBias)
+                                .hasBias(convHasBias)
                                 .activation(Activation.TANH).build())
                         .layer(1, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(0, 0).nOut(3)
-                                .hasBias(convNoBias)
+                                .hasBias(convHasBias)
                                 .activation(Activation.TANH).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                 .activation(Activation.SOFTMAX).nOut(nOut).build())
@@ -202,7 +202,7 @@ public class CuDNNGradientChecks {
 
 
                 String name = new Object() {}.getClass().getEnclosingMethod().getName() + ", minibatch = "
-                        + minibatchSize + ", convNoBias = " + convNoBias;
+                        + minibatchSize + ", convHasBias = " + convHasBias;
 
                 if (PRINT_RESULTS) {
                     System.out.println(name);

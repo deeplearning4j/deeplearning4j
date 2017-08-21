@@ -90,7 +90,7 @@ public class EmbeddingLayer extends FeedForwardLayer {
         /**
          * If true: include bias parameters in the layer. False (default): no bias.
          *
-         * @param hasBias If true: don't include bias parameters in this layer
+         * @param hasBias If true: include bias parameters in this layer
          */
         public Builder hasBias(boolean hasBias){
             this.hasBias = hasBias;
