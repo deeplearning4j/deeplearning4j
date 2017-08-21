@@ -151,7 +151,7 @@ public class GradientCheckUtil {
             }
 
             double dropout = n.getLayer().getDropOut();
-            if (n.isUseRegularization() && dropout != 0.0) {
+            if (dropout != 0.0) {
                 throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
                                 + dropout + " for layer " + layerCount);
             }
@@ -331,7 +331,7 @@ public class GradientCheckUtil {
             }
 
             double dropout = lv.getLayerConf().getLayer().getDropOut();
-            if (lv.getLayerConf().isUseRegularization() && dropout != 0.0) {
+            if (dropout != 0.0) {
                 throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
                                 + dropout + " for layer " + layerCount);
             }

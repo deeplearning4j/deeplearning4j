@@ -472,9 +472,6 @@ public class KerasModel {
             inboundTypeList.toArray(inboundTypeArray);
             InputPreProcessor preprocessor = layer.getInputPreprocessor(inboundTypeArray);
 
-            if (layer.usesRegularization())
-                modelBuilder.setUseRegularization(true);
-
             if (layer.isLayer()) {
                 /* Add DL4J layer. */
                 if (preprocessor != null)

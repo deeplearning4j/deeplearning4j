@@ -98,7 +98,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     //whether to constrain the gradient to unit norm or not
     //adadelta - weight for how much to consider previous history
     protected StepFunction stepFunction;
-    protected boolean useRegularization = false;
     protected boolean useDropConnect = false;
     //minimize or maximize objective
     protected boolean minimize = true;
@@ -620,7 +619,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected int numIterations = 1;
         protected int maxNumLineSearchIterations = 5;
         protected long seed = System.currentTimeMillis();
-        protected boolean useRegularization = false;
         protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
         protected StepFunction stepFunction = null;
         protected boolean useDropConnect = false;
@@ -649,7 +647,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 maxNumLineSearchIterations = newConf.maxNumLineSearchIterations;
                 layer = newConf.layer;
                 numIterations = newConf.numIterations;
-                useRegularization = newConf.useRegularization;
                 optimizationAlgo = newConf.optimizationAlgo;
                 seed = newConf.seed;
                 stepFunction = newConf.stepFunction;
@@ -853,10 +850,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Whether to use regularization (l1, l2, dropout, etc
+         * @deprecated Now: no-op. Regularization is always used when l1/l2/dropout is > 0
          */
+        @Deprecated
         public Builder regularization(boolean useRegularization) {
-            this.useRegularization = useRegularization;
             return this;
         }
 
@@ -980,7 +977,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /**
          * L1 regularization coefficient for the weights.
-         * Use with .regularization(true)
          */
         public Builder l1(double l1) {
             this.l1 = l1;
@@ -989,7 +985,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /**
          * L2 regularization coefficient for the weights.
-         * Use with .regularization(true)
          */
         public Builder l2(double l2) {
             this.l2 = l2;
@@ -998,7 +993,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /**
          * L1 regularization coefficient for the bias.
-         * Use with .regularization(true)
          */
         public Builder l1Bias(double l1Bias) {
             this.l1Bias = l1Bias;
@@ -1007,7 +1001,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /**
          * L2 regularization coefficient for the bias.
-         * Use with .regularization(true)
          */
         public Builder l2Bias(double l2Bias) {
             this.l2Bias = l2Bias;
@@ -1280,7 +1273,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
             conf.layer = layer;
             conf.numIterations = numIterations;
-            conf.useRegularization = useRegularization;
             conf.optimizationAlgo = optimizationAlgo;
             conf.seed = seed;
             conf.stepFunction = stepFunction;
@@ -1329,7 +1321,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     sl.setConvolutionMode(convolutionMode);
                 }
             }
-            LayerValidation.generalValidation(layerName, layer, useRegularization, useDropConnect, dropOut, l2, l2Bias,
+            LayerValidation.generalValidation(layerName, layer, useDropConnect, dropOut, l2, l2Bias,
                             l1, l1Bias, dist);
         }
 

@@ -72,8 +72,6 @@ public class NeuralNetConfigurationTest {
     @Test
     public void testJson() {
         NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.XAVIER, true);
-
-        assertFalse(conf.useRegularization);
         String json = conf.toJson();
         NeuralNetConfiguration read = NeuralNetConfiguration.fromJson(json);
 
@@ -84,8 +82,6 @@ public class NeuralNetConfigurationTest {
     @Test
     public void testYaml() {
         NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.XAVIER, true);
-
-        assertFalse(conf.useRegularization);
         String json = conf.toYaml();
         NeuralNetConfiguration read = NeuralNetConfiguration.fromYaml(json);
 
