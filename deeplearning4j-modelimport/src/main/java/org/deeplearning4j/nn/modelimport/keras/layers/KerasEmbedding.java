@@ -116,10 +116,10 @@ public class KerasEmbedding extends KerasLayer {
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
         this.weights = new HashMap<String, INDArray>();
-        if (!weights.containsKey(conf.getKERAS_PARAM_NAME_W()))
+        if (!weights.containsKey(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS()))
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + conf.getKERAS_PARAM_NAME_W() + " does not exist in weights");
-        INDArray kernel = weights.get(conf.getKERAS_PARAM_NAME_W());
+                            "Parameter " + conf.getLAYER_FIELD_EMBEDDING_WEIGHTS() + " does not exist in weights");
+        INDArray kernel = weights.get(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS());
         if (!weights.containsKey(conf.getKERAS_PARAM_NAME_B())) {
             log.warn("Setting DL4J EmbeddingLayer bias to zero.");
             weights.put(conf.getKERAS_PARAM_NAME_B(), Nd4j.zeros(kernel.size(1)));
@@ -130,7 +130,7 @@ public class KerasEmbedding extends KerasLayer {
 
         if (weights.size() > 2) {
             Set<String> paramNames = weights.keySet();
-            paramNames.remove(conf.getKERAS_PARAM_NAME_W());
+            paramNames.remove(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS());
             String unknownParamNames = paramNames.toString();
             log.warn("Attemping to set weights for unknown parameters: "
                             + unknownParamNames.substring(1, unknownParamNames.length() - 1));
