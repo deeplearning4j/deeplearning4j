@@ -46,6 +46,11 @@ public class Keras1ModelConfigurationTest {
     }
 
     @Test
+    public void mnistCnnNoBiasTfSequentialConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras1/mnist_cnn_no_bias_tf_config.json", true);
+    }
+
+    @Test
     public void mnistCnnThSequentialConfigTest() throws Exception {
         runSequentialConfigTest("configs/keras1/mnist_cnn_th_keras_1_config.json", true);
     }

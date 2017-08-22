@@ -828,6 +828,22 @@ public class KerasLayer {
     }
 
     /**
+     * Determine if layer should be instantiated with bias
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return
+     * @throws InvalidKerasConfigurationException
+     */
+    protected boolean getHasBiasFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        boolean hasBias = true;
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_USE_BIAS())){
+            hasBias = (boolean) innerConfig.get(conf.getLAYER_FIELD_USE_BIAS());
+        }
+        return hasBias;
+    }
+
+    /**
      * Get activation function from Keras layer configuration.
      *
      * @param layerConfig dictionary containing Keras layer configuration

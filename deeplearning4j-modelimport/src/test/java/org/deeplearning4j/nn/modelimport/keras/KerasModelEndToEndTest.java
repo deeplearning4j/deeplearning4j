@@ -171,6 +171,15 @@ public class KerasModelEndToEndTest {
         importEndModelTest(modelPath, inputsOutputPath, true, false);
     }
 
+    /**
+     * CNN without bias test
+     */
+    @Test
+    public void importCnnNoBiasTfKeras2() throws Exception {
+        String modelPath = "modelimport/keras/examples/cnn_no_bias/mnist_cnn_no_bias_tf_keras_2_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/cnn_no_bias/mnist_cnn_no_bias_tf_keras_2_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath, true, false);
+    }
 
     void importEndModelTest(String modelPath, String inputsOutputsPath, boolean tfOrdering, boolean checkPredictions) throws Exception {
         ClassPathResource modelResource =
