@@ -132,21 +132,22 @@ public class CSVSparkTransform {
     }
 
     /**
-     *
+     * TODO: optimize
      * @param batchCSVRecordSequence
      * @return
      */
     public Base64NDArrayBody transformSequenceArray(SequenceBatchCSVRecord batchCSVRecordSequence) {
         List<List<List<String>>> strings = batchCSVRecordSequence.getRecordsAsString();
-        INDArray arr = Nd4j.create(strings.size(),strings.get(0).size(),strings.get(0).get(0).size());
-
+        INDArray arr = Nd4j.create(strings.size(),strings.get(0).get(0).size(),strings.get(0).size());
+        List<List<List<Writable>>> transformedTimeStep = new ArrayList<>();
         try {
-            int slice = 0;
             for(List<List<String>> sequence : strings) {
-                List<List<Writable>> transormed = transformProcess.transformRawStringsToInputSequence(sequence);
-                INDArray matrix = RecordConverter.toMatrix(transormed);
-                arr.putSlice(slice++,matrix);
+                List<List<Writable>> transformed = transformProcess.transformRawStringsToInputSequence(sequence);
+                transformedTimeStep.add(transformed);
             }
+
+            arr.assign(RecordConverter.toTensor(transformedTimeStep));
+
             return new Base64NDArrayBody(Nd4jBase64.base64String(arr));
         } catch (IOException e) {
             e.printStackTrace();
@@ -166,7 +167,7 @@ public class CSVSparkTransform {
                     .base64String(RecordConverter
                             .toTensor(transformProcess.executeToSequenceBatch(
                                     transformProcess.transformRawStringsToInputSequence(
-                                    singleCsvRecord.getRecordsAsString())))));
+                                            singleCsvRecord.getRecordsAsString())))));
         } catch (IOException e) {
             e.printStackTrace();
         }

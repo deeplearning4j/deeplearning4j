@@ -39,7 +39,7 @@ public class CSVSparkTransformTest {
         output.add(new Text("2.0"));
 
         TransformProcess transformProcess =
-                        new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
+                new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
         CSVSparkTransform csvSparkTransform = new CSVSparkTransform(transformProcess);
         String[] values = new String[] {"1.0", "2.0"};
         SingleCSVRecord record = csvSparkTransform.transform(new SingleCSVRecord(values));
@@ -61,7 +61,7 @@ public class CSVSparkTransformTest {
         output.add(new Text("2.0"));
 
         TransformProcess transformProcess =
-                        new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
+                new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
         CSVSparkTransform csvSparkTransform = new CSVSparkTransform(transformProcess);
         String[] values = new String[] {"1.0", "2.0"};
         SingleCSVRecord record = csvSparkTransform.transform(new SingleCSVRecord(values));
@@ -100,17 +100,17 @@ public class CSVSparkTransformTest {
         SequenceBatchCSVRecord sequenceBatchCSVRecord = new SequenceBatchCSVRecord();
         sequenceBatchCSVRecord.add(Arrays.asList(batchCSVRecord));
         Base64NDArrayBody sequenceArray = csvSparkTransform.transformSequenceArray(sequenceBatchCSVRecord);
-
+        INDArray outputBody = Nd4jBase64.fromBase64(sequenceArray.getNdarray());
 
 
         Base64NDArrayBody body = csvSparkTransform.toArray(batchCSVRecord1);
         INDArray fromBase64 = Nd4jBase64.fromBase64(body.getNdarray());
         assertTrue(fromBase64.isMatrix());
-        assertArrayEquals(new int[]{1,3,2},Nd4jBase64.fromBase64(sequenceArray.getNdarray()).shape());
+        assertArrayEquals(new int[]{1,2,3},Nd4jBase64.fromBase64(sequenceArray.getNdarray()).shape());
         //ensure accumulation
         sequenceBatchCSVRecord.add(Arrays.asList(batchCSVRecord));
         sequenceArray = csvSparkTransform.transformSequenceArray(sequenceBatchCSVRecord);
-        assertArrayEquals(new int[]{2,3,2},Nd4jBase64.fromBase64(sequenceArray.getNdarray()).shape());
+        assertArrayEquals(new int[]{2,2,3},Nd4jBase64.fromBase64(sequenceArray.getNdarray()).shape());
 
         SequenceBatchCSVRecord transformed = csvSparkTransform.transformSequence(sequenceBatchCSVRecord);
         assumeNotNull(transformed.getRecords());
