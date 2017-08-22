@@ -59,7 +59,6 @@ import java.io.Serializable;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -214,7 +213,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      * Fluent interface for building a list of configurations
      */
     public static class ListBuilder extends MultiLayerConfiguration.Builder {
-        private AtomicInteger layerCounter = new AtomicInteger(-1); //Used only for .layer(Layer) method
+        private int layerCounter = -1; //Used only for .layer(Layer) method
         private Map<Integer, Builder> layerwise;
         private Builder globalConfig;
 
@@ -239,22 +238,24 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        public ListBuilder layer(int ind, Layer layer) {
+        public ListBuilder layer(int ind, @NonNull Layer layer) {
             if (layerwise.containsKey(ind)) {
+                log.info("Layer index {} already exists, layer of type {} will be replace by layer type {}",
+                        ind, layerwise.get(ind).getClass().getSimpleName(), layer.getClass().getSimpleName());
                 layerwise.get(ind).layer(layer);
             } else {
                 layerwise.put(ind, globalConfig.clone().layer(layer));
             }
-            if(layerCounter.get() < ind){
+            if(layerCounter < ind){
                 //Edge case: user is mixing .layer(Layer) and .layer(int, Layer) calls
                 //This should allow a .layer(A, X) and .layer(Y) to work such that layer Y is index (A+1)
-                layerCounter.set(ind);
+                layerCounter = ind;
             }
             return this;
         }
 
         public ListBuilder layer(Layer layer){
-            return layer(layerCounter.incrementAndGet(), layer);
+            return layer(++layerCounter, layer);
         }
 
         public Map<Integer, Builder> getLayerwise() {
@@ -1008,23 +1009,29 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Dropout probability. This is the probability of <it>retaining</it> an input activation for a layer. So
+         * Dropout probability. This is the probability of <it>retaining</it> each input activation value for a layer.
          * dropOut(x) will keep an input activation with probability x, and set to 0 with probability 1-x.<br>
-         * dropOut(0.0) is disabled (default). When {@link #useDropConnect(boolean)} is set to true (false by default),
-         * this method sets the drop connect probability instead.
+         * dropOut(0.0) is a special value / special case - when set to 0.0., dropout is disabled (not applied). Note
+         * that a dropout value of 1.0 is functionally equivalent to no dropout: i.e., 100% probability of retaining
+         * each input activation.<br>
+         * When {@link #useDropConnect(boolean)} is set to true (false by default), this method sets the drop connect
+         * probability instead.
          * <p>
-         * Note 1: This sets the probability per-layer. Care should be taken when setting lower values for
-         * complex networks (too much information may be lost with aggressive dropout values).<br>
-         * Note 2: Frequently, dropout is not applied to input (first layer) our output layer. This needs to be
-         * handled MANUALLY by the user - set .dropout(0) on those layers when using global dropout setting.<br>
-         * Note 3: Implementation detail (most users can ignore): DL4J uses inverted dropout, as described here:
+         * Note 1: Dropout is applied at training time only - and is automatically not applied at test time
+         * (for evaluation, etc)<br>
+         * Note 2: This sets the probability per-layer. Care should be taken when setting lower values for
+         * complex networks (too much information may be lost with aggressive (very low) dropout values).<br>
+         * Note 3: Frequently, dropout is not applied to (or, has higher retain probability for) input (first layer)
+         * layers. Dropout is also often not applied to our output layer. This needs to be handled MANUALLY by the user
+         * - set .dropout(0) on those layers when using global dropout setting.<br>
+         * Note 4: Implementation detail (most users can ignore): DL4J uses inverted dropout, as described here:
          * <a href="http://cs231n.github.io/neural-networks-2/">http://cs231n.github.io/neural-networks-2/</a>
          * </p>
          *
-         * @param inputRetainFraction Dropout probability (probability of retaining an input activation for a layer)
+         * @param inputRetainProbability Dropout probability (probability of retaining each input activation value for a layer)
          */
-        public Builder dropOut(double inputRetainFraction) {
-            this.dropOut = inputRetainFraction;
+        public Builder dropOut(double inputRetainProbability) {
+            this.dropOut = inputRetainProbability;
             return this;
         }
 
