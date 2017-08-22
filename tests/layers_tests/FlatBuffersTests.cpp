@@ -202,7 +202,7 @@ TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
     auto in1 = builder.CreateVector(inputs1);
     auto o = builder.CreateVector(outputs);
 
-    auto node1 = CreateFlatNode(builder, 1, OpType_PAIRWISE, 0, in1, DataType_FLOAT, out1);
+    auto node1 = CreateFlatNode(builder, 1, OpType_TRANSFORM, 0, in1, DataType_FLOAT, out1);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fXVar);

@@ -60,7 +60,7 @@ TEST_F(GraphTests, DoubleInput1) {
 
     auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {3});
     auto nodeB = new Node<float>(OpType_TRANSFORM, 0, 2, {-2}, {3});
-    auto nodeC = new Node<float>(OpType_PAIRWISE, 0, 3, {1, 2}, {-3});
+    auto nodeC = new Node<float>(OpType_TRANSFORM, 0, 3, {1, 2}, {-3});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -213,7 +213,7 @@ TEST_F(GraphTests, DoubleInput3) {
     auto nodeU = new Node<float>(OpType_TRANSFORM, 14, 12, {11}, {13});
     auto nodeV = new Node<float>(OpType_TRANSFORM, 6, 13, {12}, {-4, 21});
 
-    auto nodeW = new Node<float>(OpType_PAIRWISE, 0, 21, {3, 13}, {22});
+    auto nodeW = new Node<float>(OpType_TRANSFORM, 0, 21, {3, 13}, {22});
     auto nodeZ = new Node<float>(OpType_TRANSFORM, 0, 22, {21}, {-5});
 
     graph->addNode(nodeA);
@@ -266,10 +266,10 @@ TEST_F(GraphTests, QuadInput1) {
     auto nodeC = new Node<float>(OpType_TRANSFORM, 0, 3, {-3}, {21});
     auto nodeD = new Node<float>(OpType_TRANSFORM, 0, 4, {-4}, {21});
 
-    auto nodeP1 = new Node<float>(OpType_PAIRWISE, 0, 11, {1, 2}, {31});
-    auto nodeP2 = new Node<float>(OpType_PAIRWISE, 0, 21, {3, 4}, {31});
+    auto nodeP1 = new Node<float>(OpType_TRANSFORM, 0, 11, {1, 2}, {31});
+    auto nodeP2 = new Node<float>(OpType_TRANSFORM, 0, 21, {3, 4}, {31});
 
-    auto nodeZ = new Node<float>(OpType_PAIRWISE, 0, 31, {11, 21}, {-5});
+    auto nodeZ = new Node<float>(OpType_TRANSFORM, 0, 31, {11, 21}, {-5});
 
     graph->addNode(nodeA);
     graph->addNode(nodeB);
@@ -314,7 +314,7 @@ TEST_F(GraphTests, InternalBranching1) {
     auto nodeS = new Node<float>(OpType_TRANSFORM, 6, 22, {21}, {31});
 
     // 1.0
-    auto nodeZ = new Node<float>(OpType_PAIRWISE, 0, 31, {12, 22}, {-2});
+    auto nodeZ = new Node<float>(OpType_TRANSFORM, 0, 31, {12, 22}, {-2});
 
     graph->addNode(nodeA);
     graph->addNode(nodeK);

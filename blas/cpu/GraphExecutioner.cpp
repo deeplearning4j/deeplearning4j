@@ -36,21 +36,39 @@ namespace nd4j{
                 int in = node->input()->at(0);
 
                 auto x = variableSpace->getVariable(in);
-
-                // if output of previous node is used in different code branches - duplicate it
                 auto z = x;
-                if (in > 0)
-                    if (graph->getMapped()->at(in)->output()->size() > 1) {
-                        auto array = new NDArray<T>(x->getNDArray());
-                        z = new Variable<T>(array);
-                    };
 
-                functions::transform::Transform<T>::template exec(opNum, x->getNDArray()->_buffer,
+                // if node has only one input - that's regular TRANSFORM
+                if (node->input()->size() == 1) {
+
+                    // if output of previous node is used in different code branches - duplicate it
+
+                    if (in > 0)
+                        if (graph->getMapped()->at(in)->output()->size() > 1) {
+                            auto array = new NDArray<T>(x->getNDArray());
+                            z = new Variable<T>(array);
+                        };
+
+                    functions::transform::Transform<T>::template exec(opNum, x->getNDArray()->_buffer,
                                                                       x->getNDArray()->_shapeInfo,
                                                                       z->getNDArray()->_buffer,
                                                                       z->getNDArray()->_shapeInfo, node->extraParams(),
-                                                                      // FIXME: for some cases we NEED these vars
+                            // FIXME: for some cases we NEED these vars
                                                                       nullptr, nullptr);
+
+                } else {
+                    // otherwise that's PAIRWISE op
+
+                    auto y = variableSpace->getVariable(node->input()->at(1));
+
+                    if (node->output()->size() > 0) {
+                        z = new Variable<T>(new NDArray<T>(x->getNDArray()));
+                    }
+
+
+                    functions::pairwise_transforms::PairWiseTransform<T>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
+                                                                                        z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo, node->extraParams());
+                }
 
                 variableSpace->putVariable(node->id(), z);
 
@@ -70,39 +88,7 @@ namespace nd4j{
                         }
                     }
                 }
-            } else if (opType == OpType_PAIRWISE) {
-                auto x = variableSpace->getVariable(node->input()->at(0));
-                auto y = variableSpace->getVariable(node->input()->at(1));
-
-                auto z = x;
-                if (node->output()->size() > 0) {
-                    z = new Variable<T>(new NDArray<T>(x->getNDArray()));
-                }
-
-
-                functions::pairwise_transforms::PairWiseTransform<T>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
-                                                                                         z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo, node->extraParams());
-
-                variableSpace->putVariable(node->id(), z);
-
-
-                if (node->hasExternalOutputs()) {
-                    for (int e = 0; e < node->output()->size(); e++) {
-                        if (node->output()->at(e) > 0)
-                            continue;
-
-                        auto out = variableSpace->getVariable(node->output()->at(e));
-
-                        if (out->isEmpty()) {
-                            out->setNDArray(z->getNDArray()->dup(z->getNDArray()->ordering()));
-                        } else {
-                            // assign output
-                            if (out->getNDArray() != z->getNDArray())
-                                out->getNDArray()->assign(z->getNDArray());
-                        }
-                    }
-                }
-            } else if (opType == OpType_SCALAR) {
+            }  else if (opType == OpType_SCALAR) {
                 int in = node->input()->at(0);
 
                 auto x = variableSpace->getVariable(in);
@@ -191,31 +177,95 @@ namespace nd4j{
                 }
             } else if (opType == OpType_ACCUMULATION) {
                 auto x = variableSpace->getVariable(node->input()->at(0));
-
                 auto z = x;
-                // if there's no dimensions set - it's reduceToScalar
-                if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
-                    nd4j_verbose("ACCUM SCALAR BEFORE: X[0]: %f; X[1]: %f; xLength: %f\n", x->getNDArray()->getScalar(0), x->getNDArray()->getScalar(1), x->getNDArray()->lengthOf());
 
-                    z = new Variable<T>(new NDArray<T>(1,1, 'c'));
-                    z->getNDArray()->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
+                //  regular accumulation with 1 argument
+                if (node->input()->size() == 1) {
+                    // if there's no dimensions set - it's reduceToScalar
+                    if (node->getDimensions()->size() == 0 ||
+                        (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
+                        nd4j_verbose("ACCUM SCALAR BEFORE: X[0]: %f; X[1]: %f; xLength: %f\n",
+                                     x->getNDArray()->getScalar(0), x->getNDArray()->getScalar(1),
+                                     x->getNDArray()->lengthOf());
 
-                    nd4j_verbose("ACCUM SCALAR  AFTER: Z[0]: %f; xLength: %i;\n", z->getNDArray()->getScalar(0), x->getNDArray()->lengthOf());
-                } else {
-                    // dimensional reduction
-                    shape::TAD *tad = new shape::TAD(x->getNDArray()->_shapeInfo, node->getDimensionsPtr(), node->getDimensions()->size());
-                    tad->createTadOnlyShapeInfo();
-                    tad->createOffsets();
+                        z = new Variable<T>(new NDArray<T>(1, 1, 'c'));
+                        z->getNDArray()->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar(opNum,
+                                                                                                                x->getNDArray()->_buffer,
+                                                                                                                x->getNDArray()->_shapeInfo,
+                                                                                                                node->extraParams());
 
-                    int resultLength = x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
+                        nd4j_verbose("ACCUM SCALAR  AFTER: Z[0]: %f; xLength: %i;\n", z->getNDArray()->getScalar(0),
+                                     x->getNDArray()->lengthOf());
+                    } else {
+                        // dimensional reduction
+                        shape::TAD *tad = new shape::TAD(x->getNDArray()->_shapeInfo, node->getDimensionsPtr(),
+                                                         node->getDimensions()->size());
+                        tad->createTadOnlyShapeInfo();
+                        tad->createOffsets();
 
-                    z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
+                        int resultLength =
+                                x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
 
-                    functions::reduce::ReduceFunction<T>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
-                                                                            node->getDimensionsPtr() , node->getDimensions()->size(),
+                        z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
+
+                        functions::reduce::ReduceFunction<T>::template exec(opNum, x->getNDArray()->_buffer,
+                                                                            x->getNDArray()->_shapeInfo,
+                                                                            node->extraParams(),
+                                                                            z->getNDArray()->_buffer,
+                                                                            z->getNDArray()->_shapeInfo,
+                                                                            node->getDimensionsPtr(),
+                                                                            node->getDimensions()->size(),
                                                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
 
-                    delete tad;
+                        delete tad;
+                    }
+                } else {
+                    // otherwise we're on reduce3, and expect 2 inputs
+
+                    auto y = variableSpace->getVariable(node->input()->at(1));
+
+                    // if there's no dimensions set - it's reduceToScalar
+                    if (node->getDimensions()->size() == 0 ||
+                        (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
+                        nd4j_verbose("ACCUM3 SCALAR BEFORE: X[0]: %f; X[1]: %f; xLength: %f\n",
+                                     x->getNDArray()->getScalar(0), x->getNDArray()->getScalar(1),
+                                     x->getNDArray()->lengthOf());
+
+                        z = new Variable<T>(new NDArray<T>(1, 1, 'c'));
+                        z->getNDArray()->_buffer[0] = functions::reduce3::Reduce3<T>::template execScalar(opNum,
+                                                                                                                x->getNDArray()->_buffer,
+                                                                                                                x->getNDArray()->_shapeInfo,
+                                                                                                                node->extraParams(),
+                                                                                                                y->getNDArray()->_buffer,
+                                                                                                                y->getNDArray()->_shapeInfo);
+
+                        nd4j_verbose("ACCUM3 SCALAR  AFTER: Z[0]: %f; xLength: %i;\n", z->getNDArray()->getScalar(0),
+                                     x->getNDArray()->lengthOf());
+                    } else {
+                        // dimensional reduction
+                        shape::TAD *tad = new shape::TAD(x->getNDArray()->_shapeInfo, node->getDimensionsPtr(),
+                                                         node->getDimensions()->size());
+                        tad->createTadOnlyShapeInfo();
+                        tad->createOffsets();
+
+                        int resultLength =
+                                x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
+
+                        z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
+
+                        functions::reduce3::Reduce3<T>::template exec(opNum, x->getNDArray()->_buffer,
+                                                                            x->getNDArray()->_shapeInfo,
+                                                                            node->extraParams(),
+                                                                            y->getNDArray()->_buffer,
+                                                                            y->getNDArray()->_shapeInfo,
+                                                                            z->getNDArray()->_buffer,
+                                                                            z->getNDArray()->_shapeInfo,
+                                                                            node->getDimensionsPtr(),
+                                                                            node->getDimensions()->size(),
+                                                                            tad->tadOnlyShapeInfo, tad->tadOffsets);
+
+                        delete tad;
+                    }
                 }
 
                 variableSpace->putVariable(node->id(), z);

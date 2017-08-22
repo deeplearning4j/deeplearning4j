@@ -19,9 +19,9 @@ enum OpType {
   OpType_INDEX_ACCUMULATION = 2,
   OpType_SCALAR = 3,
   OpType_BROADCAST = 4,
-  OpType_PAIRWISE = 5,
-  OpType_ACCUMULATION3 = 6,
   OpType_SUMMARYSTATS = 7,
+  OpType_SHAPE = 8,
+  OpType_AGGREGATION = 9,
   OpType_VARIABLE = 119,
   OpType_MIN = OpType_TRANSFORM,
   OpType_MAX = OpType_VARIABLE
@@ -34,9 +34,9 @@ inline OpType (&EnumValuesOpType())[9] {
     OpType_INDEX_ACCUMULATION,
     OpType_SCALAR,
     OpType_BROADCAST,
-    OpType_PAIRWISE,
-    OpType_ACCUMULATION3,
     OpType_SUMMARYSTATS,
+    OpType_SHAPE,
+    OpType_AGGREGATION,
     OpType_VARIABLE
   };
   return values;
