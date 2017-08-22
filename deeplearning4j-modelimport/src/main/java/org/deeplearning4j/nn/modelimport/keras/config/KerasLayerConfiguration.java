@@ -76,6 +76,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_OUTBOUND_NODES = "outbound_nodes";
     private final String LAYER_FIELD_DROPOUT = "dropout";
     private final String LAYER_FIELD_ACTIVITY_REGULARIZER = "activity_regularizer";
+    private final String LAYER_FIELD_EMBEDDING_OUTPUT_DIM = "output_dim";
     private final String LAYER_FIELD_OUTPUT_DIM = ""; // 1: output_dim, 2: units
     private final String LAYER_FIELD_DROPOUT_RATE = ""; // 1: p, 2: rate
     private final String LAYER_FIELD_USE_BIAS = ""; // 1: bias, 2: use_bias
@@ -90,13 +91,17 @@ public class KerasLayerConfiguration {
     /* Recurrent layers */
     private final String LAYER_FIELD_DROPOUT_W = ""; // 1: dropout_W, 2: dropout
     private final String LAYER_FIELD_DROPOUT_U = ""; // 2: dropout_U, 2: recurrent_dropout
-    private final String LAYER_FIELD_RECURRENT_INIT = ""; // 1: inner_init, 2: recurrent_initializer
+    private final String LAYER_FIELD_INNER_INIT = ""; // 1: inner_init, 2: recurrent_initializer
     private final String LAYER_FIELD_RECURRENT_CONSTRAINT = "recurrent_constraint"; // keras 2 only
     private final String LAYER_FIELD_RECURRENT_DROPOUT = ""; // 1: dropout_U, 2: recurrent_dropout
+    private final String LAYER_FIELD_INNER_ACTIVATION = ""; // 1: inner_activation, 2: recurrent_activation
+    private final String LAYER_FIELD_FORGET_BIAS_INIT = "forget_bias_init"; // keras 1 only: string
+    private final String LAYER_FIELD_UNIT_FORGET_BIAS = "unit_forget_bias"; // keras 1 only: bool
 
 
     /* Embedding layer properties */
     private final String LAYER_FIELD_INPUT_DIM = "input_dim";
+    private final String LAYER_FIELD_EMBEDDING_WEIGHTS = ""; // 1: "W", 2: "embeddings"
     private final String LAYER_FIELD_EMBEDDINGS_REGULARIZER = ""; // 1: W_regularizer, 2: embeddings_regularizer
     private final String LAYER_FIELD_EMBEDDINGS_CONSTRAINT = ""; // 1: W_constraint, 2: embeddings_constraint
     private final String LAYER_FIELD_MASK_ZERO = "mask_zero";

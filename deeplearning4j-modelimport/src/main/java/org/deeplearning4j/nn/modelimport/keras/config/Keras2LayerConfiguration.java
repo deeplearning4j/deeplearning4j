@@ -46,9 +46,12 @@ public class Keras2LayerConfiguration extends KerasLayerConfiguration {
     /* Recurrent layers */
     private final String LAYER_FIELD_DROPOUT_W = "dropout";
     private final String LAYER_FIELD_DROPOUT_U = "recurrent_dropout";
-    private final String LAYER_FIELD_RECURRENT_INIT = "recurrent_initializer";
+    private final String LAYER_FIELD_INNER_INIT = "recurrent_initializer";
+    private final String LAYER_FIELD_INNER_ACTIVATION = "recurrent_activation";
+
 
     /* Embedding layer properties */
+    private final String LAYER_FIELD_EMBEDDING_WEIGHTS = "embeddings";
     private final String LAYER_FIELD_EMBEDDINGS_REGULARIZER = "embeddings_regularizer";
     private final String LAYER_FIELD_EMBEDDINGS_CONSTRAINT = "embeddings_constraint";
 
