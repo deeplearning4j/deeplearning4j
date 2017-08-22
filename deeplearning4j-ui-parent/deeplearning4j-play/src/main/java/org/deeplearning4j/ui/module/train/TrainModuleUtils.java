@@ -201,7 +201,7 @@ public class TrainModuleUtils {
 
                 Map<String, String> decoderInfo = new LinkedHashMap<>();
                 inputSize = (i == 0 ? va.getNOut() : decLayerSizes[i - 1]);
-                outputSize = encLayerSizes[i];
+                outputSize = decLayerSizes[i];
                 decoderInfo.put("Input Size", String.valueOf(inputSize));
                 decoderInfo.put("Layer Size", String.valueOf(outputSize));
                 decoderInfo.put("Num Parameters", String.valueOf((inputSize + 1) * outputSize));
