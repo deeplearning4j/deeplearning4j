@@ -1022,7 +1022,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * Note 2: This sets the probability per-layer. Care should be taken when setting lower values for
          * complex networks (too much information may be lost with aggressive (very low) dropout values).<br>
          * Note 3: Frequently, dropout is not applied to (or, has higher retain probability for) input (first layer)
-         * layers. Dropout is also often not applied to our output layer. This needs to be handled MANUALLY by the user
+         * layers. Dropout is also often not applied to output layers. This needs to be handled MANUALLY by the user
          * - set .dropout(0) on those layers when using global dropout setting.<br>
          * Note 4: Implementation detail (most users can ignore): DL4J uses inverted dropout, as described here:
          * <a href="http://cs231n.github.io/neural-networks-2/">http://cs231n.github.io/neural-networks-2/</a>
