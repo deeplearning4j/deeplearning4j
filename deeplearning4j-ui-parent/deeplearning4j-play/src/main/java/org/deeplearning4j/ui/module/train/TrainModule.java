@@ -374,8 +374,24 @@ public class TrainModule implements UIModule {
         result.put("scoresIter", scoresIterCount);
 
         //Get scores info
-        List<Persistable> updates =
-                        (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
+        long[] allTimes = (noData ? null : ss.getAllUpdateTimes(currentSessionID, StatsListener.TYPE_ID, wid));
+        List<Persistable> updates = null;
+        if(allTimes != null && allTimes.length > maxChartPoints){
+            int subsamplingFrequency = allTimes.length / maxChartPoints;
+            LongArrayList timesToQuery = new LongArrayList(maxChartPoints+2);
+            int i=0;
+            for(; i<allTimes.length; i+= subsamplingFrequency){
+                timesToQuery.add(allTimes[i]);
+            }
+            if((i-subsamplingFrequency) != allTimes.length-1){
+                //Also add final point
+                timesToQuery.add(allTimes[allTimes.length-1]);
+            }
+            updates = ss.getUpdates(currentSessionID, StatsListener.TYPE_ID, wid, timesToQuery.toArray());
+        } else if(allTimes != null) {
+            //Don't subsample
+            updates = ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0);
+        }
         if (updates == null || updates.size() == 0) {
             noData = true;
         }
