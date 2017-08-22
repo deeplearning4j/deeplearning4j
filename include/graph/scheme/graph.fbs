@@ -1,4 +1,5 @@
 include "node.fbs";
+include "config.fbs";
 
 namespace nd4j.graph;
 
@@ -7,6 +8,7 @@ table FlatGraph {
     variables:[FlatVariable]; // list of variables
     nodes:[FlatNode]; // list of nodes
     outputs:[int]; // list of output variables or nodes
+    configuration:FlatConfiguration; // optional execution configuration
 }
 
 root_type FlatGraph;

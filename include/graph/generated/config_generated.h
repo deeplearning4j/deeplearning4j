@@ -46,6 +46,38 @@ inline const char *EnumNameProfilingMode(ProfilingMode e) {
   return EnumNamesProfilingMode()[index];
 }
 
+enum ExecutionMode {
+  ExecutionMode_SEQUENTIAL = 0,
+  ExecutionMode_STRICT = 1,
+  ExecutionMode_AUTO = 2,
+  ExecutionMode_MIN = ExecutionMode_SEQUENTIAL,
+  ExecutionMode_MAX = ExecutionMode_AUTO
+};
+
+inline ExecutionMode (&EnumValuesExecutionMode())[3] {
+  static ExecutionMode values[] = {
+    ExecutionMode_SEQUENTIAL,
+    ExecutionMode_STRICT,
+    ExecutionMode_AUTO
+  };
+  return values;
+}
+
+inline const char **EnumNamesExecutionMode() {
+  static const char *names[] = {
+    "SEQUENTIAL",
+    "STRICT",
+    "AUTO",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameExecutionMode(ExecutionMode e) {
+  const size_t index = static_cast<int>(e);
+  return EnumNamesExecutionMode()[index];
+}
+
 enum OutputMode {
   OutputMode_IMPLICIT = 0,
   OutputMode_EXPLICIT = 1,
