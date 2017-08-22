@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.execution;
 
+import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -25,8 +26,22 @@ public class BasicGraphExecutioner implements GraphExecutioner {
      * @return
      */
     @Override
-    public INDArray[] executeGraph(SameDiff graph) {
+    public INDArray[] executeGraph(SameDiff graph, ExecutorConfiguration configuration) {
         return new INDArray[]{graph.execAndEndResult()};
+    }
+
+
+    /**
+     * This method executes given graph and returns results
+     *
+     * PLEASE NOTE: Default configuration is used
+     *
+     * @param sd
+     * @return
+     */
+    @Override
+    public INDArray[] executeGraph(SameDiff sd) {
+        return executeGraph(sd, new ExecutorConfiguration());
     }
 
     /**

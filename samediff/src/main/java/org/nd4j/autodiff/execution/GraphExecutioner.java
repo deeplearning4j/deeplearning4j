@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.execution;
 
+import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,6 +35,8 @@ public interface GraphExecutioner {
      * @param graph
      * @return
      */
+    INDArray[] executeGraph(SameDiff graph, ExecutorConfiguration configuration);
+
     INDArray[] executeGraph(SameDiff graph);
 
     /**

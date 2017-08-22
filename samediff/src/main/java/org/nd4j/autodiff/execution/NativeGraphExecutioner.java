@@ -5,6 +5,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
@@ -46,11 +47,24 @@ public class NativeGraphExecutioner implements GraphExecutioner {
     /**
      * This method executes given graph and returns results
      *
+     * PLEASE NOTE: Default configuration is used
+     *
      * @param sd
      * @return
      */
     @Override
     public INDArray[] executeGraph(SameDiff sd) {
+        return executeGraph(sd, new ExecutorConfiguration());
+    }
+
+    /**
+     * This method executes given graph and returns results
+     *
+     * @param sd
+     * @return
+     */
+    @Override
+    public INDArray[] executeGraph(SameDiff sd, ExecutorConfiguration configuration) {
         FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(2048);
 
         SDGraph graph =  sd.getGraph();
@@ -197,7 +211,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         int variablesOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(variables));
         int nodesOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(nodes));
 
-        int fg = FlatGraph.createFlatGraph(bufferBuilder, 119, variablesOffset, nodesOffset, outputsOffset);
+        int fg = FlatGraph.createFlatGraph(bufferBuilder, 119, variablesOffset, nodesOffset, outputsOffset, configuration.getFlatConfiguration(bufferBuilder));
         bufferBuilder.finish(fg);
 
         ByteBuffer buffer = bufferBuilder.dataBuffer();
@@ -246,9 +260,8 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         switch (type) {
             case SCALAR_TRANSFORM:
                 return OpType.SCALAR;
-            case BROADCAST:{
+            case BROADCAST:
                 return OpType.BROADCAST;
-                }
             case TRANSFORM:
                 return OpType.TRANSFORM;
             case ACCUMULATION:

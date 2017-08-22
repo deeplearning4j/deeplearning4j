@@ -24,13 +24,17 @@ public final class FlatGraph extends Table {
   public int outputs(int j) { int o = __offset(10); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
   public int outputsLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer outputsAsByteBuffer() { return __vector_as_bytebuffer(10, 4); }
+  public org.nd4j.graph.FlatConfiguration configuration() { return configuration(new org.nd4j.graph.FlatConfiguration()); }
+  public org.nd4j.graph.FlatConfiguration configuration(org.nd4j.graph.FlatConfiguration obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
 
   public static int createFlatGraph(FlatBufferBuilder builder,
       int id,
       int variablesOffset,
       int nodesOffset,
-      int outputsOffset) {
-    builder.startObject(4);
+      int outputsOffset,
+      int configurationOffset) {
+    builder.startObject(5);
+    FlatGraph.addConfiguration(builder, configurationOffset);
     FlatGraph.addOutputs(builder, outputsOffset);
     FlatGraph.addNodes(builder, nodesOffset);
     FlatGraph.addVariables(builder, variablesOffset);
@@ -38,7 +42,7 @@ public final class FlatGraph extends Table {
     return FlatGraph.endFlatGraph(builder);
   }
 
-  public static void startFlatGraph(FlatBufferBuilder builder) { builder.startObject(4); }
+  public static void startFlatGraph(FlatBufferBuilder builder) { builder.startObject(5); }
   public static void addId(FlatBufferBuilder builder, int id) { builder.addInt(0, id, 0); }
   public static void addVariables(FlatBufferBuilder builder, int variablesOffset) { builder.addOffset(1, variablesOffset, 0); }
   public static int createVariablesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
@@ -49,6 +53,7 @@ public final class FlatGraph extends Table {
   public static void addOutputs(FlatBufferBuilder builder, int outputsOffset) { builder.addOffset(3, outputsOffset, 0); }
   public static int createOutputsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
   public static void startOutputsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addConfiguration(FlatBufferBuilder builder, int configurationOffset) { builder.addOffset(4, configurationOffset, 0); }
   public static int endFlatGraph(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;
