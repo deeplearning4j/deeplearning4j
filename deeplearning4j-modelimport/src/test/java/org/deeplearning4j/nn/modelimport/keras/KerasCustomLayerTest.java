@@ -25,7 +25,7 @@ public class KerasCustomLayerTest {
     @Test
     public void testCustomLayerImport() throws Exception {
         // file paths
-      /*  String kerasWeightsAndConfigUrl = "http://blob.deeplearning4j.org/models/googlenet_keras_weightsandconfig.h5";
+        String kerasWeightsAndConfigUrl = "http://blob.deeplearning4j.org/models/googlenet_keras_weightsandconfig.h5";
         File cachedKerasFile = new File(System.getProperty("java.io.tmpdir"), "googlenet_keras_weightsandconfig.h5");
         String outputPath = System.getProperty("java.io.tmpdir") + "/googlenet_dl4j_inference.zip";
 
@@ -44,6 +44,6 @@ public class KerasCustomLayerTest {
         ModelSerializer.writeModel(importedModel, outputPath, false);
 
         ComputationGraph serializedModel = ModelSerializer.restoreComputationGraph(outputPath);
-        log.info(serializedModel.summary());*/
+        log.info(serializedModel.summary());
     }
 }

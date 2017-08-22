@@ -23,6 +23,7 @@ import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.hdf5;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -319,6 +320,37 @@ public class Hdf5Archive {
             }
         }
 
+        return s;
+    }
+
+    /**
+     * Read string attribute from group path.
+     *
+     * @param attributeName     Name of attribute
+     * @param bufferSize        buffer size to read
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public String readAttributeAsFixedLengthString(String attributeName, int bufferSize)
+            throws UnsupportedKerasConfigurationException {
+        return readAttributeAsFixedLengthString(this.file.openAttribute(attributeName), bufferSize);
+    }
+
+    /**
+     * Read attribute of fixed buffer size as string.
+     *
+     * @param attribute     HDF5 attribute to read as string.
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    private String readAttributeAsFixedLengthString(hdf5.Attribute attribute, int bufferSize)
+            throws UnsupportedKerasConfigurationException {
+        hdf5.VarLenType vl = attribute.getVarLenType();
+        byte[] attrBuffer = new byte[bufferSize];
+        BytePointer attrPointer = new BytePointer(attrBuffer);
+        attribute.read(vl, attrPointer);
+        attrPointer.get(attrBuffer);
+        String s = new String(attrBuffer);
         return s;
     }
 }

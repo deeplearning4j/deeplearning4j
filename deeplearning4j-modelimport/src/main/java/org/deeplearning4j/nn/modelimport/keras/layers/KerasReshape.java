@@ -20,13 +20,10 @@ package org.deeplearning4j.nn.modelimport.keras.layers;
 
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
-import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
-import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
-import org.deeplearning4j.nn.modelimport.keras.preprocessors.TensorFlowCnnToFeedForwardPreProcessor;
 import org.nd4j.linalg.util.ArrayUtil;
 
 
@@ -40,8 +37,6 @@ import java.util.Map;
  */
 public class KerasReshape extends KerasLayer {
 
-    /* Keras layer parameter names. */
-    public static final String LAYER_FIELD_TARGET_SHAPE = "target_shape";
     private int[] targetShape;
 
 
@@ -69,8 +64,9 @@ public class KerasReshape extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (innerConfig.containsKey(LAYER_FIELD_TARGET_SHAPE)) {
-            List<Integer> targetShapeList = (List<Integer>) innerConfig.get(LAYER_FIELD_TARGET_SHAPE);
+        String targetShape = "target_shape";
+        if (innerConfig.containsKey(targetShape)) {
+            List<Integer> targetShapeList = (List<Integer>) innerConfig.get(targetShape);
             this.targetShape = ArrayUtil.toArray(targetShapeList);
         }
 

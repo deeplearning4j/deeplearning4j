@@ -1,11 +1,12 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
-import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
-import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.IActivation;
@@ -24,35 +25,44 @@ import java.util.Set;
  * @author dave@skymind.io
  */
 @Slf4j
+@Data
 public class KerasLstm extends KerasLayer {
 
-    /* Keras layer configuration fields. */
-    public static final String LAYER_FIELD_INNER_INIT = "inner_init";
-    public static final String LAYER_FIELD_INNER_ACTIVATION = "inner_activation";
-    public static final String LAYER_FIELD_FORGET_BIAS_INIT = "forget_bias_init";
-    public static final String LAYER_FIELD_DROPOUT_U = "dropout_U";
-    public static final String LAYER_FIELD_UNROLL = "unroll";
-    public static final String LSTM_FORGET_BIAS_INIT_ZERO = "zero";
-    public static final String LSTM_FORGET_BIAS_INIT_ONE = "one";
+    private final String LAYER_FIELD_UNROLL = "unroll";
+    private final String LSTM_FORGET_BIAS_INIT_ZERO = "zero";
+    private final String LSTM_FORGET_BIAS_INIT_ONE = "one";
 
     /* Keras layer parameter names. */
-    public static final int NUM_TRAINABLE_PARAMS = 12;
-    public static final String KERAS_PARAM_NAME_W_C = "W_c";
-    public static final String KERAS_PARAM_NAME_W_F = "W_f";
-    public static final String KERAS_PARAM_NAME_W_I = "W_i";
-    public static final String KERAS_PARAM_NAME_W_O = "W_o";
-    public static final String KERAS_PARAM_NAME_U_C = "U_c";
-    public static final String KERAS_PARAM_NAME_U_F = "U_f";
-    public static final String KERAS_PARAM_NAME_U_I = "U_i";
-    public static final String KERAS_PARAM_NAME_U_O = "U_o";
-    public static final String KERAS_PARAM_NAME_B_C = "b_c";
-    public static final String KERAS_PARAM_NAME_B_F = "b_f";
-    public static final String KERAS_PARAM_NAME_B_I = "b_i";
-    public static final String KERAS_PARAM_NAME_B_O = "b_o";
+    private final String KERAS_PARAM_NAME_KERNEL = "kernel";
+    private final String KERAS_PARAM_NAME_BIAS = "bias";
+    private final String KERAS_PARAM_NAME_RECURRENT_KERNEL = "recurrent_kernel";
 
-    public static final int NUM_WEIGHTS_IN_KERAS_LSTM = 12;
+    private final int NUM_TRAINABLE_PARAMS_KERAS_2 = 3;
+    private final int NUM_TRAINABLE_PARAMS = 12;
+    private final String KERAS_PARAM_NAME_W_C = "W_c";
+    private final String KERAS_PARAM_NAME_W_F = "W_f";
+    private final String KERAS_PARAM_NAME_W_I = "W_i";
+    private final String KERAS_PARAM_NAME_W_O = "W_o";
+    private final String KERAS_PARAM_NAME_U_C = "U_c";
+    private final String KERAS_PARAM_NAME_U_F = "U_f";
+    private final String KERAS_PARAM_NAME_U_I = "U_i";
+    private final String KERAS_PARAM_NAME_U_O = "U_o";
+    private final String KERAS_PARAM_NAME_B_C = "b_c";
+    private final String KERAS_PARAM_NAME_B_F = "b_f";
+    private final String KERAS_PARAM_NAME_B_I = "b_i";
+    private final String KERAS_PARAM_NAME_B_O = "b_o";
+    private final int NUM_WEIGHTS_IN_KERAS_LSTM = 12;
 
     protected boolean unroll = false; // whether to unroll LSTM
+
+    /**
+     * Pass-through constructor from KerasLayer
+     * @param kerasVersion major keras version
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public KerasLstm(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+        super(kerasVersion);
+    }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -126,7 +136,7 @@ public class KerasLstm extends KerasLayer {
      */
     @Override
     public int getNumParams() {
-        return NUM_TRAINABLE_PARAMS;
+        return kerasMajorVersion == 2 ? NUM_TRAINABLE_PARAMS_KERAS_2 : NUM_TRAINABLE_PARAMS;
     }
 
     /**
@@ -142,30 +152,117 @@ public class KerasLstm extends KerasLayer {
          * concatenated into one matrix (e.g., U = [ U_c U_f U_o U_i ]). Thus we have
          * to map the Keras weight matrix to its corresponding DL4J weight submatrix.
          */
-        INDArray W_c;
-        if (weights.containsKey(KERAS_PARAM_NAME_W_C))
-            W_c = weights.get(KERAS_PARAM_NAME_W_C);
-        else
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_W_C);
-        INDArray W_f;
-        if (weights.containsKey(KERAS_PARAM_NAME_W_F))
-            W_f = weights.get(KERAS_PARAM_NAME_W_F);
-        else
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_W_F);
-        INDArray W_o;
-        if (weights.containsKey(KERAS_PARAM_NAME_W_O))
-            W_o = weights.get(KERAS_PARAM_NAME_W_O);
-        else
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_W_O);
         INDArray W_i;
-        if (weights.containsKey(KERAS_PARAM_NAME_W_I))
-            W_i = weights.get(KERAS_PARAM_NAME_W_I);
-        else
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_W_I);
+        INDArray W_f;
+        INDArray W_c;
+        INDArray W_o;
+        INDArray U_i;
+        INDArray U_f;
+        INDArray U_c;
+        INDArray U_o;
+        INDArray b_i;
+        INDArray b_f;
+        INDArray b_c;
+        INDArray b_o;
+
+
+        if (kerasMajorVersion == 2) {
+            INDArray W;
+            if (weights.containsKey(KERAS_PARAM_NAME_KERNEL))
+                W = weights.get(KERAS_PARAM_NAME_KERNEL);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_RECURRENT_KERNEL);
+            INDArray U;
+            if (weights.containsKey(KERAS_PARAM_NAME_RECURRENT_KERNEL))
+                U = weights.get(KERAS_PARAM_NAME_RECURRENT_KERNEL);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_RECURRENT_KERNEL);
+            INDArray b;
+            if (weights.containsKey(KERAS_PARAM_NAME_BIAS))
+                b = weights.get(KERAS_PARAM_NAME_BIAS);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_BIAS);
+
+            int sliceInterval = b.length() / 4;
+            W_i = W.get(NDArrayIndex.all(), NDArrayIndex.interval(0, sliceInterval));
+            W_f = W.get(NDArrayIndex.all(), NDArrayIndex.interval(sliceInterval, 2 * sliceInterval ));
+            W_c = W.get(NDArrayIndex.all(), NDArrayIndex.interval(2 * sliceInterval, 3 * sliceInterval));
+            W_o = W.get(NDArrayIndex.all(), NDArrayIndex.interval(3 * sliceInterval, 4 * sliceInterval));
+            U_i = U.get(NDArrayIndex.all(), NDArrayIndex.interval(0, sliceInterval));
+            U_f = U.get(NDArrayIndex.all(), NDArrayIndex.interval(sliceInterval, 2 * sliceInterval));
+            U_c = U.get(NDArrayIndex.all(), NDArrayIndex.interval(2 * sliceInterval, 3 * sliceInterval));
+            U_o = U.get(NDArrayIndex.all(), NDArrayIndex.interval(3 * sliceInterval, 4 * sliceInterval));
+            b_i = b.get(NDArrayIndex.all(), NDArrayIndex.interval(0, sliceInterval));
+            b_f = b.get(NDArrayIndex.all(), NDArrayIndex.interval(sliceInterval, 2 * sliceInterval));
+            b_c = b.get(NDArrayIndex.all(), NDArrayIndex.interval(2 * sliceInterval, 3 * sliceInterval));
+            b_o = b.get(NDArrayIndex.all(), NDArrayIndex.interval(3 * sliceInterval, 4 * sliceInterval));
+        }
+        else {
+            if (weights.containsKey(KERAS_PARAM_NAME_W_C))
+                W_c = weights.get(KERAS_PARAM_NAME_W_C);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_W_C);
+            if (weights.containsKey(KERAS_PARAM_NAME_W_F))
+                W_f = weights.get(KERAS_PARAM_NAME_W_F);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_W_F);
+            if (weights.containsKey(KERAS_PARAM_NAME_W_O))
+                W_o = weights.get(KERAS_PARAM_NAME_W_O);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_W_O);
+            if (weights.containsKey(KERAS_PARAM_NAME_W_I))
+                W_i = weights.get(KERAS_PARAM_NAME_W_I);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_W_I);
+            if (weights.containsKey(KERAS_PARAM_NAME_U_C))
+                U_c = weights.get(KERAS_PARAM_NAME_U_C);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_U_C);
+            if (weights.containsKey(KERAS_PARAM_NAME_U_F))
+                U_f = weights.get(KERAS_PARAM_NAME_U_F);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_U_F);
+            if (weights.containsKey(KERAS_PARAM_NAME_U_O))
+                U_o = weights.get(KERAS_PARAM_NAME_U_O);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_U_O);
+            if (weights.containsKey(KERAS_PARAM_NAME_U_I))
+                U_i = weights.get(KERAS_PARAM_NAME_U_I);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_U_I);
+            if (weights.containsKey(KERAS_PARAM_NAME_B_C))
+                b_c = weights.get(KERAS_PARAM_NAME_B_C);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_B_C);
+            if (weights.containsKey(KERAS_PARAM_NAME_B_F))
+                b_f = weights.get(KERAS_PARAM_NAME_B_F);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_B_F);
+            if (weights.containsKey(KERAS_PARAM_NAME_B_O))
+                b_o = weights.get(KERAS_PARAM_NAME_B_O);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_B_O);
+            if (weights.containsKey(KERAS_PARAM_NAME_B_I))
+                b_i = weights.get(KERAS_PARAM_NAME_B_I);
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_B_I);
+
+        }
         INDArray W = Nd4j.zeros(W_c.rows(), W_c.columns() + W_f.columns() + W_o.columns() + W_i.columns());
         W.put(new INDArrayIndex[] {NDArrayIndex.interval(0, W.rows()), NDArrayIndex.interval(0, W_c.columns())}, W_c);
         W.put(new INDArrayIndex[] {NDArrayIndex.interval(0, W.rows()),
@@ -178,30 +275,7 @@ public class KerasLstm extends KerasLayer {
                         W_i);
         this.weights.put(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, W);
 
-        INDArray U_c;
-        if (weights.containsKey(KERAS_PARAM_NAME_U_C))
-            U_c = weights.get(KERAS_PARAM_NAME_U_C);
-        else
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_U_C);
-        INDArray U_f;
-        if (weights.containsKey(KERAS_PARAM_NAME_U_F))
-            U_f = weights.get(KERAS_PARAM_NAME_U_F);
-        else
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_U_F);
-        INDArray U_o;
-        if (weights.containsKey(KERAS_PARAM_NAME_U_O))
-            U_o = weights.get(KERAS_PARAM_NAME_U_O);
-        else
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_U_O);
-        INDArray U_i;
-        if (weights.containsKey(KERAS_PARAM_NAME_U_I))
-            U_i = weights.get(KERAS_PARAM_NAME_U_I);
-        else
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_U_I);
+
         /* DL4J has three additional columns in its recurrent weights matrix that don't appear in Keras LSTMs.
          * These are for peephole connections. Since Keras doesn't use them, we zero them out.
          */
@@ -217,30 +291,6 @@ public class KerasLstm extends KerasLayer {
                         U_i);
         this.weights.put(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY, U);
 
-        INDArray b_c;
-        if (weights.containsKey(KERAS_PARAM_NAME_B_C))
-            b_c = weights.get(KERAS_PARAM_NAME_B_C);
-        else
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_B_C);
-        INDArray b_f;
-        if (weights.containsKey(KERAS_PARAM_NAME_B_F))
-            b_f = weights.get(KERAS_PARAM_NAME_B_F);
-        else
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_B_F);
-        INDArray b_o;
-        if (weights.containsKey(KERAS_PARAM_NAME_B_O))
-            b_o = weights.get(KERAS_PARAM_NAME_B_O);
-        else
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_B_O);
-        INDArray b_i;
-        if (weights.containsKey(KERAS_PARAM_NAME_B_I))
-            b_i = weights.get(KERAS_PARAM_NAME_B_I);
-        else
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_B_I);
         INDArray b = Nd4j.zeros(b_c.rows(), b_c.columns() + b_f.columns() + b_o.columns() + b_i.columns());
         b.put(new INDArrayIndex[] {NDArrayIndex.interval(0, b.rows()), NDArrayIndex.interval(0, b_c.columns())}, b_c);
         b.put(new INDArrayIndex[] {NDArrayIndex.interval(0, b.rows()),
@@ -282,7 +332,7 @@ public class KerasLstm extends KerasLayer {
         return this.unroll;
     }
 
-    public static boolean getUnrollRecurrentLayer(Map<String, Object> layerConfig)
+    public boolean getUnrollRecurrentLayer(Map<String, Object> layerConfig)
                     throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         if (!innerConfig.containsKey(LAYER_FIELD_UNROLL))
@@ -298,13 +348,22 @@ public class KerasLstm extends KerasLayer {
      * @return                  epsilon
      * @throws InvalidKerasConfigurationException
      */
-    public static WeightInit getRecurrentWeightInitFromConfig(Map<String, Object> layerConfig, boolean train)
+    public  WeightInit getRecurrentWeightInitFromConfig(Map<String, Object> layerConfig, boolean train)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(LAYER_FIELD_INNER_INIT))
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_INNER_INIT()))
             throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer config missing " + LAYER_FIELD_INNER_INIT + " field");
-        String kerasInit = (String) innerConfig.get(LAYER_FIELD_INNER_INIT);
+                            "Keras LSTM layer config missing " + conf.getLAYER_FIELD_INNER_INIT() + " field");
+        String kerasInit = "";
+        if (kerasMajorVersion != 2)
+            kerasInit = (String) innerConfig.get(conf.getLAYER_FIELD_INNER_INIT());
+        else {
+            Object foo = innerConfig.get(conf.getLAYER_FIELD_INNER_INIT());
+            HashMap initMap = (HashMap) innerConfig.get(conf.getLAYER_FIELD_INNER_INIT());
+            if (initMap.containsKey("class_name")) {
+                kerasInit = (String) initMap.get("class_name");
+            }
+        }
         WeightInit init;
         try {
             init = mapWeightInitialization(kerasInit);
@@ -326,15 +385,15 @@ public class KerasLstm extends KerasLayer {
      * @return                  epsilon
      * @throws InvalidKerasConfigurationException
      */
-    public static double getRecurrentDropout(Map<String, Object> layerConfig)
+    public double getRecurrentDropout(Map<String, Object> layerConfig)
                     throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         /* NOTE: Keras "dropout" parameter determines dropout probability,
          * while DL4J "dropout" parameter determines retention probability.
          */
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         double dropout = 1.0;
-        if (innerConfig.containsKey(LAYER_FIELD_DROPOUT_U))
-            dropout = 1.0 - (double) innerConfig.get(LAYER_FIELD_DROPOUT_U);
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT_U()))
+            dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_U());
         if (dropout < 1.0)
             throw new UnsupportedKerasConfigurationException(
                             "Dropout > 0 on LSTM recurrent connections not supported.");
@@ -348,13 +407,13 @@ public class KerasLstm extends KerasLayer {
      * @return                  epsilon
      * @throws InvalidKerasConfigurationException
      */
-    public static IActivation getGateActivationFromConfig(Map<String, Object> layerConfig)
+    public IActivation getGateActivationFromConfig(Map<String, Object> layerConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(LAYER_FIELD_INNER_ACTIVATION))
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_INNER_ACTIVATION()))
             throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer config missing " + LAYER_FIELD_INNER_ACTIVATION + " field");
-        return mapActivation((String) innerConfig.get(LAYER_FIELD_INNER_ACTIVATION));
+                            "Keras LSTM layer config missing " + conf.getLAYER_FIELD_INNER_ACTIVATION() + " field");
+        return mapActivation((String) innerConfig.get(conf.getLAYER_FIELD_INNER_ACTIVATION()));
     }
 
     /**
@@ -364,14 +423,17 @@ public class KerasLstm extends KerasLayer {
      * @return                  epsilon
      * @throws InvalidKerasConfigurationException
      */
-    public static double getForgetBiasInitFromConfig(Map<String, Object> layerConfig, boolean train)
+    public double getForgetBiasInitFromConfig(Map<String, Object> layerConfig, boolean train)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(LAYER_FIELD_FORGET_BIAS_INIT))
+        String kerasForgetBiasInit;
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_UNIT_FORGET_BIAS())) {
+            kerasForgetBiasInit = LSTM_FORGET_BIAS_INIT_ONE;
+        } else if (!innerConfig.containsKey(conf.getLAYER_FIELD_FORGET_BIAS_INIT()))
             throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer config missing " + LAYER_FIELD_FORGET_BIAS_INIT + " field");
-        String kerasForgetBiasInit = (String) innerConfig.get(LAYER_FIELD_FORGET_BIAS_INIT);
-        double init = 0;
+                            "Keras LSTM layer config missing " + conf.getLAYER_FIELD_FORGET_BIAS_INIT() + " field");
+        else kerasForgetBiasInit = (String) innerConfig.get(conf.getLAYER_FIELD_FORGET_BIAS_INIT());
+        double init;
         switch (kerasForgetBiasInit) {
             case LSTM_FORGET_BIAS_INIT_ZERO:
                 init = 0.0;

@@ -29,6 +29,11 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+
+import org.deeplearning4j.nn.modelimport.keras.config.KerasModelConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.layers.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLoss;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLstm;
@@ -58,22 +63,8 @@ import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.DimOrder;
  */
 @Slf4j
 public class KerasModel {
-    /* Model class name field. */
-    public static final String MODEL_FIELD_CLASS_NAME = "class_name";
-    public static final String MODEL_CLASS_NAME_SEQUENTIAL = "Sequential";
-    public static final String MODEL_CLASS_NAME_MODEL = "Model";
 
-    /* Model configuration field. */
-    public static final String MODEL_FIELD_CONFIG = "config";
-    public static final String MODEL_CONFIG_FIELD_LAYERS = "layers";
-    public static final String MODEL_CONFIG_FIELD_INPUT_LAYERS = "input_layers";
-    public static final String MODEL_CONFIG_FIELD_OUTPUT_LAYERS = "output_layers";
-
-    /* Training configuration field. */
-    public static final String TRAINING_CONFIG_FIELD_LOSS = "loss";
-    public static final String HDF5_MODEL_WEIGHTS_ROOT = "model_weights";
-    public static final String HDF5_MODEL_CONFIG_ATTRIBUTE = "model_config";
-    public static final String HDF5_TRAINING_CONFIG_ATTRIBUTE = "training_config";
+    protected static KerasModelConfiguration config = new KerasModelConfiguration();
 
     protected String className; // Keras model class name
     protected boolean enforceTrainingConfig; // whether to build model in training mode
@@ -84,6 +75,8 @@ public class KerasModel {
     protected ArrayList<String> outputLayerNames; // list of output layers
     protected boolean useTruncatedBPTT = false; // whether to use truncated BPTT
     protected int truncatedBPTT = 0; // truncated BPTT value
+    protected Integer kerasMajorVersion;
+
 
     /**
      * (Recommended) Builder-pattern constructor for (Functional API) Model.
@@ -124,45 +117,66 @@ public class KerasModel {
         else
             throw new InvalidKerasConfigurationException("Requires model configuration not found.");
 
+        /* Determine keras major version*/
+        if (!modelConfig.containsKey(config.getFieldKerasVersion())) {
+            log.warn("Could not read keras version used (no "
+                    + config.getFieldKerasVersion() + " field found) \n"
+                    + "assuming keras version is 1.0.7 or earlier."
+            );
+            this.kerasMajorVersion = 1;
+        } else {
+            String kerasVersionString = (String) modelConfig.get(config.getFieldKerasVersion());
+            if (Character.isDigit(kerasVersionString.charAt(0))) {
+                this.kerasMajorVersion = Character.getNumericValue(kerasVersionString.charAt(0));
+            } else {
+                throw new InvalidKerasConfigurationException(
+                        "Keras version was not readable (" +  config.getFieldKerasVersion() + " provided)"
+                );
+            }
+        }
+
         /* Whether to enforce training-related configurations. */
         this.enforceTrainingConfig = enforceTrainingConfig;
 
         /* Determine model configuration type. */
-        if (!modelConfig.containsKey(MODEL_FIELD_CLASS_NAME))
+        if (!modelConfig.containsKey(config.getFieldClassName()))
             throw new InvalidKerasConfigurationException(
-                    "Could not determine Keras model class (no " + MODEL_FIELD_CLASS_NAME + " field found)");
-        this.className = (String) modelConfig.get(MODEL_FIELD_CLASS_NAME);
-        if (!this.className.equals(MODEL_CLASS_NAME_MODEL))
+                    "Could not determine Keras model class (no " + config.getFieldClassName() + " field found)");
+        this.className = (String) modelConfig.get(config.getFieldClassName());
+        if (!this.className.equals(config.getFieldClassNameModel()))
             throw new InvalidKerasConfigurationException(
-                    "Expected model class name " + MODEL_CLASS_NAME_MODEL + " (found " + this.className + ")");
+                    "Expected model class name " + config.getFieldClassNameModel() + " (found " + this.className + ")");
+
 
         /* Retrieve lists of input and output layers, layer configurations. */
-        if (!modelConfig.containsKey(MODEL_FIELD_CONFIG))
+        if (!modelConfig.containsKey(config.getModelFieldConfig()))
             throw new InvalidKerasConfigurationException("Could not find model configuration details (no "
-                    + MODEL_FIELD_CONFIG + " in model config)");
-        Map<String, Object> layerLists = (Map<String, Object>) modelConfig.get(MODEL_FIELD_CONFIG);
+                    + config.getModelFieldConfig() + " in model config)");
+        Map<String, Object> layerLists = (Map<String, Object>) modelConfig.get(config.getModelFieldConfig());
+
 
         /* Construct list of input layers. */
-        if (!layerLists.containsKey(MODEL_CONFIG_FIELD_INPUT_LAYERS))
+        if (!layerLists.containsKey(config.getModelFieldInputLayers()))
             throw new InvalidKerasConfigurationException("Could not find list of input layers (no "
-                    + MODEL_CONFIG_FIELD_INPUT_LAYERS + " field found)");
+                    + config.getModelFieldInputLayers() + " field found)");
         this.inputLayerNames = new ArrayList<String>();
-        for (Object inputLayerNameObj : (List<Object>) layerLists.get(MODEL_CONFIG_FIELD_INPUT_LAYERS))
+        for (Object inputLayerNameObj : (List<Object>) layerLists.get(config.getModelFieldInputLayers()))
             this.inputLayerNames.add((String) ((List<Object>) inputLayerNameObj).get(0));
 
         /* Construct list of output layers. */
-        if (!layerLists.containsKey(MODEL_CONFIG_FIELD_OUTPUT_LAYERS))
+        if (!layerLists.containsKey(config.getModelFieldOutputLayers()))
             throw new InvalidKerasConfigurationException("Could not find list of output layers (no "
-                    + MODEL_CONFIG_FIELD_OUTPUT_LAYERS + " field found)");
+                    + config.getModelFieldOutputLayers() + " field found)");
+
         this.outputLayerNames = new ArrayList<String>();
-        for (Object outputLayerNameObj : (List<Object>) layerLists.get(MODEL_CONFIG_FIELD_OUTPUT_LAYERS))
+        for (Object outputLayerNameObj : (List<Object>) layerLists.get(config.getModelFieldOutputLayers()))
             this.outputLayerNames.add((String) ((List<Object>) outputLayerNameObj).get(0));
 
         /* Process layer configurations. */
-        if (!layerLists.containsKey(MODEL_CONFIG_FIELD_LAYERS))
+        if (!layerLists.containsKey(config.getModelFieldLayers()))
             throw new InvalidKerasConfigurationException(
-                    "Could not find layer configurations (no " + MODEL_CONFIG_FIELD_LAYERS + " field found)");
-        helperPrepareLayers((List<Object>) layerLists.get(MODEL_CONFIG_FIELD_LAYERS));
+                    "Could not find layer configurations (no " + (config.getModelFieldLayers() + " field found)"));
+        helperPrepareLayers((List<Object>) layerLists.get((config.getModelFieldLayers())));
 
         /* Import training configuration. */
         if (trainingJson != null)
@@ -188,7 +202,11 @@ public class KerasModel {
         this.layers = new HashMap<String, KerasLayer>();
         DimOrder dimOrder = DimOrder.NONE;
         for (Object layerConfig : layerConfigs) {
-            KerasLayer layer = KerasLayer.getKerasLayerFromConfig((Map<String, Object>) layerConfig,
+            Map<String, Object> layerConfigMap = (Map<String, Object>) layerConfig;
+            // Append major keras version to each layer config.
+            layerConfigMap.put(config.getFieldKerasVersion(), this.kerasMajorVersion);
+            KerasLayer layer = new KerasLayer(this.kerasMajorVersion).getKerasLayerFromConfig(layerConfigMap,
+
                     this.enforceTrainingConfig);
             if (dimOrder == DimOrder.NONE && layer.getDimOrder() != DimOrder.NONE) // determine dimension order, if any
                 dimOrder = layer.getDimOrder();
@@ -226,10 +244,11 @@ public class KerasModel {
 
         /* Add loss layers for each loss function. */
         List<KerasLayer> lossLayers = new ArrayList<KerasLayer>();
-        if (!trainingConfig.containsKey(TRAINING_CONFIG_FIELD_LOSS))
+        if (!trainingConfig.containsKey(config.getTrainingLoss()))
             throw new InvalidKerasConfigurationException("Could not determine training loss function (no "
-                    + TRAINING_CONFIG_FIELD_LOSS + " field found in training config)");
-        Object kerasLossObj = trainingConfig.get(TRAINING_CONFIG_FIELD_LOSS);
+                    + config.getTrainingLoss() + " field found in training config)");
+        Object kerasLossObj = trainingConfig.get(config.getTrainingLoss());
+
         if (kerasLossObj instanceof String) {
             String kerasLoss = (String) kerasLossObj;
             for (String outputLayerName : this.outputLayerNames)
@@ -284,7 +303,8 @@ public class KerasModel {
                 int i = 0;
                 for (String inboundLayerName : layer.getInboundLayerNames())
                     inputTypes[i++] = this.outputTypes.get(inboundLayerName);
-                outputType = layer.getOutputType(inputTypes);
+                    outputType = layer.getOutputType(inputTypes);
+
             }
             this.outputTypes.put(layer.getLayerName(), outputType);
         }
@@ -350,11 +370,19 @@ public class KerasModel {
             }
 
             String baseAttributes = layerName + "/" + attributeJoinStr;
-            try {
-                layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
-            } catch (Exception e) {
-                layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
+            if (layerFragments.length > 1) {
+                try {
+                    layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
+                } catch (Exception e) {
+                    layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
+                }
+            } else {
+                if (foundTfGroups) {
+                    layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
+                } else {
+                    layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
 
+                }
             }
 
             if (layerParamNames.isEmpty())
@@ -369,43 +397,54 @@ public class KerasModel {
                                 + " trainable params (named " + layerName + ")");
             Map<String, INDArray> weights = new HashMap<String, INDArray>();
 
+
             for (String layerParamName : layerParamNames) {
-                /* TODO: push this logic into KerasLayer subclasses. Layers know what
-                 * parameters they have and should be looking for, so let them handle
-                 * it in a layer-specific manner.
-                 * Keras parameter names are typically formatted as [layer name]_[parameter]. For
-                 * example, the weight matrix in the first Dense layer with the TensorFlow backend
-                 * will be named "dense_1_W:0."
-                 */
+               /* TODO: push this logic into KerasLayer subclasses. Layers know what
+                * parameters they have and should be looking for, so let them handle
+                * it in a layer-specific manner.
+                * Keras parameter names are typically formatted as [layer name]_[parameter]. For
+                * example, the weight matrix in the first Dense layer with the TensorFlow backend
+                * will be named "dense_1_W:0."
+                */
                 // TODO fix the SLASH issue with layer names
                 Matcher layerNameMatcher =
                         Pattern.compile(layerFragments[layerFragments.length - 1]).matcher(layerParamName);
-                if (!layerNameMatcher.find())
-                    throw new InvalidKerasConfigurationException(
-                            "Unable to parse layer/parameter name " + layerParamName + " for stored weights.");
+                Matcher layerNameMatcherAttributes =
+                        Pattern.compile(attributeJoinStr).matcher(layerParamName);
+                if (!(layerNameMatcher.find() || layerNameMatcherAttributes.find()))
+                    log.warn("Unable to match layer parameter name " + layerParamName + " for stored weights.");
                 String paramName = layerNameMatcher.replaceFirst("");
 
-                /* Usually layer name is separated from parameter name by an underscore. */
+               /* Usually layer name is separated from parameter name by an underscore. */
                 Matcher paramNameMatcher = Pattern.compile("^_(.+)$").matcher(paramName);
                 if (paramNameMatcher.find())
                     paramName = paramNameMatcher.group(1);
 
-                /* TensorFlow backend often appends ":" followed by one or more digits to parameter
-                 * names. We strip it off here.
-                 */
+               /* TensorFlow backend often appends ":" followed by one or more digits to parameter
+                * names. We strip it off here.
+                */
                 Matcher tfSuffixMatcher = Pattern.compile(":\\d+?$").matcher(paramName);
                 if (tfSuffixMatcher.find())
                     paramName = tfSuffixMatcher.replaceFirst("");
 
-                /* TensorFlow backend also may append "_" followed by one or more digits to parameter
-                 * names. We strip it off here.
-                 */
+               /* TensorFlow backend also may append "_" followed by one or more digits to parameter
+                * names. We strip it off here.
+                */
                 Matcher tfParamNbMatcher = Pattern.compile("_\\d+$").matcher(paramName);
                 if (tfParamNbMatcher.find())
                     paramName = tfParamNbMatcher.replaceFirst("");
 
 
-                INDArray paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix + baseAttributes);
+                INDArray paramValue;
+                if (foundTfGroups) {
+                    paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix + baseAttributes);
+                } else {
+                    if (layerFragments.length > 1) {
+                        paramValue = weightsArchive.readDataSet(layerFragments[0] + "/" + layerParamName, rootPrefix, layerName);
+                    } else {
+                        paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix, layerName);
+                    }
+                }
                 weights.put(paramName, paramValue);
             }
             layer.setWeights(weights);
@@ -430,7 +469,8 @@ public class KerasModel {
      */
     public ComputationGraphConfiguration getComputationGraphConfiguration()
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        if (!this.className.equals(MODEL_CLASS_NAME_MODEL) && !this.className.equals(MODEL_CLASS_NAME_SEQUENTIAL))
+        if (!this.className.equals(config.getFieldClassNameModel()) && !this.className.equals(config.getFieldClassNameSequential()))
+
             throw new InvalidKerasConfigurationException(
                     "Keras model class name " + this.className + " incompatible with ComputationGraph");
         NeuralNetConfiguration.Builder modelBuilder = new NeuralNetConfiguration.Builder();
@@ -601,15 +641,21 @@ public class KerasModel {
         }
 
         public ModelBuilder modelHdf5Filename(String modelHdf5Filename)
-                throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+                throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException, IOException {
             this.weightsArchive = this.trainingArchive = new Hdf5Archive(modelHdf5Filename);
-            this.weightsRoot = HDF5_MODEL_WEIGHTS_ROOT;
-            if (!this.weightsArchive.hasAttribute(HDF5_MODEL_CONFIG_ATTRIBUTE))
+            this.weightsRoot = config.getTrainingWeightsRoot();
+            if (!this.weightsArchive.hasAttribute(config.getTrainingModelConfigAttribute()))
                 throw new InvalidKerasConfigurationException(
                         "Model configuration attribute missing from " + modelHdf5Filename + " archive.");
-            this.modelJson = this.weightsArchive.readAttributeAsJson(HDF5_MODEL_CONFIG_ATTRIBUTE);
-            if (this.trainingArchive.hasAttribute(HDF5_TRAINING_CONFIG_ATTRIBUTE))
-                this.trainingJson = this.trainingArchive.readAttributeAsJson(HDF5_TRAINING_CONFIG_ATTRIBUTE);
+            String initialModelJson = this.weightsArchive.readAttributeAsJson(
+                    config.getTrainingModelConfigAttribute());
+            String kerasVersion = this.weightsArchive.readAttributeAsFixedLengthString(
+                    config.getFieldKerasVersion(), 5);
+            Map<String, Object> modelMapper = parseJsonString(initialModelJson);
+            modelMapper.put(config.getFieldKerasVersion(), kerasVersion);
+            this.modelJson = new ObjectMapper().writeValueAsString(modelMapper);;
+            if (this.trainingArchive.hasAttribute(config.getTrainingTrainingConfigAttribute()))
+                this.trainingJson = this.trainingArchive.readAttributeAsJson(config.getTrainingTrainingConfigAttribute());
             return this;
         }
 
@@ -653,17 +699,17 @@ public class KerasModel {
     }
 
     /**
-     * Convenience function for parsing JSON strings.
+     * Convenience function for parsing YAML strings.
      *
-     * @param json String containing valid JSON
+     * @param yaml String containing valid YAML
      * @return Nested (key,value) map of arbitrary depth
      * @throws IOException
      */
-    public static Map<String, Object> parseYamlString(String json) throws IOException {
+    public static Map<String, Object> parseYamlString(String yaml) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {
         };
-        return mapper.readValue(json, typeRef);
+        return mapper.readValue(yaml, typeRef);
     }
 
     /**

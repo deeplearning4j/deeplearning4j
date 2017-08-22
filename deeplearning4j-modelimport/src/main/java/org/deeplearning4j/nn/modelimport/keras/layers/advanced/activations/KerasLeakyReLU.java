@@ -19,9 +19,9 @@ package org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
-import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
-import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
 
@@ -34,9 +34,6 @@ import java.util.Map;
  * @author Max Pumperla
  */
 public class KerasLeakyReLU extends KerasLayer {
-
-    /* Keras layer parameter names. */
-    public static final String LAYER_FIELD_LEAKY_RELU_ALPHA = "alpha";
 
 
     /**
@@ -65,8 +62,9 @@ public class KerasLeakyReLU extends KerasLayer {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         // Set default alpha to default in nd4j
         double alpha = 0.01;
-        if (innerConfig.containsKey(LAYER_FIELD_LEAKY_RELU_ALPHA)) {
-            alpha = (double) innerConfig.get(LAYER_FIELD_LEAKY_RELU_ALPHA);
+        String layerFieldLeakyReluAlpha = "alpha";
+        if (innerConfig.containsKey(layerFieldLeakyReluAlpha)) {
+            alpha = (double) innerConfig.get(layerFieldLeakyReluAlpha);
         }
         IActivation leakyReLU = new ActivationLReLU(alpha);
         this.layer = new ActivationLayer.Builder().name(this.layerName).activation(leakyReLU).build();
