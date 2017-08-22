@@ -22,7 +22,7 @@ enum OutputMode:byte {
 
 table FlatConfiguration {
     id:int; // id of the graph this configuration applies to
-    executionMode:ExecutionMode; // current execution mode
+    executionMode:ExecutionMode; // current execution dmode
     profilingMode:ProfilingMode; // current profiling mode
     outputMode:OutputMode; // current output mode
     timestats:bool; // are we gathering time info. false by default

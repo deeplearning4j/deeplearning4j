@@ -13,6 +13,8 @@
 #include <graph/VariableSpace.h>
 #include <graph/generated/node_generated.h>
 #include <graph/generated/graph_generated.h>
+#include <graph/generated/config_generated.h>
+#include <ExecutorConfiguration.h>
 
 /*
 template<typename K, typename V>
@@ -25,6 +27,7 @@ namespace nd4j {
         template <typename T>
         class Graph {
         protected:
+            ExecutorConfiguration *_configuration;
             VariableSpace<T> *_variableSpace;
 
             // vector holds ID's of top nodes only
@@ -264,6 +267,12 @@ nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
 
     // add 0 layer
     this->expandOnion(0);
+
+    // if there was no exec configuration in flatgraph - create default one
+    if (flatGraph != nullptr && flatGraph->configuration() != nullptr) {
+        _configuration = new ExecutorConfiguration(flatGraph->configuration());
+    } else
+        _configuration = new ExecutorConfiguration();
 
     // parsing variables here
     if (flatGraph != nullptr && flatGraph->variables() != nullptr && flatGraph->variables()->size() > 0) {
