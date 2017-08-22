@@ -138,7 +138,7 @@ public class CSVSparkTransform {
      */
     public Base64NDArrayBody transformSequenceArray(SequenceBatchCSVRecord batchCSVRecordSequence) {
         List<List<List<String>>> strings = batchCSVRecordSequence.getRecordsAsString();
-        INDArray arr = Nd4j.create(strings.size(),strings.get(0).get(0).size(),strings.get(0).size());
+        INDArray arr = Nd4j.create(strings.size(),strings.get(0).size(),strings.get(0).get(0).size());
 
         try {
             int slice = 0;
