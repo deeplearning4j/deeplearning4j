@@ -181,8 +181,6 @@ public class KerasSequentialModel extends KerasModel {
         KerasLayer prevLayer = null;
         int layerIndex = 0;
         for (KerasLayer layer : this.layersOrdered) {
-            if (layer.usesRegularization())
-                modelBuilder.setUseRegularization(true);
             if (layer.isLayer()) {
                 int nbInbound = layer.getInboundLayerNames().size();
                 if (nbInbound != 1)

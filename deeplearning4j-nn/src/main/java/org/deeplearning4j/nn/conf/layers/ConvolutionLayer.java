@@ -447,17 +447,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         /**
-         * Dropout. Value is probability of retaining an activation - thus 1.0 is equivalent to no dropout.
-         * Note that 0.0 (the default) disables dropout.
-         *
-         * @param dropOut
-         */
-        @Override
-        public Builder dropOut(double dropOut) {
-            return super.dropOut(dropOut);
-        }
-
-        /**
          * Momentum rate.
          *
          * @param momentum

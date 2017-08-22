@@ -27,6 +27,7 @@ import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
@@ -96,7 +97,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     //whether to constrain the gradient to unit norm or not
     //adadelta - weight for how much to consider previous history
     protected StepFunction stepFunction;
-    protected boolean useRegularization = false;
     protected boolean useDropConnect = false;
     //minimize or maximize objective
     protected boolean minimize = true;
@@ -213,6 +213,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      * Fluent interface for building a list of configurations
      */
     public static class ListBuilder extends MultiLayerConfiguration.Builder {
+        private int layerCounter = -1; //Used only for .layer(Layer) method
         private Map<Integer, Builder> layerwise;
         private Builder globalConfig;
 
@@ -237,17 +238,41 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        public ListBuilder layer(int ind, Layer layer) {
+        public ListBuilder layer(int ind, @NonNull Layer layer) {
             if (layerwise.containsKey(ind)) {
+                log.info("Layer index {} already exists, layer of type {} will be replace by layer type {}",
+                        ind, layerwise.get(ind).getClass().getSimpleName(), layer.getClass().getSimpleName());
                 layerwise.get(ind).layer(layer);
             } else {
                 layerwise.put(ind, globalConfig.clone().layer(layer));
             }
+            if(layerCounter < ind){
+                //Edge case: user is mixing .layer(Layer) and .layer(int, Layer) calls
+                //This should allow a .layer(A, X) and .layer(Y) to work such that layer Y is index (A+1)
+                layerCounter = ind;
+            }
             return this;
+        }
+
+        public ListBuilder layer(Layer layer){
+            return layer(++layerCounter, layer);
         }
 
         public Map<Integer, Builder> getLayerwise() {
             return layerwise;
+        }
+
+        @Override
+        public ListBuilder setInputType(InputType inputType){
+            return (ListBuilder)super.setInputType(inputType);
+        }
+
+        /**
+         * A convenience method for setting input types: note that for example .inputType().convolutional(h,w,d)
+         * is equivalent to .setInputType(InputType.convolutional(h,w,d))
+         */
+        public ListBuilder.InputTypeBuilder inputType(){
+            return new InputTypeBuilder();
         }
 
         /**
@@ -285,6 +310,36 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                             .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
         }
 
+        /** Helper class for setting input types */
+        public class InputTypeBuilder {
+            /**
+             * See {@link InputType#convolutional(int, int, int)}
+             */
+            public ListBuilder convolutional(int height, int width, int depth){
+                return ListBuilder.this.setInputType(InputType.convolutional(height, width, depth));
+            }
+
+            /**
+             * * See {@link InputType#convolutionalFlat(int, int, int)}
+             */
+            public ListBuilder convolutionalFlat(int height, int width, int depth){
+                return ListBuilder.this.setInputType(InputType.convolutionalFlat(height, width, depth));
+            }
+
+            /**
+             * See {@link InputType#feedForward(int)}
+             */
+            public ListBuilder feedForward(int size){
+                return ListBuilder.this.setInputType(InputType.feedForward(size));
+            }
+
+            /**
+             * See {@link InputType#recurrent(int)}}
+             */
+            public ListBuilder recurrent(int size){
+                return ListBuilder.this.setInputType(InputType.recurrent(size));
+            }
+        }
     }
 
     /**
@@ -565,7 +620,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected int numIterations = 1;
         protected int maxNumLineSearchIterations = 5;
         protected long seed = System.currentTimeMillis();
-        protected boolean useRegularization = false;
         protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
         protected StepFunction stepFunction = null;
         protected boolean useDropConnect = false;
@@ -594,7 +648,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 maxNumLineSearchIterations = newConf.maxNumLineSearchIterations;
                 layer = newConf.layer;
                 numIterations = newConf.numIterations;
-                useRegularization = newConf.useRegularization;
                 optimizationAlgo = newConf.optimizationAlgo;
                 seed = newConf.seed;
                 stepFunction = newConf.stepFunction;
@@ -798,10 +851,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Whether to use regularization (l1, l2, dropout, etc
+         * @deprecated Now: no-op. Regularization is always used when l1/l2/dropout is > 0
          */
+        @Deprecated
         public Builder regularization(boolean useRegularization) {
-            this.useRegularization = useRegularization;
             return this;
         }
 
@@ -925,7 +978,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /**
          * L1 regularization coefficient for the weights.
-         * Use with .regularization(true)
          */
         public Builder l1(double l1) {
             this.l1 = l1;
@@ -934,7 +986,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /**
          * L2 regularization coefficient for the weights.
-         * Use with .regularization(true)
          */
         public Builder l2(double l2) {
             this.l2 = l2;
@@ -943,7 +994,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /**
          * L1 regularization coefficient for the bias.
-         * Use with .regularization(true)
          */
         public Builder l1Bias(double l1Bias) {
             this.l1Bias = l1Bias;
@@ -952,7 +1002,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /**
          * L2 regularization coefficient for the bias.
-         * Use with .regularization(true)
          */
         public Builder l2Bias(double l2Bias) {
             this.l2Bias = l2Bias;
@@ -960,17 +1009,29 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Dropout probability. This is the probability of <it>retaining</it> an activation. So dropOut(x) will keep an
-         * activation with probability x, and set to 0 with probability 1-x.<br>
-         * dropOut(0.0) is disabled (default).
+         * Dropout probability. This is the probability of <it>retaining</it> each input activation value for a layer.
+         * dropOut(x) will keep an input activation with probability x, and set to 0 with probability 1-x.<br>
+         * dropOut(0.0) is a special value / special case - when set to 0.0., dropout is disabled (not applied). Note
+         * that a dropout value of 1.0 is functionally equivalent to no dropout: i.e., 100% probability of retaining
+         * each input activation.<br>
+         * When {@link #useDropConnect(boolean)} is set to true (false by default), this method sets the drop connect
+         * probability instead.
          * <p>
-         * Note: This sets the probability per-layer. Care should be taken when setting lower values for complex networks.
+         * Note 1: Dropout is applied at training time only - and is automatically not applied at test time
+         * (for evaluation, etc)<br>
+         * Note 2: This sets the probability per-layer. Care should be taken when setting lower values for
+         * complex networks (too much information may be lost with aggressive (very low) dropout values).<br>
+         * Note 3: Frequently, dropout is not applied to (or, has higher retain probability for) input (first layer)
+         * layers. Dropout is also often not applied to output layers. This needs to be handled MANUALLY by the user
+         * - set .dropout(0) on those layers when using global dropout setting.<br>
+         * Note 4: Implementation detail (most users can ignore): DL4J uses inverted dropout, as described here:
+         * <a href="http://cs231n.github.io/neural-networks-2/">http://cs231n.github.io/neural-networks-2/</a>
          * </p>
          *
-         * @param dropOut Dropout probability (probability of retaining an activation)
+         * @param inputRetainProbability Dropout probability (probability of retaining each input activation value for a layer)
          */
-        public Builder dropOut(double dropOut) {
-            this.dropOut = dropOut;
+        public Builder dropOut(double inputRetainProbability) {
+            this.dropOut = inputRetainProbability;
             return this;
         }
 
@@ -1225,7 +1286,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
             conf.layer = layer;
             conf.numIterations = numIterations;
-            conf.useRegularization = useRegularization;
             conf.optimizationAlgo = optimizationAlgo;
             conf.seed = seed;
             conf.stepFunction = stepFunction;
@@ -1274,7 +1334,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     sl.setConvolutionMode(convolutionMode);
                 }
             }
-            LayerValidation.generalValidation(layerName, layer, useRegularization, useDropConnect, dropOut, l2, l2Bias,
+            LayerValidation.generalValidation(layerName, layer, useDropConnect, dropOut, l2, l2Bias,
                             l1, l1Bias, dist);
         }
 

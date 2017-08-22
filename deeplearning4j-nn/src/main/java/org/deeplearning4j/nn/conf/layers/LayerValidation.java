@@ -288,16 +288,16 @@ public class LayerValidation {
         }
     }
 
-    public static void generalValidation(String layerName, Layer layer, boolean useRegularization,
-                    boolean useDropConnect, Double dropOut, Double l2, Double l2Bias, Double l1, Double l1Bias,
+    public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, Double dropOut,
+                                         Double l2, Double l2Bias, Double l1, Double l1Bias,
                     Distribution dist) {
-        generalValidation(layerName, layer, useRegularization, useDropConnect, dropOut == null ? 0.0 : dropOut,
+        generalValidation(layerName, layer, useDropConnect, dropOut == null ? 0.0 : dropOut,
                         l2 == null ? Double.NaN : l2, l2Bias == null ? Double.NaN : l2Bias,
                         l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, dist);
     }
 
-    public static void generalValidation(String layerName, Layer layer, boolean useRegularization,
-                    boolean useDropConnect, double dropOut, double l2, double l2Bias, double l1, double l1Bias,
+    public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, double dropOut,
+                                         double l2, double l2Bias, double l1, double l1Bias,
                     Distribution dist) {
 
         if (layer != null) {
@@ -311,48 +311,31 @@ public class LayerValidation {
 
             if (layer instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) layer;
-                configureBaseLayer(layerName, bLayer, useRegularization, useDropConnect, dropOut, l2, l2Bias, l1,
+                configureBaseLayer(layerName, bLayer, useDropConnect, dropOut, l2, l2Bias, l1,
                                 l1Bias, dist);
             } else if (layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
-                configureBaseLayer(layerName, bLayer, useRegularization, useDropConnect, dropOut, l2, l2Bias, l1,
+                configureBaseLayer(layerName, bLayer, useDropConnect, dropOut, l2, l2Bias, l1,
                                 l1Bias, dist);
             }
         }
     }
 
-    private static void configureBaseLayer(String layerName, BaseLayer bLayer, boolean useRegularization,
-                    boolean useDropConnect, Double dropOut, Double l2, Double l2Bias, Double l1, Double l1Bias,
+    private static void configureBaseLayer(String layerName, BaseLayer bLayer,  boolean useDropConnect,
+                                           Double dropOut, Double l2, Double l2Bias, Double l1, Double l1Bias,
                     Distribution dist) {
-        if (useRegularization && (Double.isNaN(l1) && Double.isNaN(bLayer.getL1()) && Double.isNaN(l2)
-                        && Double.isNaN(bLayer.getL2()) && Double.isNaN(l2Bias) && Double.isNaN(l1Bias)
-                        && (Double.isNaN(dropOut) || dropOut == 0.0)
-                        && (Double.isNaN(bLayer.getDropOut()) || bLayer.getDropOut() == 0.0)))
-            OneTimeLogger.warn(log, "Layer \"" + layerName
-                            + "\" regularization is set to true but l1, l2 or dropout has not been added to configuration.");
 
-        if (useRegularization) {
-            if (!Double.isNaN(l1) && Double.isNaN(bLayer.getL1())) {
-                bLayer.setL1(l1);
-            }
-            if (!Double.isNaN(l2) && Double.isNaN(bLayer.getL2())) {
-                bLayer.setL2(l2);
-            }
-            if (!Double.isNaN(l1Bias) && Double.isNaN(bLayer.getL1Bias())) {
-                bLayer.setL1Bias(l1Bias);
-            }
-            if (!Double.isNaN(l2Bias) && Double.isNaN(bLayer.getL2Bias())) {
-                bLayer.setL2Bias(l2Bias);
-            }
-        } else if (!useRegularization && ((!Double.isNaN(l1) && l1 > 0.0)
-                        || (!Double.isNaN(bLayer.getL1()) && bLayer.getL1() > 0.0) || (!Double.isNaN(l2) && l2 > 0.0)
-                        || (!Double.isNaN(bLayer.getL2()) && bLayer.getL2() > 0.0)
-                        || (!Double.isNaN(l1Bias) && l1Bias > 0.0)
-                        || (!Double.isNaN(bLayer.getL1Bias()) && bLayer.getL1Bias() > 0.0)
-                        || (!Double.isNaN(l2Bias) && l2Bias > 0.0)
-                        || (!Double.isNaN(bLayer.getL2Bias()) && bLayer.getL2Bias() > 0.0))) {
-            OneTimeLogger.warn(log, "Layer \"" + layerName
-                            + "\" l1 or l2 has been added to configuration but useRegularization is set to false.");
+        if (!Double.isNaN(l1) && Double.isNaN(bLayer.getL1())) {
+            bLayer.setL1(l1);
+        }
+        if (!Double.isNaN(l2) && Double.isNaN(bLayer.getL2())) {
+            bLayer.setL2(l2);
+        }
+        if (!Double.isNaN(l1Bias) && Double.isNaN(bLayer.getL1Bias())) {
+            bLayer.setL1Bias(l1Bias);
+        }
+        if (!Double.isNaN(l2Bias) && Double.isNaN(bLayer.getL2Bias())) {
+            bLayer.setL2Bias(l2Bias);
         }
 
         if (Double.isNaN(l2) && Double.isNaN(bLayer.getL2())) {
