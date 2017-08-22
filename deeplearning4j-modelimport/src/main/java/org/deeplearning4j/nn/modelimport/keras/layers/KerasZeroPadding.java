@@ -1,11 +1,12 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
-import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
-import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 
 import java.util.List;
 import java.util.Map;
@@ -20,9 +21,10 @@ import java.util.Map;
  * @author dave@skymind.io
  */
 @Slf4j
+@Data
 public class KerasZeroPadding extends KerasLayer {
 
-    public static final String LAYER_FIELD_PADDING = "padding";
+    private final String LAYER_FIELD_PADDING = "padding";
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -92,23 +94,20 @@ public class KerasZeroPadding extends KerasLayer {
             throw new InvalidKerasConfigurationException(
                             "Field " + LAYER_FIELD_PADDING + " not found in Keras ZeroPadding layer");
         List<Integer> paddingList = (List<Integer>) innerConfig.get(LAYER_FIELD_PADDING);
-        switch (this.className) {
-            case LAYER_CLASS_NAME_ZERO_PADDING_2D:
-                if (paddingList.size() == 2) {
-                    paddingList.add(paddingList.get(1));
-                    paddingList.add(1, paddingList.get(0));
-                }
-                if (paddingList.size() != 4)
-                    throw new InvalidKerasConfigurationException("Found Keras ZeroPadding2D layer with invalid "
-                                    + paddingList.size() + "D padding.");
-                break;
-            case LAYER_CLASS_NAME_ZERO_PADDING_1D:
-                throw new UnsupportedKerasConfigurationException("Keras ZeroPadding1D layer not supported");
-            default:
-                throw new UnsupportedKerasConfigurationException(
-                                "Keras " + this.className + " padding layer not supported");
+        if (this.className.equals(conf.getLAYER_CLASS_NAME_ZERO_PADDING_2D())) {
+            if (paddingList.size() == 2) {
+                paddingList.add(paddingList.get(1));
+                paddingList.add(1, paddingList.get(0));
+            }
+            if (paddingList.size() != 4)
+                throw new InvalidKerasConfigurationException("Found Keras ZeroPadding2D layer with invalid "
+                        + paddingList.size() + "D padding.");
+        } else if (this.className.equals(conf.getLAYER_CLASS_NAME_ZERO_PADDING_1D())) {
+            throw new UnsupportedKerasConfigurationException("Keras ZeroPadding1D layer not supported");
+        } else {
+            throw new UnsupportedKerasConfigurationException(
+                    "Keras " + this.className + " padding layer not supported");
         }
-
         int[] padding = new int[paddingList.size()];
         for (int i = 0; i < paddingList.size(); i++)
             padding[i] = paddingList.get(i);

@@ -49,6 +49,8 @@ public class MnistDataFetcher extends BaseDataFetcher {
     protected int[] order;
     protected Random rng;
     protected boolean shuffle;
+    protected boolean oneIndexed = false;
+    protected boolean fOrder = false; //MNIST is C order, EMNIST is F order
 
 
     /**
@@ -129,21 +131,40 @@ public class MnistDataFetcher extends BaseDataFetcher {
             throw new IllegalStateException("Unable to getFromOrigin more; there are no more images");
         }
 
-
         float[][] featureData = new float[numExamples][0];
         float[][] labelData = new float[numExamples][0];
 
         int actualExamples = 0;
+        byte[] working = null;
         for (int i = 0; i < numExamples; i++, cursor++) {
             if (!hasMore())
                 break;
 
             byte[] img = man.readImageUnsafe(order[cursor]);
+
+            if (fOrder) {
+                //EMNIST requires F order to C order
+                if (working == null) {
+                    working = new byte[28 * 28];
+                }
+                for (int j = 0; j < 28 * 28; j++) {
+                    working[j] = img[28 * (j % 28) + j / 28];
+                }
+                byte[] temp = img;
+                img = working;
+                working = temp;
+            }
+
             int label = man.readLabel(order[cursor]);
+            if (oneIndexed) {
+                //For some inexplicable reason, Emnist LETTERS set is indexed 1 to 26 (i.e., 1 to nClasses), while everything else
+                // is indexed (0 to nClasses-1) :/
+                label--;
+            }
 
             float[] featureVec = new float[img.length];
             featureData[actualExamples] = featureVec;
-            labelData[actualExamples] = new float[10];
+            labelData[actualExamples] = new float[numOutcomes];
             labelData[actualExamples][label] = 1.0f;
 
             for (int j = 0; j < img.length; j++) {

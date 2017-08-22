@@ -1,12 +1,13 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
-import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
-import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -22,14 +23,10 @@ import java.util.Set;
  * @author dave@skymind.io
  */
 @Slf4j
+@Data
 public class KerasEmbedding extends KerasLayer {
 
-    public static final String LAYER_FIELD_INPUT_DIM = "input_dim";
-
-    /* Keras layer parameter names. */
-    public static final int NUM_TRAINABLE_PARAMS = 1;
-    public static final String KERAS_PARAM_NAME_W = "W";
-    public static final String KERAS_PARAM_NAME_B = "b";
+    private final int NUM_TRAINABLE_PARAMS = 1;
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -62,17 +59,10 @@ public class KerasEmbedding extends KerasLayer {
         this.inputShape[1] = inputDim;
         /* TODO: what about mask_zero field? */
 
-        /* TODO: fix this once we have a solution for fixing layer parameters. */
-        if (enforceTrainingConfig)
-            throw new UnsupportedKerasConfigurationException(
-                            "DL4J EmbeddingLayer includes bias but Keras Embedding does not");
-        else
-            log.warn("DL4J EmbeddingLayer includes bias but Keras Embedding does not.");
-
         this.layer = new EmbeddingLayer.Builder().name(this.layerName).nIn(inputDim)
                         .nOut(getNOutFromConfig(layerConfig)).dropOut(this.dropout).activation(Activation.IDENTITY)
                         .weightInit(getWeightInitFromConfig(layerConfig, enforceTrainingConfig)).biasInit(0.0)
-                        .l1(this.weightL1Regularization).l2(this.weightL2Regularization).build();
+                        .l1(this.weightL1Regularization).l2(this.weightL2Regularization).hasBias(false).build();
     }
 
     /**
@@ -119,20 +109,15 @@ public class KerasEmbedding extends KerasLayer {
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
         this.weights = new HashMap<String, INDArray>();
-        if (!weights.containsKey(KERAS_PARAM_NAME_W))
+        if (!weights.containsKey(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS()))
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + KERAS_PARAM_NAME_W + " does not exist in weights");
-        INDArray W = weights.get(KERAS_PARAM_NAME_W);
-        if (!weights.containsKey(KERAS_PARAM_NAME_B)) {
-            log.warn("Setting DL4J EmbeddingLayer bias to zero.");
-            weights.put(KERAS_PARAM_NAME_B, Nd4j.zeros(W.size(1)));
-        }
-        this.weights.put(DefaultParamInitializer.WEIGHT_KEY, W);
-        this.weights.put(DefaultParamInitializer.BIAS_KEY, weights.get(KERAS_PARAM_NAME_B));
+                            "Parameter " + conf.getLAYER_FIELD_EMBEDDING_WEIGHTS() + " does not exist in weights");
+        INDArray kernel = weights.get(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS());
+        this.weights.put(DefaultParamInitializer.WEIGHT_KEY, kernel);
 
         if (weights.size() > 2) {
             Set<String> paramNames = weights.keySet();
-            paramNames.remove(KERAS_PARAM_NAME_W);
+            paramNames.remove(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS());
             String unknownParamNames = paramNames.toString();
             log.warn("Attemping to set weights for unknown parameters: "
                             + unknownParamNames.substring(1, unknownParamNames.length() - 1));
@@ -147,9 +132,9 @@ public class KerasEmbedding extends KerasLayer {
      */
     private int getInputDimFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(LAYER_FIELD_INPUT_DIM))
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_INPUT_DIM()))
             throw new InvalidKerasConfigurationException(
-                            "Keras Embedding layer config missing " + LAYER_FIELD_INPUT_DIM + " field");
-        return (int) innerConfig.get(LAYER_FIELD_INPUT_DIM);
+                            "Keras Embedding layer config missing " + conf.getLAYER_FIELD_INPUT_DIM() + " field");
+        return (int) innerConfig.get(conf.getLAYER_FIELD_INPUT_DIM());
     }
 }

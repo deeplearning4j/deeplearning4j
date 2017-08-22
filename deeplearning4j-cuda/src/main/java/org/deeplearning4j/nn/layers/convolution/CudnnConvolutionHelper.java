@@ -18,12 +18,12 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import lombok.extern.slf4j.Slf4j;
-import org.bytedeco.javacpp.*;
-import org.deeplearning4j.berkeley.Pair;
+import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.BwdFilterAlgo;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.BwdDataAlgo;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.BwdFilterAlgo;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.FwdAlgo;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -42,7 +42,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 
-import static org.bytedeco.javacpp.cuda.*;
+import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
 
 /**

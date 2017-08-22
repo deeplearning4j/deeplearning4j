@@ -3,7 +3,7 @@ package org.deeplearning4j.datasets.iterator.impl;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
-import org.nd4j.linalg.dataset.api.iterator.*;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 /**
  * Iterator that adapts a DataSetIterator to a MultiDataSetIterator

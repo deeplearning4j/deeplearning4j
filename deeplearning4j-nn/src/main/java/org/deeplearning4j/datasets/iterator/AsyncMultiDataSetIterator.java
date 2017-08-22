@@ -10,15 +10,11 @@ import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -341,7 +337,6 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             try {
                 if (useWorkspaces) {
                     workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceId);
-                    //workspace.enableDebug(true);
                 }
 
                 while (iterator.hasNext() && shouldWork.get()) {
@@ -360,6 +355,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                         if (callback != null)
                             callback.call(smth);
                     }
+
+                    // we want to ensure underlying iterator finished dataset creation
+                    Nd4j.getExecutioner().commit();
 
                     if (smth != null)
                         queue.put(smth);

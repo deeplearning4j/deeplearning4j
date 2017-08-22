@@ -2,16 +2,12 @@ package org.deeplearning4j.datasets.datavec;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.datavec.api.records.Record;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataComposable;
 import org.datavec.api.records.metadata.RecordMetaDataComposableMap;
 import org.datavec.api.records.reader.SequenceRecordReader;
-import org.datavec.api.writable.NDArrayWritable;
-import org.datavec.api.writable.Writable;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
-import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -20,7 +16,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.IOException;
 import java.io.Serializable;

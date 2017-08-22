@@ -16,9 +16,7 @@ import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.convolution.Convolution;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +29,8 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class ConvolutionLayer extends FeedForwardLayer {
+    @Getter(AccessLevel.NONE)
+    protected boolean hasBias = true;
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate; //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
     protected int[] kernelSize; // Square filter
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
@@ -87,6 +87,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
      */
     protected ConvolutionLayer(BaseConvBuilder<?> builder) {
         super(builder);
+        this.hasBias = builder.hasBias;
         this.convolutionMode = builder.convolutionMode;
         if (builder.kernelSize.length != 2)
             throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
@@ -101,6 +102,10 @@ public class ConvolutionLayer extends FeedForwardLayer {
         this.cudnnFwdAlgo = builder.cudnnFwdAlgo;
         this.cudnnBwdFilterAlgo = builder.cudnnBwdFilterAlgo;
         this.cudnnBwdDataAlgo = builder.cudnnBwdDataAlgo;
+    }
+
+    public boolean hasBias(){
+        return hasBias;
     }
 
     @Override
@@ -442,17 +447,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         /**
-         * Dropout. Value is probability of retaining an activation - thus 1.0 is equivalent to no dropout.
-         * Note that 0.0 (the default) disables dropout.
-         *
-         * @param dropOut
-         */
-        @Override
-        public Builder dropOut(double dropOut) {
-            return super.dropOut(dropOut);
-        }
-
-        /**
          * Momentum rate.
          *
          * @param momentum
@@ -605,6 +599,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     protected static abstract class BaseConvBuilder<T extends BaseConvBuilder<T>> extends FeedForwardLayer.Builder<T> {
+        protected boolean hasBias = true;
         protected ConvolutionMode convolutionMode = null;
         protected int[] kernelSize = new int[] {5, 5};
         protected int[] stride = new int[] {1, 1};
@@ -631,6 +626,16 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         protected BaseConvBuilder() {}
+
+        /**
+         * If true (default): include bias parameters in the model. False: no bias.
+         *
+         * @param hasBias If true: include bias parameters in this model
+         */
+        public T hasBias(boolean hasBias){
+            this.hasBias = hasBias;
+            return (T)this;
+        }
 
         /**
          * Set the convolution mode for the Convolution layer.

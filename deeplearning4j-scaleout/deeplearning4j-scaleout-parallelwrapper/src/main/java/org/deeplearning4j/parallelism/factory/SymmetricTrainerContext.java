@@ -10,8 +10,6 @@ import org.deeplearning4j.parallelism.trainer.DefaultTrainer;
 import org.deeplearning4j.parallelism.trainer.SymmetricTrainer;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 
-import java.util.concurrent.ThreadFactory;
-
 /**
  * Creates {@link DefaultTrainer}
  * instances for use with {@link ParallelWrapper}
@@ -47,7 +45,7 @@ public class SymmetricTrainerContext implements TrainerContext {
     public Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
                     WorkspaceMode mode, int averagingFrequency) {
 
-        SymmetricTrainer trainer = new SymmetricTrainer(model, threadId, mode, wrapper);
+        SymmetricTrainer trainer = new SymmetricTrainer(model, threadId, mode, wrapper, useMDS);
 
         trainer.setName("SymmetricTrainer thread " + threadId);
         trainer.setDaemon(true);

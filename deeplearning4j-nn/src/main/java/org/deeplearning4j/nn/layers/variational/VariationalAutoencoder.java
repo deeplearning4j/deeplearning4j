@@ -3,10 +3,9 @@ package org.deeplearning4j.nn.layers.variational;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.variational.CompositeReconstructionDistribution;
@@ -589,9 +588,6 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
-
         double l2Sum = 0.0;
         for (Map.Entry<String, INDArray> e : paramTable().entrySet()) {
             double l2 = conf().getL2ByParam(e.getKey());
@@ -608,9 +604,6 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
-
         double l1Sum = 0.0;
         for (Map.Entry<String, INDArray> e : paramTable().entrySet()) {
             double l1 = conf().getL1ByParam(e.getKey());
@@ -934,13 +927,8 @@ public class VariationalAutoencoder implements Layer {
         }
 
         if (solver == null) {
-            solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
-            //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
-            Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = (int) layerConf().getIUpdater().stateSize(numParams());
-            if (updaterStateSize > 0) {
-                updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
-                                true);
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
             }
         }
         this.optimizer = solver.getOptimizer();

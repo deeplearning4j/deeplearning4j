@@ -18,7 +18,7 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -56,6 +56,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected ConvolutionHelper helper = null;
     protected ConvolutionMode convolutionMode;
 
+    protected transient INDArray dummyBias;     //Used only when: hasBias == false AND helpers are used
+    protected transient INDArray dummyBiasGrad; //As above
+
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         super(conf);
         initializeHelper();
@@ -84,9 +87,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
-
         double l2Sum = 0.0;
         for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l2 = conf.getL2ByParam(entry.getKey());
@@ -101,9 +101,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
-
         double l1Sum = 0.0;
         for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l1 = conf.getL1ByParam(entry.getKey());
@@ -164,6 +161,16 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         delta = afn.backprop(p.getFirst(), epsilon).getFirst(); //TODO handle activation function params
 
         if (helper != null) {
+
+            if(!hasBias()){
+                if(dummyBiasGrad == null){
+                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        dummyBiasGrad = Nd4j.create(1, layerConf().getNOut());
+                    }
+                }
+                biasGradView = dummyBiasGrad;
+            }
+
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad,
                             biasGradView, weightGradView, afn, layerConf().getCudnnAlgoMode(),
                             layerConf().getCudnnBwdFilterAlgo(), layerConf().getCudnnBwdDataAlgo(), convolutionMode);
@@ -226,9 +233,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         Convolution.col2im(eps6d, epsNext, strides[0], strides[1], pad[0], pad[1], inH, inW);
 
         Gradient retGradient = new DefaultGradient();
-        delta2d.sum(biasGradView, 1); //biasGradView is initialized/zeroed first in sum op
-
-        retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
+        if(layerConf().hasBias()){
+            delta2d.sum(biasGradView, 1); //biasGradView is initialized/zeroed first in sum op
+            retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
+        }
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
 
         return new Pair<>(retGradient, epsNext);
@@ -319,6 +327,16 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 return new Pair<>(preOutput, null);
             }
 
+            //For no-bias convolutional layers: use an empty (all 0s) value for biases
+            if(!hasBias()){
+                if(dummyBias == null){
+                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        dummyBias = Nd4j.create(1, layerConf().getNOut());
+                    }
+                }
+                bias = dummyBias;
+            }
+
             INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
                             layerConf().getCudnnFwdAlgo(), convolutionMode);
             if (ret != null) {
@@ -360,7 +378,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             z = im2col2d.mmul(reshapedW);
 
         //Add biases, before reshaping. Note that biases are [1,depthOut] and currently z is [miniBatch*outH*outW,depthOut] -> addiRowVector
-        z.addiRowVector(bias);
+        if(layerConf().hasBias()){
+            z.addiRowVector(bias);
+        }
 
         //Now, reshape to [outW,outH,miniBatch,outDepth], and permute to have correct output order: [miniBath,outDepth,outH,outW];
         z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
@@ -417,6 +437,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public Layer transpose() {
         throw new UnsupportedOperationException("Not supported - " + layerId());
+    }
+
+    @Override
+    public boolean hasBias() {
+        return layerConf().hasBias();
     }
 
     @Override

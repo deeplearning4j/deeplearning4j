@@ -18,7 +18,8 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
-import org.deeplearning4j.berkeley.Pair;
+import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -40,18 +41,36 @@ import java.util.Map;
  * @author Alex Black
  * @see GravesLSTM GravesLSTM class, for the version with peephole connections
  */
+@Slf4j
 public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
     public static final String STATE_KEY_PREV_MEMCELL = "prevMem";
-
+    protected LSTMHelper helper = null;
     protected FwdPassReturn cachedFwdPass;
 
     public LSTM(NeuralNetConfiguration conf) {
         super(conf);
+        initializeHelper();
     }
 
     public LSTM(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
+        initializeHelper();
+    }
+
+    void initializeHelper() {
+        try {
+            helper = Class.forName("org.deeplearning4j.nn.layers.recurrent.CudnnLSTMHelper")
+                            .asSubclass(LSTMHelper.class).newInstance();
+            log.debug("CudnnLSTMHelper successfully initialized");
+            if (!helper.checkSupported(layerConf().getGateActivationFn(), layerConf().getActivationFn(), false)) {
+                helper = null;
+            }
+        } catch (Throwable t) {
+            if (!(t instanceof ClassNotFoundException)) {
+                log.warn("Could not initialize CudnnLSTMHelper", t);
+            }
+        }
     }
 
     @Override
@@ -89,8 +108,8 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
             fwdPass = activateHelper(true, stateMap.get(STATE_KEY_PREV_ACTIVATION),
                             stateMap.get(STATE_KEY_PREV_MEMCELL), true);
             //Store last time step of output activations and memory cell state in tBpttStateMap
-            tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct);
-            tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell);
+            tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct.leverageTo(ComputationGraph.workspaceTBPTT));
+            tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell.leverageTo(ComputationGraph.workspaceTBPTT));
         } else {
             fwdPass = activateHelper(true, null, null, true);
         }
@@ -99,7 +118,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         return LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         LSTMParamInitializer.INPUT_WEIGHT_KEY, LSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                        LSTMParamInitializer.BIAS_KEY, gradientViews, null, false);
+                        LSTMParamInitializer.BIAS_KEY, gradientViews, null, false, helper);
     }
 
 
@@ -156,7 +175,8 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
                         this.input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
                         prevMemCellState, (training && cacheMode != CacheMode.NONE) || forBackprop, true,
-                        LSTMParamInitializer.INPUT_WEIGHT_KEY, null, false, forBackprop ? cacheMode : CacheMode.NONE);
+                        LSTMParamInitializer.INPUT_WEIGHT_KEY, null, false, helper,
+                        forBackprop ? cacheMode : CacheMode.NONE);
 
         if (training && cacheMode != CacheMode.NONE) {
             cachedFwdPass = fwd;
@@ -200,9 +220,6 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
-
         double l2Sum = 0.0;
         for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l2 = conf.getL2ByParam(entry.getKey());
@@ -217,9 +234,6 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
-
         double l1Sum = 0.0;
         for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l1 = conf.getL1ByParam(entry.getKey());
@@ -255,8 +269,8 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         INDArray outAct = fwdPass.fwdPassOutput;
         if (storeLastForTBPTT) {
             //Store last time step of output activations and memory cell state in tBpttStateMap
-            tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct);
-            tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell);
+            tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct.leverageTo(ComputationGraph.workspaceTBPTT));
+            tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell.leverageTo(ComputationGraph.workspaceTBPTT));
         }
 
         return outAct;

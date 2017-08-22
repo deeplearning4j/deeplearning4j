@@ -17,8 +17,8 @@
 package com.atilika.kuromoji.dict;
 
 import com.atilika.kuromoji.io.ByteBufferIO;
-import com.atilika.kuromoji.util.ResourceResolver;
 import com.atilika.kuromoji.util.KuromojiBinFilesFetcher;
+import com.atilika.kuromoji.util.ResourceResolver;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;

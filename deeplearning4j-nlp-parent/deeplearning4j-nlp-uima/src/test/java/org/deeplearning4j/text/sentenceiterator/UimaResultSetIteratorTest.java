@@ -2,12 +2,12 @@ package org.deeplearning4j.text.sentenceiterator;
 
 import org.junit.Before;
 import org.junit.Test;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.sql.ResultSet;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Brad Heap nzv8fan@gmail.com

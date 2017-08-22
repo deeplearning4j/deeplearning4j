@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -13,7 +12,6 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -34,8 +32,12 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class EmbeddingLayer extends FeedForwardLayer {
 
+    @Getter(AccessLevel.NONE)
+    private boolean hasBias = true; //Default for pre-0.9.2 implementations
+
     private EmbeddingLayer(Builder builder) {
         super(builder);
+        this.hasBias = builder.hasBias;
     }
 
     @Override
@@ -76,8 +78,24 @@ public class EmbeddingLayer extends FeedForwardLayer {
                         .build();
     }
 
-    @AllArgsConstructor
+    public boolean hasBias(){
+        return hasBias;
+    }
+
+    @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
+
+        private boolean hasBias = false;
+
+        /**
+         * If true: include bias parameters in the layer. False (default): no bias.
+         *
+         * @param hasBias If true: include bias parameters in this layer
+         */
+        public Builder hasBias(boolean hasBias){
+            this.hasBias = hasBias;
+            return this;
+        }
 
         @Override
         @SuppressWarnings("unchecked")

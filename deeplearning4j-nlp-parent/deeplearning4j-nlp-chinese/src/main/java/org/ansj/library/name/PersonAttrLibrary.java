@@ -1,16 +1,16 @@
 package org.ansj.library.name;
 
+import org.ansj.domain.PersonNatureAttr;
+import org.ansj.util.MyStaticValue;
+import org.nlpcn.commons.lang.util.logging.Log;
+import org.nlpcn.commons.lang.util.logging.LogFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import org.ansj.domain.PersonNatureAttr;
-import org.ansj.util.MyStaticValue;
-import org.nlpcn.commons.lang.util.logging.Log;
-import org.nlpcn.commons.lang.util.logging.LogFactory;
 
 /**
  * 人名标注所用的词典就是简单的hashmap简单方便谁用谁知道,只在加载词典的时候用

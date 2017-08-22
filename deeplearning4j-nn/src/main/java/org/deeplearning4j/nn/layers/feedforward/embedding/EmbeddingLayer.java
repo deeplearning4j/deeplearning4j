@@ -19,7 +19,7 @@
 package org.deeplearning4j.nn.layers.feedforward.embedding;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -28,8 +28,6 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-
-import java.util.Arrays;
 
 /**Embedding layer: feed-forward layer that expects single integers per example as input (class numbers, in range 0 to numClass-1)
  * as input. This input has shape [numExamples,1] instead of [numExamples,numClasses] for the equivalent one-hot representation.
@@ -68,12 +66,14 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             weightGradients.getRow(indexes[i]).addi(delta.getRow(i));
         }
 
-        INDArray biasGradientsView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-        delta.sum(biasGradientsView, 0); //biasGradientView is initialized/zeroed first in sum op
-
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradients);
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradientsView);
+
+        if(hasBias()) {
+            INDArray biasGradientsView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
+            delta.sum(biasGradientsView, 0); //biasGradientView is initialized/zeroed first in sum op
+            ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradientsView);
+        }
 
         return new Pair<>(ret, null); //Don't bother returning epsilons: no layer below this one...
     }
@@ -96,7 +96,9 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
 
         INDArray rows = Nd4j.pullRows(weights, 1, indexes);
-        rows.addiRowVector(bias);
+        if(hasBias()){
+            rows.addiRowVector(bias);
+        }
 
         return rows;
     }
@@ -111,6 +113,11 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             ret.muliColumnVector(maskArray);
         }
         return ret;
+    }
+
+    @Override
+    public boolean hasBias() {
+        return layerConf().hasBias();
     }
 
     @Override

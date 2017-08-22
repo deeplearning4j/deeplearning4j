@@ -255,6 +255,20 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         }
 
         /**
+         * This method sets vocabulary limit during construction.
+         *
+         * Default value: 0. Means no limit
+         *
+         * @param limit
+         * @return
+         */
+        @Override
+        public Builder limitVocabularySize(int limit) {
+            super.limitVocabularySize(limit);
+            return this;
+        }
+
+        /**
          * This method allows to define external VocabCache to be used
          *
          * @param vocabCache
@@ -554,6 +568,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.variableWindows = this.variableWindows;
             ret.seed = this.seed;
             ret.enableScavenger = this.enableScavenger;
+            ret.vocabLimit = this.vocabLimit;
 
 
             ret.iterator = this.iterator;

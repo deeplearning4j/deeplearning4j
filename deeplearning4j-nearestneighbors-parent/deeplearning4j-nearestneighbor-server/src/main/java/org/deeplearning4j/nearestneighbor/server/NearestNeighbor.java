@@ -28,8 +28,15 @@ public class NearestNeighbor {
             List<DataPoint> add = new ArrayList<>();
             List<Double> distances = new ArrayList<>();
             tree.search(input, record.getK(), add, distances);
-            for (DataPoint dataPoint : add) {
-                results.add(new NearestNeighborsResult(dataPoint.getIndex()));
+
+            if (add.size() != distances.size()) {
+                throw new IllegalStateException(
+                        String.format("add.size == %d != %d == distances.size",
+                                add.size(), distances.size()));
+            }
+
+            for (int i=0; i<add.size(); i++) {
+                results.add(new NearestNeighborsResult(add.get(i).getIndex(), distances.get(i)));
             }
         }
 

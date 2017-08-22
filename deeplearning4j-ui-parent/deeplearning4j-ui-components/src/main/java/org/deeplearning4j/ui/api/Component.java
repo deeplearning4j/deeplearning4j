@@ -17,14 +17,14 @@
  */
 package org.deeplearning4j.ui.api;
 
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
 import org.deeplearning4j.ui.components.chart.*;
 import org.deeplearning4j.ui.components.component.ComponentDiv;
 import org.deeplearning4j.ui.components.decorator.DecoratorAccordion;
 import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.text.ComponentText;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 /**
  * A component is anything that can be rendered, such at charts, text or tables.

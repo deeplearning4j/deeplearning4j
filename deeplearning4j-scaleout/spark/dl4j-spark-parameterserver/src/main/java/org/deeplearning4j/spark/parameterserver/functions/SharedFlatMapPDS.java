@@ -11,7 +11,6 @@ import org.deeplearning4j.spark.parameterserver.iterators.PdsIterator;
 import org.deeplearning4j.spark.parameterserver.pw.SharedTrainingWrapper;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
-import org.nd4j.linalg.dataset.DataSet;
 
 import java.util.Collections;
 import java.util.Iterator;

@@ -2,7 +2,7 @@ package org.deeplearning4j.eval;
 
 import lombok.*;
 import org.apache.commons.lang3.ArrayUtils;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
 import org.deeplearning4j.eval.serde.ROCSerializer;
@@ -352,7 +352,7 @@ public class ROC extends BaseEvaluation<ROC> {
             t.put(new INDArrayIndex[] {NDArrayIndex.interval(1, length + 1), NDArrayIndex.all()}, sorted.getColumn(0));
 
             INDArray linspace = Nd4j.linspace(1, length, length);
-            INDArray precision = cumSumPos.div(linspace);
+            INDArray precision = cumSumPos.div(linspace.reshape(cumSumPos.shape()));
             INDArray prec = Nd4j.create(new int[] {length + 2, 1});
             prec.put(new INDArrayIndex[] {NDArrayIndex.interval(1, length + 1), NDArrayIndex.all()}, precision);
 

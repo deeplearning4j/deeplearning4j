@@ -65,7 +65,6 @@ public class FineTuneConfiguration {
     protected Integer numIterations;
     protected Integer maxNumLineSearchIterations;
     protected Long seed;
-    protected Boolean useRegularization;
     protected OptimizationAlgorithm optimizationAlgo;
     protected StepFunction stepFunction;
     protected Boolean useDropConnect;
@@ -101,8 +100,11 @@ public class FineTuneConfiguration {
             return this;
         }
 
+        /**
+         * @deprecated No longer used
+         */
+        @Deprecated
         public Builder regularization(boolean regularization) {
-            this.useRegularization = regularization;
             return this;
         }
 
@@ -207,8 +209,6 @@ public class FineTuneConfiguration {
             nnc.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
         if (seed != null)
             nnc.setSeed(seed);
-        if (useRegularization != null)
-            nnc.setUseRegularization(useRegularization);
         if (optimizationAlgo != null)
             nnc.setOptimizationAlgo(optimizationAlgo);
         if (stepFunction != null)
@@ -284,8 +284,7 @@ public class FineTuneConfiguration {
                             adamMeanDecay, adamVarDecay, rho, rmsDecay, epsilon);
 
             boolean useDropCon = (useDropConnect == null ? nnc.isUseDropConnect() : useDropConnect);
-            LayerValidation.generalValidation(l.getLayerName(), l, nnc.isUseRegularization(), useDropCon, dropOut, l2,
-                            l2Bias, l1, l1Bias, dist);
+            LayerValidation.generalValidation(l.getLayerName(), l, useDropCon, dropOut, l2, l2Bias, l1, l1Bias, dist);
         }
 
         //Also: update the LR, L1 and L2 maps, based on current config (which might be different to original config)
@@ -378,8 +377,6 @@ public class FineTuneConfiguration {
             confBuilder.setMaxNumLineSearchIterations(maxNumLineSearchIterations);
         if (seed != null)
             confBuilder.setSeed(seed);
-        if (useRegularization != null)
-            confBuilder.setUseRegularization(useRegularization);
         if (optimizationAlgo != null)
             confBuilder.setOptimizationAlgo(optimizationAlgo);
         if (stepFunction != null)

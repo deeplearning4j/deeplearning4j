@@ -18,11 +18,13 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.solvers.accumulation.*;
+import org.deeplearning4j.optimize.listeners.SharedGradient;
+import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
+import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
+import org.deeplearning4j.optimize.solvers.accumulation.Registerable;
 import org.deeplearning4j.parallelism.factory.DefaultTrainerContext;
 import org.deeplearning4j.parallelism.factory.SymmetricTrainerContext;
 import org.deeplearning4j.parallelism.factory.TrainerContext;
-import org.deeplearning4j.optimize.listeners.SharedGradient;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,9 +35,11 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -152,6 +156,9 @@ public class ParallelWrapper implements AutoCloseable {
             executorService.shutdown();
             executorService = null;
         }
+
+        if (gradientsAccumulator != null)
+            gradientsAccumulator.reset();
     }
 
     /**
@@ -317,7 +324,7 @@ public class ParallelWrapper implements AutoCloseable {
             score += zoo[cnt].getModel().score();
         }
 
-        Nd4j.averageAndPropagate(model.params(), params);
+        Nd4j.averageAndPropagate(null, params);
 
 
         score /= Math.min(workers, locker.get());
@@ -344,7 +351,7 @@ public class ParallelWrapper implements AutoCloseable {
                         batchSize += workerModel.batchSize();
                     }
 
-                    Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
+                    Nd4j.averageAndPropagate(null, updaters);
                 }
             }
 
@@ -361,7 +368,7 @@ public class ParallelWrapper implements AutoCloseable {
                         updaters.add(workerModel.getUpdater().getStateViewArray());
                         batchSize += workerModel.batchSize();
                     }
-                    Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
+                    Nd4j.averageAndPropagate(null, updaters);
                 }
             }
 
@@ -419,13 +426,6 @@ public class ParallelWrapper implements AutoCloseable {
                     if (statsStorage == null && rl.getStorageRouter() == null) {
                         log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}",
                                         l);
-                    } else if (rl.getStorageRouter() != null && !(rl.getStorageRouter() instanceof Serializable)) {
-                        //Spark would throw a (probably cryptic) serialization exception later anyway...
-                        throw new IllegalStateException(
-                                        "RoutingIterationListener provided with non-serializable storage router "
-                                                        + "\nRoutingIterationListener class: " + rl.getClass().getName()
-                                                        + "\nStatsStorageRouter class: "
-                                                        + rl.getStorageRouter().getClass().getName());
                     }
                 }
             }
@@ -825,7 +825,7 @@ public class ParallelWrapper implements AutoCloseable {
                     this.trainerContext = new SymmetricTrainerContext();
                     if (this.accumulator == null) {
                         log.info("Creating new GradientsAccumulator instance");
-                        this.accumulator = new CudaGradientsAccumulator(workers, 1e-3);
+                        this.accumulator = new EncodedGradientsAccumulator(workers, 1e-3);
                     }
                 }
                     break;
@@ -844,6 +844,19 @@ public class ParallelWrapper implements AutoCloseable {
             wrapper.gradientsAccumulator = this.accumulator;
 
             wrapper.init();
+
+            List<IterationListener> modelListeners = null;
+            if (model instanceof MultiLayerNetwork) {
+                modelListeners = new ArrayList<>(((MultiLayerNetwork) model).getListeners());
+                model.setListeners(Collections.emptyList());
+            } else if (model instanceof ComputationGraph) {
+                modelListeners = new ArrayList<>(((ComputationGraph) model).getListeners());
+                model.setListeners(Collections.emptyList());
+            }
+
+            if (modelListeners != null && modelListeners.size() > 0) {
+                wrapper.setListeners(modelListeners);
+            }
 
             return wrapper;
         }

@@ -1,8 +1,8 @@
 package org.deeplearning4j.spark.ml.impl
 
-import org.apache.spark.ml.{Estimator, Model}
 import org.apache.spark.ml.param.{IntParam, Param, ParamMap, Params}
 import org.apache.spark.ml.util._
+import org.apache.spark.ml.{Estimator, Model}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.sql._
 import org.apache.spark.sql.expressions._
@@ -10,7 +10,6 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
 import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer, SparkDl4jUtil}
-import org.deeplearning4j.util.ModelSerializer
 import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.factory.Nd4j
 

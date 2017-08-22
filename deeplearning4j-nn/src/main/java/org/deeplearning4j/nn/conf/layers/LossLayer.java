@@ -16,8 +16,6 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.lossfunctions.impl.LossL2;
-import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 
 import java.util.Collection;
 import java.util.Map;

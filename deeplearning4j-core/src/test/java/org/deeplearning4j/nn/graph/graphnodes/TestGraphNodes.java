@@ -1,10 +1,9 @@
 package org.deeplearning4j.nn.graph.graphnodes;
 
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
@@ -16,24 +15,14 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.*;
-import org.deeplearning4j.nn.graph.vertex.impl.L2Vertex;
-import org.deeplearning4j.nn.graph.vertex.impl.MergeVertex;
-import org.deeplearning4j.nn.graph.vertex.impl.ReshapeVertex;
-import org.deeplearning4j.nn.graph.vertex.impl.StackVertex;
-import org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex;
-import org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
-import org.nd4j.linalg.api.ops.impl.transforms.Pow;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
 
@@ -503,7 +492,7 @@ public class TestGraphNodes {
     @Test
     public void testReshapeNode() {
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex reshapeVertex = new ReshapeVertex(null, "", -1, new int[] {-1, 736});
+        GraphVertex reshapeVertex = new ReshapeVertex(null, "", -1, 'c', new int[] {-1, 736}, null);
 
         int[] inputShape = new int[] {1, 1, 1, 736};
         INDArray input = Nd4j.create(inputShape);

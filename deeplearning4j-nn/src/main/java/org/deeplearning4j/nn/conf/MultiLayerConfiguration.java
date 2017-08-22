@@ -435,6 +435,16 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /**When doing truncated BPTT: how many steps should we do?<br>
+         * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
+         * See: http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
+         * @param bpttLength length > 0
+         */
+        public Builder tBPTTLength(int bpttLength) {
+            tBPTTForwardLength(bpttLength);
+            return tBPTTBackwardLength(bpttLength);
+        }
+
         /**When doing truncated BPTT: how many steps of forward pass should we do
          * before doing (truncated) backprop?<br>
          * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>

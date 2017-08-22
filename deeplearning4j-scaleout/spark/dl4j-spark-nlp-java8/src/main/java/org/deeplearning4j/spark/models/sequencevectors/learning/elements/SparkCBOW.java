@@ -8,10 +8,8 @@ import org.nd4j.parameterserver.distributed.logic.sequence.BasicSequenceProvider
 import org.nd4j.parameterserver.distributed.messages.Frame;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.CbowRequestMessage;
-import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.training.impl.CbowTrainer;
-import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
 
 import java.util.ArrayList;
 import java.util.List;

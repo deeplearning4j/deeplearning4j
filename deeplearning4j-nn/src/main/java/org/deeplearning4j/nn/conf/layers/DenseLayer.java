@@ -19,10 +19,8 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
-import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -33,7 +31,6 @@ import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 
 /**Dense layer: fully connected feed forward layer trainable by backprop.
@@ -44,8 +41,12 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class DenseLayer extends FeedForwardLayer {
 
+    @Getter(AccessLevel.NONE)
+    private boolean hasBias = true;
+
     private DenseLayer(Builder builder) {
         super(builder);
+        this.hasBias = builder.hasBias;
     }
 
     @Override
@@ -101,8 +102,24 @@ public class DenseLayer extends FeedForwardLayer {
                         .build();
     }
 
-    @AllArgsConstructor
+    public boolean hasBias(){
+        return hasBias;
+    }
+
+    @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
+
+        private boolean hasBias = true;
+
+        /**
+         * If true (default): include bias parameters in the model. False: no bias.
+         *
+         * @param hasBias If true: include bias parameters in this model
+         */
+        public Builder hasBias(boolean hasBias){
+            this.hasBias = hasBias;
+            return this;
+        }
 
         @Override
         @SuppressWarnings("unchecked")

@@ -18,10 +18,9 @@
 
 package org.deeplearning4j.nn.layers;
 
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -81,8 +80,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray weightErrorSignal = layerError.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
         INDArray weightError = weightErrorSignal.transpose().mmul(activation).transpose();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightError);
-        INDArray biasGradient = weightError.mean(0);
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradient);
+        if(hasBias()){
+            INDArray biasGradient = weightError.mean(0);
+            ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradient);
+        }
 
         return ret;
     }
@@ -104,11 +105,13 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY); //f order
         Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
-        INDArray biasGrad = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-        delta.sum(biasGrad, 0); //biasGrad is initialized/zeroed first
-
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
+
+        if(hasBias()){
+            INDArray biasGrad = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
+            delta.sum(biasGrad, 0); //biasGrad is initialized/zeroed first
+            ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
+        }
 
         INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
 
@@ -315,7 +318,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             W = Dropout.applyDropConnect(this, DefaultParamInitializer.WEIGHT_KEY);
         }
 
-        INDArray ret = input.mmul(W).addiRowVector(b);
+        INDArray ret = input.mmul(W);
+        if(hasBias()){
+            ret.addiRowVector(b);
+        }
 
         if (maskArray != null) {
             applyMask(ret);
@@ -327,8 +333,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public INDArray activate(boolean training) {
         INDArray z = preOutput(training);
-        //INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-        //        conf.getLayer().getActivationFunction(), z, conf.getExtraArgs() ));
         INDArray ret = layerConf().getActivationFn().getActivation(z, training);
 
         if (maskArray != null) {
@@ -340,16 +344,13 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
-
         //L2 norm: sqrt( sum_i x_i^2 ) -> want sum squared weights, so l2 norm squared
         double l2Sum = 0.0;
         if (conf.getL2ByParam(DefaultParamInitializer.WEIGHT_KEY) > 0.0) {
             double l2Norm = getParam(DefaultParamInitializer.WEIGHT_KEY).norm2Number().doubleValue();
             l2Sum += 0.5 * conf.getL2ByParam(DefaultParamInitializer.WEIGHT_KEY) * l2Norm * l2Norm;
         }
-        if (conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
+        if (hasBias() && conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
             double l2Norm = getParam(DefaultParamInitializer.BIAS_KEY).norm2Number().doubleValue();
             l2Sum += 0.5 * conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) * l2Norm * l2Norm;
         }
@@ -358,14 +359,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
         double l1Sum = 0.0;
         if (conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY) > 0.0) {
             l1Sum += conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY)
                             * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
         }
-        if (conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
+        if (hasBias() && conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
             l1Sum += conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY)
                             * getParam(DefaultParamInitializer.BIAS_KEY).norm1Number().doubleValue();
         }
@@ -377,7 +376,11 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public INDArray activationMean() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        return input().mmul(W).addiRowVector(b);
+        INDArray ret = input().mmul(W);
+        if(hasBias()){
+            ret.addiRowVector(b);
+        }
+        return ret;
     }
 
     /**
@@ -431,12 +434,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         }
         if (solver == null) {
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
-            //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
-            Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = (int) layerConf().getIUpdater().stateSize(numParams());
-            if (updaterStateSize > 0)
-                updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
-                                true);
         }
         this.optimizer = solver.getOptimizer();
         solver.optimize();
@@ -506,5 +503,16 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         for (Map.Entry<String, Double> lrPair : conf.getLearningRateByParam().entrySet())
             conf.setLearningRateByParam(lrPair.getKey(),
                             lrPair.getValue() * (conf.getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
+    }
+
+    /**
+     * Does this layer have no bias term? Many layers (dense, convolutional, output, embedding) have biases by
+     * default, but no-bias versions are possible via configuration
+     *
+     * @return True if a bias term is present, false otherwise
+     */
+    public boolean hasBias(){
+        //Overridden by layers supporting no bias mode: dense, output, convolutional, embedding
+        return true;
     }
 }

@@ -1,12 +1,11 @@
 package org.deeplearning4j.nn.layers;
 
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Created by davekale on 12/7/16.
@@ -56,22 +55,13 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
-        INDArray dummy = input;
-        applyDropOutIfNecessary(training);
-
-        INDArray ret;
-        if (training) {
-            //dup required: need to keep original input for backprop
-            ret = input.dup();
-        } else {
-            ret = input;
-        }
+        applyDropOutIfNecessary(training);      //Dups input if necessary
 
         if (maskArray != null) {
-            ret.muliColumnVector(maskArray);
+            input.muliColumnVector(maskArray);
         }
 
-        return ret;
+        return input;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui;
 
+import org.apache.commons.io.IOUtils;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.loader.LFWLoader;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
@@ -17,24 +18,28 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.flow.FlowIterationListener;
 import org.deeplearning4j.ui.weights.ConvolutionalIterationListener;
 import org.deeplearning4j.ui.weights.HistogramIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +75,37 @@ public class ManualTests {
 
         new ScoreIterationListener(100);
         fail("not implemneted");
+    }
+
+
+    @Test
+    public void testTsne() throws Exception {
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        Nd4j.getRandom().setSeed(123);
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).theta(0.5).learningRate(500)
+                        .useAdaGrad(true).build();
+
+        org.nd4j.linalg.io.ClassPathResource resource = new org.nd4j.linalg.io.ClassPathResource("/mnist2500_X.txt");
+        File f = resource.getTempFileFromArchive();
+        INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ").get(NDArrayIndex.interval(0, 100),
+                        NDArrayIndex.interval(0, 784));
+
+
+
+        org.nd4j.linalg.io.ClassPathResource labels = new org.nd4j.linalg.io.ClassPathResource("mnist2500_labels.txt");
+        List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
+        b.fit(data);
+        File save = new File(System.getProperty("java.io.tmpdir"), "labels-" + UUID.randomUUID().toString());
+        System.out.println("Saved to " + save.getAbsolutePath());
+        save.deleteOnExit();
+        b.saveAsFile(labelsList, save.getAbsolutePath());
+
+        INDArray output = b.getData();
+        System.out.println("Coordinates");
+
+        UIServer server = UIServer.getInstance();
+        Thread.sleep(10000000000L);
     }
 
     @Test

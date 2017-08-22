@@ -21,17 +21,14 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
-import org.deeplearning4j.nn.conf.memory.MemoryReport;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
@@ -41,8 +38,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo.Id;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * A neural network layer.
@@ -229,11 +224,29 @@ public abstract class Layer implements Serializable, Cloneable {
         }
 
         /**
-         * Dropout. Value is probability of retaining an activation - thus 1.0 is equivalent to no dropout.
-         * Note that 0.0 (the default) disables dropout.
+         * Dropout probability. This is the probability of <it>retaining</it> each input activation value for a layer.
+         * dropOut(x) will keep an input activation with probability x, and set to 0 with probability 1-x.<br>
+         * dropOut(0.0) is a special value / special case - when set to 0.0., dropout is disabled (not applied). Note
+         * that a dropout value of 1.0 is functionally equivalent to no dropout: i.e., 100% probability of retaining
+         * each input activation.<br>
+         * When useDropConnect(boolean) is set to true (false by default), this method sets the drop connect
+         * probability instead.
+         * <p>
+         * Note 1: Dropout is applied at training time only - and is automatically not applied at test time
+         * (for evaluation, etc)<br>
+         * Note 2: This sets the probability per-layer. Care should be taken when setting lower values for
+         * complex networks (too much information may be lost with aggressive (very low) dropout values).<br>
+         * Note 3: Frequently, dropout is not applied to (or, has higher retain probability for) input (first layer)
+         * layers. Dropout is also often not applied to output layers. This needs to be handled MANUALLY by the user
+         * - set .dropout(0) on those layers when using global dropout setting.<br>
+         * Note 4: Implementation detail (most users can ignore): DL4J uses inverted dropout, as described here:
+         * <a href="http://cs231n.github.io/neural-networks-2/">http://cs231n.github.io/neural-networks-2/</a>
+         * </p>
+         *
+         * @param inputRetainProbability Dropout probability (probability of retaining each input activation value for a layer)
          */
-        public T dropOut(double dropOut) {
-            this.dropOut = dropOut;
+        public T dropOut(double inputRetainProbability) {
+            this.dropOut = inputRetainProbability;
             return (T) this;
         }
 

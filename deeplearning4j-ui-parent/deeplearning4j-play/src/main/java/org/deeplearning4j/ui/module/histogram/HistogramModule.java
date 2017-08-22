@@ -1,6 +1,9 @@
 package org.deeplearning4j.ui.module.histogram;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.api.storage.Persistable;
+import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.ui.api.FunctionType;
 import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
@@ -10,9 +13,6 @@ import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
 import org.deeplearning4j.ui.stats.api.StatsReport;
 import org.deeplearning4j.ui.stats.api.StatsType;
 import org.deeplearning4j.ui.stats.api.SummaryType;
-import org.deeplearning4j.api.storage.Persistable;
-import org.deeplearning4j.api.storage.StatsStorage;
-import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.ui.weights.beans.CompactModelAndGradient;
 import play.libs.Json;
 import play.mvc.Result;

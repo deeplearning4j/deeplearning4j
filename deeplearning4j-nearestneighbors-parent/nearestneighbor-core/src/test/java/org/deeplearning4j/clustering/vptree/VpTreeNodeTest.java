@@ -18,15 +18,19 @@
 
 package org.deeplearning4j.clustering.vptree;
 
-import org.deeplearning4j.clustering.berkeley.*;
+import com.google.common.util.concurrent.AtomicDouble;
+import org.nd4j.linalg.primitives.Counter;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.PriorityQueue;
+import java.util.TreeSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -61,9 +65,9 @@ public class VpTreeNodeTest {
     public void testParallel() {
         Nd4j.getRandom().setSeed(7);
         INDArray randn = Nd4j.rand(1000, 100);
-        VPTree vpTree = new VPTree(randn, false, true);
+        VPTree vpTree = new VPTree(randn, false, 2);
         Nd4j.getRandom().setSeed(7);
-        VPTree vpTreeNoParallel = new VPTree(randn, false, false);
+        VPTree vpTreeNoParallel = new VPTree(randn, false, 1);
         List<DataPoint> results = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
         List<DataPoint> noParallelResults = new ArrayList<>();
@@ -103,12 +107,12 @@ public class VpTreeNodeTest {
 
             }
 
-            org.deeplearning4j.clustering.berkeley.PriorityQueue<Integer> pq = counter.asMinPriorityQueue();
+            PriorityQueue<Pair<Integer, Double>> pq = counter.asReversedPriorityQueue();
             // keep closest k
             for (int i = 0; i < k; i++) {
-                Integer di = pq.next();
-                System.out.println("exhaustive d=" + di);
-                s.add(di);
+                Pair<Integer, Double> di = pq.poll();
+                System.out.println("exhaustive d=" + di.getFirst());
+                s.add(di.getFirst());
             }
 
             // Check what VPTree gives for results
@@ -163,15 +167,50 @@ public class VpTreeNodeTest {
         tree.search(Nd4j.create(new double[] {60, 60}), 1, add, distances);
         assertion = add.get(0);
         assertEquals(Nd4j.create(new double[] {60, 60}), assertion.getPoint());
+    }
 
+    @Test(expected = ND4JIllegalStateException.class)
+    public void vpTreeTest2() {
+        List<DataPoint> points = new ArrayList<>();
+        points.add(new DataPoint(0, Nd4j.create(new double[] {55, 55})));
+        points.add(new DataPoint(1, Nd4j.create(new double[] {60, 60})));
+        points.add(new DataPoint(2, Nd4j.create(new double[] {65, 65})));
+        VPTree tree = new VPTree(points, "euclidean");
 
+        tree.search(Nd4j.create(1, 10), 2, new ArrayList<DataPoint>(), new ArrayList<Double>());
+    }
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void vpTreeTest3() {
+        List<DataPoint> points = new ArrayList<>();
+        points.add(new DataPoint(0, Nd4j.create(new double[] {55, 55})));
+        points.add(new DataPoint(1, Nd4j.create(new double[] {60, 60})));
+        points.add(new DataPoint(2, Nd4j.create(new double[] {65, 65})));
+        VPTree tree = new VPTree(points, "euclidean");
+
+        tree.search(Nd4j.create(2, 10), 2, new ArrayList<DataPoint>(), new ArrayList<Double>());
+    }
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void vpTreeTest4() {
+        List<DataPoint> points = new ArrayList<>();
+        points.add(new DataPoint(0, Nd4j.create(new double[] {55, 55})));
+        points.add(new DataPoint(1, Nd4j.create(new double[] {60, 60})));
+        points.add(new DataPoint(2, Nd4j.create(new double[] {65, 65})));
+        VPTree tree = new VPTree(points, "euclidean");
+
+        tree.search(Nd4j.create(2, 10, 10), 2, new ArrayList<DataPoint>(), new ArrayList<Double>());
     }
 
     public static INDArray generateNaturalsMatrix(int nrows, int ncols) {
         INDArray col = Nd4j.arange(0, nrows).transpose();
         INDArray points = Nd4j.zeros(nrows, ncols);
-        for (int i = 0; i < ncols; i++)
-            points.putColumn(i, col);
+        if (points.isColumnVector())
+            points = col.dup();
+        else {
+            for (int i = 0; i < ncols; i++)
+                points.putColumn(i, col);
+        }
         return points;
     }
 
@@ -199,18 +238,22 @@ public class VpTreeNodeTest {
             for (int i = 0; i < ncols; i++)
                 trueResults.putScalar(j, i, pt);
         }
-        VPTree tree = new VPTree(points, "euclidean", false, true);
+
+        VPTree tree = new VPTree(points, "euclidean", 1, false);
+
         List<DataPoint> results = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
         tree.search(query, K, results, distances);
+        int dimensionToSort = 0;
+
         INDArray sortedResults = Nd4j.zeros(K, ncols);
         int i = 0;
         for (DataPoint p : results) {
-            sortedResults.put(new INDArrayIndex[] {NDArrayIndex.point(i++), NDArrayIndex.all()}, p.getPoint());
+            sortedResults.putRow(i++, p.getPoint());
         }
-        Nd4j.sort(sortedResults, 0, true);
-        if (!trueResults.equalsWithEps(sortedResults, 1E-12))
-            throw new Exception("VPTree search results do not match true results");
+
+        sortedResults = Nd4j.sort(sortedResults, dimensionToSort, true);
+        assertTrue(trueResults.equalsWithEps(sortedResults, 1e-12));
 
         VPTreeFillSearch fillSearch = new VPTreeFillSearch(tree, K, query);
         fillSearch.search();
@@ -218,10 +261,10 @@ public class VpTreeNodeTest {
         sortedResults = Nd4j.zeros(K, ncols);
         i = 0;
         for (DataPoint p : results)
-            sortedResults.put(new INDArrayIndex[] {NDArrayIndex.point(i++), NDArrayIndex.all()}, p.getPoint());
-        Nd4j.sort(sortedResults, 0, true);
-        if (!trueResults.equalsWithEps(sortedResults, 1E-12))
-            throw new Exception("VPTreeFillSearch results do not match true results");
+            sortedResults.putRow(i++, p.getPoint());
+        INDArray[] sortedWithIndices = Nd4j.sortWithIndices(sortedResults, dimensionToSort, true);;
+        sortedResults = sortedWithIndices[1];
+        assertEquals(trueResults.sumNumber().doubleValue(), sortedResults.sumNumber().doubleValue(), 1e-12);
     }
 
 }

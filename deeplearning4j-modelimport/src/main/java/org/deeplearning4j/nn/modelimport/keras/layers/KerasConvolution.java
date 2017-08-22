@@ -1,12 +1,13 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
-import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -21,12 +22,22 @@ import java.util.Set;
  * @author dave@skymind.io
  */
 @Slf4j
+@Data
 public class KerasConvolution extends KerasLayer {
 
     /* Keras layer parameter names. */
-    public static final int NUM_TRAINABLE_PARAMS = 2;
-    public static final String KERAS_PARAM_NAME_W = "W";
-    public static final String KERAS_PARAM_NAME_B = "b";
+    private int numTrainableParams;
+    private boolean hasBias;
+
+
+    /**
+     * Pass-through constructor from KerasLayer
+     * @param kerasVersion major keras version
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public KerasConvolution(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+        super(kerasVersion);
+    }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -51,6 +62,8 @@ public class KerasConvolution extends KerasLayer {
     public KerasConvolution(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
+        hasBias = getHasBiasFromConfig(layerConfig);
+        numTrainableParams = hasBias ? 2 : 1;
 
         ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder().name(this.layerName)
                         .nOut(getNOutFromConfig(layerConfig)).dropOut(this.dropout)
@@ -58,7 +71,8 @@ public class KerasConvolution extends KerasLayer {
                         .weightInit(getWeightInitFromConfig(layerConfig, enforceTrainingConfig)).biasInit(0.0)
                         .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                         .convolutionMode(getConvolutionModeFromConfig(layerConfig))
-                        .kernelSize(getKernelSizeFromConfig(layerConfig)).stride(getStrideFromConfig(layerConfig));
+                        .kernelSize(getKernelSizeFromConfig(layerConfig))
+                        .hasBias(hasBias).stride(getStrideFromConfig(layerConfig));
         int[] padding = getPaddingFromBorderModeConfig(layerConfig);
         if (padding != null)
             builder.padding(padding);
@@ -96,7 +110,7 @@ public class KerasConvolution extends KerasLayer {
      */
     @Override
     public int getNumParams() {
-        return NUM_TRAINABLE_PARAMS;
+        return numTrainableParams;
     }
 
     /**
@@ -107,14 +121,14 @@ public class KerasConvolution extends KerasLayer {
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
         this.weights = new HashMap<String, INDArray>();
-        if (weights.containsKey(KERAS_PARAM_NAME_W)) {
+        if (weights.containsKey(conf.getKERAS_PARAM_NAME_W())) {
             /* Theano and TensorFlow backends store convolutional weights
              * with a different dimensional ordering than DL4J so we need
              * to permute them to match.
              *
              * DL4J: (# outputs, # inputs, # rows, # cols)
              */
-            INDArray kerasParamValue = weights.get(KERAS_PARAM_NAME_W);
+            INDArray kerasParamValue = weights.get(conf.getKERAS_PARAM_NAME_W());
             INDArray paramValue;
             switch (this.getDimOrder()) {
                 case TENSORFLOW:
@@ -143,16 +157,19 @@ public class KerasConvolution extends KerasLayer {
             this.weights.put(ConvolutionParamInitializer.WEIGHT_KEY, paramValue);
         } else
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + KERAS_PARAM_NAME_W + " does not exist in weights");
-        if (weights.containsKey(KERAS_PARAM_NAME_B))
-            this.weights.put(ConvolutionParamInitializer.BIAS_KEY, weights.get(KERAS_PARAM_NAME_B));
-        else
-            throw new InvalidKerasConfigurationException(
-                            "Parameter " + KERAS_PARAM_NAME_B + " does not exist in weights");
+                            "Parameter " + conf.getKERAS_PARAM_NAME_W() + " does not exist in weights");
+
+        if (hasBias) {
+            if (weights.containsKey(conf.getKERAS_PARAM_NAME_B()))
+                this.weights.put(ConvolutionParamInitializer.BIAS_KEY, weights.get(conf.getKERAS_PARAM_NAME_B()));
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Parameter " + conf.getKERAS_PARAM_NAME_B() + " does not exist in weights");
+        }
         if (weights.size() > 2) {
             Set<String> paramNames = weights.keySet();
-            paramNames.remove(KERAS_PARAM_NAME_W);
-            paramNames.remove(KERAS_PARAM_NAME_B);
+            paramNames.remove(conf.getKERAS_PARAM_NAME_W());
+            paramNames.remove(conf.getKERAS_PARAM_NAME_B());
             String unknownParamNames = paramNames.toString();
             log.warn("Attemping to set weights for unknown parameters: "
                             + unknownParamNames.substring(1, unknownParamNames.length() - 1));

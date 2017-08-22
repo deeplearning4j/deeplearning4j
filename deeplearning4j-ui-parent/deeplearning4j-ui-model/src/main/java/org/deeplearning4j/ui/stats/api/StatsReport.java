@@ -1,8 +1,8 @@
 package org.deeplearning4j.ui.stats.api;
 
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.api.storage.Persistable;
+import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.ui.stats.StatsListener;
 
 import java.io.Serializable;
 import java.util.List;

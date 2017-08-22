@@ -1,12 +1,12 @@
 package org.ansj.app.crf;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.ansj.app.crf.pojo.Element;
 import org.ansj.util.MatrixUtil;
 import org.nlpcn.commons.lang.util.StringUtil;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * 分词

@@ -10,7 +10,7 @@ import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
@@ -27,7 +27,6 @@ import org.deeplearning4j.ui.play.staticroutes.Assets;
 import org.deeplearning4j.ui.play.staticroutes.I18NRoute;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
-import org.nd4j.linalg.io.CollectionUtils;
 import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
 import play.Mode;
@@ -38,6 +37,7 @@ import play.server.Server;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -69,10 +69,10 @@ public class PlayUIServer extends UIServer {
 
     private Server server;
     private final BlockingQueue<StatsStorageEvent> eventQueue = new LinkedBlockingQueue<>();
-    private List<Pair<StatsStorage, StatsStorageListener>> listeners = new ArrayList<>();
-    private List<StatsStorage> statsStorageInstances = new ArrayList<>();
+    private List<Pair<StatsStorage, StatsStorageListener>> listeners = new CopyOnWriteArrayList<>();
+    private List<StatsStorage> statsStorageInstances = new CopyOnWriteArrayList<>();
 
-    private List<UIModule> uiModules = new ArrayList<>();
+    private List<UIModule> uiModules = new CopyOnWriteArrayList<>();
     private RemoteReceiverModule remoteReceiverModule;
     //typeIDModuleMap: Records which modules are registered for which type IDs
     private Map<String, List<UIModule>> typeIDModuleMap = new ConcurrentHashMap<>();
@@ -230,7 +230,7 @@ public class PlayUIServer extends UIServer {
         List<UIModule> l = new ArrayList<>();
         while (iter.hasNext()) {
             UIModule m = iter.next();
-            log.info("Loaded UI module via service loader: {}", m.getClass());
+            log.debug("Loaded UI module via service loader: {}", m.getClass());
             l.add(m);
         }
 
@@ -304,10 +304,11 @@ public class PlayUIServer extends UIServer {
         if (!statsStorageInstances.contains(statsStorage))
             return; //No op
         boolean found = false;
-        for (Pair<StatsStorage, StatsStorageListener> p : listeners) {
+        for (Iterator<Pair<StatsStorage, StatsStorageListener>> iterator = listeners.iterator(); iterator.hasNext();) {
+            Pair<StatsStorage, StatsStorageListener> p = iterator.next();
             if (p.getFirst() == statsStorage) { //Same object, not equality
                 statsStorage.deregisterStatsStorageListener(p.getSecond());
-                listeners.remove(p);
+                iterator.remove();
                 found = true;
             }
         }

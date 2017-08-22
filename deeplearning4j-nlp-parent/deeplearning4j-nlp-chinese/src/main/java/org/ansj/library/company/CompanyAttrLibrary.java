@@ -1,12 +1,12 @@
 package org.ansj.library.company;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.util.HashMap;
-
 import org.ansj.util.MyStaticValue;
 import org.nlpcn.commons.lang.util.logging.Log;
 import org.nlpcn.commons.lang.util.logging.LogFactory;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * 机构名识别词典加载类

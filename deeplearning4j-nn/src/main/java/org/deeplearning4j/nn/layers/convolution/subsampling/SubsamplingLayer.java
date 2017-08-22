@@ -19,7 +19,7 @@
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -28,21 +28,16 @@ import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
-import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
-import org.nd4j.linalg.api.ops.impl.transforms.Pow;
+import org.nd4j.linalg.api.ops.impl.transforms.convolution.Pooling2D;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
@@ -291,32 +286,44 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //Similar to convolution layer forward pass: do im2col, but permute so that pooling can be done with efficient strides...
         //Current im2col implementation expects input with shape [miniBatch,depth,kH,kW,outH,outW]
-        INDArray col = Nd4j.createUninitialized(new int[] {miniBatch, inDepth, outH, outW, kernel[0], kernel[1]}, 'c');
-        INDArray col2 = col.permute(0, 1, 4, 5, 2, 3);
-        Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1],
-                        convolutionMode == ConvolutionMode.Same, col2);
 
-        //Reshape to 2d; should be zero-copy reshape due to permute above
-        INDArray col2d = col.reshape('c', miniBatch * inDepth * outH * outW, kernel[0] * kernel[1]);
+        INDArray output = Nd4j.createUninitialized(miniBatch * inDepth * outH * outW);
 
-        INDArray reduced;
+
         switch (layerConf().getPoolingType()) {
             case AVG:
-                reduced = col2d.mean(1);
+                //                reduced = col2d.mean(1);
+                //                time2 = System.nanoTime();
+
+                Convolution.pooling2D(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1],
+                                convolutionMode == ConvolutionMode.Same, Pooling2D.Pooling2DType.AVG, 0.0, outH, outW,
+                                output);
+
                 break;
             case MAX:
-                reduced = col2d.max(1);
+                Convolution.pooling2D(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1],
+                                convolutionMode == ConvolutionMode.Same, Pooling2D.Pooling2DType.MAX, 0.0, outH, outW,
+                                output);
+
                 break;
             case PNORM:
                 // pnorm pooling is used for signal loss recovery it is mixed with avg pooling,
                 // applying the exponent to the input and recovering the signal by multiplying the kernel of
                 // the pooling layer and then applying the same inverse exponent
                 int pnorm = layerConf().getPnorm();
-
+                /*
+                
                 Transforms.abs(col2d, false);
                 Transforms.pow(col2d, pnorm, false);
                 reduced = col2d.sum(1);
                 Transforms.pow(reduced, (1.0 / pnorm), false);
+                time2 = System.nanoTime();
+                */
+
+                Convolution.pooling2D(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1],
+                                convolutionMode == ConvolutionMode.Same, Pooling2D.Pooling2DType.PNORM, (double) pnorm,
+                                outH, outW, output);
+
                 break;
             case NONE:
                 return input;
@@ -324,7 +331,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 throw new IllegalStateException("Unknown/not supported pooling type: " + layerConf().getPoolingType()
                                 + " " + layerId());
         }
-        return reduced.reshape('c', miniBatch, inDepth, outH, outW);
+
+        return output.reshape('c', miniBatch, inDepth, outH, outW);
     }
 
     @Override

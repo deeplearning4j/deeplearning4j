@@ -3,7 +3,6 @@ package org.deeplearning4j.spark.impl.listeners;
 import lombok.Data;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
 import org.deeplearning4j.api.storage.StorageMetaData;
 
 import java.util.ArrayList;

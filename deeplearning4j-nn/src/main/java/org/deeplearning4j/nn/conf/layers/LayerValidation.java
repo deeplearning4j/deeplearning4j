@@ -7,8 +7,6 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.OneTimeLogger;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.*;
 import org.nd4j.linalg.learning.config.*;
 
 import java.util.HashMap;
@@ -48,25 +46,25 @@ public class LayerValidation {
                     Map<Integer, Double> momentumSchedule, double adamMeanDecay, double adamVarDecay, double rho,
                     double rmsDecay, double epsilon) {
         if ((!Double.isNaN(momentum) || !Double.isNaN(layer.getMomentum())) && layer.getUpdater() != Updater.NESTEROVS)
-            OneTimeLogger.warn(log,"Layer \"" + layerName
+            OneTimeLogger.warn(log, "Layer \"" + layerName
                             + "\" momentum has been set but will not be applied unless the updater is set to NESTEROVS.");
         if ((momentumSchedule != null || layer.getMomentumSchedule() != null)
                         && layer.getUpdater() != Updater.NESTEROVS)
-            OneTimeLogger.warn(log,"Layer \"" + layerName
+            OneTimeLogger.warn(log, "Layer \"" + layerName
                             + "\" momentum schedule has been set but will not be applied unless the updater is set to NESTEROVS.");
         if ((!Double.isNaN(adamVarDecay) || (!Double.isNaN(layer.getAdamVarDecay())))
                         && layer.getUpdater() != Updater.ADAM)
-            OneTimeLogger.warn(log,"Layer \"" + layerName
+            OneTimeLogger.warn(log, "Layer \"" + layerName
                             + "\" adamVarDecay is set but will not be applied unless the updater is set to Adam.");
         if ((!Double.isNaN(adamMeanDecay) || !Double.isNaN(layer.getAdamMeanDecay()))
                         && layer.getUpdater() != Updater.ADAM)
-            OneTimeLogger.warn(log,"Layer \"" + layerName
+            OneTimeLogger.warn(log, "Layer \"" + layerName
                             + "\" adamMeanDecay is set but will not be applied unless the updater is set to Adam.");
         if ((!Double.isNaN(rho) || !Double.isNaN(layer.getRho())) && layer.getUpdater() != Updater.ADADELTA)
-            OneTimeLogger.warn(log,"Layer \"" + layerName
+            OneTimeLogger.warn(log, "Layer \"" + layerName
                             + "\" rho is set but will not be applied unless the updater is set to ADADELTA.");
         if ((!Double.isNaN(rmsDecay) || (!Double.isNaN(layer.getRmsDecay()))) && layer.getUpdater() != Updater.RMSPROP)
-            OneTimeLogger.warn(log,"Layer \"" + layerName
+            OneTimeLogger.warn(log, "Layer \"" + layerName
                             + "\" rmsdecay is set but will not be applied unless the updater is set to RMSPROP.");
 
 
@@ -290,70 +288,54 @@ public class LayerValidation {
         }
     }
 
-    public static void generalValidation(String layerName, Layer layer, boolean useRegularization,
-                    boolean useDropConnect, Double dropOut, Double l2, Double l2Bias, Double l1, Double l1Bias,
+    public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, Double dropOut,
+                                         Double l2, Double l2Bias, Double l1, Double l1Bias,
                     Distribution dist) {
-        generalValidation(layerName, layer, useRegularization, useDropConnect, dropOut == null ? 0.0 : dropOut,
+        generalValidation(layerName, layer, useDropConnect, dropOut == null ? 0.0 : dropOut,
                         l2 == null ? Double.NaN : l2, l2Bias == null ? Double.NaN : l2Bias,
                         l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, dist);
     }
 
-    public static void generalValidation(String layerName, Layer layer, boolean useRegularization,
-                    boolean useDropConnect, double dropOut, double l2, double l2Bias, double l1, double l1Bias,
+    public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, double dropOut,
+                                         double l2, double l2Bias, double l1, double l1Bias,
                     Distribution dist) {
 
         if (layer != null) {
 
             if (useDropConnect && (Double.isNaN(dropOut) && (Double.isNaN(layer.getDropOut()))))
-                OneTimeLogger.warn(log,"Layer \"" + layerName
+                OneTimeLogger.warn(log, "Layer \"" + layerName
                                 + "\" dropConnect is set to true but dropout rate has not been added to configuration.");
             if (useDropConnect && layer.getDropOut() == 0.0)
-                OneTimeLogger.warn(log,"Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
+                OneTimeLogger.warn(log,
+                                "Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
 
             if (layer instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) layer;
-                configureBaseLayer(layerName, bLayer, useRegularization, useDropConnect, dropOut, l2, l2Bias, l1,
+                configureBaseLayer(layerName, bLayer, useDropConnect, dropOut, l2, l2Bias, l1,
                                 l1Bias, dist);
             } else if (layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
-                configureBaseLayer(layerName, bLayer, useRegularization, useDropConnect, dropOut, l2, l2Bias, l1,
+                configureBaseLayer(layerName, bLayer, useDropConnect, dropOut, l2, l2Bias, l1,
                                 l1Bias, dist);
             }
         }
     }
 
-    private static void configureBaseLayer(String layerName, BaseLayer bLayer, boolean useRegularization,
-                    boolean useDropConnect, Double dropOut, Double l2, Double l2Bias, Double l1, Double l1Bias,
+    private static void configureBaseLayer(String layerName, BaseLayer bLayer,  boolean useDropConnect,
+                                           Double dropOut, Double l2, Double l2Bias, Double l1, Double l1Bias,
                     Distribution dist) {
-        if (useRegularization && (Double.isNaN(l1) && Double.isNaN(bLayer.getL1()) && Double.isNaN(l2)
-                        && Double.isNaN(bLayer.getL2()) && Double.isNaN(l2Bias) && Double.isNaN(l1Bias)
-                        && (Double.isNaN(dropOut) || dropOut == 0.0)
-                        && (Double.isNaN(bLayer.getDropOut()) || bLayer.getDropOut() == 0.0)))
-            OneTimeLogger.warn(log,"Layer \"" + layerName
-                            + "\" regularization is set to true but l1, l2 or dropout has not been added to configuration.");
 
-        if (useRegularization) {
-            if (!Double.isNaN(l1) && Double.isNaN(bLayer.getL1())) {
-                bLayer.setL1(l1);
-            }
-            if (!Double.isNaN(l2) && Double.isNaN(bLayer.getL2())) {
-                bLayer.setL2(l2);
-            }
-            if (!Double.isNaN(l1Bias) && Double.isNaN(bLayer.getL1Bias())) {
-                bLayer.setL1Bias(l1Bias);
-            }
-            if (!Double.isNaN(l2Bias) && Double.isNaN(bLayer.getL2Bias())) {
-                bLayer.setL2Bias(l2Bias);
-            }
-        } else if (!useRegularization && ((!Double.isNaN(l1) && l1 > 0.0)
-                        || (!Double.isNaN(bLayer.getL1()) && bLayer.getL1() > 0.0) || (!Double.isNaN(l2) && l2 > 0.0)
-                        || (!Double.isNaN(bLayer.getL2()) && bLayer.getL2() > 0.0)
-                        || (!Double.isNaN(l1Bias) && l1Bias > 0.0)
-                        || (!Double.isNaN(bLayer.getL1Bias()) && bLayer.getL1Bias() > 0.0)
-                        || (!Double.isNaN(l2Bias) && l2Bias > 0.0)
-                        || (!Double.isNaN(bLayer.getL2Bias()) && bLayer.getL2Bias() > 0.0))) {
-            OneTimeLogger.warn(log,"Layer \"" + layerName
-                            + "\" l1 or l2 has been added to configuration but useRegularization is set to false.");
+        if (!Double.isNaN(l1) && Double.isNaN(bLayer.getL1())) {
+            bLayer.setL1(l1);
+        }
+        if (!Double.isNaN(l2) && Double.isNaN(bLayer.getL2())) {
+            bLayer.setL2(l2);
+        }
+        if (!Double.isNaN(l1Bias) && Double.isNaN(bLayer.getL1Bias())) {
+            bLayer.setL1Bias(l1Bias);
+        }
+        if (!Double.isNaN(l2Bias) && Double.isNaN(bLayer.getL2Bias())) {
+            bLayer.setL2Bias(l2Bias);
         }
 
         if (Double.isNaN(l2) && Double.isNaN(bLayer.getL2())) {
@@ -375,11 +357,11 @@ public class LayerValidation {
                 bLayer.setDist(dist);
             else if (dist == null && bLayer.getDist() == null) {
                 bLayer.setDist(new NormalDistribution(0, 1));
-                OneTimeLogger.warn(log,"Layer \"" + layerName
+                OneTimeLogger.warn(log, "Layer \"" + layerName
                                 + "\" distribution is automatically set to normalize distribution with mean 0 and variance 1.");
             }
         } else if ((dist != null || bLayer.getDist() != null)) {
-            OneTimeLogger.warn(log,"Layer \"" + layerName
+            OneTimeLogger.warn(log, "Layer \"" + layerName
                             + "\" distribution is set but will not be applied unless weight init is set to WeighInit.DISTRIBUTION.");
         }
     }

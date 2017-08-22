@@ -1,19 +1,15 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.deeplearning4j.nn.conf.CacheMode;
+import lombok.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-import org.nd4j.linalg.lossfunctions.impl.*;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
+import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
+import org.nd4j.linalg.lossfunctions.impl.LossMSE;
+import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 
 @Data
 @NoArgsConstructor
@@ -21,10 +17,17 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public abstract class BaseOutputLayer extends FeedForwardLayer {
     protected ILossFunction lossFn;
+    @Getter(AccessLevel.NONE)
+    protected boolean hasBias = true;
 
     protected BaseOutputLayer(Builder builder) {
         super(builder);
         this.lossFn = builder.lossFn;
+        this.hasBias = builder.hasBias;
+    }
+
+    public boolean hasBias(){
+        return hasBias;
     }
 
     /**
@@ -84,6 +87,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
 
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
         protected ILossFunction lossFn = new LossMCXENT();
+        private boolean hasBias = true;
 
         public Builder() {}
 
@@ -97,6 +101,16 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
 
         public T lossFunction(LossFunction lossFunction) {
             return lossFunction(lossFunction.getILossFunction());
+        }
+
+        /**
+         * If true (default): include bias parameters in the model. False: no bias.
+         *
+         * @param hasBias If true: include bias parameters in this model
+         */
+        public T hasBias(boolean hasBias){
+            this.hasBias = hasBias;
+            return (T)this;
         }
 
         public T lossFunction(ILossFunction lossFunction) {

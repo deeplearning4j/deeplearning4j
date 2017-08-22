@@ -2,15 +2,12 @@ package org.deeplearning4j.spark.parameterserver.pw;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Loader;
-import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.listeners.PerformanceListener;
 import org.deeplearning4j.optimize.listeners.SleepyTrainingListener;
-import org.deeplearning4j.optimize.solvers.accumulation.CudaGradientsAccumulator;
+import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
@@ -29,7 +26,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
-import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
@@ -39,10 +35,8 @@ import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Observer;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class maintains ParallelWrapper instance in Spark environment, and provides primitives for inter-executor
@@ -64,7 +58,7 @@ public class SharedTrainingWrapper {
     protected AtomicBoolean isFirst = new AtomicBoolean(false);
 
     protected ThreadLocal<BlockingObserver> observer = new ThreadLocal<>();
-    protected CudaGradientsAccumulator accumulator;
+    protected EncodedGradientsAccumulator accumulator;
     protected Model originalModel;
 
     protected SilentTrainingDriver driver;
@@ -174,14 +168,29 @@ public class SharedTrainingWrapper {
                 if (model == null)
                     throw new DL4JInvalidConfigException("No model was defined for training");
 
-                MessageHandler handler = new WiredEncodingHandler(trainingConfiguration.getThreshold(), trainingConfiguration.getMinThreshold(), trainingConfiguration.getThresholdStep(), trainingConfiguration.getStepTrigger(), trainingConfiguration.getStepDelay(), trainingConfiguration.getShakeFrequency());
+                MessageHandler handler = new WiredEncodingHandler(trainingConfiguration.getThreshold(),
+                                trainingConfiguration.getMinThreshold(), trainingConfiguration.getThresholdStep(),
+                                trainingConfiguration.getStepTrigger(), trainingConfiguration.getStepDelay(),
+                                trainingConfiguration.getShakeFrequency());
 
                 // this accumulator will provide sharing gradients over network, via WiredEncodedHandler. But we create it only once
                 if (accumulator == null) {
-                    accumulator = new CudaGradientsAccumulator.Builder(numWorkers).messageHandler(handler)
+                    /**
+                     *  We know, that updates are guaranteed to have MAX size of params / 16. So, here we go.
+                     *  I.e. for model with 100m params, that's 400m of floats (or 800m of doubles)
+                     *  The worst case for us is bitmap encoding, that takes 2 bits to encode each gradient value
+                     *
+                     *  so, for float in worst case we'll have (100m / 16) int elements. So, our buffer size will be 6.25m * queueSize * 4 bytes per int
+                     */
+
+                    int queueSize = numWorkers * 2;
+
+                    int bufferSize = trainingConfiguration.getBufferSize() > 0 ? trainingConfiguration.getBufferSize()
+                                    : EncodedGradientsAccumulator.getOptimalBufferSize(model, numWorkers, 2);
+
+                    accumulator = new EncodedGradientsAccumulator.Builder(numWorkers).messageHandler(handler)
                                     .encodingThreshold(trainingConfiguration.getThreshold())
-                                    // TODO: make this configurable
-                                    .memoryParameters(200 * 1024 * 1024L, numWorkers * 2).build();
+                                    .memoryParameters(bufferSize, queueSize).build();
 
                     // FIXME: implement support for Custom transport implementation
                     Transport transport =

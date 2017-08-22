@@ -20,7 +20,7 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
@@ -47,10 +47,6 @@ public class LayerVertex extends BaseGraphVertex {
 
     private Layer layer;
     private final InputPreProcessor layerPreProcessor;
-    //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
-    // For RL situations, this Layer insn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
-    // passed in externally
-    private final boolean outputVertex;
 
     /**
      * Create a network input vertex:

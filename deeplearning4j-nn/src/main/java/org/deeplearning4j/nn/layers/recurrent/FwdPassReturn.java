@@ -2,7 +2,6 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Created by benny on 12/31/15.
@@ -24,9 +23,12 @@ public class FwdPassReturn {
     public INDArray[] fz;
     public INDArray[] oz;
     public INDArray[] gz;
-    //Last 2: needed for rnnTimeStep only
+    //Next 2: needed for rnnTimeStep only
     public INDArray lastAct;
     public INDArray lastMemCell;
+    //Last 2: needed only for TBPTT
+    public INDArray prevAct;
+    public INDArray prevMemCell;
 
     /**
      * This method is OPTIONAL, and written mostly for future use
@@ -91,5 +93,8 @@ public class FwdPassReturn {
 
         if (lastMemCell != null)
             lastMemCell = lastMemCell.leverageTo(id);
+
+        //Don't want to leverage previous activations if present - assume that has already happened (either passed
+        // externally, or was originally a lastAct/lastMemCell)
     }
 }

@@ -1,24 +1,10 @@
 package org.ansj.splitWord.analysis;
 
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.ansj.app.crf.SplitWord;
 import org.ansj.dic.LearnTool;
-import org.ansj.domain.Nature;
-import org.ansj.domain.NewWord;
-import org.ansj.domain.Result;
-import org.ansj.domain.Term;
-import org.ansj.domain.TermNatures;
+import org.ansj.domain.*;
 import org.ansj.library.CrfLibrary;
-import org.ansj.recognition.arrimpl.AsianPersonRecognition;
-import org.ansj.recognition.arrimpl.ForeignPersonRecognition;
-import org.ansj.recognition.arrimpl.NewWordRecognition;
-import org.ansj.recognition.arrimpl.NumRecognition;
-import org.ansj.recognition.arrimpl.UserDefineRecognition;
+import org.ansj.recognition.arrimpl.*;
 import org.ansj.recognition.impl.NatureRecognition;
 import org.ansj.splitWord.Analysis;
 import org.ansj.util.AnsjReader;
@@ -31,6 +17,12 @@ import org.nlpcn.commons.lang.util.MapCount;
 import org.nlpcn.commons.lang.util.WordAlert;
 import org.nlpcn.commons.lang.util.logging.Log;
 import org.nlpcn.commons.lang.util.logging.LogFactory;
+
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * 自然语言分词,具有未登录词发现功能。建议在自然语言理解中用。搜索中不要用

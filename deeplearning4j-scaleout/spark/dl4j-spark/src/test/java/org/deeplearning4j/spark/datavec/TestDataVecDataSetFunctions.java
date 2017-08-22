@@ -313,7 +313,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         pathFeatures = folderFeatures + "*";
 
         File f2 = new File("src/test/resources/csvsequencelabels/csvsequencelabelsShort_0.txt");
-        String pathLabels = f2.getPath();
+        String pathLabels = f2.getAbsolutePath();
         String folderLabels = pathLabels.substring(0, pathLabels.length() - 28);
         pathLabels = folderLabels + "*";
 
@@ -324,7 +324,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
 
         Path p = Files.createTempDirectory("dl4j_testSeqPairFnVarLength");
         p.toFile().deleteOnExit();
-        String outPath = p.toString() + "/out";
+        String outPath = p.toFile().getAbsolutePath() + "/out";
         new File(outPath).deleteOnExit();
         toWrite.saveAsNewAPIHadoopFile(outPath, Text.class, BytesPairWritable.class, SequenceFileOutputFormat.class);
 
@@ -344,8 +344,8 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
 
 
         //Now: do the same thing locally (SequenceRecordReaderDataSetIterator) and compare
-        String featuresPath = f.getPath().replaceAll("0", "%d");
-        String labelsPath = f2.getPath().replaceAll("0", "%d");
+        String featuresPath = f.getAbsolutePath().replaceAll("0", "%d");
+        String labelsPath = f2.getAbsolutePath().replaceAll("0", "%d");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");

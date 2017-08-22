@@ -1,10 +1,5 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-import java.io.IOException;
-
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -14,6 +9,11 @@ import org.deeplearning4j.text.tokenization.tokenizerFactory.ChineseTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
 
 /**@author wangfeng
  * @date June 3,2017

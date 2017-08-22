@@ -3,14 +3,18 @@ package org.deeplearning4j.nearestneighbor.server;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import org.apache.commons.io.IOUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nearestneighbor.model.*;
-import org.jboss.netty.util.internal.ByteBufferUtil;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.serde.base64.Nd4jBase64;
 import org.nd4j.serde.binary.BinarySerde;
 import play.Mode;
@@ -19,17 +23,12 @@ import play.routing.RoutingDsl;
 import play.server.Server;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import static play.mvc.Controller.request;
-import static play.mvc.Results.badRequest;
-import static play.mvc.Results.internalServerError;
-import static play.mvc.Results.ok;
+import static play.mvc.Results.*;
 
 /**
  * A rest server for using an
@@ -41,9 +40,12 @@ import static play.mvc.Results.ok;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class NearestNeighborsServer {
     @Parameter(names = {"--ndarrayPath"}, arity = 1, required = true)
     private String ndarrayPath = null;
+    @Parameter(names = {"--labelsPath"}, arity = 1, required = false)
+    private String labelsPath = null;
     @Parameter(names = {"--nearestNeighborsPort"}, arity = 1)
     private int port = 9000;
     @Parameter(names = {"--similarityFunction"}, arity = 1)
@@ -71,10 +73,52 @@ public class NearestNeighborsServer {
         }
 
         String[] pathArr = ndarrayPath.split(",");
-        INDArray[] pointsArr = new INDArray[pathArr.length];
-        for (int i = 0; i < pathArr.length; i++)
-            pointsArr[i] = BinarySerde.readFromDisk(new File(pathArr[i]));
-        final INDArray points = Nd4j.concat(0, pointsArr);
+        //INDArray[] pointsArr = new INDArray[pathArr.length];
+        // first of all we reading shapes of saved eariler files
+        int rows = 0;
+        int cols = 0;
+        for (int i = 0; i < pathArr.length; i++) {
+            DataBuffer shape = BinarySerde.readShapeFromDisk(new File(pathArr[i]));
+
+            log.info("Loading shape {} of {}; Shape: [{} x {}]", i + 1, pathArr.length, Shape.size(shape, 0),
+                            Shape.size(shape, 1));
+
+            if (Shape.rank(shape) != 2)
+                throw new DL4JInvalidInputException("NearestNeighborsServer assumes 2D chunks");
+
+            rows += Shape.size(shape, 0);
+
+            if (cols == 0)
+                cols = Shape.size(shape, 1);
+            else if (cols != Shape.size(shape, 1))
+                throw new DL4JInvalidInputException(
+                                "NearestNeighborsServer requires equal 2D chunks. Got columns mismatch.");
+        }
+
+        final List<String> labels = new ArrayList<>();
+        if (labelsPath != null) {
+            String[] labelsPathArr = labelsPath.split(",");
+            for (int i = 0; i < labelsPathArr.length; i++) {
+                labels.addAll(FileUtils.readLines(new File(labelsPathArr[i]), "utf-8"));
+            }
+        }
+        if (labels.size() > 0 && labels.size() != rows)
+            throw new DL4JInvalidInputException(String.format("Number of labels must match number of rows in points matrix (expected %d, found %d)", rows, labels.size()));
+
+        final INDArray points = Nd4j.createUninitialized(rows, cols);
+
+        int lastPosition = 0;
+        for (int i = 0; i < pathArr.length; i++) {
+            log.info("Loading chunk {} of {}", i + 1, pathArr.length);
+            INDArray pointsArr = BinarySerde.readFromDisk(new File(pathArr[i]));
+
+            points.get(NDArrayIndex.interval(lastPosition, lastPosition + pointsArr.rows())).assign(pointsArr);
+            lastPosition += pointsArr.rows();
+
+            // let's ensure we don't bring too much stuff in next loop
+            System.gc();
+        }
+
         VPTree tree = new VPTree(points, similarityFunction, invert);
 
         RoutingDsl routingDsl = new RoutingDsl();
@@ -119,13 +163,20 @@ public class NearestNeighborsServer {
                     results = new ArrayList<>();
                     distances = new ArrayList<>();
                     tree.search(arr, record.getK(), results, distances);
+                }
 
-
+                if (results.size() != distances.size()) {
+                    return internalServerError(
+                            String.format("results.size == %d != %d == distances.size",
+                                    results.size(), distances.size()));
                 }
 
                 List<NearestNeighborsResult> nnResult = new ArrayList<>();
-                for (DataPoint dataPoint : results) {
-                    nnResult.add(new NearestNeighborsResult(dataPoint.getIndex()));
+                for (int i=0; i<results.size(); i++) {
+                    if (labels.size() > 0)
+                        nnResult.add(new NearestNeighborsResult(results.get(i).getIndex(), distances.get(i), labels.get(results.get(i).getIndex())));
+                    else
+                        nnResult.add(new NearestNeighborsResult(results.get(i).getIndex(), distances.get(i)));
                 }
 
                 NearstNeighborsResults results2 = NearstNeighborsResults.builder().results(nnResult).build();

@@ -12,7 +12,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
 import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer}
-import org.nd4j.linalg.api.ndarray.INDArray
 
 
 final class SparkDl4jNetwork(

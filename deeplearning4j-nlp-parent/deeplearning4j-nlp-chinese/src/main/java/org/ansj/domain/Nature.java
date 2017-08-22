@@ -1,8 +1,8 @@
 package org.ansj.domain;
 
-import java.io.Serializable;
-
 import org.ansj.library.NatureLibrary;
+
+import java.io.Serializable;
 
 /**
  * 这里面封装了一些基本的词性.

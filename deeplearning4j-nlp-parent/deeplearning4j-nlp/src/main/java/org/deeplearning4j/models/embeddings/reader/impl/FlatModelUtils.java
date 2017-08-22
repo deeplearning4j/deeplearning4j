@@ -1,6 +1,6 @@
 package org.deeplearning4j.models.embeddings.reader.impl;
 
-import org.deeplearning4j.berkeley.Counter;
+import org.nd4j.linalg.primitives.Counter;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -54,7 +54,7 @@ public class FlatModelUtils<T extends SequenceElement> extends BasicModelUtils<T
             distances.incrementCount(s, (float) sim);
         }
 
-        distances.keepTopNKeys(top);
-        return distances.getSortedKeys();
+        distances.keepTopNElements(top);
+        return distances.keySetSorted();
     }
 }

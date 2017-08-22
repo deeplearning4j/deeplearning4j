@@ -1,6 +1,7 @@
 package org.deeplearning4j.base;
 
 import org.junit.Test;
+
 import java.io.File;
 
 /**
@@ -9,11 +10,10 @@ import java.io.File;
 public class MnistFetcherTest {
 
     @Test
-    public void testIrisDataFetcher() throws Exception {
+    public void testMnistDataFetcher() throws Exception {
         MnistFetcher mnistFetcher = new MnistFetcher();
         File mnistDir = mnistFetcher.downloadAndUntar();
 
         assert (mnistDir.isDirectory());
     }
-
 }

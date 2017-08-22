@@ -179,14 +179,14 @@ public class UpdaterBlock {
         //TODO: do this for multiple contiguous params/layers (fewer, larger ops)
 
         double l2 = conf.getL2ByParam(paramName);
-        if (conf.isUseRegularization() && l2 > 0) {
+        if (l2 > 0) {
             //This can be an axpy op, saving an allocation...
             //gradientView += params * l2           i.e., dC/dw = dC0/dw + lambda/n * w where C0 is pre-l2 cost function
             //Equivalent to gradientView.addi(paramsView.mul(conf.getL2ByParam(paramName)));
             int length = gradientView.length();
             Nd4j.getBlasWrapper().level1().axpy(length, l2, paramsView, gradientView);
         }
-        if (conf.isUseRegularization() && conf.getL1ByParam(paramName) > 0) {
+        if (conf.getL1ByParam(paramName) > 0) {
             gradientView.addi(Transforms.sign(paramsView, true).muli(conf.getL1ByParam(paramName)));
         }
     }

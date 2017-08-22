@@ -1,8 +1,8 @@
 package org.ansj.app.summary.pojo;
 
-import java.util.List;
-
 import org.ansj.app.keyword.Keyword;
+
+import java.util.List;
 
 /**
  * 摘要结构体封装

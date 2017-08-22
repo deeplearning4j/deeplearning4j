@@ -152,9 +152,9 @@ public abstract class BaseCudnnHelper {
             }
         }
 
-        TensorArray() {}
+        public TensorArray() {}
 
-        TensorArray(long size) {
+        public TensorArray(long size) {
             PointerPointer p = new PointerPointer(size);
             p.deallocate(false);
             this.address = p.address();
@@ -169,7 +169,7 @@ public abstract class BaseCudnnHelper {
             deallocator(new Deallocator(this, p));
         }
 
-        TensorArray(TensorArray a) {
+        public TensorArray(TensorArray a) {
             super(a);
         }
     }

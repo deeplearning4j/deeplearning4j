@@ -19,7 +19,7 @@
 package org.deeplearning4j.nn.layers;
 
 
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -218,8 +218,6 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
         double l2Sum = super.calcL2(true);
         if (backpropParamsOnly)
             return l2Sum;
@@ -232,8 +230,6 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
         double l1Sum = super.calcL1(true);
         if (conf.getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0) {
             l1Sum += conf.getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY)

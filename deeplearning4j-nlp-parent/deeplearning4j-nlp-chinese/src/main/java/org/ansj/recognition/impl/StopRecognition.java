@@ -1,17 +1,13 @@
 package org.ansj.recognition.impl;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.regex.Pattern;
-
 import org.ansj.domain.Result;
 import org.ansj.domain.Term;
 import org.ansj.recognition.Recognition;
 import org.nlpcn.commons.lang.util.logging.Log;
 import org.nlpcn.commons.lang.util.logging.LogFactory;
+
+import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * 对结果增加过滤,支持词性过滤,和词语过滤.

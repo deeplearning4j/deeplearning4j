@@ -17,12 +17,12 @@
  */
 package org.deeplearning4j.ui.components.chart;
 
-import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 /**
  * Abstract class for charts

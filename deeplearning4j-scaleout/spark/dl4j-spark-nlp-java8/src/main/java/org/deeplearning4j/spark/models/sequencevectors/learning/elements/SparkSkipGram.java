@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.RandomUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
-import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.logic.sequence.BasicSequenceProvider;
 import org.nd4j.parameterserver.distributed.messages.Frame;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;

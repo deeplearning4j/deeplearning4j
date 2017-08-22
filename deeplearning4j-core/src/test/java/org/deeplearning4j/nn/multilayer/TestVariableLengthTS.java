@@ -19,11 +19,12 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 public class TestVariableLengthTS {
 
@@ -86,7 +87,7 @@ public class TestVariableLengthTS {
             Gradient g2 = net.gradient();
 
             //Scores and gradients should be identical for two cases (given mask array)
-            assertEquals(score1, score2, 0.0);
+            assertEquals(score1, score2, 1e-6);
 
             Map<String, INDArray> g1map = g1.gradientForVariable();
             Map<String, INDArray> g2map = g2.gradientForVariable();
@@ -108,7 +109,7 @@ public class TestVariableLengthTS {
                 net.computeGradientAndScore();
                 double score2a = net.score();
                 Gradient g2a = net.gradient();
-                assertEquals(score2, score2a, 0.0);
+                assertEquals(score2, score2a, 1e-6);
                 for (String s : g2map.keySet()) {
                     INDArray g2s = g2map.get(s);
                     INDArray g2sa = g2a.getGradientFor(s);

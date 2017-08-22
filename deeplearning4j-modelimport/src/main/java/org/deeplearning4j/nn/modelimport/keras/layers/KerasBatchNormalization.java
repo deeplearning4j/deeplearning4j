@@ -1,11 +1,12 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
-import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
-import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -19,24 +20,34 @@ import java.util.Set;
  * @author dave@skymind.io
  */
 @Slf4j
+@Data
 public class KerasBatchNormalization extends KerasLayer {
 
     /* Keras layer configuration fields. */
-    public static final int LAYER_BATCHNORM_MODE_1 = 1;
-    public static final int LAYER_BATCHNORM_MODE_2 = 2;
-    public static final String LAYER_FIELD_GAMMA_REGULARIZER = "gamma_regularizer";
-    public static final String LAYER_FIELD_BETA_REGULARIZER = "beta_regularizer";
-    public static final String LAYER_FIELD_MODE = "mode";
-    public static final String LAYER_FIELD_AXIS = "axis";
-    public static final String LAYER_FIELD_MOMENTUM = "momentum";
-    public static final String LAYER_FIELD_EPSILON = "epsilon";
+    private final int LAYER_BATCHNORM_MODE_1 = 1;
+    private final int LAYER_BATCHNORM_MODE_2 = 2;
+    private final String LAYER_FIELD_GAMMA_REGULARIZER = "gamma_regularizer";
+    private final String LAYER_FIELD_BETA_REGULARIZER = "beta_regularizer";
+    private final String LAYER_FIELD_MODE = "mode";
+    private final String LAYER_FIELD_AXIS = "axis";
+    private final String LAYER_FIELD_MOMENTUM = "momentum";
+    private final String LAYER_FIELD_EPSILON = "epsilon";
 
     /* Keras layer parameter names. */
-    public static final int NUM_TRAINABLE_PARAMS = 4;
-    public static final String PARAM_NAME_GAMMA = "gamma";
-    public static final String PARAM_NAME_BETA = "beta";
-    public static final String PARAM_NAME_RUNNING_MEAN = "running_mean";
-    public static final String PARAM_NAME_RUNNING_STD = "running_std";
+    private final int NUM_TRAINABLE_PARAMS = 4;
+    private final String PARAM_NAME_GAMMA = "gamma";
+    private final String PARAM_NAME_BETA = "beta";
+    private final String PARAM_NAME_RUNNING_MEAN = "running_mean";
+    private final String PARAM_NAME_RUNNING_STD = "running_std";
+
+    /**
+     * Pass-through constructor from KerasLayer
+     * @param kerasVersion major keras version
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public KerasBatchNormalization(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+        super(kerasVersion);
+    }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -221,10 +232,12 @@ public class KerasBatchNormalization extends KerasLayer {
     protected int getBatchNormMode(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(LAYER_FIELD_MODE))
+        int batchNormMode = 0;
+        if (this.kerasMajorVersion == 1 & !innerConfig.containsKey(LAYER_FIELD_MODE))
             throw new InvalidKerasConfigurationException(
                             "Keras BatchNorm layer config missing " + LAYER_FIELD_MODE + " field");
-        int batchNormMode = (int) innerConfig.get(LAYER_FIELD_MODE);
+        if (this.kerasMajorVersion == 1)
+            batchNormMode = (int) innerConfig.get(LAYER_FIELD_MODE);
         switch (batchNormMode) {
             case LAYER_BATCHNORM_MODE_1:
                 throw new UnsupportedKerasConfigurationException("Keras BatchNormalization mode "

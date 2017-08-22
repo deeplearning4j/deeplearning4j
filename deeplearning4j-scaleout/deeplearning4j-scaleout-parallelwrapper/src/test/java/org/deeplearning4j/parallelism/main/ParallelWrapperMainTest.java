@@ -20,7 +20,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
-import java.util.Random;
 
 /**
  * Created by agibsonccc on 12/29/16.
@@ -65,7 +64,7 @@ public class ParallelWrapperMainTest {
                         .layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutional(28, 28, nChannels));
+                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, nChannels));
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);

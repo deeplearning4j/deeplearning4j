@@ -5,7 +5,7 @@
   <parent>
     <artifactId>deeplearning4j-parent</artifactId>
     <groupId>org.deeplearning4j</groupId>
-    <version>0.8.1-SNAPSHOT</version>
+    <version>0.9.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>deeplearning4j-keras</artifactId>
@@ -85,13 +85,6 @@
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-native</artifactId>
       <version>${nd4j.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <version>2.5.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.nn.graph.vertex;
 
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -84,6 +84,9 @@ public interface GraphVertex extends Serializable {
 
     /** Whether the GraphVertex is an output vertex */
     boolean isOutputVertex();
+
+    /** Set the GraphVertex to be an output vertex */
+    void setOutputVertex(boolean outputVertex);
 
     /** Get the Layer (if any). Returns null if {@link #hasLayer()} == false */
     Layer getLayer();

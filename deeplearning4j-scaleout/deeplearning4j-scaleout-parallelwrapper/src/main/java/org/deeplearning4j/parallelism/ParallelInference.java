@@ -8,18 +8,17 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.parallelism.inference.InferenceMode;
+import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObservable;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObserver;
-import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.deeplearning4j.parallelism.inference.observers.BatchedInferenceObservable;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.List;
 import java.util.Observer;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -297,7 +296,7 @@ public class ParallelInference {
                 if (protoModel instanceof ComputationGraph) {
                     if (!rootDevice) {
                         this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration
-                                .fromJson(((ComputationGraph) protoModel).getConfiguration().toJson()));
+                                        .fromJson(((ComputationGraph) protoModel).getConfiguration().toJson()));
                         this.replicatedModel.init();
 
                         synchronized (locker) {
@@ -310,8 +309,8 @@ public class ParallelInference {
                     }
                 } else if (protoModel instanceof MultiLayerNetwork) {
                     if (!rootDevice) {
-                        this.replicatedModel = new MultiLayerNetwork(MultiLayerConfiguration
-                                .fromJson(((MultiLayerNetwork) protoModel).getLayerWiseConfigurations().toJson()));
+                        this.replicatedModel = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(
+                                        ((MultiLayerNetwork) protoModel).getLayerWiseConfigurations().toJson()));
                         this.replicatedModel.init();
 
                         synchronized (locker) {

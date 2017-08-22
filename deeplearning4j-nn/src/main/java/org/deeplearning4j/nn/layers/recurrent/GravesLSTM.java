@@ -19,7 +19,7 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -102,7 +102,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         return LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, maskArray, true);
+                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, maskArray, true, null);
     }
 
 
@@ -159,7 +159,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
                         this.input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
                         prevMemCellState, forBackprop || (cacheMode != CacheMode.NONE && training), true,
-                        GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, true,
+                        GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, true, null,
                         forBackprop ? cacheMode : CacheMode.NONE);
 
 
@@ -205,9 +205,6 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
-
         double l2Sum = 0.0;
         for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l2 = conf.getL2ByParam(entry.getKey());
@@ -222,9 +219,6 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
-
         double l1Sum = 0.0;
         for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l1 = conf.getL1ByParam(entry.getKey());

@@ -23,6 +23,7 @@ import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.hdf5;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -32,9 +33,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
-import static org.bytedeco.javacpp.hdf5.H5O_TYPE_DATASET;
-import static org.bytedeco.javacpp.hdf5.H5O_TYPE_GROUP;
+import static org.bytedeco.javacpp.hdf5.*;
+
+import java.lang.Exception;
 
 /**
  * Class for reading ND4J arrays and JSON strings from HDF5
@@ -92,6 +93,24 @@ public class Hdf5Archive {
         for (int i = 1; i < groups.length; i++)
             group = group.asCommonFG().openGroup(groups[i]);
         return readAttributeAsJson(group.openAttribute(attributeName));
+    }
+
+    /**
+     * Read string attribute from group path.
+     *
+     * @param attributeName     Name of attribute
+     * @param groups            Array of zero or more ancestor groups from root to parent.
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public String readAttributeAsString(String attributeName, String... groups)
+        throws UnsupportedKerasConfigurationException {
+        if (groups.length == 0)
+            return readAttributeAsString(this.file.openAttribute(attributeName));
+        hdf5.Group group = this.file.asCommonFG().openGroup(groups[0]);
+        for (int i = 1; i < groups.length; i++)
+            group = group.asCommonFG().openGroup(groups[i]);
+        return readAttributeAsString(group.openAttribute(attributeName));
     }
 
     /**
@@ -262,6 +281,76 @@ public class Hdf5Archive {
                 throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
             }
         }
+        return s;
+    }
+
+    /**
+     * Read attribute as string.
+     *
+     * @param attribute     HDF5 attribute to read as string.
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    private String readAttributeAsString(hdf5.Attribute attribute) throws UnsupportedKerasConfigurationException {
+        hdf5.VarLenType vl = attribute.getVarLenType();
+        int bufferSizeMult = 1;
+        String s = null;
+        /* TODO: find a less hacky way to do this.
+         * Reading variable length strings (from attributes) is a giant
+         * pain. There does not appear to be any way to determine the
+         * length of the string in advance, so we use a hack: choose a
+         * buffer size and read the config, increase buffer and repeat
+         * until the buffer ends with \u0000
+         */
+        while (true) {
+            byte[] attrBuffer = new byte[bufferSizeMult * 2000];
+            BytePointer attrPointer = new BytePointer(attrBuffer);
+            attribute.read(vl, attrPointer);
+            attrPointer.get(attrBuffer);
+            s = new String(attrBuffer);
+
+            if (s.endsWith("\u0000")) {
+                s = s.replace("\u0000", "");
+                break;
+            }
+
+            bufferSizeMult++;
+            if (bufferSizeMult > 100) {
+                throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
+            }
+        }
+
+        return s;
+    }
+
+    /**
+     * Read string attribute from group path.
+     *
+     * @param attributeName     Name of attribute
+     * @param bufferSize        buffer size to read
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public String readAttributeAsFixedLengthString(String attributeName, int bufferSize)
+            throws UnsupportedKerasConfigurationException {
+        return readAttributeAsFixedLengthString(this.file.openAttribute(attributeName), bufferSize);
+    }
+
+    /**
+     * Read attribute of fixed buffer size as string.
+     *
+     * @param attribute     HDF5 attribute to read as string.
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    private String readAttributeAsFixedLengthString(hdf5.Attribute attribute, int bufferSize)
+            throws UnsupportedKerasConfigurationException {
+        hdf5.VarLenType vl = attribute.getVarLenType();
+        byte[] attrBuffer = new byte[bufferSize];
+        BytePointer attrPointer = new BytePointer(attrBuffer);
+        attribute.read(vl, attrPointer);
+        attrPointer.get(attrBuffer);
+        String s = new String(attrBuffer);
         return s;
     }
 }

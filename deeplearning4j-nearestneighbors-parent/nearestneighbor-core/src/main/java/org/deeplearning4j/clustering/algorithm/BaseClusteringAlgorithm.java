@@ -35,8 +35,6 @@ import org.deeplearning4j.clustering.strategy.OptimisationStrategy;
 import org.deeplearning4j.clustering.util.MultiThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.ArrayList;

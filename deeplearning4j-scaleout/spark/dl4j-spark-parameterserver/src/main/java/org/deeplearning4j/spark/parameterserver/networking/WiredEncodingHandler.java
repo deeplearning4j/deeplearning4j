@@ -57,7 +57,8 @@ public class WiredEncodingHandler extends EncodingHandler {
      * @param stepDelay Minimal number of iterations between decay steps
      * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
      */
-    public WiredEncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger, int stepDelay, int shakeFrequency) {
+    public WiredEncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
+                    int stepDelay, int shakeFrequency) {
         this(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, null);
     }
 
@@ -72,7 +73,8 @@ public class WiredEncodingHandler extends EncodingHandler {
      * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
      * @param boundary
      */
-    public WiredEncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger, int stepDelay, int shakeFrequency, Double boundary) {
+    public WiredEncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
+                    int stepDelay, int shakeFrequency, Double boundary) {
         super(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, boundary);
     }
 

@@ -22,8 +22,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.eval.meta.Prediction;
 import org.deeplearning4j.eval.serde.ConfusionMatrixDeserializer;
 import org.deeplearning4j.eval.serde.ConfusionMatrixSerializer;
@@ -204,9 +204,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     }
 
     private ConfusionMatrix<Integer> confusion() {
-        if (confusion != null)
-            return confusion;
-        confusion = new ConfusionMatrix<>();
         return confusion;
     }
 
@@ -301,7 +298,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     public void eval(final INDArray realOutcomes, final INDArray guesses,
                     final List<? extends Serializable> recordMetaData) {
         // Add the number of rows to numRowCounter
-        numRowCounter += realOutcomes.shape()[0];
+        numRowCounter += realOutcomes.size(0);
 
         // If confusion is null, then Evaluation was instantiated without providing the classes -> infer # classes from
         if (confusion == null) {
@@ -513,7 +510,11 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         String actual, predicted;
         StringBuilder builder = new StringBuilder().append("\n");
         StringBuilder warnings = new StringBuilder();
-        List<Integer> classes = confusion().getClasses();
+        ConfusionMatrix<Integer> confusion = confusion();
+        if(confusion == null){
+            confusion = new ConfusionMatrix<>();    //Empty
+        }
+        List<Integer> classes = confusion.getClasses();
 
         List<Integer> falsePositivesWarningClasses = new ArrayList<>();
         List<Integer> falseNegativesWarningClasses = new ArrayList<>();
@@ -549,7 +550,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         builder.append("\n");
         builder.append(warnings);
 
-        int nClasses = confusion().getClasses().size();
+        int nClasses = confusion.getClasses().size();
         DecimalFormat df = new DecimalFormat("0.0000");
         double acc = accuracy();
         double precisionMacro = precision(EvaluationAveraging.Macro);
@@ -672,6 +673,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average precision
      */
     public double precision(EvaluationAveraging averaging) {
+        if(getNumRowCounter() == 0){
+            return 0.0; //No data
+        }
         int nClasses = confusion().getClasses().size();
         if (averaging == EvaluationAveraging.Macro) {
             double macroPrecision = 0.0;
@@ -808,6 +812,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average recall
      */
     public double recall(EvaluationAveraging averaging) {
+        if(getNumRowCounter() == 0.0){
+            return 0.0; //No data
+        }
         int nClasses = confusion().getClasses().size();
         if (averaging == EvaluationAveraging.Macro) {
             double macroRecall = 0.0;
@@ -1041,6 +1048,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param averaging Averaging method to use
      */
     public double fBeta(double beta, EvaluationAveraging averaging) {
+        if(getNumRowCounter() == 0.0){
+            return Double.NaN;  //No data
+        }
         int nClasses = confusion().getClasses().size();
 
         if (nClasses == 2) {
@@ -1126,6 +1136,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return the accuracy of the guesses so far
      */
     public double accuracy() {
+        if (getNumRowCounter() == 0) {
+            return 0.0; //No records
+        }
         //Accuracy: sum the counts on the diagonal of the confusion matrix, divide by total
         int nClasses = confusion().getClasses().size();
         int countCorrect = 0;
@@ -1331,7 +1344,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      */
     public int getTopNCorrectCount() {
         if (confusion == null)
-            confusion = new ConfusionMatrix<>();
+            return 0;
         if (topN <= 1) {
             int nClasses = confusion().getClasses().size();
             int countCorrect = 0;

@@ -23,7 +23,6 @@ import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
-import org.deeplearning4j.datasets.iterator.callbacks.DefaultCallback;
 import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -32,11 +31,9 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.iterator.SparkADSI;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Function to evaluate data (using an IEvaluation instance), in a distributed manner

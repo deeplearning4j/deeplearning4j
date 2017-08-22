@@ -7,12 +7,12 @@ import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.berkeley.Triple;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.primitives.Triple;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -312,7 +312,7 @@ public class TrainModule implements UIModule {
         try {
             currentWorkerIdx = Integer.parseInt(newWorkerIdx);
         } catch (NumberFormatException e) {
-            log.debug("Invaild call to setWorkerByIdx", e);
+            log.debug("Invalid call to setWorkerByIdx", e);
         }
         return ok();
     }
@@ -374,8 +374,24 @@ public class TrainModule implements UIModule {
         result.put("scoresIter", scoresIterCount);
 
         //Get scores info
-        List<Persistable> updates =
-                        (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
+        long[] allTimes = (noData ? null : ss.getAllUpdateTimes(currentSessionID, StatsListener.TYPE_ID, wid));
+        List<Persistable> updates = null;
+        if(allTimes != null && allTimes.length > maxChartPoints){
+            int subsamplingFrequency = allTimes.length / maxChartPoints;
+            LongArrayList timesToQuery = new LongArrayList(maxChartPoints+2);
+            int i=0;
+            for(; i<allTimes.length; i+= subsamplingFrequency){
+                timesToQuery.add(allTimes[i]);
+            }
+            if((i-subsamplingFrequency) != allTimes.length-1){
+                //Also add final point
+                timesToQuery.add(allTimes[allTimes.length-1]);
+            }
+            updates = ss.getUpdates(currentSessionID, StatsListener.TYPE_ID, wid, timesToQuery.toArray());
+        } else if(allTimes != null) {
+            //Don't subsample
+            updates = ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0);
+        }
         if (updates == null || updates.size() == 0) {
             noData = true;
         }
@@ -687,57 +703,40 @@ public class TrainModule implements UIModule {
         result.put("layerInfo", layerInfoTable);
 
         //First: get all data, and subsample it if necessary, to avoid returning too many points...
-        List<Persistable> updates =
-                        (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
+        long[] allTimes = (noData ? null : ss.getAllUpdateTimes(currentSessionID, StatsListener.TYPE_ID, wid));
+
+        List<Persistable> updates = null;
         List<Integer> iterationCounts = null;
         boolean needToHandleLegacyIterCounts = false;
-        if (updates != null && updates.size() > maxChartPoints) {
-            int subsamplingFrequency = updates.size() / maxChartPoints;
-            List<Persistable> subsampled = new ArrayList<>();
-            iterationCounts = new ArrayList<>();
-            int pCount = -1;
-            int lastUpdateIdx = updates.size() - 1;
-
-            int lastIterCount = -1;
-            for (Persistable p : updates) {
-                if (!(p instanceof StatsReport))
-                    continue;;
-                StatsReport sr = (StatsReport) p;
-                pCount++;
-
-                int iterCount = sr.getIterationCount();
-                if (iterCount <= lastIterCount) {
-                    needToHandleLegacyIterCounts = true;
-                }
-                lastIterCount = iterCount;
-
-
-                if (pCount > 0 && subsamplingFrequency > 1 && pCount % subsamplingFrequency != 0) {
-                    //Skip this to subsample the data
-                    if (pCount != lastUpdateIdx)
-                        continue; //Always keep the most recent value
-                }
-
-                subsampled.add(p);
-                iterationCounts.add(iterCount);
+        if(allTimes != null && allTimes.length > maxChartPoints){
+            int subsamplingFrequency = allTimes.length / maxChartPoints;
+            LongArrayList timesToQuery = new LongArrayList(maxChartPoints+2);
+            int i=0;
+            for(; i<allTimes.length; i+= subsamplingFrequency){
+                timesToQuery.add(allTimes[i]);
             }
-            updates = subsampled;
-        } else if (updates != null) {
-            int offset = 0;
-            iterationCounts = new ArrayList<>(updates.size());
-            int lastIterCount = -1;
-            for (Persistable p : updates) {
-                if (!(p instanceof StatsReport))
-                    continue;;
-                StatsReport sr = (StatsReport) p;
-                int iterCount = sr.getIterationCount();
-
-                if (iterCount <= lastIterCount) {
-                    needToHandleLegacyIterCounts = true;
-                }
-
-                iterationCounts.add(iterCount);
+            if((i-subsamplingFrequency) != allTimes.length-1){
+                //Also add final point
+                timesToQuery.add(allTimes[allTimes.length-1]);
             }
+            updates = ss.getUpdates(currentSessionID, StatsListener.TYPE_ID, wid, timesToQuery.toArray());
+        } else if(allTimes != null) {
+            //Don't subsample
+            updates = ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0);
+        }
+
+        iterationCounts = new ArrayList<>(updates.size());
+        int lastIterCount = -1;
+        for (Persistable p : updates) {
+            if (!(p instanceof StatsReport))
+                continue;;
+            StatsReport sr = (StatsReport) p;
+            int iterCount = sr.getIterationCount();
+
+            if (iterCount <= lastIterCount) {
+                needToHandleLegacyIterCounts = true;
+            }
+            iterationCounts.add(iterCount);
         }
 
         //Legacy issue - Spark training - iteration counts are used to be reset... which means: could go 0,1,2,0,1,2, etc...

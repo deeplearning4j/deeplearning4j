@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -38,25 +38,25 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class ReshapeVertex extends BaseGraphVertex {
 
+    private char order;
     private int[] newShape;
+    private int[] maskShape;
 
-    public ReshapeVertex(ComputationGraph graph, String name, int vertexIndex, int[] newShape) {
-        this(graph, name, vertexIndex, null, null, newShape);
+
+    public ReshapeVertex(ComputationGraph graph, String name, int vertexIndex, char order, int[] newShape, int[] maskShape) {
+        this(graph, name, vertexIndex, null, null, order, newShape, maskShape);
     }
 
     public ReshapeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, int[] newShape) {
+                    VertexIndices[] outputVertices, char order, int[] newShape, int[] maskShape) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
+        this.order = order;
         this.newShape = newShape;
+        this.maskShape = maskShape;
     }
 
     @Override
     public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public boolean isOutputVertex() {
         return false;
     }
 
@@ -74,7 +74,7 @@ public class ReshapeVertex extends BaseGraphVertex {
             throw new IllegalStateException("Reshape vertex requires a single input.");
 
 
-        return inputs[0].reshape(inputs[0].ordering(), newShape);
+        return inputs[0].reshape(order, newShape);
     }
 
     @Override
@@ -83,7 +83,7 @@ public class ReshapeVertex extends BaseGraphVertex {
             throw new IllegalStateException("Cannot do backward pass: errors not set");
 
         INDArray[] out = new INDArray[1];
-        out[0] = epsilon.reshape(inputs[0].ordering(), inputs[0].shape());
+        out[0] = epsilon.reshape(order, inputs[0].shape());
         return new Pair<>(null, out);
     }
 
@@ -96,34 +96,43 @@ public class ReshapeVertex extends BaseGraphVertex {
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                     int minibatchSize) {
-        if (maskArrays == null) {
+        if (maskArrays == null || maskArrays.length < 1 || maskArrays[0] == null) {
             return new Pair<>(null, currentMaskState);
         }
 
-        //Most common case: all or none.
-        //If there's only *some* mask arrays: assume the others (missing) are equivalent to all 1s
-        //And for handling multiple masks: best strategy seems to be an OR operation
-        //i.e., output is 1 if any of the input are 1s
-        //Which means: if any masks are missing, output null (equivalent to no mask, or all steps present)
-        //Otherwise do an element-wise OR operation
-
-        for (INDArray arr : maskArrays) {
-            if (arr == null) {
-                return new Pair<>(null, currentMaskState);
-            }
+        if(maskShape != null){
+            return new Pair<>(maskArrays[0].reshape(order, maskShape), currentMaskState);
         }
 
-        //At this point: all present. Do OR operation
-        if (maskArrays.length == 1) {
-            return new Pair<>(maskArrays[0], currentMaskState);
+        //Mask array is an input mask. Therefore: 2 possible cases
+        //(a) column vector mask (MLP, CNN), and
+        //  i. output is rank 2 or 4 (MLP, CNN) -> no change
+        // ii. output is rank 3 (RNN) -> to 2d
+        //(b) 2d mask (RNN), and
+        //  i. output is rank 2 or 4 (MLP, CNN) -> mask to column vector
+        // ii. output is rank 3 (RNN) -> no change
+
+
+        if(maskArrays[0].isColumnVector()){
+            if(newShape.length == 2 || newShape.length == 4){
+                return new Pair<>(maskArrays[0], currentMaskState);
+            } else if(newShape.length == 3) {
+                //Column vector -> 2d (FF -> RNN etc)
+                int[] newMaskShape = new int[]{newShape[0], newShape[2]};
+                return new Pair<>(maskArrays[0].reshape(order, newMaskShape), currentMaskState);
+            }
         } else {
-            INDArray ret = maskArrays[0].dup(maskArrays[0].ordering());
-            Nd4j.getExecutioner().exec(new Or(maskArrays[0], maskArrays[1], ret));
-            for (int i = 2; i < maskArrays.length; i++) {
-                Nd4j.getExecutioner().exec(new Or(maskArrays[i], ret, ret));
+            if(newShape.length == 3){
+                return new Pair<>(maskArrays[0], currentMaskState);
+            } else {
+                //RNN -> FF/CNN
+                int[] newMaskShape = new int[]{newShape[0]*newShape[2], 1};
+                return new Pair<>(maskArrays[0].reshape(order, newMaskShape), currentMaskState);
             }
-            return new Pair<>(ret, currentMaskState);
         }
+
+        //Other unknown case - shouldn't happen...
+        return new Pair<>(maskArrays[0], currentMaskState);
     }
 
     @Override

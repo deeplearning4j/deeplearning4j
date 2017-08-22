@@ -2,7 +2,6 @@ package org.deeplearning4j.nn.multilayer;
 
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.eval.EvaluationBinary;
-import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.gradientcheck.LossFunctionGradientCheck;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.*;
@@ -25,7 +24,6 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.*;
 
-import java.util.Arrays;
 import java.util.Collections;
 
 import static org.junit.Assert.*;

@@ -217,17 +217,27 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
             return activation(Activation.fromString(activationFunction));
         }
 
+        /**
+         * Set the activation function for the layer. This overload can be used for custom {@link IActivation} instances
+         *
+         * @param activationFunction Activation function to use for the layer
+         */
         public T activation(IActivation activationFunction) {
             this.activationFn = activationFunction;
             return (T) this;
         }
 
+        /**
+         * Set the activation function for the layer, from an {@link Activation} enumeration value.
+         *
+         * @param activation Activation function to use for the layer
+         */
         public T activation(Activation activation) {
             return activation(activation.getActivationFunction());
         }
 
         /**
-         * Weight initialization scheme.
+         * Weight initialization scheme to use, for initial weight values
          *
          * @see WeightInit
          */
@@ -236,6 +246,11 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
             return (T) this;
         }
 
+        /**
+         * Bias initialization value, for layers with biases. Defaults to 0
+         *
+         * @param biasInit Value to use for initializing biases
+         */
         public T biasInit(double biasInit) {
             this.biasInit = biasInit;
             return (T) this;
@@ -435,8 +450,5 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
             this.learningRatePolicy = policy;
             return (T) this;
         }
-
-        //        @Override
-        //        public abstract <E extends BaseLayer> E build();
     }
 }

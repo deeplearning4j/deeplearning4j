@@ -2,17 +2,9 @@
 package org.deeplearning4j.ui.views.html.training
 
 import play.twirl.api._
-import play.twirl.api.TemplateMagic._
 
 
      object TrainingOverview_Scope0 {
-import models._
-import controllers._
-import play.api.i18n._
-import views.html._
-import play.api.templates.PlayMagic._
-import play.api.mvc._
-import play.api.data._
 
 class TrainingOverview extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appendable,Format[play.twirl.api.HtmlFormat.Appendable]](play.twirl.api.HtmlFormat) with play.twirl.api.Template1[org.deeplearning4j.ui.api.I18N,play.twirl.api.HtmlFormat.Appendable] {
 

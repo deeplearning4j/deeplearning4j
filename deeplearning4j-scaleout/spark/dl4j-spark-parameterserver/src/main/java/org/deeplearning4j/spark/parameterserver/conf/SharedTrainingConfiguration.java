@@ -29,6 +29,12 @@ public class SharedTrainingConfiguration implements Serializable {
     @Builder.Default
     protected long debugLongerIterations = 0L;
 
+    /**
+     * This value **overrides** bufferSize calculations for gradients accumulator
+     */
+    @Builder.Default
+    protected int bufferSize = 0;
+
     // TODO: decide, if we abstract this one out, or not
     protected double threshold;
     protected double thresholdStep = 1e-5;

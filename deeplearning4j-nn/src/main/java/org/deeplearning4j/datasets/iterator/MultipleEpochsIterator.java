@@ -48,8 +48,6 @@ public class MultipleEpochsIterator implements DataSetIterator {
     @Getter
     protected DataSetPreProcessor preProcessor;
     protected boolean newEpoch = false;
-    protected int queueSize = 1;
-    protected boolean async = false;
     protected AtomicLong iterationsCounter = new AtomicLong(0);
     protected long totalIterations = Long.MAX_VALUE;
 
@@ -58,26 +56,22 @@ public class MultipleEpochsIterator implements DataSetIterator {
         this.iter = iter;
     }
 
+    @Deprecated
     public MultipleEpochsIterator(int numEpochs, DataSetIterator iter, int queueSize) {
         this.numEpochs = numEpochs;
-        this.queueSize = queueSize;
-        this.async = queueSize > 1 && iter.asyncSupported();
-        this.iter = async ? new AsyncDataSetIterator(iter, queueSize) : iter;
+        this.iter = iter;
     }
 
+    @Deprecated
     public MultipleEpochsIterator(DataSetIterator iter, int queueSize, long totalIterations) {
         this.numEpochs = Integer.MAX_VALUE;
-        this.queueSize = queueSize;
-        this.async = queueSize > 1 && iter.asyncSupported();
-        this.iter = async ? new AsyncDataSetIterator(iter, queueSize) : iter;
+        this.iter = iter;
         this.totalIterations = totalIterations;
     }
 
     public MultipleEpochsIterator(DataSetIterator iter, long totalIterations) {
         this.numEpochs = Integer.MAX_VALUE;
-        this.queueSize = 1;
-        this.async = false;
-        this.iter = async ? new AsyncDataSetIterator(iter, queueSize) : iter;
+        this.iter = iter;
         this.totalIterations = totalIterations;
     }
 
@@ -187,7 +181,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
 
     @Override
     public boolean asyncSupported() {
-        return !async;
+        return iter.asyncSupported();
     }
 
     /**
@@ -238,7 +232,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
 
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
-        this.preProcessor = (DataSetPreProcessor) preProcessor;
+        this.preProcessor = preProcessor;
     }
 
     @Override
