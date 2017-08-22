@@ -19,10 +19,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -152,6 +149,35 @@ public class TestStatsStorage {
                 assertEquals(3, l.countNewWorkerId);
                 assertEquals(2, l.countStaticInfo);
                 assertEquals(4, l.countUpdate);
+
+
+
+
+                //Test get updates times:
+                long[] expTSWid0 = new long[]{12345, 12346};
+                long[] actTSWid0 = ss.getAllUpdateTimes("sid0", "tid0", "wid0");
+                assertArrayEquals(expTSWid0, actTSWid0);
+
+                long[] expTSWid1 = new long[]{12345};
+                long[] actTSWid1 = ss.getAllUpdateTimes("sid0", "tid0", "wid1");
+                assertArrayEquals(expTSWid1, actTSWid1);
+
+
+
+                ss.putUpdate(getReport(100, 200, 300, 12347, useJ7Storage));
+                ss.putUpdate(getReport(100, 200, 300, 12348, useJ7Storage));
+                ss.putUpdate(getReport(100, 200, 300, 12349, useJ7Storage));
+
+                long[] expTSWid300 = new long[]{12346, 12347, 12348, 12349};
+                long[] actTSWid300 = ss.getAllUpdateTimes("sid100", "tid200", "wid300");
+                assertArrayEquals(expTSWid300, actTSWid300);
+
+                //Test subset query:
+                List<Persistable> subset = ss.getUpdates("sid100", "tid200", "wid300", new long[]{12346, 12349});
+                assertEquals(2, subset.size());
+                assertEquals(Arrays.asList(getReport(100, 200, 300, 12346, useJ7Storage),
+                        getReport(100, 200, 300, 12349, useJ7Storage)),
+                        subset);
             }
         }
     }

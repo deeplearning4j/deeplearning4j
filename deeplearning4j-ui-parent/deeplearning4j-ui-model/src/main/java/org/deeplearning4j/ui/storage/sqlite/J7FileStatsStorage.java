@@ -2,6 +2,7 @@ package org.deeplearning4j.ui.storage.sqlite;
 
 import lombok.NonNull;
 import org.deeplearning4j.api.storage.*;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
@@ -517,23 +518,26 @@ public class J7FileStatsStorage implements StatsStorage {
 
     @Override
     public List<Persistable> getLatestUpdateAllWorkers(String sessionID, String typeID) {
-        String sql = "SELECT * FROM " + TABLE_NAME_UPDATES + " t1" + " LEFT JOIN " + TABLE_NAME_UPDATES
-                        + " t2 ON t1.SessionID = t2.SessionID AND "
-                        + "t1.TypeID = t2.TypeID AND t1.WorkerID = t2.WorkerID AND t1.Timestamp < t2.Timestamp "
-                        + "WHERE t2.Timestamp IS NULL AND t1.SessionID = '" + sessionID + "' AND t1.TypeID = '" + typeID
-                        + "';";
+        String sql = "SELECT workerId, MAX(Timestamp) FROM " + TABLE_NAME_UPDATES + " WHERE SessionID ='"
+                + sessionID + "' AND " + "TypeID = '" + typeID + "' GROUP BY workerId";
 
+        Map<String,Long> m = new HashMap<>();
         try (Statement statement = connection.createStatement()) {
             ResultSet rs = statement.executeQuery(sql);
-            List<Persistable> out = new ArrayList<>();
             while (rs.next()) {
-                byte[] bytes = rs.getBytes(6);
-                out.add((Persistable) deserialize(bytes));
+                String wid = rs.getString(1);
+                long ts = rs.getLong(2);
+                m.put(wid, ts);
             }
-            return out;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+
+        List<Persistable> out = new ArrayList<>();
+        for(String s : m.keySet()){
+            out.add(getUpdate(sessionID, typeID, s, m.get(s)));
+        }
+        return out;
     }
 
     @Override
@@ -555,13 +559,62 @@ public class J7FileStatsStorage implements StatsStorage {
 
     @Override
     public List<Persistable> getAllUpdatesAfter(String sessionID, String typeID, long timestamp) {
-        String sql = "SELECT * FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '" + sessionID + "'  "
+        String sql = "SELECT ObjectBytes FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '" + sessionID + "'  "
                         + "AND Timestamp > " + timestamp + ";";
+        return queryUpdates(sql);
+    }
+
+    @Override
+    public long[] getAllUpdateTimes(String sessionID, String typeID, String workerID) {
+        /*
+        statement.executeUpdate("CREATE TABLE " + TABLE_NAME_UPDATES + " (" + "SessionID TEXT NOT NULL, "
+                + "TypeID TEXT NOT NULL, " + "WorkerID TEXT NOT NULL, " + "Timestamp INTEGER NOT NULL, "
+                + "ObjectClass TEXT NOT NULL, " + "ObjectBytes BLOB NOT NULL, "
+                + "PRIMARY KEY ( SessionID, TypeID, WorkerID, Timestamp )" + ");");
+         */
+        String sql = "SELECT Timestamp FROM " + TABLE_NAME_UPDATES + " WHERE SessionID = '" + sessionID + "'  "
+                + "AND TypeID = '" + typeID + "' AND workerID = '" + workerID + "';";
+        try (Statement statement = connection.createStatement()) {
+            ResultSet rs = statement.executeQuery(sql);
+            LongArrayList list = new LongArrayList();
+            while (rs.next()) {
+                list.add(rs.getLong(1));
+            }
+            return list.toArray();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<Persistable> getUpdates(String sessionID, String typeID, String workerID, long[] timestamps) {
+        if(timestamps == null || timestamps.length == 0){
+            return Collections.emptyList();
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("SELECT ObjectBytes FROM ").append(TABLE_NAME_UPDATES).append(" WHERE SessionID = '").append(sessionID)
+                .append("' AND TypeID = '").append(typeID).append("' AND workerID='").append(workerID)
+                .append("'  AND Timestamp IN (");
+
+        for( int i=0; i<timestamps.length; i++ ){
+            if(i > 0){
+                sb.append(",");
+            }
+            sb.append(timestamps[i]);
+        }
+        sb.append(");");
+
+        String sql = sb.toString();
+        return queryUpdates(sql);
+    }
+
+    private List<Persistable> queryUpdates(String sql){
         try (Statement statement = connection.createStatement()) {
             ResultSet rs = statement.executeQuery(sql);
             List<Persistable> out = new ArrayList<>();
             while (rs.next()) {
-                byte[] bytes = rs.getBytes(6);
+                byte[] bytes = rs.getBytes(1);
                 out.add((Persistable) deserialize(bytes));
             }
             return out;

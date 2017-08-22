@@ -105,6 +105,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.eclipse.collections</groupId>
+            <artifactId>eclipse-collections</artifactId>
+            <version>${eclipse.collections.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-netty-server_2.11</artifactId>
             <version>${playframework.version}</version>
@@ -192,6 +198,12 @@
             <version>2.3.13</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>${jcommander.version}</version>
+        </dependency>
+
         <!-- Test Scope Dependencies -->
         <dependency>
             <groupId>junit</groupId>
@@ -203,11 +215,6 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>    <!-- Version set by deeplearning4j-parent dependency management -->
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.beust</groupId>
-            <artifactId>jcommander</artifactId>
-            <version>1.27</version>
         </dependency>
     </dependencies>
 

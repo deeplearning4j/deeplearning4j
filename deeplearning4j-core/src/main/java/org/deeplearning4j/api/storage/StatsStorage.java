@@ -160,6 +160,27 @@ public interface StatsStorage extends StatsStorageRouter {
      */
     List<Persistable> getAllUpdatesAfter(String sessionID, String typeID, long timestamp);
 
+    /**
+     * List the times of all updates for the specified sessionID, typeID and workerID
+     *
+     * @param sessionID Session ID to get update times for
+     * @param typeID    Type ID to get update times for
+     * @param workerID  Worker ID to get update times for
+     * @return          Times of all updates
+     */
+    long[] getAllUpdateTimes(String sessionID, String typeID, String workerID);
+
+    /**
+     * Get updates for the specified times only
+     *
+     * @param sessionID Session ID to get update times for
+     * @param typeID    Type ID to get update times for
+     * @param workerID  Worker ID to get update times for
+     * @param timestamps Timestamps to get the updates for. Note that if one of the specified times does not exist,
+     *                   it will be ommitted from the returned results list.
+     * @return          List of updates at the specified times
+     */
+    List<Persistable> getUpdates(String sessionID, String typeID, String workerID, long[] timestamps);
 
     /**
      * Get the session metadata, if any has been registered via {@link #putStorageMetaData(StorageMetaData)}
