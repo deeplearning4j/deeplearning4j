@@ -388,11 +388,13 @@ namespace nd4j{
         Nd4jStatus nd4j::graph::GraphExecutioner<T>::execute(nd4j::graph::Graph<T> *graph) {
             auto __variableSpace = graph->getVariableSpace();
 
+            bool pe = graph->getExecutorConfiguration()->_executionMode == ExecutionMode_AUTO;
+
             // we loop through op layers here
             for (int l = 0; l < graph->getOnion()->size(); l++) {
                 int layerSize = graph->getOnion()->count(l) == 1 ? graph->getOnion()->at(l)->size() : 0;
 
-//#pragma omp parallel for if (layerSize > 1) schedule(dynamic) proc_bind(spread)
+#pragma omp parallel for if (layerSize > 1 && pe) schedule(dynamic) proc_bind(spread)
                 for (int n = 0; n < layerSize; n++) {
                     auto node = graph->getOnion()->at(l)->at(n);
 
@@ -424,12 +426,12 @@ namespace nd4j{
 
             nd4j_printf("Building output...\n", 0);
 
-            flatbuffers::FlatBufferBuilder builder(4096);
+            flatbuffers::FlatBufferBuilder builder(1024);
 
-            // copying back registered variables to FlatBuffers
+            // now, we'll prepare output, depending on given outputmode
             auto outputs = nativeGraph->fetchOutputs();
             std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
-            int cnt = 0;
+
             for (int e = 0; e < outputs->size(); e++) {
                 auto var = outputs->at(e);
 
@@ -439,10 +441,9 @@ namespace nd4j{
                 auto fv = CreateFlatVariable(builder, var->id(), 0, fShape, fBuffer, -1);
 
                 variables_vector.push_back(fv);
-                cnt++;
             }
 
-            nd4j_printf("Returning %i variables back\n", cnt);
+            nd4j_printf("Returning %i variables back\n", variables_vector.size());
 
             auto varVectors = builder.CreateVector(variables_vector);
             auto result = CreateFlatResult(builder, restoredGraph->id(), varVectors);

@@ -6,6 +6,7 @@
 #define LIBND4J_GRAPH_H
 
 #include <list>
+#include <algorithm>
 #include <map>
 //#include <NDArray.h>
 #include <graph/Node.h>
@@ -63,16 +64,51 @@ namespace nd4j {
             int rootNodes();
             int totalNodes();
 
+            /**
+             * This method returns pointer to thread_local VariableSpace
+             * @return
+             */
             nd4j::graph::VariableSpace<T> *getVariableSpace();
 
+            /**
+             * This method adds given node to the graph
+             *
+             * @param node
+             */
             void addNode(nd4j::graph::Node<T> *node);
 
+            /**
+             * This method returns layered representation of the graph
+             *
+             * @return
+             */
             std::map<int, std::vector<nd4j::graph::Node<T> *> *> *getOnion();
+
+            /**
+             * This method returns map of all nodes of the graph
+             * @return
+             */
             std::map<int32_t, nd4j::graph::Node<T> *> *getMapped();
 
+            /**
+             * This method returns outputs of of this graph
+             * @return
+             */
             std::vector<nd4j::graph::Variable<T> *> *fetchOutputs();
+
+            /**
+             * This method returns pointer to ExecutorConfiguration
+             *
+             * @return
+             */
+            ExecutorConfiguration *getExecutorConfiguration();
         };
     }
+}
+
+template <typename T>
+nd4j::graph::ExecutorConfiguration * nd4j::graph::Graph<T>::getExecutorConfiguration() {
+    return _configuration;
 }
 
 template <typename T>
@@ -148,16 +184,22 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
         _variableSpace->putOutputVariable(var);
         node->pickOutput(var->id());
 
-        this->_output.push_back(var->id());
+        // we're pushing this variable to output
+        if (_configuration->_outputMode == OutputMode_IMPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT)
+            this->_output.push_back(var->id());
+
         this->_autos.push_back(var->id());
         assert(node->hasExternalOutputs());
     } else if (node->hasExternalOutputs()) {
         // TODO: we might want this behavior configurable!
         nd4j_verbose("Adding specific output variable: Outputs: %i\n", node->output()->size())
 
-        for (int e = 0; e < node->output()->size(); e++) {
-            if (node->output()->at(e) < 0)
-                this->_output.push_back(node->output()->at(e));
+        // we're pushing this node to output only
+        if ((!node->hasInternalOutputs() && (_configuration->_outputMode == OutputMode_IMPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT)) ) {
+            for (int e = 0; e < node->output()->size(); e++) {
+                if (node->output()->at(e) < 0)
+                    this->_output.push_back(node->output()->at(e));
+            }
         }
     }
 
@@ -292,15 +334,18 @@ nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
     }
 
     // at this point we expect all variables are already registered
-    if (flatGraph != nullptr && flatGraph->outputs() != nullptr) {
-        for (int e = 0; e < flatGraph->outputs()->size(); e++) {
-            auto out = flatGraph->outputs()->Get(e);
-            if (!_variableSpace->hasVariable(out)) {
-                nd4j_verbose("Non-existent variable requested: %i\n", out);
-                throw "Non-existent variable requested";
-            }
+    // we're saving outputs only if explicit mode is set
+    if (_configuration->_outputMode == OutputMode_EXPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT) {
+        if (flatGraph != nullptr && flatGraph->outputs() != nullptr) {
+            for (int e = 0; e < flatGraph->outputs()->size(); e++) {
+                auto out = flatGraph->outputs()->Get(e);
+                if (!_variableSpace->hasVariable(out)) {
+                    nd4j_verbose("Non-existent variable requested: %i\n", out);
+                    throw "Non-existent variable requested";
+                }
 
-            _output.push_back(out);
+                _output.push_back(out);
+            }
         }
     }
 

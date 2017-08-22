@@ -238,12 +238,13 @@ TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
 
     auto results = restoredGraph->fetchOutputs();
 
-    ASSERT_EQ(3, results->size());
+    // IMPLICIT is default
+    ASSERT_EQ(1, results->size());
 
-    ASSERT_NEAR(-2.0, results->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
-    ASSERT_NEAR(-1.0, results->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
-    ASSERT_NEAR(-3.0, results->at(2)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    //ASSERT_NEAR(-2.0, results->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    //ASSERT_NEAR(-1.0, results->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(-3.0, results->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 
-    ASSERT_EQ(-1, results->at(0)->id());
-    ASSERT_EQ(-2, results->at(1)->id());
+    //ASSERT_EQ(-1, results->at(0)->id());
+    //ASSERT_EQ(-2, results->at(1)->id());
 }

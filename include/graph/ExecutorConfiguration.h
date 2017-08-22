@@ -10,13 +10,12 @@
 namespace nd4j {
     namespace graph {
         class ExecutorConfiguration {
-        protected:
-            ProfilingMode _profilingMode;
-            ExecutionMode _executionMode;
-            OutputMode _outputMode;
+        public:
+            nd4j::graph::ProfilingMode _profilingMode;
+            nd4j::graph::ExecutionMode _executionMode;
+            nd4j::graph::OutputMode _outputMode;
             bool _timestats;
 
-        public:
             ExecutorConfiguration(const nd4j::graph::FlatConfiguration *conf = nullptr) {
                 if (conf != nullptr) {
                     _profilingMode = conf->profilingMode();

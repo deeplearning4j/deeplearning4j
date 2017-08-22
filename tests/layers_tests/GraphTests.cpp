@@ -456,13 +456,12 @@ TEST_F(GraphTests, AutoOutput2) {
 
     auto outputs = graph->fetchOutputs();
 
-    ASSERT_EQ(3, outputs->size());
+    ASSERT_EQ(2, outputs->size());
 
     ASSERT_TRUE(outputs->at(0) != nullptr);
 
-    ASSERT_NEAR(2.0, outputs->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
-    ASSERT_NEAR(-1.0, outputs->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
-    ASSERT_NEAR(-2.0, outputs->at(2)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(-1.0, outputs->at(0)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+    ASSERT_NEAR(-2.0, outputs->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
 
 
@@ -566,4 +565,33 @@ TEST_F(GraphTests, SymbolicLookupTest1) {
     ASSERT_TRUE(graph->getVariableSpace()->hasVariable(new std::string("theta")));
 
     ASSERT_NEAR(1.4142135, z->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+}
+
+TEST_F(GraphTests, OutputValidation1) {
+    auto graph = new Graph<float>();
+
+    graph->getExecutorConfiguration()->_outputMode = OutputMode_EXPLICIT;
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0);
+
+    auto z = new NDArray<float>(5, 5, 'c');
+
+    Variable<float> vX(x);
+    Variable<float> vZ(z);
+
+    vX.setName(new std::string("alpha"));
+    vZ.setName(new std::string("omega"));
+
+    graph->getVariableSpace()->putVariable(-1, &vX);
+    graph->getVariableSpace()->putVariable(-2, &vZ);
+
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {-2});
+
+    graph->addNode(nodeA);
+    graph->addNode(nodeB);
+
+    ASSERT_EQ(0, graph->fetchOutputs()->size());
+
 }
