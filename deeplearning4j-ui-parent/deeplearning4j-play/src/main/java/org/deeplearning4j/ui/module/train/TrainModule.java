@@ -311,7 +311,7 @@ public class TrainModule implements UIModule {
         try {
             currentWorkerIdx = Integer.parseInt(newWorkerIdx);
         } catch (NumberFormatException e) {
-            log.debug("Invaild call to setWorkerByIdx", e);
+            log.debug("Invalid call to setWorkerByIdx", e);
         }
         return ok();
     }
@@ -686,8 +686,11 @@ public class TrainModule implements UIModule {
         result.put("layerInfo", layerInfoTable);
 
         //First: get all data, and subsample it if necessary, to avoid returning too many points...
+        long start = System.currentTimeMillis();
         List<Persistable> updates =
                         (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
+        long end = System.currentTimeMillis();
+        System.out.println("Update loading time: " + (end-start));
         List<Integer> iterationCounts = null;
         boolean needToHandleLegacyIterCounts = false;
         if (updates != null && updates.size() > maxChartPoints) {

@@ -161,6 +161,10 @@ public interface StatsStorage extends StatsStorageRouter {
     List<Persistable> getAllUpdatesAfter(String sessionID, String typeID, long timestamp);
 
 
+    long[] getAllUpdateTimes(String sessionID, String typeID, String workerID);
+
+    List<Persistable> getUpdates(String sessionID, String typeID, String workerID, long[] timestamps);
+
     /**
      * Get the session metadata, if any has been registered via {@link #putStorageMetaData(StorageMetaData)}
      *
