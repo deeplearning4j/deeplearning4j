@@ -1,0 +1,24 @@
+namespace nd4j.graph;
+
+enum ProfilingMode:byte {
+    NONE,
+    NAN_PANIC,
+    INF_PANIC,
+    ANY_PANIC
+}
+
+enum OutputMode:byte {
+   IMPLICIT, // only final nodes of graph will be returned
+   EXPLICIT, // only declared output fields
+   EXPLICIT_AND_IMPLICIT, //
+   VARIABLE_SPACE, // whole content of VariableSpace will be returned back
+}
+
+table FlatConfiguration {
+    id:int; // id of the graph this configuration applies to
+    profilingMode:ProfilingMode; // current profiling mode
+    outputMode:OutputMode; // current output mode
+    timestats:bool; // are we gathering time info. false by default
+}
+
+root_type FlatConfiguration;
