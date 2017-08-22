@@ -229,7 +229,7 @@ public abstract class Layer implements Serializable, Cloneable {
          * dropOut(0.0) is a special value / special case - when set to 0.0., dropout is disabled (not applied). Note
          * that a dropout value of 1.0 is functionally equivalent to no dropout: i.e., 100% probability of retaining
          * each input activation.<br>
-         * When {@link #useDropConnect(boolean)} is set to true (false by default), this method sets the drop connect
+         * When useDropConnect(boolean) is set to true (false by default), this method sets the drop connect
          * probability instead.
          * <p>
          * Note 1: Dropout is applied at training time only - and is automatically not applied at test time
