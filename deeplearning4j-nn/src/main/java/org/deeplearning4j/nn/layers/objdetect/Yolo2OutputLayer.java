@@ -8,15 +8,21 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Min;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -65,17 +71,18 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
-        //Input activations shape: [mb, depth, H, W]
+        //Input activations shape, labels shape: [mb, depth, H, W]
 
-        //Mask array must be present, with shape [H,W]. Mask array is 1_i^B in YOLO paper - i.e., whether an object
-        // is present (1) or not (0) in the specified grid cell
+        //Mask array must be present, with shape [minibatch,H,W]. Mask array is 1_i^B in YOLO paper - i.e., whether an object
+        // is present (1) or not (0) in the specified grid cell (for specified example)
         if(maskArray == null){
             throw new IllegalStateException("No mask array is present: cannot compute score for YOLO network without a mask array");
         }
 
-        if(maskArray.size(0) != input.size(2) || maskArray.size(1) != input.size(3)){
+        if(maskArray.size(1) != input.size(2) || maskArray.size(2) != input.size(3)){
             throw new IllegalStateException("Mask array does not match input size: mask height/width (dimensions " +
-                    "0/1 sizes) must match input array height/width (dimensions 2/3)");
+                    "1/2 sizes) must match input array height/width (dimensions 2/3). Mask shape: "
+                    + Arrays.toString(maskArray.shape()) + ", label shape: " + Arrays.toString(labels.shape()));
         }
 
         int mb = input.size(0);
@@ -112,9 +119,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 .muli(gridFracW);
         labelBoxYXCenterInImage.addi(gridYX);
 
-//        INDArray labelHalfHW = labelBoxHW.div(2.0);
-//        INDArray labelBoxTopLeftInImage = labelBoxYXCenterInImage.sub(labelHalfHW);
-//        INDArray labelBoxBottomRightInImage = labelBoxYXCenterInImage.add(labelHalfHW);
         Pair<INDArray,INDArray> label_tl_br = centerHwToTlbr(labelBoxYXCenterInImage, labelBoxHW);  //Shape: [mb, 2, H, W]
 
         //Determine top/left and bottom/right (x/y) of anchor bounding boxes, *in every grid cell*
@@ -122,57 +126,21 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray bbHWGrid = bbHW.broadcast(b, mb, 2, h, w);   //Shape: [B,2] -> [B,m,2,H,W]
         INDArray bbYXCenterImg = gridYX.broadcast(b, mb, 2, h, w); //Shape: [2,h,w] -> [B,mb,2,h,w]
 
-        Pair<INDArray,INDArray> bb_tl_br = centerHwToTlbr(bbYXCenterImg, bbHWGrid);                 //Shape: [B, mb, 2, H, W]
-        
+        Pair<INDArray,INDArray> bb_tl_br = centerHwToTlbr(bbYXCenterImg, bbHWGrid);                 //Shape: [B, mb, 2, H, W]   - 2 dimension: Y,X
 
-
-
-
-
-        INDArray bbX = null;    //TODO - infer X location of BB from H/W
-        INDArray bbY = null;    //TODO - infer Y location of BB from H/W
-        //Shape: [minibatch, 2, H, W]
-            //Top left position of BB
-
-        INDArray labelBoxXY2 = labelBoxXY.add(labelBoxHW);  //Bottom right position of BB
-        INDArray labelBoxX = labels.get(NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()); //Shape: [mb, H, W]
-        INDArray labelBoxY = labels.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()); //Shape: [mb, H, W
-        INDArray labelBoxH = labels.get(NDArrayIndex.all(), NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.all()); //Shape: [mb, H, W]
-        INDArray labelBoxW = labels.get(NDArrayIndex.all(), NDArrayIndex.point(3), NDArrayIndex.all(), NDArrayIndex.all()); //Shape: [mb, H, W
 
         //Calculate IOU (intersection over union - aka Jaccard index) - for the labels and bounding box priors
         //http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/
+        INDArray iou = calculateIOU(label_tl_br.getFirst(), label_tl_br.getSecond(), bb_tl_br.getFirst(), bb_tl_br.getSecond(), labelBoxHW, bbHW, 2);
+        //IOU shape: [minibatch, B, H, W]
 
-        INDArray bbHBroadcast = bbHW.getColumn(0).broadcast(mb, b, h, w);
-        INDArray bbWBroadcast = bbHW.getColumn(1).broadcast(mb, b, h, w);
-
-        //Determine x/y coordinates of the intersection rectangle... neew broadcast min/max ops:
-//        INDArray xA = Nd4j.getExecutioner().execAndReturn(new BroadcastMax)
-        INDArray xMax = bbHBroadcast.dup();
-        INDArray xMin = bbHBroadcast.dup();
-        INDArray yMax = bbWBroadcast.dup();
-        INDArray yMin = bbWBroadcast.dup();
-        for( int i=0; i<b; i++ ){
-            INDArray xMaxSub = xMax.get(NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all());
-            INDArray xMinSub = xMin.get(NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all());
-            INDArray yMaxSub = yMax.get(NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all());
-            INDArray yMinSub = yMin.get(NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all());
-            Nd4j.getExecutioner().exec(new Max(xMaxSub, labelBoxX, xMaxSub, xMaxSub.length()));
-            Nd4j.getExecutioner().exec(new Min(xMinSub, labelBoxX, xMinSub, xMinSub.length()));
-            Nd4j.getExecutioner().exec(new Max(yMaxSub, labelBoxY, yMaxSub, yMaxSub.length()));
-            Nd4j.getExecutioner().exec(new Min(yMinSub, labelBoxY, yMinSub, yMinSub.length()));
-        }
-
-        //At this point: (x/y)(Min/Max) are shape [mb, b, h, w]
-        INDArray intersectionArea = xMin.sub(xMax).addi(1.0).muli(yMin.sub(yMax).addi(1.0));
-
-        INDArray boxLabelArea = labelBoxH
-
-        //Shape: [minibatch, B, H, W]
-        INDArray mask1_ij_obj = null;
+        //Mask 1_ij^obj: isMax (dimension 1) + apply object present mask. Result: [minibatch, B, H, W]
+        //In this mask: 1 if (a) object is present in cell [for each mb/H/W], and (b) for the anchor box with the max IOU
+        INDArray mask1_ij_obj = Nd4j.getExecutioner().execAndReturn(new IsMax(iou, 1));
+        Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, maskArray, mask1_ij_obj, 0,2,3));
 
 
-
+        //
 
         return 0;
     }
@@ -182,6 +150,50 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray topLeft = centerYX.sub(labelHalfHW);
         INDArray bottomRight = centerYX.add(labelHalfHW);
         return new Pair<>(topLeft, bottomRight);
+    }
+
+//    private static INDArray calculateIOU(INDArray centerYX1, INDArray hw1, INDArray centerYX2, INDArray hw2){
+//    }
+
+    private static INDArray calculateIOU(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2, INDArray hw1, INDArray hw2, int yxDim){
+
+        INDArray intersection = intersectionArea(tl1, br1, tl2, br2, yxDim);
+
+        INDArray area1 = get(hw1, yxDim, 0).mul(get(hw1, yxDim, 1));
+        INDArray area2 = get(hw2, yxDim, 0).mul(get(hw2, yxDim, 1));
+
+        INDArray union = area1.add(area2).subi(intersection);
+
+        INDArray iou = intersection.div(union);
+        BooleanIndexing.replaceWhere(iou, 0.0, Conditions.isNan()); //Replace NaNs (0 intersection, 0 area etc) with 0s
+        return iou;
+    }
+
+    private static INDArray intersectionArea(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2, int yxDim){
+        //Order: y, x
+        int l = tl1.length();
+        INDArray yxMax = Nd4j.getExecutioner().execAndReturn(new Max(tl1, tl2, Nd4j.createUninitialized(tl1.shape(), tl1.ordering()), l ));
+        INDArray yxMin = Nd4j.getExecutioner().execAndReturn(new Min(br1, br2, Nd4j.createUninitialized(br1.shape(), br1.ordering()), l ));
+
+        INDArray diffPlus1 = yxMin.sub(yxMax).addi(1.0);
+        INDArray yTerm = get(diffPlus1, yxDim, 0);
+        INDArray xTerm = get(diffPlus1, yxDim, 1);
+
+        return xTerm.mul(yTerm);
+
+    }
+
+    private static INDArray get(INDArray in, int dim, int pos){
+        INDArrayIndex[] indexes = new INDArrayIndex[in.rank()];
+        for( int i=0; i<indexes.length; i++ ){
+            if(i == dim){
+                indexes[i] = NDArrayIndex.point(pos);
+            } else {
+                indexes[i] = NDArrayIndex.all();
+            }
+        }
+
+        return in.get(indexes);
     }
 
     @Override
