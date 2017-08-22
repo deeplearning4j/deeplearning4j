@@ -116,12 +116,16 @@ inline const char *EnumNameOutputMode(OutputMode e) {
 struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_ID = 4,
-    VT_PROFILINGMODE = 6,
-    VT_OUTPUTMODE = 8,
-    VT_TIMESTATS = 10
+    VT_EXECUTIONMODE = 6,
+    VT_PROFILINGMODE = 8,
+    VT_OUTPUTMODE = 10,
+    VT_TIMESTATS = 12
   };
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
+  }
+  ExecutionMode executionMode() const {
+    return static_cast<ExecutionMode>(GetField<int8_t>(VT_EXECUTIONMODE, 0));
   }
   ProfilingMode profilingMode() const {
     return static_cast<ProfilingMode>(GetField<int8_t>(VT_PROFILINGMODE, 0));
@@ -135,6 +139,7 @@ struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
+           VerifyField<int8_t>(verifier, VT_EXECUTIONMODE) &&
            VerifyField<int8_t>(verifier, VT_PROFILINGMODE) &&
            VerifyField<int8_t>(verifier, VT_OUTPUTMODE) &&
            VerifyField<uint8_t>(verifier, VT_TIMESTATS) &&
@@ -147,6 +152,9 @@ struct FlatConfigurationBuilder {
   flatbuffers::uoffset_t start_;
   void add_id(int32_t id) {
     fbb_.AddElement<int32_t>(FlatConfiguration::VT_ID, id, 0);
+  }
+  void add_executionMode(ExecutionMode executionMode) {
+    fbb_.AddElement<int8_t>(FlatConfiguration::VT_EXECUTIONMODE, static_cast<int8_t>(executionMode), 0);
   }
   void add_profilingMode(ProfilingMode profilingMode) {
     fbb_.AddElement<int8_t>(FlatConfiguration::VT_PROFILINGMODE, static_cast<int8_t>(profilingMode), 0);
@@ -163,7 +171,7 @@ struct FlatConfigurationBuilder {
   }
   FlatConfigurationBuilder &operator=(const FlatConfigurationBuilder &);
   flatbuffers::Offset<FlatConfiguration> Finish() {
-    const auto end = fbb_.EndTable(start_, 4);
+    const auto end = fbb_.EndTable(start_, 5);
     auto o = flatbuffers::Offset<FlatConfiguration>(end);
     return o;
   }
@@ -172,6 +180,7 @@ struct FlatConfigurationBuilder {
 inline flatbuffers::Offset<FlatConfiguration> CreateFlatConfiguration(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t id = 0,
+    ExecutionMode executionMode = ExecutionMode_SEQUENTIAL,
     ProfilingMode profilingMode = ProfilingMode_NONE,
     OutputMode outputMode = OutputMode_IMPLICIT,
     bool timestats = false) {
@@ -180,6 +189,7 @@ inline flatbuffers::Offset<FlatConfiguration> CreateFlatConfiguration(
   builder_.add_timestats(timestats);
   builder_.add_outputMode(outputMode);
   builder_.add_profilingMode(profilingMode);
+  builder_.add_executionMode(executionMode);
   return builder_.Finish();
 }
 
