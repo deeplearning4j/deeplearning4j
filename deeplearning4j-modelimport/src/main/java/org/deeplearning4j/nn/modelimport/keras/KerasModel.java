@@ -440,7 +440,7 @@ public class KerasModel {
                     paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix + baseAttributes);
                 } else {
                     if (layerFragments.length > 1) {
-                        paramValue = weightsArchive.readDataSet(baseAttributes + layerParamName, rootPrefix, layerName);
+                        paramValue = weightsArchive.readDataSet(layerFragments[0] + "/" + layerParamName, rootPrefix, layerName);
                     } else {
                         paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix, layerName);
                     }
