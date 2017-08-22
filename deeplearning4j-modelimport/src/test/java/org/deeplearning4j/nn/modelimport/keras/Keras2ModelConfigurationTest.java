@@ -50,7 +50,10 @@ public class Keras2ModelConfigurationTest {
         runSequentialConfigTest("configs/keras2/mnist_cnn_th_keras_2_config.json");
     }
 
-
+    @Test
+    public void mnistCnnNoBiasTfSequentialConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/keras2_mnist_cnn_no_bias_tf_config.json");
+    }
 
 
     @Test
