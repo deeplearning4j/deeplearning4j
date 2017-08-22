@@ -32,37 +32,37 @@ public class Keras1ModelConfigurationTest {
 
     @Test
     public void mnistMlpTfSequentialConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_mlp_tf_keras_1_config.json");
+        runSequentialConfigTest("configs/keras1/mnist_mlp_tf_keras_1_config.json", true);
     }
 
     @Test
     public void mnistMlpThSequentialConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_mlp_th_keras_1_config.json");
+        runSequentialConfigTest("configs/keras1/mnist_mlp_th_keras_1_config.json", true);
     }
 
     @Test
     public void mnistCnnTfSequentialConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_cnn_tf_keras_1_config.json");
+        runSequentialConfigTest("configs/keras1/mnist_cnn_tf_keras_1_config.json", true);
     }
 
     @Test
     public void mnistCnnThSequentialConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_cnn_th_keras_1_config.json");
+        runSequentialConfigTest("configs/keras1/mnist_cnn_th_keras_1_config.json", true);
     }
 
     @Test
     public void mlpSequentialConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mlp_config.json");
+        runSequentialConfigTest("configs/keras1/mlp_config.json", true);
     }
 
     @Test
     public void reshapeMlpConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_mlp_reshape_tf_keras_1_config.json");
+        runSequentialConfigTest("configs/keras1/mnist_mlp_reshape_tf_keras_1_config.json", true);
     }
 
     @Test
     public void reshapeCnnConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_cnn_reshape_tf_keras_1_config.json");
+        runSequentialConfigTest("configs/keras1/mnist_cnn_reshape_tf_keras_1_config.json", true);
     }
 
     @Test
@@ -77,39 +77,39 @@ public class Keras1ModelConfigurationTest {
 
     @Test
     public void yoloConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/yolo_model.json");
+        runSequentialConfigTest("configs/keras1/yolo_model.json", true);
     }
 
     @Test
     public void cnnTfTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/cnn_tf_config.json");
+        runSequentialConfigTest("configs/keras1/cnn_tf_config.json", true);
     }
 
     @Test
     public void cnnThTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/cnn_th_config.json");
+        runSequentialConfigTest("configs/keras1/cnn_th_config.json", true);
     }
 
     @Test
     public void lstmFixedLenTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/lstm_tddense_config.json");
+        runSequentialConfigTest("configs/keras1/lstm_tddense_config.json", false);
     }
 
     @Test
     public void mnistCnnTfTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_cnn_tf_config.json");
+        runSequentialConfigTest("configs/keras1/mnist_cnn_tf_config.json", true);
     }
 
     @Test
     public void mnistMlpTfTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_mlp_tf_config.json");
+        runSequentialConfigTest("configs/keras1/mnist_mlp_tf_config.json", true);
     }
 
-    void runSequentialConfigTest(String path) throws Exception {
+    void runSequentialConfigTest(String path, boolean training) throws Exception {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         MultiLayerConfiguration config =
                 new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
+                        .enforceTrainingConfig(training).buildSequential().getMultiLayerConfiguration();
         MultiLayerNetwork model = new MultiLayerNetwork(config);
         model.init();
     }

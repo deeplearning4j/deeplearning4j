@@ -586,6 +586,8 @@ public class KerasLayer {
             dl4jLoss = LossFunctions.LossFunction.HINGE;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_SPARSE_CATEGORICAL_CROSSENTROPY())) {
             throw new UnsupportedKerasConfigurationException("Loss function " + kerasLoss + " not supported yet.");
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_BINARY_CROSSENTROPY())) {
+            dl4jLoss = LossFunctions.LossFunction.XENT;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_CATEGORICAL_CROSSENTROPY())) {
             dl4jLoss = LossFunctions.LossFunction.MCXENT;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_KULLBACK_LEIBLER_DIVERGENCE()) ||
@@ -790,6 +792,9 @@ public class KerasLayer {
         if (innerConfig.containsKey(conf.getLAYER_FIELD_OUTPUT_DIM()))
             /* Most feedforward layers: Dense, RNN, etc. */
             nOut = (int) innerConfig.get(conf.getLAYER_FIELD_OUTPUT_DIM());
+        else if (innerConfig.containsKey(conf.getLAYER_FIELD_EMBEDDING_OUTPUT_DIM()))
+            /* Embedding layers. */
+            nOut = (int) innerConfig.get(conf.getLAYER_FIELD_EMBEDDING_OUTPUT_DIM());
         else if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_FILTER()))
             /* Convolutional layers. */
             nOut = (int) innerConfig.get(conf.getLAYER_FIELD_NB_FILTER());
@@ -850,17 +855,17 @@ public class KerasLayer {
     protected WeightInit getWeightInitFromConfig(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(conf.getLAYER_FIELD_INIT()))
-            throw new InvalidKerasConfigurationException("Keras layer is missing " + conf.getLAYER_FIELD_INIT() + " field");
-        String kerasInit = "";
-        if (kerasMajorVersion != 2)
-            kerasInit = (String) innerConfig.get(conf.getLAYER_FIELD_INIT());
-        else {
-            HashMap initMap = (HashMap) innerConfig.get(conf.getLAYER_FIELD_INIT());
-            if (initMap.containsKey("class_name")) {
-                kerasInit = (String) initMap.get("class_name");
-            }
-        }
+//        if (!innerConfig.containsKey(conf.getLAYER_FIELD_INIT()))
+//            throw new InvalidKerasConfigurationException("Keras layer is missing " + conf.getLAYER_FIELD_INIT() + " field");
+        String kerasInit = "glorot_normal";
+//        if (kerasMajorVersion != 2)
+//            kerasInit = (String) innerConfig.get(conf.getLAYER_FIELD_INIT());
+//        else {
+//            HashMap initMap = (HashMap) innerConfig.get(conf.getLAYER_FIELD_INIT());
+//            if (initMap.containsKey("class_name")) {
+//                kerasInit = (String) initMap.get("class_name");
+//            }
+//        }
         WeightInit init;
         try {
             init = mapWeightInitialization(kerasInit);

@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasModelConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.layers.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLoss;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLstm;
@@ -302,7 +303,8 @@ public class KerasModel {
                 int i = 0;
                 for (String inboundLayerName : layer.getInboundLayerNames())
                     inputTypes[i++] = this.outputTypes.get(inboundLayerName);
-                outputType = layer.getOutputType(inputTypes);
+                    outputType = layer.getOutputType(inputTypes);
+
             }
             this.outputTypes.put(layer.getLayerName(), outputType);
         }
@@ -368,11 +370,19 @@ public class KerasModel {
             }
 
             String baseAttributes = layerName + "/" + attributeJoinStr;
-            try {
-                layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
-            } catch (Exception e) {
-                layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
+            if (layerFragments.length > 1) {
+                try {
+                    layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
+                } catch (Exception e) {
+                    layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
+                }
+            } else {
+                if (foundTfGroups) {
+                    layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
+                } else {
+                    layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
 
+                }
             }
 
             if (layerParamNames.isEmpty())
@@ -387,43 +397,54 @@ public class KerasModel {
                                 + " trainable params (named " + layerName + ")");
             Map<String, INDArray> weights = new HashMap<String, INDArray>();
 
+
             for (String layerParamName : layerParamNames) {
-                /* TODO: push this logic into KerasLayer subclasses. Layers know what
-                 * parameters they have and should be looking for, so let them handle
-                 * it in a layer-specific manner.
-                 * Keras parameter names are typically formatted as [layer name]_[parameter]. For
-                 * example, the weight matrix in the first Dense layer with the TensorFlow backend
-                 * will be named "dense_1_W:0."
-                 */
+               /* TODO: push this logic into KerasLayer subclasses. Layers know what
+                * parameters they have and should be looking for, so let them handle
+                * it in a layer-specific manner.
+                * Keras parameter names are typically formatted as [layer name]_[parameter]. For
+                * example, the weight matrix in the first Dense layer with the TensorFlow backend
+                * will be named "dense_1_W:0."
+                */
                 // TODO fix the SLASH issue with layer names
                 Matcher layerNameMatcher =
                         Pattern.compile(layerFragments[layerFragments.length - 1]).matcher(layerParamName);
-                if (!layerNameMatcher.find())
-                    throw new InvalidKerasConfigurationException(
-                            "Unable to parse layer/parameter name " + layerParamName + " for stored weights.");
+                Matcher layerNameMatcherAttributes =
+                        Pattern.compile(attributeJoinStr).matcher(layerParamName);
+                if (!(layerNameMatcher.find() || layerNameMatcherAttributes.find()))
+                    log.warn("Unable to match layer parameter name " + layerParamName + " for stored weights.");
                 String paramName = layerNameMatcher.replaceFirst("");
 
-                /* Usually layer name is separated from parameter name by an underscore. */
+               /* Usually layer name is separated from parameter name by an underscore. */
                 Matcher paramNameMatcher = Pattern.compile("^_(.+)$").matcher(paramName);
                 if (paramNameMatcher.find())
                     paramName = paramNameMatcher.group(1);
 
-                /* TensorFlow backend often appends ":" followed by one or more digits to parameter
-                 * names. We strip it off here.
-                 */
+               /* TensorFlow backend often appends ":" followed by one or more digits to parameter
+                * names. We strip it off here.
+                */
                 Matcher tfSuffixMatcher = Pattern.compile(":\\d+?$").matcher(paramName);
                 if (tfSuffixMatcher.find())
                     paramName = tfSuffixMatcher.replaceFirst("");
 
-                /* TensorFlow backend also may append "_" followed by one or more digits to parameter
-                 * names. We strip it off here.
-                 */
+               /* TensorFlow backend also may append "_" followed by one or more digits to parameter
+                * names. We strip it off here.
+                */
                 Matcher tfParamNbMatcher = Pattern.compile("_\\d+$").matcher(paramName);
                 if (tfParamNbMatcher.find())
                     paramName = tfParamNbMatcher.replaceFirst("");
 
 
-                INDArray paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix + baseAttributes);
+                INDArray paramValue;
+                if (foundTfGroups) {
+                    paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix + baseAttributes);
+                } else {
+                    if (layerFragments.length > 1) {
+                        paramValue = weightsArchive.readDataSet(baseAttributes + layerParamName, rootPrefix, layerName);
+                    } else {
+                        paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix, layerName);
+                    }
+                }
                 weights.put(paramName, paramValue);
             }
             layer.setWeights(weights);
