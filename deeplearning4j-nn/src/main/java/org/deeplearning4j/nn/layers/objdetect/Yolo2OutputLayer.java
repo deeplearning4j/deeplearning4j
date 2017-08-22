@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
@@ -19,6 +20,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.Serializable;
@@ -27,12 +29,22 @@ import java.util.List;
 
 /**
  *
- * Label format: [minibatch, 5B+C, H, W]
- * Order for labels depth: [y,x,h,w,conf,(class labels)]
+ * Label format: [minibatch, 4+C, H, W]
+ * Order for labels depth: [y,x,h,w,(class labels)]
  * x = box center position (x axis), within the grid cell. (0,0) is top left of grid, (1,1) is bottom right of grid
  * y = as above, y axis
  * h = bounding box height, relative to whole image... in interval [0, 1]
  * w = as above, width
+ *
+ * Input format: [minibatch, 5B+C, H, W]
+ *
+ * Possible layouts for depth dimension, for input:
+ * - Strided: batches of [y,x,h,w,C]
+ * - Together: [By,Bx,Bh,Bw,BC] -> would be more efficient, but harder to interpret and extract values from...  ***
+ *      -> But, we can just add helper methods
+ *
+ *
+ * Mask format: [minibatch,H,W]
  *
  * @author Alex Black
  */
@@ -71,7 +83,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
-        //Input activations shape, labels shape: [mb, depth, H, W]
+        //Labels shape: [mb, depth, H, W], depth = 4B+C
 
         //Mask array must be present, with shape [minibatch,H,W]. Mask array is 1_i^B in YOLO paper - i.e., whether an object
         // is present (1) or not (0) in the specified grid cell (for specified example)
@@ -108,11 +120,16 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //Determine top/left and bottom/right (x/y) of label bounding boxes - relative to the whole image
         //[0,0] is top left of whole image, [1,1] is bottom right of whole image
-        //Label format: [minibatch, 5B+C, H, W]
-        INDArray labelBoxYXCenterInGrid = labels.get(NDArrayIndex.all(), NDArrayIndex.interval(0,1,true), NDArrayIndex.all(), NDArrayIndex.all());
+        //Label format: [minibatch, 4+C, H, W]
+
+        //Pull out the Y and X components:
+        INDArray labelBoxYXCenterInGridCell = labels.get(NDArrayIndex.all(), NDArrayIndex.interval(0,1,true), NDArrayIndex.all(), NDArrayIndex.all());
+        INDArray labelBoxYCenterInGridCell = labels.get(NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()); //Shape: [minibatch, H, W]
+        INDArray labelBoxXCenterInGridCell = labels.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()); //Shape: [minibatch, H, W]
+        //And the H/W components:
         INDArray labelBoxHW = labels.get(NDArrayIndex.all(), NDArrayIndex.interval(2,3,true), NDArrayIndex.all(), NDArrayIndex.all());
 
-        INDArray labelBoxYXCenterInImage = labelBoxYXCenterInGrid.dup();
+        INDArray labelBoxYXCenterInImage = labelBoxYXCenterInGridCell.dup();
         labelBoxYXCenterInImage.get(NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all())
                 .muli(gridFracH);
         labelBoxYXCenterInImage.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all())
@@ -140,7 +157,36 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, maskArray, mask1_ij_obj, 0,2,3));
 
 
-        //
+        //Calculate predicted box locations + dimensions from activations
+        //Input shape: [minibatch, 5B+C, H, W]
+        //Layout for depth dimension: [5Y, 5X, 5H, 5W, 5C]
+
+        //Pull out both Y and X components
+        INDArray predictedYXCenterInGridCell = input.get(NDArrayIndex.all(), NDArrayIndex.interval(0,2*b,true), NDArrayIndex.all(), NDArrayIndex.all());
+        predictedYXCenterInGridCell = Transforms.sigmoid(predictedYXCenterInGridCell, true);    //Shape: [minibatch, 2, h, w]
+
+        INDArray predictedYXCenter2d = predictedYXCenterInGridCell.dup('c').reshape('c', mb, 2*b*h*w);
+        //Create broadcasted version of labels:
+        INDArray broadcastLabelsYX = Nd4j.createUninitialized(predictedYXCenterInGridCell.shape(), 'c');
+        INDArray bLabelsY = broadcastLabelsYX.get(NDArrayIndex.all(), NDArrayIndex.interval(0,4), NDArrayIndex.all(), NDArrayIndex.all());  //Shape: [minibatch, 4, H, W]
+        Nd4j.getExecutioner().execAndReturn(new BroadcastCopyOp(bLabelsY, labelBoxYCenterInGridCell, bLabelsY, 0,2,3));  //
+        INDArray bLabelsX = broadcastLabelsYX.get(NDArrayIndex.all(), NDArrayIndex.interval(4,8), NDArrayIndex.all(), NDArrayIndex.all());  //Shape: [minibatch, 4, H, W]
+        Nd4j.getExecutioner().execAndReturn(new BroadcastCopyOp(bLabelsX, labelBoxXCenterInGridCell, bLabelsX, 0,2,3));  //
+        INDArray labelYXCenter2d = broadcastLabelsYX.dup('c').reshape('c', mb, 2*b*h*w);
+
+        //And 2d version of the mask1_ij_obj: [minibatch,B,H,W] -> ???
+
+
+
+        //Calculate the loss:
+        double positionLoss = layerConf().getLossPositionScale().computeScore(labelYXCenter2d, predictedYXCenter2d, null, null, false );
+        double sizeScaleLoss = 0.0;
+        double confidenceLoss = 0.0;
+        double classPredictionLoss = 0.0;
+
+        double loss = layerConf().getLambdaCoord() * (positionLoss + sizeScaleLoss)
+                + confidenceLoss
+                + classPredictionLoss;
 
         return 0;
     }
