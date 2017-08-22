@@ -27,8 +27,9 @@ public:
 TEST_F(FlatBuffersTest, BasicTest1) {
     flatbuffers::FlatBufferBuilder builder(1024);
 
+    auto name = builder.CreateString("wow");
 
-    auto node = CreateFlatNode(builder, -1, OpType_TRANSFORM, 26, {0});
+    auto node = CreateFlatNode(builder, -1, name, OpType_TRANSFORM, 26, {0});
 
     builder.Finish(node);
 
@@ -73,8 +74,11 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto in1 = builder.CreateVector(inputs1);
     auto in2 = builder.CreateVector(inputs2);
 
-    auto node1 = CreateFlatNode(builder, 1, OpType_TRANSFORM, 0, in1, DataType_INHERIT, vec1);
-    auto node2 = CreateFlatNode(builder, 2, OpType_TRANSFORM, 2, in2, DataType_INHERIT, vec2);
+    auto name1 = builder.CreateString("wow1");
+    auto name2 = builder.CreateString("wow2");
+
+    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, DataType_INHERIT, vec1);
+    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM, 2, in2, DataType_INHERIT, vec2);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fVar);
@@ -126,9 +130,9 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 
     auto vs = graph.getVariableSpace();
 
-    ASSERT_EQ(1, vs->totalEntries());
+    ASSERT_EQ(3, vs->totalEntries());
     ASSERT_EQ(1, vs->externalEntries());
-    ASSERT_EQ(0, vs->internalEntries());
+    ASSERT_EQ(2, vs->internalEntries());
 
     auto var = vs->getVariable(-1)->getNDArray();
 
@@ -202,7 +206,9 @@ TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
     auto in1 = builder.CreateVector(inputs1);
     auto o = builder.CreateVector(outputs);
 
-    auto node1 = CreateFlatNode(builder, 1, OpType_TRANSFORM, 0, in1, DataType_FLOAT, out1);
+    auto name1 = builder.CreateString("wow1");
+
+    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, DataType_FLOAT, out1);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fXVar);

@@ -18,6 +18,7 @@ namespace nd4j {
         template <typename T>
         class VariableSpace {
         protected:
+            std::map<std::string, nd4j::graph::Variable<T> *> _symbolic;
             std::map<const int32_t, nd4j::graph::Variable<T> *> _variables;
             std::list<nd4j::graph::Variable<T> *> _external;
             std::list<nd4j::graph::Variable<T> *> _internal;
@@ -32,7 +33,11 @@ namespace nd4j {
             ~VariableSpace();
 
             bool hasVariable(int32_t id);
+            bool hasVariable(std::string *symbol);
+
             nd4j::graph::Variable<T> *getVariable(const int32_t id);
+            nd4j::graph::Variable<T> *getVariable(std::string *symbol);
+
             void putVariable(int32_t id, Variable<T> *variable);
             void putVariable(int32_t id, NDArray<T> *array);
 
@@ -49,9 +54,20 @@ namespace nd4j {
         };
     }
 }
+
+template <typename T>
+bool nd4j::graph::VariableSpace<T>::hasVariable(std::string *symbol) {
+    return _symbolic.count(*symbol) == 1;
+}
+
+template <typename T>
+nd4j::graph::Variable<T> * nd4j::graph::VariableSpace<T>::getVariable(std::string *symbol) {
+    return _symbolic.at(*symbol);
+}
+
 template <typename T>
 bool nd4j::graph::VariableSpace<T>::hasVariable(int32_t id) {
-    return _variables.count(id) == 1;
+    return _variables.count(id) == 1 || _temporary.count(id) == 1;
 }
 
 template <typename T>
@@ -103,8 +119,17 @@ template <typename T>
 void nd4j::graph::VariableSpace<T>::putVariable(const int32_t id, Variable<T> *variable) {
 
     // we don't want to add variables more then once
-    if (_variables.count(id) > 0)
+    if (_variables.count(id) > 0 || _temporary.count(id) > 0) {
+        nd4j_verbose("Trying to update variable for node_%i\n", id);
+
+        auto local = id < 0 ? _variables.at(id) : _temporary.at(id);
+
+        if (local->getNDArray() == nullptr && variable->getNDArray() != nullptr) {
+            nd4j_verbose("Saving variable for node_%i\n", id);
+            local->setNDArray(variable->getNDArray());
+        }
         return;
+    }
 
     nd4j_verbose("Adding Variable to Space: id: %i; Array is null: %i%\n", id, variable->getNDArray() == nullptr);
 
@@ -114,6 +139,11 @@ void nd4j::graph::VariableSpace<T>::putVariable(const int32_t id, Variable<T> *v
         _auto_counter = id - 1;
 
     variable->setId(id);
+
+    if (variable->getName() != nullptr && variable->getName()->length() != 0) {
+        std::pair<std::string, nd4j::graph::Variable<T> *> pair(*(variable->getName()), variable);
+        _symbolic.insert(pair);
+    }
 
     // we have special list for external variables to ensure graph completeness
     if (id < 0) {

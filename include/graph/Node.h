@@ -6,6 +6,7 @@
 #define LIBND4J_GNODE_H
 
 #include <atomic>
+#include <string>
 #include <NDArray.h>
 #include <graph/generated/node_generated.h>
 
@@ -25,6 +26,7 @@ namespace nd4j {
             std::vector<int> _dimensions;
 
             int * _dim;
+            std::string _name;
 
 
             // this variable points to onion layer within graph
@@ -75,8 +77,21 @@ namespace nd4j {
 
             void pickOutput(int outputId);
             void pickInput(int inputId);
+
+            void setName(std::string *name);
+            std::string * getName();
         };
     }
+}
+
+template <typename T>
+std::string * nd4j::graph::Node<T>::getName() {
+    return &_name;
+}
+
+template <typename T>
+void nd4j::graph::Node<T>::setName(std::string *name) {
+    _name = *name;
 }
 
 template <typename T>

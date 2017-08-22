@@ -31,6 +31,7 @@ table FlatVariable {
 
 table FlatNode {
     id:int; // unique id for this node
+    name: string; // literal id of this node (optional)
     opType:OpType;
     opNum:short;
     input:[int]; // ID's of input nodes for this node

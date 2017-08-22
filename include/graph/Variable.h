@@ -5,6 +5,7 @@
 #ifndef LIBND4J_VARIABLE_H
 #define LIBND4J_VARIABLE_H
 
+#include <string>
 #include <NDArray.h>
 #include <graph/generated/node_generated.h>
 #include <graph/generated/graph_generated.h>
@@ -16,6 +17,7 @@ namespace nd4j {
         protected:
             int32_t _id;
             nd4j::NDArray<T> * _ndarray;
+            std::string _name;
 
             bool _external;
             bool _readOnly;
@@ -38,11 +40,21 @@ namespace nd4j {
             int32_t id();
             void setId(int32_t id);
 
-
+            std::string *getName();
+            void setName(std::string *name);
         };
     }
 }
 
+template <typename T>
+std::string * nd4j::graph::Variable<T>::getName() {
+    return &_name;
+}
+
+template <typename T>
+void nd4j::graph::Variable<T>::setName(std::string *name) {
+    _name = *name;
+}
 
 template <typename T>
 int32_t nd4j::graph::Variable<T>::id() {

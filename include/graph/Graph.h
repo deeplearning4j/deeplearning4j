@@ -135,6 +135,12 @@ template <typename T>
 void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
     _built.store(false);
 
+    auto nodeState = new Variable<T>();
+    if (node->getName() != nullptr)
+        nodeState->setName(node->getName());
+
+    _variableSpace->putVariable(node->id(), nodeState);
+
     // if outputs are undefined, we have to auto-create variable
     if (node->output()->size() == 0 || (node->output()->size() == 1 && node->output()->at(0) == 0)){
         nd4j_verbose("Adding auto output variable; Output size: %i\n", node->output()->size());
