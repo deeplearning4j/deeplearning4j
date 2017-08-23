@@ -60,7 +60,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if()
+        return inputType;
     }
 
     @Override

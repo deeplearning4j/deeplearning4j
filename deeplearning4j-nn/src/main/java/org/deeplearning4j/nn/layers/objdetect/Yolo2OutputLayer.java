@@ -7,10 +7,15 @@ import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Min;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -21,6 +26,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -123,8 +129,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         // ----- Step 2: apply activation functions to network output activations -----
-        //Reshape from [minibatch, 5B+C, H, W] to [minibatch, B, 5+C, H, W]
-        INDArray input5 = input.dup('c').reshape(mb, b, 5+c, h, w);
+        //Reshape from [minibatch, 5B+C, H, W] to [minibatch, 5B, H, W] to [minibatch, B, 5, H, W]
+        INDArray input5 = input.get(all(), interval(0,5*b), all(), all()).dup('c').reshape(mb, b, 5, h, w);
+        INDArray inputClasses = input.get(all(), interval(5*b, 5*b+c), all(), all());
 
         // Sigmoid for x/y centers
         INDArray predictedXYCenterGrid = input5.get(all(), all(), interval(0,2), all(), all());
@@ -174,30 +181,40 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         // ----- Step 4: Loss Function -----
 
-//        INDArray predictedYXCenter2d = predictedYXCenterInGridCell.dup('c').reshape('c', mb, 2*b*h*w);
-//        //Create broadcasted version of labels:
-//        INDArray broadcastLabelsYX = Nd4j.createUninitialized(predictedYXCenterInGridCell.shape(), 'c');
-//        INDArray bLabelsY = broadcastLabelsYX.get(all(), interval(0,4), all(), all());  //Shape: [minibatch, 4, H, W]
-//        Nd4j.getExecutioner().execAndReturn(new BroadcastCopyOp(bLabelsY, labelBoxYCenterInGridCell, bLabelsY, 0,2,3));  //
-//        INDArray bLabelsX = broadcastLabelsYX.get(all(), interval(4,8), all(), all());  //Shape: [minibatch, 4, H, W]
-//        Nd4j.getExecutioner().execAndReturn(new BroadcastCopyOp(bLabelsX, labelBoxXCenterInGridCell, bLabelsX, 0,2,3));  //
-//        INDArray labelYXCenter2d = broadcastLabelsYX.dup('c').reshape('c', mb, 2*b*h*w);
-//
-//        //And 2d version of the mask1_ij_obj: [minibatch,B,H,W] -> ???
+        //One design goal here is to make the loss function configurable. To do this, we want to reshape the activations
+        //(and masks) to a 2d representation, suitable for use in DL4J's loss functions
+
+        INDArray mask1_ij_obj_2d = mask1_ij_obj.dup('c').reshape(mb*b*h*w, 1);
+
+        INDArray predictedXYCenter2d = predictedXYCenterGrid.dup('c').reshape('c', mb*b*h*w, 2);        //TODO need permute first??
+        INDArray labelsCenterXYInGridBroadcast = labelsCenterXYInGrid.broadcast(mb, b, 2, h, w);
+        INDArray labelXYCenter2d = labelsCenterXYInGridBroadcast.dup('c').reshape('c', mb*b*h*w, 2);    //TODO need permute first??
 
 
+        //Width/height (sqrt)
+        INDArray predictedWHSqrt2d = predictedWHSqrt.dup('c').reshape(mb*b*h*w, 2);
+        INDArray labelWHSqrt2d = labelWHSqrt.dup('c').reshape(mb*b*h*w, 2);
+
+        //Confidence
+
+
+        //Class prediction loss
+        INDArray classPredictionsPreSoftmax = inputClasses;      //Shape: [minibatch, C, H, W]
+        INDArray classPredictionsPreSoftmax2d = classPredictionsPreSoftmax.permute(0,2,3,1).dup('c').reshape(mb*h*w, c);
+        INDArray classLabels2d = classLabels.permute(0,2,3,1).dup('c').reshape(mb*h*w, c);
 
         //Calculate the loss:
-        double positionLoss = 0.0;  //layerConf().getLossPositionScale().computeScore(labelYXCenter2d, predictedYXCenter2d, null, null, false );
-        double sizeScaleLoss = 0.0;
+        IActivation identity = new ActivationIdentity();
+        double positionLoss = layerConf().getLossPositionScale().computeScore(labelXYCenter2d, predictedXYCenter2d, identity, mask1_ij_obj_2d, false );
+        double sizeScaleLoss = layerConf().getLossPositionScale().computeScore(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d, false);
         double confidenceLoss = 0.0;
-        double classPredictionLoss = 0.0;
+        double classPredictionLoss = layerConf().getLossClassPredictions().computeScore(classLabels2d, classPredictionsPreSoftmax2d, new ActivationSoftmax(), mask1_ij_obj_2d, false);
 
         double loss = layerConf().getLambdaCoord() * (positionLoss + sizeScaleLoss)
                 + confidenceLoss
                 + classPredictionLoss;
 
-        return 0;
+        return loss;
     }
 
 
