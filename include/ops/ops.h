@@ -1493,6 +1493,10 @@ namespace simdOps {
 			return nd4j::math::nd4j_max<T>(d1, d2);
 		}
 
+        op_def static T op(T d1, T d2) {
+            return nd4j::math::nd4j_max<T>(d1, d2);
+        }
+
 		// FIXME: this signature overlaps with MetaOp
 		op_def static T op(T d1, T *extraParams) {
 			return d1;
@@ -1521,6 +1525,10 @@ namespace simdOps {
 
         op_def static T op(T d1, T d2, T *params) {
             return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(d1), nd4j::math::nd4j_abs<T>(d2));
+        }
+
+        op_def static T op(T d1, T d2) {
+            return nd4j::math::nd4j_abs<T>(d1) > nd4j::math::nd4j_abs<T>(d2) ? d1 : d2;
         }
 
         // FIXME: this signature overlaps with MetaOp
@@ -1553,6 +1561,10 @@ namespace simdOps {
 			return nd4j::math::nd4j_min(nd4j::math::nd4j_abs<T>(d1), nd4j::math::nd4j_abs<T>(d2));
 		}
 
+        op_def static T op(T d1, T d2) {
+            return nd4j::math::nd4j_abs<T>(d1) < nd4j::math::nd4j_abs<T>(d2) ? d1 : d2;
+        }
+
 		// FIXME: this signature overlaps with MetaOp
 		op_def static T op(T d1, T *extraParams) {
 			return nd4j::math::nd4j_abs<T>(d1);
@@ -1579,6 +1591,10 @@ namespace simdOps {
         }
 
         op_def static T op(T d1, T d2, T *params) {
+            return nd4j::math::nd4j_min(d1, d2);
+        }
+
+        op_def static T op(T d1, T d2) {
             return nd4j::math::nd4j_min(d1, d2);
         }
 

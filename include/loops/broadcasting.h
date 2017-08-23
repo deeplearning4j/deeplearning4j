@@ -37,7 +37,11 @@
        (9, simdOps::GreaterThanOrEqual) ,\
        (10, simdOps::LessThan) ,\
        (11, simdOps::LessThanOrEqual) ,\
-       (12, simdOps::NotEqualTo)
+       (12, simdOps::NotEqualTo) ,\
+       (13, simdOps::Min) ,\
+       (14, simdOps::Max) ,\
+       (15, simdOps::AMin) ,\
+       (16, simdOps::AMax)
 
 
 namespace functions {
