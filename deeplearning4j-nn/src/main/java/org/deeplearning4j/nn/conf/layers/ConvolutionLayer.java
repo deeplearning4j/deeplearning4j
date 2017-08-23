@@ -32,6 +32,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     @Getter(AccessLevel.NONE)
     protected boolean hasBias = true;
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate; //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
+    protected int dilation[] = new int[]{1,1};
     protected int[] kernelSize; // Square filter
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
@@ -89,6 +90,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         super(builder);
         this.hasBias = builder.hasBias;
         this.convolutionMode = builder.convolutionMode;
+        this.dilation = builder.dilation;
         if (builder.kernelSize.length != 2)
             throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
         this.kernelSize = builder.kernelSize;
@@ -601,6 +603,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     protected static abstract class BaseConvBuilder<T extends BaseConvBuilder<T>> extends FeedForwardLayer.Builder<T> {
         protected boolean hasBias = true;
         protected ConvolutionMode convolutionMode = null;
+        protected int[] dilation = new int[]{1, 1};
         protected int[] kernelSize = new int[] {5, 5};
         protected int[] stride = new int[] {1, 1};
         protected int[] padding = new int[] {0, 0};
@@ -645,6 +648,11 @@ public class ConvolutionLayer extends FeedForwardLayer {
          */
         public T convolutionMode(ConvolutionMode convolutionMode) {
             this.convolutionMode = convolutionMode;
+            return (T) this;
+        }
+
+        public T dilation(int... dilation){
+            this.dilation = dilation;
             return (T) this;
         }
 
