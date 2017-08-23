@@ -122,4 +122,31 @@ public class Broadcast {
         return Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(x,y,z,dimensions));
     }
 
+    /**
+     * Broadcast max op. See: {@link BroadcastMax}
+     */
+    public static INDArray max(INDArray x, INDArray y, INDArray z, int... dimensions ){
+        return Nd4j.getExecutioner().execAndReturn(new BroadcastMax(x,y,z,dimensions));
+    }
+
+    /**
+     * Broadcast min op. See: {@link BroadcastMin}
+     */
+    public static INDArray min(INDArray x, INDArray y, INDArray z, int... dimensions ){
+        return Nd4j.getExecutioner().execAndReturn(new BroadcastMin(x,y,z,dimensions));
+    }
+
+    /**
+     * Broadcast absolute max op. See: {@link BroadcastAMax}
+     */
+    public static INDArray amax(INDArray x, INDArray y, INDArray z, int... dimensions ){
+        return Nd4j.getExecutioner().execAndReturn(new BroadcastAMax(x,y,z,dimensions));
+    }
+
+    /**
+     * Broadcast absolute min op. See: {@link BroadcastAMax}
+     */
+    public static INDArray amin(INDArray x, INDArray y, INDArray z, int... dimensions ){
+        return Nd4j.getExecutioner().execAndReturn(new BroadcastAMin(x,y,z,dimensions));
+    }
 }
