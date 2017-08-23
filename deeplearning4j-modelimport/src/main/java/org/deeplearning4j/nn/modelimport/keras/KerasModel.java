@@ -33,11 +33,10 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasModelConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.layers.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLoss;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLstm;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.util.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.core.type.TypeReference;
@@ -573,7 +572,7 @@ public class KerasModel {
         ComputationGraph model = new ComputationGraph(getComputationGraphConfiguration());
         model.init();
         if (importWeights)
-            model = (ComputationGraph) helperCopyWeightsToModel(model);
+            model = (ComputationGraph) KerasModelUtils.copyWeightsToModel(model, this.layers);
         return model;
     }
 
@@ -707,42 +706,5 @@ public class KerasModel {
         TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {
         };
         return mapper.readValue(yaml, typeRef);
-    }
-
-    /**
-     * Helper function to import weights from nested Map into existing model. Depends critically
-     * on matched layer and parameter names. In general this seems to be straightforward for most
-     * Keras models and layersOrdered, but there may be edge cases.
-     *
-     * @param model DL4J Model interface
-     * @return DL4J Model interface
-     * @throws InvalidKerasConfigurationException
-     */
-    protected org.deeplearning4j.nn.api.Model helperCopyWeightsToModel(org.deeplearning4j.nn.api.Model model)
-            throws InvalidKerasConfigurationException {
-        /* Get list if layers from model. */
-        org.deeplearning4j.nn.api.Layer[] layersFromModel;
-        if (model instanceof MultiLayerNetwork)
-            layersFromModel = ((MultiLayerNetwork) model).getLayers();
-        else
-            layersFromModel = ((ComputationGraph) model).getLayers();
-
-        /* Iterate over layers in model, setting weights when relevant. */
-        Set<String> layerNames = new HashSet<>(this.layers.keySet());
-        for (org.deeplearning4j.nn.api.Layer layer : layersFromModel) {
-            String layerName = layer.conf().getLayer().getLayerName();
-            if (!this.layers.containsKey(layerName))
-                throw new InvalidKerasConfigurationException(
-                        "No weights found for layer in model (named " + layerName + ")");
-            this.layers.get(layerName).copyWeightsToLayer(layer);
-            layerNames.remove(layerName);
-        }
-
-        for (String layerName : layerNames) {
-            if (this.layers.get(layerName).getNumParams() > 0)
-                throw new InvalidKerasConfigurationException(
-                        "Attemping to copy weights for layer not in model (named " + layerName + ")");
-        }
-        return model;
     }
 }
