@@ -9,7 +9,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
@@ -26,7 +25,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
@@ -148,7 +146,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         INDArray predictedXYCenterImage = Broadcast.div(predictedXYCenterGrid, wh,
-                Nd4j.createUninitialized(predictedXYCenterGrid.shape(), predictedXYCenterGrid.ordering()), 1 ));
+                Nd4j.createUninitialized(predictedXYCenterGrid.shape(), predictedXYCenterGrid.ordering()), 1 );
         Broadcast.add(predictedXYCenterImage, gridYX, predictedXYCenterImage, 2,3,4); // [2,H,W] to [minibatch, B, 2, H, W]
 
         INDArray halfWidth = predictedWH.mul(0.5);
@@ -161,12 +159,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         // ----- Step 3: Calculate IOU(predicted, labels) to infer 1_ij^obj mask array (for loss function) -----
-
-//        INDArray predictedTL =
-
         //Calculate IOU (intersection over union - aka Jaccard index) - for the labels and bounding box priors
         //http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/
-        INDArray iou = calculateIOU5d(labelTLXYImg, labelBRXYImg, predictedTLXYImage, predictedBRXYImage);
+        INDArray iou = calculateIOULabelPredicted(labelTLXYImg, labelBRXYImg, predictedTLXYImage, predictedBRXYImage);
         //IOU shape: [minibatch, B, H, W]
 
         //Mask 1_ij^obj: isMax (dimension 1) + apply object present mask. Result: [minibatch, B, H, W]
@@ -175,29 +170,25 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, maskArray, mask1_ij_obj, 0,2,3));
 
 
-        //Calculate predicted box locations + dimensions from activations
-        //Input shape: [minibatch, 5B+C, H, W]
-        //Layout for depth dimension: [5Y, 5X, 5H, 5W, 5C]
 
-        //Pull out both Y and X components
-        INDArray predictedYXCenterInGridCell = input.get(all(), interval(0,2*b,true), all(), all());
-        predictedYXCenterInGridCell = Transforms.sigmoid(predictedYXCenterInGridCell, true);    //Shape: [minibatch, 2, h, w]
 
-        INDArray predictedYXCenter2d = predictedYXCenterInGridCell.dup('c').reshape('c', mb, 2*b*h*w);
-        //Create broadcasted version of labels:
-        INDArray broadcastLabelsYX = Nd4j.createUninitialized(predictedYXCenterInGridCell.shape(), 'c');
-        INDArray bLabelsY = broadcastLabelsYX.get(all(), interval(0,4), all(), all());  //Shape: [minibatch, 4, H, W]
-        Nd4j.getExecutioner().execAndReturn(new BroadcastCopyOp(bLabelsY, labelBoxYCenterInGridCell, bLabelsY, 0,2,3));  //
-        INDArray bLabelsX = broadcastLabelsYX.get(all(), interval(4,8), all(), all());  //Shape: [minibatch, 4, H, W]
-        Nd4j.getExecutioner().execAndReturn(new BroadcastCopyOp(bLabelsX, labelBoxXCenterInGridCell, bLabelsX, 0,2,3));  //
-        INDArray labelYXCenter2d = broadcastLabelsYX.dup('c').reshape('c', mb, 2*b*h*w);
+        // ----- Step 4: Loss Function -----
 
-        //And 2d version of the mask1_ij_obj: [minibatch,B,H,W] -> ???
+//        INDArray predictedYXCenter2d = predictedYXCenterInGridCell.dup('c').reshape('c', mb, 2*b*h*w);
+//        //Create broadcasted version of labels:
+//        INDArray broadcastLabelsYX = Nd4j.createUninitialized(predictedYXCenterInGridCell.shape(), 'c');
+//        INDArray bLabelsY = broadcastLabelsYX.get(all(), interval(0,4), all(), all());  //Shape: [minibatch, 4, H, W]
+//        Nd4j.getExecutioner().execAndReturn(new BroadcastCopyOp(bLabelsY, labelBoxYCenterInGridCell, bLabelsY, 0,2,3));  //
+//        INDArray bLabelsX = broadcastLabelsYX.get(all(), interval(4,8), all(), all());  //Shape: [minibatch, 4, H, W]
+//        Nd4j.getExecutioner().execAndReturn(new BroadcastCopyOp(bLabelsX, labelBoxXCenterInGridCell, bLabelsX, 0,2,3));  //
+//        INDArray labelYXCenter2d = broadcastLabelsYX.dup('c').reshape('c', mb, 2*b*h*w);
+//
+//        //And 2d version of the mask1_ij_obj: [minibatch,B,H,W] -> ???
 
 
 
         //Calculate the loss:
-        double positionLoss = layerConf().getLossPositionScale().computeScore(labelYXCenter2d, predictedYXCenter2d, null, null, false );
+        double positionLoss = 0.0;  //layerConf().getLossPositionScale().computeScore(labelYXCenter2d, predictedYXCenter2d, null, null, false );
         double sizeScaleLoss = 0.0;
         double confidenceLoss = 0.0;
         double classPredictionLoss = 0.0;
@@ -209,13 +200,21 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         return 0;
     }
 
-    private static INDArray calculateIOU5d(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2){
+
+    private static INDArray calculateIOULabelPredicted(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2){
+
+        //Labels, 4d: [mb, 2, H, W] - order (x,y) for dimension 1
+        //Predictions, 5d: [minibatch, B, 2, H, W] - order (x,y) for dimension 2
+        //Return: 5d, same shape as predictions
 
         INDArray intersection = intersectionArea5d(tl1, br1, tl2, br2);
 
-        INDArray area1 = tl1.
-        INDArray area1 = get(hw1, yxDim, 0).mul(get(hw1, yxDim, 1));
-        INDArray area2 = get(hw2, yxDim, 0).mul(get(hw2, yxDim, 1));
+        INDArray wh1 = br1.sub(tl1);
+        INDArray area1 = wh1.get(all(), point(0), all(), all())
+                .muli(wh1.get(all(), point(1), all(), all()));  //Shape: [minibatch, H, W]
+        INDArray wh2 = br2.sub(tl1);
+        INDArray area2 = wh2.get(all(), all(), point(0), all(), all())
+                .muli(wh2.get(all(), all(), point(1), all(), all()));  //Shape: [minibatch, B, H, W]
 
         INDArray union = area1.add(area2).subi(intersection);
 
@@ -225,17 +224,22 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     private static INDArray intersectionArea5d(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2){
-        //Order: y, x
-        int l = tl1.length();
-        INDArray yxMax = Nd4j.getExecutioner().execAndReturn(new Max(tl1, tl2, Nd4j.createUninitialized(tl1.shape(), tl1.ordering()), l ));
-        INDArray yxMin = Nd4j.getExecutioner().execAndReturn(new Min(br1, br2, Nd4j.createUninitialized(br1.shape(), br1.ordering()), l ));
+        //Broadcast max/min op - compare 4d with 5d, 5d result
+        int[] s = tl2.shape();
+        char o = tl2.ordering();
 
-        INDArray diffPlus1 = yxMin.sub(yxMax).addi(1.0);
-        INDArray yTerm = get(diffPlus1, yxDim, 0);
-        INDArray xTerm = get(diffPlus1, yxDim, 1);
+        INDArray xyMaxTL = Broadcast.max(tl2, tl1, Nd4j.createUninitialized(s, o), 0, 2, 3, 4 );
+        INDArray xyMinBR = Broadcast.min(br2, tl2, Nd4j.createUninitialized(s, o), 0, 2, 3, 4 );
+
+        INDArray xMaxTL = xyMaxTL.get(all(), all(), point(0), all(), all());
+        INDArray xMinBR = xyMinBR.get(all(), all(), point(0), all(), all());
+        INDArray yMaxTL = xyMaxTL.get(all(), all(), point(1), all(), all());
+        INDArray yMinBR = xyMinBR.get(all(), all(), point(1), all(), all());
+
+        INDArray xTerm = xMinBR.sub(xMaxTL).addi(1.0);
+        INDArray yTerm = yMinBR.sub(yMaxTL).addi(1.0);
 
         return xTerm.mul(yTerm);
-
     }
 
     private static INDArray get(INDArray in, int dim, int pos){
