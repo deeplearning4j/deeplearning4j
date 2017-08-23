@@ -27,6 +27,10 @@ package org.deeplearning4j.nn.weights;
  * <p>
  * <b>SIGMOID_UNIFORM</b>: A version of XAVIER_UNIFORM for sigmoid activation functions. U(-r,r) with r=4*sqrt(6/(fanIn + fanOut))
  * <p>
+ * <b>NORMAL</b>: Normal/Gaussian distribution, with mean 0 and standard deviation 1/sqrt(fanIn).
+ * This is the initialization recommented in Klambauer et al. 2017, "Self-Normalizing Neural Network". Equivalent to
+ * DL4J's XAVIER_FAN_IN and Keras' "lecun_normal"
+ * <p>
  * <b>UNIFORM</b>: Uniform U[-a,a] with a=1/sqrt(fanIn). "Commonly used heuristic" as per Glorot and Bengio 2010
  * <p>
  * <b>XAVIER</b>: As per Glorot and Bengio 2010: Gaussian distribution with mean 0, variance 2.0/(fanIn + fanOut)
@@ -45,5 +49,6 @@ package org.deeplearning4j.nn.weights;
  * @author Adam Gibson
  */
 public enum WeightInit {
-    DISTRIBUTION, ZERO, SIGMOID_UNIFORM, UNIFORM, XAVIER, XAVIER_UNIFORM, XAVIER_FAN_IN, XAVIER_LEGACY, RELU, RELU_UNIFORM
+    DISTRIBUTION, ZERO, SIGMOID_UNIFORM, NORMAL, UNIFORM, XAVIER, XAVIER_UNIFORM, XAVIER_FAN_IN, XAVIER_LEGACY, RELU,
+    RELU_UNIFORM
 }

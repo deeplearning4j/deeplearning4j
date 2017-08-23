@@ -94,6 +94,7 @@ public class WeightInitUtil {
                 double s = Math.sqrt(6.0) / Math.sqrt(fanIn + fanOut);
                 ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-s, s));
                 break;
+            case NORMAL:            //Fall through: these 2 are equivalent
             case XAVIER_FAN_IN:
                 ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(fanIn));
                 break;
