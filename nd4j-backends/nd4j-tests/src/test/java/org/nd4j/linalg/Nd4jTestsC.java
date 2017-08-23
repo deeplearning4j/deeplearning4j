@@ -5211,6 +5211,73 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp_1, res);
     }
 
+    @Test
+    public void testBroadcastMin() throws Exception {
+        INDArray matrix = Nd4j.create(5, 5);
+        for (int r = 0; r < matrix.rows(); r++) {
+            matrix.getRow(r).assign(Nd4j.create(new double[]{2, 3, 3, 4, 5}));
+        }
+
+        INDArray row = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new BroadcastMin(matrix, row, matrix, 1));
+
+        for (int r = 0; r < matrix.rows(); r++) {
+            assertEquals(Nd4j.create(new double[] {1, 2, 3, 4, 5}), matrix.getRow(r));
+        }
+    }
+
+    @Test
+    public void testBroadcastMax() throws Exception {
+        INDArray matrix = Nd4j.create(5, 5);
+        for (int r = 0; r < matrix.rows(); r++) {
+            matrix.getRow(r).assign(Nd4j.create(new double[]{1, 2, 3, 2, 1}));
+        }
+
+        INDArray row = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new BroadcastMax(matrix, row, matrix, 1));
+
+        for (int r = 0; r < matrix.rows(); r++) {
+            assertEquals(Nd4j.create(new double[] {1, 2, 3, 4, 5}), matrix.getRow(r));
+        }
+    }
+
+
+    @Test
+    public void testBroadcastAMax() throws Exception {
+        INDArray matrix = Nd4j.create(5, 5);
+        for (int r = 0; r < matrix.rows(); r++) {
+            matrix.getRow(r).assign(Nd4j.create(new double[]{1, 2, 3, 2, 1}));
+        }
+
+        INDArray row = Nd4j.create(new double[]{1, 2, 3, -4, -5});
+
+        Nd4j.getExecutioner().exec(new BroadcastAMax(matrix, row, matrix, 1));
+
+        for (int r = 0; r < matrix.rows(); r++) {
+            assertEquals(Nd4j.create(new double[] {1, 2, 3, -4, -5}), matrix.getRow(r));
+        }
+    }
+
+
+    @Test
+    public void testBroadcastAMin() throws Exception {
+        INDArray matrix = Nd4j.create(5, 5);
+        for (int r = 0; r < matrix.rows(); r++) {
+            matrix.getRow(r).assign(Nd4j.create(new double[]{2, 3, 3, 4, 1}));
+        }
+
+        INDArray row = Nd4j.create(new double[]{1, 2, 3, 4, -5});
+
+        Nd4j.getExecutioner().exec(new BroadcastAMin(matrix, row, matrix, 1));
+
+        for (int r = 0; r < matrix.rows(); r++) {
+            assertEquals(Nd4j.create(new double[] {1, 2, 3, 4, 1}), matrix.getRow(r));
+        }
+    }
+
+
     @Override
     public char ordering() {
         return 'c';
