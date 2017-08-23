@@ -74,6 +74,13 @@ When gpu ram is less than cpu ram, we need to monitor how much ram is being used
 
 off heap. You can check this based on the javacpp options specified above.
 
+
+Of note here is we allocate memory on the gpu equivalent to the amount of offheap memory you specify.
+We don't use anymore of your gpu than that. You are also allowed to (but it's not encouraged)
+to specify heap space greater than your gpu, but your gpu will run out of ram when trying to run jobs.
+We also allocate off heap memory on the cpu ram as well. This is for efficient communicaton of cpu to gpu
+and cpu accessing data from an ndarray without having to fetch data from the gpu.
+
 If javacpp or your gpu throws an out of memory error, or even if your compute slows down (due to gpu memory
 being limited), then you either may want to decrease batch size or if you can increase the amount of off heap memory
 javacpp is allowed to allocate.
