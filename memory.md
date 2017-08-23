@@ -63,3 +63,26 @@ try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mma
 ``` 
 In this case, 1GB temporary file will be created and mmap'ed, and NDArray `x` will be created in that space.
 Obviously, this option is mostly viable for cases when you need NDArrays that can't fit into your RAM.
+
+
+
+# GPUs
+
+When using GPUs, a typical case is your cpu ram being greater than GPU ram.
+
+When gpu ram is less than cpu ram, we need to monitor how much ram is being used
+
+off heap. You can check this based on the javacpp options specified above.
+
+If javacpp or your gpu throws an out of memory error, or even if your compute slows down (due to gpu memory
+being limited), then you either may want to decrease batch size or if you can increase the amount of off heap memory
+javacpp is allowed to allocate.
+
+Try to run with an off heap memory equal to your gpu's ram. Also, always remember to set up a small heap space.
+
+Please do note that if your gpu has < 2g of ram it's probably not usable for deep learning.
+You should consider just using your cpu if this is the case.
+
+Typical deep learning workloads should *at minimum* have 4g of ram. 4g of ram is not recommended though.
+At least 8g of ram on a gpu is recommended when trying to run deep learning workloads.
+
