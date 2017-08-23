@@ -694,3 +694,38 @@ TEST_F(GraphTests, OutputValidation4) {
 
     ASSERT_NEAR(1.4142135, graph->fetchOutputs()->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
+
+
+TEST_F(GraphTests, OutputValidation5) {
+    auto graph = new Graph<float>();
+
+    graph->getExecutorConfiguration()->_outputMode = OutputMode_VARIABLE_SPACE;
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0);
+
+    auto z = new NDArray<float>(5, 5, 'c');
+
+    Variable<float> vX(x);
+    Variable<float> vZ(z);
+
+    vX.setName(new std::string("alpha"));
+    vZ.setName(new std::string("omega"));
+
+    graph->getVariableSpace()->putVariable(-1, &vX);
+    graph->getVariableSpace()->putVariable(-2, &vZ);
+
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {-2});
+
+    graph->addOutput(-1);
+
+    graph->addNode(nodeA);
+    graph->addNode(nodeB);
+
+    GraphExecutioner<float>::execute(graph);
+
+    ASSERT_EQ(3, graph->fetchOutputs()->size());
+
+    //ASSERT_NEAR(1.4142135, graph->fetchOutputs()->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+}

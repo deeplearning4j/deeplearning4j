@@ -130,8 +130,10 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 
     auto vs = graph.getVariableSpace();
 
-    ASSERT_EQ(3, vs->totalEntries());
-    ASSERT_EQ(1, vs->externalEntries());
+    ASSERT_EQ(OutputMode_IMPLICIT, graph.getExecutorConfiguration()->_outputMode);
+
+    ASSERT_EQ(4, vs->totalEntries());
+    ASSERT_EQ(2, vs->externalEntries());
     ASSERT_EQ(2, vs->internalEntries());
 
     auto var = vs->getVariable(-1)->getNDArray();

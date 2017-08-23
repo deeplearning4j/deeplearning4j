@@ -386,6 +386,7 @@ namespace nd4j{
          */
         template <typename T>
         Nd4jStatus nd4j::graph::GraphExecutioner<T>::execute(nd4j::graph::Graph<T> *graph) {
+            graph->buildGraph();
             auto __variableSpace = graph->getVariableSpace();
 
             bool pe = graph->getExecutorConfiguration()->_executionMode == ExecutionMode_AUTO;

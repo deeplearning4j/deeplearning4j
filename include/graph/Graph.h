@@ -50,6 +50,8 @@ namespace nd4j {
             void expandOnion(int newLayer);
 
             void injectNode(nd4j::graph::Node<T> *node);
+
+            void pushToOutputOnce(int32_t id);
         public:
             Graph(const FlatGraph *flatGraph = nullptr);
 
@@ -113,8 +115,15 @@ namespace nd4j {
 }
 
 template <typename T>
+void nd4j::graph::Graph<T>::pushToOutputOnce(int32_t id) {
+    if (std::find(_output.begin(), _output.end(), id) == _output.end())
+        _output.push_back(id);
+}
+
+template <typename T>
 void nd4j::graph::Graph<T>::addOutput(int32_t id) {
-    _output.push_back(id);
+    if (_configuration->_outputMode == OutputMode_EXPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT)
+        pushToOutputOnce(id);
 }
 
 template <typename T>
@@ -188,6 +197,11 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
 
     _variableSpace->putVariable(node->id(), nodeState);
 
+    // we're saving only ops that have internal outpus here
+    if (_configuration->_outputMode == OutputMode_VARIABLE_SPACE)
+        if (node->hasInternalOutputs())
+            pushToOutputOnce(node->id());
+
     // if outputs are undefined, we have to auto-create variable
     if (node->output()->size() == 0 || (node->output()->size() == 1 && node->output()->at(0) == 0)){
         nd4j_verbose("Adding auto output variable; Output size: %i\n", node->output()->size());
@@ -197,7 +211,7 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
 
         // we're pushing this variable to output
         if (_configuration->_outputMode == OutputMode_IMPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT)
-            this->_output.push_back(var->id());
+            pushToOutputOnce(var->id());
 
         this->_autos.push_back(var->id());
         assert(node->hasExternalOutputs());
@@ -209,7 +223,7 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
         if ((!node->hasInternalOutputs() && (_configuration->_outputMode == OutputMode_IMPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT)) ) {
             for (int e = 0; e < node->output()->size(); e++) {
                 if (node->output()->at(e) < 0)
-                    this->_output.push_back(node->output()->at(e));
+                    pushToOutputOnce(node->output()->at(e));
             }
 
             nd4j_printf("Loop finished: %i outputs now\n", this->_output.size());
@@ -265,8 +279,8 @@ Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
             // single-input node
             if (node->input()->size() == 1) {
 
-                printf("Trying SI Node_%i\n", node->id());
-                fflush(stdout);
+                nd4j_verbose("Trying SI Node_%i\n", node->id());
+
 
                 int iNode = node->input()->at(0);
                 if (_mapped->count(iNode) > 0) {
@@ -283,8 +297,8 @@ Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
                 _unmapped.erase(node->id());
             } else {
                 // multi-input node
-                printf("Trying MI Node_%i\n", node->id());
-                fflush(stdout);
+                nd4j_verbose("Trying MI Node_%i\n", node->id());
+
 
                 int maxLayer = 0;
                 for (int e = 0; e < node->input()->size(); e++) {
@@ -317,6 +331,15 @@ Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
 
     if (_unmapped.size() == 0)
         _built.store(true);
+
+    // if we're dumping everything out there - we'll add external variables as well
+    if (_configuration->_outputMode == OutputMode_VARIABLE_SPACE) {
+        auto ext = _variableSpace->getExternalVariables();
+        nd4j_verbose("Number of external variables: %i\n", ext->size())
+        for (int e = 0; e < ext->size(); e++) {
+            pushToOutputOnce(ext->at(e)->id());
+        }
+    }
 }
 
 template <typename T>
@@ -343,6 +366,11 @@ nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
             auto var = new Variable<T>(flatVar);
             nd4j_verbose("Registering variable: %i\n", var->id());
             _variableSpace->putVariable(flatVar->id(), var);
+
+            // if that's VariableSpace mode - we're pushing it to _output
+            if (_configuration->_outputMode == OutputMode_VARIABLE_SPACE)
+                pushToOutputOnce(var->id());
+
         }
     }
 
@@ -357,7 +385,7 @@ nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
                     throw "Non-existent variable requested";
                 }
 
-                _output.push_back(out);
+                pushToOutputOnce(out);
             }
         }
     }

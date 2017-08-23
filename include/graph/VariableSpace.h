@@ -20,8 +20,8 @@ namespace nd4j {
         protected:
             std::map<std::string, nd4j::graph::Variable<T> *> _symbolic;
             std::map<const int32_t, nd4j::graph::Variable<T> *> _variables;
-            std::list<nd4j::graph::Variable<T> *> _external;
-            std::list<nd4j::graph::Variable<T> *> _internal;
+            std::vector<nd4j::graph::Variable<T> *> _external;
+            std::vector<nd4j::graph::Variable<T> *> _internal;
 
             int _auto_counter = -1;
 
@@ -51,6 +51,10 @@ namespace nd4j {
             int externalEntries();
             int internalEntries();
             int totalEntries();
+
+            std::vector<nd4j::graph::Variable<T> *> * getExternalVariables() {
+                return &_external;
+            }
         };
     }
 }
@@ -147,7 +151,7 @@ void nd4j::graph::VariableSpace<T>::putVariable(const int32_t id, Variable<T> *v
 
     // we have special list for external variables to ensure graph completeness
     if (id < 0) {
-        if (variable->isExternal())
+        //if (variable->isExternal())
             _external.push_back(variable);
 
         std::pair<const int32_t, nd4j::graph::Variable<T> *> pair(id, variable);
