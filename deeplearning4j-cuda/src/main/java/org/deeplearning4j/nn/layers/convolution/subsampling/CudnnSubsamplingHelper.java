@@ -102,7 +102,12 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides,
-                    int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode) {
+                    int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation) {
+        if(dilation[0] != 1 || dilation[1] != 1){
+            //CuDNN doesn't support dilated subsampling
+            return null;
+        }
+
         int miniBatch = input.size(0);
         int depth = input.size(1);
         int inH = input.size(2);
@@ -110,11 +115,11 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
 
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {input.size(2), input.size(3)}, kernel,
-                            strides);
+                            strides, dilation);
         } else {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
         }
 
         int outH = outSize[0];
@@ -197,7 +202,12 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
 
     @Override
     public INDArray activate(INDArray input, boolean training, int[] kernel, int[] strides, int[] pad,
-                    PoolingType poolingType, ConvolutionMode convolutionMode) {
+                    PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation) {
+        if(dilation[0] != 1 || dilation[1] != 1){
+            //CuDNN doesn't support dilated subsampling
+            return null;
+        }
+
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
         int inH = input.size(2);
@@ -205,11 +215,11 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
 
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {input.size(2), input.size(3)}, kernel,
-                            strides);
+                            strides, dilation);
         } else {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
         }
 
         int outH = outSize[0];

@@ -107,15 +107,16 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
+        int[] dilation = layerConf().getDilation();
 
         int[] pad;
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode); //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides);
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
         }
         int outH = outSize[0];
         int outW = outSize[1];
@@ -123,7 +124,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         if (helper != null) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
-                            layerConf().getPoolingType(), convolutionMode);
+                            layerConf().getPoolingType(), convolutionMode, dilation);
             if (ret != null) {
                 return ret;
             }
@@ -264,21 +265,22 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
+        int[] dilation = layerConf().getDilation();
         int[] pad;
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode); //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides);
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
         }
         int outH = outSize[0];
         int outW = outSize[1];
 
         if (helper != null) {
             INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
-                            convolutionMode);
+                            convolutionMode, dilation);
             if (ret != null) {
                 return ret;
             }

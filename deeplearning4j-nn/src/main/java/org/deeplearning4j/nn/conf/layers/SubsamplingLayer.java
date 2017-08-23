@@ -40,6 +40,7 @@ public class SubsamplingLayer extends Layer {
     protected int[] kernelSize; // Same as filter size from the last conv layer
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
+    protected int[] dilation = new int[]{1,1};
     protected int pnorm;
     protected double eps;
 
@@ -63,7 +64,7 @@ public class SubsamplingLayer extends Layer {
         }
     }
 
-    protected SubsamplingLayer(BaseSubsamplingBuilder<?> builder) {
+    protected SubsamplingLayer(Builder builder) {
         super(builder);
         this.poolingType = builder.poolingType;
         if (builder.kernelSize.length != 2)
@@ -74,6 +75,7 @@ public class SubsamplingLayer extends Layer {
         this.stride = builder.stride;
         this.padding = builder.padding;
         this.convolutionMode = builder.convolutionMode;
+        this.dilation = builder.dilation;
         this.pnorm = builder.pnorm;
         this.eps = builder.eps;
     }
@@ -197,6 +199,9 @@ public class SubsamplingLayer extends Layer {
 
     @NoArgsConstructor
     public static class Builder extends BaseSubsamplingBuilder<Builder> {
+
+        private int[] dilation = new int[]{1,1};
+
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             super(poolingType, kernelSize, stride);
         }
@@ -271,6 +276,11 @@ public class SubsamplingLayer extends Layer {
             if (padding.length != 2)
                 throw new IllegalArgumentException("Invalid input: must be length 2");
             this.padding = padding;
+            return this;
+        }
+
+        public Builder dilation(int... dilation){
+            this.dilation = dilation;
             return this;
         }
 

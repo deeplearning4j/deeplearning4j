@@ -32,8 +32,8 @@ public interface SubsamplingHelper {
     boolean checkSupported();
 
     Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides, int[] pad,
-                    PoolingType poolingType, ConvolutionMode convolutionMode);
+                    PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation);
 
     INDArray activate(INDArray input, boolean training, int[] kernel, int[] strides, int[] pad, PoolingType poolingType,
-                    ConvolutionMode convolutionMode);
+                    ConvolutionMode convolutionMode, int[] dilation);
 }
