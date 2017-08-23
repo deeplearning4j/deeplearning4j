@@ -6,7 +6,10 @@ layout: default
 
 # DeepLearning4j Examples Explained
 
-The example files are located at: https://github.com/deeplearning4j/dl4j-examples. A generic pom.xml file is located here. 
+The example files are located at: https://github.com/deeplearning4j/dl4j-examples. 
+
+Note that the DeepLearning4J project uses and recommends Maven for dependency management. Maven uses pom.xml files for configuration. Note that the examples make use of a two level pom.xml structure, one pom.xml file in the main directory and another one in the base directory. 
+
 
 Files that require editing for each specific training scenario. 
 * pom.xml
@@ -18,7 +21,13 @@ Files that require editing for each specific training scenario.
 Specific examples for different neural network layers are at:
 https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples
 
-Locate the file that corresponds to the type of training you want performed. Edit the content to define the particulars as listed below.
+For most common Neural Network use cases you will find an example that corresponds to your use case.
+* Feed Forward Neural Networks for Classification. 
+* Recurrent Neural Networks for working with Time Series Data. 
+* Convolutional Neural Networks for dealing with images.
+
+
+Locate the file that corresponds to the type of training you want performed. Review the content to define the particulars as listed below.
 
 Common Structure by example
 
@@ -28,6 +37,8 @@ Common Structure by example
 
 ## MultiLayerConfiguration
 Extracted portion of an example for building the neural network layer in a dense multi-layer configuration. 
+
+Here is an example of a Feed Forward Neural Network Configuration also known as a Multi Layer Perceptron. A Feed Forward Neural Network consists of an Input Layer, an Output Layer and a user determined number of Fully Connected or Dense Layers. 
 
 ```
  MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -51,6 +62,19 @@ Extracted portion of an example for building the neural network layer in a dense
 ```
 
 ## Convolutional
+
+### Convolutional Input
+A Convolutional Neural Network takes an input matrix that includes the depth of the input, for example an image has a value for each pixel to represent amount of green, amount of red, and amount of blue. A Convolutional Neural Networks input includes that structure. 
+
+[See](https://deeplearning4j.org/convolutionalnets.html)
+
+### Convolutional Layers
+A Convolutional Layer 
+
+[See](https://deeplearning4j.org/convolutionalnets.html#work)
+
+Typical Pattern in a Convolutional Network is a Convolutional Layer followed by a SubSampling, typically a maxPooling, layer. The Convolutional Layer extracts small scale patterns, the SubSampling Layer summarizes or reduces the number of Parameters introduced by the convolutional Layer. 
+
 Extracted portion of an example for building the neural network layer in a convolutional multi-layer configuration. 
 
 ```
@@ -84,6 +108,17 @@ MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 
 ##  Deconstructed: Training neural network code sample
 
+A first step would be to find an example that is similar to your needs and use it as a template to build your own network. 
+Changes that will be required. 
+* Your Input Layer
+* Your Output Layer
+
+Structure of your Input Layers is determined by the format of your input. Take a look at the CSV example to clarify this point. The dataset has 4 features, sepal length, sepal width, petal length and petal width. This correlates with the size or number of nodes in the input Layer. 
+
+Structure of your Output Layer is determined by the task of the Neural Network, when asked to perform classification the output layer will have one neuron for each class. Once again see the CSV example. In this example we have flowers of 3 classes, iris setosa, iris virginica, iris versicolor. We therefore have 3 neurons in the output Layer. 
+
+If you were to modelyour neural net for a similar role but had 5 features and 2 classes, instead of 4 features and 3 classes you could start with the code in the csv example and make the needed changes to your input Layer and your Output Layer. 
+
 For any dl4j-example you select, there are areas that require editing for your specific situation. When reading the file in IntelliJ, right-click the italic objects and select from the listed choices.
 
 The following is an annotated description of each area of a CSVExample. You edit this file through IntelliJ, then use Maven, with the edited pom.xml file to build the neural network model. 
@@ -113,6 +148,10 @@ import org.nd4j.linalg.activations.Activation;
 import org.slf4j.Logger;
 …
 ```
+
+## Reading Data
+
+DeepLearning4J uses RecordReaders to help take the data from raw source to an N-Dimensional Array of Numeric Values, INDArray, format needed by the Neural Network. A RecordReader isthe first step in that process. Many RecordReaders are available for processing images,audio, and text data. 
 
 *  RecordReader
 
