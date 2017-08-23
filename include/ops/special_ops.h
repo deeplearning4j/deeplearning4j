@@ -474,7 +474,9 @@ namespace simdOps {
 			int strideY = (int)extraParams[3];
 			int padWidth = (int)extraParams[4];
 			int padHeight = (int)extraParams[5];
-			bool isSameMode = extraParams[6] > 0.0;
+			int dX = (int)extraParams[6];			//Dilation, width/x dimension
+			int dY = (int)extraParams[7];			//Dilation, height/y dimension
+			bool isSameMode = extraParams[8] > 0.0;
 
 			int outArrayOffset = 0;
 			int *outShape = shape::shapeOf(resultShapeBuffer);
@@ -541,15 +543,14 @@ namespace simdOps {
 									//Want dimension 2 (along height) in inner loop for cache reasons
 									for (int patchX = 0; patchX < kernelWidth; patchX++) {
 										int outBufferIdxX = baseOffsetOut + patchX * outStride3;
-										int inBufferIdxX = baseOffsetIn + patchX * inStride3;
+										int inBufferIdxX = baseOffsetIn + patchX * dX * inStride3;
 										for (int patchY = 0; patchY < kernelHeight; patchY++) {
-											if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape2 ||
-												j + patchX >= inShape3)
+											if (i + patchY * dY < 0 || j + patchX * dX < 0 || i + patchY * dY >= inShape2 ||
+												j + patchX * dX >= inShape3)
 												dOut[outBufferIdxX + patchY * outStride2] = 0; //padding
 											else {
 												dOut[outBufferIdxX + patchY * outStride2] = dIn[inBufferIdxX +
-													patchY *
-													inStride2];
+													patchY * dY * inStride2];
 											}
 										}
 									}
@@ -558,15 +559,14 @@ namespace simdOps {
 									//Want dimension 3 in inner loop for cache reasons
 									for (int patchY = 0; patchY < kernelHeight; patchY++) {
 										int outBufferIdxY = baseOffsetOut + patchY * outStride2;
-										int inBufferIdxY = baseOffsetIn + patchY * inStride2;
+										int inBufferIdxY = baseOffsetIn + patchY * dY * inStride2;
 										for (int patchX = 0; patchX < kernelWidth; patchX++) {
 											if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape[2] ||
 												j + patchX >= inShape[3])
 												dOut[outBufferIdxY + patchX * outStride3] = 0.0; //padding
 											else {
 												dOut[outBufferIdxY + patchX * outStride3] = dIn[inBufferIdxY +
-													patchX *
-													inStride3];
+													patchX * dX * inStride3];
 											}
 										}
 									}
@@ -587,10 +587,10 @@ namespace simdOps {
 									//Want dimension 2 (along height) in inner loop for cache reasons
 									for (int patchX = 0; patchX < kernelWidth; patchX++) {
 										int outBufferIdxX = baseOffsetOut + patchX * outStride3;
-										int inBufferIdxX = baseOffsetIn + patchX * inStride3;
+										int inBufferIdxX = baseOffsetIn + patchX * dX * inStride3;
 										for (int patchY = 0; patchY < kernelHeight; patchY++) {
 											dOut[outBufferIdxX + patchY * outStride2] = dIn[inBufferIdxX +
-												patchY * inStride2];
+												patchY * dY * inStride2];
 										}
 									}
 								}
@@ -598,10 +598,10 @@ namespace simdOps {
 									//Want dimension 3 in inner loop for cache reasons
 									for (int patchY = 0; patchY < kernelHeight; patchY++) {
 										int outBufferIdxY = baseOffsetOut + patchY * outStride2;
-										int inBufferIdxY = baseOffsetIn + patchY * inStride2;
+										int inBufferIdxY = baseOffsetIn + patchY * dY * inStride2;
 										for (int patchX = 0; patchX < kernelWidth; patchX++) {
 											dOut[outBufferIdxY + patchX * outStride3] = dIn[inBufferIdxY +
-												patchX * inStride3];
+												patchX * dX * inStride3];
 										}
 									}
 								}
