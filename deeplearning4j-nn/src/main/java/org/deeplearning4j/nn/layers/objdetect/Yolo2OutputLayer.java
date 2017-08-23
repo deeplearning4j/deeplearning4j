@@ -9,12 +9,14 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Min;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -27,24 +29,25 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
+import static org.nd4j.linalg.indexing.NDArrayIndex.point;
+
 /**
  *
  * Label format: [minibatch, 4+C, H, W]
- * Order for labels depth: [y,x,h,w,(class labels)]
- * x = box center position (x axis), within the grid cell. (0,0) is top left of grid, (1,1) is bottom right of grid
- * y = as above, y axis
- * h = bounding box height, relative to whole image... in interval [0, 1]
- * w = as above, width
+ * Order for labels depth: [x1,y1,x2,y2,(class labels)]
+ * x1 = box top left position
+ * y1 = as above, y axis
+ * x2 = box bottom right position
+ * y2 = as above y axis
+ * Note: labels are represented as fraction of total image - (0,0) is top left, (1,1) is bottom right
  *
- * Input format: [minibatch, 5B+C, H, W]
- *
- * Possible layouts for depth dimension, for input:
- * - Strided: batches of [y,x,h,w,C]
- * - Together: [By,Bx,Bh,Bw,BC] -> would be more efficient, but harder to interpret and extract values from...  ***
- *      -> But, we can just add helper methods
+ * Input format: [minibatch, 5B+C, H, W]    ->      Reshape to [minibatch, B, 5+C, H, W]
+ * Layout for dimension 2 (of size 5+C) after reshaping: [xInGrid,yInGrid,w,h]
  *
  *
- * Mask format: [minibatch,H,W]
+ * Masks: not required. Infer presence or absence from labels.
  *
  * @author Alex Black
  */
@@ -83,72 +86,87 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
-        //Labels shape: [mb, depth, H, W], depth = 4B+C
+        //Labels shape: [mb, 4B+C, H, W],
 
-        //Mask array must be present, with shape [minibatch,H,W]. Mask array is 1_i^B in YOLO paper - i.e., whether an object
-        // is present (1) or not (0) in the specified grid cell (for specified example)
-        if(maskArray == null){
-            throw new IllegalStateException("No mask array is present: cannot compute score for YOLO network without a mask array");
-        }
-
-        if(maskArray.size(1) != input.size(2) || maskArray.size(2) != input.size(3)){
-            throw new IllegalStateException("Mask array does not match input size: mask height/width (dimensions " +
-                    "1/2 sizes) must match input array height/width (dimensions 2/3). Mask shape: "
-                    + Arrays.toString(maskArray.shape()) + ", label shape: " + Arrays.toString(labels.shape()));
-        }
+        //Infer mask array from labels. Mask array is 1_i^B in YOLO paper - i.e., whether an object is present in that
+        // grid location or not. Here: we are using the fact that class labels are one-hot, and assume that values are
+        // all 0s if no class label is present
+        int size1 = labels.size(1);
+        INDArray classLabels = labels.get(all(), interval(4,size1), all(), all());
+        INDArray maskArray = classLabels.sum(1); //Shape: [minibatch, H, W]
 
         int mb = input.size(0);
         int h = input.size(2);
         int w = input.size(3);
         int b = layerConf().getBoundingBoxes().size(0);
+        int c = labels.size(1)-4*b;
 
-        double gridFracH = 1.0 / h;     //grid cell height, as a fraction of total image H
-        double gridFracW = 1.0 / w;     //grid cell width, as a fraction of total image W
 
-        //First: Infer Mask/indicator 1_{i,j}^obj
-        //This is a [H,W,B] for each bonding box being responsible for the detection of an object
-        //values are 1 if (a) an object is present in that cell, and (b) the specified bounding  box is
-        // responsible
+        // ----- Step 1: Labels format conversion -----
+        //First: Convert labels/ground truth (x1,y1,x2,y2) from "fraction of total image" format to center format, as
+        // fraction of total image
+        //0.5 * ([x1,y1]+[x2,y2])   ->      shape: [mb, 2, H, W]
+        INDArray labelTLXYImg = labels.get(all(),interval(0,1,true), all(), all());
+        INDArray labelBRXYImg = labels.get(all(),interval(2,3,true), all(), all());
+        INDArray labelCenterXYImg = labelTLXYImg.add(labelBRXYImg).muli(0.5);
 
+        //Then convert label centers from "fraction of total image" to "fraction of grid", which are used in position loss
+        INDArray wh = Nd4j.create(new double[]{w,h});
+        INDArray labelsCenterXYInGrid = Nd4j.getExecutioner().execAndReturn( new BroadcastMulOp(labelCenterXYImg, wh,
+                        Nd4j.createUninitialized(labelCenterXYImg.shape(), labelCenterXYImg.ordering()), 1 ));
+        labelsCenterXYInGrid.subi(Transforms.floor(labelsCenterXYInGrid,true));
+
+        //Also infer size/scale (label w/h) from (x1,y1,x2,y2) format to (w,h) format
+        // Then apply sqrt ready for use in loss function
+        INDArray labelWHSqrt = labels.get(all(),interval(2,3,true), all(), all()).sub(
+                    labels.get(all(),interval(0,1,true), all(), all()));
+        Transforms.sqrt(labelWHSqrt, false);
+
+
+
+        // ----- Step 2: apply activation functions to network output activations -----
+        //Reshape from [minibatch, 5B+C, H, W] to [minibatch, B, 5+C, H, W]
+        INDArray input5 = input.dup('c').reshape(mb, b, 5+c, h, w);
+
+        // Sigmoid for x/y centers
+        INDArray predictedXYCenterGrid = input5.get(all(), all(), interval(0,2), all(), all());
+        Transforms.sigmoid(predictedXYCenterGrid, false);
+
+        //Exponential for w/h (for: boxPrior * exp(input))
+        INDArray predictedWH = input5.get(all(), all(), interval(2,4), all(), all());
+        Transforms.exp(predictedWH, false);
+
+        //Calculate predicted top/left and bottom/right in overall image
+            //First: calculate top/left  value for each grid location. gridXY contains
         INDArray xVector = Nd4j.linspace(0, 1.0-1.0/w, w);  //[0 to w-1]/w
         INDArray yVector = Nd4j.linspace(0, 1.0-1.0/h, h);  //[0 to h-1]/h
         INDArray gridYX = Nd4j.create(2,h,w);
-        gridYX.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()).putiColumnVector(yVector);
-        gridYX.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).putiRowVector(xVector);
+        gridYX.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()).putiRowVector(xVector);
+        gridYX.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).putiColumnVector(yVector);
 
 
 
-        //Determine top/left and bottom/right (x/y) of label bounding boxes - relative to the whole image
-        //[0,0] is top left of whole image, [1,1] is bottom right of whole image
-        //Label format: [minibatch, 4+C, H, W]
 
-        //Pull out the Y and X components:
-        INDArray labelBoxYXCenterInGridCell = labels.get(NDArrayIndex.all(), NDArrayIndex.interval(0,1,true), NDArrayIndex.all(), NDArrayIndex.all());
-        INDArray labelBoxYCenterInGridCell = labels.get(NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()); //Shape: [minibatch, H, W]
-        INDArray labelBoxXCenterInGridCell = labels.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()); //Shape: [minibatch, H, W]
-        //And the H/W components:
-        INDArray labelBoxHW = labels.get(NDArrayIndex.all(), NDArrayIndex.interval(2,3,true), NDArrayIndex.all(), NDArrayIndex.all());
+        INDArray predictedXYCenterImage = Broadcast.div(predictedXYCenterGrid, wh,
+                Nd4j.createUninitialized(predictedXYCenterGrid.shape(), predictedXYCenterGrid.ordering()), 1 ));
+        Broadcast.add(predictedXYCenterImage, gridYX, predictedXYCenterImage, 2,3,4); // [2,H,W] to [minibatch, B, 2, H, W]
 
-        INDArray labelBoxYXCenterInImage = labelBoxYXCenterInGridCell.dup();
-        labelBoxYXCenterInImage.get(NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all())
-                .muli(gridFracH);
-        labelBoxYXCenterInImage.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all())
-                .muli(gridFracW);
-        labelBoxYXCenterInImage.addi(gridYX);
+        INDArray halfWidth = predictedWH.mul(0.5);
+        INDArray predictedTLXYImage = predictedXYCenterImage.sub(halfWidth);
+        INDArray predictedBRXYImage = halfWidth.addi(predictedXYCenterImage);
 
-        Pair<INDArray,INDArray> label_tl_br = centerHwToTlbr(labelBoxYXCenterInImage, labelBoxHW);  //Shape: [mb, 2, H, W]
+        //Apply sqrt to W/H in preparation for loss function
+        INDArray predictedWHSqrt = Transforms.sqrt(predictedWH, false);
 
-        //Determine top/left and bottom/right (x/y) of anchor bounding boxes, *in every grid cell*
-        INDArray bbHW = layerConf().getBoundingBoxes();   //Bounding box priors: height + width. Shape: [B, 2]. *as a fraction of the total image dimensions*
-        INDArray bbHWGrid = bbHW.broadcast(b, mb, 2, h, w);   //Shape: [B,2] -> [B,m,2,H,W]
-        INDArray bbYXCenterImg = gridYX.broadcast(b, mb, 2, h, w); //Shape: [2,h,w] -> [B,mb,2,h,w]
 
-        Pair<INDArray,INDArray> bb_tl_br = centerHwToTlbr(bbYXCenterImg, bbHWGrid);                 //Shape: [B, mb, 2, H, W]   - 2 dimension: Y,X
 
+        // ----- Step 3: Calculate IOU(predicted, labels) to infer 1_ij^obj mask array (for loss function) -----
+
+//        INDArray predictedTL =
 
         //Calculate IOU (intersection over union - aka Jaccard index) - for the labels and bounding box priors
         //http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/
-        INDArray iou = calculateIOU(label_tl_br.getFirst(), label_tl_br.getSecond(), bb_tl_br.getFirst(), bb_tl_br.getSecond(), labelBoxHW, bbHW, 2);
+        INDArray iou = calculateIOU5d(labelTLXYImg, labelBRXYImg, predictedTLXYImage, predictedBRXYImage);
         //IOU shape: [minibatch, B, H, W]
 
         //Mask 1_ij^obj: isMax (dimension 1) + apply object present mask. Result: [minibatch, B, H, W]
@@ -162,15 +180,15 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Layout for depth dimension: [5Y, 5X, 5H, 5W, 5C]
 
         //Pull out both Y and X components
-        INDArray predictedYXCenterInGridCell = input.get(NDArrayIndex.all(), NDArrayIndex.interval(0,2*b,true), NDArrayIndex.all(), NDArrayIndex.all());
+        INDArray predictedYXCenterInGridCell = input.get(all(), interval(0,2*b,true), all(), all());
         predictedYXCenterInGridCell = Transforms.sigmoid(predictedYXCenterInGridCell, true);    //Shape: [minibatch, 2, h, w]
 
         INDArray predictedYXCenter2d = predictedYXCenterInGridCell.dup('c').reshape('c', mb, 2*b*h*w);
         //Create broadcasted version of labels:
         INDArray broadcastLabelsYX = Nd4j.createUninitialized(predictedYXCenterInGridCell.shape(), 'c');
-        INDArray bLabelsY = broadcastLabelsYX.get(NDArrayIndex.all(), NDArrayIndex.interval(0,4), NDArrayIndex.all(), NDArrayIndex.all());  //Shape: [minibatch, 4, H, W]
+        INDArray bLabelsY = broadcastLabelsYX.get(all(), interval(0,4), all(), all());  //Shape: [minibatch, 4, H, W]
         Nd4j.getExecutioner().execAndReturn(new BroadcastCopyOp(bLabelsY, labelBoxYCenterInGridCell, bLabelsY, 0,2,3));  //
-        INDArray bLabelsX = broadcastLabelsYX.get(NDArrayIndex.all(), NDArrayIndex.interval(4,8), NDArrayIndex.all(), NDArrayIndex.all());  //Shape: [minibatch, 4, H, W]
+        INDArray bLabelsX = broadcastLabelsYX.get(all(), interval(4,8), all(), all());  //Shape: [minibatch, 4, H, W]
         Nd4j.getExecutioner().execAndReturn(new BroadcastCopyOp(bLabelsX, labelBoxXCenterInGridCell, bLabelsX, 0,2,3));  //
         INDArray labelYXCenter2d = broadcastLabelsYX.dup('c').reshape('c', mb, 2*b*h*w);
 
@@ -191,20 +209,11 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         return 0;
     }
 
-    private static Pair<INDArray,INDArray> centerHwToTlbr(INDArray centerYX, INDArray hw){
-        INDArray labelHalfHW = hw.div(2.0);
-        INDArray topLeft = centerYX.sub(labelHalfHW);
-        INDArray bottomRight = centerYX.add(labelHalfHW);
-        return new Pair<>(topLeft, bottomRight);
-    }
+    private static INDArray calculateIOU5d(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2){
 
-//    private static INDArray calculateIOU(INDArray centerYX1, INDArray hw1, INDArray centerYX2, INDArray hw2){
-//    }
+        INDArray intersection = intersectionArea5d(tl1, br1, tl2, br2);
 
-    private static INDArray calculateIOU(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2, INDArray hw1, INDArray hw2, int yxDim){
-
-        INDArray intersection = intersectionArea(tl1, br1, tl2, br2, yxDim);
-
+        INDArray area1 = tl1.
         INDArray area1 = get(hw1, yxDim, 0).mul(get(hw1, yxDim, 1));
         INDArray area2 = get(hw2, yxDim, 0).mul(get(hw2, yxDim, 1));
 
@@ -215,7 +224,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         return iou;
     }
 
-    private static INDArray intersectionArea(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2, int yxDim){
+    private static INDArray intersectionArea5d(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2){
         //Order: y, x
         int l = tl1.length();
         INDArray yxMax = Nd4j.getExecutioner().execAndReturn(new Max(tl1, tl2, Nd4j.createUninitialized(tl1.shape(), tl1.ordering()), l ));
@@ -233,9 +242,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArrayIndex[] indexes = new INDArrayIndex[in.rank()];
         for( int i=0; i<indexes.length; i++ ){
             if(i == dim){
-                indexes[i] = NDArrayIndex.point(pos);
+                indexes[i] = point(pos);
             } else {
-                indexes[i] = NDArrayIndex.all();
+                indexes[i] = all();
             }
         }
 
