@@ -67,6 +67,8 @@ public class Keras2LayerConfiguration extends KerasLayerConfiguration {
     /* Convolutional layer properties */
     private final String LAYER_FIELD_NB_FILTER = "filters";
     private final String LAYER_FIELD_CONVOLUTION_STRIDES = "strides";
+    private final String LAYER_FIELD_FILTER_LENGTH = "kernel_size";
+    private final String LAYER_FIELD_SUBSAMPLE_LENGTH = "strides";
 
     /* Pooling / Upsampling layer properties */
     private final String LAYER_FIELD_POOL_1D_SIZE = "pool_size";

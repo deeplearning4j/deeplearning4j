@@ -31,6 +31,9 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
+import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution;
+import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution1D;
+import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution2D;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
@@ -116,7 +119,9 @@ public class KerasLayer {
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LSTM())) {
             layer = new KerasLstm(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_2D())) {
-            layer = new KerasConvolution(layerConfig, enforceTrainingConfig);
+            layer = new KerasConvolution2D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_1D())) {
+            layer = new KerasConvolution1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_2D()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_2D())) {
             layer = new KerasPooling(layerConfig, enforceTrainingConfig);
@@ -139,11 +144,9 @@ public class KerasLayer {
             layer = new KerasReshape(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ZERO_PADDING_2D())) {
             layer = new KerasZeroPadding(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_1D()) ||
-                layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_1D()) ||
-                layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_1D()) ||
-                layerClassName.equals(conf.getLAYER_CLASS_NAME_ZERO_PADDING_1D())) {
-            layer = new KerasGlobalPooling(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_1D()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_1D())) {
+            layer = new KerasPooling(layerConfig, enforceTrainingConfig);
         } else {
             // check if user registered a custom config
             Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
@@ -1005,13 +1008,17 @@ public class KerasLayer {
      * @return
      * @throws InvalidKerasConfigurationException
      */
-    public int[] getStrideFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
+    public int[] getStrideFromConfig(Map<String, Object> layerConfig, int dimension) throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         int[] strides = null;
-        if (innerConfig.containsKey(conf.getLAYER_FIELD_CONVOLUTION_STRIDES())) {
-            /* Convolutional layers. */
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_CONVOLUTION_STRIDES()) && dimension == 2) {
+            /* 2D Convolutional layers. */
             List<Integer> stridesList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_CONVOLUTION_STRIDES());
             strides = ArrayUtil.toArray(stridesList);
+        } else if (innerConfig.containsKey(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH()) && dimension == 1) {
+           /* 1D Convolutional layers. */
+            int subsample_length = (int) innerConfig.get(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH());
+            strides = new int[]{subsample_length};
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_STRIDES())) {
             /* Pooling layers. */
             List<Integer> stridesList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_STRIDES());
@@ -1030,17 +1037,22 @@ public class KerasLayer {
      * @return
      * @throws InvalidKerasConfigurationException
      */
-    public int[] getKernelSizeFromConfig(Map<String, Object> layerConfig)
+    public int[] getKernelSizeFromConfig(Map<String, Object> layerConfig, int dimension)
             throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         int[] kernelSize = null;
         if (kerasMajorVersion != 2) {
-            if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_ROW()) && innerConfig.containsKey(conf.getLAYER_FIELD_NB_COL())) {
-            /* Convolutional layers. */
+            if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_ROW()) && dimension == 2
+                    && innerConfig.containsKey(conf.getLAYER_FIELD_NB_COL())) {
+            /* 2D Convolutional layers. */
                 List<Integer> kernelSizeList = new ArrayList<Integer>();
                 kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_ROW()));
                 kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_COL()));
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
+            } else if (innerConfig.containsKey(conf.getLAYER_FIELD_FILTER_LENGTH()) && dimension == 1) {
+            /* 1D Convolutional layers. */
+                int filter_length = (int) innerConfig.get(conf.getLAYER_FIELD_FILTER_LENGTH());
+                kernelSize = new int[]{ filter_length };
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_SIZE())) {
             /* Pooling layers. */
                 List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_SIZE());
@@ -1049,13 +1061,18 @@ public class KerasLayer {
                 throw new InvalidKerasConfigurationException("Could not determine kernel size: no "
                         + conf.getLAYER_FIELD_NB_ROW() + ", "
                         + conf.getLAYER_FIELD_NB_COL() + ", or "
+                        + conf.getLAYER_FIELD_FILTER_LENGTH() + ", or "
                         + conf.getLAYER_FIELD_POOL_SIZE() + " field found");
             }
         } else {
-            /* Convolutional layers. */
-            if (innerConfig.containsKey(conf.getLAYER_FIELD_KERNEL_SIZE())) {
+            /* 2D Convolutional layers. */
+            if (innerConfig.containsKey(conf.getLAYER_FIELD_KERNEL_SIZE()) && dimension == 2) {
                 List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_KERNEL_SIZE());
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
+            } else if (innerConfig.containsKey(conf.getLAYER_FIELD_FILTER_LENGTH()) && dimension == 1) {
+            /* 1D Convolutional layers. */
+                int filter_length = (int) innerConfig.get(conf.getLAYER_FIELD_FILTER_LENGTH());
+                kernelSize = new int[]{ filter_length };
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_SIZE())) {
             /* Pooling layers. */
                 List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_SIZE());
@@ -1063,6 +1080,7 @@ public class KerasLayer {
             } else {
                 throw new InvalidKerasConfigurationException("Could not determine kernel size: no "
                         + conf.getLAYER_FIELD_KERNEL_SIZE() + ", or "
+                        + conf.getLAYER_FIELD_FILTER_LENGTH() + ", or "
                         + conf.getLAYER_FIELD_POOL_SIZE() + " field found");
             }
         }
@@ -1121,7 +1139,7 @@ public class KerasLayer {
      * @return
      * @throws InvalidKerasConfigurationException
      */
-    public int[] getPaddingFromBorderModeConfig(Map<String, Object> layerConfig)
+    public int[] getPaddingFromBorderModeConfig(Map<String, Object> layerConfig, int dimension)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
         int[] padding = null;
@@ -1130,7 +1148,7 @@ public class KerasLayer {
                     + conf.getLAYER_FIELD_BORDER_MODE() + " field found");
         String borderMode = (String) innerConfig.get(conf.getLAYER_FIELD_BORDER_MODE());
         if (borderMode == conf.getLAYER_FIELD_BORDER_MODE()) {
-            padding = getKernelSizeFromConfig(layerConfig);
+            padding = getKernelSizeFromConfig(layerConfig, dimension);
             for (int i = 0; i < padding.length; i++)
                 padding[i]--;
         }

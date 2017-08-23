@@ -36,8 +36,8 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_LAYER = "layer";
 
     /* Basic layer names */
-    // Missing Layers: Reshape, Permute, RepeatVector, Lambda, ActivityRegularization, Masking
-    // Conv1D, Conv3D, SeparableConv2D, Deconvolution2D/Conv2DTranspose, Cropping1D-3D, UpSampling1D-3D,
+    // Missing Layers: Permute, RepeatVector, Lambda, ActivityRegularization, Masking
+    // Conv3D, SeparableConv2D, Deconvolution2D/Conv2DTranspose, Cropping1D-3D, UpSampling1D-3D,
     // ZeroPadding3D, LocallyConnected1D-2D
     // Missing layers from keras 1: AtrousConvolution1D-2D, Highway, MaxoutDense
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
@@ -130,6 +130,8 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_POOL_SIZE = "pool_size";
     private final String LAYER_FIELD_CONVOLUTION_STRIDES = ""; // 1: subsample, 2: strides
     private final String LAYER_FIELD_DILATION_RATE = "dilation_rate"; // keras 2 only, replaces Atrous layers
+    private final String LAYER_FIELD_FILTER_LENGTH = ""; // 1: filter_length, 2: kernel_size
+    private final String LAYER_FIELD_SUBSAMPLE_LENGTH = ""; // 1: subsample_length, 2: strides
 
     /* Pooling / Upsampling layer properties */
     private final String LAYER_FIELD_POOL_STRIDES = "strides";
