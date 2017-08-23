@@ -61,7 +61,9 @@ public class KerasEmbedding extends KerasLayer {
 
         this.layer = new EmbeddingLayer.Builder().name(this.layerName).nIn(inputDim)
                         .nOut(getNOutFromConfig(layerConfig)).dropOut(this.dropout).activation(Activation.IDENTITY)
-                        .weightInit(getWeightInitFromConfig(layerConfig, enforceTrainingConfig)).biasInit(0.0)
+                        .weightInit(getWeightInitFromConfig(
+                                layerConfig, conf.getLAYER_FIELD_EMBEDDING_INIT(), enforceTrainingConfig))
+                        .biasInit(0.0)
                         .l1(this.weightL1Regularization).l2(this.weightL2Regularization).hasBias(false).build();
     }
 

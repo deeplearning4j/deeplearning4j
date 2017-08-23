@@ -101,6 +101,7 @@ public class KerasLayerConfiguration {
 
     /* Embedding layer properties */
     private final String LAYER_FIELD_INPUT_DIM = "input_dim";
+    private final String LAYER_FIELD_EMBEDDING_INIT = ""; // 1: "init", 2: "embeddings_initializer"
     private final String LAYER_FIELD_EMBEDDING_WEIGHTS = ""; // 1: "W", 2: "embeddings"
     private final String LAYER_FIELD_EMBEDDINGS_REGULARIZER = ""; // 1: W_regularizer, 2: embeddings_regularizer
     private final String LAYER_FIELD_EMBEDDINGS_CONSTRAINT = ""; // 1: W_constraint, 2: embeddings_constraint
@@ -164,20 +165,32 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_INIT = ""; // 1: init, 2: kernel_initializer
     private final String LAYER_FIELD_BIAS_INIT = "bias_initializer"; // keras 2 only
 
-    private final String INIT_UNIFORM = "uniform"; // keras 2 aliases: random_uniform, RandomUniform
-    private final String INIT_ZERO = "zero"; // keras 2 aliases: zeros, Zeros
-    private final String INIT_ONE = "one"; // keras 2 aliases: ones, Ones
-    private final String INIT_CONSTANT = "constant"; // keras 2 alias: Constant
-    private final String INIT_TRUNCATED_NORMAL = "truncated_normal"; // TruncatedNormal
+    private final String INIT_UNIFORM = "uniform";
+    private final String INIT_RANDOM_UNIFORM = "random_uniform";
+    private final String INIT_RANDOM_UNIFORM_ALIAS = "RandomUniform";
+    private final String INIT_ZERO = "zero";
+    private final String INIT_ZEROS = "zeros";
+    private final String INIT_ZEROS_ALIAS = "Zeros";
+    private final String INIT_ONE = "one";
+    private final String INIT_ONES = "ones";
+    private final String INIT_ONES_ALIAS = "Ones";
+    private final String INIT_CONSTANT = "constant";
+    private final String INIT_CONSTANT_ALIAS = "Constant";
+    private final String INIT_TRUNCATED_NORMAL = "truncated_normal";
+    private final String INIT_TRUNCATED_NORMAL_ALIAS = "TruncatedNormal";
     private final String INIT_GLOROT_NORMAL = "glorot_normal";
     private final String INIT_GLOROT_UNIFORM = "glorot_uniform";
     private final String INIT_HE_NORMAL = "he_normal";
     private final String INIT_HE_UNIFORM = "he_uniform";
     private final String INIT_LECUN_UNIFORM = "lecun_uniform";
     private final String INIT_LECUN_NORMAL = "lecun_normal";
-    private final String INIT_NORMAL = "normal"; // keras 2 aliases: random_normal, RandomNormal
-    private final String INIT_ORTHOGONAL = "orthogonal"; // Orthogonal
-    private final String INIT_IDENTITY = "identity"; // Identity
+    private final String INIT_NORMAL = "normal";
+    private final String INIT_RANDOM_NORMAL = "random_normal";
+    private final String INIT_RANDOM_NORMAL_ALIAS = "RandomNormal";
+    private final String INIT_ORTHOGONAL = "orthogonal";
+    private final String INIT_ORTHOGONAL_ALIAS = "Orthogonal";
+    private final String INIT_IDENTITY = "identity";
+    private final String INIT_IDENTITY_ALIAS = "Identity";
     private final String INIT_VARIANCE_SCALING = "VarianceScaling"; // keras 2 only
 
 
