@@ -3,6 +3,8 @@ package org.nd4j.autodiff.execution;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
+import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -16,6 +18,10 @@ import static org.junit.Assert.*;
  */
 @Slf4j
 public class GraphExecutionerTest {
+    protected static ExecutorConfiguration configVarSpace = ExecutorConfiguration.builder().outputMode(OutputMode.VARIABLE_SPACE).build();
+    protected static ExecutorConfiguration configExplicit = ExecutorConfiguration.builder().outputMode(OutputMode.EXPLICIT).build();
+    protected static ExecutorConfiguration configImplicit = ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build();
+
     @Before
     public void setUp() throws Exception {
         //
@@ -36,10 +42,13 @@ public class GraphExecutionerTest {
 
         log.info("ID: {}",sameDiff.getGraph().getVertex(1).getValue().getId());
 
-        INDArray resB = executionerB.executeGraph(sameDiff)[1];
+        INDArray[] resB = executionerB.executeGraph(sameDiff, configImplicit);
 
-        INDArray resA = executionerA.executeGraph(sameDiff)[0];
+        assertEquals(1, resB.length);
+        assertEquals(Nd4j.scalar(8.0), resB[0]);
 
-        assertEquals(resA, resB);
+        //INDArray resA = executionerA.executeGraph(sameDiff)[0];
+
+        //assertEquals(resA, resB);
     }
 }

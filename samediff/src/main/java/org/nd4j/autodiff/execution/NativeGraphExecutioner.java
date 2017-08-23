@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
+import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
@@ -63,6 +64,177 @@ public class NativeGraphExecutioner implements GraphExecutioner {
      * @param sd
      * @return
      */
+    @Override
+    public INDArray[] executeGraph(SameDiff sd, ExecutorConfiguration configuration) {
+        FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(32);
+
+        SDGraph graph =  sd.getGraph();
+        List<Integer> variables = new ArrayList<>();
+
+        log.info("Graph inputs: {}", graph.getInputs());
+
+        int varId = 0;
+        Map<String, Integer> mappedVariables = new HashMap<>();
+        Map<Integer, Integer> mappedInputs = new HashMap<>();
+
+        Map<Integer, Node> intermediate = new HashMap<>();
+
+        // mapping input variables first
+        for (NDArrayInformation input: graph.getInputs()) {
+            varId--;
+            SDVariable sdVar = sd.getVariableMap().get(input.getId());
+            //log.info("Var: {}", sdVar);
+
+            log.info("Input varId: {}; varName: {};", varId, input.getId());
+
+            INDArray arr = sdVar.getArr().isView() ? sdVar.getArr().dup(sdVar.getArr().ordering()) : sdVar.getArr();
+            int name = bufferBuilder.createString(sdVar.getVarName());
+            int values = FlatVariable.createValuesVector(bufferBuilder, arr.data().asFloat());
+            int shape = FlatVariable.createShapeVector(bufferBuilder, arr.shapeInfoDataBuffer().asInt());
+
+            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, varId, name, shape, values, -1);
+            variables.add(flatVariable);
+
+            mappedVariables.put(input.getId(), varId);
+        }
+
+
+        List<OpExecAction> ops = graph.getOpOrder().getActions();
+        int nodesCount = 1;
+        for (OpExecAction action: ops) {
+            log.info("Action: {}", action);
+            int[] ins = action.getInputsIds();
+
+            Node node = new Node();
+            node.setId(nodesCount);
+            node.setName(action.getOpState().getId());
+            node.setOpState(action.getOpState());
+
+            mappedInputs.put(action.getOutputId(), nodesCount);
+
+            // each of inputs can be either external variable, or another node
+            for (int in: ins) {
+                NDArrayInformation state = sd.getVertexIdxToInfo().get(in);
+
+                int realIn;
+                if (state != null && mappedVariables.containsKey(state.getId())) {
+                    // this means it's external variable, already available at mappedInputs
+                    log.info("External input: {}", mappedVariables.get(state.getId()));
+                    realIn = mappedVariables.get(state.getId());
+                } else if (mappedInputs.containsKey(in)) {
+                    log.info("Node as input: {}", mappedInputs.get(in));
+                    realIn = mappedInputs.get(in);
+                } else {
+                    throw new RuntimeException("Unknown graph input node found: " + in);
+                }
+
+                // updating intermediate representation with mapped input
+                node.getInput().add(realIn);
+            }
+
+            intermediate.put(nodesCount, node);
+
+            nodesCount++;
+        }
+
+        // now we'll update output fields with proper values
+        Set<Integer> keySet = intermediate.keySet();
+        for (Integer n: keySet) {
+            Node node = intermediate.get(n);
+            for (Integer in: node.getInput()) {
+
+                // we're skipping variables here, since we already mapped them
+                if (in >= 0) {
+                    intermediate.get(in).getOutput().add(node.getId());
+                }
+            }
+        }
+
+        // building FlatBuffers now
+        List<Integer> nodes = new ArrayList<>();
+        for (Integer n: keySet) {
+            Node node = intermediate.get(n);
+
+            // make this variable
+            float[] extras = node.getOpState().getExtraArgs() != null ? new float[node.getOpState().getExtraArgs().length] : new float[0];
+            for (int e = 0; e < extras.length; e++) {
+                extras[e] = ((Number) node.getOpState().getExtraArgs()[e]).floatValue();
+            }
+
+            int nodesIn = FlatNode.createInputVector(bufferBuilder, Ints.toArray(node.getInput()));
+            int nodesOut = FlatNode.createOutputVector(bufferBuilder, Ints.toArray(node.getOutput()));
+            int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
+            int dimensions = FlatNode.createDimensionsVector(bufferBuilder, node.getOpState().getAxes() != null ? node.getOpState().getAxes() : new int[]{});
+            int fname = bufferBuilder.createString(node.getName());
+
+            int flatNode = FlatNode.createFlatNode(bufferBuilder,
+                    node.getId(),
+                    fname,
+                    getFlatOpType(node.getOpState().getOpType()),
+                    getOpNum(node.getOpState().getOpName(), node.getOpState().getOpType()),
+                    nodesIn,
+                    (byte) 0,
+                    nodesOut,
+                    extraz,
+                    dimensions,
+                    -1,
+                    node.getOpState().getOpType() == OpState.OpType.SCALAR_TRANSFORM ? node.getOpState().getScalarValue().floatValue() : 0.0f);
+
+            nodes.add(flatNode);
+        }
+
+        log.info("-------");
+        log.info("Intermediate: {}", intermediate);
+
+
+        int outputsOffset = FlatGraph.createVariablesVector(bufferBuilder, new int[]{});
+
+        int variablesOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(variables));
+        int nodesOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(nodes));
+
+        int fg = FlatGraph.createFlatGraph(bufferBuilder, 119, variablesOffset, nodesOffset, outputsOffset, configuration.getFlatConfiguration(bufferBuilder));
+        bufferBuilder.finish(fg);
+
+        ByteBuffer buffer = bufferBuilder.dataBuffer();
+        BytePointer bPtr = new BytePointer(buffer);
+
+        log.info("Buffer length: {}", buffer.limit());
+
+        Pointer res  = NativeOpsHolder.getInstance().getDeviceNativeOps().executeFlatGraphFloat(null, bPtr);
+
+        // FIXME: this is BAD
+        PagedPointer pagedPointer = new PagedPointer(res,1024 * 1024L);
+        FlatResult fr = FlatResult.getRootAsFlatResult(pagedPointer.asBytePointer().asByteBuffer());
+
+        INDArray[] results = new INDArray[fr.variablesLength()];
+        for (int e = 0; e < fr.variablesLength(); e++) {
+            FlatVariable var = fr.variables(e);
+            log.info("Var received: id: {}; name: {}", var.id(), var.name());
+            float[] values = new float[var.valuesLength()];
+            int[] shape = new int[var.shapeLength()];
+
+            for (int i = 0; i < var.valuesLength(); i++) {
+                values[i] = var.values(i);
+            }
+
+            for (int i = 0; i < var.shapeLength(); i++) {
+                shape[i] = var.shape(i);
+            }
+
+            int[] _shape = new int[shape[0]];
+            for (int i = 0; i < _shape.length; i++) {
+                _shape[i] = shape[i+1];
+            }
+
+            char _order = shape[shape[0] * 2 + 4 - 1] == 99 ? 'c' : 'f';
+
+            INDArray val = Nd4j.create(values, _shape, _order, 0);
+            results[e] = val;
+        }
+
+        return results;
+    }
+    /*
     @Override
     public INDArray[] executeGraph(SameDiff sd, ExecutorConfiguration configuration) {
         FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(2048);
@@ -251,6 +423,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
         return results;
     }
+    */
 
     protected short getOpNum(String name, OpState.OpType type) {
         return (short) Nd4j.getOpFactory().getOpNumByName(name);
