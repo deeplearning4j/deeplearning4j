@@ -102,8 +102,19 @@ namespace nd4j {
              * @return
              */
             ExecutorConfiguration *getExecutorConfiguration();
+
+            /**
+             * This method adds specified node (by ID) to de
+             * @param id
+             */
+            void addOutput(int32_t id);
         };
     }
+}
+
+template <typename T>
+void nd4j::graph::Graph<T>::addOutput(int32_t id) {
+    _output.push_back(id);
 }
 
 template <typename T>
@@ -192,7 +203,7 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
         assert(node->hasExternalOutputs());
     } else if (node->hasExternalOutputs()) {
         // TODO: we might want this behavior configurable!
-        nd4j_verbose("Adding specific output variable: Outputs: %i\n", node->output()->size())
+        nd4j_verbose("Adding specific output variable: Outputs: %i; HasInternal: %i;\n", node->output()->size(), node->hasInternalOutputs())
 
         // we're pushing this node to output only
         if ((!node->hasInternalOutputs() && (_configuration->_outputMode == OutputMode_IMPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT)) ) {
@@ -200,6 +211,8 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
                 if (node->output()->at(e) < 0)
                     this->_output.push_back(node->output()->at(e));
             }
+
+            nd4j_printf("Loop finished: %i outputs now\n", this->_output.size());
         }
     }
 
