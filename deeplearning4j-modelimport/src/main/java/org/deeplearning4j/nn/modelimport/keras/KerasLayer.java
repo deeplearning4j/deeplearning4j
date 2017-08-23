@@ -116,7 +116,7 @@ public class KerasLayer {
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LSTM())) {
             layer = new KerasLstm(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_2D())) {
-            layer = new KerasConvolution(layerConfig, enforceTrainingConfig);
+            layer = new KerasConvolution2D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_2D()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_2D())) {
             layer = new KerasPooling(layerConfig, enforceTrainingConfig);

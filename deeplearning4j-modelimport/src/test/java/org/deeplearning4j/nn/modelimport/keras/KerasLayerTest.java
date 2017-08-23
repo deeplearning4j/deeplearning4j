@@ -19,8 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.deeplearning4j.nn.modelimport.keras.layers.KerasBatchNormalization.*;
-import static org.deeplearning4j.nn.modelimport.keras.layers.KerasLstm.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -284,7 +282,7 @@ public class KerasLayerTest {
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
 
-        ConvolutionLayer layer = new KerasConvolution(layerConfig).getConvolutionLayer();
+        ConvolutionLayer layer = new KerasConvolution2D(layerConfig).getConvolutionLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());
