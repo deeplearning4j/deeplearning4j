@@ -68,6 +68,8 @@ public class Keras1LayerConfiguration extends KerasLayerConfiguration {
     /* Convolutional layer properties */
     private final String LAYER_FIELD_NB_FILTER = "nb_filter";
     private final String LAYER_FIELD_CONVOLUTION_STRIDES = "subsample";
+    private final String LAYER_FIELD_FILTER_LENGTH = "filter_length";
+    private final String LAYER_FIELD_SUBSAMPLE_LENGTH = "subsample_length";
 
     /* Pooling / Upsampling layer properties */
     private final String LAYER_FIELD_POOL_1D_SIZE = "pool_length";

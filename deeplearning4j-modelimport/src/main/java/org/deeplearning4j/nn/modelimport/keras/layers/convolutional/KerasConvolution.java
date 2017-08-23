@@ -1,10 +1,10 @@
-package org.deeplearning4j.nn.modelimport.keras.layers;
+package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -17,25 +17,24 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Imports a Convolution layer from Keras.
+ * Keras Convolution base layer
  *
- * @author dave@skymind.io
+ * @author Max Pumperla
  */
+
 @Slf4j
 @Data
-public class KerasConvolution2D extends KerasLayer {
+abstract public class KerasConvolution extends KerasLayer {
 
-    /* Keras layer parameter names. */
-    private int numTrainableParams;
-    private boolean hasBias;
-
+    protected int numTrainableParams;
+    protected boolean hasBias;
 
     /**
      * Pass-through constructor from KerasLayer
      * @param kerasVersion major keras version
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasConvolution2D(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+    public KerasConvolution(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
     }
 
@@ -46,8 +45,8 @@ public class KerasConvolution2D extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasConvolution2D(Map<String, Object> layerConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasConvolution(Map<String, Object> layerConfig)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
@@ -59,50 +58,10 @@ public class KerasConvolution2D extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasConvolution2D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    public KerasConvolution(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        hasBias = getHasBiasFromConfig(layerConfig);
-        numTrainableParams = hasBias ? 2 : 1;
 
-        ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder().name(this.layerName)
-                        .nOut(getNOutFromConfig(layerConfig)).dropOut(this.dropout)
-                        .activation(getActivationFromConfig(layerConfig))
-                        .weightInit(getWeightInitFromConfig(
-                                layerConfig, conf.getLAYER_FIELD_INIT(), enforceTrainingConfig))
-                        .biasInit(0.0)
-                        .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
-                        .convolutionMode(getConvolutionModeFromConfig(layerConfig))
-                        .kernelSize(getKernelSizeFromConfig(layerConfig))
-                        .hasBias(hasBias).stride(getStrideFromConfig(layerConfig));
-        int[] padding = getPaddingFromBorderModeConfig(layerConfig);
-        if (padding != null)
-            builder.padding(padding);
-        this.layer = builder.build();
-    }
-
-    /**
-     * Get DL4J ConvolutionLayer.
-     *
-     * @return  ConvolutionLayer
-     */
-    public ConvolutionLayer getConvolutionLayer() {
-        return (ConvolutionLayer) this.layer;
-    }
-
-    /**
-     * Get layer output type.
-     *
-     * @param  inputType    Array of InputTypes
-     * @return              output type as InputType
-     * @throws InvalidKerasConfigurationException
-     */
-    @Override
-    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
-        if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException(
-                            "Keras Convolution layer accepts only one input (received " + inputType.length + ")");
-        return this.getConvolutionLayer().getOutputType(-1, inputType[0]);
     }
 
     /**
@@ -159,7 +118,7 @@ public class KerasConvolution2D extends KerasLayer {
             this.weights.put(ConvolutionParamInitializer.WEIGHT_KEY, paramValue);
         } else
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + conf.getKERAS_PARAM_NAME_W() + " does not exist in weights");
+                    "Parameter " + conf.getKERAS_PARAM_NAME_W() + " does not exist in weights");
 
         if (hasBias) {
             if (weights.containsKey(conf.getKERAS_PARAM_NAME_B()))
@@ -174,7 +133,7 @@ public class KerasConvolution2D extends KerasLayer {
             paramNames.remove(conf.getKERAS_PARAM_NAME_B());
             String unknownParamNames = paramNames.toString();
             log.warn("Attemping to set weights for unknown parameters: "
-                            + unknownParamNames.substring(1, unknownParamNames.length() - 1));
+                    + unknownParamNames.substring(1, unknownParamNames.length() - 1));
         }
     }
 }
