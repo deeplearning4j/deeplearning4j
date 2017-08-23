@@ -13,7 +13,7 @@ public class SoftMaxDerivative extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().softmaxDerivative(arg().getValue(true), );
+        return sameDiff.getArrayFactory().softmaxDerivative(arg().getValue(true),args()[1].getValue(true));
     }
 
 

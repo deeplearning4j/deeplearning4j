@@ -508,7 +508,7 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField softmaxDerivative(ArrayField wrt) {
-        return addPairTransformOp(new SoftMaxDerivative().name(),wrt,null);
+        return addGradientOp(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative().name(),wrt,null);
     }
 
     @Override
@@ -982,8 +982,6 @@ public class ArrayField implements Field<ArrayField> {
 
         return new ArrayField(newVertex,ops);
     }
-
-
     /**
      *
      * @param name
@@ -992,7 +990,7 @@ public class ArrayField implements Field<ArrayField> {
      * @return
      */
 
-    private ArrayField addPairTransformOp(String name,ArrayField i_v,Object[] extraArgs) {
+    private ArrayField addPairTransformOp(String name, ArrayField i_v, OpState.OpType opType,Object[] extraArgs) {
         if(ArrayUtil.prod(getInput().getShape()) == 1 || ArrayUtil.prod(i_v.getInput().getShape()) == 1) {
             return addFirstScalarTransformOp(name + "_scalar",
                     i_v,extraArgs);
@@ -1016,7 +1014,7 @@ public class ArrayField implements Field<ArrayField> {
                 .opName(name).extraArgs(extraArgs)
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
-                .opType(OpState.OpType.TRANSFORM).build();
+                .opType(opType).build();
         xToZ.setResult(resultInfo);
         if(vertex.vertexID() == newVertex.vertexID())
             throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
@@ -1030,7 +1028,7 @@ public class ArrayField implements Field<ArrayField> {
                 .opName(name).extraArgs(extraArgs)
                 .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                .opType(OpState.OpType.TRANSFORM).build();
+                .opType(opType).build();
         yToZ.setResult(resultInfo);
         if(i_v.getVertex().vertexID() == newVertex.vertexID())
             throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
@@ -1044,6 +1042,30 @@ public class ArrayField implements Field<ArrayField> {
         }
 
         return new ArrayField(newVertex,ops);
+    }
+
+
+    /**
+     *
+     * @param name
+     * @param wrt
+     * @param extraArgs
+     * @return
+     */
+
+    private ArrayField addGradientOp(String name,ArrayField wrt,Object[] extraArgs) {
+        return addPairTransformOp(name,wrt, OpState.OpType.GRADIENT,extraArgs);
+    }
+    /**
+     *
+     * @param name
+     * @param i_v
+     * @param extraArgs
+     * @return
+     */
+
+    private ArrayField addPairTransformOp(String name,ArrayField i_v,Object[] extraArgs) {
+      return addPairTransformOp(name,i_v, OpState.OpType.TRANSFORM,extraArgs);
     }
 
     private ArrayField  addPairTransformOp(String name,ArrayField i_v) {

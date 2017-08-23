@@ -1,18 +1,13 @@
 package org.nd4j.autodiff.functions;
 
-import java.util.Arrays;
-import java.util.List;
-
-import com.google.common.base.Preconditions;
 import lombok.Data;
 import lombok.Getter;
-import org.nd4j.autodiff.AbstractIdentityFactory;
-import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Data
 public class Variable<X extends Field<X>> extends DifferentialFunction<X> {

@@ -7,10 +7,15 @@ import lombok.Builder;
 import lombok.Data;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.functions.*;
-import org.nd4j.autodiff.functions.impl.unary.transform.shape.Broadcast;
+import org.nd4j.autodiff.functions.Constant;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
+import org.nd4j.autodiff.functions.Variable;
 import org.nd4j.autodiff.graph.api.Edge;
-import org.nd4j.autodiff.opstate.*;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.NDArrayVertex;
+import org.nd4j.autodiff.opstate.OpExecAction;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -18,10 +23,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.BroadcastOp;
-import org.nd4j.linalg.api.ops.IndexAccumulation;
-import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -977,7 +979,7 @@ public class SameDiff {
         SDVariable ret = SDVariable.builder()
                 .arr(null).shape(iX.getShape())
                 .differentialFunction(functionFactory.softmaxDerivative(getFunctionInput(iX)))
-                .varName("softmax(" + iX.getVarName() + ")").sameDiff(this)
+                .varName("softmaxderivative(" + iX.getVarName() + ")").sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -1856,6 +1858,12 @@ public class SameDiff {
                        OpExecAction opExecAction) {
         OpState opState = opExecAction.getOpState();
         switch (opType) {
+            case GRADIENT:
+                return Nd4j.getOpFactory().createGradientOp(
+                        opState.getOpName(),
+                        getX(opExecAction),
+                        getY(opExecAction),
+                        getZ(opExecAction));
             case SHAPE:
                 return Nd4j.getOpFactory().createShape(
                         opState.getOpName(),
@@ -2114,6 +2122,9 @@ public class SameDiff {
                 else if(op instanceof BroadcastOp) {
                     BroadcastOp broadcastOp = (BroadcastOp) op;
                     Nd4j.getExecutioner().exec(broadcastOp,axes);
+                }
+                else if(op instanceof GradientOp) {
+                    Nd4j.getExecutioner().exec(op);
                 }
                 else if(op instanceof IndexAccumulation) {
                     IndexAccumulation indexAccumulation = (IndexAccumulation) op;

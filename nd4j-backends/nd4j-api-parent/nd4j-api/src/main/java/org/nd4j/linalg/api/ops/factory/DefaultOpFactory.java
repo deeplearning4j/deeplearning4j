@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.ops.impl.shape.Reshape;
 import org.nd4j.linalg.api.ops.impl.shape.Transpose;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -81,6 +82,16 @@ public class DefaultOpFactory implements OpFactory {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+
+    @Override
+    public GradientOp createGradientOp(String name, INDArray x, INDArray y, INDArray z) {
+        switch(name) {
+            case "softmaxderivative":
+                return new SoftMaxDerivative(x,y,z);
+            default: throw new IllegalStateException("Illegal name " + name);
         }
     }
 
@@ -367,7 +378,7 @@ public class DefaultOpFactory implements OpFactory {
                 op = new TimesOneMinus(x, z);
                 break;
             case "softmaxderivative":
-                op = new SoftMaxDerivative(x, z);
+                op = new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative(x, z);
                 break;
             case "softmax":
                 op = new SoftMax(x, z);

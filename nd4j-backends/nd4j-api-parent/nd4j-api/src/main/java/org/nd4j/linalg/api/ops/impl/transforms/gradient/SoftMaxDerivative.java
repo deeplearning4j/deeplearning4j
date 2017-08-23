@@ -4,26 +4,28 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseGradientOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 
-public class SoftmaxDerivative extends BaseGradientOp  {
-    public SoftmaxDerivative(INDArray x, INDArray z) {
+/**
+ *
+ */
+public class SoftMaxDerivative extends BaseGradientOp  {
+    public SoftMaxDerivative(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public SoftmaxDerivative() {
+    public SoftMaxDerivative() {
     }
 
-    public SoftmaxDerivative(INDArray x, INDArray z, long n) {
+    public SoftMaxDerivative(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public SoftmaxDerivative(INDArray x, INDArray y, INDArray z) {
+    public SoftMaxDerivative(INDArray x, INDArray y, INDArray z) {
         super(x, y, z, z.lengthLong());
     }
 
-    public SoftmaxDerivative(INDArray x) {
+    public SoftMaxDerivative(INDArray x) {
         super(x);
     }
 
@@ -61,11 +63,11 @@ public class SoftmaxDerivative extends BaseGradientOp  {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new SoftMaxDerivative(x.vectorAlongDimension(index, dimension),
+            return new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative(x.vectorAlongDimension(index, dimension),
                     y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension),
                     xAlongDimension.length());
         else
-            return new SoftMaxDerivative(x.vectorAlongDimension(index, dimension),
+            return new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative(x.vectorAlongDimension(index, dimension),
                     z.vectorAlongDimension(index, dimension), xAlongDimension.length());
     }
 
@@ -81,11 +83,11 @@ public class SoftmaxDerivative extends BaseGradientOp  {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new SoftMaxDerivative(x.tensorAlongDimension(index, dimension),
+            return new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative(x.tensorAlongDimension(index, dimension),
                     y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension),
                     xAlongDimension.length());
         else
-            return new SoftMaxDerivative(x.tensorAlongDimension(index, dimension),
+            return new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative(x.tensorAlongDimension(index, dimension),
                     z.tensorAlongDimension(index, dimension), xAlongDimension.length());
     }
 

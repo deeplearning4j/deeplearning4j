@@ -29,6 +29,8 @@ import org.nd4j.linalg.api.ops.*;
  */
 public interface OpFactory {
 
+    GradientOp createGradientOp(String name, INDArray x, INDArray y, INDArray z);
+
     /**
      *
      *
