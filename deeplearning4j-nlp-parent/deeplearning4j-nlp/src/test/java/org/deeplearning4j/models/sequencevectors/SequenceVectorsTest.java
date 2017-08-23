@@ -435,7 +435,7 @@ public class SequenceVectorsTest {
     private static Graph<Blogger, Double> buildGraph() throws IOException, InterruptedException {
         File nodes = new File("/ext/Temp/BlogCatalog/nodes.csv");
 
-        CSVRecordReader reader = new CSVRecordReader(0, ",");
+        CSVRecordReader reader = new CSVRecordReader(0, ',');
         reader.initialize(new FileSplit(nodes));
 
         List<Blogger> bloggers = new ArrayList<>();
@@ -454,7 +454,7 @@ public class SequenceVectorsTest {
         // load edges
         File edges = new File("/ext/Temp/BlogCatalog/edges.csv");
 
-        reader = new CSVRecordReader(0, ",");
+        reader = new CSVRecordReader(0, ',');
         reader.initialize(new FileSplit(edges));
 
         while (reader.hasNext()) {

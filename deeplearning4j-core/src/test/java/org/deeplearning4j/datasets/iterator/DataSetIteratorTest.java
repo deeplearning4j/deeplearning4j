@@ -4,10 +4,8 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.image.loader.CifarLoader;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.fetchers.DataSetType;
+import org.deeplearning4j.datasets.iterator.impl.*;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -72,7 +70,7 @@ public class DataSetIteratorTest {
     @Test
     public void testMnist() throws Exception {
         ClassPathResource cpr = new ClassPathResource("mnist_first_200.txt");
-        CSVRecordReader rr = new CSVRecordReader(0, ",");
+        CSVRecordReader rr = new CSVRecordReader(0, ',');
         rr.initialize(new FileSplit(cpr.getTempFileFromArchive()));
         RecordReaderDataSetIterator dsi = new RecordReaderDataSetIterator(rr, 10, 0, 10);
 
@@ -105,6 +103,19 @@ public class DataSetIteratorTest {
         assertTrue(iter.hasNext());
         DataSet data = iter.next();
         assertEquals(numExamples, data.getLabels().size(0));
+        assertEquals(row, data.getFeatureMatrix().size(2));
+    }
+
+    @Test
+    public void testTinyImageNetIterator() throws Exception {
+        int numClasses = 200;
+        int row = 64;
+        int col = 64;
+        int channels = 3;
+        TinyImageNetDataSetIterator iter = new TinyImageNetDataSetIterator(1, DataSetType.TEST);
+        assertTrue(iter.hasNext());
+        DataSet data = iter.next();
+        assertEquals(numClasses, data.getLabels().size(1));
         assertEquals(row, data.getFeatureMatrix().size(2));
     }
 

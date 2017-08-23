@@ -243,7 +243,7 @@ public class TestComputationGraphNetwork {
     @Test
     public void testIrisFitMultiDataSetIterator() throws Exception {
 
-        RecordReader rr = new CSVRecordReader(0, ",");
+        RecordReader rr = new CSVRecordReader(0, ',');
         rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
         MultiDataSetIterator iter = new RecordReaderMultiDataSetIterator.Builder(10).addReader("iris", rr)
