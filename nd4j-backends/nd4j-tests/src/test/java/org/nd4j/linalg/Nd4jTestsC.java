@@ -113,7 +113,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testSoftmaxDerivativeGradient() {
         INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
-        //Nd4j.getExecutioner().exec(new org.nd4j.linalg.o)
+        INDArray inputDup = input.dup();
+        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftmaxDerivative(input,Nd4j.ones(2,2),input));
+        Nd4j.getExecutioner().exec(new SoftMaxDerivative(inputDup));
+        assertEquals(input,inputDup);
     }
 
     @Test

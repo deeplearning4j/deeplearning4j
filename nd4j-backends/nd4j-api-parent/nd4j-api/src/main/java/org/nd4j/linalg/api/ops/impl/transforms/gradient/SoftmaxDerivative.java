@@ -8,6 +8,25 @@ import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 
 public class SoftmaxDerivative extends BaseGradientOp  {
+    public SoftmaxDerivative(INDArray x, INDArray z) {
+        super(x, z);
+    }
+
+    public SoftmaxDerivative() {
+    }
+
+    public SoftmaxDerivative(INDArray x, INDArray z, long n) {
+        super(x, z, n);
+    }
+
+    public SoftmaxDerivative(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, z.lengthLong());
+    }
+
+    public SoftmaxDerivative(INDArray x) {
+        super(x);
+    }
+
     /**
      * An op number
      *
@@ -75,7 +94,7 @@ public class SoftmaxDerivative extends BaseGradientOp  {
         INDArray softmaxed = Nd4j.getExecutioner().execAndReturn(new SoftMax(x));
         INDArray mulled = softmaxed.muli(y);
         INDArray summed = mulled.sum(-1);
-        softmaxed.muliRowVector(summed);
+        softmaxed.muliColumnVector(summed);
         mulled.subi(softmaxed);
 
     }

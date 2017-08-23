@@ -16,7 +16,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public abstract class BaseGradientOp extends BaseTransformOp {
+public abstract class BaseGradientOp extends BaseTransformOp implements GradientOp {
 
     public BaseGradientOp(INDArray x, INDArray z) {
         super(x, z);
@@ -41,6 +41,16 @@ public abstract class BaseGradientOp extends BaseTransformOp {
         assertWrt();
     }
 
+    /**
+     * The array
+     * to the gradient with respect to
+     *
+     * @return
+     */
+    @Override
+    public INDArray wrt() {
+        return y();
+    }
 
     @Override
     public boolean isExecSpecial() {
