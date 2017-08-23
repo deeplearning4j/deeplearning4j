@@ -19,7 +19,11 @@ public class Im2col extends BaseTransformOp {
     public Im2col() {}
 
     public Im2col(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode) {
-        this(x, kh, kw, sy, sx, ph, pw, 1, 1, isSameMode, getNewOutputArray(x, kh, kw, sy, sx, ph, pw, false));
+        this(x, kh, kw, sy, sx, ph, pw, 1, 1, isSameMode);
+    }
+
+    public Im2col(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
+        this(x, kh, kw, sy, sx, ph, pw, 1, 1, isSameMode, getNewOutputArray(x, kh, kw, sy, sx, ph, pw, dh, dw,false));
     }
 
     public Im2col(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode, INDArray z) {
@@ -58,7 +62,7 @@ public class Im2col extends BaseTransformOp {
     }
 
     private static INDArray getNewOutputArray(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,
-                    int padHeight, int padWidth, boolean coverAll) {
+                    int padHeight, int padWidth, int dilationH, int dilationW, boolean coverAll) {
         //number of images
         int n = img.size(0);
         //number of channels (depth)
@@ -67,8 +71,8 @@ public class Im2col extends BaseTransformOp {
         int h = img.size(2);
         //image width
         int w = img.size(3);
-        int outHeight = Convolution.outSize(h, kernelHeight, strideY, padHeight, coverAll);
-        int outWidth = Convolution.outSize(w, kernelWidth, strideX, padWidth, coverAll);
+        int outHeight = Convolution.outSize(h, kernelHeight, strideY, padHeight, dilationH, coverAll);
+        int outWidth = Convolution.outSize(w, kernelWidth, strideX, padWidth, dilationW, coverAll);
 
         return Nd4j.createUninitialized(new int[] {n, c, kernelHeight, kernelWidth, outHeight, outWidth}, 'c');
     }

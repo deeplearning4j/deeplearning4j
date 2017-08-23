@@ -53,7 +53,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
     @Test
     public void testConvOutWidthAndHeight() {
-        int outSize = Convolution.outSize(2, 1, 1, 2, false);
+        int outSize = Convolution.outSize(2, 1, 1, 2, 1, false);
         assertEquals(6, outSize);
     }
 

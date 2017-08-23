@@ -123,14 +123,24 @@ public class Convolution {
      *
      */
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode) {
+        return im2col(img, kh, kw, sy, sx, ph, pw, 1, 1, isSameMode);
+    }
+
+    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
         Nd4j.getCompressor().autoDecompress(img);
-        Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, isSameMode);
+        Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, dh, dw, isSameMode);
         return Nd4j.getExecutioner().exec(im2col).z();
     }
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode,
                     INDArray out) {
-        Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, isSameMode, out);
+        Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, 1, 1, isSameMode, out);
+        return Nd4j.getExecutioner().exec(im2col).z();
+    }
+
+    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dH, int dW, boolean isSameMode,
+                                  INDArray out) {
+        Im2col im2col = new Im2col(img, kh, kw, sy, sx, ph, pw, dH, dW, isSameMode, out);
         return Nd4j.getExecutioner().exec(im2col).z();
     }
 
@@ -170,11 +180,17 @@ public class Convolution {
      * @param coverAll
      * @return
      */
-    public static int outSize(int size, int k, int s, int p, boolean coverAll) {
+    public static int outSize(int size, int k, int s, int p, int dilation, boolean coverAll) {
+        k = effectiveKernelSize(k, dilation);
+
         if (coverAll)
             return (size + p * 2 - k + s - 1) / s + 1;
         else
             return (size + p * 2 - k) / s + 1;
+    }
+
+    public static int effectiveKernelSize(int kernel, int dilation){
+        return kernel + (kernel - 1)*(dilation-1);
     }
 
 
