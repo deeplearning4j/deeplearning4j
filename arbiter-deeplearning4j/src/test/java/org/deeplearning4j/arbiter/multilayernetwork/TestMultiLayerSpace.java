@@ -189,7 +189,6 @@ public class TestMultiLayerSpace {
 
                 double lr = ((BaseLayer) layerConf.getLayer()).getLearningRate();
                 assertTrue(lr >= 0.0001 && lr <= 0.1);
-                assertEquals(true, layerConf.isUseRegularization());
                 double l2 = ((BaseLayer) layerConf.getLayer()).getL2();
                 assertTrue(l2 >= 0.2 && l2 <= 0.5);
 
