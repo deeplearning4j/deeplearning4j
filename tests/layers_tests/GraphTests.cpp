@@ -685,6 +685,9 @@ TEST_F(GraphTests, OutputValidation4) {
 
     graph->addOutput(-1);
 
+    // not a typo. we want this value only once
+    graph->addOutput(-1);
+
     graph->addNode(nodeA);
     graph->addNode(nodeB);
 
