@@ -28,8 +28,43 @@ public class GraphExecutionerTest {
     }
 
 
+    /**
+     * VarSpace should dump everything. 4 variables in our case
+     * @throws Exception
+     */
     @Test
     public void testEquality1() throws Exception {
+        GraphExecutioner executionerA = new BasicGraphExecutioner();
+        GraphExecutioner executionerB = new NativeGraphExecutioner();
+
+        SameDiff sameDiff = SameDiff.create();
+        INDArray ones = Nd4j.ones(4);
+        SDVariable sdVariable = sameDiff.var("ones",ones);
+        SDVariable scalarOne = sameDiff.var("add1",Nd4j.scalar(1.0));
+        SDVariable result = sdVariable.addi(scalarOne);
+        SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
+
+        log.info("ID: {}",sameDiff.getGraph().getVertex(1).getValue().getId());
+
+        INDArray[] resB = executionerB.executeGraph(sameDiff, configVarSpace);
+
+        assertEquals(4, resB.length);
+        assertEquals(Nd4j.create(new float[]{2f, 2f, 2f, 2f}), resB[0]);
+        assertEquals(Nd4j.scalar(1), resB[1]);
+        assertEquals(Nd4j.scalar(8.0), resB[3]);
+
+        //INDArray resA = executionerA.executeGraph(sameDiff)[0];
+
+        //assertEquals(resA, resB);
+    }
+
+
+    /**
+     * Implicit should return tree edges. So, one variable
+     * @throws Exception
+     */
+    @Test
+    public void testEquality2() throws Exception {
         GraphExecutioner executionerA = new BasicGraphExecutioner();
         GraphExecutioner executionerB = new NativeGraphExecutioner();
 
