@@ -102,7 +102,7 @@ public class KerasModelImport {
      */
     public static ComputationGraph importKerasModelAndWeights(String modelHdf5Filename, boolean enforceTrainingConfig)
                     throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        KerasModel kerasModel = new KerasModel.ModelBuilder().modelHdf5Filename(modelHdf5Filename)
+        KerasModel kerasModel = new KerasModel().modelBuilder.modelHdf5Filename(modelHdf5Filename)
                         .enforceTrainingConfig(enforceTrainingConfig).buildModel();
         ComputationGraph model = kerasModel.getComputationGraph();
         return model;
@@ -120,7 +120,7 @@ public class KerasModelImport {
      */
     public static ComputationGraph importKerasModelAndWeights(String modelHdf5Filename)
                     throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        KerasModel kerasModel = new KerasModel.ModelBuilder().modelHdf5Filename(modelHdf5Filename)
+        KerasModel kerasModel = new KerasModel().modelBuilder().modelHdf5Filename(modelHdf5Filename)
                         .enforceTrainingConfig(true).buildModel();
         ComputationGraph model = kerasModel.getComputationGraph();
         return model;
@@ -138,7 +138,7 @@ public class KerasModelImport {
     public static MultiLayerNetwork importKerasSequentialModelAndWeights(String modelHdf5Filename,
                     boolean enforceTrainingConfig)
                     throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasSequentialModel kerasModel = new KerasSequentialModel.ModelBuilder().modelHdf5Filename(modelHdf5Filename)
+        KerasSequentialModel kerasModel = new KerasSequentialModel().modelBuilder().modelHdf5Filename(modelHdf5Filename)
                         .enforceTrainingConfig(enforceTrainingConfig).buildSequential();
         MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
         return model;
@@ -154,7 +154,7 @@ public class KerasModelImport {
      */
     public static MultiLayerNetwork importKerasSequentialModelAndWeights(String modelHdf5Filename)
                     throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasSequentialModel kerasModel = new KerasSequentialModel.ModelBuilder().modelHdf5Filename(modelHdf5Filename)
+        KerasSequentialModel kerasModel = new KerasSequentialModel().modelBuilder().modelHdf5Filename(modelHdf5Filename)
                         .enforceTrainingConfig(true).buildSequential();
         MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
         return model;
@@ -174,7 +174,7 @@ public class KerasModelImport {
     public static ComputationGraph importKerasModelAndWeights(String modelJsonFilename, String weightsHdf5Filename,
                     boolean enforceTrainingConfig)
                     throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasModel kerasModel = new KerasModel.ModelBuilder().modelJsonFilename(modelJsonFilename)
+        KerasModel kerasModel = new KerasModel().modelBuilder().modelJsonFilename(modelJsonFilename)
                         .weightsHdf5Filename(weightsHdf5Filename).enforceTrainingConfig(enforceTrainingConfig)
                         .buildModel();
         ComputationGraph model = kerasModel.getComputationGraph();
@@ -193,7 +193,7 @@ public class KerasModelImport {
      */
     public static ComputationGraph importKerasModelAndWeights(String modelJsonFilename, String weightsHdf5Filename)
                     throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasModel kerasModel = new KerasModel.ModelBuilder().modelJsonFilename(modelJsonFilename)
+        KerasModel kerasModel = new KerasModel().modelBuilder().modelJsonFilename(modelJsonFilename)
                         .weightsHdf5Filename(weightsHdf5Filename).enforceTrainingConfig(true).buildModel();
         ComputationGraph model = kerasModel.getComputationGraph();
         return model;
@@ -213,7 +213,7 @@ public class KerasModelImport {
     public static MultiLayerNetwork importKerasSequentialModelAndWeights(String modelJsonFilename,
                     String weightsHdf5Filename, boolean enforceTrainingConfig)
                     throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasSequentialModel kerasModel = new KerasSequentialModel.ModelBuilder().modelJsonFilename(modelJsonFilename)
+        KerasSequentialModel kerasModel = new KerasSequentialModel().modelBuilder().modelJsonFilename(modelJsonFilename)
                         .weightsHdf5Filename(weightsHdf5Filename).enforceTrainingConfig(enforceTrainingConfig)
                         .buildSequential();
         MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
@@ -233,7 +233,7 @@ public class KerasModelImport {
     public static MultiLayerNetwork importKerasSequentialModelAndWeights(String modelJsonFilename,
                     String weightsHdf5Filename)
                     throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasSequentialModel kerasModel = new KerasSequentialModel.ModelBuilder().modelJsonFilename(modelJsonFilename)
+        KerasSequentialModel kerasModel = new KerasSequentialModel().modelBuilder().modelJsonFilename(modelJsonFilename)
                         .weightsHdf5Filename(weightsHdf5Filename).enforceTrainingConfig(true).buildSequential();
         MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
         return model;
@@ -252,7 +252,7 @@ public class KerasModelImport {
     public static ComputationGraphConfiguration importKerasModelConfiguration(String modelJsonFilename,
                     boolean enforceTrainingConfig)
                     throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasModel kerasModel = new KerasModel.ModelBuilder().modelJsonFilename(modelJsonFilename)
+        KerasModel kerasModel = new KerasModel().modelBuilder().modelJsonFilename(modelJsonFilename)
                         .enforceTrainingConfig(enforceTrainingConfig).buildModel();
         return kerasModel.getComputationGraphConfiguration();
     }
@@ -268,7 +268,7 @@ public class KerasModelImport {
      */
     public static ComputationGraphConfiguration importKerasModelConfiguration(String modelJsonFilename)
                     throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasModel kerasModel = new KerasModel.ModelBuilder().modelJsonFilename(modelJsonFilename)
+        KerasModel kerasModel = new KerasModel().modelBuilder().modelJsonFilename(modelJsonFilename)
                         .enforceTrainingConfig(true).buildModel();
         return kerasModel.getComputationGraphConfiguration();
     }
@@ -286,7 +286,7 @@ public class KerasModelImport {
     public static MultiLayerConfiguration importKerasSequentialConfiguration(String modelJsonFilename,
                     boolean enforceTrainingConfig)
                     throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasSequentialModel kerasModel = new KerasSequentialModel.ModelBuilder().modelJsonFilename(modelJsonFilename)
+        KerasSequentialModel kerasModel = new KerasSequentialModel().modelBuilder().modelJsonFilename(modelJsonFilename)
                         .enforceTrainingConfig(enforceTrainingConfig).buildSequential();
         return kerasModel.getMultiLayerConfiguration();
     }
@@ -302,7 +302,7 @@ public class KerasModelImport {
      */
     public static MultiLayerConfiguration importKerasSequentialConfiguration(String modelJsonFilename)
                     throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasSequentialModel kerasModel = new KerasSequentialModel.ModelBuilder().modelJsonFilename(modelJsonFilename)
+        KerasSequentialModel kerasModel = new KerasSequentialModel().modelBuilder().modelJsonFilename(modelJsonFilename)
                         .enforceTrainingConfig(true).buildSequential();
         return kerasModel.getMultiLayerConfiguration();
     }

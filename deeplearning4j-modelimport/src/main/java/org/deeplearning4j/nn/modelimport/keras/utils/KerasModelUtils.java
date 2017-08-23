@@ -18,22 +18,27 @@
 package org.deeplearning4j.nn.modelimport.keras.utils;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.config.KerasModelConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Utility functionality to import keras models
  *
  * @author Max Pumperla
  */
+@Slf4j
 public class KerasModelUtils {
 
     /**
@@ -72,4 +77,59 @@ public class KerasModelUtils {
         }
         return model;
     }
+
+    /**
+     *
+     * @param modelConfig parsed model configuration for keras model
+     * @param config basic model configuration (KerasModelConfiguration)
+     * @return Major Keras version (1 or 2)
+     * @throws InvalidKerasConfigurationException
+     */
+    public static int determineKerasMajorVersion(Map<String, Object> modelConfig, KerasModelConfiguration config)
+            throws InvalidKerasConfigurationException {
+        int kerasMajorVersion;
+        if (!modelConfig.containsKey(config.getFieldKerasVersion())) {
+            log.warn("Could not read keras version used (no "
+                    + config.getFieldKerasVersion() + " field found) \n"
+                    + "assuming keras version is 1.0.7 or earlier."
+            );
+            kerasMajorVersion = 1;
+        } else {
+            String kerasVersionString = (String) modelConfig.get(config.getFieldKerasVersion());
+            if (Character.isDigit(kerasVersionString.charAt(0))) {
+                kerasMajorVersion = Character.getNumericValue(kerasVersionString.charAt(0));
+            } else {
+                throw new InvalidKerasConfigurationException(
+                        "Keras version was not readable (" +  config.getFieldKerasVersion() + " provided)"
+                );
+            }
+        }
+        return kerasMajorVersion;
+    }
+
+    public static String findParameterName(String parameter, String[] fragmentList) {
+        Matcher layerNameMatcher =
+                Pattern.compile(fragmentList[fragmentList.length - 1]).matcher(parameter);
+        if (!(layerNameMatcher.find()))
+            log.warn("Unable to match layer parameter name " + parameter + " for stored weights.");
+        String parameterNameFound = layerNameMatcher.replaceFirst("");
+
+        /* Usually layer name is separated from parameter name by an underscore. */
+        Matcher paramNameMatcher = Pattern.compile("^_(.+)$").matcher(parameterNameFound);
+        if (paramNameMatcher.find())
+            parameterNameFound = paramNameMatcher.group(1);
+
+        /* TensorFlow backend often appends ":" followed by one or more digits to parameter names. */
+        Matcher tfSuffixMatcher = Pattern.compile(":\\d+?$").matcher(parameterNameFound);
+        if (tfSuffixMatcher.find())
+            parameterNameFound = tfSuffixMatcher.replaceFirst("");
+
+        /* TensorFlow backend also may append "_" followed by one or more digits to parameter names.*/
+        Matcher tfParamNbMatcher = Pattern.compile("_\\d+$").matcher(parameterNameFound);
+        if (tfParamNbMatcher.find())
+            parameterNameFound = tfParamNbMatcher.replaceFirst("");
+
+        return parameterNameFound;
+    }
+
 }

@@ -94,7 +94,7 @@ public class Keras2ModelConfigurationTest {
     void runSequentialConfigTest(String path) throws Exception {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         MultiLayerConfiguration config =
-                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
+                new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
                         .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
         MultiLayerNetwork model = new MultiLayerNetwork(config);
         model.init();
@@ -103,7 +103,7 @@ public class Keras2ModelConfigurationTest {
     void runModelConfigTest(String path) throws Exception {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         ComputationGraphConfiguration config =
-                new KerasModel.ModelBuilder().modelJsonInputStream(configResource.getInputStream())
+                new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
                         .enforceTrainingConfig(true).buildModel().getComputationGraphConfiguration();
         ComputationGraph model = new ComputationGraph(config);
         model.init();
