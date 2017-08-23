@@ -88,8 +88,8 @@ public class KerasLstm extends KerasLayer {
     public KerasLstm(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        WeightInit weightInit = getWeightInitFromConfig(layerConfig, enforceTrainingConfig);
-        WeightInit recurrentWeightInit = getRecurrentWeightInitFromConfig(layerConfig, enforceTrainingConfig);
+        WeightInit weightInit = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(), enforceTrainingConfig);
+        WeightInit recurrentWeightInit = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INNER_INIT(), enforceTrainingConfig);
         if (weightInit != recurrentWeightInit)
             if (enforceTrainingConfig)
                 throw new UnsupportedKerasConfigurationException(
@@ -339,43 +339,6 @@ public class KerasLstm extends KerasLayer {
             throw new InvalidKerasConfigurationException(
                             "Keras LSTM layer config missing " + LAYER_FIELD_UNROLL + " field");
         return (boolean) innerConfig.get(LAYER_FIELD_UNROLL);
-    }
-
-    /**
-     * Get LSTM recurrent weight initialization from Keras layer configuration.
-     *
-     * @param layerConfig       dictionary containing Keras layer configuration
-     * @return                  epsilon
-     * @throws InvalidKerasConfigurationException
-     */
-    public  WeightInit getRecurrentWeightInitFromConfig(Map<String, Object> layerConfig, boolean train)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        if (!innerConfig.containsKey(conf.getLAYER_FIELD_INNER_INIT()))
-            throw new InvalidKerasConfigurationException(
-                            "Keras LSTM layer config missing " + conf.getLAYER_FIELD_INNER_INIT() + " field");
-        String kerasInit = "";
-        if (kerasMajorVersion != 2)
-            kerasInit = (String) innerConfig.get(conf.getLAYER_FIELD_INNER_INIT());
-        else {
-            Object foo = innerConfig.get(conf.getLAYER_FIELD_INNER_INIT());
-            HashMap initMap = (HashMap) innerConfig.get(conf.getLAYER_FIELD_INNER_INIT());
-            if (initMap.containsKey("class_name")) {
-                kerasInit = (String) initMap.get("class_name");
-            }
-        }
-        WeightInit init;
-        try {
-            init = mapWeightInitialization(kerasInit);
-        } catch (UnsupportedKerasConfigurationException e) {
-            if (train)
-                throw e;
-            else {
-                init = WeightInit.XAVIER;
-                log.warn("Unknown weight initializer " + kerasInit + " (Using XAVIER instead).");
-            }
-        }
-        return init;
     }
 
     /**

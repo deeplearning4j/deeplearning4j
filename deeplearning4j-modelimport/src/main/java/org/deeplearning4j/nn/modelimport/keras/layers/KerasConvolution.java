@@ -68,7 +68,9 @@ public class KerasConvolution extends KerasLayer {
         ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder().name(this.layerName)
                         .nOut(getNOutFromConfig(layerConfig)).dropOut(this.dropout)
                         .activation(getActivationFromConfig(layerConfig))
-                        .weightInit(getWeightInitFromConfig(layerConfig, enforceTrainingConfig)).biasInit(0.0)
+                        .weightInit(getWeightInitFromConfig(
+                                layerConfig, conf.getLAYER_FIELD_INIT(), enforceTrainingConfig))
+                        .biasInit(0.0)
                         .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                         .convolutionMode(getConvolutionModeFromConfig(layerConfig))
                         .kernelSize(getKernelSizeFromConfig(layerConfig))

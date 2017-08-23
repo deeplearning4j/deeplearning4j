@@ -532,6 +532,8 @@ public class KerasLayer {
     public WeightInit mapWeightInitialization(String kerasInit) throws UnsupportedKerasConfigurationException {
         /* WEIGHT INITIALIZATION
          * TODO: finish mapping keras-to-dl4j weight distributions.
+         * INIT_IDENTITY INIT_ORTHOGONAL INIT_LECUN_UNIFORM, INIT_NORMAL
+         * INIT_VARIANCE_SCALING, INIT_CONSTANT, INIT_ONES
          * Low priority since our focus is on loading trained models.
          * Remaining dl4j distributions: DISTRIBUTION, SIZE, NORMALIZED,VI
          */
@@ -541,18 +543,25 @@ public class KerasLayer {
                 init = WeightInit.XAVIER;
             } else if (kerasInit.equals(conf.getINIT_GLOROT_UNIFORM())) {
                 init = WeightInit.XAVIER_UNIFORM;
-            } else if (kerasInit.equals(conf.getINIT_HE_NORMAL())) {
+            } else if (kerasInit.equals(conf.getINIT_LECUN_NORMAL())) {
+                init = WeightInit.NORMAL;
+            } else if (kerasInit.equals(conf.getINIT_UNIFORM()) ||
+                    kerasInit.equals(conf.getINIT_RANDOM_UNIFORM()) ||
+                    kerasInit.equals(conf.getINIT_RANDOM_UNIFORM_ALIAS())) {
+                init = WeightInit.UNIFORM;
+            }  else if (kerasInit.equals(conf.getINIT_HE_NORMAL())) {
                 init = WeightInit.RELU;
             } else if (kerasInit.equals(conf.getINIT_HE_UNIFORM())) {
                 init = WeightInit.RELU_UNIFORM;
-            } else if (kerasInit.equals(conf.getINIT_ZERO())) {
+            } else if (kerasInit.equals(conf.getINIT_ZERO()) ||
+                    kerasInit.equals(conf.getINIT_ZEROS()) ||
+                    kerasInit.equals(conf.getINIT_ZEROS_ALIAS())) {
                 init = WeightInit.ZERO;
             } else if (kerasInit.equals(conf.getINIT_VARIANCE_SCALING())) {
                 // TODO: This is incorrect, but we need it in tests for now
                 init = WeightInit.XAVIER_UNIFORM;
             } else {
-                // TODO: map INIT_UNIFORM and INIT_NORMAL
-                // TODO: implement INIT_IDENTITY INIT_ORTHOGONAL INIT_LECUN_UNIFORM
+                // TODO: implement
                 throw new UnsupportedKerasConfigurationException("Unknown keras weight initializer " + kerasInit);
             }
         }
@@ -868,20 +877,20 @@ public class KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    protected WeightInit getWeightInitFromConfig(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    protected WeightInit getWeightInitFromConfig(Map<String, Object> layerConfig, String initField, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
-//        if (!innerConfig.containsKey(conf.getLAYER_FIELD_INIT()))
-//            throw new InvalidKerasConfigurationException("Keras layer is missing " + conf.getLAYER_FIELD_INIT() + " field");
+        if (!innerConfig.containsKey(initField))
+            throw new InvalidKerasConfigurationException("Keras layer is missing " + initField + " field");
         String kerasInit = "glorot_normal";
-//        if (kerasMajorVersion != 2)
-//            kerasInit = (String) innerConfig.get(conf.getLAYER_FIELD_INIT());
-//        else {
-//            HashMap initMap = (HashMap) innerConfig.get(conf.getLAYER_FIELD_INIT());
-//            if (initMap.containsKey("class_name")) {
-//                kerasInit = (String) initMap.get("class_name");
-//            }
-//        }
+        if (kerasMajorVersion != 2)
+            kerasInit = (String) innerConfig.get(initField);
+        else {
+            HashMap initMap = (HashMap) innerConfig.get(initField);
+            if (initMap.containsKey("class_name")) {
+                kerasInit = (String) initMap.get("class_name");
+            }
+        }
         WeightInit init;
         try {
             init = mapWeightInitialization(kerasInit);
