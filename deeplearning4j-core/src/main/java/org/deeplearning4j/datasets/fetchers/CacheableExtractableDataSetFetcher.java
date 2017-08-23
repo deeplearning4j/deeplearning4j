@@ -18,14 +18,13 @@ import java.util.zip.Checksum;
 @Slf4j
 public abstract class CacheableExtractableDataSetFetcher implements CacheableDataSet {
 
-    private final static String DL4J_DIR = "/.deeplearning4j/";
-    private final static File ROOT_CACHE_DIR = new File(System.getProperty("user.home"), DL4J_DIR);
-    private File LOCAL_CACHE = new File(ROOT_CACHE_DIR, localCacheName());
+    public final static String DL4J_DIR = "/.deeplearning4j/";
+    public final static File ROOT_CACHE_DIR = new File(System.getProperty("user.home"), DL4J_DIR);
+    public File LOCAL_CACHE = new File(ROOT_CACHE_DIR, localCacheName());
 
     /**
      * Downloads and extracts the local dataset.
      *
-     * @return
      * @throws IOException
      */
     public void downloadAndExtract() throws IOException {
@@ -33,16 +32,18 @@ public abstract class CacheableExtractableDataSetFetcher implements CacheableDat
         File tmpFile = new File(System.getProperty("java.io.tmpdir"), localFilename);
         File cachedFile = new File(ROOT_CACHE_DIR.getAbsolutePath(), localFilename);
 
-        if(!LOCAL_CACHE.exists()) {
-            LOCAL_CACHE.mkdirs();
+        // check empty cache
+        if(LOCAL_CACHE.exists()) {
+            if(LOCAL_CACHE.listFiles().length<1) LOCAL_CACHE.delete();
         }
 
-        if (!LOCAL_CACHE.exists()) {
+        if(!LOCAL_CACHE.exists()) {
+            LOCAL_CACHE.mkdirs();
             tmpFile.delete();
-            log.info("Downloading model to " + tmpFile.getAbsolutePath());
+            log.info("Downloading dataset to " + tmpFile.getAbsolutePath());
             FileUtils.copyURLToFile(new URL(remoteDataUrl()), tmpFile);
         } else {
-            log.info("Using cached model at " + cachedFile.toString());
+            log.info("Using cached dataset at " + cachedFile.toString());
         }
 
         if(expectedChecksum() != 0L) {
@@ -56,10 +57,21 @@ public abstract class CacheableExtractableDataSetFetcher implements CacheableDat
                 log.error("Checksums do not match. Cleaning up files and failing...");
                 cachedFile.delete();
                 throw new IllegalStateException(
-                        "Pretrained model file failed checksum. If this error persists, please open an issue at https://github.com/deeplearning4j/deeplearning4j.");
+                        "Dataset file failed checksum. If this error persists, please open an issue at https://github.com/deeplearning4j/deeplearning4j.");
             }
         }
 
         ArchiveUtils.unzipFileTo(tmpFile.getAbsolutePath(), LOCAL_CACHE.getAbsolutePath());
     }
+
+    /**
+     * Returns a boolean indicating if the dataset is already cached locally.
+     *
+     * @return boolean
+     */
+    @Override
+    public boolean isCached() {
+        return LOCAL_CACHE.exists();
+    }
+
 }
