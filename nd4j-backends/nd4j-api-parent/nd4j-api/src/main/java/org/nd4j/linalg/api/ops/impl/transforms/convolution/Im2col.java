@@ -9,20 +9,20 @@ import org.nd4j.linalg.factory.Nd4j;
 
 
 /**
- * Im 2 col operation
+ * Im2col operation
  */
 public class Im2col extends BaseTransformOp {
 
-    private int kh, kw, sy, sx, ph, pw;
+    private int kh, kw, sy, sx, ph, pw, dh, dw;
     boolean isSameMode;
 
     public Im2col() {}
 
     public Im2col(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode) {
-        this(x, kh, kw, sy, sx, ph, pw, isSameMode, getNewOutputArray(x, kh, kw, sy, sx, ph, pw, false));
+        this(x, kh, kw, sy, sx, ph, pw, 1, 1, isSameMode, getNewOutputArray(x, kh, kw, sy, sx, ph, pw, false));
     }
 
-    public Im2col(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, INDArray z) {
+    public Im2col(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode, INDArray z) {
         super(x);
         this.kh = kh;
         this.kw = kw;
@@ -30,6 +30,8 @@ public class Im2col extends BaseTransformOp {
         this.sx = sx;
         this.ph = ph;
         this.pw = pw;
+        this.dh = dh;
+        this.dw = dw;
         this.isSameMode = isSameMode;
         this.z = z;
         extraArgs = this.extraArgs();
@@ -52,7 +54,7 @@ public class Im2col extends BaseTransformOp {
 
     @Override
     public Object[] extraArgs() {
-        return new Object[] {kw, kh, sx, sy, pw, ph, isSameMode ? 1.0 : 0.0};
+        return new Object[] {kw, kh, sx, sy, pw, ph, dh, dw, isSameMode ? 1.0 : 0.0};
     }
 
     private static INDArray getNewOutputArray(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,
