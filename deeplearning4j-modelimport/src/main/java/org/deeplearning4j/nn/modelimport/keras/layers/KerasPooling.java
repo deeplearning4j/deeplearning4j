@@ -44,8 +44,8 @@ public class KerasPooling extends KerasLayer {
         SubsamplingLayer.Builder builder = new SubsamplingLayer.Builder(mapPoolingType(this.className))
                         .name(this.layerName).dropOut(this.dropout)
                         .convolutionMode(getConvolutionModeFromConfig(layerConfig))
-                        .kernelSize(getKernelSizeFromConfig(layerConfig)).stride(getStrideFromConfig(layerConfig));
-        int[] padding = getPaddingFromBorderModeConfig(layerConfig);
+                        .kernelSize(getKernelSizeFromConfig(layerConfig, 2)).stride(getStrideFromConfig(layerConfig, 2));
+        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2);
         if (padding != null)
             builder.padding(padding);
         this.layer = builder.build();
