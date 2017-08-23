@@ -132,8 +132,8 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 
     ASSERT_EQ(OutputMode_IMPLICIT, graph.getExecutorConfiguration()->_outputMode);
 
-    ASSERT_EQ(4, vs->totalEntries());
-    ASSERT_EQ(2, vs->externalEntries());
+    ASSERT_EQ(3, vs->totalEntries());
+    ASSERT_EQ(1, vs->externalEntries());
     ASSERT_EQ(2, vs->internalEntries());
 
     auto var = vs->getVariable(-1)->getNDArray();
@@ -153,6 +153,9 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto flatResults = GetFlatResult(result);
 
     ASSERT_EQ(1, flatResults->variables()->size());
+    ASSERT_TRUE(flatResults->variables()->Get(0)->name() != nullptr);
+    ASSERT_TRUE(flatResults->variables()->Get(0)->name()->c_str() != nullptr);
+    nd4j_printf("VARNAME: %s\n", flatResults->variables()->Get(0)->name()->c_str());
 
     auto var0 = new Variable<float>(flatResults->variables()->Get(0));
     //auto var1 = new Variable<float>(flatResults->variables()->Get(1));

@@ -414,7 +414,7 @@ TEST_F(GraphTests, AutoOutput1) {
 
     graph->buildGraph();
 
-    ASSERT_TRUE(graph->getVariableSpace()->getVariable(-2) != nullptr);
+    ASSERT_TRUE(graph->getVariableSpace()->getVariable(2) != nullptr);
 
     GraphExecutioner<float>::execute(graph);
 
@@ -449,8 +449,8 @@ TEST_F(GraphTests, AutoOutput2) {
     graph->buildGraph();
 
     ASSERT_TRUE(graph->getVariableSpace()->getVariable(-1) != nullptr);
-    ASSERT_TRUE(graph->getVariableSpace()->getVariable(-2) != nullptr);
-    ASSERT_TRUE(graph->getVariableSpace()->getVariable(-3) != nullptr);
+    ASSERT_TRUE(graph->getVariableSpace()->getVariable(2) != nullptr);
+    ASSERT_TRUE(graph->getVariableSpace()->getVariable(3) != nullptr);
 
     GraphExecutioner<float>::execute(graph);
 
@@ -729,6 +729,47 @@ TEST_F(GraphTests, OutputValidation5) {
     GraphExecutioner<float>::execute(graph);
 
     ASSERT_EQ(3, graph->fetchOutputs()->size());
+
+    //ASSERT_NEAR(1.4142135, graph->fetchOutputs()->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+}
+
+TEST_F(GraphTests, OutputValidation6) {
+    auto graph = new Graph<float>();
+
+    graph->getExecutorConfiguration()->_outputMode = OutputMode_VARIABLE_SPACE;
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0);
+
+    auto z = new NDArray<float>(5, 5, 'c');
+
+    Variable<float> vX(x);
+    Variable<float> vZ(z);
+
+    vX.setName(new std::string("alpha"));
+    vZ.setName(new std::string("omega"));
+
+    graph->getVariableSpace()->putVariable(-1, &vX);
+    graph->getVariableSpace()->putVariable(-2, &vZ);
+
+    auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeB = new Node<float>(OpType_TRANSFORM, 14, 2, {1}, {});
+
+    //graph->addOutput(-1);
+
+    graph->addNode(nodeA);
+    graph->addNode(nodeB);
+
+    GraphExecutioner<float>::execute(graph);
+
+
+    nd4j_printf("Returned variables: \n", "");
+    for (int e = 0; e < graph->fetchOutputs()->size(); e++) {
+        printf("%i, ", graph->fetchOutputs()->at(e)->id());
+    }
+    printf("\n");
+
+    ASSERT_EQ(4, graph->fetchOutputs()->size());
 
     //ASSERT_NEAR(1.4142135, graph->fetchOutputs()->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }

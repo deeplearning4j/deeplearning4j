@@ -47,6 +47,7 @@ namespace nd4j{
                         if (graph->getMapped()->at(in)->output()->size() > 1) {
                             auto array = new NDArray<T>(x->getNDArray());
                             z = new Variable<T>(array);
+                            z->setName(node->getName());
                         };
 
                     functions::transform::Transform<T>::template exec(opNum, x->getNDArray()->_buffer,
@@ -63,6 +64,7 @@ namespace nd4j{
 
                     if (node->output()->size() > 0) {
                         z = new Variable<T>(new NDArray<T>(x->getNDArray()));
+                        z->setName(node->getName());
                     }
 
 
@@ -99,6 +101,7 @@ namespace nd4j{
                     if (graph->getMapped()->at(in)->output()->size() > 1) {
                         auto array = new NDArray<T>(x->getNDArray());
                         z = new Variable<T>(array);
+                        z->setName(node->getName());
                     };
 
                 nd4j_verbose("xLength: %i\n", x->getNDArray()->lengthOf());
@@ -138,6 +141,7 @@ namespace nd4j{
                 // if there's no dimensions set - it's reduceToScalar
                 if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
                     z = new Variable<T>(new NDArray<T>(1,1, 'c'));
+                    z->setName(node->getName());
                     z->getNDArray()->_buffer[0] = functions::summarystats::SummaryStatsReduce<T>::template execScalar(opNum, node->scalar() != 0.0, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
 
                 } else {
@@ -149,7 +153,7 @@ namespace nd4j{
                     int resultLength = x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
 
                     z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
-
+                    z->setName(node->getName());
 
                     functions::summarystats::SummaryStatsReduce<T>::template exec(opNum, node->scalar() != 0.0, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
                                                                             node->getDimensionsPtr() , node->getDimensions()->size());
@@ -189,6 +193,7 @@ namespace nd4j{
                                      x->getNDArray()->lengthOf());
 
                         z = new Variable<T>(new NDArray<T>(1, 1, 'c'));
+                        z->setName(node->getName());
                         z->getNDArray()->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar(opNum,
                                                                                                                 x->getNDArray()->_buffer,
                                                                                                                 x->getNDArray()->_shapeInfo,
@@ -252,7 +257,7 @@ namespace nd4j{
                                 x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
 
                         z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
-
+                        z->setName(node->getName());
                         functions::reduce3::Reduce3<T>::template exec(opNum, x->getNDArray()->_buffer,
                                                                             x->getNDArray()->_shapeInfo,
                                                                             node->extraParams(),
@@ -294,6 +299,7 @@ namespace nd4j{
                 // if there's no dimensions set - it's reduceToScalar
                 if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
                     z = new Variable<T>(new NDArray<T>(1,1, 'c'));
+                    z->setName(node->getName());
                     z->getNDArray()->_buffer[0] = (T) functions::indexreduce::IndexReduce<T>::template execScalar(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
 
                 } else {
@@ -305,7 +311,7 @@ namespace nd4j{
                     int resultLength = x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
 
                     z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
-
+                    z->setName(node->getName());
                     functions::indexreduce::IndexReduce<T>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
                                                                             node->getDimensionsPtr() , node->getDimensions()->size(),
                                                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
@@ -438,8 +444,9 @@ namespace nd4j{
 
                 auto fShape = builder.CreateVector(var->getNDArray()->getShapeAsVector());
                 auto fBuffer = builder.CreateVector(var->getNDArray()->getBufferAsVector());
+                auto fName = builder.CreateString(*(var->getName()));
 
-                auto fv = CreateFlatVariable(builder, var->id(), 0, fShape, fBuffer, -1);
+                auto fv = CreateFlatVariable(builder, var->id(), fName, fShape, fBuffer, -1);
 
                 variables_vector.push_back(fv);
             }

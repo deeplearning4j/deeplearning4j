@@ -76,7 +76,8 @@ bool nd4j::graph::VariableSpace<T>::hasVariable(int32_t id) {
 
 template <typename T>
 void nd4j::graph::VariableSpace<T>::putOutputVariable(Variable<T> *variable) {
-    putVariable(_auto_counter--, variable);
+    //putVariable(_auto_counter--, variable);
+    putVariable(variable->id(), variable);
 }
 
 template <typename T>

@@ -206,11 +206,13 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
     if (node->output()->size() == 0 || (node->output()->size() == 1 && node->output()->at(0) == 0)){
         nd4j_verbose("Adding auto output variable; Output size: %i\n", node->output()->size());
         auto var = new Variable<T>();
+        var->setId(node->id());
+        var->setName(node->getName());
         _variableSpace->putOutputVariable(var);
-        node->pickOutput(var->id());
+        node->pickExternalOutput(var->id());
 
         // we're pushing this variable to output
-        if (_configuration->_outputMode == OutputMode_IMPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT)
+        if (_configuration->_outputMode == OutputMode_IMPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT || _configuration->_outputMode == OutputMode_VARIABLE_SPACE)
             pushToOutputOnce(var->id());
 
         this->_autos.push_back(var->id());
@@ -238,8 +240,7 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
         _onion->at(0)->push_back(node);
         _mapped->insert(pair);
 
-        printf("A Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
-        fflush(stdout);
+        nd4j_verbose("A Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
     } else {
         // in some cases we're able to put stuff immediately
         if (node->hasInternalInputs() && !node->hasExternalInputs() && node->input()->size() == 1) {
@@ -255,8 +256,8 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
                 node->setLayer(nLayer);
                 _onion->at(nLayer)->push_back(node);
                 _mapped->insert(pair);
-                printf("B Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
-                fflush(stdout);
+
+                nd4j_verbose("B Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
 
                 return;
             }

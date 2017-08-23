@@ -76,6 +76,7 @@ namespace nd4j {
 
 
             void pickOutput(int outputId);
+            void pickExternalOutput(int outputId);
             void pickInput(int inputId);
 
             void setName(std::string *name);
@@ -107,6 +108,13 @@ void nd4j::graph::Node<T>::pickInput(int inputId) {
         _hasExternalInputs = true;
     else
         _hasInternalInputs = true;
+}
+
+template <typename T>
+void nd4j::graph::Node<T>::pickExternalOutput(int outputId) {
+    _output.push_back(outputId);
+
+    _hasExternalOutputs = true;
 }
 
 template <typename T>
@@ -244,6 +252,11 @@ nd4j::graph::Node<T>::Node(const nd4j::graph::FlatNode *node) {
         this->_dataType = node->dataType();
         this->_opNum = node->opNum();
         this->_opType = node->opType();
+
+        if (node->name() != nullptr && node->name()->c_str() != nullptr)
+            this->_name = node->name()->str();
+
+        nd4j_printf("Pulled node_%i (%s)\n", node->id(), this->_name.c_str())
 
         if (node->input() != nullptr)
             for (int e = 0; e < node->input()->size(); e++)
