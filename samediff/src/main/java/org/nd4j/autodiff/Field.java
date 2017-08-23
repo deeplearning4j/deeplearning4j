@@ -132,7 +132,7 @@ public interface Field<X> extends CommutativeRing<X> {
 
     X softmax();
 
-    X softmaxDerivative();
+    X softmaxDerivative(ArrayField wrt);
 
     X softplus();
 

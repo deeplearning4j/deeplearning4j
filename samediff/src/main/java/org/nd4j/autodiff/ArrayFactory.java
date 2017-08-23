@@ -657,8 +657,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField softmaxDerivative(ArrayField value) {
-        return value.softmaxDerivative();
+    public ArrayField softmaxDerivative(ArrayField value, ArrayField wrt) {
+        return value.softmaxDerivative(wrt);
     }
 
 

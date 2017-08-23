@@ -217,7 +217,7 @@ public interface AbstractFactory<X extends Field<X>>
 
     X set(X value, X value1);
 
-    X softmaxDerivative(X value);
+    X softmaxDerivative(X value, X wrt);
 
     X seluDerivative(X value);
 

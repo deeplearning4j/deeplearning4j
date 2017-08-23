@@ -5,15 +5,11 @@ import java.util.UUID;
 
 import com.google.common.base.Preconditions;
 import lombok.*;
-import org.nd4j.autodiff.AbstractIdentityFactory;
-import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -35,6 +31,12 @@ public abstract class DifferentialFunction<X extends Field<X>>
     @Setter
     protected int vertexId;
     protected Object[] extraArgs;
+
+
+    @Override
+    public double getReal() {
+        throw new UnsupportedOperationException("Get real not supported for array operations");
+    }
 
 
     /**
@@ -109,9 +111,6 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
         return val;
     }
-
-    @Override
-    public abstract double getReal();
 
 
     @Override
@@ -384,7 +383,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> softmaxDerivative() {
+    public DifferentialFunction<X> softmaxDerivative(ArrayField wrt) {
         return null;
     }
 

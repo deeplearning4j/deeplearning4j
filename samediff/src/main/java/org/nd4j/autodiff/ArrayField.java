@@ -3,11 +3,9 @@ package org.nd4j.autodiff;
 import com.google.common.base.Preconditions;
 import lombok.*;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
@@ -500,7 +498,7 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField softsignDerivative() {
-        return addTransformOp(new LeakyReLUDerivative().name());
+        return addTransformOp(new SoftSignDerivative().name());
     }
 
     @Override
@@ -509,8 +507,8 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField softmaxDerivative() {
-        return addTransformOp(new SoftMaxDerivative().name());
+    public ArrayField softmaxDerivative(ArrayField wrt) {
+        return addPairTransformOp(new SoftMaxDerivative().name(),wrt,null);
     }
 
     @Override
@@ -986,8 +984,13 @@ public class ArrayField implements Field<ArrayField> {
     }
 
 
-
-
+    /**
+     *
+     * @param name
+     * @param i_v
+     * @param extraArgs
+     * @return
+     */
 
     private ArrayField addPairTransformOp(String name,ArrayField i_v,Object[] extraArgs) {
         if(ArrayUtil.prod(getInput().getShape()) == 1 || ArrayUtil.prod(i_v.getInput().getShape()) == 1) {

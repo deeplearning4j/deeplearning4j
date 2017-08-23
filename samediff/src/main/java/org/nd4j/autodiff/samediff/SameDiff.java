@@ -132,8 +132,9 @@ public class SameDiff {
                     if(newEdge.getValue().getArrayField() != null)
                         newEdge.getValue().getArrayField().setOps(sameDiff);
 
-                    if(newEdge.getValue().getDifferentialFunction() != null)
-                        newEdge.getValue().getDifferentialFunction().setSameDiff(sameDiff);
+                    if(newEdge.getValue().getDifferentialFunction() != null) {
+                        ensureSameDiffInstance(sameDiff,newEdge.getValue().getDifferentialFunction());
+                    }
                 }
             }
 
@@ -2062,7 +2063,7 @@ public class SameDiff {
                         if(action.getOpState() != null) {
                             DifferentialFunction<ArrayField> func = action.getOpState().getDifferentialFunction();
                             if(func != null) {
-                                currentDiff = currentDiff.diff(func);
+                                currentDiff = func.diff(currentDiff);
                             }
                             else if(action.getOpState().getArrayField() != null) {
 

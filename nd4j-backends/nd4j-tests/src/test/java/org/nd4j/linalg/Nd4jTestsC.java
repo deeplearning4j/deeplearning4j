@@ -111,6 +111,12 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
+    public void testSoftmaxDerivativeGradient() {
+        INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
+        //Nd4j.getExecutioner().exec(new org.nd4j.linalg.o)
+    }
+
+    @Test
     public void testNd4jEnvironment() {
         System.out.println(Nd4j.getExecutioner().getEnvironmentInformation());
         int manualNumCores = Integer.parseInt(Nd4j.getExecutioner().getEnvironmentInformation().get(Nd4jEnvironment.CPU_CORES_KEY).toString());

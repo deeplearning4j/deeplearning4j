@@ -4,7 +4,6 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 
 public class SoftMaxDerivative extends AbstractUnaryFunction<ArrayField> {
 
@@ -14,17 +13,13 @@ public class SoftMaxDerivative extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().softmaxDerivative(arg().getValue(true));
+        return sameDiff.getArrayFactory().softmaxDerivative(arg().getValue(true), );
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
 
     @Override
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().softmaxDerivative(i_v).mul(arg().diff(i_v));
+        throw new UnsupportedOperationException();
     }
 
     @Override
