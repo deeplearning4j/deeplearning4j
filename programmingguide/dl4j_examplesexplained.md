@@ -1,10 +1,25 @@
-------
 title: DeepLearning4j Examples Explained
 layout: default 
 
-------
+---
 
-# DeepLearning4j Examples Explained
+DeepLearning4j Examples Explained
+
+The example files are located at: https://github.com/deeplearning4j/dl4j-examples. A generic pom.xml file is located here. 
+
+Files that require editing for each specific training scenario. 
+
+- pom.xml
+  Purpose
+  Required content - dependencies
+  What to edit - dependencies
+  Options (to select, edit, or add)
+
+Specific examples for different neural network layers are at:
+
+https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples
+
+Locate the file that corresponds to the type of training you want performed. Edit the content to define the particulars as listed below.
 
 Common Structure by example
 
@@ -12,380 +27,428 @@ Common Structure by example
 - Convolutional
 - Deconstructed Example
 
-## MultiLayerConfiguration
+MultiLayerConfiguration
 
- conf = new NeuralNetConfiguration.Builder()
+Extracted portion of an example for building the neural network layer in a dense multi-layer configuration. 
 
-```
-    .seed(seed) //for reproducabilty
-    .iterations(iterations)// how often to update, see epochs and minibatch
-    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-    .learningRate(learningRate)
-    .updater(Updater.NESTEROVS).momentum(0.9)
-    .regularization(true).l2(1e-4)
-    .weightInit(WeightInit.XAVIER)
-    .activation(Activation.TANH)
-    .list()
-    .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes)
-            .build())
-    .layer(1, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes)
-            .build())
-    .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-            .activation(Activation.SOFTMAX)
-            .nIn(numHiddenNodes).nOut(numOutputs).build())
-    .pretrain(false).backprop(true).build();
-```
+     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+        .seed(seed) //for reproducabilty
+        .iterations(iterations)// how often to update, see epochs and minibatch
+        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+        .learningRate(learningRate)
+        .updater(Updater.NESTEROVS).momentum(0.9)
+        .regularization(true).l2(1e-4)
+        .weightInit(WeightInit.XAVIER)
+        .activation(Activation.TANH)
+        .list()
+        .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes)
+                .build())
+        .layer(1, new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes)
+                .build())
+        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                .activation(Activation.SOFTMAX)
+                .nIn(numHiddenNodes).nOut(numOutputs).build())
+        .pretrain(false).backprop(true).build();
 
-## Convolutional
+Convolutional
 
-MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+Extracted portion of an example for building the neural network layer in a convolutional multi-layer configuration. 
 
-```
-.seed(rngseed)
-.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-.iterations(1)
-.learningRate(0.006)
-.updater(Updater.NESTEROVS).momentum(0.9)
-.regularization(true).l2(1e-4)
-.list()
-    .layer(0, new ConvolutionLayer.Builder(5, 5)
-            //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
-            .nIn(channels)
-            .stride(1,1)
-            .nOut(20)
-            .activation(Activation.IDENTITY)
-            .build())
-    .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-            .kernelSize(2,2)
-            .stride(2,2)
-            .build())
-    .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-            .nOut(outputNum)
-            .activation(Activation.SOFTMAX)
-            .build())
-    .pretrain(false).backprop(true)
-.setInputType(InputType.convolutional(height,width,channels))
-.build();
-```
+    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+       .seed(rngseed)
+       .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+       .iterations(1)
+       .learningRate(0.006)
+       .updater(Updater.NESTEROVS).momentum(0.9)
+       .regularization(true).l2(1e-4)
+       .list()
+         .layer(0, new ConvolutionLayer.Builder(5, 5)
+                .nIn(channels)
+                .stride(1,1)
+                .nOut(20)
+                .activation(Activation.IDENTITY)
+                .build())
+           //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
+        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                .kernelSize(2,2)
+                .stride(2,2)
+                .build())
+        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                .nOut(outputNum)
+                .activation(Activation.SOFTMAX)
+                .build())
+        .pretrain(false).backprop(true)
+    .setInputType(InputType.convolutional(height,width,channels))
+    .build();
 
-##  Deconstructed: Training NN code sample
+Deconstructed: Training neural network code sample
 
-[**Chris:** The balance of this file is very raw. It only has my raw notes in chunks. Don't edit this yet.]
+For any dl4j-example you select, there are areas that require editing for your specific situation. When reading the file in IntelliJ, right-click the italic objects and select from the listed choices.
 
-For any dl4j-example you select, there will be areas that require editing for your specific situation. When reading the file in IntelliJ, right-click the italic objects and select from the listed choices.
+The following is an annotated description of each area of a CSVExample. You edit this file through IntelliJ, then use Maven, with the edited pom.xml file to build the neural network model. 
 
-The following is a annotated description of each area of a CSVExample. 
+Declarations
 
-### Declarations
+The top portion of the file, typical to most programming files, contains the declarations, parameters, and identification information. Using the example files provided, some of the elements remain as is, others you edit to your specifics. 
 
-`package org.deeplearning4j.examples.dataexamples;`
+Package name
 
-The name of the package assigned by the creator. The package is a collection of classes that perform the tasks.
+The name of the package assigned by the creator. The package is a collection of classes that perform the tasks. Edit to a name appropriate to your project.
 
-Edit to a name appropriate to your project.
+    package org.deeplearning4j.examples.dataexamples;
 
-`import org.datavec.api.records.reader.RecordReader;`
-`...`
-`import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;`
-`...`
-`import org.nd4j.linalg.activations.Activation;`
-`...`
-`import org.slf4j.Logger;`
-`…`
+Imports
 
-The imports are used by the includes. 
+The imports are used by the includes. The list is specific to the use case/example. No editing required. Click the ... to expand and view the list of imports.
 
-No editing required.
+    import org.datavec.api.records.reader.RecordReader;
+    ...
+    import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+    ...
+    import org.nd4j.linalg.activations.Activation;
+    ...
+    import org.slf4j.Logger;
+    …
 
-Record reader > returns a list of writables. About Source content. get data > INDarray	data > writable > INDarray	see javadoc	deeplearning4j.org/datavecdoc > record reader
+- RecordReader
+  See the javadoc at https://github.com/deeplearning4j/DataVec > recordreader. 
+  - RecordReader -- is in all examples. It returns a list of writables. Converting the source content into numeric values. 
+  - RecordReaderDataSetIterator -- is in all examples. It converts the numeric values into n-dimentional arrays (n-d arrays) approproriate to the use case. 
+- Logging
+  - Logger -- is in all examples. Some form of logging is required. 
 
-`public class CSVExample {`
+Neural Network Class Type
 
-  ` private static Logger log = LoggerFactory.getLogger(CSVExample.class);`
-// Some type of logging is needed, once again not our role to explain this
+Define the class type for the neural network and some file error handling.
 
-  ` public static void main(String[] args) throws  Exception {`
+    public class CSVExample {
+       private static Logger log=LoggerFactory.getLogger(CSVExample.class);
+       public static void main(String[] args) throws  Exception {
 
-### Defining the Conditions
+Defining the Conditions
 
-//HERE IS THE BEEF
+The edits in this section describe the conditions you are applying to the neural network training. 
 
-//First: get the dataset using the record reader. CSVRecordReader handles loading/parsing
+Step 1
 
+Retrieve the dataset
 
-       int numLinesToSkip = 0;
-//SET SOME PARAMETERS
-// the data file has no header
-// set at the top so we can switch it easily
+Use the RecordReader imported above. 
 
-       String delimiter = ","; 
-//FILE IS COMMA DELIMTED 
-// Up to here we have actually done very little it starts soon
+    int numLinesToSkip = 0;
+           String delimiter = ",";
 
-       RecordReader recordReader = new CSVRecordReader(numLinesToSkip,delimiter);
-       recordReader.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+In this example, the CSV (comma separated values) RecordReader handles loading and parsing the data. 
 
-// MOST CODE WILL USE A RECORDREADER OF SOME SORT
-// See DataVec Record Reader, also I wrote some decent docs on our main page
-// I believe RecordReader returns a list of Writables
-// Writables are borrowed from hadoop as an efficient serialization protocol
-// Content is text or images or whatever and RecordReader parses that
-// BIG PICTURE DATA ⇒ INDARRAY..
-// DATA=>Writable=>INDARRAY
-// DEFINE IT, then initialize by passing it a FIlePath
-// ClassPAthResource is just a convenience class to make code examples portable
-// Real World, >> path to file system, file object
-//recordReader.initialize(new File(PATH TO FILE));
+There is no header in the csv file, so the first entry of data is at line 0. Specify 0 lines to skip in the file. The file delimiter, used to separate data is a comma.
 
- //Second: the RecordReaderDataSetIterator handles conversion to DataSet objects, ready for use in neural network
+Instantiate the RecordReader class
 
-         int labelIndex = 4;     //5 values in each row of the iris.txt CSV: 4 input features followed by an integer label (class) index. Labels are the 5th value (index 4) in each row
-// File Looks like this
-//5.1,3.5,1.4,0.2,0
-// measurement, measurment, measurement, measurment, LABEL
-// Measurements are properly features
-// features => INDARRAY , Labels=> INDARRYA
-// FEATURES=>NN=>emits a label
-// then the output is compared to the label and then we repeat
+           RecordReader recordReader = new CSVRecordReader(numLinesToSkip,delimiter);
+           recordReader.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
 
-data science use word feature for measurements, value for what measuring, label what measuring. 
+Most neural network models require a RecordReader. The RecordReader imports and converts the raw data into writables. The writeables are passed through to the neural network in n-dimensional (N-D) arrays. These writables, borrowing from Hadoop, use an efficient serialized protocol to process source content that is text, images, or other form of data.
 
-label is conclusion = predict the label given the features. 
+Define the RecordReader, initialize it by passing it a file path. For example, ClassPathResource is a convenient class to make code examples portable, it follows the format: 
 
-   int numClasses = 3;     //3 classes (types of iris flowers) in the iris data set. Classes have integer values 0, 1 or 2
+recordReader.initialize(new File(new PATH TO FILE))
 
+Python user tip: Common Java format: instantiate the class, assign it a name, declare it as new, then initialize it with listed parameters. 
 
-          int numClasses = 3;     //3 classes (types of iris flowers) in the iris data set. Classes have integer values 0, 1 or 2
-​      
+Step 2
 
-example 3 types of flowers,  
+Define how the DataSetIterator handles conversion of the writables into DataSet objects that are ready for use in the neural network. 
 
-```
-      int batchSize = 150;    //Iris data set: 150 examples total. We are loading all of them into one DataSet (not recommended for large data sets)
-  
-```
+Specify the number of labels, classes, and batch size
 
- batchSize — how much to pass through at a time. how often weights adjusted
+      int labelIndex = 4;
+       int numClasses = 3;
+       int batchSize = 150;
 
-// batchsize refers to how often weights are updated
+This supports the process: feed in the features into the neural network, which generates an output, a prediction about the label. The output is compared to the label. The process is repeated until the output within an acceptable range, agrees with the label.
 
-       DataSetIterator iterator = new RecordReaderDataSetIterator(recordReader,batchSize,labelIndex,numClasses);
-// Takes writables from record reader and creates DataSet
-// Dataset is INDarray of features and INDArray of Labels
+For example, a row of data in the source file that contains measurements of Iris flowers. 
 
-standard java class that forward only, has a next method, instance of the class DataSetintrator > calling it iterator, RecordReaderDataSetintrator is a subset . inputs are parameter. Whole is called a contstructor
+  5.1,3.5,1.4,0.2,0
 
-New instance of a sub class, using the constructor. have to match constructors defined, see javadoc for RecordReaderDataSetiterator
+- Classes are the features that are measured. These are the source data values. 
+  The first 4 values are measurements of a flower. These are sepal length, sepal width, petal length, and petal width.
+- Labels are the target answers we are asking the neural network to identify. In this example, the goal of training the neural network is to accurately predict the label.
+  The last value is the index label for the row. The label options here are 0, 1, or 2, representing the 3 species of Irises measured.
+- Batch size specifies how much data to pass through at a time and how often the weights are adjusted. Weights are adjusted each time a batch of data is processed. The batch size in the Iris example, the entire dataset is entered in one batch. This is not recommended for large datasets. 
 
-       DataSet allData = iterator.next();
+Instantiate the DataSetIterator class
 
-// allData.getFeatures =>INDARRY of FEATURES
-// allData.getLabels 
-// Each iterator has a Next
+See javadoc for RecordReaderDataSetIterator
 
-In Intellij > allData.getFeatures= INDARRY of Features.take code, expand, intellij, allData
+        DataSetIterator iterator = new RecordReaderDataSetIterator(recordReader,batchSize,labelIndex,numClasses); 
 
-       allData.shuffle();
-// Our batchsize is 150 and that is all our data
-// Shufflle is important and you can shuffle early in the pipeline with the iterator or the file path you can shuffle as well
-// Usually set random seed for reproducable results
+The DataSetIterator takes the writables from the RecordReader and creates the DataSet. The DataSet is two arrays, an N-D array of features and an N-D array of labels.
 
-batch size, when define iterator or filepath, can also shuffle. randomize data, read only once, random seed >> for reproducibility relative to shuffle. 
+Python user tip: Standard Java classes that forward only have a next method. For example, an instance of the class, DataSetIterator, called iterator, creates a subset RecordReaderDataSetIterator. The inputs are the parameters. The entire string is called a constructor. When you issue a new instance of the subclass, use the constructor. Ensure that the defined constructors match. 
 
+Set the DataSet class
 
-       SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.65);  //Use 65% of data for training
-// SPLIT DATA INTO TEST AND TRAIN
-// At bare minimum you need two splits, you may need 3
+DataSet allData = iterator.next();
 
-test, train, and validate >> data does see, prevent overfitting. choice when to split the data 
+Every iterator requires a next. 
 
+In this example, all the data is imported and used in each pass. 
+
+In other situations, the data can be split into identified data. For example, allData.getFeatures and allData.getLabels. Each of these pull in an NDarray of features and an NDarray of labels. 
+
+Set the data shuffle
+
+allData.shuffle();
+
+Set the data that is to be shuffled in each pass. The shuffle can be set when either the iterator or the filepath is defined. 
+
+In this example, the batch size is 150, which is all of the data in the sample. All the data, the full batch size is included in each shuffle.
+
+A batch size is defined with either the iterator or the filepath. It can also be shuffled. This randomizes the data prior to reading it based on a random seed. Batch size and a random seed are set for reproducible results relative to the shuffle. 
+
+Set percentages for test and train
+
+       SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.65);
        DataSet trainingData = testAndTrain.getTrain();
        DataSet testData = testAndTrain.getTest();
-// You can also split at the filesplit point
-       //We need to normalize our data. We'll use NormalizeStandardize (which gives us mean 0, unit variance):
-       DataNormalization normalizer = new NormalizerStandardize();
-       normalizer.fit(trainingData);           //Collect the statistics (mean/stdev) from the training data. This does not modify the input data
-       normalizer.transform(trainingData);     //Apply normalization to the training data
-       normalizer.transform(testData);         //Apply normalization to the test data. This is using statistics calculated from the *training* set
 
-// Normalizing and standardizing
-// Imagine you have temperature in Celsius, 
-// and height in feet
-// one has a range of 0-6, the other -270 to some big hot number
-// so we level the unit variance 
-// take max temp = 1
-// take min temp =0
+Splitting the data, sets a portion of the data for each function. This is used to prevent overfitting. Minimum required is two splits, for training the model and testing the model. It is common to have three splits: one each for training, testing, and validating. Optionally, the split allocation can be set at the file split point instead.
 
-ex: features one w/large units, one with small units level them. so large doesn’t overwhelm by unit variance like reducing to percentage of their range. set of normalize/standardize tools common to machine learning we provide tools, check dj4j/normalizer java doc
+Define the data sets for the training data and testing data. In this example, 65% of the data is set for training.
 
+Normalize the data
 
-       final int numInputs = 4;
-       int outputNum = 3;
-// classification outputnum= number of nodes in output layer
+           normalizer.fit(trainingData);           
+           normalizer.transform(trainingData);     
+           normalizer.transform(testData);
 
-(input nodes,) set params for NN
+The raw data needs to be normalized to level the unit variance between features. This is needed to ensure that a feature with large units does not overwhelm the other features.  For example if one features measures adult height, with a range of 21" to 99", and another feature measures populations of countries, with a range of (450 to 1,388,232,693), normalizing adjusts the values to fit within the same range. This example uses NormalizeStandardize, this returns mean 0 and unit variance. See the javadoc, https://deeplearning4j.org/datavecdoc/ > Normalization.
 
-4 measurement, ex. > number input nodes = number of features. typically, for this type of NN outputNum = number labels., for classification ex. Long seed — reproducible if pass seed to shuffle add to ()
+Instantiate the DataNormalization. Then set the data purposes. In order, the normalizer.action lines perform: 
 
-       int iterations = 1000;
-       long seed = 6;
-/// set params for the NN
-/// Number of input nodes matches number of features in FeedForwardNeuralNetwork
+- Collect the statistics (mean/stdev) from the training data. This does not modify the input data
+- Apply normalization to the training data
+- Apply normalization to the test data. This is using statistics calculated from the training set
 
-====
+Set the layer and iteration parameters
+
+      final int numInputs = 4;
+      int outputNum = 3;
+      int iterations = 1000;
+      long seed = 6;
+
+- Input and output nodes. 
+  For the layer, set the number of input nodes to the layer and the number of output nodes from the layer. Typically, for a classification model, the number of input nodes are the number of features and the number of output is the number of labels. 
+- Iterations.
+  The number of times the passes and updates made with the data. See also epochs and batches.
+- Seed.
+  This is used with each batch and shuffle to ensure reproducibility. It sets a starting point for randomizing the data. In this example, the value is set to 6. Rather than set a specific number, another common option is using a random number generator (rng). 
+
+This completes the portion that defines the input and output options.
+
+Step 3
+
+Define how the neural network model proceeds.
+
+Instantiate the model class
+
+This is performed referencing the objects defined above. 
 
        log.info("Build model....");
        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-           .seed(seed) // for reproducability
-           .iterations(iterations) // number of updates.. BEthany see doc page on epochs batches and iterations
-           .activation(Activation.TANH) \\ ACTIVATION THIS is important they will set this and it matters
-// Neuron’s (output = Inputs * Weights + Bias) => Activation 
-// So for a neuron here with input 5.1,3.5,1.4,0.2,0
-// 5.1 * weight1 + bias1 = input 1
-// 3.5 * weight2+bias2 = input 2
-// 1.4 * weight3 + bias3 = input 3
+         .seed(seed)
+         .iterations(iterations)
 
-(Input1 + ,2,+ 3,+ 4) => ACTIVATION => OUTPUT TANH is a value beetween -1 and +1
+- Reproducibility object. Using seed. Defined above, applied here.
+- Number of iterations. Number of updates applied to the data. Defined above, applied here.
 
-INput Iris label 0 => random label 
-See SImplest network example from the training class_ 
+Activation
 
-builder method, standard for NN, but  MultiLayerConfiguration >> diff ways to do this, we are calling NeualaNEtConfiguaraiton.Builder
+        .activation(Activation.TANH)
 
-           .weightInit(WeightInit.XAVIER)
-// randomizes initial weights
-           .learningRate(0.1)
-// Important how big of steps it takes to correct error
-           .regularization(true).l2(1e-4) // ask me later
-// Using what is called a builder method
-// way to deal with complex variable sized inputs
-// the .list might be important
+Type of activation. Using TANH. Select from options. 
 
-way to handle complex variable size, flexible with number
+Activation type sets how the output values are evaluated.  The neuron's output, calculated from inputs * weights + bias, is fed into the activation. 
 
-           .list()
+For example. A neuron with inputs: 5.1,3.5,1.4,0.2,0
 
-Below is where we build it
-           .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(3)
-               .build())
-//Input Layer 4 nodes nEYeN
-           .layer(1, new DenseLayer.Builder().nIn(3).nOut(3)
-               .build())
-// RUN with  UI attached to see image of the layers
-// 4=>3=>3=>3
+5.1 * weight1 + bias1 = input 1
 
-Section users/dev add. iterations > can also use epoch, batches, iterations
+3.5 * weight2+bias2 = input 2
 
-           .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-               .activation(Activation.SOFTMAX)
-               .nIn(3).nOut(outputNum).build())
-           .backprop(true).pretrain(false)
-           .build();
-    
-       //run the model
-       MultiLayerNetwork model = new MultiLayerNetwork(conf);
-       model.init();
-       model.setListeners(new ScoreIterationListener(100));
-    
-       model.fit(trainingData);
-    
-       //evaluate the model on the test set
-       Evaluation eval = new Evaluation(3); // The Evaluation class is determined by what is imported
-### Evalution
+1.4 * weight3 + bias3 = input 3
 
-// SO EVALUATION is actually this. import org.deeplearning4j.eval.Evaluation;
-// So that makes it org.deeplearning4j.eval.Evaluation 
+The input values, as processed, are fed to through the activation. 
 
-Activation > determines final output, formulas, one weight per each.  > send to activation function. ex. 5.1, 3.5, 1.4 normalized, sample formulas each input formulas
+The output of a TANH activation is a value between -1 and +1. 
 
-Neuron takes inputs, add them, applies activation function > produces output of activation function. 
+Initial pass, input labels the Iris = 0, a random label. Each pass evaluation of likelihood this is correct label, adjusts the weights and bias. 
 
-ex output TANH is a value between -1 and +1, min and max of output. step function increases in middle, keep values in reasonable range. weights updated as NN learns
+Other methods for process call the NeuralNetConfiguration.Builder.
 
-***Take inputs, multiple by random weights and biases, pass through activation > output compare output to expected output. adjust weights and biases. rerun
+Randomization method
 
-***
+        .weightInit(WeightInit.XAVIER) 
 
-usually batch is smaller, number of passes is by epoch. ex is not standard bc small. weighting >> Xavier, almost always good. randomizes weights. learningRate > step size, 
+This example uses the XAVIER method for randomizing the initial weights. 
 
-====
+Step size for each iteration
 
-build NN >> layers. nin, Number of inputs, 4 inut, 3 hidden. 1st layer numInputs is 4, output > 2 layers. second layers each 4, then 3, then 3. 
+       .learningRate(0.1)
+
+Set the size of the steps to use to correct the error. Too large and you overshoot, too small and it takes longer to get to an appropriate solution.
+
+Set regularization formula 
+
+        .regularization(true).l2(1e-4)
+        .list()
+
+- Regularization is integrated with the builder method applied. It is a way to handle complex and variably sized inputs. 
+- List defines how to handle complex and variably sized inputs and is flexible with numbers. (Need data)
+
+Step 4
+
+Build the neural network model
+
+Define input  and output layers
+
+      .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(3)
+        .build())
+      .layer(1, new DenseLayer.Builder().nIn(3).nOut(3)
+        .build())
+      .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+    	.activation(Activation.SOFTMAX)
+    	.nIn(3).nOut(outputNum).build())
+
+- Input Layer is determined by data. How many features types are input. This is layer 0.
+- Hidden Layer is determined by the methods you choose to apply. At each iteration, batch, or epoch the weights and biases are adjusted through each hidden layer. In this example, there is only one hidden layer, Layer 1. 
+- Output Layer is determined by question we are asking. How many options for solution. This is layer 2. 
+
+For example, with the Iris data, there are 4 features measured -- the inputs to the first layer -- and 3 types of Irises to identify -- the output from the output layer. 
+
+Set backpropagation, pretraining, and build
+
+     .backprop(true).pretrain(false)
+     .build();
+
+Pretraining applies to unsupervised training only. For example, Variational AutoEncoders and Restricted Boltzman machines.
+
+Step 5
+
+Run the model
+
+           model.init();
+           model.setListeners(new ScoreIterationListener(100));
+           model.fit(trainingData);
+
+Instantiating the model calls all the subset and defined parameters set above. A score is an output of loss function, and the loss function is a determiniation of error. As the passes are made, the score should move towards 0.
+
+Example: ouput of a score iteration listener
+
+    o.d.o.l.ScoreIterationListener - Score at iteration 0 is 1.3087471277551905
+    o.d.o.l.ScoreIterationListener - Score at iteration 100 is 0.3386059108000891
+    o.d.o.l.ScoreIterationListener - Score at iteration 200 is 0.15180469491523504
+    o.d.o.l.ScoreIterationListener - Score at iteration 300 is 0.08593290147904636
+    o.d.o.l.ScoreIterationListener - Score at iteration 400 is 0.06059342302219454
+    o.d.o.l.ScoreIterationListener - Score at iteration 500 is 0.046881126863677
+
+Step 6
+
+Evaluate the model results
+
+    Evaluation eval = new Evaluation(3);
+
+The Evaluation class is determined by what is imported. In this example, the evaluation is:
+
+    import org.deeplearning4j.eval.Evaluation;
+
+Summary:
+
+Activation determines final output, formulas, one weight per each.  Send to activation function the normalized data. Normalized from, for example:  5.1, 3.5, 1.4. Add sample formulas to each input formulas. 
+
+Neuron takes inputs, add them, applies the activation function that produces output of activation function. For example, output TANH is a value between -1 and +1, min and max of output. The step function increases in the middle/hidden layers, keeps values in reasonable range. Weights updated as the neural network learns. 
+
+Neural network takes inputs, multiple by random weights and biases, pass through activation to produce output, then compares output to expected output and adjusts weights and biases. Repeat. 
+
+Typically, batch is smaller, number of passes is by epoch. The examples used here are not standard because they are small. 
+
+For weighting, Xavier, is almost always good. It randomizes weights. LearningRate is set by step size.
+
+Build the neural network
 
        INDArray output = model.output(testData.getFeatureMatrix());
        eval.eval(testData.getLabels(), output);
        log.info(eval.stats());
        log.info(eval.confusionToString());
        log.info(String.valueOf(eval.falsePositiveRate(0)));
+
+Run the model. Run the evaluation. Create and update the logs. 
+
+RegressionEvaluation regressionEvaluation = new RegressionEvaluation()
+
+Python Example
+
+    import numpy
+    import pandas
+    from keras.models import Sequential
+    from keras.layers import Dense
+    from keras.wrappers.scikit_learn import KerasClassifier
+    from keras.utils import np_utils
+    from sklearn.cross_validation import cross_val_score, KFold
+    from sklearn.preprocessing import LabelEncoder
+    from sklearn.pipeline import Pipeline
     
-       //RegressionEvaluation regressionEvaluation = new RegressionEvaluation()
-   }
-
-}
-
-Here is the same example in Python…
-
-import numpy
-import pandas
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.wrappers.scikit_learn import KerasClassifier
-from keras.utils import np_utils
-from sklearn.cross_validation import cross_val_score, KFold
-from sklearn.preprocessing import LabelEncoder
-from sklearn.pipeline import Pipeline
-
-\# fix random seed for reproducibility
-seed = 7
-numpy.random.seed(seed)
-
-\# load dataset
-dataframe = pandas.read_csv("iris.csv", header=None)
-dataset = dataframe.values
-X = dataset[:,0:4].astype(float)
-Y = dataset[:,4]
-print(X)
-print(Y)
-
-\# encode class values as integers
-encoder = LabelEncoder()
-encoder.fit(Y)
-encoded_Y = encoder.transform(Y)
-
-
-\# convert integers to dummy variables (hot encoded)
-dummy_y = np_utils.to_categorical(encoded_Y)
-print(dummy_y)
-
-\# define baseline model
-\#def baseline_model():
-\# create model
-model = Sequential()
-model.add(Dense(4, input_dim=4, activation='relu'))
-model.add(Dense(3,activation='sigmoid'))
-
-\# Compile model
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-\#    return model
-\#model.fit
-model.fit(X, dummy_y, nb_epoch=200, batch_size=5)
-prediction = model.predict(numpy.array([[4.6,3.6,1.0,0.2]]));
-print(prediction);
-
-
-\# To casve just the weights
-model.save_weights('/tmp/iris_model_weights')
-
-\# To save the weights and the config
-\# Note this is what is used for this demo
-model.save('/tmp/full_iris_model')
-
-\# To save the Json config to a file
-json_string = model.to_json()
-text_file = open("/tmp/iris_model_json", "w")
-text_file.write(json_string)
-text_file.close()
-
+    \# fix random seed for reproducibility
+    seed = 7
+    numpy.random.seed(seed)
+    
+    \# load dataset
+    dataframe = pandas.read_csv("iris.csv", header=None)
+    dataset = dataframe.values
+    X = dataset[:,0:4].astype(float)
+    Y = dataset[:,4]
+    print(X)
+    print(Y)
+    
+    \# encode class values as integers
+    encoder = LabelEncoder()
+    encoder.fit(Y)
+    encoded_Y = encoder.transform(Y)
+    
+    
+    \# convert integers to dummy variables (hot encoded)
+    dummy_y = np_utils.to_categorical(encoded_Y)
+    print(dummy_y)
+    
+    \# define baseline model
+    \#def baseline_model():
+    \# create model
+    model = Sequential()
+    model.add(Dense(4, input_dim=4, activation='relu'))
+    model.add(Dense(3,activation='sigmoid'))
+    
+    \# Compile model
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    
+    \#    return model
+    \#model.fit
+    model.fit(X, dummy_y, nb_epoch=200, batch_size=5)
+    prediction = model.predict(numpy.array([[4.6,3.6,1.0,0.2]]));
+    print(prediction);
+    
+    
+    \# To casve just the weights
+    model.save_weights('/tmp/iris_model_weights')
+    
+    \# To save the weights and the config
+    \# Note this is what is used for this demo
+    model.save('/tmp/full_iris_model')
+    
+    \# To save the Json config to a file
+    json_string = model.to_json()
+    text_file = open("/tmp/iris_model_json", "w")
+    text_file.write(json_string)
+    text_file.close()
 
 
