@@ -23,7 +23,7 @@ public class Im2col extends BaseTransformOp {
     }
 
     public Im2col(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
-        this(x, kh, kw, sy, sx, ph, pw, 1, 1, isSameMode, getNewOutputArray(x, kh, kw, sy, sx, ph, pw, dh, dw,false));
+        this(x, kh, kw, sy, sx, ph, pw, dh, dw, isSameMode, getNewOutputArray(x, kh, kw, sy, sx, ph, pw, dh, dw,false));
     }
 
     public Im2col(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode, INDArray z) {
