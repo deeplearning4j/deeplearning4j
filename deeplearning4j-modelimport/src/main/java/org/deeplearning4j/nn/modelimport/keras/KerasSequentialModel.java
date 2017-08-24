@@ -79,9 +79,9 @@ public class KerasSequentialModel extends KerasModel {
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> modelConfig;
         if (modelJson != null)
-            modelConfig = parseJsonString(modelJson);
+            modelConfig = KerasModelUtils.parseJsonString(modelJson);
         else if (modelYaml != null)
-            modelConfig = parseYamlString(modelYaml);
+            modelConfig = KerasModelUtils.parseYamlString(modelYaml);
         else
             throw new InvalidKerasConfigurationException("Requires model configuration as either JSON or YAML string.");
 
@@ -135,7 +135,7 @@ public class KerasSequentialModel extends KerasModel {
 
         /* Store weights in layers. */
         if (weightsArchive != null)
-            helperImportWeights(weightsArchive, weightsRoot);
+            KerasModelUtils.importWeights(weightsArchive, weightsRoot, layers);
     }
 
     protected KerasSequentialModel() {
