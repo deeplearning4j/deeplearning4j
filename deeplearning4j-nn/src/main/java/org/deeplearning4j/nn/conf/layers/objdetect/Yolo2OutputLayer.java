@@ -145,9 +145,11 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
         }
 
         /**
-         * Bounding box priors dimensions [height, width] - *as a fraction of  the total image*
+         * Bounding box priors dimensions [width, height]. For N bounding boxes, input has shape [rows, columns] = [N, 2]
+         * Note that dimensions should be specified as fraction of grid size. For example, a network with 13x13 output,
+         * a value of 1.0 would correspond
          *
-         * @param boundingBoxes
+         * @param boundingBoxes Bounding box prior dimensions (width, height)
          * @return
          */
         public Builder boundingBoxes(INDArray boundingBoxes){
