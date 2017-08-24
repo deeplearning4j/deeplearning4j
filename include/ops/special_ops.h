@@ -563,8 +563,8 @@ namespace simdOps {
 										int outBufferIdxY = baseOffsetOut + patchY * outStride2;
 										int inBufferIdxY = baseOffsetIn + patchY * dY * inStride2;
 										for (int patchX = 0; patchX < kernelWidth; patchX++) {
-											if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape[2] ||
-												j + patchX >= inShape[3])
+											if (i + patchY * dY < 0 || j + patchX * dX < 0 || i + patchY * dY >= inShape[2] ||
+												j + patchX * dX >= inShape[3])
 												dOut[outBufferIdxY + patchX * outStride3] = 0.0; //padding
 											else {
 												dOut[outBufferIdxY + patchX * outStride3] = dIn[inBufferIdxY +
