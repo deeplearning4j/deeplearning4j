@@ -3036,13 +3036,6 @@ template<typename T, typename OpTypeA, typename OpTypeB>
             return OpTypeB::postProcess(reduction, n, paramsB);
         }
     };
-
-    template<typename T>
-	class LogSumExp {
-	public:		
-
-
-	};
 }
 
 #endif

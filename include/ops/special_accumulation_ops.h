@@ -5,35 +5,38 @@
 #ifndef LIBND4J_SPECIAL_ACCUMULATION_OPS_H
 #define LIBND4J_SPECIAL_ACCUMULATION_OPS_H
 
-#include <ops/ops.h>
-
+#include <templatemath.h>
+//#include <ops/ops.h>
+//#include <loops/reduce.h>
 
 namespace simdOps {
+
     template<typename T>
-    class LogExpSum {
+    class LogSumExp {
     public:
         static const bool requiresSpecial = true;
 
 
-        op_def static T startingValue(const T *input) {
+        static T startingValue(const T *input) {
             return (T) 0.0f;
         }
 
-        op_def static T merge(T old, T opOutput, T *extraParams) {
+        static T merge(T old, T opOutput, T *extraParams) {
             return opOutput + old;
         }
 
-        op_def static T update(T old, T opOutput, T *extraParams) {
+        static T update(T old, T opOutput, T *extraParams) {
             return opOutput + old;
         }
 
-        op_def static T op(T d1, T* extraParams) {
-            return exp(d1 - extraParams[0]);
+        static T op(T d1, T* extraParams) {
+            return nd4j::math::nd4j_exp<T>(d1 - extraParams[0]);
         }
 
-        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
-            return extraParams[0] + log(reduction);
+        static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return extraParams[0] + nd4j::math::nd4j_log<T>(reduction);
         }
+
 
 #ifdef __CUDACC__
         static inline __device__ void execSpecialCuda(
@@ -107,7 +110,7 @@ namespace simdOps {
                          Nd4jIndex *tadOffset) {
 
             // first we're building MAX along dimension
-            functions::reduce::ReduceFunction<T>::template exec<simdOps::Max<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
+            //functions::reduce::ReduceFunction<T>::template exec<simdOps::Max<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
 
             int resultLength = shape::length(resultShapeInfoBuffer);
 
@@ -143,7 +146,7 @@ namespace simdOps {
 #pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
                 for (int i = 0; i < resultLength; i++) {
                     T *iter = x + tadOffsets[i];
-                    T start = OpType::startingValue(iter);
+                    T start = startingValue(iter);
                     if (tadEWS == 1) {
                         for (int j = 0; j < tadLength; j++) {
                             start = update(start, op(iter[j], result[i]), extraParams);

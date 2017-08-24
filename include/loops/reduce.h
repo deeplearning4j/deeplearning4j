@@ -1,7 +1,9 @@
+
+#ifndef REDUCE_H
+#define REDUCE_H
 #include <dll.h>
 //#include <string>
 #include <helpers/sharedmem.h>
-#include <ops/special_accumulation_ops.h>
 #include <stdio.h>
 #include <helpers/shape.h>
 #ifdef _OPENMP
@@ -12,6 +14,7 @@
 #include <nd4jmalloc.h>
 #include <pairwise_util.h>
 #include <ops/ops.h>
+#include <ops/special_accumulation_ops.h>
 #include <op_boilerplate.h>
 
 #pragma once
@@ -36,7 +39,7 @@
         (7, simdOps::NormMax), \
         (8, simdOps::Prod), \
         (9, simdOps::StandardDeviation), \
-        (10,simdOps::Variance), \
+        (10, simdOps::Variance), \
 		(11, simdOps::ASum), \
         (12, simdOps::MatchCondition) ,\
         (13, simdOps::AMax) ,\
@@ -933,6 +936,8 @@ DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float, INPUT
 DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, double, INPUT(double *x, int *xShape, double *extraParams, double *z, int *zShape, int *dimension, int dimensionLength, double *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
 DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float16, INPUT(float16 *x, int *xShape, float16 *extraParams, float16 *z, int *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
 
+
+#endif
 
 #endif
 
