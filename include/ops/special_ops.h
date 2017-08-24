@@ -881,8 +881,8 @@ namespace simdOps {
 			int padHeight = (int)extraParams[3];
 			int imgHeight = (int)extraParams[4];
 			int imgWidth = (int)extraParams[5];
-			int dW = (int)extraParams[6];			//Dilation in width/x dimension
-			int dH = (int)extraParams[7];			//Dilation in height/y dimension
+			int dX = (int)extraParams[6];			//Dilation in width/x dimension
+			int dY = (int)extraParams[7];			//Dilation in height/y dimension
 
 			int *outShape = shape::shapeOf(resultShapeBuffer);
 			char resultOrder = shape::order(resultShapeBuffer);
@@ -902,7 +902,9 @@ namespace simdOps {
 			printf("Kernel h: [%i], w: [%i]; Col h: [%i], w: [%i]; Stride x: [%i], y: [%i]; Height: [%i], Width: [%i], Depth: [%i], N: [%i], Samples: [%i]\n",
 			kernelHeight, kernelWidth, height_col, width_col, strideX, strideY, imgHeight, imgWidth, depth, n, samples);*/
 
-
+			//Effective kernel size, accounting for dilation
+			int kEffectiveW = kernelWidth + (kernelWidth - 1) * (dX - 1);
+			int kEffectiveH = kernelHeight + (kernelHeight - 1) * (dY - 1);
 
 			for (int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
 				T val = 0;
@@ -915,10 +917,10 @@ namespace simdOps {
 
 				// compute the start and end of the output
 				// These are the indexes for dimensions ??? in the 6d col matrix
-				int w_col_start = (w_im < kernelWidth) ? 0 : (w_im - kernelWidth) / strideX + 1;
+				int w_col_start = (w_im < kEffectiveW) ? 0 : (w_im - kEffectiveW) / strideX + 1;
 				int w_col_end = nd4j::math::nd4j_min<int>(w_im / strideX + 1, width_col);
 
-				int h_col_start = (h_im < kernelHeight) ? 0 : (h_im - kernelHeight) / strideY + 1;
+				int h_col_start = (h_im < kEffectiveH) ? 0 : (h_im - kEffectiveH) / strideY + 1;
 				int h_col_end = nd4j::math::nd4j_min<int>(h_im / strideY + 1, height_col);
 
 
@@ -928,9 +930,9 @@ namespace simdOps {
 						int h_k = (h_im - h_col * strideY);
 						int w_k = (w_im - w_col * strideX);
 						
-						if(h_k % dH == 0 && w_k % dW == 0){
-							h_k /= dH;
-							w_k /= dW;
+						if(h_k % dY == 0 && w_k % dX == 0){
+							h_k /= dY;
+							w_k /= dX;
 
 							int data_col_index = num_im * strideex + depth_im * stridech + h_k * stridekrow + w_k * stridekcol + h_col * striderow + w_col * stridecol;
 							val += dx[data_col_index];
