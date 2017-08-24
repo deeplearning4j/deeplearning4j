@@ -45,7 +45,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  * y1 = as above, y axis
  * x2 = box bottom right position
  * y2 = as above y axis
- * Note: labels are represented as fraction of total image - (0,0) is top left, (1,1) is bottom right
+ * Note: labels are represented as a multiple of grid size - for a 13x13 grid, (0,0) is top left, (13,13) is bottom right
  *
  * Input format: [minibatch, 5B+C, H, W]    ->      Reshape to [minibatch, B, 5+C, H, W]
  * Layout for dimension 2 (of size 5+C) after reshaping: [xInGrid,yInGrid,w,h]
@@ -75,12 +75,46 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public INDArray activationMean() {
-        return null;
+        return activate();
     }
 
     @Override
     public INDArray activate(boolean training) {
-        return null;
+        //Essentially: just apply activation functions...
+
+        int mb = input.size(0);
+        int h = input.size(2);
+        int w = input.size(3);
+        int b = layerConf().getBoundingBoxes().size(0);
+        int c = labels.size(1)-4*b;
+
+        INDArray input5 = input.get(all(), interval(0,5*b), all(), all()).dup('c').reshape(mb, b, 5, h, w);
+
+        //X/Y center in grid: sigmoid
+        INDArray predictedXYCenterGrid = input5.get(all(), all(), interval(0,2), all(), all());
+        Transforms.sigmoid(predictedXYCenterGrid, false);
+
+        //width/height: prior * exp(input)
+        INDArray predictedWH = input5.get(all(), all(), interval(2,4), all(), all());   //Shape: [mb, B, 2, H, W]
+        Transforms.exp(predictedWH, false);
+        INDArray priorBoxes = layerConf().getBoundingBoxes();   //Shape: [B, 2]
+        Broadcast.mul(predictedWH, priorBoxes, predictedWH, 1, 2);
+
+        //Confidence - sigmoid
+        INDArray predictedConf = input5.get(all(), all(), point(4), all(), all());   //Shape: [mb, B, H, W]
+        Transforms.sigmoid(predictedConf, false);
+
+
+        //Softmax
+        //TODO OPTIMIZE
+        INDArray inputClasses = input.get(all(), interval(5*b, 5*b+c), all(), all());   //Shape: [minibatch, C, H, W]
+        INDArray classPredictionsPreSoftmax2d = inputClasses.permute(0,2,3,1).dup('c')  //Shape before reshape: [mb, h, w, c]
+                .reshape(mb*h*w, c);
+        Transforms.softmax(classPredictionsPreSoftmax2d);
+        INDArray postSoftmax4d = classPredictionsPreSoftmax2d.reshape('c', mb, h, w, c ).permute(0, 3, 1, 2);
+        inputClasses.assign(postSoftmax4d);
+
+        return input;
     }
 
     @Override
@@ -105,17 +139,19 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int b = layerConf().getBoundingBoxes().size(0);
         int c = labels.size(1)-4*b;
 
+        INDArray wh = Nd4j.create(new double[]{w,h});
 
         // ----- Step 1: Labels format conversion -----
-        //First: Convert labels/ground truth (x1,y1,x2,y2) from "fraction of total image" format to center format, as
+        //First: Convert labels/ground truth (x1,y1,x2,y2) from "number of grid boxes" format to center format, as
         // fraction of total image
         //0.5 * ([x1,y1]+[x2,y2])   ->      shape: [mb, 2, H, W]
         INDArray labelTLXYImg = labels.get(all(),interval(0,1,true), all(), all());
         INDArray labelBRXYImg = labels.get(all(),interval(2,3,true), all(), all());
         INDArray labelCenterXYImg = labelTLXYImg.add(labelBRXYImg).muli(0.5);
+        Broadcast.div(labelBRXYImg, wh, labelBRXYImg, 1);
+
 
         //Then convert label centers from "fraction of total image" to "fraction of grid", which are used in position loss
-        INDArray wh = Nd4j.create(new double[]{w,h});
         INDArray labelsCenterXYInGrid = Nd4j.getExecutioner().execAndReturn( new BroadcastMulOp(labelCenterXYImg, wh,
                         Nd4j.createUninitialized(labelCenterXYImg.shape(), labelCenterXYImg.ordering()), 1 ));
         labelsCenterXYInGrid.subi(Transforms.floor(labelsCenterXYInGrid,true));
@@ -168,23 +204,30 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         // ----- Step 3: Calculate IOU(predicted, labels) to infer 1_ij^obj mask array (for loss function) -----
         //Calculate IOU (intersection over union - aka Jaccard index) - for the labels and bounding box priors
         //http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/
-        INDArray iou = calculateIOULabelPredicted(labelTLXYImg, labelBRXYImg, predictedTLXYImage, predictedBRXYImage);
-        //IOU shape: [minibatch, B, H, W]
+        INDArray iou = calculateIOULabelPredicted(labelTLXYImg, labelBRXYImg, predictedTLXYImage, predictedBRXYImage);  //IOU shape: [minibatch, B, H, W]
 
         //Mask 1_ij^obj: isMax (dimension 1) + apply object present mask. Result: [minibatch, B, H, W]
         //In this mask: 1 if (a) object is present in cell [for each mb/H/W], and (b) for the anchor box with the max IOU
-        INDArray mask1_ij_obj = Nd4j.getExecutioner().execAndReturn(new IsMax(iou, 1));
+        INDArray mask1_ij_obj = Nd4j.getExecutioner().execAndReturn(new IsMax(iou.dup(iou.ordering()), 1));
         Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, maskArray, mask1_ij_obj, 0,2,3));
 
+        // ----- Step 4: Calculate confidence, and confidence label -----
+        //Predicted confidence: sigmoid (0 to 1)
+        //Label confidence: 0 if no object, IOU(predicted,actual) otherwise
+
+        INDArray labelConfidence = iou.muli(mask1_ij_obj);  //OK to reuse IOU array here.   //Shape: [mb, B, H, W]
+        INDArray predictedConfidence = input5.get(all(), all(), point(4), all(), all());    //Shape: [mb, B, H, W]
+        Transforms.sigmoid(predictedBRXYImage, false);
 
 
-
-        // ----- Step 4: Loss Function -----
+        // ----- Step 5: Loss Function -----
 
         //One design goal here is to make the loss function configurable. To do this, we want to reshape the activations
         //(and masks) to a 2d representation, suitable for use in DL4J's loss functions
 
         INDArray mask1_ij_obj_2d = mask1_ij_obj.dup('c').reshape(mb*b*h*w, 1);
+        INDArray mask1_ij_noobj_2d = Transforms.not(mask1_ij_obj_2d);   //Not op is copy op; mask has 1 where box is not responsible for prediction
+        INDArray mask2d = maskArray.dup('c').reshape(mb*h*w, 1);
 
         INDArray predictedXYCenter2d = predictedXYCenterGrid.dup('c').reshape('c', mb*b*h*w, 2);        //TODO need permute first??
         INDArray labelsCenterXYInGridBroadcast = labelsCenterXYInGrid.broadcast(mb, b, 2, h, w);
@@ -196,6 +239,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray labelWHSqrt2d = labelWHSqrt.dup('c').reshape(mb*b*h*w, 2);
 
         //Confidence
+        INDArray labelConfidence2d = labelConfidence.reshape('c', mb * b * h * w, 1);
+        INDArray predictedCondidence2d = predictedConfidence.reshape('c', mb * b * h * w, 1);
 
 
         //Class prediction loss
@@ -207,8 +252,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         IActivation identity = new ActivationIdentity();
         double positionLoss = layerConf().getLossPositionScale().computeScore(labelXYCenter2d, predictedXYCenter2d, identity, mask1_ij_obj_2d, false );
         double sizeScaleLoss = layerConf().getLossPositionScale().computeScore(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d, false);
-        double confidenceLoss = 0.0;
-        double classPredictionLoss = layerConf().getLossClassPredictions().computeScore(classLabels2d, classPredictionsPreSoftmax2d, new ActivationSoftmax(), mask1_ij_obj_2d, false);
+        double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedCondidence2d, identity, mask1_ij_obj_2d, false)
+                + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedCondidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
+        double classPredictionLoss = layerConf().getLossClassPredictions().computeScore(classLabels2d, classPredictionsPreSoftmax2d, new ActivationSoftmax(), mask2d, false);
 
         double loss = layerConf().getLambdaCoord() * (positionLoss + sizeScaleLoss)
                 + confidenceLoss
@@ -259,28 +305,15 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         return xTerm.mul(yTerm);
     }
 
-    private static INDArray get(INDArray in, int dim, int pos){
-        INDArrayIndex[] indexes = new INDArrayIndex[in.rank()];
-        for( int i=0; i<indexes.length; i++ ){
-            if(i == dim){
-                indexes[i] = point(pos);
-            } else {
-                indexes[i] = all();
-            }
-        }
-
-        return in.get(indexes);
-    }
-
     @Override
     public void computeGradientAndScore(){
-
+        //TODO
 
     }
 
     @Override
     public INDArray preOutput(boolean training) {
-        return null;
+        return input;
     }
 
     @Override
@@ -290,7 +323,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
