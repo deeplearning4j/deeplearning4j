@@ -43,7 +43,8 @@
         (15, simdOps::AMean) ,\
         (16, simdOps::Entropy) ,\
         (17, simdOps::LogEntropy) ,\
-        (18, simdOps::ShannonEntropy)
+        (18, simdOps::ShannonEntropy) ,\
+        (19, simdOps::LogSumExp)
 
 
 //an op for the kernel

@@ -3036,6 +3036,32 @@ template<typename T, typename OpTypeA, typename OpTypeB>
             return OpTypeB::postProcess(reduction, n, paramsB);
         }
     };
+
+    template<typename T>
+	class LogSumExp {
+	public:		
+
+		op_def static T startingValue(const T *input) {
+			return (T) 0.0f;
+		}
+    
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+
+		op_def static T op(T d1, T* extraParams) {
+			return exp(d1 - extraParams[0]);
+		}
+
+		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+			return extraParams[0] + log(reduction);
+		}
+	};
 }
 
 #endif
+	
