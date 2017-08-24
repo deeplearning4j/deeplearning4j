@@ -844,6 +844,7 @@ public class ArrayField implements Field<ArrayField> {
                 .shape(getInput().getShape()).build();
         //result
         NDArrayVertex newVertex = new NDArrayVertex(
+                this.ops,
                 this.ops.getGraph().nextVertexId(),
                 ndArrayInformation);
 
@@ -895,6 +896,7 @@ public class ArrayField implements Field<ArrayField> {
                 .shape(nonScalarShape).build();
         //result
         NDArrayVertex newVertex = new NDArrayVertex(
+                this.ops,
                 this.ops.getGraph().nextVertexId(),
                 result);
 
@@ -948,7 +950,7 @@ public class ArrayField implements Field<ArrayField> {
                 .arrId(UUID.randomUUID().toString())
                 .shape(resultShape).build();
 
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getGraph().nextVertexId(), information);
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops,this.ops.getGraph().nextVertexId(), information);
 
         //add the result vertex to the graph
         this.ops.getGraph().addVertex(newVertex);
@@ -1001,7 +1003,7 @@ public class ArrayField implements Field<ArrayField> {
         NDArrayInformation resultInfo =  NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
                 .shape(input.getShape()).build();
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getGraph().nextVertexId(), resultInfo);
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops,this.ops.getGraph().nextVertexId(), resultInfo);
 
         Preconditions.checkArgument(Arrays.equals(input.getShape(),i_v.getInput().getShape()),"X and y not equal shapes.");
 
@@ -1030,7 +1032,7 @@ public class ArrayField implements Field<ArrayField> {
                 .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(opType).build();
         yToZ.setResult(resultInfo);
-        if(i_v.getVertex().vertexID() == newVertex.vertexID())
+        if(!ops.graph().isFrozen() && i_v.getVertex().vertexID() == newVertex.vertexID())
             throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
                     " when next vertex id was " + this.ops.getGraph().getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
         this.ops.getGraph().addEdge(i_v.getVertex().vertexID(),
@@ -1087,7 +1089,7 @@ public class ArrayField implements Field<ArrayField> {
 
     private NDArrayVertex getVertex(String name,int[] shape) {
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getGraph().nextVertexId() ,
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops,this.ops.getGraph().nextVertexId() ,
                 NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                         .scalarValue(getInput().getScalarValue())
                         .id(name + "(" + input.getId() + ")")

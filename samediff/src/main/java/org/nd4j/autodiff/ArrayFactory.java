@@ -14,11 +14,11 @@ import java.util.*;
 @Data
 public class ArrayFactory implements AbstractFactory<ArrayField> {
 
-    private SameDiff graph;
+    private SameDiff sameDiff;
     private Map<String,Method> methodNames;
 
-    public ArrayFactory(SameDiff graph) {
-        this.graph = graph;
+    public ArrayFactory(SameDiff sameDiff) {
+        this.sameDiff = sameDiff;
         methodNames = new HashMap<>();
         Method[] methods = getClass().getDeclaredMethods();
         for(Method method : methods)
@@ -29,7 +29,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
 
     @Override
     public SameDiff sameDiff() {
-        return graph;
+        return sameDiff;
     }
 
     @Override
@@ -208,7 +208,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString()).scalarValue(0.0)
                 .id("zero-" + UUID.randomUUID().toString()).owner(null).shape(shape).build();
-        return new ArrayField(new NDArrayVertex(graph.getGraph().nextVertexId(), information), graph);
+        return new ArrayField(new NDArrayVertex(sameDiff(),sameDiff.getGraph().nextVertexId(), information), sameDiff);
     }
 
     @Override
@@ -216,7 +216,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString()).scalarValue(1.0)
                 .id("one-"  + UUID.randomUUID().toString()).owner(null).shape(shape).build();
-        return new ArrayField(new NDArrayVertex(graph.getGraph().nextVertexId(), information), graph);
+        return new ArrayField(new NDArrayVertex(sameDiff(),sameDiff.getGraph().nextVertexId(), information), sameDiff);
     }
 
     /**
@@ -230,7 +230,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString()).scalarValue(value)
                 .id(String.valueOf(value)).owner(null).shape(new int[]{1,1}).build();
-        return new ArrayField(new NDArrayVertex(graph.getGraph().nextVertexId(), information), graph);
+        return new ArrayField(new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information), sameDiff);
     }
 
     @Override

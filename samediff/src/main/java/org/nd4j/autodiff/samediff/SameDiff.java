@@ -92,6 +92,7 @@ public class SameDiff {
             int nextVertexId = sameDiff.graph.nextVertexId();
             NDArrayInformation clone = cloner.deepClone(graph.getVertex(i + 1).getValue());
             NDArrayVertex info = new NDArrayVertex(
+                    this,
                     nextVertexId,
                     clone);
             thisVertexIdToNew.put(graph.getVertex(i + 1).vertexID(),nextVertexId);
@@ -531,7 +532,7 @@ public class SameDiff {
         if(ArrayUtil.prod(arr.shape()) == 1)
             ndArrayInformation.setScalarValue(arr.getDouble(0));
 
-        NDArrayVertex ndArrayVertex = new NDArrayVertex(graph.nextVertexId(), ndArrayInformation);
+        NDArrayVertex ndArrayVertex = new NDArrayVertex(this,graph.nextVertexId(), ndArrayInformation);
         graph.addVertex(ndArrayVertex);
         ArrayField arrayField = new ArrayField(ndArrayVertex,this);
         SDVariable ret = SDVariable.builder()
@@ -2053,7 +2054,7 @@ public class SameDiff {
 
 
     /**
-     * 
+     *
      * @return
      */
     public List<Op> execBackwards() {

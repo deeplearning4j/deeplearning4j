@@ -86,7 +86,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                             v1.getInput().getId() + ")")
                     .shape(shape).build();
             //result
-            NDArrayVertex newVertex = new NDArrayVertex(sameDiff.getGraph().nextVertexId(), information);
+            NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information);
             this.vertexId = newVertex.vertexID();
             Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");
             sameDiff.getGraph().addVertex(newVertex);

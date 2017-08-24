@@ -860,7 +860,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
                     .id(opName +"(" + v1.getInput().getId() + "," + v2.getInput().getId() + ")")
                     .shape(shape).build();
             //result
-            NDArrayVertex newVertex = new NDArrayVertex(sameDiff.getGraph().nextVertexId(), arrInfo);
+            NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), arrInfo);
             if(newVertex.vertexID() == v2VertexId || newVertex.vertexID() == v1VertexId)
                 throw new ND4JIllegalStateException("Illegal vertex id specified in new vertex." +
                         " Perhaps a mismatched graph call? Another likely cause is applyGraph");
@@ -872,7 +872,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
             //ensure there's 2 vertices for when the 2 inputs are the same
             if(v1.equals(v2)) {
-                NDArrayVertex dupVertex = new NDArrayVertex(sameDiff.getGraph().nextVertexId(),
+                NDArrayVertex dupVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(),
                         NDArrayInformation.builder()
                                 .shape(v1.getInput().getShape())
                                 .id(v1.getInput().getId()).build());

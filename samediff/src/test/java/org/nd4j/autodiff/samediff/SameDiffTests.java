@@ -549,7 +549,9 @@ public class SameDiffTests {
         SDVariable softmax = sameDiff.softmax(input);
         SDVariable sum = sameDiff.sum(softmax,Integer.MAX_VALUE);
         List<Op> backwardsOps = sameDiff.execBackwards();
-
+        assertEquals(4,backwardsOps.size());
+        assertEquals(Nd4j.zeros(2,2),backwardsOps.get(backwardsOps.size() - 1).z());
+        System.out.println(backwardsOps);
     }
 
 
