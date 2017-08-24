@@ -193,7 +193,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if (im2col2d == null) {
             INDArray col = Nd4j.createUninitialized(new int[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
             INDArray col2 = col.permute(0, 3, 4, 5, 1, 2);
-            Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1],
+            Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
                             convolutionMode == ConvolutionMode.Same, col2);
             //Shape im2col to 2d. Due to the permuting above, this should be a zero-copy reshape
             im2col2d = col.reshape('c', miniBatch * outH * outW, inDepth * kH * kW);
@@ -356,7 +356,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Post reshaping: rows are such that minibatch varies slowest, outW fastest as we step through the rows post-reshape
         INDArray col = Nd4j.createUninitialized(new int[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
         INDArray col2 = col.permute(0, 3, 4, 5, 1, 2);
-        Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1],
+        Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
                         convolutionMode == ConvolutionMode.Same, col2);
 
         INDArray im2col2d = Shape.newShapeNoCopy(col, new int[] {miniBatch * outH * outW, inDepth * kH * kW}, false);

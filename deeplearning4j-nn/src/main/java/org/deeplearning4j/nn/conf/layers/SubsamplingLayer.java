@@ -22,10 +22,7 @@ import java.util.Map;
 /**
  * Subsampling layer also referred to as pooling in convolution neural nets
  *
- *  Supports the following pooling types:
- *     MAX
- *     AVG
- *     NON
+ *  Supports the following pooling types: MAX, AVG, SUM, PNORM, NONE
  * @author Adam Gibson
  */
 
@@ -75,7 +72,9 @@ public class SubsamplingLayer extends Layer {
         this.stride = builder.stride;
         this.padding = builder.padding;
         this.convolutionMode = builder.convolutionMode;
-        this.dilation = ((Builder)builder).dilation;
+        if(builder instanceof Builder){
+            this.dilation = ((Builder)builder).dilation;
+        }
         this.pnorm = builder.pnorm;
         this.eps = builder.eps;
     }
@@ -279,6 +278,19 @@ public class SubsamplingLayer extends Layer {
             return this;
         }
 
+        /**
+         * Kernel dilation. Default: {1, 1}, which is standard convolutions. Used for implementing dilated convolutions,
+         * which are also known as atrous convolutions.<br>
+         * NOTE: Kernel dilation is less common in practice for subsampling layers, compared to convolutional layers.
+         *
+         * For more details, see:
+         * <a href="https://arxiv.org/abs/1511.07122">Yu and Koltun (2014)</a> and
+         * <a href="https://arxiv.org/abs/1412.7062">Chen et al. (2014)</a>, as well as
+         * <a href="http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions">
+         *     http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions</a><br>
+         *
+         * @param dilation Dilation for kernel
+         */
         public Builder dilation(int... dilation){
             this.dilation = dilation;
             return this;

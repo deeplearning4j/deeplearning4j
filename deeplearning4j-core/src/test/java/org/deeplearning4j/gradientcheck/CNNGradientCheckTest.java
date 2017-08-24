@@ -595,75 +595,59 @@ public class CNNGradientCheckTest {
     public void testCnnDilated() {
         int nOut = 2;
 
-        int[] minibatchSizes = {1, 3};
-        int width = 10;
-        int height = 10;
+        int minibatchSize = 3;
+        int width = 8;
+        int height = 8;
         int inputDepth = 3;
         int[] kernelSizes = new int[]{2, 3};
         int[] strides = {1, 2};
-//        int[] dilation = {1, 2, 3};
-        int[] dilation = {2};
+        int[] dilation = {2, 3};
         ConvolutionMode[] cModes = new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same};
 
         Nd4j.getRandom().setSeed(12345);
 
-        for (int minibatchSize : minibatchSizes) {
+        for (boolean subsampling : new boolean[]{false, true}) {
             for (int k : kernelSizes) {
                 for (int s : strides) {
                     for (int d : dilation) {
                         for (ConvolutionMode cm : cModes) {
 
-                            INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
+                            //Use larger input with larger dilation values (to avoid invalid config)
+                            int w = d * width;
+                            int h = d * height;
+
+                            INDArray input = Nd4j.rand(minibatchSize, w * h * inputDepth);
                             INDArray labels = Nd4j.zeros(minibatchSize, nOut);
                             for (int i = 0; i < minibatchSize; i++) {
                                 labels.putScalar(new int[]{i, i % nOut}, 1.0);
                             }
 
-//                            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-//                                    .learningRate(1.0).updater(Updater.SGD)
-//                                    .activation(Activation.TANH).convolutionMode(cm).list()
-//                                    .layer(0, new ConvolutionLayer.Builder().name("layer 0")
-//                                            .kernelSize(k, k)
-//                                            .stride(s, s)
-//                                            .dilation(d, d)
-//                                            .nIn(inputDepth).nOut(2).build())
-//                                    .layer(1, new SubsamplingLayer.Builder()
-//                                            .poolingType(SubsamplingLayer.PoolingType.MAX)
-//                                            .kernelSize(k, k)
-//                                            .stride(s,s)
-//                                            .dilation(d, d)
-//                                            .build())
-//                                    .layer(2, new ConvolutionLayer.Builder().nIn(2).nOut(2)
-//                                            .kernelSize(k, k)
-//                                            .stride(s, s)
-//                                            .dilation(d, d)
-//                                            .build())
-//                                    .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-//                                            .activation(Activation.SOFTMAX).nOut(nOut).build())
-//                                    .setInputType(InputType.convolutionalFlat(height, width, inputDepth)).build();
-
-                            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                            NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
                                     .learningRate(1.0).updater(Updater.SGD)
                                     .activation(Activation.TANH).convolutionMode(cm).list()
                                     .layer(new ConvolutionLayer.Builder().name("layer 0")
                                             .kernelSize(k, k)
                                             .stride(s, s)
                                             .dilation(d, d)
-                                            .nIn(inputDepth).nOut(2).build())
-//                                    .layer(new SubsamplingLayer.Builder()
-//                                            .poolingType(SubsamplingLayer.PoolingType.MAX)
-//                                            .kernelSize(k, k)
-//                                            .stride(s,s)
-//                                            .dilation(d, d)
-//                                            .build())
-                                    .layer(new ConvolutionLayer.Builder().nIn(2).nOut(2)
-                                            .kernelSize(k, k)
-                                            .stride(s, s)
-                                            .dilation(d, d)
-                                            .build())
-                                    .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                            .activation(Activation.SOFTMAX).nOut(nOut).build())
-                                    .setInputType(InputType.convolutionalFlat(height, width, inputDepth)).build();
+                                            .nIn(inputDepth).nOut(2).build());
+                            if (subsampling) {
+                                b.layer(new SubsamplingLayer.Builder()
+                                        .poolingType(SubsamplingLayer.PoolingType.MAX)
+                                        .kernelSize(k, k)
+                                        .stride(s, s)
+                                        .dilation(d, d)
+                                        .build());
+                            } else {
+                                b.layer(new ConvolutionLayer.Builder().nIn(2).nOut(2)
+                                        .kernelSize(k, k)
+                                        .stride(s, s)
+                                        .dilation(d, d)
+                                        .build());
+                            }
+
+                            MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nOut(nOut).build())
+                                    .setInputType(InputType.convolutionalFlat(h, w, inputDepth)).build();
 
                             MultiLayerNetwork net = new MultiLayerNetwork(conf);
                             net.init();
@@ -672,7 +656,8 @@ public class CNNGradientCheckTest {
                                 System.out.println("nParams, layer " + i + ": " + net.getLayer(i).numParams());
                             }
 
-                            String msg = "mb=" + minibatchSize + ", k=" + k + ", s=" + s + ", d=" + d + ", cm=" + cm;
+                            String msg = (subsampling ? "subsampling" : "conv") + " - mb=" + minibatchSize + ", k="
+                                    + k + ", s=" + s + ", d=" + d + ", cm=" + cm;
                             System.out.println(msg);
 
                             boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
