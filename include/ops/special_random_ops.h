@@ -254,7 +254,6 @@ namespace randomOps {
     class GaussianDistribution {
     public:
 
-
         method_XY
         method_X
         method_idx
@@ -656,9 +655,8 @@ namespace randomOps {
         }
     };
     
-        /**
-    * This Op produces random values within specified boundaries. Distribuion is Gaussian
-    */
+        
+    // This Op produces random Gaussian values within [mean-2*stddev,mean+2*stddev]
     template<typename T>
     class TruncatedNormalDistribution {
     public:
@@ -739,6 +737,85 @@ namespace randomOps {
 
         }
     };
+
+
+// This Op produces random Log-normal distribution
+ template<typename T>
+    class LogNormalDistribution {
+    public:
+
+        method_XY
+        method_X
+        method_idx
+
+        static const bool requiresSpecial = true;
+
+        static inline void
+        specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+            const T two_pi = (T) 2.0 * 3.14159265358979323846;
+
+            Nd4jIndex zLength = shape::length(zShapeBuffer);
+            int yEWS = shape::elementWiseStride(yShapeBuffer);
+            int zEWS = shape::elementWiseStride(zShapeBuffer);
+
+            int elementsPerThread = zLength / TAD_THRESHOLD;
+            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+
+            int span = (zLength / _threads) + 8;
+
+            // we're enforcing even chunks, since it's mandatory for this algorithm
+            span -= span % 2;
+
+            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+
+            T mean = extraArguments[0];
+            T stddev = extraArguments[1];
+
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
+            {
+                int tid = omp_get_thread_num();
+                Nd4jIndex start = span * tid;
+                Nd4jIndex end = span * (tid + 1);
+                if (end > zLength) end = zLength;
+
+                T z0, z1;
+                T u0, u1;
+
+                bool generated = false;
+
+                for (Nd4jIndex e = start; e < end; e++) {
+                    if (!generated) {
+                        /*
+                         * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
+                         */
+                        u0 = buffer->relativeT<T>(e, (T) 1e-5f, (T) 1.0f);
+                        u1 = buffer->relativeT<T>((e + 1), (T) 1e-5f, (T) 1.0f);
+
+                        z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                        z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
+
+                        generated = true;
+
+                        T realMean = y == z ? mean : y[e * yEWS];
+
+                        z[e * zEWS] = exp(z0 * stddev + realMean);
+                    } else {
+                        T realMean = y == z ? mean : y[e * yEWS];
+
+                        z[e * zEWS] = exp(z1 * stddev + realMean);
+
+                        generated = false;
+                    }
+                }
+            }
+
+            // update rng state
+            buffer->rewindH(zLength);
+
+        }
+    };
+
 
 }
 
