@@ -12,6 +12,9 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 
 import java.util.Map;
 
+import static org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPoolingUtils.mapPoolingDimensions;
+import static org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPoolingUtils.mapPoolingType;
+
 /**
  * Imports a Keras Pooling layer as a DL4J Subsampling layer.
  *
@@ -47,9 +50,9 @@ public class KerasGlobalPooling extends KerasLayer {
     public KerasGlobalPooling(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        this.dimensions = mapPoolingDimensions(this.className);
+        this.dimensions = mapPoolingDimensions(this.className, conf);
         GlobalPoolingLayer.Builder builder =
-                        new GlobalPoolingLayer.Builder(mapPoolingType(this.className)).poolingDimensions(dimensions)
+                        new GlobalPoolingLayer.Builder(mapPoolingType(this.className, conf)).poolingDimensions(dimensions)
                                         .collapseDimensions(true).name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
         this.vertex = null;

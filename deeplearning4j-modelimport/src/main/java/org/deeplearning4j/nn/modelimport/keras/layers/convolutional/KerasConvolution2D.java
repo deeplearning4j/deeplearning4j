@@ -30,6 +30,11 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getConvolutionModeFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getKernelSizeFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getStrideFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getPaddingFromBorderModeConfig;
+
 
 /**
  * Imports a 2D Convolution layer from Keras.
@@ -84,10 +89,10 @@ public class KerasConvolution2D extends KerasConvolution {
                         enforceTrainingConfig, conf, kerasMajorVersion))
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
-                .convolutionMode(getConvolutionModeFromConfig(layerConfig))
-                .kernelSize(getKernelSizeFromConfig(layerConfig, 2))
-                .hasBias(hasBias).stride(getStrideFromConfig(layerConfig, 2));
-        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2);
+                .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
+                .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
+                .hasBias(hasBias).stride(getStrideFromConfig(layerConfig, 2, conf));
+        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
         if (padding != null)
             builder.padding(padding);
         this.layer = builder.build();
