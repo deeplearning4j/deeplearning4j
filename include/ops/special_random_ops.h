@@ -655,6 +655,91 @@ namespace randomOps {
                 buffer->rewindH(zLength * trials);
         }
     };
+    
+        /**
+    * This Op produces random values within specified boundaries. Distribuion is Gaussian
+    */
+    template<typename T>
+    class TruncatedNormalDistribution {
+    public:
+
+        method_XY
+        method_X
+        method_idx
+
+        static const bool requiresSpecial = true;
+
+        static inline void
+        specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+            const T two_pi = (T) 2.0 * 3.14159265358979323846;
+
+            Nd4jIndex zLength = shape::length(zShapeBuffer);
+            int yEWS = shape::elementWiseStride(yShapeBuffer);
+            int zEWS = shape::elementWiseStride(zShapeBuffer);
+
+            int elementsPerThread = zLength / TAD_THRESHOLD;
+            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
+            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+
+            int span = (zLength / _threads) + 8;
+
+            // we're enforcing even chunks, since it's mandatory for this algorithm
+            span -= span % 2;
+
+            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+
+            T mean = extraArguments[0];
+            T stddev = extraArguments[1];
+
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
+            {
+                int tid = omp_get_thread_num();
+                Nd4jIndex start = span * tid;
+                Nd4jIndex end = span * (tid + 1);
+                if (end > zLength) end = zLength;
+
+                T z0, z1;
+                T u0, u1;
+                T result0, result1;                
+                bool generated = false;
+
+                for (Nd4jIndex e = start; e < end; e++) {
+                    if (!generated) {
+                        /*
+                        * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
+                        */
+                        Nd4jIndex generation0 = 0;
+                        Nd4jIndex generation1 = 0;
+                        T realMean = y == z ? mean : y[e * yEWS];
+                        do {
+                            u0 = buffer->relativeT<T>(e + generation0, (T) 1e-5f, (T) 1.0f);
+                            z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                            result0 = z0 * stddev + realMean;
+                            generation0 += zLength;
+                        } while (result0 < (realMean - 2*stddev) || (realMean + 2*stddev) < result0);
+                        
+                        do {
+                            u1 = buffer->relativeT<T>((e + generation1 + 1), (T) 1e-5f, (T) 1.0f);
+                            z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);                        
+                            result1 = z1 * stddev + realMean;                        
+                            generation1 += zLength;
+                        } while (result1 < (realMean - 2*stddev) || (realMean + 2*stddev) < result1);
+
+                        z[e * zEWS] = result0;
+                        generated = true;
+                    } else {
+                        z[e * zEWS] = result1;
+                        generated = false;
+                    }
+                }
+            }
+
+            // update rng state
+            buffer->rewindH(zLength);
+
+        }
+    };
+
 }
 
 #endif //LIBND4J_SPECIAL_RANDOM_OPS_H
