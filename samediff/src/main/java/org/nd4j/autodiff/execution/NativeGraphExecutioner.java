@@ -108,7 +108,9 @@ public class NativeGraphExecutioner implements GraphExecutioner {
             Node node = new Node();
             node.setId(nodesCount);
             node.setName(action.getOpState().getId());
-            node.setOpState(action.getOpState());
+            node.setOpExecAction(action);
+            node.setOriginalOutput(action.getOutputId());
+
 
             mappedInputs.put(action.getOutputId(), nodesCount);
 
@@ -156,29 +158,29 @@ public class NativeGraphExecutioner implements GraphExecutioner {
             Node node = intermediate.get(n);
 
             // make this variable
-            float[] extras = node.getOpState().getExtraArgs() != null ? new float[node.getOpState().getExtraArgs().length] : new float[0];
+            float[] extras = node.getOpExecAction().getOpState().getExtraArgs() != null ? new float[node.getOpExecAction().getOpState().getExtraArgs().length] : new float[0];
             for (int e = 0; e < extras.length; e++) {
-                extras[e] = ((Number) node.getOpState().getExtraArgs()[e]).floatValue();
+                extras[e] = ((Number) node.getOpExecAction().getOpState().getExtraArgs()[e]).floatValue();
             }
 
             int nodesIn = FlatNode.createInputVector(bufferBuilder, Ints.toArray(node.getInput()));
             int nodesOut = FlatNode.createOutputVector(bufferBuilder, Ints.toArray(node.getOutput()));
             int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
-            int dimensions = FlatNode.createDimensionsVector(bufferBuilder, node.getOpState().getAxes() != null ? node.getOpState().getAxes() : new int[]{});
+            int dimensions = FlatNode.createDimensionsVector(bufferBuilder, node.getOpExecAction().getOpState().getAxes() != null ? node.getOpExecAction().getOpState().getAxes() : new int[]{});
             int fname = bufferBuilder.createString(node.getName());
 
             int flatNode = FlatNode.createFlatNode(bufferBuilder,
                     node.getId(),
                     fname,
-                    getFlatOpType(node.getOpState().getOpType()),
-                    getOpNum(node.getOpState().getOpName(), node.getOpState().getOpType()),
+                    getFlatOpType(node.getOpExecAction().getOpState().getOpType()),
+                    getOpNum(node.getOpExecAction().getOpState().getOpName(), node.getOpExecAction().getOpState().getOpType()),
                     nodesIn,
                     (byte) 0,
                     nodesOut,
                     extraz,
                     dimensions,
                     -1,
-                    node.getOpState().getOpType() == OpState.OpType.SCALAR_TRANSFORM ? node.getOpState().getScalarValue().floatValue() : 0.0f);
+                    node.getOpExecAction().getOpState().getOpType() == OpState.OpType.SCALAR_TRANSFORM ? node.getOpExecAction().getOpState().getScalarValue().floatValue() : 0.0f);
 
             nodes.add(flatNode);
         }
@@ -206,6 +208,9 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         PagedPointer pagedPointer = new PagedPointer(res,1024 * 1024L);
         FlatResult fr = FlatResult.getRootAsFlatResult(pagedPointer.asBytePointer().asByteBuffer());
 
+
+        log.info("VarMap: {}", sd.getVariableMap());
+
         INDArray[] results = new INDArray[fr.variablesLength()];
         for (int e = 0; e < fr.variablesLength(); e++) {
             FlatVariable var = fr.variables(e);
@@ -230,11 +235,35 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
             INDArray val = Nd4j.create(values, _shape, _order, 0);
             results[e] = val;
+
+            if (var.name() != null && sd.getVariableMap().containsKey(var.name())) {
+                //log.info("VarName: {}; Exists: {}; NDArrayInfo: {};", var.name(), sd.getVariableMap().containsKey(var.name()), sd.getVertexToArray().containsKey(var.name()));
+                sd.getVariableMap().get(var.name()).setArr(val);
+            } else {
+                int original = intermediate.get(var.id()).getOriginalOutput();
+                //log.info("Original id: {}; out: {}; out2: {}", original, sd.getVertexIdxToInfo().get(original), graph.getInformationFor(original));
+                if (sd.getVariableMap().get(graph.getInformationFor(original).getId()) != null) {
+                    sd.getVariableMap().get(graph.getInformationFor(original).getId()).setArr(val);
+                } else {
+                    SDVariable variable = SDVariable.builder()
+                            .arr(val)
+                            .varName(graph.getInformationFor(original).getId())
+                            .shape(val.shape())
+                            .sameDiff(sd)
+                            .build();
+
+                    sd.addVariable(variable);
+                }
+            }
         }
 
         return results;
     }
+
+
     /*
+    // first version
+
     @Override
     public INDArray[] executeGraph(SameDiff sd, ExecutorConfiguration configuration) {
         FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(2048);

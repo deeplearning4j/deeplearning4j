@@ -44,6 +44,10 @@ public class GraphExecutionerTest {
         SDVariable result = sdVariable.addi(scalarOne);
         SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
 
+
+//        sameDiff.execAndEndResult();
+
+        log.info("TOTAL: {}; Id: {}", total.getVarName(), total);
         log.info("ID: {}",sameDiff.getGraph().getVertex(1).getValue().getId());
 
         INDArray[] resB = executionerB.executeGraph(sameDiff, configVarSpace);
@@ -56,6 +60,9 @@ public class GraphExecutionerTest {
         //INDArray resA = executionerA.executeGraph(sameDiff)[0];
 
         //assertEquals(resA, resB);
+        //log.info("-------------");
+        //executionerA.executeGraph(sameDiff);
+        //log.info("SameDiff: {}", sameDiff.getGraph().getOutputs());
     }
 
 
@@ -75,7 +82,7 @@ public class GraphExecutionerTest {
         SDVariable result = sdVariable.addi(scalarOne);
         SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
 
-        log.info("ID: {}",sameDiff.getGraph().getVertex(1).getValue().getId());
+//        log.info("ID: {}",sameDiff.getGraph().getVertex(1).getValue().getId());
 
         INDArray[] resB = executionerB.executeGraph(sameDiff, configImplicit);
 

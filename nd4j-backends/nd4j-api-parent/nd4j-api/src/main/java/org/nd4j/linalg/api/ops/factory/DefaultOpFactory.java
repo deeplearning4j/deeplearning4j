@@ -572,7 +572,7 @@ public class DefaultOpFactory implements OpFactory {
         ScalarOp ret = null;
 
         try {
-            ret = (ScalarOp) opClazzes.get(name).getConstructor(INDArray.class, INDArray.class, INDArray.class, int.class, Number.class).newInstance(x, y, z, x.length(), scalar);
+            ret = (ScalarOp) opClazzes.get(name).getConstructor(INDArray.class, INDArray.class, INDArray.class, long.class, Number.class).newInstance(x, y, z, x.length(), scalar);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
