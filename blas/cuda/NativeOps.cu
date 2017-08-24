@@ -6832,6 +6832,13 @@ void NativeOps::munmapFile(Nd4jPointer *extraPointers, Nd4jIndex* ptrMap, Nd4jIn
 
 }
 
+Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer protoBufferPointer) {
+	return nullptr;
+}
+
+Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, const char *fileName) {
+	return nullptr;
+}
 
 Nd4jPointer NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
 return nullptr;

@@ -3081,4 +3081,12 @@ Nd4jPointer NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPoi
     return nd4j::graph::GraphExecutioner<float>::executeFlatBuffer(flatBufferPointer);
 }
 
+Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer protoBufferPointer) {
+    return nullptr;
+}
+
+Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, const char *fileName) {
+    return nullptr;
+}
+
 #endif
