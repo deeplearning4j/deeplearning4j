@@ -121,6 +121,11 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                     int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
                     AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
                     ConvolutionMode convolutionMode, int[] dilation) {
+        if(dilation[0] > 2 || dilation[1] > 2){
+            //CuDNN seems to not support all (valid) configurations...
+            //Same mode + dilation 3: cuDNN status = 9: CUDNN_STATUS_NOT_SUPPORTED
+            return null;
+        }
         int miniBatch = input.size(0);
         int inH = input.size(2);
         int inW = input.size(3);
@@ -294,6 +299,11 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     @Override
     public INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad,
                     AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode, int[] dilation) {
+        if(dilation[0] > 2 || dilation[1] > 2){
+            //CuDNN seems to not support all (valid) configurations...
+            //Same mode + dilation 3: cuDNN status = 9: CUDNN_STATUS_NOT_SUPPORTED
+            return null;
+        }
         int miniBatch = input.size(0);
         int inH = input.size(2);
         int inW = input.size(3);

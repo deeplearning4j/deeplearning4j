@@ -461,7 +461,7 @@ public class CuDNNGradientChecks {
         f.setAccessible(true);
 
         Field f2 = org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class.getDeclaredField("helper");
-        f.setAccessible(true);
+        f2.setAccessible(true);
 
         for (boolean subsampling : new boolean[]{false, true}) {
             for (int k : kernelSizes) {
@@ -517,7 +517,7 @@ public class CuDNNGradientChecks {
                             if(subsampling){
                                 org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer s1 =
                                         (org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer)net.getLayer(1);
-                                SubsamplingHelper sh1 = (SubsamplingHelper) f.get(s1);
+                                SubsamplingHelper sh1 = (SubsamplingHelper) f2.get(s1);
                                 assertTrue(sh1 instanceof SubsamplingHelper);
                             } else {
                                 org.deeplearning4j.nn.layers.convolution.ConvolutionLayer c1 =
