@@ -59,10 +59,12 @@ namespace simdOps {
 			int strideY = (int)extraParams[3];
 			int padWidth = (int)extraParams[4];
 			int padHeight = (int)extraParams[5];
-			int poolingMode = (int)extraParams[7];
+			int dW = (int)extraParams[6];			//Dilation, width dimension
+			int dH = (int)extraParams[7];			//Dilation, height dimension
+			int poolingMode = (int)extraParams[9];
 			int kSize = kernelWidth * kernelHeight;
 
-            T extraParam0 = extraParams[8];
+            T extraParam0 = extraParams[10];
 
 			int *inShape = shape::shapeOf(xShapeBuffer);
 			int *inStride = shape::stride(xShapeBuffer);
@@ -120,8 +122,8 @@ namespace simdOps {
 
 				for (int i = 0; i < kernelHeight; ++i) {
 					for (int j = 0; j < kernelWidth; ++j) {
-						int h_im = h_offset + i;
-						int w_im = w_offset + j;
+						int h_im = h_offset + i * dH;
+						int w_im = w_offset + j * dW;
 						int i_f = 0;
 						int i_c_temp = i_c;
 						for (int dim = 5; dim >= 0; dim--)
@@ -132,7 +134,7 @@ namespace simdOps {
 
 
                         if (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width)
-                            val = data_im_ptr[i * strideh + j * stridew];
+                            val = data_im_ptr[i * dH * strideh + j * dW * stridew];
                         else
                             val = (T) 0.0f;
 
@@ -185,10 +187,12 @@ namespace simdOps {
 			int strideY = (int)extraParams[3];
 			int padWidth = (int)extraParams[4];
 			int padHeight = (int)extraParams[5];
-			int poolingMode = (int)extraParams[7];
+			int dW = (int)extraParams[6];			//Dilation, width dimension
+			int dH = (int)extraParams[7];			//Dilation, height dimension
+			int poolingMode = (int)extraParams[9];
 			int kSize = kernelWidth * kernelHeight;
 
-            T extraParam0 = extraParams[8];
+            T extraParam0 = extraParams[10];
 
 			int *inShape = shape::shapeOf(xShapeBuffer);
 			int *inStride = shape::stride(xShapeBuffer);
@@ -252,8 +256,8 @@ namespace simdOps {
 
                     for (int i = 0; i < kernelHeight; ++i) {
                         for (int j = 0; j < kernelWidth; ++j) {
-                            int h_im = h_offset + i;
-                            int w_im = w_offset + j;
+                            int h_im = h_offset + i * dH;
+                            int w_im = w_offset + j * dW;
                             int i_f = 0;
                             int i_c_temp = i_c;
                             for (int dim = 5; dim >= 0; dim--) {
@@ -263,7 +267,7 @@ namespace simdOps {
 
                             T val;
                             if (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width)
-                                val = data_im_ptr[i * strideh + j * stridew];
+                                val = data_im_ptr[i * dH * strideh + j * dW * stridew];
                             else
                                 val = (T) 0.0f;
 
@@ -382,6 +386,8 @@ namespace simdOps {
 			int strideY = (int)extraParams[3];
 			int padWidth = (int)extraParams[4];
 			int padHeight = (int)extraParams[5];
+			int dX = (int)extraParams[6];			//Dilation, width/x dimension
+			int dY = (int)extraParams[7];			//Dilation, height/y dimension
 			int kSize = kernelWidth * kernelHeight;
 
 			int *outShape = shape::shapeOf(resultShapeBuffer);
@@ -439,17 +445,17 @@ namespace simdOps {
 
 				for (int i = 0; i < kernelHeight; ++i) {
 					for (int j = 0; j < kernelWidth; ++j) {
-						int h_im = h_offset + i;
-						int w_im = w_offset + j;
+						int h_im = h_offset + i * dY;
+						int w_im = w_offset + j * dX;
 						int i_f = 0;
 						int i_c_temp = i_c;
-						for (int dim = 5; dim >= 0; dim--)
-						{
+						for (int dim = 5; dim >= 0; dim--) {
 							i_f += (i_c_temp % outShape[dim])  * outStride[dim];
 							i_c_temp = i_c_temp / outShape[dim];
 						}
-						if (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) result[i_f] = data_im_ptr[i * strideh + j*stridew];
-							else result[i_f] = 0;
+						if (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width){
+							result[i_f] = data_im_ptr[i * dY * strideh + j * dX * stridew];
+						} else result[i_f] = 0;
 
 						//result[i_f] = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
 						data_col_ptr += height_col * width_col;
@@ -474,7 +480,9 @@ namespace simdOps {
 			int strideY = (int)extraParams[3];
 			int padWidth = (int)extraParams[4];
 			int padHeight = (int)extraParams[5];
-			bool isSameMode = extraParams[6] > 0.0;
+			int dX = (int)extraParams[6];			//Dilation, width/x dimension
+			int dY = (int)extraParams[7];			//Dilation, height/y dimension
+			bool isSameMode = extraParams[8] > 0.0;
 
 			int outArrayOffset = 0;
 			int *outShape = shape::shapeOf(resultShapeBuffer);
@@ -541,15 +549,14 @@ namespace simdOps {
 									//Want dimension 2 (along height) in inner loop for cache reasons
 									for (int patchX = 0; patchX < kernelWidth; patchX++) {
 										int outBufferIdxX = baseOffsetOut + patchX * outStride3;
-										int inBufferIdxX = baseOffsetIn + patchX * inStride3;
+										int inBufferIdxX = baseOffsetIn + patchX * dX * inStride3;
 										for (int patchY = 0; patchY < kernelHeight; patchY++) {
-											if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape2 ||
-												j + patchX >= inShape3)
+											if (i + patchY * dY < 0 || j + patchX * dX < 0 || i + patchY * dY >= inShape2 ||
+												j + patchX * dX >= inShape3)
 												dOut[outBufferIdxX + patchY * outStride2] = 0; //padding
 											else {
 												dOut[outBufferIdxX + patchY * outStride2] = dIn[inBufferIdxX +
-													patchY *
-													inStride2];
+													patchY * dY * inStride2];
 											}
 										}
 									}
@@ -558,15 +565,14 @@ namespace simdOps {
 									//Want dimension 3 in inner loop for cache reasons
 									for (int patchY = 0; patchY < kernelHeight; patchY++) {
 										int outBufferIdxY = baseOffsetOut + patchY * outStride2;
-										int inBufferIdxY = baseOffsetIn + patchY * inStride2;
+										int inBufferIdxY = baseOffsetIn + patchY * dY * inStride2;
 										for (int patchX = 0; patchX < kernelWidth; patchX++) {
-											if (i + patchY < 0 || j + patchX < 0 || i + patchY >= inShape[2] ||
-												j + patchX >= inShape[3])
+											if (i + patchY * dY < 0 || j + patchX * dX < 0 || i + patchY * dY >= inShape[2] ||
+												j + patchX * dX >= inShape[3])
 												dOut[outBufferIdxY + patchX * outStride3] = 0.0; //padding
 											else {
 												dOut[outBufferIdxY + patchX * outStride3] = dIn[inBufferIdxY +
-													patchX *
-													inStride3];
+													patchX * dX * inStride3];
 											}
 										}
 									}
@@ -587,10 +593,10 @@ namespace simdOps {
 									//Want dimension 2 (along height) in inner loop for cache reasons
 									for (int patchX = 0; patchX < kernelWidth; patchX++) {
 										int outBufferIdxX = baseOffsetOut + patchX * outStride3;
-										int inBufferIdxX = baseOffsetIn + patchX * inStride3;
+										int inBufferIdxX = baseOffsetIn + patchX * dX * inStride3;
 										for (int patchY = 0; patchY < kernelHeight; patchY++) {
 											dOut[outBufferIdxX + patchY * outStride2] = dIn[inBufferIdxX +
-												patchY * inStride2];
+												patchY * dY * inStride2];
 										}
 									}
 								}
@@ -598,10 +604,10 @@ namespace simdOps {
 									//Want dimension 3 in inner loop for cache reasons
 									for (int patchY = 0; patchY < kernelHeight; patchY++) {
 										int outBufferIdxY = baseOffsetOut + patchY * outStride2;
-										int inBufferIdxY = baseOffsetIn + patchY * inStride2;
+										int inBufferIdxY = baseOffsetIn + patchY * dY * inStride2;
 										for (int patchX = 0; patchX < kernelWidth; patchX++) {
 											dOut[outBufferIdxY + patchX * outStride3] = dIn[inBufferIdxY +
-												patchX * inStride3];
+												patchX * dX * inStride3];
 										}
 									}
 								}
@@ -875,6 +881,8 @@ namespace simdOps {
 			int padHeight = (int)extraParams[3];
 			int imgHeight = (int)extraParams[4];
 			int imgWidth = (int)extraParams[5];
+			int dX = (int)extraParams[6];			//Dilation in width/x dimension
+			int dY = (int)extraParams[7];			//Dilation in height/y dimension
 
 			int *outShape = shape::shapeOf(resultShapeBuffer);
 			char resultOrder = shape::order(resultShapeBuffer);
@@ -882,8 +890,8 @@ namespace simdOps {
 
 			int samples = outShape[0];
 			int depth = outShape[1];
-			//int height = outShape[2];
-			//int width = outShape[3];
+			int imgH = outShape[2];
+			int imgW = outShape[3];
 
 			int height_col = inShape[4];//(imgHeight + 2 * padHeight - kernelHeight) / strideX + 1;
 			int width_col = inShape[5];//(imgWidth + 2 * padWidth - kernelWidth) / strideY + 1;
@@ -894,7 +902,9 @@ namespace simdOps {
 			printf("Kernel h: [%i], w: [%i]; Col h: [%i], w: [%i]; Stride x: [%i], y: [%i]; Height: [%i], Width: [%i], Depth: [%i], N: [%i], Samples: [%i]\n",
 			kernelHeight, kernelWidth, height_col, width_col, strideX, strideY, imgHeight, imgWidth, depth, n, samples);*/
 
-
+			//Effective kernel size, accounting for dilation
+			int kEffectiveW = kernelWidth + (kernelWidth - 1) * (dX - 1);
+			int kEffectiveH = kernelHeight + (kernelHeight - 1) * (dY - 1);
 
 			for (int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
 				T val = 0;
@@ -906,21 +916,27 @@ namespace simdOps {
 				int depth_im = c_im % depth;
 
 				// compute the start and end of the output
-				int w_col_start = (w_im < kernelWidth) ? 0 : (w_im - kernelWidth) / strideX + 1;
+				// These are the indexes for dimensions ??? in the 6d col matrix
+				int w_col_start = (w_im < kEffectiveW) ? 0 : (w_im - kEffectiveW) / strideX + 1;
 				int w_col_end = nd4j::math::nd4j_min<int>(w_im / strideX + 1, width_col);
 
-				int h_col_start = (h_im < kernelHeight) ? 0 : (h_im - kernelHeight) / strideY + 1;
+				int h_col_start = (h_im < kEffectiveH) ? 0 : (h_im - kEffectiveH) / strideY + 1;
 				int h_col_end = nd4j::math::nd4j_min<int>(h_im / strideY + 1, height_col);
 
 
+				//Iterate over col entries in the 6d array... these are added up
 				for (int h_col = h_col_start; h_col < h_col_end; h_col += 1) {
 					for (int w_col = w_col_start; w_col < w_col_end; w_col += 1) {
 						int h_k = (h_im - h_col * strideY);
 						int w_k = (w_im - w_col * strideX);
+						
+						if(h_k % dY == 0 && w_k % dX == 0){
+							h_k /= dY;
+							w_k /= dX;
 
-						int data_col_index = num_im * strideex + depth_im * stridech + h_k * stridekrow + w_k * stridekcol + h_col * striderow + w_col * stridecol;
-
-						val += dx[data_col_index];
+							int data_col_index = num_im * strideex + depth_im * stridech + h_k * stridekrow + w_k * stridekcol + h_col * striderow + w_col * stridecol;
+							val += dx[data_col_index];
+						}
 					}
 				}
 				int i_f = 0;
@@ -947,11 +963,13 @@ namespace simdOps {
 
 			int kernelHeight = inShape[2];
 			int kernelWidth = inShape[3];
-			/* int strideY, int strideX, int padHeight, int padWidth, int imgHeight, int imgWidth, */
+			/* int strideY, int strideX, int padHeight, int padWidth, int imgHeight, int imgWidth, int dilationW, int dilationH */
 			int strideX = (int)extraParams[0];
 			int strideY = (int)extraParams[1];
 			int padWidth = (int)extraParams[2];
 			int padHeight = (int)extraParams[3];
+			int dX = (int)extraParams[6];			//Dilation in width/x dimension
+			int dY = (int)extraParams[7];			//Dilation in height/y dimension
 
 
 			int exampleFrom = 0;
@@ -1000,10 +1018,10 @@ namespace simdOps {
 							int baseOffsetIn = getOffsetUnsafe6(inOffset, inShape, inStride, inIndices);
 
 							if (padding) {
-								int i = y * strideY -
-									padHeight;    //index along height of first element of patch in original img
-								int j = x * strideX -
-									padWidth;     //index along width of first element in patch in original img
+								//index along height of first element of patch in original img
+								int i = y * strideY - padHeight;
+								//index along width of first element in patch in original img
+								int j = x * strideX - padWidth;
 								outIndices[2] = i;  //along height
 								outIndices[3] = j;  //along width
 
@@ -1013,13 +1031,13 @@ namespace simdOps {
 								if (inStride2 <= inStride3) {
 									//Want dimension 2 (along height) in inner loop for cache efficiency
 									for (int patchX = 0; patchX < kernelWidth; patchX++) {
-										if (j + patchX < 0 || j + patchX >= outShape3)
+										if (j + patchX * dX < 0 || j + patchX * dX >= outShape3)
 											continue;
 
 										for (int patchY = 0; patchY < kernelHeight; patchY++) {
-											if (i + patchY < 0 || i + patchY >= outShape2)
+											if (i + patchY * dY < 0 || i + patchY * dY >= outShape2)
 												continue;
-											fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+											fOut[baseOffsetOut + patchY * dY * outStride2 + patchX * dX * outStride3] +=
 												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
 										}
 									}
@@ -1027,12 +1045,12 @@ namespace simdOps {
 								else {
 									//Want dimension 3 (along width) in inner loop for cache efficiency
 									for (int patchY = 0; patchY < kernelHeight; patchY++) {
-										if (i + patchY < 0 || i + patchY >= outShape2)
+										if (i + patchY * dY < 0 || i + patchY * dY >= outShape2)
 											continue;
 										for (int patchX = 0; patchX < kernelWidth; patchX++) {
-											if (j + patchX < 0 || j + patchX >= outShape3)
+											if (j + patchX * dX < 0 || j + patchX * dX >= outShape3)
 												continue;
-											fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+											fOut[baseOffsetOut + patchY * dY * outStride2 + patchX * dX * outStride3] +=
 												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
 										}
 									}
@@ -1055,7 +1073,7 @@ namespace simdOps {
 									//Want dimension 2 (along height) in inner loop for cache efficiency
 									for (int patchX = 0; patchX < kernelWidth; patchX++) {
 										for (int patchY = 0; patchY < kernelHeight; patchY++) {
-											fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+											fOut[baseOffsetOut + patchY * dY * outStride2 + patchX * dX * outStride3] +=
 												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
 										}
 									}
@@ -1064,7 +1082,7 @@ namespace simdOps {
 									//Want dimension 3 (along width) in inner loop for cache efficiency
 									for (int patchY = 0; patchY < kernelHeight; patchY++) {
 										for (int patchX = 0; patchX < kernelWidth; patchX++) {
-											fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+											fOut[baseOffsetOut + patchY * dY * outStride2 + patchX * dX * outStride3] +=
 												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
 										}
 									}
