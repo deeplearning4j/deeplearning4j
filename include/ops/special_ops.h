@@ -256,8 +256,8 @@ namespace simdOps {
 
                     for (int i = 0; i < kernelHeight; ++i) {
                         for (int j = 0; j < kernelWidth; ++j) {
-                            int h_im = h_offset + i * dh;
-                            int w_im = w_offset + j * dw;
+                            int h_im = h_offset + i * dH;
+                            int w_im = w_offset + j * dW;
                             int i_f = 0;
                             int i_c_temp = i_c;
                             for (int dim = 5; dim >= 0; dim--) {
