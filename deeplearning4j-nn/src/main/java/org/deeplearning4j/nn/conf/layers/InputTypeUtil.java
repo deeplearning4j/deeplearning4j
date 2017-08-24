@@ -21,7 +21,7 @@ public class InputTypeUtil {
 
 
     public static InputType getOutputTypeCnnLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
-                    ConvolutionMode convolutionMode, int outputDepth, int layerIdx, String layerName,
+                    int[] dilation, ConvolutionMode convolutionMode, int outputDepth, int layerIdx, String layerName,
                     Class<?> layerClass) {
 
         if (convolutionMode == null) {
@@ -37,6 +37,14 @@ public class InputTypeUtil {
         int padW = (padding == null ? 0 : padding[1]);
         int kH = kernelSize[0];
         int kW = kernelSize[1];
+        if(dilation[0] != 1){
+            //Use *effective* kernel size, accounting for dilation
+            kH = kH + (kH-1)*(dilation[0]-1);
+        }
+        if(dilation[1] != 1){
+            kW = kW + (kW-1)*(dilation[1]-1);
+        }
+
         int sH = stride[0];
         int sW = stride[1];
 

@@ -34,8 +34,15 @@ import java.util.Arrays;
  */
 public class ConvolutionUtils {
 
+    private static final int[] ONES = new int[]{1,1};
+
 
     private ConvolutionUtils() {}
+
+    public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
+                                      ConvolutionMode convolutionMode) {
+        return getOutputSize(inputData, kernel, strides, padding, convolutionMode, ONES);
+    }
 
     /**
      * Get the output size (height/width) for the given inpud data and CNN configuration

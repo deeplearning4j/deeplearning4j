@@ -64,7 +64,7 @@ public class SubsamplingLayer extends Layer {
         }
     }
 
-    protected SubsamplingLayer(Builder builder) {
+    protected SubsamplingLayer(BaseSubsamplingBuilder builder) {
         super(builder);
         this.poolingType = builder.poolingType;
         if (builder.kernelSize.length != 2)
@@ -75,7 +75,7 @@ public class SubsamplingLayer extends Layer {
         this.stride = builder.stride;
         this.padding = builder.padding;
         this.convolutionMode = builder.convolutionMode;
-        this.dilation = builder.dilation;
+        this.dilation = ((Builder)builder).dilation;
         this.pnorm = builder.pnorm;
         this.eps = builder.eps;
     }
@@ -120,7 +120,7 @@ public class SubsamplingLayer extends Layer {
                             + "\"): Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, convolutionMode,
+        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
                         ((InputType.InputTypeConvolutional) inputType).getDepth(), layerIndex, getLayerName(),
                         SubsamplingLayer.class);
     }

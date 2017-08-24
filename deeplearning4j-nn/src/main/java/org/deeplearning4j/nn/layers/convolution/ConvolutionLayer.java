@@ -231,7 +231,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         //Note: we are execute col2im in a way that the output array should be used in a stride 1 muli in the layer below... (same strides as zs/activations)
         INDArray epsNext = epsNextOrig.permute(1, 0, 2, 3);
-        Convolution.col2im(eps6d, epsNext, strides[0], strides[1], pad[0], pad[1], inH, inW);
+        Convolution.col2im(eps6d, epsNext, strides[0], strides[1], pad[0], pad[1], inH, inW, dilation[0], dilation[1]);
 
         Gradient retGradient = new DefaultGradient();
         if(layerConf().hasBias()){
