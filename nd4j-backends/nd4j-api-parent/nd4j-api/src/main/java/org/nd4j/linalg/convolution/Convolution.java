@@ -144,9 +144,10 @@ public class Convolution {
         return Nd4j.getExecutioner().exec(im2col).z();
     }
 
-    public static INDArray pooling2D(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, Pooling2D.Pooling2DType type, double extra, int virtualHeight, int virtualWidth,
+    public static INDArray pooling2D(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw,
+                                     int dh, int dw, boolean isSameMode, Pooling2D.Pooling2DType type, double extra, int virtualHeight, int virtualWidth,
                                   INDArray out) {
-        Pooling2D pooling = new Pooling2D(img, kh, kw, sy, sx, ph, pw, isSameMode, type, extra, virtualHeight, virtualWidth, out);
+        Pooling2D pooling = new Pooling2D(img, kh, kw, sy, sx, ph, pw, dh, dw, isSameMode, type, extra, virtualHeight, virtualWidth, out);
         return Nd4j.getExecutioner().exec(pooling).z();
     }
 
