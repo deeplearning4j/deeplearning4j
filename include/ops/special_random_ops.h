@@ -667,6 +667,85 @@ namespace randomOps {
 
         static const bool requiresSpecial = true;
 
+
+#ifdef __CUDACC__
+        __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+            // FIXME: we use cuRAND for this op, due to undesired code branching
+            __shared__ T epsilon;
+            __shared__ T two_pi;
+
+            __shared__ Nd4jIndex zLength;
+            __shared__ int zEWS;
+            __shared__ int yEWS;
+            __shared__ T mean;
+            __shared__ T stddev;
+            __shared__ int step;
+
+            __shared__ T *tZ;
+
+            __shared__ nd4j::random::RandomBuffer *buffer;
+            __shared__ unsigned char *cB;
+            __shared__ unsigned char *dB;
+            __shared__ nd4j::random::RandomBuffer *devBuffer;
+
+            if (threadIdx.x == 0) {
+                extern __shared__ unsigned char shmem[];
+                buffer = (nd4j::random::RandomBuffer *) shmem;
+                cB = shmem;
+                devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                dB = reinterpret_cast<unsigned char *> (state);
+
+                tZ = (T *) (shmem + sizeof(nd4j::random::RandomBuffer));
+
+                zLength = shape::length(zShapeBuffer);
+                zEWS = shape::elementWiseStride(zShapeBuffer);
+                yEWS = shape::elementWiseStride(yShapeBuffer);
+
+
+                epsilon = (T) 1e-5;
+                two_pi = (T) 2.0 * (T) 3.14159265358979323846;
+
+                mean = extraArguments[0];
+                stddev = extraArguments[1];
+
+                step = (blockDim.x * gridDim.x);
+            }
+            __syncthreads();
+
+            // using this loop instead of memcpy
+            for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
+                cB[e] = dB[e];
+            }
+            __syncthreads();
+
+            int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+            for (Nd4jIndex e = tid; e < zLength; e += step) {
+                // we need to get random values
+
+                tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, (T) 1.0f);
+
+                // fix for "next rng value"
+                if (e + 1 >= zLength && e % 2 == 0) {
+                    tZ[threadIdx.x+1] = buffer->relativeT<T>(e+1, epsilon, (T) 1.0f);
+                }
+
+                T realMean = y == z ? mean : y[e * yEWS];
+
+                __syncthreads();
+
+                if (e % 2 == 0)
+                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean;
+                else
+                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T>(two_pi * tZ[threadIdx.x])) * stddev + realMean;
+                __syncthreads();
+            }
+
+            __syncthreads();
+            devBuffer->rewind(zLength);
+        }
+#endif
+
         static inline void
         specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
             const T two_pi = (T) 2.0 * 3.14159265358979323846;
@@ -750,6 +829,85 @@ namespace randomOps {
 
         static const bool requiresSpecial = true;
 
+
+#ifdef __CUDACC__
+        __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
+            // FIXME: we use cuRAND for this op, due to undesired code branching
+            __shared__ T epsilon;
+            __shared__ T two_pi;
+
+            __shared__ Nd4jIndex zLength;
+            __shared__ int zEWS;
+            __shared__ int yEWS;
+            __shared__ T mean;
+            __shared__ T stddev;
+            __shared__ int step;
+
+            __shared__ T *tZ;
+
+            __shared__ nd4j::random::RandomBuffer *buffer;
+            __shared__ unsigned char *cB;
+            __shared__ unsigned char *dB;
+            __shared__ nd4j::random::RandomBuffer *devBuffer;
+
+            if (threadIdx.x == 0) {
+                extern __shared__ unsigned char shmem[];
+                buffer = (nd4j::random::RandomBuffer *) shmem;
+                cB = shmem;
+                devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+                dB = reinterpret_cast<unsigned char *> (state);
+
+                tZ = (T *) (shmem + sizeof(nd4j::random::RandomBuffer));
+
+                zLength = shape::length(zShapeBuffer);
+                zEWS = shape::elementWiseStride(zShapeBuffer);
+                yEWS = shape::elementWiseStride(yShapeBuffer);
+
+
+                epsilon = (T) 1e-5;
+                two_pi = (T) 2.0 * (T) 3.14159265358979323846;
+
+                mean = extraArguments[0];
+                stddev = extraArguments[1];
+
+                step = (blockDim.x * gridDim.x);
+            }
+            __syncthreads();
+
+            // using this loop instead of memcpy
+            for (int e = threadIdx.x; e < sizeof(nd4j::random::RandomBuffer); e+= blockDim.x) {
+                cB[e] = dB[e];
+            }
+            __syncthreads();
+
+            int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+            for (Nd4jIndex e = tid; e < zLength; e += step) {
+                // we need to get random values
+
+                tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, (T) 1.0f);
+
+                // fix for "next rng value"
+                if (e + 1 >= zLength && e % 2 == 0) {
+                    tZ[threadIdx.x+1] = buffer->relativeT<T>(e+1, epsilon, (T) 1.0f);
+                }
+
+                T realMean = y == z ? mean : y[e * yEWS];
+
+                __syncthreads();
+
+                if (e % 2 == 0)
+                    z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean);
+                else
+                    z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T>(two_pi * tZ[threadIdx.x])) * stddev + realMean);
+                __syncthreads();
+            }
+
+            __syncthreads();
+            devBuffer->rewind(zLength);
+        }
+#endif
+
         static inline void
         specialOp(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
             const T two_pi = (T) 2.0 * 3.14159265358979323846;
@@ -799,11 +957,11 @@ namespace randomOps {
 
                         T realMean = y == z ? mean : y[e * yEWS];
 
-                        z[e * zEWS] = exp(z0 * stddev + realMean);
+                        z[e * zEWS] = nd4j::math::nd4j_exp<T>(z0 * stddev + realMean);
                     } else {
                         T realMean = y == z ? mean : y[e * yEWS];
 
-                        z[e * zEWS] = exp(z1 * stddev + realMean);
+                        z[e * zEWS] = nd4j::math::nd4j_exp<T>(z1 * stddev + realMean);
 
                         generated = false;
                     }

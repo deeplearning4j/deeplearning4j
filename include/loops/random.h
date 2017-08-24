@@ -15,7 +15,9 @@
         (6, randomOps::GaussianDistribution) ,\
         (7, randomOps::BernoulliDistribution) ,\
         (8, randomOps::BinomialDistribution),\
-        (9, randomOps::BinomialDistributionEx)
+        (9, randomOps::BinomialDistributionEx),\
+        (10, randomOps::LogNormalDistribution) ,\
+        (11, randomOps::TruncatedNormalDistribution)
 
 
 
