@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
 
 /**
@@ -64,8 +65,8 @@ public class KerasEmbedding extends KerasLayer {
 
         this.layer = new EmbeddingLayer.Builder().name(this.layerName).nIn(inputDim)
                         .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout).activation(Activation.IDENTITY)
-                        .weightInit(getWeightInitFromConfig(
-                                layerConfig, conf.getLAYER_FIELD_EMBEDDING_INIT(), enforceTrainingConfig))
+                        .weightInit(getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_EMBEDDING_INIT(),
+                                enforceTrainingConfig, conf, kerasMajorVersion))
                         .biasInit(0.0)
                         .l1(this.weightL1Regularization).l2(this.weightL2Regularization).hasBias(false).build();
     }

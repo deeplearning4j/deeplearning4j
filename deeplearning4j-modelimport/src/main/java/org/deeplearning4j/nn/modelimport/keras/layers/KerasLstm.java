@@ -20,7 +20,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.mapActivation;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
 
 /**
  * Imports a Keras LSTM layer as a DL4J GravesLSTM layer.
@@ -91,8 +94,10 @@ public class KerasLstm extends KerasLayer {
     public KerasLstm(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        WeightInit weightInit = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(), enforceTrainingConfig);
-        WeightInit recurrentWeightInit = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INNER_INIT(), enforceTrainingConfig);
+        WeightInit weightInit = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
+                enforceTrainingConfig, conf, kerasMajorVersion);
+        WeightInit recurrentWeightInit = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INNER_INIT(),
+                enforceTrainingConfig, conf, kerasMajorVersion);
         if (weightInit != recurrentWeightInit)
             if (enforceTrainingConfig)
                 throw new UnsupportedKerasConfigurationException(
@@ -104,7 +109,8 @@ public class KerasLstm extends KerasLayer {
         this.layer = new GravesLSTM.Builder().gateActivationFunction(getGateActivationFromConfig(layerConfig))
                         .forgetGateBiasInit(getForgetBiasInitFromConfig(layerConfig, enforceTrainingConfig))
                         .name(this.layerName).nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
-                        .activation(getActivationFromConfig(layerConfig)).weightInit(weightInit).biasInit(0.0)
+                        .activation(getActivationFromConfig(layerConfig, conf))
+                        .weightInit(weightInit).biasInit(0.0)
                         .l1(this.weightL1Regularization).l2(this.weightL2Regularization).build();
     }
 
@@ -379,7 +385,7 @@ public class KerasLstm extends KerasLayer {
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_INNER_ACTIVATION()))
             throw new InvalidKerasConfigurationException(
                             "Keras LSTM layer config missing " + conf.getLAYER_FIELD_INNER_ACTIVATION() + " field");
-        return mapActivation((String) innerConfig.get(conf.getLAYER_FIELD_INNER_ACTIVATION()));
+        return mapActivation((String) innerConfig.get(conf.getLAYER_FIELD_INNER_ACTIVATION()), conf);
     }
 
     /**
