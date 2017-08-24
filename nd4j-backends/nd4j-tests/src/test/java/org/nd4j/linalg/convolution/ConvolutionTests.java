@@ -1292,7 +1292,7 @@ public class ConvolutionTests extends BaseNd4jTest {
 
 
         INDArray col2imResult = Nd4j.create(miniBatch, depth, inH, inW);
-        INDArray col2im = Convolution.col2im(col6d, col2imResult, strideH, strideW, padTop, padLeft, inH, inW, 1, 1);
+        INDArray col2im = Convolution.col2im(col6d, col2imResult, strideH, strideW, padTop, padLeft, inH, inW, dH, dW);
 
         assertEquals(expected, col2im);
     }
