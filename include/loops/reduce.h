@@ -1,6 +1,7 @@
 #include <dll.h>
 //#include <string>
 #include <helpers/sharedmem.h>
+#include <ops/special_accumulation_ops.h>
 #include <stdio.h>
 #include <helpers/shape.h>
 #ifdef _OPENMP

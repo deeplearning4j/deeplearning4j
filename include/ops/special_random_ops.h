@@ -262,7 +262,6 @@ namespace randomOps {
 
 #ifdef __CUDACC__
         __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
-            // FIXME: we use cuRAND for this op, due to undesired code branching
             __shared__ T epsilon;
             __shared__ T two_pi;
 
@@ -670,7 +669,6 @@ namespace randomOps {
 
 #ifdef __CUDACC__
         __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
-            // FIXME: we use cuRAND for this op, due to undesired code branching
             __shared__ T epsilon;
             __shared__ T two_pi;
 
@@ -702,7 +700,7 @@ namespace randomOps {
                 yEWS = shape::elementWiseStride(yShapeBuffer);
 
 
-                epsilon = (T) 1e-5;
+                epsilon = (T) 1e-5f;
                 two_pi = (T) 2.0 * (T) 3.14159265358979323846;
 
                 mean = extraArguments[0];
@@ -829,7 +827,6 @@ namespace randomOps {
 
 #ifdef __CUDACC__
         __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, int *xShapeBuffer, T *y, int *yShapeBuffer, T *z, int *zShapeBuffer, T *extraArguments) {
-            // FIXME: we use cuRAND for this op, due to undesired code branching
             __shared__ T epsilon;
             __shared__ T two_pi;
 
