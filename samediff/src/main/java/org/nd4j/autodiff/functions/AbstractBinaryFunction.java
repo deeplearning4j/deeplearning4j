@@ -5,6 +5,8 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.List;
+
 @NoArgsConstructor
 public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extends DifferentialFunction<ArrayField> {
 
@@ -60,6 +62,16 @@ public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extend
     }
 
 
+    @Override
+    public String toString() {
+        return functionName() + "(" + larg().toString() + ", " + rarg().toString() + ")";
+    }
+
+    @Override
+    public String doGetFormula(List<Variable<ArrayField> > variables) {
+        return functionName() + "(" + larg().doGetFormula(variables) + ","
+                + rarg().doGetFormula(variables) + ")";
+    }
 
     @Override
     public DifferentialFunction<ArrayField> dup() {

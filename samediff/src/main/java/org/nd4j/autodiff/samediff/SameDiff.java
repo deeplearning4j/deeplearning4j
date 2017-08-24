@@ -975,10 +975,10 @@ public class SameDiff {
      * @param iX
      * @return
      */
-    public SDVariable softmaxDerivative(SDVariable iX) {
+    public SDVariable softmaxDerivative(SDVariable iX,SDVariable wrt) {
         SDVariable ret = SDVariable.builder()
                 .arr(null).shape(iX.getShape())
-                .differentialFunction(functionFactory.softmaxDerivative(getFunctionInput(iX)))
+                .differentialFunction(functionFactory.softmaxDerivative(getFunctionInput(iX),getFunctionInput(wrt)))
                 .varName("softmaxderivative(" + iX.getVarName() + ")").sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
@@ -2052,6 +2052,10 @@ public class SameDiff {
     }
 
 
+    /**
+     * 
+     * @return
+     */
     public List<Op> execBackwards() {
         SameDiff outer = this;
         if(getFunction("grad") == null)

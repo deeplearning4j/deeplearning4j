@@ -11,12 +11,12 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.functions.impl.binary.reduce.EuclideanDistance;
 import org.nd4j.autodiff.functions.impl.binary.reduce.ManhattanDistance;
+import org.nd4j.autodiff.functions.impl.binary.transform.gradient.SoftMaxDerivative;
 import org.nd4j.autodiff.functions.impl.unary.reduce.Prod;
 import org.nd4j.autodiff.functions.impl.unary.transform.*;
 import org.nd4j.autodiff.functions.impl.unary.transform.shape.*;
 import org.nd4j.autodiff.functions.mmul.Mmul;
 import org.nd4j.autodiff.functions.mmul.TensorMmul;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -928,9 +928,9 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
     @Override
-    public DifferentialFunction<ArrayField> softmaxDerivative(DifferentialFunction<ArrayField> functionInput) {
+    public DifferentialFunction<ArrayField> softmaxDerivative(DifferentialFunction<ArrayField> functionInput, DifferentialFunction<ArrayField> wrt) {
         validateDifferentialFunctionsameDiff(functionInput);
-        return new SoftMaxDerivative(sameDiff,functionInput,null);
+        return new SoftMaxDerivative(sameDiff,functionInput,wrt);
     }
 
     @Override
