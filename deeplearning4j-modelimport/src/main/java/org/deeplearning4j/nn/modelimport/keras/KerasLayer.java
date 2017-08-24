@@ -15,27 +15,21 @@
  *  *    limitations under the License.
  *
  */
-
 package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfigurationFactory;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.*;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasRegularizerUtils;
+import org.deeplearning4j.util.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
@@ -47,10 +41,10 @@ import java.util.*;
 @Slf4j
 public class KerasLayer {
 
-    public static final String LAYER_FIELD_KERAS_VERSION = "keras_version";
-    public static final Map<String, Class<? extends KerasLayer>> customLayers = new HashMap<>();
+    private static final String LAYER_FIELD_KERAS_VERSION = "keras_version";
+    static final Map<String, Class<? extends KerasLayer>> customLayers = new HashMap<>();
 
-    public enum DimOrder {NONE, THEANO, TENSORFLOW;}
+    public enum DimOrder {NONE, THEANO, TENSORFLOW}
 
     protected String className; // Keras layer class name
     protected String layerName; // Keras layer name
@@ -70,14 +64,14 @@ public class KerasLayer {
      * Constructor with Keras version only.
      *
      * @param kerasVersion major Keras version (1 or 2)
-     * @throws UnsupportedKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras configuration
      */
     protected KerasLayer(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         this.className = null;
         this.layerName = null;
         this.inputShape = null;
         this.dimOrder = DimOrder.NONE;
-        this.inboundLayerNames = new ArrayList<String>();
+        this.inboundLayerNames = new ArrayList<>();
         this.layer = null;
         this.vertex = null;
         this.weights = null;
@@ -88,14 +82,14 @@ public class KerasLayer {
     /**
      * Default constructor.
      *
-     * @throws UnsupportedKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras configuration
      */
     protected KerasLayer() throws UnsupportedKerasConfigurationException {
         this.className = null;
         this.layerName = null;
         this.inputShape = null;
         this.dimOrder = DimOrder.NONE;
-        this.inboundLayerNames = new ArrayList<String>();
+        this.inboundLayerNames = new ArrayList<>();
         this.layer = null;
         this.vertex = null;
         this.weights = null;
@@ -138,8 +132,10 @@ public class KerasLayer {
         this.layer = null;
         this.vertex = null;
         this.weights = null;
-        this.weightL1Regularization = getWeightL1RegularizationFromConfig(layerConfig, enforceTrainingConfig);
-        this.weightL2Regularization = getWeightL2RegularizationFromConfig(layerConfig, enforceTrainingConfig);
+        this.weightL1Regularization = KerasRegularizerUtils.getWeightL1RegularizationFromConfig(
+                layerConfig, enforceTrainingConfig, conf);
+        this.weightL2Regularization = KerasRegularizerUtils.getWeightL2RegularizationFromConfig(
+                layerConfig, enforceTrainingConfig, conf);
         this.dropout = KerasLayerUtils.getDropoutFromConfig(layerConfig, conf);
         KerasLayerUtils.checkForUnsupportedConfigurations(layerConfig, enforceTrainingConfig, conf);
     }
@@ -149,7 +145,7 @@ public class KerasLayer {
      * @param layerName name of custom layer
      * @param configClass class of custom layer
      */
-    public static void registerCustomLayer(String layerName, Class<? extends KerasLayer> configClass) {
+     static void registerCustomLayer(String layerName, Class<? extends KerasLayer> configClass) {
         customLayers.put(layerName, configClass);
     }
 
@@ -196,16 +192,14 @@ public class KerasLayer {
      *
      * @return Keras layer (backend) dimension order
      */
-    public DimOrder getDimOrder() {
+    protected DimOrder getDimOrder() {
         return this.dimOrder;
     }
 
     /**
      * Set Keras layer backend dimension order.
-     *
-     * @return Keras layer (backend) dimension order
      */
-    public void setDimOrder(DimOrder dimOrder) {
+    void setDimOrder(DimOrder dimOrder) {
         this.dimOrder = dimOrder;
     }
 
@@ -214,9 +208,9 @@ public class KerasLayer {
      *
      * @return list of inbound layer names
      */
-    public List<String> getInboundLayerNames() {
+    List<String> getInboundLayerNames() {
         if (this.inboundLayerNames == null)
-            this.inboundLayerNames = new ArrayList<String>();
+            this.inboundLayerNames = new ArrayList<>();
         return this.inboundLayerNames;
     }
 
@@ -224,10 +218,9 @@ public class KerasLayer {
      * Set list of inbound layers.
      *
      * @param inboundLayerNames list of inbound layer naems
-     * @return
      */
-    public void setInboundLayerNames(List<String> inboundLayerNames) {
-        this.inboundLayerNames = new ArrayList<String>(inboundLayerNames);
+    void setInboundLayerNames(List<String> inboundLayerNames) {
+        this.inboundLayerNames = new ArrayList<>(inboundLayerNames);
     }
 
     /**
@@ -251,7 +244,7 @@ public class KerasLayer {
     /**
      * Set weights for Keras layer.
      *
-     * @param weights
+     * @param weights Map of named NDArrays
      */
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
         //no op
@@ -260,8 +253,8 @@ public class KerasLayer {
     /**
      * Copy Keras layer weights to DL4J Layer.
      *
-     * @param layer
-     * @throws InvalidKerasConfigurationException
+     * @param layer DL4J layer
+     * @throws InvalidKerasConfigurationException Invalid Keras configuration
      */
     public void copyWeightsToLayer(org.deeplearning4j.nn.api.Layer layer) throws InvalidKerasConfigurationException {
         if (this.getNumParams() > 0) {
@@ -273,19 +266,24 @@ public class KerasLayer {
             if (this.weights == null)
                 throw new InvalidKerasConfigurationException(msg + "(weights is null)");
 
-            Set<String> paramsInLayer = new HashSet<String>(layer.paramTable().keySet());
-            Set<String> paramsInKerasLayer = new HashSet<String>(this.weights.keySet());
+            Set<String> paramsInLayer = new HashSet<>(layer.paramTable().keySet());
+            Set<String> paramsInKerasLayer = new HashSet<>(this.weights.keySet());
 
             /* Check for parameters in layer for which we don't have weights. */
             paramsInLayer.removeAll(paramsInKerasLayer);
-            for (String paramName : paramsInLayer)
+            if (!paramsInLayer.isEmpty()) {
+                String joinedParamsInLayer = StringUtils.join(", ", paramsInLayer);
                 throw new InvalidKerasConfigurationException(
-                        msg + "(no stored weights for parameter " + paramName + ")");
+                        msg + "(no stored weights for parameters: " + joinedParamsInLayer + ")");
+            }
 
             /* Check for parameters NOT in layer for which we DO have weights. */
             paramsInKerasLayer.removeAll(layer.paramTable().keySet());
-            for (String paramName : paramsInKerasLayer)
-                throw new InvalidKerasConfigurationException(msg + "(found no parameter named " + paramName + ")");
+            if (!paramsInKerasLayer.isEmpty()) {
+                String joinedParamsInKerasLayer = StringUtils.join(", ", paramsInKerasLayer);
+                throw new InvalidKerasConfigurationException(
+                        msg + "(found no parameters named: " + joinedParamsInKerasLayer + ")");
+            }
 
             /* Copy weights. */
             for (String paramName : layer.paramTable().keySet()) {
@@ -346,7 +344,7 @@ public class KerasLayer {
      *
      * @param inputType Array of InputTypes
      * @return DL4J InputPreProcessor
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras configuration
      * @see org.deeplearning4j.nn.conf.InputPreProcessor
      */
     public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
@@ -365,7 +363,7 @@ public class KerasLayer {
      *
      * @param inputType Array of InputTypes
      * @return output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras configuration
      */
     public InputType getOutputType(InputType... inputType)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -386,41 +384,5 @@ public class KerasLayer {
     public boolean isValidInboundLayer() throws InvalidKerasConfigurationException {
         return (getLayer() != null || getVertex() != null || getInputPreprocessor() != null
                 || this.className.equals(conf.getLAYER_CLASS_NAME_INPUT()));
-    }
-
-    /**
-     * Get L1 weight regularization (if any) from Keras weight regularization configuration.
-     *
-     * @param layerConfig dictionary containing Keras layer configuration     Map containing Keras weight reguarlization configuration
-     * @return L1 regularization strength (0.0 if none)
-     */
-    public double getWeightL1RegularizationFromConfig(Map<String, Object> layerConfig, boolean willBeTrained)
-            throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        if (innerConfig.containsKey(conf.getLAYER_FIELD_W_REGULARIZER())) {
-            Map<String, Object> regularizerConfig =
-                    (Map<String, Object>) innerConfig.get(conf.getLAYER_FIELD_W_REGULARIZER());
-            if (regularizerConfig != null && regularizerConfig.containsKey(conf.getREGULARIZATION_TYPE_L1()))
-                return (double) regularizerConfig.get(conf.getREGULARIZATION_TYPE_L1());
-        }
-        return 0.0;
-    }
-
-    /**
-     * Get L2 weight regularization (if any) from Keras weight regularization configuration.
-     *
-     * @param layerConfig dictionary containing Keras layer configuration
-     * @return L1 regularization strength (0.0 if none)
-     */
-    public double getWeightL2RegularizationFromConfig(Map<String, Object> layerConfig, boolean willBeTrained)
-            throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        if (innerConfig.containsKey(conf.getLAYER_FIELD_W_REGULARIZER())) {
-            Map<String, Object> regularizerConfig =
-                    (Map<String, Object>) innerConfig.get(conf.getLAYER_FIELD_W_REGULARIZER());
-            if (regularizerConfig != null && regularizerConfig.containsKey(conf.getREGULARIZATION_TYPE_L2()))
-                return (double) regularizerConfig.get(conf.getREGULARIZATION_TYPE_L2());
-        }
-        return 0.0;
     }
 }
