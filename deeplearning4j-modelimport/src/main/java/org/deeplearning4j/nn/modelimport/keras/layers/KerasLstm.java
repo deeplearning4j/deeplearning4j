@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
+
 /**
  * Imports a Keras LSTM layer as a DL4J GravesLSTM layer.
  *
@@ -101,7 +103,7 @@ public class KerasLstm extends KerasLayer {
         this.unroll = getUnrollRecurrentLayer(layerConfig);
         this.layer = new GravesLSTM.Builder().gateActivationFunction(getGateActivationFromConfig(layerConfig))
                         .forgetGateBiasInit(getForgetBiasInitFromConfig(layerConfig, enforceTrainingConfig))
-                        .name(this.layerName).nOut(getNOutFromConfig(layerConfig)).dropOut(this.dropout)
+                        .name(this.layerName).nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                         .activation(getActivationFromConfig(layerConfig)).weightInit(weightInit).biasInit(0.0)
                         .l1(this.weightL1Regularization).l2(this.weightL2Regularization).build();
     }

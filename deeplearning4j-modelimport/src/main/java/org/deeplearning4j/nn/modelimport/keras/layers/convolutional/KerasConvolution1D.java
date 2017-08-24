@@ -34,6 +34,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
+
 /**
  * Imports a 1D Convolution layer from Keras.
  *
@@ -75,11 +78,11 @@ public class KerasConvolution1D extends KerasConvolution {
     public KerasConvolution1D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        hasBias = getHasBiasFromConfig(layerConfig);
+        hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
 
         Convolution1DLayer.Builder builder = new Convolution1DLayer.Builder().name(this.layerName)
-                .nOut(getNOutFromConfig(layerConfig)).dropOut(this.dropout)
+                .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig))
                 .weightInit(getWeightInitFromConfig(
                         layerConfig, conf.getLAYER_FIELD_INIT(), enforceTrainingConfig))

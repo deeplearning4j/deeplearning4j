@@ -15,6 +15,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
+
 /**
  * Imports a Dense layer from Keras.
  *
@@ -61,10 +64,10 @@ public class KerasDense extends KerasLayer {
     public KerasDense(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        hasBias = getHasBiasFromConfig(layerConfig);
+        hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
 
-        this.layer = new DenseLayer.Builder().name(this.layerName).nOut(getNOutFromConfig(layerConfig))
+        this.layer = new DenseLayer.Builder().name(this.layerName).nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout).activation(getActivationFromConfig(layerConfig))
                 .weightInit(getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(), enforceTrainingConfig)).biasInit(0.0)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)

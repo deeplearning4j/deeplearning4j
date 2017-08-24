@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
+
 /**
  * Imports an Embedding layer from Keras.
  *
@@ -61,7 +63,7 @@ public class KerasEmbedding extends KerasLayer {
         /* TODO: what about mask_zero field? */
 
         this.layer = new EmbeddingLayer.Builder().name(this.layerName).nIn(inputDim)
-                        .nOut(getNOutFromConfig(layerConfig)).dropOut(this.dropout).activation(Activation.IDENTITY)
+                        .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout).activation(Activation.IDENTITY)
                         .weightInit(getWeightInitFromConfig(
                                 layerConfig, conf.getLAYER_FIELD_EMBEDDING_INIT(), enforceTrainingConfig))
                         .biasInit(0.0)
