@@ -152,7 +152,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
          * @param boundingBoxes Bounding box prior dimensions (width, height)
          * @return
          */
-        public Builder boundingBoxes(INDArray boundingBoxes){
+        public Builder boundingBoxePriors(INDArray boundingBoxes){
             this.boundingBoxes = boundingBoxes;
             return this;
         }

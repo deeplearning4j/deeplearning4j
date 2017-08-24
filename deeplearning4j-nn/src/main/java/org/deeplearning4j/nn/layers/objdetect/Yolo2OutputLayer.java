@@ -86,7 +86,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int h = input.size(2);
         int w = input.size(3);
         int b = layerConf().getBoundingBoxes().size(0);
-        int c = labels.size(1)-4*b;
+        int c = input.size(1)-5*b;
 
         INDArray input5 = input.get(all(), interval(0,5*b), all(), all()).dup('c').reshape(mb, b, 5, h, w);
 
@@ -183,7 +183,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray yVector = Nd4j.linspace(0, 1.0-1.0/h, h);  //[0 to h-1]/h
         INDArray gridYX = Nd4j.create(2,h,w);
         gridYX.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()).putiRowVector(xVector);
-        gridYX.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).putiColumnVector(yVector);
+        gridYX.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).putiRowVector(yVector);
 
 
 
@@ -275,11 +275,12 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray wh1 = br1.sub(tl1);
         INDArray area1 = wh1.get(all(), point(0), all(), all())
                 .muli(wh1.get(all(), point(1), all(), all()));  //Shape: [minibatch, H, W]
-        INDArray wh2 = br2.sub(tl1);
+        INDArray wh2 = br2.sub(tl2);
         INDArray area2 = wh2.get(all(), all(), point(0), all(), all())
                 .muli(wh2.get(all(), all(), point(1), all(), all()));  //Shape: [minibatch, B, H, W]
 
-        INDArray union = area1.add(area2).subi(intersection);
+        INDArray union = Nd4j.createUninitialized(area2.shape(), area2.ordering());
+        Broadcast.add(area2, area1, union, 0, 2, 3);
 
         INDArray iou = intersection.div(union);
         BooleanIndexing.replaceWhere(iou, 0.0, Conditions.isNan()); //Replace NaNs (0 intersection, 0 area etc) with 0s
