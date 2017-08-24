@@ -786,21 +786,18 @@ namespace randomOps {
                         * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
                         */
                         Nd4jIndex generation0 = 0;
-                        Nd4jIndex generation1 = 0;
                         T realMean = y == z ? mean : y[e * yEWS];
                         do {
                             u0 = buffer->relativeT<T>(e + generation0, (T) 1e-5f, (T) 1.0f);
+                            u1 = buffer->relativeT<T>((e + generation0 + 1), (T) 1e-5f, (T) 1.0f);
+
                             z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                            z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
+                            result1 = z1 * stddev + realMean;
                             result0 = z0 * stddev + realMean;
                             generation0 += zLength;
-                        } while (result0 < (realMean - 2*stddev) || (realMean + 2*stddev) < result0);
-                        
-                        do {
-                            u1 = buffer->relativeT<T>((e + generation1 + 1), (T) 1e-5f, (T) 1.0f);
-                            z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);                        
-                            result1 = z1 * stddev + realMean;                        
-                            generation1 += zLength;
-                        } while (result1 < (realMean - 2*stddev) || (realMean + 2*stddev) < result1);
+                        } while (result0 < (realMean - 2*stddev) || (realMean + 2*stddev) < result0 || result1 < (realMean - 2*stddev) || (realMean + 2*stddev) < result1);
+
 
                         z[e * zEWS] = result0;
                         generated = true;
