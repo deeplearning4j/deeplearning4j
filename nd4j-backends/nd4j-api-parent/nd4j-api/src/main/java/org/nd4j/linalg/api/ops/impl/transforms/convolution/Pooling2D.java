@@ -73,25 +73,6 @@ public class Pooling2D extends BaseTransformOp {
         return new Object[] {kw, kh, sx, sy, pw, ph, dw, dh, isSameMode ? 1.0 : 0.0, type.ordinal(), extra};
     }
 
-//    private static INDArray getNewOutputArray(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,
-//                                              int padHeight, int padWidth, boolean coverAll) {
-//
-//        // FIXME!!!
-//
-//        //number of images
-//        int n = img.size(0);
-//        //number of channels (depth)
-//        int c = img.size(1);
-//        //image height
-//        int h = img.size(2);
-//        //image width
-//        int w = img.size(3);
-//        int outHeight = Convolution.outSize(h, kernelHeight, strideY, padHeight, coverAll);
-//        int outWidth = Convolution.outSize(w, kernelWidth, strideX, padWidth, coverAll);
-//
-//        return Nd4j.createUninitialized(new int[] {n, c, kernelHeight, kernelWidth, outHeight, outWidth}, 'c');
-//    }
-
     private static DataBuffer getNewOutputShape(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,
                                                 int padHeight, int padWidth, int outHeight, int outWidth,  boolean coverAll) {
         //number of images
