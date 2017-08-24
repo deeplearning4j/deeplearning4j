@@ -877,6 +877,8 @@ namespace simdOps {
 			int padHeight = (int)extraParams[3];
 			int imgHeight = (int)extraParams[4];
 			int imgWidth = (int)extraParams[5];
+			int dW = (int)extraParams[6];			//Dilation in width/x dimension
+			int dH = (int)extraParams[7];			//Dilation in height/y dimension
 
 			int *outShape = shape::shapeOf(resultShapeBuffer);
 			char resultOrder = shape::order(resultShapeBuffer);
@@ -949,11 +951,13 @@ namespace simdOps {
 
 			int kernelHeight = inShape[2];
 			int kernelWidth = inShape[3];
-			/* int strideY, int strideX, int padHeight, int padWidth, int imgHeight, int imgWidth, */
+			/* int strideY, int strideX, int padHeight, int padWidth, int imgHeight, int imgWidth, int dilationW, int dilationH */
 			int strideX = (int)extraParams[0];
 			int strideY = (int)extraParams[1];
 			int padWidth = (int)extraParams[2];
 			int padHeight = (int)extraParams[3];
+			int dX = (int)extraParams[6];			//Dilation in width/x dimension
+			int dY = (int)extraParams[7];			//Dilation in height/y dimension
 
 
 			int exampleFrom = 0;
@@ -1015,13 +1019,13 @@ namespace simdOps {
 								if (inStride2 <= inStride3) {
 									//Want dimension 2 (along height) in inner loop for cache efficiency
 									for (int patchX = 0; patchX < kernelWidth; patchX++) {
-										if (j + patchX < 0 || j + patchX >= outShape3)
+										if (j + patchX * dX < 0 || j + patchX * dX >= outShape3)
 											continue;
 
 										for (int patchY = 0; patchY < kernelHeight; patchY++) {
-											if (i + patchY < 0 || i + patchY >= outShape2)
+											if (i + patchY * dY < 0 || i + patchY * dY >= outShape2)
 												continue;
-											fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+											fOut[baseOffsetOut + patchY * dY * outStride2 + patchX * dX * outStride3] +=
 												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
 										}
 									}
@@ -1029,12 +1033,12 @@ namespace simdOps {
 								else {
 									//Want dimension 3 (along width) in inner loop for cache efficiency
 									for (int patchY = 0; patchY < kernelHeight; patchY++) {
-										if (i + patchY < 0 || i + patchY >= outShape2)
+										if (i + patchY * dY < 0 || i + patchY * dY >= outShape2)
 											continue;
 										for (int patchX = 0; patchX < kernelWidth; patchX++) {
-											if (j + patchX < 0 || j + patchX >= outShape3)
+											if (j + patchX * dX < 0 || j + patchX * dX >= outShape3)
 												continue;
-											fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+											fOut[baseOffsetOut + patchY * dY * outStride2 + patchX * dX * outStride3] +=
 												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
 										}
 									}
@@ -1057,7 +1061,7 @@ namespace simdOps {
 									//Want dimension 2 (along height) in inner loop for cache efficiency
 									for (int patchX = 0; patchX < kernelWidth; patchX++) {
 										for (int patchY = 0; patchY < kernelHeight; patchY++) {
-											fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+											fOut[baseOffsetOut + patchY * dX * outStride2 + patchX * dX * outStride3] +=
 												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
 										}
 									}
@@ -1066,7 +1070,7 @@ namespace simdOps {
 									//Want dimension 3 (along width) in inner loop for cache efficiency
 									for (int patchY = 0; patchY < kernelHeight; patchY++) {
 										for (int patchX = 0; patchX < kernelWidth; patchX++) {
-											fOut[baseOffsetOut + patchY * outStride2 + patchX * outStride3] +=
+											fOut[baseOffsetOut + patchY * dY * outStride2 + patchX * dX * outStride3] +=
 												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
 										}
 									}
