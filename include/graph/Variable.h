@@ -107,6 +107,9 @@ nd4j::graph::Variable<T>::Variable(const nd4j::graph::FlatVariable *flatVariable
     int *shape = new int[shapeLen];
     this->_id = flatVariable->id();
 
+    if (flatVariable->name() != nullptr && flatVariable->name()->size() != 0)
+        this->_name = flatVariable->name()->str();
+
     _external = true;
     _readOnly = false;
 
