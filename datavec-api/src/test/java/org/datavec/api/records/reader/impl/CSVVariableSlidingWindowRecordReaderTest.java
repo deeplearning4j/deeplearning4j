@@ -21,15 +21,20 @@ import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVNLinesSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
+import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVVariableSlidingWindowRecordReader;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.InputSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.WritableType;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.net.URI;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -44,7 +49,7 @@ public class CSVVariableSlidingWindowRecordReaderTest {
     public void testCSVVariableSlidingWindowRecordReader() throws Exception {
         int maxLinesPerSequence = 3;
 
-        SequenceRecordReader seqRR = new CSVVariableSlidingWindowRecordReader(maxLinesPerSequence, 1);
+        SequenceRecordReader seqRR = new CSVVariableSlidingWindowRecordReader(maxLinesPerSequence);
         seqRR.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
 
         CSVRecordReader rr = new CSVRecordReader();
@@ -55,11 +60,10 @@ public class CSVVariableSlidingWindowRecordReaderTest {
             List<List<Writable>> next = seqRR.sequenceRecord();
 
             if(count==maxLinesPerSequence-1) {
-                List<List<Writable>> expected = new ArrayList<>();
+                LinkedList<List<Writable>> expected = new LinkedList<>();
                 for (int i = 0; i < maxLinesPerSequence; i++) {
-                    expected.add(rr.next());
+                    expected.addFirst(rr.next());
                 }
-                Collections.reverse(expected);
                 assertEquals(expected, next);
 
             }
@@ -69,12 +73,55 @@ public class CSVVariableSlidingWindowRecordReaderTest {
             if(count==0) { // first seq should be length 1
                 assertEquals(1, next.size());
             }
-            if(count==151) { // last seq should be length 1
+            if(count>151) { // last seq should be length 1
                 assertEquals(1, next.size());
             }
 
             count++;
         }
+
+        assertEquals(152, count);
     }
 
+    @Test
+    public void testCSVVariableSlidingWindowRecordReaderStride() throws Exception {
+        int maxLinesPerSequence = 3;
+        int stride = 2;
+
+        SequenceRecordReader seqRR = new CSVVariableSlidingWindowRecordReader(maxLinesPerSequence, stride);
+        seqRR.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+
+        CSVRecordReader rr = new CSVRecordReader();
+        rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+
+        int count = 0;
+        while (seqRR.hasNext()) {
+            List<List<Writable>> next = seqRR.sequenceRecord();
+
+            if(count==maxLinesPerSequence-1) {
+                LinkedList<List<Writable>> expected = new LinkedList<>();
+                for(int s = 0; s < stride; s++) {
+                    expected = new LinkedList<>();
+                    for (int i = 0; i < maxLinesPerSequence; i++) {
+                        expected.addFirst(rr.next());
+                    }
+                }
+                assertEquals(expected, next);
+
+            }
+            if(count==maxLinesPerSequence) {
+                assertEquals(maxLinesPerSequence, next.size());
+            }
+            if(count==0) { // first seq should be length 2
+                assertEquals(2, next.size());
+            }
+            if(count>151) { // last seq should be length 1
+                assertEquals(1, next.size());
+            }
+
+            count++;
+        }
+
+        assertEquals(76, count);
+    }
 }

@@ -35,6 +35,9 @@ import java.util.*;
 /**
  * A sliding window of variable size across an entire CSV.
  *
+ * In practice the sliding window size starts at 1, then linearly increase to maxLinesPer sequence, then
+ * linearly decrease back to 1.
+ *
  * @author Justin Long (crockpotveggies)
  */
 public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implements SequenceRecordReader {
@@ -55,27 +58,40 @@ public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implem
     }
 
     /**
-     * @param maxLinesPerSequence    Number of lines in each sequence, use default delemiter(,) between entries in the same line
+     * @param maxLinesPerSequence Number of lines in each sequence, use default delemiter(,) between entries in the same line
      */
     public CSVVariableSlidingWindowRecordReader(int maxLinesPerSequence) {
         this(maxLinesPerSequence, 0, 1, String.valueOf(CSVRecordReader.DEFAULT_DELIMITER));
     }
 
     /**
-     * @param maxLinesPerSequence    Number of lines in each sequence, use default delemiter(,) between entries in the same line
+     * @param maxLinesPerSequence Number of lines in each sequence, use default delemiter(,) between entries in the same line
+     * @param stride Number of lines between records (increment window > 1 line)
      */
     public CSVVariableSlidingWindowRecordReader(int maxLinesPerSequence, int stride) {
         this(maxLinesPerSequence, 0, stride, String.valueOf(CSVRecordReader.DEFAULT_DELIMITER));
     }
 
     /**
+     * @param maxLinesPerSequence Number of lines in each sequence, use default delemiter(,) between entries in the same line
+     * @param stride Number of lines between records (increment window > 1 line)
+     */
+    public CSVVariableSlidingWindowRecordReader(int maxLinesPerSequence, int stride, String delimiter) {
+        this(maxLinesPerSequence, 0, stride, String.valueOf(CSVRecordReader.DEFAULT_DELIMITER));
+    }
+
+    /**
      *
-     * @param maxLinesPerSequence    Number of lines in each sequences
-     * @param skipNumLines         Number of lines to skip at the start of the file (only skipped once, not per sequence)
-     * @param delimiter            Delimiter between entries in the same line, for example ","
+     * @param maxLinesPerSequence Number of lines in each sequences
+     * @param skipNumLines Number of lines to skip at the start of the file (only skipped once, not per sequence)
+     * @param stride Number of lines between records (increment window > 1 line)
+     * @param delimiter Delimiter between entries in the same line, for example ","
      */
     public CSVVariableSlidingWindowRecordReader(int maxLinesPerSequence, int skipNumLines, int stride, String delimiter) {
         super(skipNumLines);
+        if(stride < 1)
+            throw new IllegalArgumentException("Stride must be greater than 1");
+
         this.delimiter = delimiter;
         this.maxLinesPerSequence = maxLinesPerSequence;
         this.stride = stride;
@@ -98,13 +114,11 @@ public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implem
 
     @Override
     public List<List<Writable>> sequenceRecord() {
-        List<List<Writable>> sequence = new ArrayList<>();
-
         // try polling next(), otherwise empty the queue
         // loop according to stride size
         for(int i = 0; i < stride; i++) {
             if(super.hasNext())
-                queue.add(super.next());
+                queue.addFirst(super.next());
             else
                 exhausted = true;
 
@@ -112,14 +126,17 @@ public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implem
                 throw new NoSuchElementException("No next element");
 
             if (queue.size() > maxLinesPerSequence || exhausted)
-                queue.poll();
+                queue.pollLast();
         }
 
+        List<List<Writable>> sequence = new ArrayList<>();
         for(List<Writable> line : queue) {
             sequence.add(line);
         }
 
-        Collections.reverse(sequence);
+        if(exhausted && queue.size()==1)
+            queue.pollLast();
+
         return sequence;
     }
 
@@ -132,7 +149,7 @@ public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implem
     public SequenceRecord nextSequence() {
         int lineBefore = lineIndex;
         List<List<Writable>> record = sequenceRecord();
-        int lineAfter = lineIndex;
+        int lineAfter = lineIndex + queue.size();
         URI uri = (locations == null || locations.length < 1 ? null : locations[splitIndex]);
         RecordMetaData meta = new RecordMetaDataLineInterval(lineBefore, lineAfter - 1, uri,
                         CSVVariableSlidingWindowRecordReader.class);
@@ -146,74 +163,7 @@ public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implem
 
     @Override
     public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
-        //First: create a sorted list of the RecordMetaData
-        List<Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>>> list = new ArrayList<>();
-        Iterator<RecordMetaData> iter = recordMetaDatas.iterator();
-        int count = 0;
-        while (iter.hasNext()) {
-            RecordMetaData rmd = iter.next();
-            if (!(rmd instanceof RecordMetaDataLineInterval)) {
-                throw new IllegalArgumentException(
-                                "Invalid metadata; expected RecordMetaDataLineInterval instance; got: " + rmd);
-            }
-            list.add(new Triple<>(count++, (RecordMetaDataLineInterval) rmd,
-                            (List<List<Writable>>) new ArrayList<List<Writable>>()));
-        }
-
-        //Sort by starting line number:
-        Collections.sort(list, new Comparator<Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>>>() {
-            @Override
-            public int compare(Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>> o1,
-                            Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>> o2) {
-                return Integer.compare(o1.getSecond().getLineNumberStart(), o2.getSecond().getLineNumberStart());
-            }
-        });
-
-        Iterator<String> lineIter = getIterator(0); //TODO handle multi file case...
-        int currentLineIdx = 0;
-        String line = lineIter.next();
-        while (currentLineIdx < skipNumLines) {
-            line = lineIter.next();
-            currentLineIdx++;
-        }
-        for (Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>> next : list) {
-            int nextStartLine = next.getSecond().getLineNumberStart();
-            int nextEndLine = next.getSecond().getLineNumberEnd();
-            while (currentLineIdx < nextStartLine && lineIter.hasNext()) {
-                line = lineIter.next();
-                currentLineIdx++;
-            }
-            while (currentLineIdx <= nextEndLine && (lineIter.hasNext() || currentLineIdx == nextEndLine)) {
-                String[] split = line.split(this.delimiter, -1);
-                List<Writable> writables = new ArrayList<>();
-                for (String s : split) {
-                    writables.add(new Text(s));
-                }
-                next.getThird().add(writables);
-                currentLineIdx++;
-                if (lineIter.hasNext()) {
-                    line = lineIter.next();
-                }
-            }
-        }
-        closeIfRequired(lineIter);
-
-        //Now, sort by the original order:
-        Collections.sort(list, new Comparator<Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>>>() {
-            @Override
-            public int compare(Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>> o1,
-                            Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>> o2) {
-                return Integer.compare(o1.getFirst(), o2.getFirst());
-            }
-        });
-
-        //And return...
-        List<SequenceRecord> out = new ArrayList<>();
-        for (Triple<Integer, RecordMetaDataLineInterval, List<List<Writable>>> t : list) {
-            out.add(new org.datavec.api.records.impl.SequenceRecord(t.getThird(), t.getSecond()));
-        }
-
-        return out;
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
