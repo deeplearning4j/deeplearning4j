@@ -120,7 +120,12 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
                     int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
                     AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
-                    ConvolutionMode convolutionMode) {
+                    ConvolutionMode convolutionMode, int[] dilation) {
+        if(dilation[0] > 2 || dilation[1] > 2){
+            //CuDNN seems to not support all (valid) configurations...
+            //Same mode + dilation 3: cuDNN status = 9: CUDNN_STATUS_NOT_SUPPORTED
+            return null;
+        }
         int miniBatch = input.size(0);
         int inH = input.size(2);
         int inW = input.size(3);
@@ -132,10 +137,10 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode); //Also performs validation
-            pad = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {inH, inW}, kernel, strides);
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+            pad = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
         } else {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
         }
 
         int outH = outSize[0];
@@ -159,8 +164,8 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, outDepth, outH, outW,
                         deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]));
-        checkCudnn(cudnnSetConvolution2dDescriptor_v5(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], 1,
-                        1, CUDNN_CROSS_CORRELATION, dataType));
+        checkCudnn(cudnnSetConvolution2dDescriptor_v5(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
+                        dilation[1], CUDNN_CROSS_CORRELATION, dataType));
         checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH,
                         kW));
         if (mode == AlgoMode.USER_SPECIFIED && bwdFilterAlgo != null && bwdDataAlgo != null) {
@@ -293,7 +298,12 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
     @Override
     public INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad,
-                    AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode) {
+                    AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode, int[] dilation) {
+        if(dilation[0] > 2 || dilation[1] > 2){
+            //CuDNN seems to not support all (valid) configurations...
+            //Same mode + dilation 3: cuDNN status = 9: CUDNN_STATUS_NOT_SUPPORTED
+            return null;
+        }
         int miniBatch = input.size(0);
         int inH = input.size(2);
         int inW = input.size(3);
@@ -310,10 +320,10 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode); //Also performs validation
-            pad = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {inH, inW}, kernel, strides);
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+            pad = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
         } else {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
         }
 
 
@@ -331,8 +341,8 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH,
                         kW));
-        checkCudnn(cudnnSetConvolution2dDescriptor_v5(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], 1,
-                        1, CUDNN_CROSS_CORRELATION, dataType));
+        checkCudnn(cudnnSetConvolution2dDescriptor_v5(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
+                        dilation[1], CUDNN_CROSS_CORRELATION, dataType));
 
         // find dimension of convolution output
         //        checkCudnn(cudnnGetConvolution2dForwardOutputDim(cudnnContext.convDesc, cudnnContext.srcTensorDesc, cudnnContext.filterDesc, n, c, h, w));

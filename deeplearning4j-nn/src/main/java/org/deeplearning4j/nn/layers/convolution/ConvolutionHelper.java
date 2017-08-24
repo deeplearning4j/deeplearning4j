@@ -38,10 +38,10 @@ public interface ConvolutionHelper {
     Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
                     int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
                     AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
-                    ConvolutionMode convolutionMode);
+                    ConvolutionMode convolutionMode, int[] dilation);
 
     INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad,
-                    AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode);
+                    AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode, int[] dilation);
 
     INDArray activate(INDArray z, IActivation afn);
 }
