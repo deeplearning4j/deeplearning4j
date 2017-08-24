@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.eval.ROCMultiClass;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -225,7 +226,7 @@ public class KerasModelEndToEndTest {
     }
 
     static public INDArray[] getInputs(Hdf5Archive archive, boolean tensorFlowImageDimOrdering) throws Exception {
-        List<String> inputNames = (List<String>) KerasModel
+        List<String> inputNames = (List<String>) KerasModelUtils
                 .parseJsonString(archive.readAttributeAsJson(GROUP_ATTR_INPUTS)).get(GROUP_ATTR_INPUTS);
         INDArray[] inputs = new INDArray[inputNames.size()];
         for (int i = 0; i < inputNames.size(); i++) {
@@ -249,7 +250,7 @@ public class KerasModelEndToEndTest {
     }
 
     static public INDArray[] getOutputs(Hdf5Archive archive, boolean tensorFlowImageDimOrdering) throws Exception {
-        List<String> outputNames = (List<String>) KerasModel
+        List<String> outputNames = (List<String>) KerasModelUtils
                 .parseJsonString(archive.readAttributeAsJson(GROUP_ATTR_OUTPUTS)).get(GROUP_ATTR_OUTPUTS);
         INDArray[] outputs = new INDArray[outputNames.size()];
         for (int i = 0; i < outputNames.size(); i++) {
@@ -261,7 +262,7 @@ public class KerasModelEndToEndTest {
     }
 
     static public INDArray[] getPredictions(Hdf5Archive archive, boolean tensorFlowImageDimOrdering) throws Exception {
-        List<String> outputNames = (List<String>) KerasModel
+        List<String> outputNames = (List<String>) KerasModelUtils
                 .parseJsonString(archive.readAttributeAsJson(GROUP_ATTR_OUTPUTS)).get(GROUP_ATTR_OUTPUTS);
         INDArray[] predictions = new INDArray[outputNames.size()];
         for (int i = 0; i < outputNames.size(); i++) {

@@ -29,11 +29,7 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfigurationFactory;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.layers.*;
-import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution1D;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution2D;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
@@ -41,7 +37,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.lang.reflect.Constructor;
 import java.util.*;
 
 /**
@@ -75,93 +70,7 @@ public class KerasLayer {
     protected KerasLayerConfiguration conf;
 
 
-    /**
-     * Build KerasLayer from a Keras layer configuration.
-     *
-     * @param layerConfig map containing Keras layer properties
-     * @return KerasLayer
-     * @see Layer
-     */
-    public KerasLayer getKerasLayerFromConfig(Map<String, Object> layerConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        return getKerasLayerFromConfig(layerConfig, false);
-    }
 
-    /**
-     * Build KerasLayer from a Keras layer configuration. Building layer with
-     * enforceTrainingConfig=true will throw exceptions for unsupported Keras
-     * options related to training (e.g., unknown regularizers). Otherwise
-     * we only generate warnings.
-     *
-     * @param layerConfig           map containing Keras layer properties
-     * @param enforceTrainingConfig whether to enforce training-only configurations
-     * @return KerasLayer
-     * @see Layer
-     */
-    public KerasLayer getKerasLayerFromConfig(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        String layerClassName = getClassNameFromConfig(layerConfig);
-        if (layerClassName.equals(conf.getLAYER_CLASS_NAME_TIME_DISTRIBUTED())) {
-            layerConfig = getTimeDistributedLayerConfig(layerConfig);
-            layerClassName = getClassNameFromConfig(layerConfig);
-        }
-
-        KerasLayer layer = null;
-        if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ACTIVATION())) {
-            layer = new KerasActivation(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LEAKY_RELU())) {
-            layer = new KerasLeakyReLU(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DROPOUT())) {
-            layer = new KerasDropout(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DENSE()) ||
-                layerClassName.equals(conf.getLAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE())) {
-            layer = new KerasDense(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LSTM())) {
-            layer = new KerasLstm(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_2D())) {
-            layer = new KerasConvolution2D(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_1D())) {
-            layer = new KerasConvolution1D(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_2D()) ||
-                layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_2D())) {
-            layer = new KerasPooling(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D()) ||
-                layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D()) ||
-                layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D()) ||
-                layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D())) {
-            layer = new KerasGlobalPooling(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_BATCHNORMALIZATION())) {
-            layer = new KerasBatchNormalization(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_EMBEDDING())) {
-            layer = new KerasEmbedding(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_INPUT())) {
-            layer = new KerasInput(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MERGE())) {
-            layer = new KerasMerge(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_FLATTEN())) {
-            layer = new KerasFlatten(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_RESHAPE())) {
-            layer = new KerasReshape(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ZERO_PADDING_2D())) {
-            layer = new KerasZeroPadding(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_1D()) ||
-                layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_1D())) {
-            layer = new KerasPooling(layerConfig, enforceTrainingConfig);
-        } else {
-            // check if user registered a custom config
-            Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
-
-            if (customConfig == null)
-                throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);
-            try {
-                Constructor constructor = customConfig.getConstructor(Map.class);
-                layer = (KerasLayer) constructor.newInstance(layerConfig);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return layer;
-    }
 
     public static void registerCustomLayer(String layerName, Class<? extends KerasLayer> configClass) {
         customLayers.put(layerName, configClass);
@@ -216,7 +125,7 @@ public class KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this.kerasMajorVersion = (Integer) layerConfig.get(LAYER_FIELD_KERAS_VERSION);
         this.conf = KerasLayerConfigurationFactory.get(this.kerasMajorVersion);
-        this.className = getClassNameFromConfig(layerConfig);
+        this.className = KerasLayerUtils.getClassNameFromConfig(layerConfig, conf);
         if (this.className == null)
             throw new InvalidKerasConfigurationException("Keras layer class name is missing");
         this.layerName = getLayerNameFromConfig(layerConfig);
@@ -249,7 +158,7 @@ public class KerasLayer {
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         getBiasL1RegularizationFromConfig(layerConfig, enforceTrainingConfig);
         getBiasL2RegularizationFromConfig(layerConfig, enforceTrainingConfig);
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (innerConfig.containsKey(conf.getLAYER_FIELD_W_REGULARIZER()))
             checkForUnknownRegularizer((Map<String, Object>) innerConfig.get(conf.getLAYER_FIELD_W_REGULARIZER()),
                     enforceTrainingConfig);
@@ -659,62 +568,6 @@ public class KerasLayer {
         return dimensions;
     }
 
-    /**
-     * Get Keras layer class name from Keras layer configuration.
-     *
-     * @param layerConfig dictionary containing Keras layer configuration
-     * @return
-     * @throws InvalidKerasConfigurationException
-     */
-    public String getClassNameFromConfig(Map<String, Object> layerConfig)
-            throws InvalidKerasConfigurationException {
-        if (!layerConfig.containsKey(conf.getLAYER_FIELD_CLASS_NAME()))
-            throw new InvalidKerasConfigurationException(
-                    "Field " + conf.getLAYER_FIELD_CLASS_NAME() + " missing from layer config");
-        return (String) layerConfig.get(conf.getLAYER_FIELD_CLASS_NAME());
-    }
-
-    /**
-     * Extract inner layer config from TimeDistributed configuration and merge
-     * it into the outer config.
-     *
-     * @param layerConfig dictionary containing Keras TimeDistributed configuration
-     * @return
-     * @throws InvalidKerasConfigurationException
-     */
-    public Map<String, Object> getTimeDistributedLayerConfig(Map<String, Object> layerConfig)
-            throws InvalidKerasConfigurationException {
-        if (!layerConfig.containsKey(conf.getLAYER_FIELD_CLASS_NAME()))
-            throw new InvalidKerasConfigurationException(
-                    "Field " + conf.getLAYER_FIELD_CLASS_NAME() + " missing from layer config");
-        if (!layerConfig.get(conf.getLAYER_FIELD_CLASS_NAME()).equals(conf.getLAYER_CLASS_NAME_TIME_DISTRIBUTED()))
-            throw new InvalidKerasConfigurationException("Expected " + conf.getLAYER_CLASS_NAME_TIME_DISTRIBUTED()
-                    + " layer, found " + (String) layerConfig.get(conf.getLAYER_FIELD_CLASS_NAME()));
-        if (!layerConfig.containsKey(conf.getLAYER_FIELD_CONFIG()))
-            throw new InvalidKerasConfigurationException("Field " + conf.getLAYER_FIELD_CONFIG() + " missing from layer config");
-        Map<String, Object> outerConfig = getInnerLayerConfigFromConfig(layerConfig);
-        Map<String, Object> innerLayer = (Map<String, Object>) outerConfig.get(conf.getLAYER_FIELD_LAYER());
-        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
-        layerConfig.put(conf.getLAYER_FIELD_NAME(), innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
-        Map<String, Object> innerConfig = (Map<String, Object>) getInnerLayerConfigFromConfig(innerLayer);
-        outerConfig.putAll(innerConfig);
-        outerConfig.remove(conf.getLAYER_FIELD_LAYER());
-        return layerConfig;
-    }
-
-    /**
-     * Get inner layer config from Keras layer configuration.
-     *
-     * @param layerConfig dictionary containing Keras layer configuration
-     * @return
-     * @throws InvalidKerasConfigurationException
-     */
-    public Map<String, Object> getInnerLayerConfigFromConfig(Map<String, Object> layerConfig)
-            throws InvalidKerasConfigurationException {
-        if (!layerConfig.containsKey(conf.getLAYER_FIELD_CONFIG()))
-            throw new InvalidKerasConfigurationException("Field " + conf.getLAYER_FIELD_CONFIG() + " missing from layer config");
-        return (Map<String, Object>) layerConfig.get(conf.getLAYER_FIELD_CONFIG());
-    }
 
     /**
      * Get layer name from Keras layer configuration.
@@ -724,7 +577,7 @@ public class KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     protected String getLayerNameFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_NAME()))
             throw new InvalidKerasConfigurationException("Field " + conf.getLAYER_FIELD_NAME() + " missing from layer config");
         return (String) innerConfig.get(conf.getLAYER_FIELD_NAME());
@@ -737,7 +590,7 @@ public class KerasLayer {
      * @return input shape array
      */
     private int[] getInputShapeFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_BATCH_INPUT_SHAPE()))
             return null;
         List<Integer> batchInputShape = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_BATCH_INPUT_SHAPE());
@@ -755,7 +608,7 @@ public class KerasLayer {
      * @return Dimension order
      */
     private DimOrder getDimOrderFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         DimOrder dimOrder = DimOrder.NONE;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_DIM_ORDERING())) {
             String dimOrderStr = (String) innerConfig.get(conf.getLAYER_FIELD_DIM_ORDERING());
@@ -799,7 +652,7 @@ public class KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     public int getNOutFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         int nOut;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_OUTPUT_DIM()))
             /* Most feedforward layers: Dense, RNN, etc. */
@@ -824,7 +677,7 @@ public class KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     protected double getDropoutFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         /* NOTE: Keras "dropout" parameter determines dropout probability,
          * while DL4J "dropout" parameter determines retention probability.
          */
@@ -847,7 +700,7 @@ public class KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     protected boolean getHasBiasFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         boolean hasBias = true;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_USE_BIAS())){
             hasBias = (boolean) innerConfig.get(conf.getLAYER_FIELD_USE_BIAS());
@@ -865,9 +718,10 @@ public class KerasLayer {
      */
     protected IActivation getActivationFromConfig(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_ACTIVATION()))
-            throw new InvalidKerasConfigurationException("Keras layer is missing " + conf.getLAYER_FIELD_ACTIVATION() + " field");
+            throw new InvalidKerasConfigurationException("Keras layer is missing "
+                    + conf.getLAYER_FIELD_ACTIVATION() + " field");
         return mapActivation((String) innerConfig.get(conf.getLAYER_FIELD_ACTIVATION()));
     }
 
@@ -880,9 +734,10 @@ public class KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    protected WeightInit getWeightInitFromConfig(Map<String, Object> layerConfig, String initField, boolean enforceTrainingConfig)
+    protected WeightInit getWeightInitFromConfig(Map<String, Object> layerConfig, String initField,
+                                                 boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(initField))
             throw new InvalidKerasConfigurationException("Keras layer is missing " + initField + " field");
         String kerasInit = "glorot_normal";
@@ -916,9 +771,10 @@ public class KerasLayer {
      */
     public double getWeightL1RegularizationFromConfig(Map<String, Object> layerConfig, boolean willBeTrained)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (innerConfig.containsKey(conf.getLAYER_FIELD_W_REGULARIZER())) {
-            Map<String, Object> regularizerConfig = (Map<String, Object>) innerConfig.get(conf.getLAYER_FIELD_W_REGULARIZER());
+            Map<String, Object> regularizerConfig =
+                    (Map<String, Object>) innerConfig.get(conf.getLAYER_FIELD_W_REGULARIZER());
             if (regularizerConfig != null && regularizerConfig.containsKey(conf.getREGULARIZATION_TYPE_L1()))
                 return (double) regularizerConfig.get(conf.getREGULARIZATION_TYPE_L1());
         }
@@ -928,14 +784,15 @@ public class KerasLayer {
     /**
      * Get L2 weight regularization (if any) from Keras weight regularization configuration.
      *
-     * @param layerConfig dictionary containing Keras layer configuration     Map containing Keras weight reguarlization configuration
+     * @param layerConfig dictionary containing Keras layer configuration
      * @return L1 regularization strength (0.0 if none)
      */
     public double getWeightL2RegularizationFromConfig(Map<String, Object> layerConfig, boolean willBeTrained)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (innerConfig.containsKey(conf.getLAYER_FIELD_W_REGULARIZER())) {
-            Map<String, Object> regularizerConfig = (Map<String, Object>) innerConfig.get(conf.getLAYER_FIELD_W_REGULARIZER());
+            Map<String, Object> regularizerConfig =
+                    (Map<String, Object>) innerConfig.get(conf.getLAYER_FIELD_W_REGULARIZER());
             if (regularizerConfig != null && regularizerConfig.containsKey(conf.getREGULARIZATION_TYPE_L2()))
                 return (double) regularizerConfig.get(conf.getREGULARIZATION_TYPE_L2());
         }
@@ -945,12 +802,12 @@ public class KerasLayer {
     /**
      * Get L1 bias regularization (if any) from Keras bias regularization configuration.
      *
-     * @param layerConfig dictionary containing Keras layer configuration     Map containing Keras bias reguarlization configuration
+     * @param layerConfig dictionary containing Keras layer configuration
      * @return L1 regularization strength (0.0 if none)
      */
     public double getBiasL1RegularizationFromConfig(Map<String, Object> layerConfig, boolean willBeTrained)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (innerConfig.containsKey(conf.getLAYER_FIELD_B_REGULARIZER())) {
             Map<String, Object> regularizerConfig = (Map<String, Object>) innerConfig.get(conf.getLAYER_FIELD_B_REGULARIZER());
             if (regularizerConfig != null && regularizerConfig.containsKey(conf.getREGULARIZATION_TYPE_L1()))
@@ -962,12 +819,12 @@ public class KerasLayer {
     /**
      * Get L2 bias regularization (if any) from Keras bias regularization configuration.
      *
-     * @param layerConfig dictionary containing Keras layer configuration     Map containing Keras weight reguarlization configuration
+     * @param layerConfig dictionary containing Keras layer configuration
      * @return L1 regularization strength (0.0 if none)
      */
     private double getBiasL2RegularizationFromConfig(Map<String, Object> layerConfig, boolean willBeTrained)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (innerConfig.containsKey(conf.getLAYER_FIELD_B_REGULARIZER())) {
             Map<String, Object> regularizerConfig = (Map<String, Object>) innerConfig.get(conf.getLAYER_FIELD_B_REGULARIZER());
             if (regularizerConfig != null && regularizerConfig.containsKey(conf.getREGULARIZATION_TYPE_L2()))
@@ -1009,7 +866,7 @@ public class KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     public int[] getStrideFromConfig(Map<String, Object> layerConfig, int dimension) throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         int[] strides = null;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_CONVOLUTION_STRIDES()) && dimension == 2) {
             /* 2D Convolutional layers. */
@@ -1039,7 +896,7 @@ public class KerasLayer {
      */
     public int[] getKernelSizeFromConfig(Map<String, Object> layerConfig, int dimension)
             throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         int[] kernelSize = null;
         if (kerasMajorVersion != 2) {
             if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_ROW()) && dimension == 2
@@ -1097,7 +954,7 @@ public class KerasLayer {
      */
     public ConvolutionMode getConvolutionModeFromConfig(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_BORDER_MODE()))
             throw new InvalidKerasConfigurationException("Could not determine convolution border mode: no "
                     + conf.getLAYER_FIELD_BORDER_MODE() + " field found");
@@ -1141,7 +998,7 @@ public class KerasLayer {
      */
     public int[] getPaddingFromBorderModeConfig(Map<String, Object> layerConfig, int dimension)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         int[] padding = null;
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_BORDER_MODE()))
             throw new InvalidKerasConfigurationException("Could not determine convolution border mode: no "

@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -89,7 +90,7 @@ public class KerasZeroPadding extends KerasLayer {
      */
     public int[] getPaddingFromConfig(Map<String, Object> layerConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(LAYER_FIELD_PADDING))
             throw new InvalidKerasConfigurationException(
                             "Field " + LAYER_FIELD_PADDING + " not found in Keras ZeroPadding layer");

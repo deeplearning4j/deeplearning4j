@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -133,7 +134,7 @@ public class KerasEmbedding extends KerasLayer {
      * @return                  input dim as int
      */
     private int getInputDimFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_INPUT_DIM()))
             throw new InvalidKerasConfigurationException(
                             "Keras Embedding layer config missing " + conf.getLAYER_FIELD_INPUT_DIM() + " field");

@@ -28,12 +28,14 @@ import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 
+import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasModelConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLoss;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLstm;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 
@@ -41,6 +43,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.DimOrder;
+import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.customLayers;
 
 /**
  * Build ComputationGraph from Keras (Functional API) Model or
@@ -176,8 +179,9 @@ public class KerasModel {
             Map<String, Object> layerConfigMap = (Map<String, Object>) layerConfig;
             // Append major keras version to each layer config.
             layerConfigMap.put(config.getFieldKerasVersion(), this.kerasMajorVersion);
-            KerasLayer layer = new KerasLayer(this.kerasMajorVersion).getKerasLayerFromConfig(layerConfigMap,
-                    this.enforceTrainingConfig);
+            KerasLayerConfiguration kerasLayerConf = new KerasLayer(this.kerasMajorVersion).conf;
+            KerasLayer layer = KerasLayerUtils.getKerasLayerFromConfig(layerConfigMap, this.enforceTrainingConfig,
+                    kerasLayerConf, customLayers);
             if (dimOrder == DimOrder.NONE && layer.getDimOrder() != DimOrder.NONE)
                 dimOrder = layer.getDimOrder();
             this.layersOrdered.add(layer);

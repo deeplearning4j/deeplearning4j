@@ -17,8 +17,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
 
-import static org.deeplearning4j.nn.modelimport.keras.KerasModel.parseJsonString;
-
 @Data
 public class KerasModelBuilder implements Cloneable {
     protected String modelJson = null;
@@ -93,7 +91,7 @@ public class KerasModelBuilder implements Cloneable {
                 config.getTrainingModelConfigAttribute());
         String kerasVersion = this.weightsArchive.readAttributeAsFixedLengthString(
                 config.getFieldKerasVersion(), 5);
-        Map<String, Object> modelMapper = parseJsonString(initialModelJson);
+        Map<String, Object> modelMapper = KerasModelUtils.parseJsonString(initialModelJson);
         modelMapper.put(config.getFieldKerasVersion(), kerasVersion);
         this.modelJson = new ObjectMapper().writeValueAsString(modelMapper);;
         if (this.trainingArchive.hasAttribute(config.getTrainingTrainingConfigAttribute()))
