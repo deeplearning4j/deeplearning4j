@@ -382,6 +382,8 @@ namespace simdOps {
 			int strideY = (int)extraParams[3];
 			int padWidth = (int)extraParams[4];
 			int padHeight = (int)extraParams[5];
+			int dX = (int)extraParams[6];			//Dilation, width/x dimension
+			int dY = (int)extraParams[7];			//Dilation, height/y dimension
 			int kSize = kernelWidth * kernelHeight;
 
 			int *outShape = shape::shapeOf(resultShapeBuffer);
@@ -439,17 +441,17 @@ namespace simdOps {
 
 				for (int i = 0; i < kernelHeight; ++i) {
 					for (int j = 0; j < kernelWidth; ++j) {
-						int h_im = h_offset + i;
-						int w_im = w_offset + j;
+						int h_im = h_offset + i * dY;
+						int w_im = w_offset + j * dX;
 						int i_f = 0;
 						int i_c_temp = i_c;
-						for (int dim = 5; dim >= 0; dim--)
-						{
+						for (int dim = 5; dim >= 0; dim--) {
 							i_f += (i_c_temp % outShape[dim])  * outStride[dim];
 							i_c_temp = i_c_temp / outShape[dim];
 						}
-						if (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) result[i_f] = data_im_ptr[i * strideh + j*stridew];
-							else result[i_f] = 0;
+						if (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width){
+							result[i_f] = data_im_ptr[i * dY * strideh + j * dX * stridew];
+						} else result[i_f] = 0;
 
 						//result[i_f] = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
 						data_col_ptr += height_col * width_col;
