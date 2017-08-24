@@ -71,6 +71,7 @@ public class KerasModel {
     public KerasModelBuilder modelBuilder() {
         return this.modelBuilder;
     }
+
     /**
      * (Recommended) Builder-pattern constructor for (Functional API) Model.
      *
@@ -103,14 +104,8 @@ public class KerasModel {
     protected KerasModel(String modelJson, String modelYaml, Hdf5Archive weightsArchive, String weightsRoot,
                          String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String, Object> modelConfig;
-        if (modelJson != null)
-            modelConfig = KerasModelUtils.parseJsonString(modelJson);
-        else if (modelYaml != null)
-            modelConfig = KerasModelUtils.parseYamlString(modelYaml);
-        else
-            throw new InvalidKerasConfigurationException("Requires model configuration not found.");
 
+        Map<String, Object> modelConfig = KerasModelUtils.parseModelConfig(modelJson, modelYaml);
         this.kerasMajorVersion = KerasModelUtils.determineKerasMajorVersion(modelConfig, config);
         this.enforceTrainingConfig = enforceTrainingConfig;
 
@@ -152,14 +147,14 @@ public class KerasModel {
         if (!layerLists.containsKey(config.getModelFieldLayers()))
             throw new InvalidKerasConfigurationException(
                     "Could not find layer configurations (no " + (config.getModelFieldLayers() + " field found)"));
-        helperPrepareLayers((List<Object>) layerLists.get((config.getModelFieldLayers())));
+        prepareLayers((List<Object>) layerLists.get((config.getModelFieldLayers())));
 
         /* Import training configuration. */
         if (trainingJson != null)
-            helperImportTrainingConfiguration(trainingJson);
+            importTrainingConfiguration(trainingJson);
 
         /* Infer output types for each layer. */
-        helperInferOutputTypes();
+        inferOutputTypes();
 
         /* Store weights in layers. */
         if (weightsArchive != null)
@@ -172,7 +167,7 @@ public class KerasModel {
      *
      * @param layerConfigs List of Keras layer configurations
      */
-     void helperPrepareLayers(List<Object> layerConfigs)
+     void prepareLayers(List<Object> layerConfigs)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this.layersOrdered = new ArrayList<>();
         this.layers = new HashMap<>();
@@ -209,7 +204,7 @@ public class KerasModel {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    protected void helperImportTrainingConfiguration(String trainingConfigJson)
+    protected void importTrainingConfiguration(String trainingConfigJson)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> trainingConfig = KerasModelUtils.parseJsonString(trainingConfigJson);
         /* TODO: handle other configs (loss weights, sample weights). */
@@ -250,7 +245,7 @@ public class KerasModel {
      * Helper method called from constructor. Infers and records output type
      * for every layer.
      */
-    protected void helperInferOutputTypes()
+    protected void inferOutputTypes()
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this.outputTypes = new HashMap<String, InputType>();
         for (KerasLayer layer : this.layersOrdered) {
@@ -320,7 +315,6 @@ public class KerasModel {
             InputPreProcessor preprocessor = layer.getInputPreprocessor(inboundTypeArray);
 
             if (layer.isLayer()) {
-                /* Add DL4J layer. */
                 if (preprocessor != null)
                     preprocessors.put(layer.getLayerName(), preprocessor);
                 graphBuilder.addLayer(layer.getLayerName(), layer.getLayer(), inboundLayerNamesArray);
@@ -328,7 +322,6 @@ public class KerasModel {
                     log.warn("Model cannot be trained: output layer " + layer.getLayerName()
                             + " is not an IOutputLayer (no loss function specified)");
             } else if (layer.isVertex()) { // Ignore "preprocessor" layers for now
-                /* Add DL4J vertex. */
                 if (preprocessor != null)
                     preprocessors.put(layer.getLayerName(), preprocessor);
                 graphBuilder.addVertex(layer.getLayerName(), layer.getVertex(), inboundLayerNamesArray);

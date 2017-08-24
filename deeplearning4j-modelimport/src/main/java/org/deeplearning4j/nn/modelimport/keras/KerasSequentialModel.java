@@ -77,14 +77,8 @@ public class KerasSequentialModel extends KerasModel {
     public KerasSequentialModel(String modelJson, String modelYaml, Hdf5Archive weightsArchive, String weightsRoot,
                                 String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String, Object> modelConfig;
-        if (modelJson != null)
-            modelConfig = KerasModelUtils.parseJsonString(modelJson);
-        else if (modelYaml != null)
-            modelConfig = KerasModelUtils.parseYamlString(modelYaml);
-        else
-            throw new InvalidKerasConfigurationException("Requires model configuration as either JSON or YAML string.");
 
+        Map<String, Object> modelConfig = KerasModelUtils.parseModelConfig(modelJson, modelYaml);
         this.kerasMajorVersion = KerasModelUtils.determineKerasMajorVersion(modelConfig, config);
         this.enforceTrainingConfig = enforceTrainingConfig;
 
@@ -101,7 +95,7 @@ public class KerasSequentialModel extends KerasModel {
         if (!modelConfig.containsKey(config.getModelFieldConfig()))
             throw new InvalidKerasConfigurationException(
                     "Could not find layer configurations (no " + config.getModelFieldConfig() + " field found)");
-        helperPrepareLayers((List<Object>) modelConfig.get(config.getModelFieldConfig()));
+        prepareLayers((List<Object>) modelConfig.get(config.getModelFieldConfig()));
 
         KerasLayer inputLayer;
         if (this.layersOrdered.get(0) instanceof KerasInput) {
@@ -128,10 +122,10 @@ public class KerasSequentialModel extends KerasModel {
 
         /* Import training configuration. */
         if (trainingJson != null)
-            helperImportTrainingConfiguration(trainingJson);
+            importTrainingConfiguration(trainingJson);
 
         /* Infer output types for each layer. */
-        helperInferOutputTypes();
+        inferOutputTypes();
 
         /* Store weights in layers. */
         if (weightsArchive != null)
