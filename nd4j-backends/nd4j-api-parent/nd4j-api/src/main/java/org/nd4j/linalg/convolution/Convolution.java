@@ -82,16 +82,16 @@ public class Convolution {
     public static INDArray col2im(INDArray col, int sy, int sx, int ph, int pw, int h, int w) {
         if (col.rank() != 6)
             throw new IllegalArgumentException("col2im input array must be rank 6");
-        Col2Im col2Im = new Col2Im(col, sy, sx, ph, pw, h, w);
+        Col2Im col2Im = new Col2Im(col, sy, sx, ph, pw, h, w, 1, 1);
         return Nd4j.getExecutioner().exec(col2Im).z();
     }
 
-    public static INDArray col2im(INDArray col, INDArray z, int sy, int sx, int ph, int pw, int h, int w) {
+    public static INDArray col2im(INDArray col, INDArray z, int sy, int sx, int ph, int pw, int h, int w, int dh, int dw ) {
         if (col.rank() != 6)
             throw new IllegalArgumentException("col2im input array must be rank 6");
         if (z.rank() != 4)
             throw new IllegalArgumentException("col2im output array must be rank 4");
-        Col2Im col2Im = new Col2Im(col, sy, sx, ph, pw, h, w, false, z);
+        Col2Im col2Im = new Col2Im(col, sy, sx, ph, pw, h, w, dh, dw, false, z);
         Nd4j.getExecutioner().exec(col2Im);
         return z;
     }
