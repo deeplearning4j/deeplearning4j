@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.modelimport.keras.layers;
+package org.deeplearning4j.nn.modelimport.keras.layers.embeddings;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

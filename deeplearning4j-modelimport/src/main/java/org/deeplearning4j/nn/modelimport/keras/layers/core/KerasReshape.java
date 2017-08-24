@@ -15,7 +15,7 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.nn.modelimport.keras.layers;
+package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 
 import org.deeplearning4j.nn.conf.InputPreProcessor;

@@ -27,6 +27,13 @@ import org.deeplearning4j.nn.modelimport.keras.layers.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution1D;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution2D;
+import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasZeroPadding;
+import org.deeplearning4j.nn.modelimport.keras.layers.core.*;
+import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
+import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasBatchNormalization;
+import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasGlobalPooling;
+import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling;
+import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLstm;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;

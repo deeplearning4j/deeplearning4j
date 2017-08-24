@@ -34,7 +34,7 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLoss;
-import org.deeplearning4j.nn.modelimport.keras.layers.KerasLstm;
+import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLstm;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;

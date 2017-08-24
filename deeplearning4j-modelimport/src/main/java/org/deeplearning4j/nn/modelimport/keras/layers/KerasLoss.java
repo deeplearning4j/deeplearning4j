@@ -12,6 +12,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.ArrayList;
 import java.util.Map;
 
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLossUtils.mapLossFunction;
+
 /**
  * Builds a DL4J LossLayer from a Keras training loss function.
  *
@@ -57,7 +59,7 @@ public class KerasLoss extends KerasLayer {
         this.inboundLayerNames.add(inboundLayerName);
         LossFunctions.LossFunction loss;
         try {
-            loss = mapLossFunction(kerasLoss);
+            loss = mapLossFunction(kerasLoss, conf);
         } catch (UnsupportedKerasConfigurationException e) {
             if (enforceTrainingConfig)
                 throw e;
