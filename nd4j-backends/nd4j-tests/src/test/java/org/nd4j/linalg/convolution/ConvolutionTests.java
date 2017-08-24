@@ -302,6 +302,88 @@ public class ConvolutionTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testIm2ColKnownValuesDilatedStrided() {
+        //Input: w=5, h=5, depth=1, minibatch = 1, dilation=2, stride 2
+        //kh=2, kw=2
+        /*
+        ----- Input images -----
+        example 0:
+        depth 0
+        [ 0  1  2  3  4
+          5  6  7  8  9
+         10 11 12 13 14
+         15 16 17 18 19
+         20 21 22 23 24 ]
+
+         ----- Expected Output -----
+         Shape: [miniBatch,depth,kH,kW,outH,outW]
+         - example 0 -
+         depth 0
+         h0,w0      h0,w1
+           0  2     2  4
+          10 12    12 14
+
+         h1,w0      h1,w1
+          10 12    12 14
+          20 22    22 24
+         */
+
+        int miniBatch = 1;
+        int depth = 1;
+        int height = 5;
+        int width = 5;
+
+        int outH = 2;
+        int outW = 2;
+        int kH = 2;
+        int kW = 2;
+        int sX = 2;
+        int sY = 2;
+        int pX = 0;
+        int pY = 0;
+        int dh = 2;
+        int dw = 2;
+
+        //Input data: shape [miniBatch,depth,height,width]
+        INDArray input = Nd4j.create(new int[] {miniBatch, depth, height, width}, 'c');
+        input.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all(),
+                NDArrayIndex.all()}, Nd4j.create(new double[][] {{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}, {10, 11, 12, 13, 14},
+                {15, 16, 17, 18, 19}, {20, 21, 22, 23, 24}}));
+
+        //Expected data:
+        INDArray expected = Nd4j.create(new int[] {miniBatch, depth, kH, kW, outH, outW}, 'c');
+
+        //Example 0
+        //depth 0
+        expected.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.point(0)},
+                Nd4j.create(new double[][] {{0, 2}, {10, 12}}));
+        expected.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.point(1)},
+                Nd4j.create(new double[][] {{2, 4}, {12, 14}}));
+        expected.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.point(0)},
+                Nd4j.create(new double[][] {{10, 12}, {20, 22}}));
+        expected.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.point(1)},
+                Nd4j.create(new double[][] {{12, 14}, {22, 24}}));
+
+        INDArray out = Convolution.im2col(input, kH, kW, sY, sX, pY, pX, dh, dw, false);
+        assertEquals(expected, out);
+
+        //Now: test with a provided results array, where the results array has weird strides
+        INDArray out2 = Nd4j.create(new int[] {miniBatch, depth, outH, outW, kH, kW}, 'c');
+        INDArray out2p = out2.permute(0, 1, 4, 5, 2, 3);
+        Convolution.im2col(input, kH, kW, sY, sX, pY, pX, dh, dw, false, out2p);
+        assertEquals(expected, out2p);
+
+        INDArray out3 = Nd4j.create(new int[] {miniBatch, outH, outW, depth, kH, kW}, 'c');
+        INDArray out3p = out3.permute(0, 3, 4, 5, 1, 2);
+        Convolution.im2col(input, kH, kW, sY, sX, pY, pX, dh, dw, false, out3p);
+        assertEquals(expected, out3p);
+    }
+
+    @Test
     public void testIm2ColKnownValuesMiniBatch3() {
         //Input: w=3, h=3, depth=2, minibatch = 3
         //kh=2, kw=2
