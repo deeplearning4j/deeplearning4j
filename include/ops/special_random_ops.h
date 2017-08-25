@@ -763,7 +763,7 @@ namespace randomOps {
             int span = (zLength / _threads) + 8;            
             // we're enforcing even chunks, since it's mandatory for this algorithm
             span -= span % 2;
-            int middle = span>>1;
+            int middle = span>>1 + 1;
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
 
             T mean = extraArguments[0];
@@ -772,10 +772,10 @@ namespace randomOps {
 #pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
                 int tid = omp_get_thread_num();
-                Nd4jIndex start = span * tid;
+                Nd4jIndex start = span * tid; 
                 Nd4jIndex end = span * tid + middle;
                 if (end + middle > zLength) {
-                    middle = (zLength - start)/2;
+                    middle = (zLength - start)/2 + 1;
                     end = start + middle;                                    
                 }
     
@@ -784,7 +784,7 @@ namespace randomOps {
                 T lnU0;
                 T result0, result1;                
 
-                for (Nd4jIndex e = start+1; e <= end; e++) {
+                for (Nd4jIndex e = start; e < end; e++) {
                    
                     /*
                     * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
