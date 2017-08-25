@@ -1,6 +1,8 @@
 package org.nd4j.linalg.rng;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.random.JDKRandomGenerator;
+import org.apache.commons.math3.util.FastMath;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -1246,6 +1248,51 @@ public class RandomTests extends BaseNd4jTest {
         INDArray res = x.muli(y);
 
         assertEquals(expCUDA, res);
+    }
+
+    @Test
+    public void testTruncatedNormal1() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+
+        INDArray z01 = Nd4j.create(1000000);
+
+        TruncatedNormalDistribution distribution01 = new TruncatedNormalDistribution(z01, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(distribution01, random1);
+
+        for (int e = 0; e < z01.length(); e++) {
+            assertTrue("Value: " + z01.getDouble(e),FastMath.abs(z01.getDouble(e)) <= 2.0);
+        }
+
+        assertEquals(0.0, z01.meanNumber().doubleValue(), 1e-3);
+    }
+
+    @Test
+    public void testLogNormal1() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+
+        INDArray z01 = Nd4j.create(1000000);
+
+        JDKRandomGenerator rng = new JDKRandomGenerator();
+        rng.setSeed(119);
+
+        org.apache.commons.math3.distribution.LogNormalDistribution dst = new org.apache.commons.math3.distribution.LogNormalDistribution(rng, 0.0, 1.0);
+        double[] array = dst.sample(1000000);
+
+
+        double mean = 0.0;
+        for (double e: array) {
+            mean += e;
+        }
+        mean /= array.length;
+
+        LogNormalDistribution distribution01 = new LogNormalDistribution(z01, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(distribution01, random1);
+
+        log.info("Java mean: {}; Native mean: {}", mean, z01.meanNumber().doubleValue());
+        assertEquals(mean, z01.meanNumber().doubleValue(), 1e-1);
+
+
+
     }
 
     @Test
