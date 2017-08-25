@@ -35,7 +35,8 @@ import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasDropout;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasReshape;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasBatchNormalization;
-import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling;
+import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling1D;
+import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLstm;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -120,9 +121,15 @@ public class KerasLayerTest {
     }
 
     @Test
-    public void testSubsamplingLayer() throws Exception {
-        buildSubsamplingLayer(conf1, keras1);
-        buildSubsamplingLayer(conf2, keras2);
+    public void testSubsampling2DLayer() throws Exception {
+        buildSubsampling2DLayer(conf1, keras1);
+        buildSubsampling2DLayer(conf2, keras2);
+    }
+
+    @Test
+    public void testSubsampling1DLayer() throws Exception {
+        buildSubsampling1DLayer(conf1, keras1);
+        buildSubsampling1DLayer(conf2, keras2);
     }
 
     @Test
@@ -496,10 +503,10 @@ public class KerasLayerTest {
         assertEquals(DILATION[1], layer.getDilation()[1]);
     }
 
-    public void buildSubsamplingLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    public void buildSubsampling2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_2D());
-        Map<String, Object> config = new HashMap<String, Object>();
+        Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         List<Integer> kernelSizeList = new ArrayList<>();
         kernelSizeList.add(KERNEL_SIZE[0]);
@@ -513,13 +520,33 @@ public class KerasLayerTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        SubsamplingLayer layer = new KerasPooling(layerConfig).getSubsamplingLayer();
+        SubsamplingLayer layer = new KerasPooling2D(layerConfig).getSubsampling2DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertArrayEquals(KERNEL_SIZE, layer.getKernelSize());
         assertArrayEquals(STRIDE, layer.getStride());
         assertEquals(POOLING_TYPE, layer.getPoolingType());
         assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
         assertArrayEquals(VALID_PADDING, layer.getPadding());
+    }
+
+    public void buildSubsampling1DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        Map<String, Object> layerConfig = new HashMap<>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_1D());
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        config.put(conf.getLAYER_FIELD_POOL_1D_SIZE(), KERNEL_SIZE[0]);
+        config.put(conf.getLAYER_FIELD_POOL_1D_STRIDES(), STRIDE[0]);
+        config.put(conf.getLAYER_FIELD_BORDER_MODE(), BORDER_MODE_VALID);
+        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+
+        Subsampling1DLayer layer = new KerasPooling1D(layerConfig).getSubsampling1DLayer();
+        assertEquals(LAYER_NAME, layer.getLayerName());
+        assertEquals(KERNEL_SIZE[0], layer.getKernelSize()[0]);
+        assertEquals(STRIDE[0], layer.getStride()[0]);
+        assertEquals(POOLING_TYPE, layer.getPoolingType());
+        assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
+        assertEquals(VALID_PADDING[0], layer.getPadding()[0]);
     }
 
     public void buildGravesLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {

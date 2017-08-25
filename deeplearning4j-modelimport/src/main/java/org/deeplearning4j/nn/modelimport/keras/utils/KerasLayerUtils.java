@@ -30,7 +30,8 @@ import org.deeplearning4j.nn.modelimport.keras.layers.core.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasBatchNormalization;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasGlobalPooling;
-import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling;
+import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling1D;
+import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLstm;
 
 import java.lang.reflect.Constructor;
@@ -188,8 +189,11 @@ public class KerasLayerUtils {
             layer = new KerasAtrousConvolution1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_2D()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_2D())) {
-            layer = new KerasPooling(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D()) ||
+            layer = new KerasPooling2D(layerConfig, enforceTrainingConfig);
+        }  else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_1D()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_1D())) {
+            layer = new KerasPooling1D(layerConfig, enforceTrainingConfig);
+        }else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D())) {
@@ -208,9 +212,6 @@ public class KerasLayerUtils {
             layer = new KerasReshape(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ZERO_PADDING_2D())) {
             layer = new KerasZeroPadding(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_1D()) ||
-                layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_1D())) {
-            layer = new KerasPooling(layerConfig, enforceTrainingConfig);
         } else {
             // check if user registered a custom config
             Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
