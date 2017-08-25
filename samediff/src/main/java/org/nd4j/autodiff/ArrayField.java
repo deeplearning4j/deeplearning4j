@@ -368,7 +368,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField tanhDerivative() {
+    public ArrayField tanhDerivative(ArrayField wrt) {
         return addTransformOp(new TanhDerivative().name());
     }
 
@@ -471,7 +471,7 @@ public class ArrayField implements Field<ArrayField> {
 
 
     @Override
-    public ArrayField seluDerivative() {
+    public ArrayField seluDerivative(ArrayField wrt) {
         return addTransformOp(new SELUDerivative().name());
     }
 

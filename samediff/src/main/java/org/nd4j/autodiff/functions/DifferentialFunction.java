@@ -373,12 +373,12 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> tanhDerivative() {
+    public DifferentialFunction<X> tanhDerivative(DifferentialFunction<X> wrt) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> seluDerivative() {
+    public DifferentialFunction<X> seluDerivative(DifferentialFunction<X> wrt) {
         return null;
     }
 

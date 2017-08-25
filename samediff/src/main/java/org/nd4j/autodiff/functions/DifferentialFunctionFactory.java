@@ -459,8 +459,8 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
     @Override
-    public DifferentialFunction<ArrayField> leakyReluDerivative(DifferentialFunction<ArrayField> iX, double cutoff) {
-        return new LeakyReluDerivative(sameDiff,iX,cutoff);
+    public DifferentialFunction<ArrayField> leakyReluDerivative(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> iY, double cutoff) {
+        return new LeakyReluDerivative(sameDiff,iX,iY,cutoff);
 
     }
 

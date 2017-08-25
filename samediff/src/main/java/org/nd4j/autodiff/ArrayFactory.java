@@ -52,8 +52,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField seluDerivative(ArrayField value) {
-        return value.seluDerivative();
+    public ArrayField seluDerivative(ArrayField value, ArrayField wrt) {
+        return value.seluDerivative(wrt);
     }
 
     @Override
@@ -295,8 +295,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField tanhDerivative(ArrayField x) {
-        return x.tanhDerivative();
+    public ArrayField tanhDerivative(ArrayField x, ArrayField wrt) {
+        return x.tanhDerivative(wrt);
     }
 
     @Override
@@ -466,11 +466,12 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
      * 0.01
      *
      * @param value the value to transform
+     * @param wrt
      * @return
      */
     @Override
-    public ArrayField leakyReluDerivative(ArrayField value) {
-        return value.leakyReluDerivative(, 0.001);
+    public ArrayField leakyReluDerivative(ArrayField value, ArrayField wrt) {
+        return value.leakyReluDerivative(wrt, 0.001);
     }
 
     @Override

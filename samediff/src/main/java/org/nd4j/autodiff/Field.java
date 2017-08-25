@@ -224,7 +224,7 @@ public interface Field<X> extends CommutativeRing<X> {
 
     X selu();
 
-    X tanhDerivative();
+    X tanhDerivative(X wrt);
 
-    X seluDerivative();
+    X seluDerivative(X wrt);
 }

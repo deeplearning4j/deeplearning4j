@@ -1179,13 +1179,16 @@ public class SameDiff {
     /**
      *
      * @param iX
+     * @param wrt
      * @param cutoff
      * @return
      */
-    public SDVariable leakyReluDerivative(SDVariable iX, double cutoff) {
+    public SDVariable leakyReluDerivative(SDVariable iX, SDVariable wrt,double cutoff) {
         SDVariable ret = SDVariable.builder()
                 .arr(null)
-                .differentialFunction(functionFactory.leakyReluDerivative(getFunctionInput(iX),cutoff))
+                .differentialFunction(functionFactory.leakyReluDerivative(getFunctionInput(iX),
+                        getFunctionInput(wrt),
+                        cutoff))
                 .varName("leakyReluDerivative(" + iX.getVarName() + ")").sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));

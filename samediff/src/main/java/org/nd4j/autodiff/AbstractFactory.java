@@ -138,9 +138,10 @@ public interface AbstractFactory<X extends Field<X>>
      * Leaky relu with an alpha of
      * 0.01
      * @param value the value to transform
+     * @param wrt
      * @return
      */
-    X leakyReluDerivative(X value);
+    X leakyReluDerivative(X value, X wrt);
 
 
     X hardTanh(X value);
@@ -219,7 +220,7 @@ public interface AbstractFactory<X extends Field<X>>
 
     X softmaxDerivative(X value, X wrt);
 
-    X seluDerivative(X value);
+    X seluDerivative(X value, X wrt);
 
-    X tanhDerivative(X value);
+    X tanhDerivative(X value, X wrt);
 }

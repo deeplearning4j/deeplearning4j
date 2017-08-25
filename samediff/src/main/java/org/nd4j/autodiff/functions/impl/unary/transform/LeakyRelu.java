@@ -19,14 +19,10 @@ public class LeakyRelu  extends AbstractUnaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().leakyRelu(arg().getValue(true),cutoff);
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
 
     @Override
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().leakyReluDerivative(arg(),cutoff).mul(arg().diff(i_v));
+        return sameDiff.getFunctionFactory().leakyReluDerivative(arg(),i_v , cutoff);
     }
 
 

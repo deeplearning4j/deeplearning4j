@@ -135,7 +135,7 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> leakyRelu(DifferentialFunction<X> iX, double cutoff);
 
-    DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> iX, double cutoff);
+    DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> iX, DifferentialFunction<X> iY, double cutoff);
 
     DifferentialFunction<X> reshape(DifferentialFunction<X> arrayField, int[] shape);
 
