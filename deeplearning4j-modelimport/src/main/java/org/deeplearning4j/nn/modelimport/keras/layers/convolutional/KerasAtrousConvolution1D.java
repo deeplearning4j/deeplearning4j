@@ -78,7 +78,7 @@ public class KerasAtrousConvolution1D extends KerasConvolution {
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                         enforceTrainingConfig, conf, kerasMajorVersion))
-                .dilation(getAtrousRate(layerConfig, 2, conf))
+                .dilation(getDilationRate(layerConfig, 2, conf, true))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 1,  conf, kerasMajorVersion)[0])

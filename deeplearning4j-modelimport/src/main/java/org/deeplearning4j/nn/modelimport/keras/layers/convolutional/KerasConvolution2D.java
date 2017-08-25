@@ -26,14 +26,11 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 
 import java.util.Map;
 
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.*;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getConvolutionModeFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getKernelSizeFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getStrideFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getPaddingFromBorderModeConfig;
 
 
 /**
@@ -81,6 +78,7 @@ public class KerasConvolution2D extends KerasConvolution {
 
         hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
+        int[] dilationRate = getDilationRate(layerConfig, 2, conf, false);
 
         ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
@@ -97,6 +95,8 @@ public class KerasConvolution2D extends KerasConvolution {
             builder.biasInit(0.0);
         if (padding != null)
             builder.padding(padding);
+        if (dilationRate != null)
+            builder.dilation(dilationRate);
         this.layer = builder.build();
     }
 

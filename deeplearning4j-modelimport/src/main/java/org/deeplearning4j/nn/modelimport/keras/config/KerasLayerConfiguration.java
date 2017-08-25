@@ -131,10 +131,9 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_KERNEL_SIZE = "kernel_size"; // keras 2 only
     private final String LAYER_FIELD_POOL_SIZE = "pool_size";
     private final String LAYER_FIELD_CONVOLUTION_STRIDES = ""; // 1: subsample, 2: strides
-    private final String LAYER_FIELD_DILATION_RATE = "dilation_rate"; // keras 2 only, replaces Atrous layers
     private final String LAYER_FIELD_FILTER_LENGTH = ""; // 1: filter_length, 2: kernel_size
     private final String LAYER_FIELD_SUBSAMPLE_LENGTH = ""; // 1: subsample_length, 2: strides
-    private final String LAYER_FIELD_ATROUS_RATE = "atrous_rate"; // keras 1 only
+    private final String LAYER_FIELD_DILATION_RATE = ""; // 1: atrous_rate, 2: dilation_rate
 
     /* Pooling / Upsampling layer properties */
     private final String LAYER_FIELD_POOL_STRIDES = "strides";

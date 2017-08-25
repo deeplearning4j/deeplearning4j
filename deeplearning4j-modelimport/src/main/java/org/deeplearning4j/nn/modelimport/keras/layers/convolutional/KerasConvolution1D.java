@@ -25,14 +25,11 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import java.util.Map;
 
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.*;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getConvolutionModeFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getKernelSizeFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getStrideFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getPaddingFromBorderModeConfig;
 
 /**
  * Imports a 1D Convolution layer from Keras.
@@ -77,6 +74,7 @@ public class KerasConvolution1D extends KerasConvolution {
         super(layerConfig, enforceTrainingConfig);
         hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
+        int[] dilationRate = getDilationRate(layerConfig, 2, conf, false);
 
         Convolution1DLayer.Builder builder = new Convolution1DLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
@@ -93,6 +91,8 @@ public class KerasConvolution1D extends KerasConvolution {
             builder.biasInit(0.0);
         if (padding != null)
             builder.padding(padding[0]);
+        if (dilationRate != null)
+            builder.dilation(dilationRate);
         this.layer = builder.build();
     }
 
