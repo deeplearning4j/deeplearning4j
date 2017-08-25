@@ -83,8 +83,8 @@ public class PaddingTestsC extends BaseNd4jTest {
         int c = linspaced.size(1);
         int h = linspaced.size(2);
         int w = linspaced.size(3);
-        int outWidth = Convolution.outSize(h, kh, sy, ph, true);
-        int outHeight = Convolution.outSize(w, kw, sx, pw, true);
+        int outWidth = Convolution.outSize(h, kh, sy, ph, 1, true);
+        int outHeight = Convolution.outSize(w, kw, sx, pw, 1, true);
         INDArray padded = Nd4j.pad(linspaced, new int[][] {{0, 0}, {0, 0}, {ph, ph + sy - 1}, {pw, pw + sx - 1}},
                         Nd4j.PadMode.CONSTANT);
         System.out.println(padded);

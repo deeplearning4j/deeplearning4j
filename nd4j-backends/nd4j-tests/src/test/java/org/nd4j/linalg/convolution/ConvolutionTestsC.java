@@ -53,7 +53,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
     @Test
     public void testConvOutWidthAndHeight() {
-        int outSize = Convolution.outSize(2, 1, 1, 2, false);
+        int outSize = Convolution.outSize(2, 1, 1, 2, 1, false);
         assertEquals(6, outSize);
     }
 
@@ -233,19 +233,19 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                                             reduced = col2d.sum(1);
                                                             Transforms.pow(reduced, (1.0 / pnorm), false);
 
-                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw,
+                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw, 1, 1,
                                                                     true, Pooling2D.Pooling2DType.PNORM, (double) pnorm, outSize[0], outSize[1], output);
 
                                                             break;
                                                         case MAX:
-                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw,
+                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw,1, 1,
                                                                     true, Pooling2D.Pooling2DType.MAX, 0.0, outSize[0], outSize[1], output);
 
                                                             reduced = col2d.max(1);
                                                             break;
                                                         case AVG:
 
-                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw,
+                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw, 1, 1,
                                                                     true, Pooling2D.Pooling2DType.AVG, 0.0, outSize[0], outSize[1], output);
 
                                                             reduced = col2d.mean(1);
