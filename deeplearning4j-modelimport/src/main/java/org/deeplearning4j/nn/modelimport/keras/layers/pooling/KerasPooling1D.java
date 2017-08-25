@@ -2,7 +2,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.pooling;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.Subsampling1DLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -15,12 +15,12 @@ import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.Keras
 import java.util.Map;
 
 /**
- * Imports a Keras Pooling layer as a DL4J Subsampling layer.
+ * Imports a Keras 1D Pooling layer as a DL4J Subsampling layer.
  *
- * @author dave@skymind.io
+ * @author Max Pumperla
  */
 @Slf4j
-public class KerasPooling extends KerasLayer {
+public class KerasPooling1D extends KerasLayer {
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -30,7 +30,7 @@ public class KerasPooling extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasPooling(Map<String, Object> layerConfig)
+    public KerasPooling1D(Map<String, Object> layerConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
@@ -43,18 +43,18 @@ public class KerasPooling extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasPooling(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    public KerasPooling1D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        SubsamplingLayer.Builder builder = new SubsamplingLayer.Builder(
+        Subsampling1DLayer.Builder builder = new Subsampling1DLayer.Builder(
                 KerasPoolingUtils.mapPoolingType(this.className, conf)).name(this.layerName)
                 .dropOut(this.dropout)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
-                .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
-                .stride(getStrideFromConfig(layerConfig, 2, conf));
-        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
+                .kernelSize(getKernelSizeFromConfig(layerConfig, 1, conf, kerasMajorVersion)[0])
+                .stride(getStrideFromConfig(layerConfig, 1, conf)[0]);
+        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 1, conf, kerasMajorVersion);
         if (padding != null)
-            builder.padding(padding);
+            builder.padding(padding[0]);
         this.layer = builder.build();
         this.vertex = null;
     }
@@ -64,8 +64,8 @@ public class KerasPooling extends KerasLayer {
      *
      * @return  SubsamplingLayer
      */
-    public SubsamplingLayer getSubsamplingLayer() {
-        return (SubsamplingLayer) this.layer;
+    public Subsampling1DLayer getSubsampling1DLayer() {
+        return (Subsampling1DLayer) this.layer;
     }
 
     /**
@@ -80,6 +80,6 @@ public class KerasPooling extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                             "Keras Subsampling layer accepts only one input (received " + inputType.length + ")");
-        return this.getSubsamplingLayer().getOutputType(-1, inputType[0]);
+        return this.getSubsampling1DLayer().getOutputType(-1, inputType[0]);
     }
 }
