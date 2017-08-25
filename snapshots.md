@@ -7,6 +7,8 @@ layout: default
 
 We provide automated daily builds of our repositories: ND4J/DataVec/DeepLearning4j/RL4J etc. So, all newest functionality & bug fixes are delivered daily.
 
+Snapshots work like any other maven depenedencies, just served from custom repository, instead of Maven Central. 
+
 
 # Setup instructions
 
@@ -28,7 +30,7 @@ Basically to use snapshots in your project, you should just add snapshot reposit
 </repositories>
 ```
 
-And specify snapshot version. We follow simple rule. If latest stable release version is A.B.C, snapshot version will be A.B.(C+1)-SNAPSHOT. I.e. as of writing this, latest stable version is `0.9.1`, and snapshot version is `0.9.2-SNAPSHOT`
+And specify snapshot version. We follow simple rule. If latest stable release version is `A.B.C`, snapshot version will be `A.B.(C+1)-SNAPSHOT`. I.e. as of writing this, latest stable version is `0.9.1`, and snapshot version is `0.9.2-SNAPSHOT`
 
 
 # Limitations
