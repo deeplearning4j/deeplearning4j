@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -100,5 +101,20 @@ public class KerasConvolution1D extends KerasConvolution {
      */
     public Convolution1DLayer getConvolution1DLayer() {
         return (Convolution1DLayer) this.layer;
+    }
+
+    /**
+     * Get layer output type.
+     *
+     * @param inputType Array of InputTypes
+     * @return output type as InputType
+     * @throws InvalidKerasConfigurationException
+     */
+    @Override
+    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
+        if (inputType.length > 1)
+            throw new InvalidKerasConfigurationException(
+                    "Keras Convolution layer accepts only one input (received " + inputType.length + ")");
+        return this.getConvolution1DLayer().getOutputType(-1, inputType[0]);
     }
 }
