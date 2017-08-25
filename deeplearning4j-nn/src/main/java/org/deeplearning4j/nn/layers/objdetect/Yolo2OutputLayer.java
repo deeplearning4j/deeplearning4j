@@ -31,6 +31,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
@@ -137,18 +138,25 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int h = input.size(2);
         int w = input.size(3);
         int b = layerConf().getBoundingBoxes().size(0);
-        int c = labels.size(1)-4*b;
+        int c = labels.size(1)-4;
 
         INDArray wh = Nd4j.create(new double[]{w,h});
+
+
+        //Debugging code
+        System.out.println("Class labels shape: " + Arrays.toString(classLabels.shape()));
+        System.out.println("mb, h, w, b, c");
+        System.out.println(mb + ", " + h + ", " + w + ", " + b + ", " + c);
 
         // ----- Step 1: Labels format conversion -----
         //First: Convert labels/ground truth (x1,y1,x2,y2) from "number of grid boxes" format to center format, as
         // fraction of total image
         //0.5 * ([x1,y1]+[x2,y2])   ->      shape: [mb, 2, H, W]
-        INDArray labelTLXYImg = labels.get(all(),interval(0,1,true), all(), all());
-        INDArray labelBRXYImg = labels.get(all(),interval(2,3,true), all(), all());
+        INDArray labelTLXYImg = labels.get(all(),interval(0,2), all(), all());
+        INDArray labelBRXYImg = labels.get(all(),interval(2,4), all(), all());
+
         INDArray labelCenterXYImg = labelTLXYImg.add(labelBRXYImg).muli(0.5);
-        Broadcast.div(labelBRXYImg, wh, labelBRXYImg, 1);
+        Broadcast.div(labelCenterXYImg, wh, labelCenterXYImg, 1);
 
 
         //Then convert label centers from "fraction of total image" to "fraction of grid", which are used in position loss
@@ -157,9 +165,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         labelsCenterXYInGrid.subi(Transforms.floor(labelsCenterXYInGrid,true));
 
         //Also infer size/scale (label w/h) from (x1,y1,x2,y2) format to (w,h) format
-        // Then apply sqrt ready for use in loss function
-        INDArray labelWHSqrt = labels.get(all(),interval(2,3,true), all(), all()).sub(
-                    labels.get(all(),interval(0,1,true), all(), all()));
+        INDArray labelWHSqrt = labelBRXYImg.sub(labelTLXYImg);
         Transforms.sqrt(labelWHSqrt, false);
 
 
@@ -185,11 +191,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         gridYX.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()).putiRowVector(xVector);
         gridYX.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).putiRowVector(yVector);
 
-
-
-
-        INDArray predictedXYCenterImage = Broadcast.div(predictedXYCenterGrid, wh,
-                Nd4j.createUninitialized(predictedXYCenterGrid.shape(), predictedXYCenterGrid.ordering()), 1 );
+        INDArray predictedXYCenterImage = Nd4j.createUninitialized(predictedXYCenterGrid.shape(), predictedXYCenterGrid.ordering());
+        Broadcast.div(predictedXYCenterGrid, wh, predictedXYCenterImage, 2 );   //[1,2] to [minibatch, B, 2, H, W]
         Broadcast.add(predictedXYCenterImage, gridYX, predictedXYCenterImage, 2,3,4); // [2,H,W] to [minibatch, B, 2, H, W]
 
         INDArray halfWidth = predictedWH.mul(0.5);
@@ -230,13 +233,30 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray mask2d = maskArray.dup('c').reshape(mb*h*w, 1);
 
         INDArray predictedXYCenter2d = predictedXYCenterGrid.dup('c').reshape('c', mb*b*h*w, 2);        //TODO need permute first??
+        /*
+        //Don't use INDArray.broadcast(int...) until ND4J issue is fixed:
+        // https://github.com/deeplearning4j/nd4j/issues/2066
+        System.out.println(Arrays.toString(labelsCenterXYInGrid.shape()));
         INDArray labelsCenterXYInGridBroadcast = labelsCenterXYInGrid.broadcast(mb, b, 2, h, w);
+        System.out.println(mb + "\t" + b + "\t" + h + "\t" + w);
+        System.out.println(Arrays.toString(labelsCenterXYInGridBroadcast.shape()));
+        */
+        //Broadcast labelsCenterXYInGrid from [mb, 2, h, w} to [mb, b, 2, h, w]
+        INDArray labelsCenterXYInGridBroadcast = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
+        for(int i=0; i<b; i++ ){
+            labelsCenterXYInGridBroadcast.get(all(), point(i), all(), all(), all()).assign(labelsCenterXYInGrid);
+        }
         INDArray labelXYCenter2d = labelsCenterXYInGridBroadcast.dup('c').reshape('c', mb*b*h*w, 2);    //TODO need permute first??
 
 
         //Width/height (sqrt)
         INDArray predictedWHSqrt2d = predictedWHSqrt.dup('c').reshape(mb*b*h*w, 2);
-        INDArray labelWHSqrt2d = labelWHSqrt.dup('c').reshape(mb*b*h*w, 2);
+        //Broadcast labelWHSqrt from [mb, 2, h, w} to [mb, b, 2, h, w]
+        INDArray labelWHSqrtBroadcast = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
+        for(int i=0; i<b; i++ ){
+            labelWHSqrtBroadcast.get(all(), point(i), all(), all(), all()).assign(labelWHSqrt);
+        }
+        INDArray labelWHSqrt2d = labelWHSqrtBroadcast.dup('c').reshape(mb*b*h*w, 2);
 
         //Confidence
         INDArray labelConfidence2d = labelConfidence.reshape('c', mb * b * h * w, 1);
@@ -255,6 +275,12 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedCondidence2d, identity, mask1_ij_obj_2d, false)
                 + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedCondidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
         double classPredictionLoss = layerConf().getLossClassPredictions().computeScore(classLabels2d, classPredictionsPreSoftmax2d, new ActivationSoftmax(), mask2d, false);
+
+        //----------
+        //DEBUGGING:
+        System.out.println("position, size/scale, confidence, classPrediction");
+        System.out.println(positionLoss + "\t" + sizeScaleLoss + "\t" + confidenceLoss + "\t" + classPredictionLoss);
+        //----------
 
         double loss = layerConf().getLambdaCoord() * (positionLoss + sizeScaleLoss)
                 + confidenceLoss
