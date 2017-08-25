@@ -57,32 +57,38 @@ public class YoloGradientCheckTests {
 
         Nd4j.getRandom().setSeed(12345);
 
+        double[] l1 = new double[]{0.0, 0.3};
+        double[] l2 = new double[]{0.0, 0.4};
+
         for (int mb : minibatchSizes) {
-            INDArray input = Nd4j.rand(new int[]{mb, depthIn, h, w});
-            INDArray labels = yoloLabels(mb, c, h, w);
+            for( int i=0; i<l1.length; i++ ) {
+                INDArray input = Nd4j.rand(new int[]{mb, depthIn, h, w});
+                INDArray labels = yoloLabels(mb, c, h, w);
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                    .learningRate(1.0).updater(Updater.SGD)
-                    .activation(a)
-                    .convolutionMode(ConvolutionMode.Same)
-                    .list()
-                    .layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
-                            .nIn(depthIn).nOut(yoloDepth).build())//output: (5-2+0)/1+1 = 4
-                    .layer(new Yolo2OutputLayer.Builder()
-                            .boundingBoxePriors(bbPrior)
-                            .build())
-                    .build();
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .learningRate(1.0).updater(Updater.SGD)
+                        .activation(a)
+                        .l1(l1[i]).l2(l2[i])
+                        .convolutionMode(ConvolutionMode.Same)
+                        .list()
+                        .layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
+                                .nIn(depthIn).nOut(yoloDepth).build())//output: (5-2+0)/1+1 = 4
+                        .layer(new Yolo2OutputLayer.Builder()
+                                .boundingBoxePriors(bbPrior)
+                                .build())
+                        .build();
 
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
 
-            String msg = "YOLO, mb = " + mb;
-            System.out.println(msg);
+                String msg = "testYoloOutputLayer() - minibatch = " + mb + ", l1=" + l1[i] + ", l2=" + l2[i];
+                System.out.println(msg);
 
-            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
-            assertTrue(msg, gradOK);
+                assertTrue(msg, gradOK);
+            }
         }
     }
 
