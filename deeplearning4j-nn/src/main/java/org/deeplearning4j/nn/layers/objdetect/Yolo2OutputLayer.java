@@ -20,6 +20,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Min;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Broadcast;
@@ -178,6 +179,16 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/
         INDArray iou = calculateIOULabelPredicted(labelTLXYImg, labelBRXYImg, predictedTLXYImage, predictedBRXYImage);  //IOU shape: [minibatch, B, H, W]
 
+        double iouMin = iou.minNumber().doubleValue();
+        double iouMax = iou.maxNumber().doubleValue();
+        if(iouMin < 0.0){
+            throw new IllegalStateException("Invalid IOU: min value is " + iouMin);
+        }
+
+        if(iouMax > 1.0){
+            throw new IllegalStateException("Invalid IOU: max value is " + iouMax);
+        }
+
         //Mask 1_ij^obj: isMax (dimension 1) + apply object present mask. Result: [minibatch, B, H, W]
         //In this mask: 1 if (a) object is present in cell [for each mb/H/W], and (b) for the anchor box with the max IOU
         INDArray mask1_ij_obj = Nd4j.getExecutioner().execAndReturn(new IsMax(iou.dup(iou.ordering()), 1));
@@ -187,9 +198,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Predicted confidence: sigmoid (0 to 1)
         //Label confidence: 0 if no object, IOU(predicted,actual) otherwise
 
-        INDArray labelConfidence = iou.muli(mask1_ij_obj);  //OK to reuse IOU array here.   //Shape: [mb, B, H, W]
-        INDArray predictedConfidence = input5.get(all(), all(), point(4), all(), all());    //Shape: [mb, B, H, W]
-        Transforms.sigmoid(predictedBRXYImage, false);
+        INDArray labelConfidence = iou.mul(mask1_ij_obj);  //OK to reuse IOU array here.   //Shape: [mb, B, H, W]
+        INDArray predictedConfidencePreSigmoid = input5.get(all(), all(), point(4), all(), all());    //Shape: [mb, B, H, W]
+        INDArray predictedConfidence = Transforms.sigmoid(predictedConfidencePreSigmoid, true);
 
 
         // ----- Step 5: Loss Function -----
@@ -230,8 +241,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray labelWHSqrt2d = labelWHSqrtBroadcast.permute(0,1,3,4,2).dup('c').reshape(mb*b*h*w, 2).dup('c');   //[mb, b, 2, h, w] to [mb, b, h, w, 2] to [mb*b*h*w, 2]
 
         //Confidence
-        INDArray labelConfidence2d = labelConfidence.reshape('c', mb * b * h * w, 1);
-        INDArray predictedCondidence2d = predictedConfidence.reshape('c', mb * b * h * w, 1);
+        INDArray labelConfidence2d = labelConfidence.dup('c').reshape('c', mb * b * h * w, 1);
+        INDArray predictedConfidence2d = predictedConfidence.dup('c').reshape('c', mb * b * h * w, 1).dup('c');
+        INDArray predictedConfidence2dPreSigmoid = predictedConfidencePreSigmoid.dup('c').reshape('c', mb * b * h * w, 1).dup('c');
 
 
         //Class prediction loss
@@ -244,9 +256,22 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         IActivation identity = new ActivationIdentity();
         double positionLoss = layerConf().getLossPositionScale().computeScore(labelXYCenter2d, predictedXYCenter2d, identity, mask1_ij_obj_2d, false );
         double sizeScaleLoss = layerConf().getLossPositionScale().computeScore(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d, false);
-        double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedCondidence2d, identity, mask1_ij_obj_2d, false)
-                + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedCondidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
+//        double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false)
+//                + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
+
+        double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false);
+//                + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
+
         double classPredictionLoss = layerConf().getLossClassPredictions().computeScore(classLabels2d, classPredictionsPreSoftmax2d, new ActivationSoftmax(), mask2d, false);
+
+        if(DEBUG_PRINT){
+            System.out.println(Arrays.toString(labelConfidence2d.shape()) + "\t" + Arrays.toString(predictedConfidence2d.shape()));
+            System.out.println("Label confidence: min/max - " + labelConfidence2d.minNumber() + "\t" + labelConfidence2d.maxNumber());
+            System.out.println("label - confidence: ");
+            System.out.println(labelConfidence2d);
+            System.out.println("predicted - confidence: ");
+            System.out.println(predictedConfidence2d);
+        }
 
         //----------
         //DEBUGGING:
@@ -271,7 +296,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         double loss =
                 layerConf().getLambdaCoord() * positionLoss +
                 layerConf().getLambdaCoord() * sizeScaleLoss +
-//                confidenceLoss +
+                confidenceLoss +
                 classPredictionLoss +
                 fullNetworkL1 +
                 fullNetworkL2
@@ -284,11 +309,15 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //===============================================
         // ----- Gradient Calculation (specifically: return dL/dIn -----
 
+        if(DEBUG_PRINT) {
+            System.out.println("Input shape: " + Arrays.toString(input.shape()));
+        }
         INDArray epsOut = Nd4j.create(input.shape(), 'c');
-        INDArray epsOut5 = epsOut.get(all(), interval(0,5*b), all(), all()).reshape(mb, b, 5, h, w);
+        INDArray epsOut5 = Shape.newShapeNoCopy(epsOut.get(all(), interval(0,5*b), all(), all()), new int[]{mb, b, 5, h, w}, false);
         INDArray epsClassPredictions = epsOut.get(all(), interval(5*b, 5*b+c), all(), all());
         INDArray epsXY = epsOut5.get(all(), all(), interval(0,2), all(), all());
         INDArray epsWH = epsOut5.get(all(), all(), interval(2,4), all(), all());
+        INDArray epsC = epsOut5.get(all(), all(), point(4), all(), all());
 
 
         //Calculate gradient component from class probabilities (softmax)
@@ -322,7 +351,21 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         epsWH.assign(gradWH5d);
 
 
-        //Calculate gradient component from confidence loss
+        //Calculate gradient component from confidence loss... 2 parts (object present, no object present)
+        //double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedCondidence2d, identity, mask1_ij_obj_2d, false)
+        //  + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedCondidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
+
+//        INDArray gradConfidence2dA = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d);
+        INDArray gradConfidence2dA = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, new ActivationSigmoid(), mask1_ij_obj_2d);
+//        INDArray gradConfidence2dB = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d);
+//        gradConfidence2dA = new ActivationSigmoid().backprop(predictedConfidence2dPreSigmoid.dup(), gradConfidence2dA).getFirst();
+//        gradConfidence2dB.muli(layerConf().getLambdaNoObj());
+//        gradConfidence2dB = new ActivationSigmoid().backprop(predictedConfidence2dPreSigmoid.dup(), gradConfidence2dB).getFirst();
+        INDArray gradConfidence2d = gradConfidence2dA;  //.addi(gradConfidence2dB);  //dL/dC; C = sigmoid(tc)
+        //Calculate dL/dtc
+        INDArray epsConfidence4d = gradConfidence2d.dup('c').reshape(mb, b, h, w);   //[mb*b*h*w, 2] to [mb, b, h, w]
+        epsC.assign(epsConfidence4d);
+
 
 
         return epsOut;
@@ -401,15 +444,19 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray intersection = intersectionArea5d(tl1, br1, tl2, br2);
 
-        INDArray wh1 = br1.sub(tl1);
-        INDArray area1 = wh1.get(all(), point(0), all(), all())
-                .muli(wh1.get(all(), point(1), all(), all()));  //Shape: [minibatch, H, W]
-        INDArray wh2 = br2.sub(tl2);
-        INDArray area2 = wh2.get(all(), all(), point(0), all(), all())
-                .muli(wh2.get(all(), all(), point(1), all(), all()));  //Shape: [minibatch, B, H, W]
+//        System.out.println("Intersection, min/max: " + intersection.minNumber() + "\t" + intersection.maxNumber());
+
+        INDArray diff1 = br1.sub(tl1);
+        INDArray area1 = diff1.get(all(), point(0), all(), all()).add(1.0)
+                .muli(diff1.get(all(), point(1), all(), all()).add(1.0));           //Shape: [minibatch, H, W]
+        INDArray diff2 = br2.sub(tl2);
+        INDArray area2 = diff2.get(all(), all(), point(0), all(), all()).add(1.0)
+                .muli(diff2.get(all(), all(), point(1), all(), all()).add(1.0));    //Shape: [minibatch, B, H, W]
 
         INDArray union = Nd4j.createUninitialized(area2.shape(), area2.ordering());
         Broadcast.add(area2, area1, union, 0, 2, 3);
+
+//        System.out.println("Union, min/max: " + union.minNumber() + "\t" + union.maxNumber());
 
         INDArray iou = intersection.div(union);
         BooleanIndexing.replaceWhere(iou, 0.0, Conditions.isNan()); //Replace NaNs (0 intersection, 0 area etc) with 0s
@@ -422,7 +469,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         char o = tl2.ordering();
 
         INDArray xyMaxTL = Broadcast.max(tl2, tl1, Nd4j.createUninitialized(s, o), 0, 2, 3, 4 );
-        INDArray xyMinBR = Broadcast.min(br2, tl2, Nd4j.createUninitialized(s, o), 0, 2, 3, 4 );
+        INDArray xyMinBR = Broadcast.min(br2, br2, Nd4j.createUninitialized(s, o), 0, 2, 3, 4 );
 
         INDArray xMaxTL = xyMaxTL.get(all(), all(), point(0), all(), all());
         INDArray xMinBR = xyMinBR.get(all(), all(), point(0), all(), all());
