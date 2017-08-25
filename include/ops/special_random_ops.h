@@ -9,6 +9,7 @@
 
 namespace randomOps {
 
+//////////////////////////////////////////////////////////////////////
     template<typename T>
     class Choice {
     public:
@@ -247,6 +248,7 @@ namespace randomOps {
     };
 
 
+//////////////////////////////////////////////////////////////////////
     /**
     * This Op produces random values within specified boundaries. Distribuion is Gaussian
     */
@@ -369,7 +371,7 @@ namespace randomOps {
 
                 T z0, z1;
                 T u0, u1;
-
+                T lnU0;
                 bool generated = false;
 
                 for (Nd4jIndex e = start; e < end; e++) {
@@ -379,9 +381,9 @@ namespace randomOps {
                          */
                         u0 = buffer->relativeT<T>(e, (T) 1e-5f, (T) 1.0f);
                         u1 = buffer->relativeT<T>((e + 1), (T) 1e-5f, (T) 1.0f);
-
-                        z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
+                        lnU0 = (T)(-2.0f)*nd4j::math::nd4j_log<T>(u0);
+                        z0 = nd4j::math::nd4j_sqrt<T>(lnU0) * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                        z1 = nd4j::math::nd4j_sqrt<T>(lnU0 - z0*z0);
 
                         generated = true;
 
@@ -405,6 +407,7 @@ namespace randomOps {
     };
 
 
+//////////////////////////////////////////////////////////////////////
     /**
     * This Op produces random values within [0..N], Distribuion is binomial
     */
@@ -530,6 +533,7 @@ namespace randomOps {
     };
 
 
+//////////////////////////////////////////////////////////////////////
     /**
     * This Op produces random values within [0..N], Distribuion is binomial
     */
@@ -654,7 +658,7 @@ namespace randomOps {
         }
     };
     
-        
+//////////////////////////////////////////////////////////////////////        
     // This Op produces random Gaussian values within [mean-2*stddev,mean+2*stddev]
     template<typename T>
     class TruncatedNormalDistribution {
@@ -777,8 +781,8 @@ namespace randomOps {
     
                 T z0, z1;
                 T u0, u1;
+                T lnU0;
                 T result0, result1;                
-                bool even = true;
 
                 for (Nd4jIndex e = start+1; e <= end; e++) {
                    
@@ -791,32 +795,18 @@ namespace randomOps {
                     do {
                         u0 = buffer->relativeT<T>(e + generation0, (T) 1e-5f, (T) 1.0f);
                         u1 = buffer->relativeT<T>((e + generation0 + 1), (T) 1e-5f, (T) 1.0f);
+                        lnU0 = (T)(-2.0f)*nd4j::math::nd4j_log<T>(u0);
+                        z0 = nd4j::math::nd4j_sqrt<T>(lnU0) * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                        z1 = nd4j::math::nd4j_sqrt<T>(lnU0 - z0*z0);
 
-                        z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
-                        if(even) {
-                            result0 = z0 * stddev + realMean0;
-                            result1 = z1 * stddev + realMean1;                            
-                        }
-                        else {
-                            result0 = z0 * stddev + realMean1;
-                            result1 = z1 * stddev + realMean0;                            
-                        }
+                        result0 = z0 * stddev + realMean0;
+                        result1 = z1 * stddev + realMean1;                            
                         generation0 += zLength;
-                    } while (result0 < (realMean - 2*stddev) || (realMean + 2*stddev) < result0 || result1 < (realMean - 2*stddev) || (realMean + 2*stddev) < result1);
-                    
-                    if (even) {                    
-                        z[e*zEWS] = result0;
-                        if((e+middle) < zLength) 
-                            z[e*zEWS + middle] = result1;
-                        even = false;
-                    } 
-                    else {
-                        z[e*zEWS] = result1;
-                        if((e+middle) < zLength)
-                            z[e*zEWS + middle] = result0;
-                        even = true;
-                    }
+                    } while (result0 < (realMean0 - 2*stddev) || (realMean0 + 2*stddev) < result0 || result1 < (realMean1 - 2*stddev) || (realMean1 + 2*stddev) < result1);
+
+                    z[e*zEWS] = result0;
+                    if((e+middle) < zLength) 
+                        z[e*zEWS + middle] = result1;                  
                 }                            
             }
             // update rng state
@@ -825,7 +815,7 @@ namespace randomOps {
         }
     };
 
-
+//////////////////////////////////////////////////////////////////////
 // This Op produces random Log-normal distribution
  template<typename T>
     class LogNormalDistribution {
@@ -946,7 +936,7 @@ namespace randomOps {
 
                 T z0, z1;
                 T u0, u1;
-
+                T lnU0;
                 bool generated = false;
 
                 for (Nd4jIndex e = start; e < end; e++) {
@@ -956,9 +946,9 @@ namespace randomOps {
                          */
                         u0 = buffer->relativeT<T>(e, (T) 1e-5f, (T) 1.0f);
                         u1 = buffer->relativeT<T>((e + 1), (T) 1e-5f, (T) 1.0f);
-
-                        z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
+                        lnU0 = (T)(-2.0f)*nd4j::math::nd4j_log<T>(u0);
+                        z0 = nd4j::math::nd4j_sqrt<T>(lnU0) * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                        z1 = nd4j::math::nd4j_sqrt<T>(lnU0 - z0*z0);
 
                         generated = true;
 
