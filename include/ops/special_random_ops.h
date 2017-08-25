@@ -760,29 +760,35 @@ namespace randomOps {
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
             _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
-            int span = (zLength / _threads) + 8;            
+            int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
+            int span = (middle / _threads) + 8;
             // we're enforcing even chunks, since it's mandatory for this algorithm
             span -= span % 2;
-            int middle = span>>1 + 1;
+
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
 
             T mean = extraArguments[0];
             T stddev = extraArguments[1];
 
+            printf("Middle: %i\n", middle);
+
 #pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
                 int tid = omp_get_thread_num();
                 Nd4jIndex start = span * tid; 
-                Nd4jIndex end = span * tid + middle;
-                if (end + middle > zLength) {
-                    middle = (zLength - start)/2 + 1;
-                    end = start + middle;                                    
+                Nd4jIndex end = span * (tid + 1);
+                if (end >  middle) {
+                    end = middle;
                 }
+
+                printf("tid: %i; start: %i; end: %i;\n", tid, (int) start, (int) end);
+                
     
                 T z0, z1;
                 T u0, u1;
-                T lnU0;
-                T result0, result1;                
+                T result0, result1;
+
+                T ds = nd4j::math::nd4j_abs<T>(stddev) * (T) 2.0f;
 
                 for (Nd4jIndex e = start; e < end; e++) {
                    
@@ -793,20 +799,19 @@ namespace randomOps {
                     T realMean0 = y == z ? mean : y[e * yEWS];
                     T realMean1 = y == z ? mean : y[(e + middle) * yEWS];
                     do {
-                        u0 = buffer->relativeT<T>(e + generation0, (T) 1e-5f, (T) 1.0f);
-                        u1 = buffer->relativeT<T>((e + generation0 + 1), (T) 1e-5f, (T) 1.0f);
-                        lnU0 = (T)(-2.0f)*nd4j::math::nd4j_log<T>(u0);
-                        z0 = nd4j::math::nd4j_sqrt<T>(lnU0) * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = nd4j::math::nd4j_sqrt<T>(lnU0 - z0*z0);
+                        u0 = buffer->relativeT<T>(e + generation0, (T) 1e-6f, (T) 1.0f);
+                        u1 = buffer->relativeT<T>((e + generation0 + 1), (T) 1e-6f, (T) 1.0f);
+                        z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                        z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
 
                         result0 = z0 * stddev + realMean0;
                         result1 = z1 * stddev + realMean1;                            
                         generation0 += zLength;
-                    } while (result0 < (realMean0 - 2*stddev) || (realMean0 + 2*stddev) < result0 || result1 < (realMean1 - 2*stddev) || (realMean1 + 2*stddev) < result1);
+                    } while (nd4j::math::nd4j_abs<T>(realMean0) + nd4j::math::nd4j_abs<T>(result0) > ds || nd4j::math::nd4j_abs<T>(realMean1) + nd4j::math::nd4j_abs<T>(result1) > ds);
 
                     z[e*zEWS] = result0;
                     if((e+middle) < zLength) 
-                        z[e*zEWS + middle] = result1;                  
+                        z[(e + middle) * zEWS] = result1;
                 }                            
             }
             // update rng state
@@ -946,9 +951,8 @@ namespace randomOps {
                          */
                         u0 = buffer->relativeT<T>(e, (T) 1e-5f, (T) 1.0f);
                         u1 = buffer->relativeT<T>((e + 1), (T) 1e-5f, (T) 1.0f);
-                        lnU0 = (T)(-2.0f)*nd4j::math::nd4j_log<T>(u0);
-                        z0 = nd4j::math::nd4j_sqrt<T>(lnU0) * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = nd4j::math::nd4j_sqrt<T>(lnU0 - z0*z0);
+                        z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                        z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
 
                         generated = true;
 
