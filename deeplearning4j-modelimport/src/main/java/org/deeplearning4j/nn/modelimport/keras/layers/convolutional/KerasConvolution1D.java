@@ -74,7 +74,7 @@ public class KerasConvolution1D extends KerasConvolution {
         super(layerConfig, enforceTrainingConfig);
         hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
-        int[] dilationRate = getDilationRate(layerConfig, 2, conf, false);
+        int[] dilationRate = getDilationRate(layerConfig, 1, conf, false);
 
         Convolution1DLayer.Builder builder = new Convolution1DLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)

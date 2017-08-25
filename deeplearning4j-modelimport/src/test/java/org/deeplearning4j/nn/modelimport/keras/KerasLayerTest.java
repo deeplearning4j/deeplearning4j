@@ -65,6 +65,7 @@ public class KerasLayerTest {
     private final double DROPOUT_KERAS = 0.3;
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
     private final int[] KERNEL_SIZE = new int[]{1, 2};
+    private final int[] DILATION = new int[]{2, 2};
     private final int[] INPUT_SHAPE = new int[]{100, 20};
     private final int[] STRIDE = new int[]{3, 4};
     private final PoolingType POOLING_TYPE = PoolingType.MAX;
@@ -94,14 +95,16 @@ public class KerasLayerTest {
 
     @Test
     public void testConvolution2DLayer() throws Exception {
-        buildConvolution2DLayer(conf1, keras1);
-        buildConvolution2DLayer(conf2, keras2);
+        buildConvolution2DLayer(conf1, keras1, false);
+        buildConvolution2DLayer(conf2, keras2, false);
+        buildConvolution2DLayer(conf2, keras2, true);
     }
 
     @Test
     public void testConvolution1DLayer() throws Exception {
-        buildConvolution1DLayer(conf1, keras1);
-        buildConvolution1DLayer(conf2, keras2);
+        buildConvolution1DLayer(conf1, keras1, false);
+        buildConvolution1DLayer(conf2, keras2, false);
+        buildConvolution1DLayer(conf2, keras2, true);
     }
 
     @Test
@@ -146,7 +149,8 @@ public class KerasLayerTest {
         buildLReshapeLayer(conf2, keras2);
     }
 
-    public void buildConvolution1DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    public void buildConvolution1DLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean withDilation)
+            throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CONVOLUTION_1D());
         Map<String, Object> config = new HashMap<String, Object>();
@@ -159,6 +163,9 @@ public class KerasLayerTest {
             Map<String, Object> init = new HashMap<String, Object>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
             config.put(conf.getLAYER_FIELD_INIT(), init);
+        }
+        if (withDilation){
+            config.put(conf.getLAYER_FIELD_DILATION_RATE(), DILATION[0]);
         }
         Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
@@ -183,6 +190,9 @@ public class KerasLayerTest {
         assertEquals(N_OUT, layer.getNOut());
         assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
         assertEquals(VALID_PADDING[0], layer.getPadding()[0]);
+        if (withDilation) {
+            assertEquals(DILATION[0], layer.getDilation()[0]);
+        }
     }
 
     public void buildEmbeddingLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
@@ -312,7 +322,8 @@ public class KerasLayerTest {
         assertEquals(N_OUT, layer.getNOut());
     }
 
-    public void buildConvolution2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    public void buildConvolution2DLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean withDilation)
+            throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CONVOLUTION_2D());
         Map<String, Object> config = new HashMap<String, Object>();
@@ -339,6 +350,12 @@ public class KerasLayerTest {
             }};
             config.put(conf.getLAYER_FIELD_KERNEL_SIZE(), kernel);
         }
+        if (withDilation){
+            ArrayList dilation = new ArrayList<Integer>() {{
+                for (int i : DILATION) add(i);
+            }};
+            config.put(conf.getLAYER_FIELD_DILATION_RATE(), dilation);
+        }
         List<Integer> subsampleList = new ArrayList<>();
         subsampleList.add(STRIDE[0]);
         subsampleList.add(STRIDE[1]);
@@ -361,6 +378,10 @@ public class KerasLayerTest {
         assertEquals(N_OUT, layer.getNOut());
         assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
         assertArrayEquals(VALID_PADDING, layer.getPadding());
+        if (withDilation) {
+            assertEquals(DILATION[0], layer.getDilation()[0]);
+            assertEquals(DILATION[1], layer.getDilation()[1]);
+        }
     }
 
     public void buildSubsamplingLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
