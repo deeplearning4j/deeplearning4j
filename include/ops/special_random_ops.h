@@ -780,56 +780,44 @@ namespace randomOps {
                 T result0, result1;                
                 bool even = true;
 
-                for (Nd4jIndex e = start; e < end; e++) {
+                for (Nd4jIndex e = start+1; e <= end; e++) {
                    
                     /*
                     * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
                     */
                     Nd4jIndex generation0 = 0;
-                    T realMean = y == z ? mean : y[e * yEWS];                    
+                    T realMean0 = y == z ? mean : y[e * yEWS];
+                    T realMean1 = y == z ? mean : y[(e + middle) * yEWS];
                     do {
                         u0 = buffer->relativeT<T>(e + generation0, (T) 1e-5f, (T) 1.0f);
                         u1 = buffer->relativeT<T>((e + generation0 + 1), (T) 1e-5f, (T) 1.0f);
 
                         z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
                         z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
-                        result1 = z1 * stddev + realMean;
-                        result0 = z0 * stddev + realMean;
+                        if(even) {
+                            result0 = z0 * stddev + realMean0;
+                            result1 = z1 * stddev + realMean1;                            
+                        }
+                        else {
+                            result0 = z0 * stddev + realMean1;
+                            result1 = z1 * stddev + realMean0;                            
+                        }
                         generation0 += zLength;
                     } while (result0 < (realMean - 2*stddev) || (realMean + 2*stddev) < result0 || result1 < (realMean - 2*stddev) || (realMean + 2*stddev) < result1);
                     
                     if (even) {                    
                         z[e*zEWS] = result0;
-                        z[e*zEWS + middle] = result1;
+                        if((e+middle) < zLength) 
+                            z[e*zEWS + middle] = result1;
                         even = false;
                     } 
                     else {
                         z[e*zEWS] = result1;
-                        z[e*zEWS + middle] = result0;
+                        if((e+middle) < zLength)
+                            z[e*zEWS + middle] = result0;
                         even = true;
                     }
-                }                
-                if(end + middle == zLength - 1) {
-                
-                    Nd4jIndex generation0 = 0;
-                    T realMean = y == z ? mean : y[(zLength - 1) * yEWS];
-                    do {
-                        u0 = buffer->relativeT<T>(e + generation0, (T) 1e-5f, (T) 1.0f);
-                        u1 = buffer->relativeT<T>((e + generation0 + 1), (T) 1e-5f, (T) 1.0f);
-
-                        z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
-                        result1 = z1 * stddev + realMean;
-                        result0 = z0 * stddev + realMean;
-                        generation0 += zLength;
-                    } while (result0 < (realMean - 2*stddev) || (realMean + 2*stddev) < result0 || result1 < (realMean - 2*stddev) || (realMean + 2*stddev) < result1);
-                    
-                    if (even)
-                        z[(zLength - 1)*zEWS] = result1;
-                    else 
-                        z[(zLength - 1)*zEWS] = result0;
-
-                }
+                }                            
             }
             // update rng state
             buffer->rewindH(zLength);
