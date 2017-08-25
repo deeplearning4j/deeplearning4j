@@ -102,6 +102,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int c = labels.size(1)-4;
 
         INDArray wh = Nd4j.create(new double[]{w,h});
+        INDArray boxPriors = layerConf().getBoundingBoxes();    //Shape: [b, 2]
+        INDArray boxPriorsNormalized = boxPriors.divRowVector(wh); //pw * exp(in_w) and ph * exp(in_h)
+
 
 
         //Debugging code
@@ -129,7 +132,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //Also infer size/scale (label w/h) from (x1,y1,x2,y2) format to (w,h) format
         INDArray labelWHSqrt = labelBRXYImg.sub(labelTLXYImg);
-        Transforms.sqrt(labelWHSqrt, false);
+        labelWHSqrt = Transforms.sqrt(labelWHSqrt, true);
 
 
 
@@ -143,8 +146,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray predictedXYCenterGrid = Transforms.sigmoid(preSigmoidPredictedXYCenterGrid, true);
 
         //Exponential for w/h (for: boxPrior * exp(input))
-        INDArray predictedWH = input5.get(all(), all(), interval(2,4), all(), all());
-        Transforms.exp(predictedWH, false);
+        INDArray predictedWHPreExp = input5.get(all(), all(), interval(2,4), all(), all());
+        INDArray predictedWH = Transforms.exp(predictedWHPreExp, true);
+        Broadcast.mul(predictedWH, boxPriorsNormalized, predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
+
 
         //Calculate predicted top/left and bottom/right in overall image
         //First: calculate top/left  value for each grid location. gridXY contains
@@ -163,7 +168,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray predictedBRXYImage = halfWidth.addi(predictedXYCenterImage);
 
         //Apply sqrt to W/H in preparation for loss function
-        INDArray predictedWHSqrt = Transforms.sqrt(predictedWH, false);
+        INDArray predictedWHSqrt = Transforms.sqrt(predictedWH, true);
+
 
 
 
@@ -211,17 +217,17 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         for(int i=0; i<b; i++ ){
             labelsCenterXYInGridBroadcast.get(all(), point(i), all(), all(), all()).assign(labelsCenterXYInGrid);
         }
-        INDArray labelXYCenter2d = labelsCenterXYInGridBroadcast.dup('c').reshape('c', mb*b*h*w, 2);    //TODO need permute first??
+        INDArray labelXYCenter2d = labelsCenterXYInGridBroadcast.permute(0,1,3,4,2).dup('c').reshape('c', mb*b*h*w, 2);    //[mb, b, 2, h, w] to [mb, b, h, w, 2] to [mb*b*h*w, 2]
 
 
         //Width/height (sqrt)
-        INDArray predictedWHSqrt2d = predictedWHSqrt.dup('c').reshape(mb*b*h*w, 2);
+        INDArray predictedWHSqrt2d = predictedWHSqrt.permute(0,1,3,4,2).dup('c').reshape(mb*b*h*w, 2).dup('c'); //from [mb, b, 2, h, w] to [mb, b, h, w, 2] to [mb*b*h*w, 2]
         //Broadcast labelWHSqrt from [mb, 2, h, w} to [mb, b, 2, h, w]
         INDArray labelWHSqrtBroadcast = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
         for(int i=0; i<b; i++ ){
-            labelWHSqrtBroadcast.get(all(), point(i), all(), all(), all()).assign(labelWHSqrt);
+            labelWHSqrtBroadcast.get(all(), point(i), all(), all(), all()).assign(labelWHSqrt); //[mb, 2, h, w] to [mb, b, 2, h, w]
         }
-        INDArray labelWHSqrt2d = labelWHSqrtBroadcast.dup('c').reshape(mb*b*h*w, 2);
+        INDArray labelWHSqrt2d = labelWHSqrtBroadcast.permute(0,1,3,4,2).dup('c').reshape(mb*b*h*w, 2).dup('c');   //[mb, b, 2, h, w] to [mb, b, h, w, 2] to [mb*b*h*w, 2]
 
         //Confidence
         INDArray labelConfidence2d = labelConfidence.reshape('c', mb * b * h * w, 1);
@@ -263,8 +269,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 //                + fullNetworkL2;
 
         double loss =
-//                layerConf().getLambdaCoord() * (positionLoss + sizeScaleLoss) +
                 layerConf().getLambdaCoord() * positionLoss +
+                layerConf().getLambdaCoord() * sizeScaleLoss +
 //                confidenceLoss +
                 classPredictionLoss +
                 fullNetworkL1 +
@@ -282,6 +288,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray epsOut5 = epsOut.get(all(), interval(0,5*b), all(), all()).reshape(mb, b, 5, h, w);
         INDArray epsClassPredictions = epsOut.get(all(), interval(5*b, 5*b+c), all(), all());
         INDArray epsXY = epsOut5.get(all(), all(), interval(0,2), all(), all());
+        INDArray epsWH = epsOut5.get(all(), all(), interval(2,4), all(), all());
 
 
         //Calculate gradient component from class probabilities (softmax)
@@ -302,6 +309,20 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         gradXYCenter5d = new ActivationSigmoid().backprop(preSigmoidPredictedXYCenterGrid, gradXYCenter5d).getFirst();
         epsXY.assign(gradXYCenter5d);
 
+        //Calculate gradient component from width/height (w,h)
+        //Note that loss function gets sqrt(w) and sqrt(h)
+        //gradWHSqrt2d = dL/dsqrt(w) and dL/dsqrt(h)
+        INDArray gradWHSqrt2d = layerConf().getLossPositionScale().computeGradient(labelWHSqrt2d, predictedWHSqrt2d.dup(), identity, mask1_ij_obj_2d);   //Shape: [mb*b*h*w, 2]
+            //dL/dw = dL/dsqrtw * dsqrtw / dw = dL/dsqrtw * 0.5 / sqrt(w)
+        INDArray gradWH2d = gradWHSqrt2d.mul(0.5).divi(predictedWHSqrt2d);  //dL/dw and dL/dh, w = pw * exp(tw)
+            //dL/dinWH = dL/dw * dw/dInWH = dL/dw * pw * exp(tw)
+        INDArray gradWH5d = gradWH2d.dup('c').reshape(mb, b, h, w, 2).permute(0,1,4,2,3).dup('c');   //To: [mb, b, 2, h, w]
+        gradWH5d.muli(predictedWH);
+        gradWH5d.muli(layerConf().getLambdaCoord());
+        epsWH.assign(gradWH5d);
+
+
+        //Calculate gradient component from confidence loss
 
 
         return epsOut;
