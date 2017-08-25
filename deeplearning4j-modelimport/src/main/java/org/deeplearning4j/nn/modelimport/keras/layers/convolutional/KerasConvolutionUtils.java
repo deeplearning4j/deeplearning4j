@@ -142,26 +142,14 @@ public class KerasConvolutionUtils {
         String borderMode = (String) innerConfig.get(conf.getLAYER_FIELD_BORDER_MODE());
         ConvolutionMode convolutionMode = null;
         if (borderMode.equals(conf.getLAYER_BORDER_MODE_SAME())) {
-            /* Keras relies upon the Theano and TensorFlow border mode definitions
-             * and operations:
-             * - Theano: http://deeplearning.net/software/theano/library/tensor/nnet/conv.html#theano.tensor.nnet.conv.conv2d
-             * - TensorFlow: https://www.tensorflow.org/api_docs/python/nn/convolution#conv2d
+            /* Keras relies upon the Theano and TensorFlow border mode definitions and operations:
+             * TH: http://deeplearning.net/software/theano/library/tensor/nnet/conv.html#theano.tensor.nnet.conv.conv2d
+             * TF: https://www.tensorflow.org/api_docs/python/nn/convolution#conv2d
              */
             convolutionMode = ConvolutionMode.Same;
 
         } else if (borderMode.equals(conf.getLAYER_BORDER_MODE_VALID()) ||
-                borderMode.equals(conf.getLAYER_BORDER_MODE_VALID())) {
-            /* TensorFlow and Theano "valid" modes apply filter only
-             * to complete patches within the image borders with no
-             * padding. That is equivalent to DL4J Truncate mode
-             * with no padding.
-             */
-            /* Theano-only "full" mode zero pads the image so that
-             * outputs = (inputs + filters + 1) / stride. This should
-             * be equivalent to DL4J Truncate mode with padding
-             * equal to filters-1.
-             * TODO: verify this is correct.
-             */
+                borderMode.equals(conf.getLAYER_BORDER_MODE_FULL())) {
             convolutionMode = ConvolutionMode.Truncate;
 
         } else {

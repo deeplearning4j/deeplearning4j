@@ -20,12 +20,6 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * Unit tests for end-to-end Keras model import.
- * <p>
- * TODO: find a more elegant fix for the per-layer activation comparisons
- * since some layers (e.g., ActivationLayer) overwrite previous
- * layer's activations when run in train=false mode.
- * <p>
- * TODO: ndarray.equalsWithEps(ndarray) appears to be broken
  *
  * @author dave@skymind.io
  */
@@ -206,9 +200,7 @@ public class KerasModelEndToEndTest {
                 if (activationsKeras.containsKey(layerName)) {
                     INDArray activationsDl4j = model.feedForwardToLayer(i, input, false).get(i + 1);
                     /* TODO: investigate why this fails for some layers:
-                     *
                      * compareINDArrays(layerName, activationsKeras.get(layerName), activationsDl4j, EPS);
-                     *
                      */
                 }
             }
@@ -216,9 +208,7 @@ public class KerasModelEndToEndTest {
             INDArray predictionsKeras = getPredictions(outputsArchive, tfOrdering)[0];
             INDArray predictionsDl4j = model.output(input, false);
             /* TODO: investigate why this fails when max difference is ~1E-7!
-             *
              * compareINDArrays("predictions", predictionsKeras, predictionsDl4j, EPS);
-             *
              */
             INDArray outputs = getOutputs(outputsArchive, true)[0];
             compareMulticlassAUC("predictions", outputs, predictionsKeras, predictionsDl4j, 10, EPS);

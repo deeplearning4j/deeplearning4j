@@ -16,7 +16,6 @@ import java.util.Map;
  * Imports a Keras Merge layer as a DL4J Merge (graph) vertex.
  *
  * TODO: handle axes arguments that alter merge behavior (requires changes to DL4J?)
- * TODO: unsupported merge modes (require changes to DL4J)
  *
  * @author dave@skymind.io
  */

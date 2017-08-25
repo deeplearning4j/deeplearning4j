@@ -115,8 +115,6 @@ public class KerasLayerUtils {
      *
      * @param regularizerConfig Map containing Keras weight reguarlization configuration
      * @return L1 regularization strength (0.0 if none)
-     * <p>
-     * TODO: should this throw an error instead?
      */
     private static void checkForUnknownRegularizer(Map<String, Object> regularizerConfig, boolean enforceTrainingConfig,
                                             KerasLayerConfiguration conf)

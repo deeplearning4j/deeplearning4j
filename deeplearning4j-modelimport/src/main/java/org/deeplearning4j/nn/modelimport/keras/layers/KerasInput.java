@@ -132,16 +132,6 @@ public class KerasInput extends KerasLayer {
 
     /**
      * Returns value of truncated BPTT, if any found.
-     *
-     * TODO: figure out how to infer truncated BPTT value for non-sequence inputs
-     *
-     * In Keras, truncated BPTT is specified implicitly by specifying a fixed
-     * size input and by passing in the "unroll" argument to recurrent layers.
-     * Currently, the only setting in which we can confidently determine the
-     * value of truncated BPTT is if the original input has two dimensions,
-     * the first of which is sequence length. Hypothetically, we should be
-     * able to do this for other types of inputs, but that's less straightforward.
-     *
      * @return          value of truncated BPTT
      */
     public int getTruncatedBptt() {

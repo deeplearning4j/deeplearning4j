@@ -43,11 +43,8 @@ public class KerasInitilizationUtils {
      */
     public static WeightInit mapWeightInitialization(String kerasInit, KerasLayerConfiguration conf)
             throws UnsupportedKerasConfigurationException {
-        /* WEIGHT INITIALIZATION
-         * TODO: finish mapping keras-to-dl4j weight distributions.
-         * INIT_IDENTITY INIT_ORTHOGONAL INIT_LECUN_UNIFORM, INIT_NORMAL
-         * INIT_VARIANCE_SCALING, INIT_CONSTANT, INIT_ONES
-         * Low priority since our focus is on loading trained models.
+        /* INIT_IDENTITY INIT_ORTHOGONAL INIT_LECUN_UNIFORM, INIT_NORMAL
+         * INIT_VARIANCE_SCALING, INIT_CONSTANT, INIT_ONES missing.
          * Remaining dl4j distributions: DISTRIBUTION, SIZE, NORMALIZED,VI
          */
         WeightInit init = WeightInit.XAVIER;
@@ -74,7 +71,6 @@ public class KerasInitilizationUtils {
                 // TODO: This is incorrect, but we need it in tests for now
                 init = WeightInit.XAVIER_UNIFORM;
             } else {
-                // TODO: implement
                 throw new UnsupportedKerasConfigurationException("Unknown keras weight initializer " + kerasInit);
             }
         }

@@ -13,11 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Imports a Keras ZeroPadding layer as a DL4J Subsampling layer
- * with kernel size 1 and stride 1.
- *
- * TODO: change this to official DL4J ZeroPadding layer once it's
- * supported
+ * Imports a Keras ZeroPadding layer.
  *
  * @author dave@skymind.io
  */

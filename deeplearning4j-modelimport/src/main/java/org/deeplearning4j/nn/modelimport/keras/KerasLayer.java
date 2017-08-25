@@ -375,9 +375,7 @@ public class KerasLayer {
      * Indicates whether this layer a valid inbound layer. Currently, only
      * (known) DL4J Layers and inputs are valid inbound layers. "Preprocessor"
      * layers (reshaping, merging, etc.) are replaced by their own inbound layers.
-     * <p>
-     * TODO: revisit this once "preprocessor" layers are handled explicitly
-     *
+
      * @return boolean indicating whether layer is valid inbound layer
      * @see org.deeplearning4j.nn.api.Layer
      */

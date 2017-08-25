@@ -211,8 +211,6 @@ public class KerasModel {
     protected void importTrainingConfiguration(String trainingConfigJson)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> trainingConfig = KerasModelUtils.parseJsonString(trainingConfigJson);
-        /* TODO: handle other configs (loss weights, sample weights). */
-        /* TODO: handle optimizer configuration. */
 
         /* Add loss layers for each loss function. */
         List<KerasLayer> lossLayers = new ArrayList<>();
