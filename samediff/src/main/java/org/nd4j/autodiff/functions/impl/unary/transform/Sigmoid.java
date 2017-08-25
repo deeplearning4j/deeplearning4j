@@ -15,14 +15,11 @@ public class Sigmoid extends AbstractUnaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().sigmoid(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
+
 
     @Override
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().sigmoidDerivative(arg());
+        return sameDiff.getFunctionFactory().sigmoidDerivative(arg(), i_v);
     }
 
     @Override

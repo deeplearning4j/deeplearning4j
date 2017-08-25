@@ -386,8 +386,8 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
     @Override
-    public DifferentialFunction<ArrayField> sigmoidDerivative(DifferentialFunction<ArrayField> iX) {
-        return new SigmoidDerivative(sameDiff,iX,null);
+    public DifferentialFunction<ArrayField> sigmoidDerivative(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> wrt) {
+        return new SigmoidDerivative(sameDiff,iX,wrt);
 
     }
 

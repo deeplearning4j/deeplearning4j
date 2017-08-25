@@ -47,7 +47,7 @@ public class SigmoidDerivative extends BaseGradientOp  {
      */
     @Override
     public String name() {
-        return "softmaxderivative";
+        return "sigmoidderivative";
     }
 
 
@@ -95,7 +95,8 @@ public class SigmoidDerivative extends BaseGradientOp  {
     @Override
     public void exec() {
         INDArray sigmoid = Nd4j.getExecutioner().execAndReturn(new Sigmoid(x));
-        INDArray mulled = sigmoid.muli(y).muli(y.rsub(1));
+        INDArray rsubbed = sigmoid.rsub(1);
+        INDArray mulled = y.mul(sigmoid).muli(rsubbed);
         if(mulled != z)
             z.assign(mulled);
 

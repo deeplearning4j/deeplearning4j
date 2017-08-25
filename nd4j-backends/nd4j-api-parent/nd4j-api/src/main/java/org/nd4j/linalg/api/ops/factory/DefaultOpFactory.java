@@ -91,6 +91,8 @@ public class DefaultOpFactory implements OpFactory {
         switch(name) {
             case "softmaxderivative":
                 return new SoftMaxDerivative(x,y,z);
+            case "sigmoidderivative":
+                return new org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative(x,y,z);
             default: throw new IllegalStateException("Illegal name " + name);
         }
     }

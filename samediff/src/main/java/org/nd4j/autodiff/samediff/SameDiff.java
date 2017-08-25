@@ -1049,11 +1049,11 @@ public class SameDiff {
      * @param iX
      * @return
      */
-    public SDVariable sigmoidDerivative(SDVariable iX) {
+    public SDVariable sigmoidDerivative(SDVariable iX,SDVariable wrt) {
         SDVariable ret = SDVariable.builder()
                 .arr(null).shape(iX.getShape())
                 .differentialFunction(functionFactory
-                        .sigmoidDerivative(getFunctionInput(iX)))
+                        .sigmoidDerivative(getFunctionInput(iX), getFunctionInput(wrt)))
                 .varName("sigmoidDerivative(" + iX.getVarName() + ")").sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));

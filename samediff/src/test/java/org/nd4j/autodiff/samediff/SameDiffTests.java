@@ -565,7 +565,11 @@ public class SameDiffTests {
         SDVariable sum = sameDiff.sum(sigmoid,Integer.MAX_VALUE);
         List<Op> backwardsOps = sameDiff.execBackwards();
         assertEquals(4,backwardsOps.size());
-        assertEquals(Nd4j.zeros(2,2),backwardsOps.get(backwardsOps.size() - 1).z());
+        assertTrue(Nd4j.create(new double[][]{
+                        {0.1966 , 0.1050},
+                        {0.0452 , 0.0177}
+                }).equalsWithEps(
+                backwardsOps.get(backwardsOps.size() - 1).z(),1e-2));
         System.out.println(backwardsOps);
     }
 

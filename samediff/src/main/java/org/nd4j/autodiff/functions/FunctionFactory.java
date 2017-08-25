@@ -115,7 +115,7 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> sigmoid(DifferentialFunction<X> iX);
 
-    DifferentialFunction<X> sigmoidDerivative(DifferentialFunction<X> iX);
+    DifferentialFunction<X> sigmoidDerivative(DifferentialFunction<X> iX, DifferentialFunction<X> wrt);
 
     DifferentialFunction<X> sign(DifferentialFunction<X> iX);
 
