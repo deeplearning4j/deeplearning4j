@@ -68,28 +68,28 @@ Obviously, this option is mostly viable for cases when you need NDArrays that ca
 
 # GPUs
 
-When using GPUs, a typical case is your cpu ram being greater than GPU ram.
+When using GPUs, a typical case is your CPU ram being greater than GPU ram. When GPU ram is less than CPU ram, we need to monitor how much ram is being used off-heap. You can check this based on the javacpp options specified above.
 
-When gpu ram is less than cpu ram, we need to monitor how much ram is being used
+Of note here is we allocate memory on the GPU equivalent to the amount of offheap memory you specify. We don't use anymore of your GPU than that. You are also allowed to (but it's not encouraged) to specify heap space greater than your gpu, but your gpu will run out of ram when trying to run jobs.
+We also allocate off heap memory on the cpu ram as well. This is for efficient communicaton of CPU to GPU, and CPU accessing data from an NDArray without having to fetch data from the GPU each time you call for it.
 
-off heap. You can check this based on the javacpp options specified above.
+If JavaCPP or your GPU throws an out of memory error, or even if your compute slows down (due to GPU memory being limited), then you either may want to decrease batch size or if you can increase the amount of off-heap memory javacpp is allowed to allocate.
 
+Try to run with an off-heap memory equal to your GPU's ram. Also, always remember to set up a small JVM heap space (using `Xmx` option)
 
-Of note here is we allocate memory on the gpu equivalent to the amount of offheap memory you specify.
-We don't use anymore of your gpu than that. You are also allowed to (but it's not encouraged)
-to specify heap space greater than your gpu, but your gpu will run out of ram when trying to run jobs.
-We also allocate off heap memory on the cpu ram as well. This is for efficient communicaton of cpu to gpu
-and cpu accessing data from an ndarray without having to fetch data from the gpu.
+Please do note that if your gpu has < 2g of ram it's probably not really usable for deep learning. You should consider just using your CPU if this is the case. Typical deep learning workloads should *at minimum* have 4GB of ram. 4GB of ram is not recommended though. At least 8GB of ram on a GPU is recommended for deep learning workloads.
 
-If javacpp or your gpu throws an out of memory error, or even if your compute slows down (due to gpu memory
-being limited), then you either may want to decrease batch size or if you can increase the amount of off heap memory
-javacpp is allowed to allocate.
+However, it IS possible to use HOST-only memory with CUDA backend, that can be done using workspaces.
 
-Try to run with an off heap memory equal to your gpu's ram. Also, always remember to set up a small heap space.
+Example:
+```
+WorkspaceConfiguration basicConfig = WorkspaceConfiguration.builder()
+                .policyAllocation(AllocationPolicy.STRICT)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyMirroring(MirroringPolicy.HOST_ONLY) // <--- this option does this trick
+                .policyMirroring(MirroringPolicy.FULL)
+                .policySpill(SpillPolicy.EXTERNAL)
+                .build();
+```
 
-Please do note that if your gpu has < 2g of ram it's probably not usable for deep learning.
-You should consider just using your cpu if this is the case.
-
-Typical deep learning workloads should *at minimum* have 4g of ram. 4g of ram is not recommended though.
-At least 8g of ram on a gpu is recommended when trying to run deep learning workloads.
-
+***PLEASE NOTE:*** it's not recommended to use HOST-only arrays directly, since they will dramatically reduce performance. But they might be useful as in-memory cache paires with `INDArray.unsafeDuplication()` method
