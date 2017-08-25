@@ -756,12 +756,10 @@ namespace randomOps {
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
             _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
-            int span = (zLength / _threads) + 8;
-            int middle = span>>1;
-
+            int span = (zLength / _threads) + 8;            
             // we're enforcing even chunks, since it's mandatory for this algorithm
             span -= span % 2;
-
+            int middle = span>>1;
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
 
             T mean = extraArguments[0];
