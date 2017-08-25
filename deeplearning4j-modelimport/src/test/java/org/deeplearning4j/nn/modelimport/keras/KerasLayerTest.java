@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
+import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasAtrousConvolution1D;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution1D;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasActivation;
@@ -66,6 +67,7 @@ public class KerasLayerTest {
     private final double DROPOUT_KERAS = 0.3;
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
     private final int[] KERNEL_SIZE = new int[]{1, 2};
+    private final int[] DILATION = new int[]{2, 2};
     private final int[] INPUT_SHAPE = new int[]{100, 20};
     private final int[] STRIDE = new int[]{3, 4};
     private final PoolingType POOLING_TYPE = PoolingType.MAX;
@@ -94,15 +96,28 @@ public class KerasLayerTest {
     }
 
     @Test
+    public void testAtrousConvolution1DLayer() throws Exception {
+        buildAtrousConvolution1DLayer(conf1, keras1);
+    }
+
+    @Test
+    public void testAtrousConvolution2DLayer() throws Exception {
+        buildAtrousConvolution2DLayer(conf1, keras1);
+    }
+
+
+    @Test
     public void testConvolution2DLayer() throws Exception {
-        buildConvolution2DLayer(conf1, keras1);
-        buildConvolution2DLayer(conf2, keras2);
+        buildConvolution2DLayer(conf1, keras1, false);
+        buildConvolution2DLayer(conf2, keras2, false);
+        buildConvolution2DLayer(conf2, keras2, true);
     }
 
     @Test
     public void testConvolution1DLayer() throws Exception {
-        buildConvolution1DLayer(conf1, keras1);
-        buildConvolution1DLayer(conf2, keras2);
+        buildConvolution1DLayer(conf1, keras1, false);
+        buildConvolution1DLayer(conf2, keras2, false);
+        buildConvolution1DLayer(conf2, keras2, true);
     }
 
     @Test
@@ -153,7 +168,8 @@ public class KerasLayerTest {
         buildLReshapeLayer(conf2, keras2);
     }
 
-    public void buildConvolution1DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    public void buildConvolution1DLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean withDilation)
+            throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CONVOLUTION_1D());
         Map<String, Object> config = new HashMap<String, Object>();
@@ -166,6 +182,9 @@ public class KerasLayerTest {
             Map<String, Object> init = new HashMap<String, Object>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
             config.put(conf.getLAYER_FIELD_INIT(), init);
+        }
+        if (withDilation){
+            config.put(conf.getLAYER_FIELD_DILATION_RATE(), DILATION[0]);
         }
         Map<String, Object> W_reg = new HashMap<String, Object>();
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
@@ -190,6 +209,51 @@ public class KerasLayerTest {
         assertEquals(N_OUT, layer.getNOut());
         assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
         assertEquals(VALID_PADDING[0], layer.getPadding()[0]);
+        if (withDilation) {
+            assertEquals(DILATION[0], layer.getDilation()[0]);
+        }
+    }
+
+    public void buildAtrousConvolution1DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
+            throws Exception {
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CONVOLUTION_1D());
+        Map<String, Object> config = new HashMap<String, Object>();
+        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS);
+        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+        if (kerasVersion == 1) {
+            config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
+        } else {
+            Map<String, Object> init = new HashMap<String, Object>();
+            init.put("class_name", conf.getINIT_GLOROT_NORMAL());
+            config.put(conf.getLAYER_FIELD_INIT(), init);
+        }
+        config.put(conf.getLAYER_FIELD_DILATION_RATE(), DILATION[0]);
+        Map<String, Object> W_reg = new HashMap<String, Object>();
+        W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
+        W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
+        config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
+        config.put(conf.getLAYER_FIELD_DROPOUT(), DROPOUT_KERAS);
+        config.put(conf.getLAYER_FIELD_FILTER_LENGTH(), KERNEL_SIZE[0]);
+        config.put(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH(), STRIDE[0]);
+        config.put(conf.getLAYER_FIELD_NB_FILTER(), N_OUT);
+        config.put(conf.getLAYER_FIELD_BORDER_MODE(), BORDER_MODE_VALID);
+        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
+
+        Convolution1DLayer layer = new KerasAtrousConvolution1D(layerConfig).getAtrousConvolution1D();
+        assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
+        assertEquals(LAYER_NAME, layer.getLayerName());
+        assertEquals(INIT_DL4J, layer.getWeightInit());
+        assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
+        assertEquals(L2_REGULARIZATION, layer.getL2(), 0.0);
+        assertEquals(DROPOUT_DL4J, layer.getDropOut(), 0.0);
+        assertEquals(KERNEL_SIZE[0], layer.getKernelSize()[0]);
+        assertEquals(STRIDE[0], layer.getStride()[0]);
+        assertEquals(N_OUT, layer.getNOut());
+        assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
+        assertEquals(VALID_PADDING[0], layer.getPadding()[0]);
+        assertEquals(DILATION[0], layer.getDilation()[0]);
     }
 
     public void buildEmbeddingLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
@@ -319,7 +383,8 @@ public class KerasLayerTest {
         assertEquals(N_OUT, layer.getNOut());
     }
 
-    public void buildConvolution2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    public void buildConvolution2DLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean withDilation)
+            throws Exception {
         Map<String, Object> layerConfig = new HashMap<String, Object>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CONVOLUTION_2D());
         Map<String, Object> config = new HashMap<String, Object>();
@@ -346,6 +411,12 @@ public class KerasLayerTest {
             }};
             config.put(conf.getLAYER_FIELD_KERNEL_SIZE(), kernel);
         }
+        if (withDilation){
+            ArrayList dilation = new ArrayList<Integer>() {{
+                for (int i : DILATION) add(i);
+            }};
+            config.put(conf.getLAYER_FIELD_DILATION_RATE(), dilation);
+        }
         List<Integer> subsampleList = new ArrayList<>();
         subsampleList.add(STRIDE[0]);
         subsampleList.add(STRIDE[1]);
@@ -368,6 +439,68 @@ public class KerasLayerTest {
         assertEquals(N_OUT, layer.getNOut());
         assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
         assertArrayEquals(VALID_PADDING, layer.getPadding());
+        if (withDilation) {
+            assertEquals(DILATION[0], layer.getDilation()[0]);
+            assertEquals(DILATION[1], layer.getDilation()[1]);
+        }
+    }
+
+    public void buildAtrousConvolution2DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
+            throws Exception {
+        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CONVOLUTION_2D());
+        Map<String, Object> config = new HashMap<String, Object>();
+        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
+        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        if (kerasVersion == 1) {
+            config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
+        } else {
+            Map<String, Object> init = new HashMap<String, Object>();
+            init.put("class_name", conf.getINIT_GLOROT_NORMAL());
+            config.put(conf.getLAYER_FIELD_INIT(), init);
+        }
+        Map<String, Object> W_reg = new HashMap<String, Object>();
+        W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
+        W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
+        config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
+        config.put(conf.getLAYER_FIELD_DROPOUT(), DROPOUT_KERAS);
+        if (kerasVersion == 1) {
+            config.put(conf.getLAYER_FIELD_NB_ROW(), KERNEL_SIZE[0]);
+            config.put(conf.getLAYER_FIELD_NB_COL(), KERNEL_SIZE[1]);
+        } else {
+            ArrayList kernel = new ArrayList<Integer>() {{
+                for (int i : KERNEL_SIZE) add(i);
+            }};
+            config.put(conf.getLAYER_FIELD_KERNEL_SIZE(), kernel);
+        }
+        ArrayList dilation = new ArrayList<Integer>() {{
+            for (int i : DILATION) add(i);
+        }};
+        config.put(conf.getLAYER_FIELD_DILATION_RATE(), dilation);
+        List<Integer> subsampleList = new ArrayList<>();
+        subsampleList.add(STRIDE[0]);
+        subsampleList.add(STRIDE[1]);
+        config.put(conf.getLAYER_FIELD_CONVOLUTION_STRIDES(), subsampleList);
+        config.put(conf.getLAYER_FIELD_NB_FILTER(), N_OUT);
+        config.put(conf.getLAYER_FIELD_BORDER_MODE(), BORDER_MODE_VALID);
+        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+
+
+        ConvolutionLayer layer = new KerasConvolution2D(layerConfig).getConvolution2DLayer();
+        assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
+        assertEquals(LAYER_NAME, layer.getLayerName());
+        assertEquals(INIT_DL4J, layer.getWeightInit());
+        assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
+        assertEquals(L2_REGULARIZATION, layer.getL2(), 0.0);
+        assertEquals(DROPOUT_DL4J, layer.getDropOut(), 0.0);
+        assertArrayEquals(KERNEL_SIZE, layer.getKernelSize());
+        assertArrayEquals(STRIDE, layer.getStride());
+        assertEquals(N_OUT, layer.getNOut());
+        assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
+        assertArrayEquals(VALID_PADDING, layer.getPadding());
+        assertEquals(DILATION[0], layer.getDilation()[0]);
+        assertEquals(DILATION[1], layer.getDilation()[1]);
     }
 
     public void buildSubsampling2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {

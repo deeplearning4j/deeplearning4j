@@ -19,19 +19,17 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import java.util.Map;
 
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.*;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getConvolutionModeFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getKernelSizeFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getStrideFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getPaddingFromBorderModeConfig;
 
 /**
  * Imports a 1D Convolution layer from Keras.
@@ -76,20 +74,25 @@ public class KerasConvolution1D extends KerasConvolution {
         super(layerConfig, enforceTrainingConfig);
         hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
+        int[] dilationRate = getDilationRate(layerConfig, 1, conf, false);
 
         Convolution1DLayer.Builder builder = new Convolution1DLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                         enforceTrainingConfig, conf, kerasMajorVersion))
-                .biasInit(0.0)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 1,  conf, kerasMajorVersion)[0])
-                .hasBias(hasBias).stride(getStrideFromConfig(layerConfig, 1, conf)[0]);
+                .hasBias(hasBias)
+                .stride(getStrideFromConfig(layerConfig, 1, conf)[0]);
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 1, conf, kerasMajorVersion);
+        if (hasBias)
+            builder.biasInit(0.0);
         if (padding != null)
             builder.padding(padding[0]);
+        if (dilationRate != null)
+            builder.dilation(dilationRate);
         this.layer = builder.build();
     }
 
@@ -100,5 +103,20 @@ public class KerasConvolution1D extends KerasConvolution {
      */
     public Convolution1DLayer getConvolution1DLayer() {
         return (Convolution1DLayer) this.layer;
+    }
+
+    /**
+     * Get layer output type.
+     *
+     * @param inputType Array of InputTypes
+     * @return output type as InputType
+     * @throws InvalidKerasConfigurationException
+     */
+    @Override
+    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
+        if (inputType.length > 1)
+            throw new InvalidKerasConfigurationException(
+                    "Keras Convolution layer accepts only one input (received " + inputType.length + ")");
+        return this.getConvolution1DLayer().getOutputType(-1, inputType[0]);
     }
 }

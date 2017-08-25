@@ -70,6 +70,43 @@ public class KerasConvolutionUtils {
         return strides;
     }
 
+
+    /**
+     * Get atrous / dilation rate from config
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @param dimension dimension of the convolution layer (1 or 2)
+     * @param conf Keras layer configuration
+     * @param forceDilation boolean to indicate if dilation argument should be in config
+     * @return list of integers with atrous rates
+     *
+     * @throws InvalidKerasConfigurationException
+     */
+    public static int[] getDilationRate(Map<String, Object> layerConfig, int dimension, KerasLayerConfiguration conf,
+                                        boolean forceDilation)
+            throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        int[] atrousRate;
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_DILATION_RATE()) && dimension == 2) {
+            List<Integer> atrousRateList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
+            atrousRate = ArrayUtil.toArray(atrousRateList);
+        } else if (innerConfig.containsKey(conf.getLAYER_FIELD_DILATION_RATE()) && dimension == 1) {
+            int atrousValue = (int) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
+            atrousRate = new int[]{ atrousValue };
+        } else {
+            // If we are using keras 1, for regular convolutions, there is no "atrous" argument, for keras
+            // 2 there always is.
+            if (forceDilation)
+            throw new InvalidKerasConfigurationException("Could not determine dilation rate: no "
+                    + conf.getLAYER_FIELD_DILATION_RATE() + " field found");
+            else
+                atrousRate = null;
+        }
+        return atrousRate;
+
+    }
+
+
     /**
      * Get (convolution) kernel size from Keras layer configuration.
      *
@@ -81,7 +118,7 @@ public class KerasConvolutionUtils {
                                                 KerasLayerConfiguration conf, int kerasMajorVersion)
             throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        int[] kernelSize = null;
+        int[] kernelSize;
         if (kerasMajorVersion != 2) {
             if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_ROW()) && dimension == 2
                     && innerConfig.containsKey(conf.getLAYER_FIELD_NB_COL())) {

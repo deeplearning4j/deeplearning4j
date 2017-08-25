@@ -17,8 +17,6 @@
  */
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -32,15 +30,13 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUt
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
 
-
 /**
- * Imports a 2D Convolution layer from Keras.
+ * Keras 1D atrous / dilated convolution layer. Note that in keras 2 this layer has been
+ * removed and dilations are now available through the "dilated" argument in regular Conv1D layers
  *
- * @author dave@skymind.io
+ * author: Max Pumperla
  */
-@Slf4j
-@Data
-public class KerasConvolution2D extends KerasConvolution {
+public class KerasAtrousConvolution2D extends KerasConvolution {
 
     /**
      * Pass-through constructor from KerasLayer
@@ -48,7 +44,7 @@ public class KerasConvolution2D extends KerasConvolution {
      * @param kerasVersion major keras version
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasConvolution2D(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+    public KerasAtrousConvolution2D(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
     }
 
@@ -59,7 +55,7 @@ public class KerasConvolution2D extends KerasConvolution {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasConvolution2D(Map<String, Object> layerConfig)
+    public KerasAtrousConvolution2D(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
@@ -72,19 +68,19 @@ public class KerasConvolution2D extends KerasConvolution {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public KerasConvolution2D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    public KerasAtrousConvolution2D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
         hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
-        int[] dilationRate = getDilationRate(layerConfig, 2, conf, false);
 
         ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                         enforceTrainingConfig, conf, kerasMajorVersion))
+                .dilation(getDilationRate(layerConfig, 2, conf, true))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
@@ -95,8 +91,6 @@ public class KerasConvolution2D extends KerasConvolution {
             builder.biasInit(0.0);
         if (padding != null)
             builder.padding(padding);
-        if (dilationRate != null)
-            builder.dilation(dilationRate);
         this.layer = builder.build();
     }
 
@@ -105,7 +99,7 @@ public class KerasConvolution2D extends KerasConvolution {
      *
      * @return ConvolutionLayer
      */
-    public ConvolutionLayer getConvolution2DLayer() {
+    public ConvolutionLayer getAtrousConvolution2D() {
         return (ConvolutionLayer) this.layer;
     }
 
@@ -121,7 +115,7 @@ public class KerasConvolution2D extends KerasConvolution {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Convolution layer accepts only one input (received " + inputType.length + ")");
-        return this.getConvolution2DLayer().getOutputType(-1, inputType[0]);
+        return this.getAtrousConvolution2D().getOutputType(-1, inputType[0]);
     }
 
 }
