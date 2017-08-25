@@ -115,7 +115,7 @@ public class TestYolo2OutputLayer {
         int w = 6;
         int h = 6;
 
-        INDArray bbPrior = Nd4j.rand(mb, 2).muliRowVector(Nd4j.create(new double[]{w, h}));
+        INDArray bbPrior = Nd4j.rand(b, 2).muliRowVector(Nd4j.create(new double[]{w, h}));
 
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
