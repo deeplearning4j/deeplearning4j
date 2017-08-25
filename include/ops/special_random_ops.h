@@ -704,7 +704,7 @@ namespace randomOps {
                 yEWS = shape::elementWiseStride(yShapeBuffer);
 
 
-                epsilon = (T) 1e-5f;
+                epsilon = (T) 1e-6f;
                 two_pi = (T) 2.0 * (T) 3.14159265358979323846;
 
                 mean = extraArguments[0];
@@ -721,26 +721,31 @@ namespace randomOps {
             __syncthreads();
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
+            int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
+            T result0, result1;
 
-            for (Nd4jIndex e = tid; e < zLength; e += step) {
+            T ds = nd4j::math::nd4j_abs<T>(stddev) * (T) 2.0f;
+            for (Nd4jIndex e = tid; e < middle; e += step) {
                 // we need to get random values
 
-                tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, (T) 1.0f);
+                Nd4jIndex generation0 = 0;
+                T realMean0 = y == z ? mean : y[e * yEWS];
+                T realMean1 = y == z ? mean : y[(e + middle) * yEWS];
+                do {
+                    T u0 = buffer->relativeT<T>(e + generation0, epsilon, (T) 1.0f);
+                    T u1 = buffer->relativeT<T>(e + middle + generation0, epsilon, (T) 1.0f);
 
-                // fix for "next rng value"
-                if (e + 1 >= zLength && e % 2 == 0) {
-                    tZ[threadIdx.x+1] = buffer->relativeT<T>(e+1, epsilon, (T) 1.0f);
-                }
+                    z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                    z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
 
-                T realMean = y == z ? mean : y[e * yEWS];
+                    result0 = z0 * stddev + realMean0;
+                    result1 = z1 * stddev + realMean1;
+                    generation0 += zLength;
+                } while (nd4j::math::nd4j_abs<T>(realMean0) + nd4j::math::nd4j_abs<T>(result0) > ds || nd4j::math::nd4j_abs<T>(realMean1) + nd4j::math::nd4j_abs<T>(result1) > ds);
 
-                __syncthreads();
-
-                if (e % 2 == 0)
-                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean;
-                else
-                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T>(two_pi * tZ[threadIdx.x])) * stddev + realMean;
-                __syncthreads();
+                z[e*zEWS] = result0;
+                if((e+middle) < zLength)
+                    z[(e + middle) * zEWS] = result1;
             }
 
             __syncthreads();
@@ -756,11 +761,12 @@ namespace randomOps {
             int yEWS = shape::elementWiseStride(yShapeBuffer);
             int zEWS = shape::elementWiseStride(zShapeBuffer);
 
-            int elementsPerThread = zLength / TAD_THRESHOLD;
+            int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
+
+            int elementsPerThread = middle / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
             _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
-            int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
             int span = (middle / _threads) + 8;
             // we're enforcing even chunks, since it's mandatory for this algorithm
             span -= span % 2;
@@ -770,8 +776,6 @@ namespace randomOps {
             T mean = extraArguments[0];
             T stddev = extraArguments[1];
 
-            printf("Middle: %i\n", middle);
-
 #pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
                 int tid = omp_get_thread_num();
@@ -780,9 +784,6 @@ namespace randomOps {
                 if (end >  middle) {
                     end = middle;
                 }
-
-                printf("tid: %i; start: %i; end: %i;\n", tid, (int) start, (int) end);
-                
     
                 T z0, z1;
                 T u0, u1;
@@ -800,7 +801,7 @@ namespace randomOps {
                     T realMean1 = y == z ? mean : y[(e + middle) * yEWS];
                     do {
                         u0 = buffer->relativeT<T>(e + generation0, (T) 1e-6f, (T) 1.0f);
-                        u1 = buffer->relativeT<T>((e + generation0 + 1), (T) 1e-6f, (T) 1.0f);
+                        u1 = buffer->relativeT<T>((e + middle + generation0), (T) 1e-6f, (T) 1.0f);
                         z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
                         z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
 
