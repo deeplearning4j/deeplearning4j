@@ -429,7 +429,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField hardTanhDerivative() {
+    public ArrayField hardTanhDerivative(ArrayField wrt) {
         return addTransformOp(new HardTanhDerivative().name());
     }
 
@@ -444,7 +444,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField eluDerivative() {
+    public ArrayField eluDerivative(ArrayField wrt) {
         return addTransformOp(new ELUDerivative().name());
     }
 
@@ -460,7 +460,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField leakyReluDerivative(double cutoff)  {
+    public ArrayField leakyReluDerivative(ArrayField wrt, double cutoff)  {
         return addTransformOp(new LeakyReLUDerivative().name(),new Object[]{cutoff});
     }
 
@@ -482,7 +482,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField sigmoidDerivative() {
+    public ArrayField sigmoidDerivative(ArrayField wrt) {
         return addTransformOp(new SigmoidDerivative().name());
     }
 
@@ -497,7 +497,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField softsignDerivative() {
+    public ArrayField softsignDerivative(ArrayField wrt) {
         return addTransformOp(new SoftSignDerivative().name());
     }
 

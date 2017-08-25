@@ -554,6 +554,21 @@ public class SameDiffTests {
         System.out.println(backwardsOps);
     }
 
+    @Test
+    public void testSigmoidBackwards() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        Map<String, INDArray> inputs = new HashMap<>();
+        inputs.put("x",sumInput);
+        SDVariable input = sameDiff.var("x",inputs.get("x"));
+        SDVariable sigmoid = sameDiff.sigmoid(input);
+        SDVariable sum = sameDiff.sum(sigmoid,Integer.MAX_VALUE);
+        List<Op> backwardsOps = sameDiff.execBackwards();
+        assertEquals(4,backwardsOps.size());
+        assertEquals(Nd4j.zeros(2,2),backwardsOps.get(backwardsOps.size() - 1).z());
+        System.out.println(backwardsOps);
+    }
+
 
     @Test
     public void testSoftmaxGradient() {

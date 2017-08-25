@@ -457,8 +457,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField leakyReluDerivative(ArrayField value, double alpha) {
-        return value.leakyReluDerivative(alpha);
+    public ArrayField leakyReluDerivative(ArrayField value, ArrayField wrt, double alpha) {
+        return value.leakyReluDerivative(wrt,alpha);
     }
 
     /**
@@ -470,7 +470,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
      */
     @Override
     public ArrayField leakyReluDerivative(ArrayField value) {
-        return value.leakyReluDerivative(0.001);
+        return value.leakyReluDerivative(, 0.001);
     }
 
     @Override
@@ -479,8 +479,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField hardTanhDerivative(ArrayField value) {
-        return value.hardTanh();
+    public ArrayField hardTanhDerivative(ArrayField value, ArrayField wrt) {
+        return value.hardTanhDerivative(wrt);
     }
 
     @Override
@@ -489,8 +489,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField sigmoidDerivative(ArrayField value) {
-        return value.sigmoidDerivative();
+    public ArrayField sigmoidDerivative(ArrayField value, ArrayField wrt) {
+        return value.sigmoidDerivative(wrt);
     }
 
     @Override
@@ -504,8 +504,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField eluDerivative(ArrayField value) {
-        return value.eluDerivative();
+    public ArrayField eluDerivative(ArrayField value, ArrayField wrt) {
+        return value.eluDerivative(wrt);
     }
 
     @Override
@@ -524,8 +524,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField softsignDeriviative(ArrayField value) {
-        return value.softsignDerivative();
+    public ArrayField softsignDeriviative(ArrayField value, ArrayField wrt) {
+        return value.softsignDerivative(wrt);
     }
 
     @Override

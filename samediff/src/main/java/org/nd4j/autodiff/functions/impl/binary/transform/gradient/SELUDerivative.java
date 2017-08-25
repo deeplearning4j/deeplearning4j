@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.functions.impl.unary.transform;
+package org.nd4j.autodiff.functions.impl.binary.transform.gradient;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractUnaryFunction;

@@ -132,7 +132,7 @@ public interface AbstractFactory<X extends Field<X>>
      */
     X leakyRelu(X value);
 
-    X leakyReluDerivative(X value,double alpha);
+    X leakyReluDerivative(X value, X wrt, double alpha);
 
     /**
      * Leaky relu with an alpha of
@@ -145,18 +145,18 @@ public interface AbstractFactory<X extends Field<X>>
 
     X hardTanh(X value);
 
-    X hardTanhDerivative(X value);
+    X hardTanhDerivative(X value, X wrt);
 
     X sigmoid(X value);
 
-    X sigmoidDerivative(X value);
+    X sigmoidDerivative(X value, X wrt);
 
 
     X softmax(X value);
 
     X elu(X value);
 
-    X eluDerivative(X value);
+    X eluDerivative(X value, X wrt);
 
     X step(X value);
 
@@ -164,7 +164,7 @@ public interface AbstractFactory<X extends Field<X>>
 
     X softsign(X value);
 
-    X softsignDeriviative(X value);
+    X softsignDeriviative(X value, X wrt);
 
     X softplus(X value);
 

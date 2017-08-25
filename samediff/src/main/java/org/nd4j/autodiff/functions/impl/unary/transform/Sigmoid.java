@@ -22,7 +22,7 @@ public class Sigmoid extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().sigmoidDerivative(arg()).mul(arg().diff(i_v));
+        return sameDiff.getFunctionFactory().sigmoidDerivative(arg());
     }
 
     @Override

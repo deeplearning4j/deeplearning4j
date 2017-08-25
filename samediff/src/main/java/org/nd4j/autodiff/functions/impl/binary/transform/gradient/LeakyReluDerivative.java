@@ -1,20 +1,22 @@
-package org.nd4j.autodiff.functions.impl.unary.transform;
+package org.nd4j.autodiff.functions.impl.binary.transform.gradient;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.transforms.ELUDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLUDerivative;
 
-public class EluDerivative  extends AbstractUnaryFunction<ArrayField> {
+public class LeakyReluDerivative  extends AbstractUnaryFunction<ArrayField> {
+    private double cutoff;
 
-    public EluDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
+    public LeakyReluDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, double cutoff) {
+        super(sameDiff, i_v, new Object[]{cutoff});
+        this.cutoff = cutoff;
     }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().eluDerivative(arg().getValue(true));
+        return sameDiff.getArrayFactory().leakyReluDerivative((ArrayField) arg().getValue(true), , cutoff);
     }
 
     @Override
@@ -29,6 +31,7 @@ public class EluDerivative  extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public String functionName() {
-        return new ELUDerivative().name();
+        return new LeakyReLUDerivative().name();
     }
+
 }

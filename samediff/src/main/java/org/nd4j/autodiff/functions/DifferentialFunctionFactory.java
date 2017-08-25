@@ -11,7 +11,7 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.functions.impl.binary.reduce.EuclideanDistance;
 import org.nd4j.autodiff.functions.impl.binary.reduce.ManhattanDistance;
-import org.nd4j.autodiff.functions.impl.binary.transform.gradient.SoftMaxDerivative;
+import org.nd4j.autodiff.functions.impl.binary.transform.gradient.*;
 import org.nd4j.autodiff.functions.impl.unary.reduce.Prod;
 import org.nd4j.autodiff.functions.impl.unary.transform.*;
 import org.nd4j.autodiff.functions.impl.unary.transform.shape.*;
@@ -370,7 +370,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
     @Override
     public DifferentialFunction<ArrayField> hardTanhDerivative(DifferentialFunction<ArrayField> iX) {
-        return new org.nd4j.autodiff.functions.impl.unary.transform.HardTanhDerivative(sameDiff,iX,null);
+        return new HardTanhDerivative(sameDiff,iX,null);
 
     }
 
@@ -387,7 +387,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
     @Override
     public DifferentialFunction<ArrayField> sigmoidDerivative(DifferentialFunction<ArrayField> iX) {
-        return new org.nd4j.autodiff.functions.impl.unary.transform.SigmoidDerivative(sameDiff,iX,null);
+        return new SigmoidDerivative(sameDiff,iX,null);
 
     }
 
@@ -418,7 +418,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
     @Override
     public DifferentialFunction<ArrayField> softsignDerivative(DifferentialFunction<ArrayField> iX) {
-        return new org.nd4j.autodiff.functions.impl.unary.transform.SoftSignDerivative(sameDiff,iX,null);
+        return new SoftSignDerivative(sameDiff,iX,null);
 
     }
 
@@ -443,7 +443,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
     @Override
     public DifferentialFunction<ArrayField> eluDerivative(DifferentialFunction<ArrayField> iX) {
-        return new org.nd4j.autodiff.functions.impl.unary.transform.EluDerivative(sameDiff,iX,null);
+        return new EluDerivative(sameDiff,iX,null);
 
     }
 
@@ -460,7 +460,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
     @Override
     public DifferentialFunction<ArrayField> leakyReluDerivative(DifferentialFunction<ArrayField> iX, double cutoff) {
-        return new org.nd4j.autodiff.functions.impl.unary.transform.LeakyReluDerivative(sameDiff,iX,cutoff);
+        return new LeakyReluDerivative(sameDiff,iX,cutoff);
 
     }
 

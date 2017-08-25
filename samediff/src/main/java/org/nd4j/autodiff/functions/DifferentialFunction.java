@@ -548,7 +548,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> hardTanhDerivative() {
+    public DifferentialFunction<X> hardTanhDerivative(DifferentialFunction<X> wrt) {
         return null;
     }
 
@@ -563,7 +563,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> eluDerivative() {
+    public DifferentialFunction<X> eluDerivative(DifferentialFunction<X> wrt) {
         return null;
     }
 
@@ -578,7 +578,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> leakyReluDerivative(double cutoff) {
+    public DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> wrt, double cutoff) {
         return null;
     }
     @Override
@@ -591,7 +591,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> sigmoidDerivative() {
+    public DifferentialFunction<X> sigmoidDerivative(DifferentialFunction<X> wrt) {
         return null;
     }
 
@@ -606,7 +606,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> softsignDerivative() {
+    public DifferentialFunction<X> softsignDerivative(DifferentialFunction<X> wrt) {
         return null;
     }
 

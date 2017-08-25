@@ -106,29 +106,29 @@ public interface Field<X> extends CommutativeRing<X> {
 
     X hardTanh();
 
-    X hardTanhDerivative();
+    X hardTanhDerivative(X wrt);
 
     X leakyRelu();
 
     X elu();
 
-    X eluDerivative();
+    X eluDerivative(X wrt);
 
     X leakyRelu(double cutoff);
 
     X leakyReluDerivative();
 
-    X leakyReluDerivative(double cutoff);
+    X leakyReluDerivative(X wrt, double cutoff);
 
     X sigmoid();
 
-    X sigmoidDerivative();
+    X sigmoidDerivative(X wrt);
 
     X step();
 
     X softsign();
 
-    X softsignDerivative();
+    X softsignDerivative(X wrt);
 
     X softmax();
 
