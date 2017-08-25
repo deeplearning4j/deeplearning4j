@@ -722,7 +722,7 @@ namespace randomOps {
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
             int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
-            T result0, result1;
+            T result0, result1, u0, u1, z0, z1;
 
             T ds = nd4j::math::nd4j_abs<T>(stddev) * (T) 2.0f;
             for (Nd4jIndex e = tid; e < middle; e += step) {
