@@ -15,7 +15,7 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.nn.modelimport.keras.layers;
+package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.nd4j.linalg.util.ArrayUtil;
 
 
@@ -63,7 +64,7 @@ public class KerasReshape extends KerasLayer {
     public KerasReshape(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         String targetShape = "target_shape";
         if (innerConfig.containsKey(targetShape)) {
             List<Integer> targetShapeList = (List<Integer>) innerConfig.get(targetShape);

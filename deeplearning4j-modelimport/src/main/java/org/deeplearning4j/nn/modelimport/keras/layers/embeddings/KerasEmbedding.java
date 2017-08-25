@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.modelimport.keras.layers;
+package org.deeplearning4j.nn.modelimport.keras.layers.embeddings;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -16,6 +17,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
 
 /**
  * Imports an Embedding layer from Keras.
@@ -60,9 +64,9 @@ public class KerasEmbedding extends KerasLayer {
         /* TODO: what about mask_zero field? */
 
         this.layer = new EmbeddingLayer.Builder().name(this.layerName).nIn(inputDim)
-                        .nOut(getNOutFromConfig(layerConfig)).dropOut(this.dropout).activation(Activation.IDENTITY)
-                        .weightInit(getWeightInitFromConfig(
-                                layerConfig, conf.getLAYER_FIELD_EMBEDDING_INIT(), enforceTrainingConfig))
+                        .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout).activation(Activation.IDENTITY)
+                        .weightInit(getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_EMBEDDING_INIT(),
+                                enforceTrainingConfig, conf, kerasMajorVersion))
                         .biasInit(0.0)
                         .l1(this.weightL1Regularization).l2(this.weightL2Regularization).hasBias(false).build();
     }
@@ -133,7 +137,7 @@ public class KerasEmbedding extends KerasLayer {
      * @return                  input dim as int
      */
     private int getInputDimFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_INPUT_DIM()))
             throw new InvalidKerasConfigurationException(
                             "Keras Embedding layer config missing " + conf.getLAYER_FIELD_INPUT_DIM() + " field");

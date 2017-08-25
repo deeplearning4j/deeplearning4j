@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.modelimport.keras.layers;
+package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 
 import java.util.Map;
 
@@ -15,7 +16,6 @@ import java.util.Map;
  * Imports a Keras Merge layer as a DL4J Merge (graph) vertex.
  *
  * TODO: handle axes arguments that alter merge behavior (requires changes to DL4J?)
- * TODO: unsupported merge modes (require changes to DL4J)
  *
  * @author dave@skymind.io
  */
@@ -76,7 +76,7 @@ public class KerasMerge extends KerasLayer {
 
     public ElementWiseVertex.Op getMergeMode(Map<String, Object> layerConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(LAYER_FIELD_MODE))
             throw new InvalidKerasConfigurationException(
                             "Keras Merge layer config missing " + LAYER_FIELD_MODE + " field");

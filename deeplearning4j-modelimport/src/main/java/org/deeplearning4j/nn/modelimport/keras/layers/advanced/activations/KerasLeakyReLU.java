@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
 
@@ -59,7 +60,7 @@ public class KerasLeakyReLU extends KerasLayer {
     public KerasLeakyReLU(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         // Set default alpha to default in nd4j
         double alpha = 0.01;
         String layerFieldLeakyReluAlpha = "alpha";

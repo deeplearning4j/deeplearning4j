@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.modelimport.keras.layers;
+package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.IActivation;
@@ -18,6 +19,11 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.mapActivation;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
 
 /**
  * Imports a Keras LSTM layer as a DL4J GravesLSTM layer.
@@ -88,8 +94,10 @@ public class KerasLstm extends KerasLayer {
     public KerasLstm(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        WeightInit weightInit = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(), enforceTrainingConfig);
-        WeightInit recurrentWeightInit = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INNER_INIT(), enforceTrainingConfig);
+        WeightInit weightInit = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
+                enforceTrainingConfig, conf, kerasMajorVersion);
+        WeightInit recurrentWeightInit = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INNER_INIT(),
+                enforceTrainingConfig, conf, kerasMajorVersion);
         if (weightInit != recurrentWeightInit)
             if (enforceTrainingConfig)
                 throw new UnsupportedKerasConfigurationException(
@@ -100,8 +108,9 @@ public class KerasLstm extends KerasLayer {
         this.unroll = getUnrollRecurrentLayer(layerConfig);
         this.layer = new GravesLSTM.Builder().gateActivationFunction(getGateActivationFromConfig(layerConfig))
                         .forgetGateBiasInit(getForgetBiasInitFromConfig(layerConfig, enforceTrainingConfig))
-                        .name(this.layerName).nOut(getNOutFromConfig(layerConfig)).dropOut(this.dropout)
-                        .activation(getActivationFromConfig(layerConfig)).weightInit(weightInit).biasInit(0.0)
+                        .name(this.layerName).nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
+                        .activation(getActivationFromConfig(layerConfig, conf))
+                        .weightInit(weightInit).biasInit(0.0)
                         .l1(this.weightL1Regularization).l2(this.weightL2Regularization).build();
     }
 
@@ -334,7 +343,7 @@ public class KerasLstm extends KerasLayer {
 
     public boolean getUnrollRecurrentLayer(Map<String, Object> layerConfig)
                     throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(LAYER_FIELD_UNROLL))
             throw new InvalidKerasConfigurationException(
                             "Keras LSTM layer config missing " + LAYER_FIELD_UNROLL + " field");
@@ -353,7 +362,7 @@ public class KerasLstm extends KerasLayer {
         /* NOTE: Keras "dropout" parameter determines dropout probability,
          * while DL4J "dropout" parameter determines retention probability.
          */
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         double dropout = 1.0;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT_U()))
             dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_U());
@@ -372,11 +381,11 @@ public class KerasLstm extends KerasLayer {
      */
     public IActivation getGateActivationFromConfig(Map<String, Object> layerConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_INNER_ACTIVATION()))
             throw new InvalidKerasConfigurationException(
                             "Keras LSTM layer config missing " + conf.getLAYER_FIELD_INNER_ACTIVATION() + " field");
-        return mapActivation((String) innerConfig.get(conf.getLAYER_FIELD_INNER_ACTIVATION()));
+        return mapActivation((String) innerConfig.get(conf.getLAYER_FIELD_INNER_ACTIVATION()), conf);
     }
 
     /**
@@ -388,7 +397,7 @@ public class KerasLstm extends KerasLayer {
      */
     public double getForgetBiasInitFromConfig(Map<String, Object> layerConfig, boolean train)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         String kerasForgetBiasInit;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_UNIT_FORGET_BIAS())) {
             kerasForgetBiasInit = LSTM_FORGET_BIAS_INIT_ONE;

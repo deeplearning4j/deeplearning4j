@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.modelimport.keras.layers;
+package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -7,16 +7,13 @@ import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * Imports a Keras ZeroPadding layer as a DL4J Subsampling layer
- * with kernel size 1 and stride 1.
- *
- * TODO: change this to official DL4J ZeroPadding layer once it's
- * supported
+ * Imports a Keras ZeroPadding layer.
  *
  * @author dave@skymind.io
  */
@@ -89,7 +86,7 @@ public class KerasZeroPadding extends KerasLayer {
      */
     public int[] getPaddingFromConfig(Map<String, Object> layerConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(LAYER_FIELD_PADDING))
             throw new InvalidKerasConfigurationException(
                             "Field " + LAYER_FIELD_PADDING + " not found in Keras ZeroPadding layer");

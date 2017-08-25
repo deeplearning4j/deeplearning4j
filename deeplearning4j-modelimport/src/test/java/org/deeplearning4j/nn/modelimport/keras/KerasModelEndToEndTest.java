@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.eval.ROCMultiClass;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -19,12 +20,6 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * Unit tests for end-to-end Keras model import.
- * <p>
- * TODO: find a more elegant fix for the per-layer activation comparisons
- * since some layers (e.g., ActivationLayer) overwrite previous
- * layer's activations when run in train=false mode.
- * <p>
- * TODO: ndarray.equalsWithEps(ndarray) appears to be broken
  *
  * @author dave@skymind.io
  */
@@ -187,7 +182,7 @@ public class KerasModelEndToEndTest {
                         KerasModelEndToEndTest.class.getClassLoader());
         File modelFile = File.createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        MultiLayerNetwork model = new KerasModel.ModelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+        MultiLayerNetwork model = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
                 .enforceTrainingConfig(false).buildSequential().getMultiLayerNetwork();
 
         ClassPathResource outputsResource =
@@ -205,9 +200,7 @@ public class KerasModelEndToEndTest {
                 if (activationsKeras.containsKey(layerName)) {
                     INDArray activationsDl4j = model.feedForwardToLayer(i, input, false).get(i + 1);
                     /* TODO: investigate why this fails for some layers:
-                     *
                      * compareINDArrays(layerName, activationsKeras.get(layerName), activationsDl4j, EPS);
-                     *
                      */
                 }
             }
@@ -215,9 +208,7 @@ public class KerasModelEndToEndTest {
             INDArray predictionsKeras = getPredictions(outputsArchive, tfOrdering)[0];
             INDArray predictionsDl4j = model.output(input, false);
             /* TODO: investigate why this fails when max difference is ~1E-7!
-             *
              * compareINDArrays("predictions", predictionsKeras, predictionsDl4j, EPS);
-             *
              */
             INDArray outputs = getOutputs(outputsArchive, true)[0];
             compareMulticlassAUC("predictions", outputs, predictionsKeras, predictionsDl4j, 10, EPS);
@@ -225,7 +216,7 @@ public class KerasModelEndToEndTest {
     }
 
     static public INDArray[] getInputs(Hdf5Archive archive, boolean tensorFlowImageDimOrdering) throws Exception {
-        List<String> inputNames = (List<String>) KerasModel
+        List<String> inputNames = (List<String>) KerasModelUtils
                 .parseJsonString(archive.readAttributeAsJson(GROUP_ATTR_INPUTS)).get(GROUP_ATTR_INPUTS);
         INDArray[] inputs = new INDArray[inputNames.size()];
         for (int i = 0; i < inputNames.size(); i++) {
@@ -249,7 +240,7 @@ public class KerasModelEndToEndTest {
     }
 
     static public INDArray[] getOutputs(Hdf5Archive archive, boolean tensorFlowImageDimOrdering) throws Exception {
-        List<String> outputNames = (List<String>) KerasModel
+        List<String> outputNames = (List<String>) KerasModelUtils
                 .parseJsonString(archive.readAttributeAsJson(GROUP_ATTR_OUTPUTS)).get(GROUP_ATTR_OUTPUTS);
         INDArray[] outputs = new INDArray[outputNames.size()];
         for (int i = 0; i < outputNames.size(); i++) {
@@ -261,7 +252,7 @@ public class KerasModelEndToEndTest {
     }
 
     static public INDArray[] getPredictions(Hdf5Archive archive, boolean tensorFlowImageDimOrdering) throws Exception {
-        List<String> outputNames = (List<String>) KerasModel
+        List<String> outputNames = (List<String>) KerasModelUtils
                 .parseJsonString(archive.readAttributeAsJson(GROUP_ATTR_OUTPUTS)).get(GROUP_ATTR_OUTPUTS);
         INDArray[] predictions = new INDArray[outputNames.size()];
         for (int i = 0; i < outputNames.size(); i++) {

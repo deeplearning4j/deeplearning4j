@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.modelimport.keras.layers;
+package org.deeplearning4j.nn.modelimport.keras.layers.pooling;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -6,6 +6,11 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getConvolutionModeFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getKernelSizeFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getStrideFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getPaddingFromBorderModeConfig;
+
 
 import java.util.Map;
 
@@ -41,11 +46,13 @@ public class KerasPooling extends KerasLayer {
     public KerasPooling(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        SubsamplingLayer.Builder builder = new SubsamplingLayer.Builder(mapPoolingType(this.className))
-                        .name(this.layerName).dropOut(this.dropout)
-                        .convolutionMode(getConvolutionModeFromConfig(layerConfig))
-                        .kernelSize(getKernelSizeFromConfig(layerConfig, 2)).stride(getStrideFromConfig(layerConfig, 2));
-        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2);
+        SubsamplingLayer.Builder builder = new SubsamplingLayer.Builder(
+                KerasPoolingUtils.mapPoolingType(this.className, conf)).name(this.layerName)
+                .dropOut(this.dropout)
+                .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
+                .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
+                .stride(getStrideFromConfig(layerConfig, 2, conf));
+        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
         if (padding != null)
             builder.padding(padding);
         this.layer = builder.build();

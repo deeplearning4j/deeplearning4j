@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.modelimport.keras.layers;
+package org.deeplearning4j.nn.modelimport.keras.layers.normalization;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -162,7 +163,7 @@ public class KerasBatchNormalization extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     protected double getEpsFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(LAYER_FIELD_EPSILON))
             throw new InvalidKerasConfigurationException(
                             "Keras BatchNorm layer config missing " + LAYER_FIELD_EPSILON + " field");
@@ -177,7 +178,7 @@ public class KerasBatchNormalization extends KerasLayer {
      * @throws InvalidKerasConfigurationException
      */
     protected double getMomentumFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(LAYER_FIELD_MOMENTUM))
             throw new InvalidKerasConfigurationException(
                             "Keras BatchNorm layer config missing " + LAYER_FIELD_MOMENTUM + " field");
@@ -193,7 +194,7 @@ public class KerasBatchNormalization extends KerasLayer {
      */
     protected void getGammaRegularizerFromConfig(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (innerConfig.get(LAYER_FIELD_GAMMA_REGULARIZER) != null) {
             if (enforceTrainingConfig)
                 throw new UnsupportedKerasConfigurationException(
@@ -212,7 +213,7 @@ public class KerasBatchNormalization extends KerasLayer {
      */
     protected void getBetaRegularizerFromConfig(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (innerConfig.get(LAYER_FIELD_BETA_REGULARIZER) != null) {
             if (enforceTrainingConfig)
                 throw new UnsupportedKerasConfigurationException(
@@ -231,7 +232,7 @@ public class KerasBatchNormalization extends KerasLayer {
      */
     protected int getBatchNormMode(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         int batchNormMode = 0;
         if (this.kerasMajorVersion == 1 & !innerConfig.containsKey(LAYER_FIELD_MODE))
             throw new InvalidKerasConfigurationException(
@@ -259,7 +260,7 @@ public class KerasBatchNormalization extends KerasLayer {
      */
     protected int getBatchNormAxis(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(layerConfig);
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         return (int) innerConfig.get(LAYER_FIELD_AXIS);
     }
 }
