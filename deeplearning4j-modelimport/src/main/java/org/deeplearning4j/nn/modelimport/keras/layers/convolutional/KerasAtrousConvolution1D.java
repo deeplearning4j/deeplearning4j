@@ -73,18 +73,20 @@ public class KerasAtrousConvolution1D extends KerasConvolution {
         hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
 
-        // TODO: add dilation argument
         Convolution1DLayer.Builder builder = new Convolution1DLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                         enforceTrainingConfig, conf, kerasMajorVersion))
-                .biasInit(0.0)
+                .dilation(getAtrousRate(layerConfig, 2, conf))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 1,  conf, kerasMajorVersion)[0])
-                .hasBias(hasBias).stride(getStrideFromConfig(layerConfig, 1, conf)[0]);
+                .hasBias(hasBias)
+                .stride(getStrideFromConfig(layerConfig, 1, conf)[0]);
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 1, conf, kerasMajorVersion);
+        if (hasBias)
+            builder.biasInit(0.0);
         if (padding != null)
             builder.padding(padding[0]);
         this.layer = builder.build();

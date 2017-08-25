@@ -66,6 +66,36 @@ public class KerasConvolutionUtils {
         return strides;
     }
 
+
+    /**
+     * Get atrous / dilation rate from config
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @param dimension dimension of the convolution layer (1 or 2)
+     * @param conf Keras layer configuration
+     * @return list of integers with atrous rates
+     *
+     * @throws InvalidKerasConfigurationException
+     */
+    public static int[] getAtrousRate(Map<String, Object> layerConfig, int dimension, KerasLayerConfiguration conf)
+            throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        int[] atrousRate;
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_ATROUS_RATE()) && dimension == 2) {
+            List<Integer> atrousRateList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_ATROUS_RATE());
+            atrousRate = ArrayUtil.toArray(atrousRateList);
+        } else if (innerConfig.containsKey(conf.getLAYER_FIELD_ATROUS_RATE()) && dimension == 1) {
+            int atrousValue = (int) innerConfig.get(conf.getLAYER_FIELD_ATROUS_RATE());
+            atrousRate = new int[]{ atrousValue };
+        } else {
+            throw new InvalidKerasConfigurationException("Could not determine kernel size: no "
+                    + conf.getLAYER_FIELD_ATROUS_RATE() + " field found");
+        }
+        return atrousRate;
+
+    }
+
+
     /**
      * Get (convolution) kernel size from Keras layer configuration.
      *
@@ -77,7 +107,7 @@ public class KerasConvolutionUtils {
                                                 KerasLayerConfiguration conf, int kerasMajorVersion)
             throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        int[] kernelSize = null;
+        int[] kernelSize;
         if (kerasMajorVersion != 2) {
             if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_ROW()) && dimension == 2
                     && innerConfig.containsKey(conf.getLAYER_FIELD_NB_COL())) {

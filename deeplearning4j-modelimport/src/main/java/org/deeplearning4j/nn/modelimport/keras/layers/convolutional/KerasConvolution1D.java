@@ -83,12 +83,14 @@ public class KerasConvolution1D extends KerasConvolution {
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                         enforceTrainingConfig, conf, kerasMajorVersion))
-                .biasInit(0.0)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 1,  conf, kerasMajorVersion)[0])
-                .hasBias(hasBias).stride(getStrideFromConfig(layerConfig, 1, conf)[0]);
+                .hasBias(hasBias)
+                .stride(getStrideFromConfig(layerConfig, 1, conf)[0]);
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 1, conf, kerasMajorVersion);
+        if (hasBias)
+            builder.biasInit(0.0);
         if (padding != null)
             builder.padding(padding[0]);
         this.layer = builder.build();
