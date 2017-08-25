@@ -87,7 +87,6 @@ WorkspaceConfiguration basicConfig = WorkspaceConfiguration.builder()
                 .policyAllocation(AllocationPolicy.STRICT)
                 .policyLearning(LearningPolicy.FIRST_LOOP)
                 .policyMirroring(MirroringPolicy.HOST_ONLY) // <--- this option does this trick
-                .policyMirroring(MirroringPolicy.FULL)
                 .policySpill(SpillPolicy.EXTERNAL)
                 .build();
 ```
