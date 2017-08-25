@@ -1,0 +1,4 @@
+
+# flatbuffers
+./flatc -o ../libnd4j/include/graph/generated -I ../libnd4j/include/graph/scheme -j -b  -t -c ../libnd4j/include/graph/scheme/node.fbs ../libnd4j/include/graph/scheme/graph.fbs ../libnd4j/include/graph/scheme/result.fbs ../libnd4j/include/graph/scheme/config.fbs
+
