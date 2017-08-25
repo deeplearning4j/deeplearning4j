@@ -108,10 +108,6 @@ namespace simdOps {
                          int dimensionLength,
                          int *tadShapeInfo,
                          Nd4jIndex *tadOffset) {
-
-            // first we're building MAX along dimension
-            //functions::reduce::ReduceFunction<T>::template exec<simdOps::Max<T>>(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
-
             int resultLength = shape::length(resultShapeInfoBuffer);
 
             int *tadOnlyShapeInfo = tadShapeInfo;

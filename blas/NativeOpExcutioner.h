@@ -232,6 +232,23 @@ public:
                            int dimensionLength,
                            int *tadShapeInfo,
                            Nd4jIndex *tadOffsets) {
+
+
+        // for LogSumExp reduction we need to have max stored in result
+        if (opNum == 19) {
+            functions::reduce::ReduceFunction<T>::exec(
+                    3,
+                    x,
+                    xShapeInfo,
+                    extraParams,
+                    result,
+                    resultShapeInfo,
+                    dimension,
+                    dimensionLength,
+                    tadShapeInfo,
+                    tadOffsets);
+        }
+
         functions::reduce::ReduceFunction<T>::exec(
                 opNum,
                 x,
@@ -257,6 +274,20 @@ public:
                               T *x,
                               int *xShapeInfo,
                               T *extraParams) {
+        if (opNum == 19) {
+            T max = functions::reduce::ReduceFunction<T>::execScalar(
+                    3,
+                    x,
+                    xShapeInfo,
+                    extraParams);
+
+            return functions::reduce::ReduceFunction<T>::execScalar(
+                    opNum,
+                    x,
+                    xShapeInfo,
+                    &max);
+        }
+
         return functions::reduce::ReduceFunction<T>::execScalar(
                 opNum,
                 x,
