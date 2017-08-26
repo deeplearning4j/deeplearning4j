@@ -1,18 +1,26 @@
-package org.nd4j.autodiff.functions.impl.unary.transform;
+package org.nd4j.autodiff.functions.impl.binary.transform.gradient;
 
 import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.AbstractBinaryFunction;
 import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-public class HardTanhDerivative extends AbstractUnaryFunction<ArrayField> {
-    public HardTanhDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
+public class HardTanhDerivative extends AbstractBinaryFunction<ArrayField> {
+    public HardTanhDerivative() {
     }
 
+    public HardTanhDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
+        super(sameDiff, i_v1, i_v2, OpState.OpType.GRADIENT);
+    }
+
+    public HardTanhDerivative(SameDiff sameDiff) {
+        super(sameDiff);
+    }
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().hardTanhDerivative(arg().getValue(true));
+        return sameDiff.getArrayFactory().hardTanhDerivative(larg().getValue(true),rarg().getValue(true));
     }
 
     @Override

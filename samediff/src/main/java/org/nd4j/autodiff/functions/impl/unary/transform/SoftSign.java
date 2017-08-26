@@ -16,14 +16,11 @@ public class SoftSign extends AbstractUnaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().softsign(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
+
 
     @Override
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return softsignDerivative().mul(arg().diff(i_v));
+        return softsignDerivative(i_v);
     }
 
     @Override

@@ -1,19 +1,16 @@
 package org.nd4j.autodiff.functions;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 import com.google.common.base.Preconditions;
 import lombok.*;
-import org.nd4j.autodiff.AbstractIdentityFactory;
-import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -35,6 +32,12 @@ public abstract class DifferentialFunction<X extends Field<X>>
     @Setter
     protected int vertexId;
     protected Object[] extraArgs;
+
+
+    @Override
+    public double getReal() {
+        throw new UnsupportedOperationException("Get real not supported for array operations");
+    }
 
 
     /**
@@ -109,9 +112,6 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
         return val;
     }
-
-    @Override
-    public abstract double getReal();
 
 
     @Override
@@ -374,17 +374,17 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> tanhDerivative() {
+    public DifferentialFunction<X> tanhDerivative(DifferentialFunction<X> wrt) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> seluDerivative() {
+    public DifferentialFunction<X> seluDerivative(DifferentialFunction<X> wrt) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> softmaxDerivative() {
+    public DifferentialFunction<X> softmaxDerivative(ArrayField wrt) {
         return null;
     }
 
@@ -549,7 +549,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> hardTanhDerivative() {
+    public DifferentialFunction<X> hardTanhDerivative(DifferentialFunction<X> wrt) {
         return null;
     }
 
@@ -564,7 +564,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> eluDerivative() {
+    public DifferentialFunction<X> eluDerivative(DifferentialFunction<X> wrt) {
         return null;
     }
 
@@ -579,7 +579,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> leakyReluDerivative(double cutoff) {
+    public DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> wrt, double cutoff) {
         return null;
     }
     @Override
@@ -592,7 +592,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> sigmoidDerivative() {
+    public DifferentialFunction<X> sigmoidDerivative(DifferentialFunction<X> wrt) {
         return null;
     }
 
@@ -607,7 +607,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> softsignDerivative() {
+    public DifferentialFunction<X> softsignDerivative(DifferentialFunction<X> wrt) {
         return null;
     }
 
@@ -861,7 +861,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
                     .id(opName +"(" + v1.getInput().getId() + "," + v2.getInput().getId() + ")")
                     .shape(shape).build();
             //result
-            NDArrayVertex newVertex = new NDArrayVertex(sameDiff.getGraph().nextVertexId(), arrInfo);
+            NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), arrInfo);
             if(newVertex.vertexID() == v2VertexId || newVertex.vertexID() == v1VertexId)
                 throw new ND4JIllegalStateException("Illegal vertex id specified in new vertex." +
                         " Perhaps a mismatched graph call? Another likely cause is applyGraph");
@@ -873,7 +873,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
             //ensure there's 2 vertices for when the 2 inputs are the same
             if(v1.equals(v2)) {
-                NDArrayVertex dupVertex = new NDArrayVertex(sameDiff.getGraph().nextVertexId(),
+                NDArrayVertex dupVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(),
                         NDArrayInformation.builder()
                                 .shape(v1.getInput().getShape())
                                 .id(v1.getInput().getId()).build());
@@ -882,6 +882,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
                 sameDiff.getGraph().addVertex(dupVertex);
                 opState = OpState.builder()
                         .opType(opType)
+                        .differentialFunction((DifferentialFunction<ArrayField>) this)
                         .opName(opName)
                         .id(opName + "(" + dupVertex.getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                         .vertexIds(new String[]{String.valueOf(v2VertexId),String.valueOf(newVertex.vertexID())})
@@ -896,6 +897,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
                 opState =  OpState.builder()
                         .opType(opType)
                         .opName(opName)
+                        .differentialFunction((DifferentialFunction<ArrayField>) this)
                         .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                         .vertexIds(new String[]{String.valueOf(v2VertexId),String.valueOf(newVertex.vertexID())})
                         .n(ArrayUtil.prod(shape))
@@ -911,10 +913,12 @@ public abstract class DifferentialFunction<X extends Field<X>>
                     .vertexIds(new String[]{String.valueOf(v1VertexId),String.valueOf(newVertex.vertexID())})
                     .n(ArrayUtil.prod(shape))
                     .extraArgs(extraArgs)
+                    .differentialFunction((DifferentialFunction<ArrayField>) this)
                     .result(arrInfo)
                     .build();
             //add the first vertex no matter what as normal
-            sameDiff.getGraph().addEdge(v1VertexId,
+            sameDiff.getGraph().addEdge(
+                    v1VertexId,
                     newVertex.vertexID(),
                     opState2,true);
 
@@ -996,6 +1000,34 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
 
+    public DifferentialFunction<ArrayField> getDiffFunctionInput(DifferentialFunction<X> other) {
+      return   other == this ?
+                sameDiff.getFunctionFactory().var(UUID.randomUUID().toString(),
+                        sameDiff.getArrayFactory().one(getResultShape())) :
+                arg();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        DifferentialFunction<?> that = (DifferentialFunction<?>) o;
+
+        if (vertexId != that.vertexId) return false;
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        return Arrays.equals(extraArgs, that.extraArgs);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + vertexId;
+        result = 31 * result + Arrays.hashCode(extraArgs);
+        return result;
+    }
+
     protected void validateDifferentialFunctionsameDiff(
             DifferentialFunction<X> function) {
 
@@ -1017,4 +1049,6 @@ public abstract class DifferentialFunction<X extends Field<X>>
                 "match this function " + this);
 
     }
+
+
 }

@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ops;
 
 import lombok.Data;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -256,6 +257,104 @@ public abstract class BaseOp implements Op {
     @Override
     public String toString() {
         return name();
+    }
+
+
+    /**
+     * Pairwise op (applicable with an individual element in y)
+     *
+     * @param origin the origin number
+     * @param other  the other number
+     * @return the transformed output
+     */
+    @Override
+    public IComplexNumber op(IComplexNumber origin, double other) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Pairwise op (applicable with an individual element in y)
+     *
+     * @param origin the origin number
+     * @param other  the other number
+     * @return the transformed output
+     */
+    @Override
+    public IComplexNumber op(IComplexNumber origin, float other) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Pairwise op (applicable with an individual element in y)
+     *
+     * @param origin the origin number
+     * @param other  the other number
+     * @return the transformed output
+     */
+    @Override
+    public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
+        throw new UnsupportedOperationException();
+
+    }
+
+    /**
+     * Pairwise op (applicable with an individual element in y)
+     *
+     * @param origin the origin number
+     * @param other  the other number
+     * @return the transformed output
+     */
+    @Override
+    public float op(float origin, float other) {
+        throw new UnsupportedOperationException();
+
+    }
+
+    /**
+     * Pairwise op (applicable with an individual element in y)
+     *
+     * @param origin the origin number
+     * @param other  the other number
+     * @return the transformed output
+     */
+    @Override
+    public double op(double origin, double other) {
+        throw new UnsupportedOperationException();
+
+    }
+
+    /**
+     * Transform an individual element
+     *
+     * @param origin the origin element
+     * @return the new element
+     */
+    @Override
+    public double op(double origin) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Transform an individual element
+     *
+     * @param origin the origin element
+     * @return the new element
+     */
+    @Override
+    public float op(float origin) {
+        throw new UnsupportedOperationException();
+
+    }
+
+    /**
+     * Transform an individual element
+     *
+     * @param origin the origin element
+     * @return the new element
+     */
+    @Override
+    public IComplexNumber op(IComplexNumber origin) {
+       throw new UnsupportedOperationException();
     }
 
     @Override

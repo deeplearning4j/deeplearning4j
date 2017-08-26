@@ -7,10 +7,15 @@ import lombok.Builder;
 import lombok.Data;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.functions.*;
-import org.nd4j.autodiff.functions.impl.unary.transform.shape.Broadcast;
+import org.nd4j.autodiff.functions.Constant;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
+import org.nd4j.autodiff.functions.Variable;
 import org.nd4j.autodiff.graph.api.Edge;
-import org.nd4j.autodiff.opstate.*;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.NDArrayVertex;
+import org.nd4j.autodiff.opstate.OpExecAction;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -18,10 +23,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.BroadcastOp;
-import org.nd4j.linalg.api.ops.IndexAccumulation;
-import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -89,7 +91,12 @@ public class SameDiff {
         for(int i = 0; i < graph().numVertices(); i++) {
             int nextVertexId = sameDiff.graph.nextVertexId();
             NDArrayInformation clone = cloner.deepClone(graph.getVertex(i + 1).getValue());
+            if(clone.getOwner() != null && clone.getOwner().getArrayField() != null)
+                clone.getOwner().getArrayField().setOps(sameDiff);
+            if(clone.getOwner() != null && clone.getOwner().getDifferentialFunction() != null)
+                clone.getOwner().getDifferentialFunction().setSameDiff(sameDiff);
             NDArrayVertex info = new NDArrayVertex(
+                    sameDiff,
                     nextVertexId,
                     clone);
             thisVertexIdToNew.put(graph.getVertex(i + 1).vertexID(),nextVertexId);
@@ -129,6 +136,12 @@ public class SameDiff {
                             cloner.deepCloneDontCloneInstances(edge.getValue()),true);
                     newEdge.getValue().setVertexIds(new String[]{String.valueOf(newEdge.getFrom()),String.valueOf(newEdge.getTo())});
                     newIncomingEdges.add(newEdge);
+                    if(newEdge.getValue().getArrayField() != null)
+                        newEdge.getValue().getArrayField().setOps(sameDiff);
+
+                    if(newEdge.getValue().getDifferentialFunction() != null) {
+                        ensureSameDiffInstance(sameDiff,newEdge.getValue().getDifferentialFunction());
+                    }
                 }
             }
 
@@ -457,7 +470,13 @@ public class SameDiff {
              * and point to an actual array.
              */
             if(!vertexToArray.containsKey(info.getArrId())) {
-                vertexToArray.put(info.getArrId(), Nd4j.zeros(info.getShape()));
+                //initialize value if it's actually a scalar constant (zero or 1 typically...)
+                if(info.getScalarValue() != null && ArrayUtil.prod(info.getShape()) == 1) {
+                    vertexToArray.put(info.getArrId(), Nd4j.valueArrayOf(info.getShape(),
+                            info.getScalarValue().doubleValue()));
+                }
+                else
+                    vertexToArray.put(info.getArrId(), Nd4j.zeros(info.getShape()));
 
             }
         }
@@ -517,7 +536,7 @@ public class SameDiff {
         if(ArrayUtil.prod(arr.shape()) == 1)
             ndArrayInformation.setScalarValue(arr.getDouble(0));
 
-        NDArrayVertex ndArrayVertex = new NDArrayVertex(graph.nextVertexId(), ndArrayInformation);
+        NDArrayVertex ndArrayVertex = new NDArrayVertex(this,graph.nextVertexId(), ndArrayInformation);
         graph.addVertex(ndArrayVertex);
         ArrayField arrayField = new ArrayField(ndArrayVertex,this);
         SDVariable ret = SDVariable.builder()
@@ -560,7 +579,7 @@ public class SameDiff {
         Preconditions.checkArgument(arrField.getSameDiff() == this);
 
         SDVariable ret = SDVariable.builder()
-                .arr(null).shape(wrt.getShape())
+                .arr(null).shape(arrField.getResultShape())
                 .differentialFunction(arrField)
                 .varName("grad(" + iX.getVarName() + ")").sameDiff(this)
                 .build();
@@ -961,11 +980,11 @@ public class SameDiff {
      * @param iX
      * @return
      */
-    public SDVariable softmaxDerivative(SDVariable iX) {
+    public SDVariable softmaxDerivative(SDVariable iX,SDVariable wrt) {
         SDVariable ret = SDVariable.builder()
                 .arr(null).shape(iX.getShape())
-                .differentialFunction(functionFactory.softmaxDerivative(getFunctionInput(iX)))
-                .varName("softmax(" + iX.getVarName() + ")").sameDiff(this)
+                .differentialFunction(functionFactory.softmaxDerivative(getFunctionInput(iX),getFunctionInput(wrt)))
+                .varName("softmaxderivative(" + iX.getVarName() + ")").sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -1034,11 +1053,11 @@ public class SameDiff {
      * @param iX
      * @return
      */
-    public SDVariable sigmoidDerivative(SDVariable iX) {
+    public SDVariable sigmoidDerivative(SDVariable iX,SDVariable wrt) {
         SDVariable ret = SDVariable.builder()
                 .arr(null).shape(iX.getShape())
                 .differentialFunction(functionFactory
-                        .sigmoidDerivative(getFunctionInput(iX)))
+                        .sigmoidDerivative(getFunctionInput(iX), getFunctionInput(wrt)))
                 .varName("sigmoidDerivative(" + iX.getVarName() + ")").sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
@@ -1164,13 +1183,16 @@ public class SameDiff {
     /**
      *
      * @param iX
+     * @param wrt
      * @param cutoff
      * @return
      */
-    public SDVariable leakyReluDerivative(SDVariable iX, double cutoff) {
+    public SDVariable leakyReluDerivative(SDVariable iX, SDVariable wrt,double cutoff) {
         SDVariable ret = SDVariable.builder()
                 .arr(null)
-                .differentialFunction(functionFactory.leakyReluDerivative(getFunctionInput(iX),cutoff))
+                .differentialFunction(functionFactory.leakyReluDerivative(getFunctionInput(iX),
+                        getFunctionInput(wrt),
+                        cutoff))
                 .varName("leakyReluDerivative(" + iX.getVarName() + ")").sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
@@ -1844,6 +1866,12 @@ public class SameDiff {
                        OpExecAction opExecAction) {
         OpState opState = opExecAction.getOpState();
         switch (opType) {
+            case GRADIENT:
+                return Nd4j.getOpFactory().createGradientOp(
+                        opState.getOpName(),
+                        getX(opExecAction),
+                        getY(opExecAction),
+                        getZ(opExecAction));
             case SHAPE:
                 return Nd4j.getOpFactory().createShape(
                         opState.getOpName(),
@@ -2033,6 +2061,63 @@ public class SameDiff {
 
 
     /**
+     * Builds a backwards graph
+     * and executes the operations
+     * on that graph.
+     * @return
+     */
+    public List<Op> execBackwards() {
+        SameDiff outer = this;
+        if(getFunction("grad") == null)
+            defineFunction("grad", new SameDiffFunctionDefinition() {
+
+                @Override
+                public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                    //propagate graph to this samediff instance
+                    //which wil also contain the backward
+                    outer.invokeGraphOn(sameDiff);
+                    List<OpExecAction> opOrder = sameDiff.graph().getOpOrder().getActions();
+                    Collections.reverse(opOrder);
+                    //start with scalar backprop
+                    DifferentialFunction<ArrayField> currentDiff = sameDiff.functionFactory.one(new int[]{1,1});
+
+                    for(OpExecAction action : opOrder) {
+                        if(action.getOpState() != null) {
+                            DifferentialFunction<ArrayField> func = action.getOpState().getDifferentialFunction();
+                            if(func != null) {
+                                currentDiff = func.diff(currentDiff);
+                            }
+                            else if(action.getOpState().getArrayField() != null) {
+
+                            }
+                        }
+                    }
+
+                    return SDVariable.builder()
+                            .differentialFunction(currentDiff)
+                            .sameDiff(sameDiff)
+                            .varName("grad")
+                            .build();
+                }
+            });
+
+
+        List<Op> forward = exec("grad");
+        return forward;
+    }
+
+
+    /**
+     * Exec a backwards operation
+     * and return the end result
+     * @return
+     */
+    public INDArray execBackwardAndEndResult() {
+        List<Op> backwards = execBackwards();
+        return backwards.get(backwards.size() - 1).z();
+    }
+
+    /**
      * Creates and executes a list of operations
      * @return
      */
@@ -2062,6 +2147,9 @@ public class SameDiff {
                 else if(op instanceof BroadcastOp) {
                     BroadcastOp broadcastOp = (BroadcastOp) op;
                     Nd4j.getExecutioner().exec(broadcastOp,axes);
+                }
+                else if(op instanceof GradientOp) {
+                    Nd4j.getExecutioner().exec(op);
                 }
                 else if(op instanceof IndexAccumulation) {
                     IndexAccumulation indexAccumulation = (IndexAccumulation) op;

@@ -1,19 +1,28 @@
-package org.nd4j.autodiff.functions.impl.unary.transform;
+package org.nd4j.autodiff.functions.impl.binary.transform.gradient;
 
 import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.AbstractBinaryFunction;
 import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-public class SoftSignDerivative extends AbstractUnaryFunction<ArrayField> {
+public class SoftSignDerivative extends AbstractBinaryFunction<ArrayField> {
 
-    public SoftSignDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
+    public SoftSignDerivative() {
+    }
+
+    public SoftSignDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
+        super(sameDiff, i_v1, i_v2, OpState.OpType.GRADIENT);
+    }
+
+    public SoftSignDerivative(SameDiff sameDiff) {
+        super(sameDiff);
     }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().softsignDeriviative(arg().getValue(true));
+        return sameDiff.getArrayFactory().softsignDeriviative(larg().getValue(true),rarg().getValue(true));
     }
 
     @Override

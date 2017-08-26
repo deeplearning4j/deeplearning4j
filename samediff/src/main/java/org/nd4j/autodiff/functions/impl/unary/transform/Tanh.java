@@ -23,7 +23,7 @@ public class Tanh extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().tanhDerivative(i_v);
+        return sameDiff.getFunctionFactory().tanhDerivative(arg(), i_v);
     }
 
     @Override

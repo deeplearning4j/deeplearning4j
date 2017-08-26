@@ -24,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -109,6 +108,15 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.setDataType(initialType);
     }
 
+
+    @Test
+    public void testSoftmaxDerivativeGradient() {
+        INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray inputDup = input.dup();
+        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative(input,Nd4j.ones(2,2),input));
+        Nd4j.getExecutioner().exec(new SoftMaxDerivative(inputDup));
+        assertEquals(input,inputDup);
+    }
 
     @Test
     public void testNd4jEnvironment() {

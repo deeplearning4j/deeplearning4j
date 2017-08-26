@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.ops.ShapeOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
- * Transpose function
+ * Reshape function
  *
  * @author Adam Gibson
  */
