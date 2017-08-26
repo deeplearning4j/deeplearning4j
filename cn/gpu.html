@@ -4,7 +4,7 @@ layout: cn-default
 ---
 <h1>用GPU运行Deeplearning4j</h1>
 <p>Deeplearning4j同时支持分布式和本机GPU。用户可以用NVIDIA Tesla、Titan、GeForce GTX等单个本地GPU运行DL4J，也可以使用云端的NVIDIA GRID GPU来运行。</p>
-<p>若要在GPU上定型神经网络，您需要对根目录下的POM.xml文件做一项更改。<a href="quickstart" target="_blank">快速入门指南</a>中提到了一个默认状态下将项目配置成在CPU上运行的POM文件。具体配置内容如下：</p>
+<p>若要在GPU上训练神经网络，您需要对根目录下的POM.xml文件做一项更改。<a href="quickstart" target="_blank">快速入门指南</a>中提到了一个默认状态下将项目配置成在CPU上运行的POM文件。具体配置内容如下：</p>
 <pre class="line-numbers"><code class="language-java">
 &lt;name&gt;DeepLearning4j Examples Parent&lt;/name&gt;
         &lt;description&gt;Examples of training different data sets&lt;/description&gt;
@@ -25,7 +25,7 @@ layout: cn-default
 <br>
 <br>
 <h3>多GPU数据并行模式</h3>
-<p>如果您的系统安装有多个GPU，就可以用数据并行模式来定型模型。我们有一个实现数据并行的简单的包装类。您可以考虑以下的用法：</p>
+<p>如果您的系统安装有多个GPU，就可以用数据并行模式来训练模型。我们有一个实现数据并行的简单的包装类。您可以考虑以下的用法：</p>
 <pre class="line-numbers"><code class="language-java">
 ParallelWrapper wrapper = new ParallelWrapper.Builder(YourExistingModel)
         .prefetchBuffer(24)
@@ -35,9 +35,9 @@ ParallelWrapper wrapper = new ParallelWrapper.Builder(YourExistingModel)
         .useLegacyAveraging(false)
         .build();
 </code></pre>
-<p><code>ParallelWrapper</code>（并行包装类）将您的现有模型作为主要参数，以并行模式进行定型。若使用GPU，我们建议确保工作节点数量等于或高于GPU的数量。具体数值需要进行调试，因为它们取决于具体的任务以及可用的硬件。</p>
-<p><code>ParallelWrapper</code>会复制您的初始模型，每个工作节点分别定型自己的模型。每进行<em>X</em>次迭代后（该迭代次数由<code>averagingFrequency(X)</code>设置），所有模型将被平均化，然后继续定型。</p>
-<p>需要提醒的是，我们建议数据并行模式的定型采用更高的学习速率。初始速率应当可以提高20%左右。</p>
+<p><code>ParallelWrapper</code>（并行包装类）将您的现有模型作为主要参数，以并行模式进行训练。若使用GPU，我们建议确保工作器数量等于或高于GPU的数量。具体数值需要进行调试，因为它们取决于具体的任务以及可用的硬件。</p>
+<p><code>ParallelWrapper</code>会复制您的初始模型，每个工作器分别训练自己的模型。每进行<em>X</em>次迭代后（该迭代次数由<code>averagingFrequency(X)</code>设置），所有模型将被平均化，然后继续训练。</p>
+<p>需要提醒的是，我们建议数据并行模式的训练采用更高的学习速率。初始速率应当可以提高20%左右。</p>
 <br>
 <br>
 <h3>采用并行包装类的早停法</h3>
