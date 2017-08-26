@@ -143,8 +143,8 @@ public static void main(String[] args) throws Exception {
     ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(examplesPerDataSetObject)
             .workerPrefetchNumBatches(0)
             .saveUpdater(true) //保存adagrad的梯度平方等历史记录 
-            .averagingFrequency(5) //每个工作节点进行5个微批次的训练操作，然后将参数平均化并重新分发
-            .batchSizePerWorker(examplesPerDataSetObject) //每个工作节点每次训练操作时使用的样例数
+            .averagingFrequency(5) //每个工作器进行5个微批次的训练操作，然后将参数平均化并重新分发
+            .batchSizePerWorker(examplesPerDataSetObject) //每个工作器每次训练操作时使用的样例数
             .build();
             
     SparkDl4jMultiLayer sparkNetwork = new SparkDl4jMultiLayer(sc, net, tm);
