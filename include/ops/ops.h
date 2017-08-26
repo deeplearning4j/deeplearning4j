@@ -17,10 +17,12 @@
 #define AFFINITY close
 
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {}
+#define no_op_exec_special_accumulation 	static const bool requiresSpecialAccumulation = false; static void execSpecial(T *x, int *xShapeInfo, T *extraParams, T *result, int *resultShapeInfoBuffer, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffset){}
 #ifdef __CUDACC__
 #define meta_def __noinline__ __device__
 #include <helpers/sharedmem.h>
 #define no_op_exec_special_cuda static __device__ void execSpecialCuda(T *dx,int *xShapeBuffer,T *result,int *resultShapeBuffer,T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets) {}
+#define no_op_exec_special_accumulation_cuda 	static inline __device__ void execSpecialCuda(T *dx, int *xShapeInfo, T *extraParams, T *result, int *resultShapeInfo, int *dimension, int dimensionLength, T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {}
 #else
 // hacky fix for isnan/being being out of scope
 #define isnan std::isnan
@@ -28,6 +30,7 @@
 
 #define meta_def inline
 #define no_op_exec_special_cuda
+#define no_op_exec_special_accumulation_cuda
 #endif
 
 #ifdef __CUDACC__
@@ -981,6 +984,8 @@ namespace simdOps {
     template<typename T>
     class MatchCondition {
     public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
 
         op_def static T startingValue(const T *input) {
             return (T) 0.0;
@@ -1278,6 +1283,9 @@ namespace simdOps {
 	template<typename T>
 	class Sum {
 	public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
 		op_def static T startingValue(const T *input) {
 			return (T) 0.0f;
 		}
@@ -1305,6 +1313,9 @@ namespace simdOps {
     template<typename T>
     class ShannonEntropy {
     public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
         op_def static T startingValue(const T *input) {
             return (T) 0.0f;
         }
@@ -1330,6 +1341,9 @@ namespace simdOps {
     template<typename T>
     class LogEntropy {
     public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
         op_def static T startingValue(const T *input) {
             return (T) 0.0f;
         }
@@ -1354,6 +1368,9 @@ namespace simdOps {
     template<typename T>
     class Entropy {
     public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
         op_def static T startingValue(const T *input) {
             return (T) 0.0f;
         }
@@ -1379,6 +1396,9 @@ namespace simdOps {
     template<typename T>
     class ASum {
     public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
         op_def static T startingValue(const T *input) {
             return (T) 0.0f;
         }
@@ -1404,6 +1424,9 @@ namespace simdOps {
 	template<typename T>
 	class Prod {
 	public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
 		op_def static T startingValue(const T *input) {
 			return (T) 1.0f;
 		}
@@ -1428,6 +1451,9 @@ namespace simdOps {
 	template<typename T>
 	class Mean {
 	public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
 		op_def static T startingValue(const T *input) {
 			return (T) 0.0f;
 		}
@@ -1453,6 +1479,9 @@ namespace simdOps {
     template<typename T>
     class AMean {
     public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
         op_def static T startingValue(const T *input) {
             return (T) 0.0f;
         }
@@ -1477,6 +1506,9 @@ namespace simdOps {
 	template<typename T>
 	class Max {
 	public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
 		op_def static T startingValue(const T *input) {
 			return input[0];
 		}
@@ -1511,6 +1543,9 @@ namespace simdOps {
     template<typename T>
     class AMax {
     public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
         op_def static T startingValue(const T *input) {
             return input[0];
         }
@@ -1545,6 +1580,9 @@ namespace simdOps {
 	template<typename T>
 	class AMin {
 	public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
 		op_def static T startingValue(const T *input) {
 			return input[0];
 		}
@@ -1578,6 +1616,9 @@ namespace simdOps {
     template<typename T>
     class Min {
     public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
         op_def static T startingValue(const T *input) {
             return input[0];
         }
@@ -1612,6 +1653,9 @@ namespace simdOps {
     template<typename T>
 	class Norm1 {
 	public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
 		op_def static T startingValue(const T *input) {
 			return (T) 0.0f;
 		}
@@ -1639,6 +1683,9 @@ namespace simdOps {
 	template<typename T>
 	class Norm2 {
 	public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
 		op_def static T startingValue(const T *input) {
 			return (T) 0.0f;
 		}
@@ -1665,6 +1712,9 @@ namespace simdOps {
 	template<typename T>
 	class NormMax {
 	public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
 		op_def static T startingValue(const T *input) {
 			return (T) 0.0f;
 		}
@@ -1692,6 +1742,9 @@ namespace simdOps {
 	template<typename T>
 	class Variance {
 	public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
 		op_def static T startingValue(const T *input) {
 			return (T) 0.0f;
 		}
@@ -1724,6 +1777,9 @@ namespace simdOps {
 	template<typename T>
 	class StandardDeviation {
 	public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
 		op_def static T startingValue(const T *input) {
 			return (T) 0.0f;
 		}

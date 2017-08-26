@@ -14,31 +14,60 @@ namespace simdOps {
     template<typename T>
     class LogSumExp {
     public:
-        static const bool requiresSpecial = true;
+        static const bool requiresSpecialAccumulation = true;
 
 
-        static T startingValue(const T *input) {
+        op_def static T startingValue(const T *input) {
             return (T) 0.0f;
         }
 
-        static T merge(T old, T opOutput, T *extraParams) {
+        op_def static T merge(T old, T opOutput, T *extraParams) {
             return opOutput + old;
         }
 
-        static T update(T old, T opOutput, T *extraParams) {
+        op_def static T update(T old, T opOutput, T *extraParams) {
             return opOutput + old;
         }
 
-        static T op(T d1, T* extraParams) {
+        op_def static T op(T d1, T d2) {
+            return nd4j::math::nd4j_exp<T>(d1 - d2);
+        }
+
+        op_def static T op(T d1, T* extraParams) {
             return nd4j::math::nd4j_exp<T>(d1 - extraParams[0]);
         }
 
-        static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
             return extraParams[0] + nd4j::math::nd4j_log<T>(reduction);
         }
 
-
 #ifdef __CUDACC__
+        __device__ static inline void aggregatePartials(T *sPartials, int tid, int numItems, T *extraParams) {
+            // start the shared memory loop on the next power of 2 less
+            // than the block size.  If block size is not a power of 2,
+            // accumulate the intermediate sums in the remainder range.
+            int floorPow2 = numItems;
+
+            if (floorPow2 & (floorPow2 - 1)) {
+                while (floorPow2 & (floorPow2 - 1)) {
+                    floorPow2 &= floorPow2 - 1;
+                }
+                if (tid >= floorPow2) {
+                    sPartials[tid - floorPow2] = update(sPartials[tid - floorPow2], sPartials[tid], extraParams);
+                }
+
+                __syncthreads();
+            }
+
+
+            for (int activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
+                if (tid < activeThreads && tid + activeThreads < numItems) {
+                    sPartials[tid] = update(sPartials[tid], sPartials[tid + activeThreads], extraParams);
+                }
+                __syncthreads();
+            }
+        }
+
         static inline __device__ void execSpecialCuda(
 				T *dx,
 				int *xShapeInfo,
@@ -89,7 +118,7 @@ namespace simdOps {
 					__syncthreads();
 
 					// aggregate. do NOT reduce for elements > tadLength
-					aggregatePartials<simdOps::LogExpSum>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+					aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 
 					__syncthreads();

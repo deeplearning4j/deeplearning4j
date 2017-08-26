@@ -76,6 +76,11 @@ namespace functions {
 				int dimensionLength,
 				T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 
+                if (OpType::requiresSpecialAccumulation) {
+                    OpType::execSpecialCuda(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
+                    return;
+                }
+
 				//shared memory space for storing intermediate results
 				__shared__ T *sPartials;// = (T *)manager->getSharedReductionBuffer();
 				__shared__ int tadLength;
@@ -256,6 +261,11 @@ template<typename OpType>
 				int dimensionLength,
 				T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 
+                if (OpType::requiresSpecialAccumulation) {
+                    OpType::execSpecialCuda(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
+                    return;
+                }
+
 				//shared memory space for storing intermediate results
 				__shared__ T *sPartials; // = (T *)manager->getSharedReductionBuffer();
 
@@ -313,6 +323,11 @@ template<typename OpType>
 				UnifiedSharedMemory *manager,
 				int *tadOnlyShapeInfo,
 				Nd4jIndex *tadOffsets) {
+
+                if (OpType::requiresSpecialAccumulation) {
+                    OpType::execSpecialCuda(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
+                    return;
+                }
 
 				//shared memory space for storing intermediate results
 				T *sPartials = (T *)manager->getSharedReductionBuffer();
@@ -517,6 +532,11 @@ template<typename OpType>
                 // || tad.wholeThing
                 if (resultLength == 1 || dimension == nullptr || dimensionLength == shape::rank(xShapeInfo)) {
                     result[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
+                    return;
+                }
+
+                if (OpType::requiresSpecialAccumulation) {
+                    OpType::execSpecial(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
                     return;
                 }
 
