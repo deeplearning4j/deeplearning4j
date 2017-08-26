@@ -278,6 +278,15 @@ template<typename T>
 			return val1 > val2 ? val1 : val2;
 		}
 
+		template<>
+		math_def inline Nd4jIndex nd4j_max<Nd4jIndex>(Nd4jIndex val1, Nd4jIndex val2) {
+			return val1 > val2 ? val1 : val2;
+		}
+
+		template<>
+		math_def inline Nd4jIndex nd4j_min<Nd4jIndex>(Nd4jIndex val1, Nd4jIndex val2) {
+			return val1 < val2 ? val1 : val2;
+		}
 
 		template<>
         math_def inline float16 nd4j_min<float16>(float16 val1, float16 val2) {
