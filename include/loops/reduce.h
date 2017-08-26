@@ -330,7 +330,7 @@ template<typename OpType>
                 }
 
 				//shared memory space for storing intermediate results
-				T *sPartials = (T *)manager->getSharedReductionBuffer();
+				__shared__ T *sPartials;
 
 				//                __shared__ shape::TAD *tad;
 				__shared__ int tadLength;
@@ -339,6 +339,8 @@ template<typename OpType>
 				__shared__ int *tadShape;
 				__shared__ int *tadStride;
 				if (threadIdx.x == 0) {
+				    extern __shared__ unsigned char shmem[];
+				    sPartials = (T *) shmem;
 					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 					tadRank = shape::rank(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;

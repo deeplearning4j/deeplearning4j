@@ -900,6 +900,7 @@ void   NativeOps::execReduceDouble(
 
 	if (opNum == 19) {
 		execReduceDouble(extraPointers, 3, x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength);
+        checkCudaErrors(cudaStreamSynchronize(*stream));
 	}
 
 	/**

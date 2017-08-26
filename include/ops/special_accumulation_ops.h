@@ -84,7 +84,7 @@ namespace simdOps {
 				// we assume that RESULT already holds max values
 
 				//shared memory space for storing intermediate results
-				T *sPartials = (T *)manager->getSharedReductionBuffer();
+				__shared__ T *sPartials;
 
 				//                __shared__ shape::TAD *tad;
 				__shared__ int tadLength;
@@ -93,6 +93,8 @@ namespace simdOps {
 				__shared__ int *tadShape;
 				__shared__ int *tadStride;
 				if (threadIdx.x == 0) {
+				    extern __shared__ unsigned char shmem[];
+				    sPartials = (T *) shmem;
 					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 					tadRank = shape::rank(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;
@@ -118,12 +120,12 @@ namespace simdOps {
 					__syncthreads();
 
 					// aggregate. do NOT reduce for elements > tadLength
-					aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+					aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), &result[r]);
 
 
 					__syncthreads();
 					if (threadIdx.x == 0)
-						result[r] = postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+						result[r] = postProcess(sPartials[threadIdx.x], tadLength, &result[r]);
 				}
 			}
 #endif
@@ -170,6 +172,7 @@ namespace simdOps {
 
 #pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
                 for (int i = 0; i < resultLength; i++) {
+
                     T *iter = x + tadOffsets[i];
                     T start = startingValue(iter);
                     if (tadEWS == 1) {
@@ -183,7 +186,7 @@ namespace simdOps {
                             start = update(start, op(iter[j * tadEWS], result[i]), extraParams);
                         }
                     }
-                    result[i] = postProcess(start, tadLength, extraParams);
+                    result[i] = postProcess(start, tadLength, &result[i]);
                 }
             }
             else {
@@ -193,6 +196,7 @@ namespace simdOps {
 
 #pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
                 for (int i = 0; i < resultLength; i++) {
+
                     Nd4jIndex offset = tadOffsets[i];
                     int xCoord[MAX_RANK];
 
@@ -202,10 +206,12 @@ namespace simdOps {
                         shape::ind2subC(tadRank, tadShape, j, xCoord);
                         Nd4jIndex xOffset = shape::getOffset(offset, tadShape, tadStride, xCoord, tadRank);
 
+                        printf("C I: %i; V: %f; op: %f\n", i, x[xOffset], op(x[xOffset], result[i]));
+
                         start = update(start, op(x[xOffset], result[i]), extraParams);
                     }
 
-                    result[i] = postProcess(start, tadLength, extraParams);;
+                    result[i] = postProcess(start, tadLength, &result[i]);;
                 }
             }
 

@@ -381,8 +381,9 @@ namespace randomOps {
                          */
                         u0 = buffer->relativeT<T>(e, (T) 1e-5f, (T) 1.0f);
                         u1 = buffer->relativeT<T>((e + 1), (T) 1e-5f, (T) 1.0f);
-                        z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
+                        lnU0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0));
+                        z0 = lnU0 * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                        z1 = lnU0 * nd4j::math::nd4j_sin<T>(two_pi * u1);
 
                         generated = true;
 
@@ -786,7 +787,7 @@ namespace randomOps {
     
                 T z0, z1;
                 T u0, u1;
-                T result0, result1;
+                T result0, result1, lnu0;
 
                 T ds = nd4j::math::nd4j_abs<T>(stddev) * (T) 2.0f;
 
@@ -801,8 +802,9 @@ namespace randomOps {
                     do {
                         u0 = buffer->relativeT<T>(e + generation0, (T) 1e-6f, (T) 1.0f);
                         u1 = buffer->relativeT<T>((e + middle + generation0), (T) 1e-6f, (T) 1.0f);
-                        z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
+                        lnu0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0));
+                        z0 = lnu0 * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                        z1 = lnu0 * nd4j::math::nd4j_sin<T>(two_pi * u1);
 
                         result0 = z0 * stddev + realMean0;
                         result1 = z1 * stddev + realMean1;                            
@@ -951,8 +953,9 @@ namespace randomOps {
                          */
                         u0 = buffer->relativeT<T>(e, (T) 1e-5f, (T) 1.0f);
                         u1 = buffer->relativeT<T>((e + 1), (T) 1e-5f, (T) 1.0f);
-                        z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
+                        lnU0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0));
+                        z0 = lnU0 * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                        z1 = lnU0 * nd4j::math::nd4j_sin<T>(two_pi * u1);
 
                         generated = true;
 
