@@ -91,8 +91,12 @@ public class SameDiff {
         for(int i = 0; i < graph().numVertices(); i++) {
             int nextVertexId = sameDiff.graph.nextVertexId();
             NDArrayInformation clone = cloner.deepClone(graph.getVertex(i + 1).getValue());
+            if(clone.getOwner() != null && clone.getOwner().getArrayField() != null)
+                clone.getOwner().getArrayField().setOps(sameDiff);
+            if(clone.getOwner() != null && clone.getOwner().getDifferentialFunction() != null)
+                clone.getOwner().getDifferentialFunction().setSameDiff(sameDiff);
             NDArrayVertex info = new NDArrayVertex(
-                    this,
+                    sameDiff,
                     nextVertexId,
                     clone);
             thisVertexIdToNew.put(graph.getVertex(i + 1).vertexID(),nextVertexId);

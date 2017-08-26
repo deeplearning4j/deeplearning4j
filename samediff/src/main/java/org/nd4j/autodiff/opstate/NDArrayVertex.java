@@ -35,10 +35,6 @@ public class NDArrayVertex extends Vertex<NDArrayInformation>  {
         if(value.getOwner() != null) {
             if (value.getOwner().getArrayField() != null) {
                 Preconditions.checkState(sameDiff == value.getOwner().getArrayField().getOps(), "Invalid same diff instance passed in.");
-                if (value.getOwner().getArrayField().getInput().getOwner().getDifferentialFunction() != null)
-                    Preconditions.checkState(sameDiff == value.getOwner().getArrayField().getInput().getOwner().getDifferentialFunction().getSameDiff(), "Invalid same diff instance passe din.");
-                Preconditions.checkState(sameDiff == value.getOwner().getArrayField().getInput().getOwner().getArrayField().getOps(),"Invalid same diff instance passe din.");
-
             }
         }
 
