@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.ops.impl.accum.LogExpSum;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
@@ -5269,6 +5270,29 @@ public class Nd4jTestsC extends BaseNd4jTest {
         for (int r = 0; r < matrix.rows(); r++) {
             assertEquals(Nd4j.create(new double[] {1, 2, 3, 4, 1}), matrix.getRow(r));
         }
+    }
+
+    @Test
+    public void testLogExpSum1() throws Exception {
+        INDArray matrix = Nd4j.create(3, 3);
+        for (int r = 0; r < matrix.rows(); r++) {
+            matrix.getRow(r).assign(Nd4j.create(new double[]{1, 2, 3}));
+        }
+
+        INDArray res = Nd4j.getExecutioner().exec(new LogExpSum(matrix), 1);
+
+        for (int e = 0; e < res.length(); e++) {
+            assertEquals(3.407605, res.getDouble(e), 1e-5);
+        }
+    }
+
+    @Test
+    public void testLogExpSum2() throws Exception {
+        INDArray row = Nd4j.create(new double[]{1, 2, 3});
+
+        double res = Nd4j.getExecutioner().exec(new LogExpSum(row)).z().getDouble(0);
+
+        assertEquals(3.407605, res, 1e-5);
     }
 
 
