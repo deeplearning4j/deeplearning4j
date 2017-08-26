@@ -23,7 +23,7 @@ public class Exp extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().exp(i_v).mul(arg().diff(i_v));
+        return sameDiff.getFunctionFactory().exp(arg().mul(i_v));
     }
 
 

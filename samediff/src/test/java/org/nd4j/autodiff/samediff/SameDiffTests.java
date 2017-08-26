@@ -272,7 +272,7 @@ public class SameDiffTests {
         assertEquals(Transforms.sigmoid(arr), op1.z());
 
         Op op2 = sameDiff.createOp(actions.get(1).getOpState().getOpType(), actions.get(1));
-        assertTrue(op2 instanceof SigmoidDerivative);
+        assertTrue(op2 instanceof org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative);
         Nd4j.getExecutioner().exec(op2);
     }
 
@@ -282,10 +282,12 @@ public class SameDiffTests {
         SameDiff sameDiff = SameDiff.create();
         SDVariable input = sameDiff.var("x", Nd4j.linspace(1, 4, 4));
         SDVariable log = sameDiff.log(input);
-        SDVariable grad = sameDiff.grad(log, input);
-        INDArray gradResult = sameDiff.execAndEndResult();
-        INDArray assertion = Nd4j.create(new double[]{1, 0.5, 0.33, 0.25});
-        assertTrue(assertion.equalsWithEps(gradResult, 1e-2));
+        SDVariable sum = sameDiff.sum(log,Integer.MAX_VALUE);
+        INDArray result = null;
+        List<Op> execBackwards = sameDiff.execBackwards();
+        System.out.println(execBackwards);
+        //INDArray assertion = Nd4j.create(new double[]{1, 0.5, 0.33, 0.25});
+        // assertTrue(assertion.equalsWithEps(result, 1e-2));
     }
 
 
@@ -397,44 +399,7 @@ public class SameDiffTests {
     }
 
 
-    @Test
-    public void testSumGradientScalar() {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        SDVariable input = sameDiff.var("x", sumInput);
-        SDVariable sum = sameDiff.sum(input, Integer.MAX_VALUE);
-        //original shape ends up being 2,2
-        SDVariable grad = sameDiff.grad(sum, sum);
-        assertArrayEquals(new int[]{1, 1}, grad.getShape());
-        OpExecOrder opExecOrder = sameDiff.graph().getOpOrder();
-        assertArrayEquals(new int[]{2, 2}, opExecOrder.getActions().get(1).getOutput().getShape());
 
-        List<Op> execOps = sameDiff.exec();
-        assertEquals(Nd4j.ones(new int[]{2, 2}), execOps.get(1).z());
-
-    }
-
-    @Test
-    public void testSumGradient() {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        Map<String, INDArray> inputs = new HashMap<>();
-        inputs.put("x", sumInput);
-        sameDiff.defineFunction("sumWithGradient", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                SDVariable input = sameDiff.var("x", inputs.get("x"));
-                SDVariable sum = sameDiff.sum(input, 1);
-                //original shape ends up being 2,2
-                SDVariable grad = sameDiff.grad(sum, sameDiff.var("grad", Nd4j.valueArrayOf(4, 1.0).reshape(2, 2)));
-                return grad;
-            }
-        }, inputs);
-
-        INDArray executions = sameDiff.execAndEndResult("sumWithGradient");
-        assertArrayEquals(sumInput.shape(), executions.shape());
-        assertEquals(Nd4j.ones(2, 2), executions);
-    }
 
 
     @Test
@@ -573,32 +538,6 @@ public class SameDiffTests {
     }
 
 
-    @Test
-    public void testSoftmaxGradient() {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
-        Map<String,INDArray> inputs = new HashMap<>();
-        inputs.put("x",sumInput);
-        sameDiff.defineFunction("softmaxGradient", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                SDVariable input = sameDiff.var("x",inputs.get("x"));
-                SDVariable softmax = sameDiff.softmax(input);
-                SDVariable sum = sameDiff.sum(softmax,Integer.MAX_VALUE);
-                //original shape ends up being 2,2
-                SDVariable grad = sum.backward();
-                return grad;
-            }
-        },inputs);
-
-        INDArray executions = sameDiff.execAndEndResult("softmaxGradient");
-        INDArray assertion = Nd4j.getExecutioner().execAndReturn(new SoftMaxDerivative(sumInput));
-        assertArrayEquals(sumInput.shape(),executions.shape());
-        assertEquals(assertion,executions);
-        System.out.println(executions);
-        //assertEquals(Nd4j.ones(2,2),executions);
-    }
-
 
 
     @Test
@@ -611,16 +550,20 @@ public class SameDiffTests {
             @Override
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable input = sameDiff.var("x",inputs.get("x"));
-                SDVariable softmax = sameDiff.exp(input);
-                //original shape ends up being 2,2
-                SDVariable grad = sameDiff.grad(softmax,sameDiff.var("grad",sumInput.dup()));
-                
-                return grad;
+                SDVariable exp = sameDiff.exp(input);
+                SDVariable sum = sameDiff.sum(exp,Integer.MAX_VALUE);
+                return sum;
             }
         },inputs);
 
-        INDArray executions = sameDiff.execAndEndResult("expGradient");
-        INDArray assertion = Nd4j.getExecutioner().execAndReturn(new Exp(sumInput));
+
+        List<Op> ops = sameDiff.getFunction("expGradient").execBackwards();
+
+        INDArray executions = ops.get(ops.size() - 1).z();
+        INDArray assertion = Nd4j.create(new double[][]{
+                {2.7183  , 7.3891},
+                {20.0855  ,54.5981}
+        });
         assertArrayEquals(sumInput.shape(),executions.shape());
         assertEquals(assertion,executions);
         System.out.println(executions);
@@ -645,7 +588,7 @@ public class SameDiffTests {
         },inputs);
 
         INDArray executions = sameDiff.getFunction("tanhGradient").execBackwardAndEndResult();
-       //[0.41997434161402614,0.07065082485316443,0.009866037165440211,0.0013409506830258655]
+        //[0.41997434161402614,0.07065082485316443,0.009866037165440211,0.0013409506830258655]
         INDArray assertion = Nd4j.create(new double[][]{
                 {0.41997434161402614 , 0.07065082485316443},
                 {0.009866037165440211 , 0.0013409506830258655}
