@@ -381,9 +381,8 @@ namespace randomOps {
                          */
                         u0 = buffer->relativeT<T>(e, (T) 1e-5f, (T) 1.0f);
                         u1 = buffer->relativeT<T>((e + 1), (T) 1e-5f, (T) 1.0f);
-                        lnU0 = (T)(-2.0f)*nd4j::math::nd4j_log<T>(u0);
-                        z0 = nd4j::math::nd4j_sqrt<T>(lnU0) * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = nd4j::math::nd4j_sqrt<T>(lnU0 - z0*z0);
+                        z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                        z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
 
                         generated = true;
 
