@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -1006,6 +1007,26 @@ public abstract class DifferentialFunction<X extends Field<X>>
                 arg();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        DifferentialFunction<?> that = (DifferentialFunction<?>) o;
+
+        if (vertexId != that.vertexId) return false;
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        return Arrays.equals(extraArgs, that.extraArgs);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + vertexId;
+        result = 31 * result + Arrays.hashCode(extraArgs);
+        return result;
+    }
 
     protected void validateDifferentialFunctionsameDiff(
             DifferentialFunction<X> function) {
@@ -1028,4 +1049,6 @@ public abstract class DifferentialFunction<X extends Field<X>>
                 "match this function " + this);
 
     }
+
+
 }

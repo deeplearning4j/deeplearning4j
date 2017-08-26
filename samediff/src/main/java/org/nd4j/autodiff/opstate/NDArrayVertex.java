@@ -23,12 +23,18 @@ public class NDArrayVertex extends Vertex<NDArrayInformation>  {
                         .build());
     }
 
+    /**
+     *
+     * @param sameDiff
+     * @param idx
+     * @param value
+     */
     public NDArrayVertex(SameDiff sameDiff,int idx, NDArrayInformation value) {
         super(idx, value);
         this.sameDiff = sameDiff;
         if(value.getOwner() != null) {
             if (value.getOwner().getArrayField() != null) {
-                Preconditions.checkState(sameDiff == value.getOwner().getArrayField().getOps(), "Invalid same diff instance passe din.");
+                Preconditions.checkState(sameDiff == value.getOwner().getArrayField().getOps(), "Invalid same diff instance passed in.");
                 if (value.getOwner().getArrayField().getInput().getOwner().getDifferentialFunction() != null)
                     Preconditions.checkState(sameDiff == value.getOwner().getArrayField().getInput().getOwner().getDifferentialFunction().getSameDiff(), "Invalid same diff instance passe din.");
                 Preconditions.checkState(sameDiff == value.getOwner().getArrayField().getInput().getOwner().getArrayField().getOps(),"Invalid same diff instance passe din.");
@@ -36,6 +42,24 @@ public class NDArrayVertex extends Vertex<NDArrayInformation>  {
             }
         }
 
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        NDArrayVertex vertex = (NDArrayVertex) o;
+
+        return opState != null ? opState.equals(vertex.opState) : vertex.opState == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (opState != null ? opState.hashCode() : 0);
+        return result;
     }
 
     @Override

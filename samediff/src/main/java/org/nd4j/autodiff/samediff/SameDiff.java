@@ -2057,7 +2057,9 @@ public class SameDiff {
 
 
     /**
-     *
+     * Builds a backwards graph
+     * and executes the operations
+     * on that graph.
      * @return
      */
     public List<Op> execBackwards() {
@@ -2098,6 +2100,17 @@ public class SameDiff {
 
         List<Op> forward = exec("grad");
         return forward;
+    }
+
+
+    /**
+     * Exec a backwards operation
+     * and return the end result
+     * @return
+     */
+    public INDArray execBackwardAndEndResult() {
+        List<Op> backwards = execBackwards();
+        return backwards.get(backwards.size() - 1).z();
     }
 
     /**

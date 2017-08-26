@@ -147,5 +147,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
         Cloner cloner = new Cloner();
         return cloner.deepClone(this);
     }
+
+
 }
 

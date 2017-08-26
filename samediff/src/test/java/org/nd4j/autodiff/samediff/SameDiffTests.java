@@ -131,7 +131,7 @@ public class SameDiffTests {
         SDVariable addResult = result.add(result);
 
         assertEquals("cosineSimilarity(x,y)", result.getVarName());
-        assertEquals(4, sameDiff.graph().numVertices());
+        assertEquals(5, sameDiff.graph().numVertices());
         assertArrayEquals(new int[]{1, 2}, result.getShape());
     }
 
@@ -564,11 +564,10 @@ public class SameDiffTests {
         SDVariable sigmoid = sameDiff.sigmoid(input);
         SDVariable sum = sameDiff.sum(sigmoid,Integer.MAX_VALUE);
         List<Op> backwardsOps = sameDiff.execBackwards();
-        assertEquals(4,backwardsOps.size());
         assertTrue(Nd4j.create(new double[][]{
-                        {0.1966 , 0.1050},
-                        {0.0452 , 0.0177}
-                }).equalsWithEps(
+                {0.1966 , 0.1050},
+                {0.0452 , 0.0177}
+        }).equalsWithEps(
                 backwardsOps.get(backwardsOps.size() - 1).z(),1e-2));
         System.out.println(backwardsOps);
     }
@@ -615,6 +614,7 @@ public class SameDiffTests {
                 SDVariable softmax = sameDiff.exp(input);
                 //original shape ends up being 2,2
                 SDVariable grad = sameDiff.grad(softmax,sameDiff.var("grad",sumInput.dup()));
+                
                 return grad;
             }
         },inputs);
@@ -639,14 +639,21 @@ public class SameDiffTests {
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable input = sameDiff.var("x",inputs.get("x"));
                 SDVariable tanh = sameDiff.tanh(input);
-                //original shape ends up being 2,2
-                SDVariable grad = sameDiff.grad(tanh,sameDiff.var("grad",sumInput.dup()));
-                return grad;
+                SDVariable sum = sameDiff.sum(tanh,Integer.MAX_VALUE);
+                return tanh;
             }
         },inputs);
 
-        INDArray executions = sameDiff.execAndEndResult("tanhGradient");
-        INDArray assertion = Nd4j.getExecutioner().execAndReturn(new TanhDerivative(sumInput));
+        INDArray executions = sameDiff.getFunction("tanhGradient").execBackwardAndEndResult();
+       //[0.41997434161402614,0.07065082485316443,0.009866037165440211,0.0013409506830258655]
+        INDArray assertion = Nd4j.create(new double[][]{
+                {0.41997434161402614 , 0.07065082485316443},
+                {0.009866037165440211 , 0.0013409506830258655}
+        });
+
+        assertTrue(assertion.equalsWithEps(
+                executions,1e-3));
+
         assertArrayEquals(sumInput.shape(),executions.shape());
         assertEquals(assertion,executions);
         System.out.println(executions);

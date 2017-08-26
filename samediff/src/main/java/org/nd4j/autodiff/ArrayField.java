@@ -1217,6 +1217,23 @@ public class ArrayField implements Field<ArrayField> {
 
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
 
+        ArrayField that = (ArrayField) o;
 
+        if (input != null ? !input.equals(that.input) : that.input != null) return false;
+        return vertex != null ? vertex.equals(that.vertex) : that.vertex == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (input != null ? input.hashCode() : 0);
+        result = 31 * result + (vertex != null ? vertex.hashCode() : 0);
+        return result;
+    }
 }

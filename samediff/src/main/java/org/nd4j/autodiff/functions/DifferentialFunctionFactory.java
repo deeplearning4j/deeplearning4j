@@ -277,8 +277,8 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
     @Override
-    public DifferentialFunction<ArrayField> tanhDerivative(DifferentialFunction<ArrayField> iX) {
-        return new TanhDerivative(sameDiff,iX,null);
+    public DifferentialFunction<ArrayField> tanhDerivative(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> wrt) {
+        return new TanhDerivative(sameDiff,iX,wrt);
     }
 
     @Override
