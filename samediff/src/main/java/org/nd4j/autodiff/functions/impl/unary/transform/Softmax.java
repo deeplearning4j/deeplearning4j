@@ -16,14 +16,10 @@ public class Softmax extends AbstractUnaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().softmax(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
 
     @Override
     public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().softmaxDerivative(i_v).mul(arg().diff(i_v));
+        return sameDiff.getFunctionFactory().softmaxDerivative(arg(), i_v);
     }
 
     @Override

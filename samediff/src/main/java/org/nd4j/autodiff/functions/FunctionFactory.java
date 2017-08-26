@@ -79,7 +79,7 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> tanh(DifferentialFunction<X> iX);
 
-    DifferentialFunction<ArrayField> tanhDerivative(DifferentialFunction<ArrayField> iX);
+    DifferentialFunction<ArrayField> tanhDerivative(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> wrt);
 
     DifferentialFunction<X> acosh(DifferentialFunction<X> iX);
 
@@ -115,7 +115,7 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> sigmoid(DifferentialFunction<X> iX);
 
-    DifferentialFunction<X> sigmoidDerivative(DifferentialFunction<X> iX);
+    DifferentialFunction<X> sigmoidDerivative(DifferentialFunction<X> iX, DifferentialFunction<X> wrt);
 
     DifferentialFunction<X> sign(DifferentialFunction<X> iX);
 
@@ -135,7 +135,7 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> leakyRelu(DifferentialFunction<X> iX, double cutoff);
 
-    DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> iX, double cutoff);
+    DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> iX, DifferentialFunction<X> iY, double cutoff);
 
     DifferentialFunction<X> reshape(DifferentialFunction<X> arrayField, int[] shape);
 
@@ -164,7 +164,7 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> mmul(int argNum, DifferentialFunction<X> x, DifferentialFunction<X> y);
     DifferentialFunction<X> tensorMmul(DifferentialFunction<X> x, DifferentialFunction<X> y, int[][] dimensions, int argNum);
 
-    DifferentialFunction<X> softmaxDerivative(DifferentialFunction<X> functionInput);
+    DifferentialFunction<X> softmaxDerivative(DifferentialFunction<X> functionInput, DifferentialFunction<X> wrt);
 
     DifferentialFunction<X> logSoftmax(DifferentialFunction<X> i_v);
 

@@ -3,6 +3,8 @@ package org.nd4j.autodiff.opstate;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
@@ -13,7 +15,8 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Describes the type of operation that needs to happen
+ * Describes the type of
+ * operation that needs to happen
  * @author Adam Gibson
  */
 @Data
@@ -30,7 +33,9 @@ public class OpState implements Serializable {
     private Object[] extraArgs;
     private Object[] extraArgsWithoutInPlace;
     private NDArrayInformation result;
-
+    //function handle mainly used for autodiff invocation
+    private DifferentialFunction<ArrayField> differentialFunction;
+    private ArrayField arrayField;
 
     /**
      * Creates an op state from
@@ -128,7 +133,8 @@ public class OpState implements Serializable {
         BROADCAST,
         INDEX_ACCUMULATION,
         AGGREGATE,
-        SHAPE
+        SHAPE,
+        GRADIENT
     }
 
 

@@ -86,12 +86,12 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                             v1.getInput().getId() + ")")
                     .shape(shape).build();
             //result
-            NDArrayVertex newVertex = new NDArrayVertex(sameDiff.getGraph().nextVertexId(), information);
+            NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information);
             this.vertexId = newVertex.vertexID();
             Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");
             sameDiff.getGraph().addVertex(newVertex);
             OpState owner =  OpState.builder()
-                    .opType(opType)
+                    .opType(opType).differentialFunction((DifferentialFunction<ArrayField>) this)
                     .opName(opName).extraArgs(extraArgs)
                     .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                     .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
@@ -147,5 +147,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
         Cloner cloner = new Cloner();
         return cloner.deepClone(this);
     }
+
+
 }
 

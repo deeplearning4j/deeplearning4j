@@ -14,11 +14,11 @@ import java.util.*;
 @Data
 public class ArrayFactory implements AbstractFactory<ArrayField> {
 
-    private SameDiff graph;
+    private SameDiff sameDiff;
     private Map<String,Method> methodNames;
 
-    public ArrayFactory(SameDiff graph) {
-        this.graph = graph;
+    public ArrayFactory(SameDiff sameDiff) {
+        this.sameDiff = sameDiff;
         methodNames = new HashMap<>();
         Method[] methods = getClass().getDeclaredMethods();
         for(Method method : methods)
@@ -29,7 +29,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
 
     @Override
     public SameDiff sameDiff() {
-        return graph;
+        return sameDiff;
     }
 
     @Override
@@ -52,8 +52,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField seluDerivative(ArrayField value) {
-        return value.seluDerivative();
+    public ArrayField seluDerivative(ArrayField value, ArrayField wrt) {
+        return value.seluDerivative(wrt);
     }
 
     @Override
@@ -208,7 +208,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString()).scalarValue(0.0)
                 .id("zero-" + UUID.randomUUID().toString()).owner(null).shape(shape).build();
-        return new ArrayField(new NDArrayVertex(graph.getGraph().nextVertexId(), information), graph);
+        return new ArrayField(new NDArrayVertex(sameDiff(),sameDiff.getGraph().nextVertexId(), information), sameDiff);
     }
 
     @Override
@@ -216,7 +216,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString()).scalarValue(1.0)
                 .id("one-"  + UUID.randomUUID().toString()).owner(null).shape(shape).build();
-        return new ArrayField(new NDArrayVertex(graph.getGraph().nextVertexId(), information), graph);
+        return new ArrayField(new NDArrayVertex(sameDiff(),sameDiff.getGraph().nextVertexId(), information), sameDiff);
     }
 
     /**
@@ -230,7 +230,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         NDArrayInformation information = NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString()).scalarValue(value)
                 .id(String.valueOf(value)).owner(null).shape(new int[]{1,1}).build();
-        return new ArrayField(new NDArrayVertex(graph.getGraph().nextVertexId(), information), graph);
+        return new ArrayField(new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information), sameDiff);
     }
 
     @Override
@@ -295,8 +295,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField tanhDerivative(ArrayField x) {
-        return x.tanhDerivative();
+    public ArrayField tanhDerivative(ArrayField x, ArrayField wrt) {
+        return x.tanhDerivative(wrt);
     }
 
     @Override
@@ -457,8 +457,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField leakyReluDerivative(ArrayField value, double alpha) {
-        return value.leakyReluDerivative(alpha);
+    public ArrayField leakyReluDerivative(ArrayField value, ArrayField wrt, double alpha) {
+        return value.leakyReluDerivative(wrt,alpha);
     }
 
     /**
@@ -466,11 +466,12 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
      * 0.01
      *
      * @param value the value to transform
+     * @param wrt
      * @return
      */
     @Override
-    public ArrayField leakyReluDerivative(ArrayField value) {
-        return value.leakyReluDerivative(0.001);
+    public ArrayField leakyReluDerivative(ArrayField value, ArrayField wrt) {
+        return value.leakyReluDerivative(wrt, 0.001);
     }
 
     @Override
@@ -479,8 +480,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField hardTanhDerivative(ArrayField value) {
-        return value.hardTanh();
+    public ArrayField hardTanhDerivative(ArrayField value, ArrayField wrt) {
+        return value.hardTanhDerivative(wrt);
     }
 
     @Override
@@ -489,8 +490,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField sigmoidDerivative(ArrayField value) {
-        return value.sigmoidDerivative();
+    public ArrayField sigmoidDerivative(ArrayField value, ArrayField wrt) {
+        return value.sigmoidDerivative(wrt);
     }
 
     @Override
@@ -504,8 +505,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField eluDerivative(ArrayField value) {
-        return value.eluDerivative();
+    public ArrayField eluDerivative(ArrayField value, ArrayField wrt) {
+        return value.eluDerivative(wrt);
     }
 
     @Override
@@ -524,8 +525,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField softsignDeriviative(ArrayField value) {
-        return value.softsignDerivative();
+    public ArrayField softsignDeriviative(ArrayField value, ArrayField wrt) {
+        return value.softsignDerivative(wrt);
     }
 
     @Override
@@ -657,8 +658,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField softmaxDerivative(ArrayField value) {
-        return value.softmaxDerivative();
+    public ArrayField softmaxDerivative(ArrayField value, ArrayField wrt) {
+        return value.softmaxDerivative(wrt);
     }
 
 
