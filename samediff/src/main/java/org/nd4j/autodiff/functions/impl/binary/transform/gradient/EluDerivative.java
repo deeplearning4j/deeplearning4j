@@ -7,6 +7,7 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.ELUDerivative;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class EluDerivative  extends AbstractBinaryFunction<ArrayField> {
@@ -26,14 +27,10 @@ public class EluDerivative  extends AbstractBinaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().eluDerivative(larg().getValue(true),rarg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return sameDiff.getFunctionFactory().zero(getResultShape());
+        return Arrays.asList(f().zero(getResultShape()));
     }
 
     @Override

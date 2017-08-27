@@ -24,13 +24,10 @@ public class SigmoidDerivative extends AbstractBinaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().sigmoidDerivative(larg().getValue(true),rarg().getValue(true));
+        return a().sigmoidDerivative(larg().getValue(true),rarg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
+
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {

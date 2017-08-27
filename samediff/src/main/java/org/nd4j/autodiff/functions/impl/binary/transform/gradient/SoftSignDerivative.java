@@ -24,7 +24,7 @@ public class SoftSignDerivative extends AbstractBinaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().softsignDeriviative(larg().getValue(true),rarg().getValue(true));
+        return a().softsignDeriviative(larg().getValue(true),rarg().getValue(true));
     }
 
 

@@ -575,12 +575,12 @@ public class SameDiff {
         Preconditions.checkArgument(getFunctionInput(iX).getSameDiff() == this);
         Preconditions.checkArgument(getFunctionInput(wrt).getSameDiff() == this);
 
-        DifferentialFunction<ArrayField> arrField = getFunctionInput(iX).diff(getFunctionInput(wrt));
-        Preconditions.checkArgument(arrField.getSameDiff() == this);
+        List<DifferentialFunction<ArrayField>> arrField = getFunctionInput(iX).diff(Arrays.asList(getFunctionInput(wrt)));
+        Preconditions.checkArgument(arrField.get(0).getSameDiff() == this);
 
         SDVariable ret = SDVariable.builder()
-                .arr(null).shape(arrField.getResultShape())
-                .differentialFunction(arrField)
+                .arr(null).shape(arrField.get(0).getResultShape())
+                .differentialFunction(arrField.get(0))
                 .varName("grad(" + iX.getVarName() + ")").sameDiff(this)
                 .build();
         //Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
@@ -2079,7 +2079,7 @@ public class SameDiff {
                     List<OpExecAction> opOrder = sameDiff.graph().getOpOrder().getActions();
                     Collections.reverse(opOrder);
                     //start with scalar backprop
-                    DifferentialFunction<ArrayField> currentDiff = sameDiff.functionFactory.one(new int[]{1,1});
+                    List<DifferentialFunction<ArrayField>> currentDiff = Arrays.asList(sameDiff.functionFactory.one(new int[]{1,1}));
 
                     for(OpExecAction action : opOrder) {
                         if(action.getOpState() != null) {
@@ -2094,7 +2094,7 @@ public class SameDiff {
                     }
 
                     return SDVariable.builder()
-                            .differentialFunction(currentDiff)
+                            .differentialFunction(currentDiff.get(0))
                             .sameDiff(sameDiff)
                             .varName("grad")
                             .build();

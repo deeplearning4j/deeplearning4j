@@ -212,8 +212,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> inversei() {
-        DifferentialFunction<X> ret = new Inverse<>(sameDiff,this,true);
-        return ret;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -224,15 +224,14 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> muli(double i_n) {
-        PolynomialTerm<X> ret =  new PolynomialTerm<>(sameDiff,i_n, this, 1,true);
-        return ret;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public DifferentialFunction<X> powi(int i_n) {
-        PolynomialTerm<X> ret = new PolynomialTerm<>(sameDiff,1L,
-                this, i_n,true);
-        return ret;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -251,7 +250,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> divi(double v) {
-        Scalar<X> constant = new Scalar<>(sameDiff, 
+        Scalar<X> constant = new Scalar<>(sameDiff,
                 v,true);
         return this.divi(constant);
     }
@@ -327,8 +326,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> inverse() {
-        DifferentialFunction<X> ret = new Inverse<>(sameDiff,this.mul(1.0));
-        return ret;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -345,8 +344,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> pow(int i_n) {
-        PolynomialTerm<X> ret = new PolynomialTerm<>(sameDiff,1L, this, i_n);
-        return ret;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -1022,7 +1020,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
 
     public DifferentialFunction<ArrayField> getDiffFunctionInput(DifferentialFunction<X> other) {
-      return   other == this ?
+        return   other == this ?
                 sameDiff.getFunctionFactory().var(UUID.randomUUID().toString(),
                         sameDiff.getArrayFactory().one(getResultShape())) :
                 arg();

@@ -6,6 +6,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class HardTanhDerivative extends AbstractBinaryFunction<ArrayField> {
@@ -21,7 +22,7 @@ public class HardTanhDerivative extends AbstractBinaryFunction<ArrayField> {
     }
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().hardTanhDerivative(larg().getValue(true),rarg().getValue(true));
+        return a().hardTanhDerivative(larg().getValue(true),rarg().getValue(true));
     }
 
     @Override
@@ -31,7 +32,7 @@ public class HardTanhDerivative extends AbstractBinaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return sameDiff.getFunctionFactory().one(getResultShape()).mul(arg().diff(i_v));
+        return Arrays.asList(f().one(getResultShape()));
     }
 
 

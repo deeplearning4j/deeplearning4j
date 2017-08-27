@@ -5,11 +5,10 @@ import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.functions.AbstractBinaryReduceFunction;
-import org.nd4j.autodiff.functions.Differential;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.util.ArrayUtil;
+import static org.nd4j.linalg.util.ArrayUtil.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,7 +43,7 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
                     i_v2,
                     functionName(),
                     OpState.OpType.ACCUMULATION,
-                    ArrayUtil.getTensorMmulShape(a.getInput().getShape(), b.getInput().getShape(), dimensions));
+                    getTensorMmulShape(a.getInput().getShape(), b.getInput().getShape(), dimensions));
             addedEdges = true;
         }
     }
@@ -55,7 +54,7 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
                             DifferentialFunction<ArrayField> i_v1,
                             DifferentialFunction<ArrayField> i_v2,
                             String opName) {
-        if(i_v1.getValue(true) instanceof ArrayField && axes != null
+        if(axes != null
                 && !addedEdges) {
             addedEdges = true;
             ArrayField arrayField = i_v1.getValue(true);
@@ -63,7 +62,7 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
 
             addEdges(sameDiff,i_v1,i_v2,opName,
                     OpState.OpType.ACCUMULATION,
-                    ArrayUtil.getTensorMmulShape(arrayField.getInput()
+                    getTensorMmulShape(arrayField.getInput()
                                     .getShape(),
                             secondVal.getInput().getShape(),
                             axes));
@@ -94,17 +93,17 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
         List<DifferentialFunction<ArrayField>> ret = new ArrayList<>();
-        int[] bAxes = ArrayUtil.range(0, i_v1.get(1).getResultShape().length);
-        int[] aAxes = ArrayUtil.range(0, i_v1.get(0).getResultShape().length);
+        int[] bAxes = range(0, i_v1.get(1).getResultShape().length);
+        int[] aAxes = range(0, i_v1.get(0).getResultShape().length);
         int aRank = i_v1.get(0).getResultShape().length;
         int bRank = i_v1.get(1).getResultShape().length;
         int[][] sumAxes = new int[][]{
-                ArrayUtil.mod(axes[0], aRank), ArrayUtil.mod(axes[1], bRank)
+                mod(axes[0], aRank), mod(axes[1], bRank)
         };
         int[][] deletedAxes = new int[][]{
-                ArrayUtil.removeIndex(aAxes, sumAxes[0]),
-                ArrayUtil.removeIndex(bAxes, sumAxes[1])};
-        int[] gAxes = ArrayUtil.range(0, i_v1.get(0).getResultShape().length);
+                removeIndex(aAxes, sumAxes[0]),
+                removeIndex(bAxes, sumAxes[1])};
+        int[] gAxes = range(0, i_v1.get(0).getResultShape().length);
         int[][] firstAxes = new int[][]{
                 Arrays.copyOfRange(gAxes, deletedAxes[0].length, gAxes.length),
                 deletedAxes[1]
@@ -116,41 +115,17 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
         };
 
 
-
-        /**
-         * perm = onp.argsort(onp.concatenate(
-         (other_axes[0], summed_axes[0][onp.argsort(summed_axes[1])])))
-         */
-        int[] firstPerm = ArrayUtil.argsort(ArrayUtil.combine(deletedAxes[0],sumAxes[0][ArrayUtil.k]));
+        //tensor matrix multiply gradient wrt second variable
+        int[] firstPerm = argsort(combine(deletedAxes[0],keep(argsort(sumAxes[1]),sumAxes[0])));
         DifferentialFunction<ArrayField> firstResult = doTensorMmul(i_v1.get(0), rarg(), firstAxes);
         DifferentialFunction<ArrayField> permuted = f().permute(firstResult,firstPerm);
         ret.add(permuted);
-        /**
-         * perm = onp.argsort(onp.concatenate(
-         (summed_axes[1][onp.argsort(summed_axes[0])], other_axes[1])))
-         */
-        int[] secondPerm = new int[] {};
+
+        //tensor matrix multiply gradient wrt first variable
+        int[] secondPerm = argsort(combine(keep(argsort(sumAxes[0]),sumAxes[1]),deletedAxes[1]));
         DifferentialFunction<ArrayField> secondResult = doTensorMmul(i_v1.get(0), larg(), secondAxes);
         DifferentialFunction<ArrayField> secondPermuted = f().permute(secondResult,secondPerm);
         ret.add(secondPermuted);
-
-/**
- *
- *
-
- if argnum == 0:
-
- * out = anp.tensordot(g, B, [g_axes[len(other_axes[0]):], other_axes[1]])
- perm = onp.argsort(onp.concatenate(
- (other_axes[0], summed_axes[0][onp.argsort(summed_axes[1])])))
- return anp.transpose(out, perm)
- else:
- out = anp.tensordot(A, g, [other_axes[0], g_axes[:len(other_axes[0])]])
- perm = onp.argsort(onp.concatenate(
- (summed_axes[1][onp.argsort(summed_axes[0])], other_axes[1])))
- return anp.transpose(out, perm)
- */
-
 
         return ret;
     }

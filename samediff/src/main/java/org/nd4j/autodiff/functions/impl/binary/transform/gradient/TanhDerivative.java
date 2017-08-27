@@ -30,7 +30,7 @@ public class TanhDerivative extends AbstractBinaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(sameDiff.getFunctionFactory().one(getResultShape()).div(sameDiff.getFunctionFactory().cosh(arg())).pow(2));
+        return Collections.singletonList(f().one(getResultShape()).div(sameDiff.getFunctionFactory().cosh(arg())).pow(2));
     }
 
     @Override

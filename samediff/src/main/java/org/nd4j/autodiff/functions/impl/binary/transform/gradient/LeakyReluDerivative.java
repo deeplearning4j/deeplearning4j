@@ -7,6 +7,7 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLUDerivative;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class LeakyReluDerivative  extends AbstractBinaryFunction<ArrayField> {
@@ -25,7 +26,10 @@ public class LeakyReluDerivative  extends AbstractBinaryFunction<ArrayField> {
     }
 
 
-    public LeakyReluDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v,DifferentialFunction<ArrayField> i_v2, double cutoff) {
+    public LeakyReluDerivative(SameDiff sameDiff,
+                               DifferentialFunction<ArrayField> i_v,
+                               DifferentialFunction<ArrayField> i_v2,
+                               double cutoff) {
         super(sameDiff, i_v, i_v2, OpState.OpType.GRADIENT,new Object[]{cutoff});
         this.cutoff = cutoff;
     }
@@ -35,14 +39,10 @@ public class LeakyReluDerivative  extends AbstractBinaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().leakyReluDerivative(larg().getValue(true),rarg().getValue(true) , cutoff);
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return sameDiff.getFunctionFactory().zero(getResultShape());
+        return Arrays.asList(f().zero(getResultShape()));
     }
 
     @Override

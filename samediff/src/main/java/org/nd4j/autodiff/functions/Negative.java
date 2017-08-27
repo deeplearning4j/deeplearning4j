@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.nd4j.autodiff.Field;
@@ -33,7 +34,7 @@ public class Negative<X extends Field<X>> extends AbstractUnaryFunction<X> {
 
     @Override
     public List<DifferentialFunction<X>> diff(List<DifferentialFunction<X>> i_v) {
-        return (arg().diff(i_v)).negate();
+        return Arrays.asList(arg().diff(i_v).get(0).negate());
     }
 
     @Override

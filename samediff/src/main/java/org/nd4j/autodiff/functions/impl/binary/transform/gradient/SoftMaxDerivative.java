@@ -26,7 +26,7 @@ public class SoftMaxDerivative extends AbstractBinaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().softmaxDerivative(larg().getValue(true),rarg().getValue(true));
+        return a().softmaxDerivative(larg().getValue(true),rarg().getValue(true));
     }
 
 

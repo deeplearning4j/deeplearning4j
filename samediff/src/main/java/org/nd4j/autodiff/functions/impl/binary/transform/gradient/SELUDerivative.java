@@ -6,6 +6,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class SELUDerivative extends AbstractBinaryFunction<ArrayField> {
@@ -33,7 +34,7 @@ public class SELUDerivative extends AbstractBinaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return arg().div(sameDiff.getFunctionFactory().seluDerivative(arg()));
+        return Arrays.asList(arg().div(sameDiff.getFunctionFactory().seluDerivative(arg())));
     }
 
 
