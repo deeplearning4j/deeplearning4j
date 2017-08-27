@@ -37,9 +37,10 @@ public interface OpFactory {
      * @param name
      * @param x
      * @param z
+     * @param extraArgs
      * @return
      */
-    Op createShape(String name, INDArray x, INDArray z);
+    Op createShape(String name, INDArray x, INDArray z, Object[] extraArgs);
 
     /**
      * Create a loss function with the given inputs and outputs

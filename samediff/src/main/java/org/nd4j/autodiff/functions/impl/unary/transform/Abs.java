@@ -5,6 +5,9 @@ import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Collections;
+import java.util.List;
+
 public class Abs extends AbstractUnaryFunction<ArrayField> {
 
     public Abs(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
@@ -22,8 +25,8 @@ public class Abs extends AbstractUnaryFunction<ArrayField> {
     }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return arg().div(sameDiff.getFunctionFactory().abs(arg()));
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        return Collections.singletonList(arg().div(sameDiff.getFunctionFactory().abs(arg())));
     }
 
 

@@ -4,6 +4,7 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.*;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Collections;
 import java.util.List;
 
 public class Or extends AbstractBinaryFunction<ArrayField> {
@@ -22,11 +23,11 @@ public class Or extends AbstractBinaryFunction<ArrayField> {
     }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         Constant<ArrayField> ym1 = sameDiff.getFunctionFactory()
                 .val(rarg().getValue(true).sub(sameDiff.getArrayFactory().one(getResultShape())));
-        return rarg().mul(sameDiff.getFunctionFactory().pow(larg(), ym1))
-                .mul(larg().diff(i_v));
+        return Collections.singletonList(rarg().mul(sameDiff.getFunctionFactory().pow(larg(), ym1))
+                .mul(larg()));
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.nd4j.autodiff;
 
+import com.google.common.base.Preconditions;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -297,6 +298,11 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     @Override
     public ArrayField tanhDerivative(ArrayField x, ArrayField wrt) {
         return x.tanhDerivative(wrt);
+    }
+
+    @Override
+    public ArrayField logSoftmax(ArrayField value) {
+        return value.logSoftmax();
     }
 
     @Override
@@ -637,11 +643,13 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
 
     @Override
     public ArrayField tensorMmul(DifferentialFunction<ArrayField> arrayField, DifferentialFunction<ArrayField> y, int[][] dimensions) {
+        Preconditions.checkState(dimensions != null,"Dimensions must not be null.");
         return arrayField.getValue(true).tensorMmul(y,dimensions);
     }
 
     @Override
     public ArrayField permute(ArrayField value, int[] dimensions) {
+        Preconditions.checkState(dimensions != null,"Dimensions must not be null.");
         return value.permute(dimensions);
     }
 

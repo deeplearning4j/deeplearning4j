@@ -1415,7 +1415,7 @@ public class SameDiff {
     public SDVariable mmul(int argNum, SDVariable x, SDVariable y) {
         SDVariable ret = SDVariable.builder()
                 .arr(null)
-                .differentialFunction(functionFactory.mmul(argNum ,x.getArrayField(), y.getArrayField()))
+                .differentialFunction(functionFactory.mmul(x.getArrayField(), y.getArrayField()))
                 .varName("mmul(" + x.getVarName() + "," + y.getVarName()  + ")").sameDiff(this)
                 .build();
         ret.setShape(Shape.getMatrixMultiplyShape(x.getShape(),y.getShape()));
@@ -1440,7 +1440,7 @@ public class SameDiff {
 
         SDVariable ret = SDVariable.builder()
                 .arr(null)
-                .differentialFunction(functionFactory.tensorMmul(x.getArrayField(), y.getArrayField(), dimensions, argNum))
+                .differentialFunction(functionFactory.tensorMmul(x.getArrayField(), y.getArrayField(), dimensions))
                 .varName("tensorMmul(" + x.getVarName() + "," + y.getVarName() +  ")")
                 .sameDiff(this)
                 .shape(shape)
@@ -1876,8 +1876,8 @@ public class SameDiff {
                 return Nd4j.getOpFactory().createShape(
                         opState.getOpName(),
                         getX(opExecAction),
-                        getZ(opExecAction)
-                );
+                        getZ(opExecAction),
+                        opState.getExtraArgs());
             case SCALAR_TRANSFORM:
                 return Nd4j.getOpFactory().createScalarTransform(
                         opState.getOpName(),

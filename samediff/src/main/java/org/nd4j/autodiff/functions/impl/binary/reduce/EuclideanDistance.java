@@ -33,7 +33,7 @@ public class EuclideanDistance  extends AbstractBinaryReduceFunction<ArrayField>
 
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
         return null;
     }
 }

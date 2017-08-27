@@ -539,6 +539,38 @@ public class SameDiffTests {
 
 
 
+    @Test
+    public void testMmulGradient() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1,4,4).reshape(2,2);
+        Map<String,INDArray> inputs = new HashMap<>();
+        inputs.put("x",sumInput);
+        inputs.put("y",sumInput.dup());
+
+        sameDiff.defineFunction("mmulGradient", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable input2 = sameDiff.var("y",inputs.get("y"));
+                SDVariable exp = sameDiff.mmul(0,input,input2);
+                SDVariable sum = sameDiff.sum(exp,Integer.MAX_VALUE);
+                return sum;
+            }
+        },inputs);
+
+
+        List<Op> ops = sameDiff.getFunction("mmulGradient").execBackwards();
+
+        INDArray executions = ops.get(ops.size() - 1).z();
+        INDArray assertion = Nd4j.create(new double[][]{
+                {2.7183  , 7.3891},
+                {20.0855  ,54.5981}
+        });
+        assertArrayEquals(sumInput.shape(),executions.shape());
+        assertEquals(assertion,executions);
+        System.out.println(executions);
+        //assertEquals(Nd4j.ones(2,2),executions);
+    }
 
     @Test
     public void testExpGradient() {
@@ -861,6 +893,9 @@ public class SameDiffTests {
 
     }
 
+
+
+
     @Test
     public void testLogisticRegression() throws Exception {
         SameDiff sameDiff = SameDiff.create();
@@ -892,13 +927,15 @@ public class SameDiffTests {
         assertEquals(3,sameDiff.graph().getEdges().size());
         //    label_probabilities = preds * targets + (1 - preds) * (1 - targets)
         SDVariable outputTimesY = outputs.mul(y);
-        SDVariable oneMinusOutput = outputs.rsub(sameDiff.scalar("one",1.0));
-        SDVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(sameDiff.scalar("onetwo",1.0))));
+        SDVariable oneMinusOutput = outputs.rsub(1.0);
+        SDVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(1.0)));
         SDVariable logProbs = sameDiff.log(probs);
         SDVariable sum = sameDiff.sum(logProbs,Integer.MAX_VALUE);
         //ensure the output is scalar shape
         assertEquals(1,ArrayUtil.prod(sum.getShape()));
         SDVariable negSum = sameDiff.neg(sum);
+        List<Op> backwards = sameDiff.execBackwards();
+        System.out.println(backwards);
        /* SDVariable outputGrad = sameDiff.grad(negSum,w);
         assertArrayEquals(new int[]{3,1},outputGrad.getShape());
         SDVariable preUpdate = w.mul(outputGrad);

@@ -104,17 +104,22 @@ public class DefaultOpFactory implements OpFactory {
      * @param name
      * @param x
      * @param z
+     * @param extraArgs
      * @return
      */
     @Override
-    public Op createShape(String name, INDArray x, INDArray z) {
+    public Op createShape(String name, INDArray x, INDArray z, Object[] extraArgs) {
         switch(name) {
             case "transpose":
                 return new Transpose(x,z);
             case "reshape":
-                return new Reshape(x,z);
+                Reshape ret2 = new Reshape(x,z);
+                ret2.setExtraArgs(extraArgs);
+                return ret2;
             case "permute":
-                return new Permute(x,z);
+                Permute ret = new Permute(x,z,x.lengthLong());
+                ret.setExtraArgs(extraArgs);
+                return ret;
             case "broadcast":
                 return new Broadcast(x,z);
         }

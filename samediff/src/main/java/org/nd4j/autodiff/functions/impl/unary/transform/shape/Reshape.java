@@ -7,6 +7,9 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.shape.Shape;
 
+import java.util.Collections;
+import java.util.List;
+
 public class Reshape extends AbstractUnaryFunction<ArrayField> {
     public Reshape(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v,int[] shape) {
         super(sameDiff,i_v, Shape.resolveNegativeShapeIfNeccessary(shape),
@@ -25,8 +28,8 @@ public class Reshape extends AbstractUnaryFunction<ArrayField> {
     }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return this;
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        return Collections.singletonList(this);
     }
 
     @Override

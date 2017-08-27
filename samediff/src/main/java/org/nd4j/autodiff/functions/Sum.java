@@ -3,8 +3,6 @@ package org.nd4j.autodiff.functions;
 import java.util.List;
 
 import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 
@@ -26,7 +24,7 @@ public class Sum extends AbstractBinaryFunction<ArrayField> {
     }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
         return (larg() == rarg()) ? larg().diff(i_v1).mul(2L) // Field is
                                                               // commutative
                                                               // with respect to

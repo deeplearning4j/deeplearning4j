@@ -6,6 +6,9 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.PolynomialTerm;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Collections;
+import java.util.List;
+
 public class Tan  extends AbstractUnaryFunction<ArrayField> {
 
     public Tan(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
@@ -15,17 +18,14 @@ public class Tan  extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().tan(arg().getValue(true));
+        return a().tan(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.tan(arg().getReal());
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return (new PolynomialTerm<>(sameDiff,1, sameDiff.getFunctionFactory().cos(arg()), -2)).mul(arg().diff(i_v));
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        return Collections.singletonList(new PolynomialTerm<>(sameDiff,1, f().cos(arg()), -2));
     }
 
 

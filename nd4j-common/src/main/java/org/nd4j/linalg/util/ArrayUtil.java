@@ -169,6 +169,17 @@ public class ArrayUtil {
         return retVal;
     }
 
+
+    public static int[] mod(int[] input,int mod) {
+        int[] ret = new int[input.length];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i]  = input[i] % mod;
+        }
+
+        return ret;
+    }
+
+
     /**
      * Calculate the offset for a given stride array
      * @param stride the stride to use
@@ -985,6 +996,12 @@ public class ArrayUtil {
     }
 
 
+    /**
+     *
+     * @param a
+     * @param ascending
+     * @return
+     */
     public static int[] argsort(final int[] a, final boolean ascending) {
         Integer[] indexes = new Integer[a.length];
         for (int i = 0; i < indexes.length; i++) {

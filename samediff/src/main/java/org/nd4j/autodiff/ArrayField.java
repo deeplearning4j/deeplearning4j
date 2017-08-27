@@ -507,6 +507,12 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
+    public ArrayField logSoftmax() {
+        return addTransformOp(new LogSoftMax().name());
+
+    }
+
+    @Override
     public ArrayField softmaxDerivative(ArrayField wrt) {
         return addGradientOp(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative().name(),wrt,null);
     }
@@ -1236,4 +1242,6 @@ public class ArrayField implements Field<ArrayField> {
         result = 31 * result + (vertex != null ? vertex.hashCode() : 0);
         return result;
     }
+
+
 }

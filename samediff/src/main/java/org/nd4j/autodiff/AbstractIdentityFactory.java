@@ -23,5 +23,4 @@ public interface AbstractIdentityFactory<X> {
      */
     X scalar(double value);
 
-
 }

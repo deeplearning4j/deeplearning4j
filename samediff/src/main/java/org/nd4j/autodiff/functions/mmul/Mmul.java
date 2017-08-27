@@ -25,13 +25,12 @@ public class Mmul extends TensorMmul<ArrayField> {
 
     public Mmul(SameDiff sameDiff,
                 DifferentialFunction<ArrayField> i_v1,
-                DifferentialFunction<ArrayField> i_v2,
-                int argNum) {
+                DifferentialFunction<ArrayField> i_v2) {
         super(sameDiff,
                 i_v1,
                 i_v2, new int[][] {
-                {1},{0}
-        },argNum);
+                        {1},{0}
+                });
     }
 
 
@@ -41,18 +40,13 @@ public class Mmul extends TensorMmul<ArrayField> {
                             DifferentialFunction<ArrayField> i_v1,
                             DifferentialFunction<ArrayField> i_v2,
                             String opName) {
-        if(i_v1.getValue(true) instanceof ArrayField) {
-            ArrayField arrayField = i_v1.getValue(true);
-            ArrayField secondVal = i_v2.getValue(true);
-            //skip empty dimensions
-            addEdges(sameDiff,i_v1,i_v2,opName,
-                    OpState.OpType.ACCUMULATION,
-                    Shape.getMatrixMultiplyShape(arrayField.getInput().getShape(),secondVal.getInput().getShape()));
-
-        }
-
-        else
-            throw new UnsupportedOperationException("Only supporting array fields");
+        ArrayField arrayField = i_v1.getValue(true);
+        ArrayField secondVal = i_v2.getValue(true);
+        //skip empty dimensions
+        addEdges(sameDiff,i_v1,i_v2,opName,
+                OpState.OpType.ACCUMULATION,
+                Shape.getMatrixMultiplyShape(arrayField.getInput().getShape(),
+                        secondVal.getInput().getShape()));
     }
 
 

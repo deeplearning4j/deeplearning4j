@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.google.common.base.Preconditions;
 import lombok.*;
+import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
@@ -68,6 +69,21 @@ public abstract class DifferentialFunction<X extends Field<X>>
     public abstract X doGetValue();
 
 
+    /**
+     * Shortcut for the {@link DifferentialFunctionFactory}
+     * @return
+     */
+    public DifferentialFunctionFactory<ArrayField> f() {
+        return sameDiff.getFunctionFactory();
+    }
+
+    /**
+     * Shortcut for the {@link ArrayFactory}
+     * @return
+     */
+    public ArrayFactory a() {
+        return sameDiff.getArrayFactory();
+    }
 
 
     /**
@@ -141,7 +157,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public abstract DifferentialFunction<X> diff(DifferentialFunction<X> i_v1);
+    public abstract List<DifferentialFunction<X>> diff(List<DifferentialFunction<X>> i_v1);
 
     private void validateDifferentialFunctionGraph(DifferentialFunction<X> function) {
         Preconditions.checkState(function.getSameDiff() == this.getSameDiff(),"Function applications must be contained in same graph. The left " + function +" must match this function " + this);
@@ -371,6 +387,11 @@ public abstract class DifferentialFunction<X extends Field<X>>
                 shape,
                 null);
 
+    }
+
+    @Override
+    public ArrayField logSoftmax() {
+        return null;
     }
 
     @Override
@@ -1026,6 +1047,12 @@ public abstract class DifferentialFunction<X extends Field<X>>
         result = 31 * result + vertexId;
         result = 31 * result + Arrays.hashCode(extraArgs);
         return result;
+    }
+
+    protected void validateDifferentialFunctionsameDiff(
+            List<DifferentialFunction<X>> function) {
+        for(DifferentialFunction<X> differentialFunction : function)
+            validateDifferentialFunctionsameDiff(differentialFunction);
     }
 
     protected void validateDifferentialFunctionsameDiff(

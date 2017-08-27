@@ -512,7 +512,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 DifferentialFunction<ArrayField> numerator = i_y.sub(iX);
                 DifferentialFunction<ArrayField> denominator = i_y.mul(i_y.rsub(1.0));
                 DifferentialFunction<ArrayField> dLda = denominator.div(denominator);
@@ -575,7 +575,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 return null;
             }
         };
@@ -602,7 +602,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 return null;
             }
         };
@@ -629,7 +629,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 return null;
             }
         };
@@ -656,7 +656,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 return null;
             }
         };
@@ -683,7 +683,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 return null;
             }
         };
@@ -710,7 +710,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 return null;
             }
         };
@@ -738,7 +738,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 return null;
             }
         };
@@ -766,7 +766,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 return null;
             }
         };
@@ -793,7 +793,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 return null;
             }
         };
@@ -821,7 +821,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 return null;
             }
         };
@@ -848,7 +848,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 return null;
             }
         };
@@ -874,7 +874,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 return null;
             }
         };
@@ -901,29 +901,27 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
 
             @Override
-            public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+            public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
                 return null;
             }
         };
     }
 
     @Override
-    public DifferentialFunction<ArrayField> mmul(int argNum,
-                                                 DifferentialFunction<ArrayField> x,
+    public DifferentialFunction<ArrayField> mmul(DifferentialFunction<ArrayField> x,
                                                  DifferentialFunction<ArrayField> y) {
         validateDifferentialFunctionsameDiff(x);
         validateDifferentialFunctionsameDiff(y);
-        return new Mmul(sameDiff,x,y,argNum);
+        return new Mmul(sameDiff,x,y);
     }
 
     @Override
     public DifferentialFunction<ArrayField> tensorMmul(DifferentialFunction<ArrayField> x,
                                                        DifferentialFunction<ArrayField> y,
-                                                       int[][] dimensions,
-                                                       int argNum) {
+                                                       int[][] dimensions) {
         validateDifferentialFunctionsameDiff(x);
         validateDifferentialFunctionsameDiff(y);
-        return new TensorMmul<>(sameDiff,x,y,dimensions,argNum);
+        return new TensorMmul<>(sameDiff,x,y,dimensions);
     }
 
 

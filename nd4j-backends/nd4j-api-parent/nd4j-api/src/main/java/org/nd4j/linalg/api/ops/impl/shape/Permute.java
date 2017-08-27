@@ -36,7 +36,7 @@ public class Permute extends ShapeOp {
 
     public Permute() {}
 
-    public Permute(INDArray x, INDArray z) {
+    public Permute(INDArray x, INDArray z,Object[] extraArgs) {
         super(x, z);
     }
 

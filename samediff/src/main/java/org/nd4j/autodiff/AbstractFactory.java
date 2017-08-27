@@ -223,4 +223,8 @@ public interface AbstractFactory<X extends Field<X>>
     X seluDerivative(X value, X wrt);
 
     X tanhDerivative(X value, X wrt);
+
+
+
+    X logSoftmax(X value);
 }

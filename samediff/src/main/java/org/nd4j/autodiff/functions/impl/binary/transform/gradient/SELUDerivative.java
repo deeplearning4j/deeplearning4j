@@ -2,10 +2,11 @@ package org.nd4j.autodiff.functions.impl.binary.transform.gradient;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractBinaryFunction;
-import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
+
+import java.util.List;
 
 public class SELUDerivative extends AbstractBinaryFunction<ArrayField> {
 
@@ -31,7 +32,7 @@ public class SELUDerivative extends AbstractBinaryFunction<ArrayField> {
     }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         return arg().div(sameDiff.getFunctionFactory().seluDerivative(arg()));
     }
 

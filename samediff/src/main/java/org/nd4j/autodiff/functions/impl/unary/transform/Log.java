@@ -3,8 +3,10 @@ package org.nd4j.autodiff.functions.impl.unary.transform;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.functions.Inverse;
 import org.nd4j.autodiff.samediff.SameDiff;
+
+import java.util.Collections;
+import java.util.List;
 
 public class Log extends AbstractUnaryFunction<ArrayField> {
 
@@ -23,11 +25,11 @@ public class Log extends AbstractUnaryFunction<ArrayField> {
     }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
         validateDifferentialFunctionsameDiff(arg());
-        DifferentialFunction<ArrayField> toInverse = arg().div(i_v);
-        return toInverse;
+        DifferentialFunction<ArrayField> toInverse = arg().div(i_v.get(0));
+        return Collections.singletonList(toInverse);
     }
 
     @Override

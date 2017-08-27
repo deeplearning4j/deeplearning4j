@@ -66,7 +66,7 @@ public class Reshape extends ShapeOp {
     public void exec() {
         int[] shape = (int[]) extraArgs[0];
         if(x != z) {
-            z.assign(x.permute(shape));
+            z.assign(x.reshape(shape));
         }
         else {
             this.z = x.reshape(shape);

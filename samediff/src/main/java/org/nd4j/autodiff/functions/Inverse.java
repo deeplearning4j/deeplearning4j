@@ -27,7 +27,7 @@ public class Inverse<X extends Field<X>> extends AbstractUnaryFunction<X> {
     }
 
     @Override
-    public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
+    public List<DifferentialFunction<X>> diff(List<DifferentialFunction<X>> i_v) {
         return new PolynomialTerm<>(sameDiff, -1L, arg(), -2).mul(arg().diff(i_v));
     }
 

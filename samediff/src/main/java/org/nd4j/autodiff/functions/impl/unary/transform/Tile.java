@@ -5,6 +5,8 @@ import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.List;
+
 public class Tile extends AbstractUnaryFunction<ArrayField> {
 
     private int[] repeat;
@@ -16,16 +18,12 @@ public class Tile extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().tile(arg().getValue(true),repeat);
+        return a().tile(arg().getValue(true),repeat);
     }
 
-    @Override
-    public double getReal() {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
         throw new UnsupportedOperationException();
     }
