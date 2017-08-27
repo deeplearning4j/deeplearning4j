@@ -6,28 +6,28 @@ layout: default
 
 # DeepLearning4j Examples Explained
 
-The example files are located at: https://github.com/deeplearning4j/dl4j-examples. 
+The example files are located at: https://github.com/deeplearning4j/dl4j-examples
 
-Note that the DeepLearning4J project uses and recommends Maven for dependency management. Maven uses pom.xml files for configuration. Note that the examples make use of a two level pom.xml structure, one pom.xml file in the main directory and another one in the base directory. 
-
+Note that the DeepLearning4J project uses and recommends Maven for dependency management. Maven uses `pom.xml` files for configuration. Note that the examples make use of a two-level `pom.xml` structure, one `pom.xml` file in the main directory and another one in the base directory. 
 
 Files that require editing for each specific training scenario. 
+
 * pom.xml
   Purpose
   Required content - dependencies
   What to edit - dependencies
   Options (to select, edit, or add)
 
-Specific examples for different neural network layers are at:
+Specific examples of different neural network layers are here:
 https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples
 
-For most common Neural Network use cases you will find an example that corresponds to your use case.
-* Feed Forward Neural Networks for Classification. 
-* Recurrent Neural Networks for working with Time Series Data. 
-* Convolutional Neural Networks for dealing with images.
+For most common neural net applications, you will find an example that corresponds to your use case.
 
+* Feed Forward Neural Networks for Classification
+* Recurrent Neural Networks for working with Time Series Data
+* Convolutional Neural Networks for dealing with images
 
-Locate the file that corresponds to the type of training you want performed. Review the content to define the particulars as listed below.
+Locate the file that corresponds to the type of training you want. Review the content to define the particulars as listed below.
 
 Common Structure by example
 
@@ -36,6 +36,7 @@ Common Structure by example
 - Deconstructed Example
 
 ## MultiLayerConfiguration
+
 Extracted portion of an example for building the neural network layer in a dense multi-layer configuration. 
 
 Here is an example of a Feed Forward Neural Network Configuration also known as a Multi Layer Perceptron. A Feed Forward Neural Network consists of an Input Layer, an Output Layer and a user determined number of Fully Connected or Dense Layers. 
@@ -113,17 +114,18 @@ Changes that will be required.
 * Your Input Layer
 * Your Output Layer
 
-Structure of your Input Layers is determined by the format of your input. Take a look at the CSV example to clarify this point. The dataset has 4 features, sepal length, sepal width, petal length and petal width. This correlates with the size or number of nodes in the input Layer. 
+The structure of your Input Layers is determined by the format of your input. Take a look at the CSV example to clarify this point. The dataset has 4 features, sepal length, sepal width, petal length and petal width. This correlates with the size or number of nodes in the input layer; that is, four features mean four numbers are fed to the net. 
 
-Structure of your Output Layer is determined by the task of the Neural Network, when asked to perform classification the output layer will have one neuron for each class. Once again see the CSV example. In this example we have flowers of 3 classes, iris setosa, iris virginica, iris versicolor. We therefore have 3 neurons in the output Layer. 
+The structure of your Output Layer is determined by the task you seek to perform with the Neural Network. When asked to perform classification, the output layer will have one neuron for each class or category you want to apply to the data (e.g. for face identification on images, you'd have one output node per name). The CSV example illustrates this: We have flowers of three classes, *iris setosa*, *iris virginica*, and *iris versicolor*. We therefore have three neurons in the output Layer. 
 
-If you were to modelyour neural net for a similar role but had 5 features and 2 classes, instead of 4 features and 3 classes you could start with the code in the csv example and make the needed changes to your input Layer and your Output Layer. 
+If you were to model your neural net for a similar role but had 5 features and 2 classes, instead of 4 features and 3 classes in the CSV example, you could take the code in the CSV example and simply change the Input Layer and Output Layer. 
 
-For any dl4j-example you select, there are areas that require editing for your specific situation. When reading the file in IntelliJ, right-click the italic objects and select from the listed choices.
+For any dl4j-example you select, there will be code and parameters that require editing to adapt them to your specific task and data. When reading the file in IntelliJ, right-click the italic objects and select from the listed choices.
 
-The following is an annotated description of each area of a CSVExample. You edit this file through IntelliJ, then use Maven, with the edited pom.xml file to build the neural network model. 
+The following is an annotated description of each area of a `CSVExample`. You edit this file through IntelliJ, then use Maven, with the edited `pom.xml` file to build the neural network model. 
 
 ### Declarations
+
 The top portion of the file, typical to most programming files, contains the declarations, parameters, and identification information. Using the example files provided, some of the elements remain as is, others you edit to your specifics. 
 
 **Package name**
@@ -151,11 +153,11 @@ import org.slf4j.Logger;
 
 ## Reading Data
 
-DeepLearning4J uses RecordReaders to help take the data from raw source to an N-Dimensional Array of Numeric Values, INDArray, format needed by the Neural Network. A RecordReader isthe first step in that process. Many RecordReaders are available for processing images,audio, and text data. 
+DeepLearning4J uses `RecordReaders` to help take the data from raw source to an n-dimensional array of numeric values, or `INDArray`, the format ingested by a Neural Network. A `RecordReader` is the first step in that process. Different RecordReaders are available for processing images, audio, text and time series data. 
 
 *  RecordReader
 
-   See the javadoc at https://github.com/deeplearning4j/DataVec > recordreader. 
+   See the Javadoc at https://deeplearning4j.org/datavecdoc/ > recordreader. 
 
    * RecordReader -- is in all examples. It returns a list of writables. Converting the source content into numeric values. 
    * RecordReaderDataSetIterator -- is in all examples. It converts the numeric values into n-dimentional arrays (n-d arrays) approproriate to the use case. 
@@ -189,7 +191,7 @@ int numLinesToSkip = 0;
        String delimiter = ",";
 ```
 
-In this example, the CSV (comma separated values) RecordReader handles loading and parsing the data. 
+In this example, the CSV (comma-separated values) RecordReader handles loading and parsing the data. 
 
 There is no header in the csv file, so the first entry of data is at line 0. Specify 0 lines to skip in the file. The file delimiter, used to separate data is a comma.
 
