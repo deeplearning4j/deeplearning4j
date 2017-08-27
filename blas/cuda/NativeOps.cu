@@ -853,6 +853,10 @@ void   NativeOps::execReduceDouble(
 
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
+	if (opNum == 19) {
+		execReduceDouble(extraPointers, 3, x, xShapeInfo, extraParams, result, resultShapeInfo);
+	}
+
 	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], 1, sizeof(double), 1);
 
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
@@ -894,6 +898,10 @@ void   NativeOps::execReduceDouble(
 
 	double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
 
+	if (opNum == 19) {
+		execReduceDouble(extraPointers, 3, x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength);
+        //checkCudaErrors(cudaStreamSynchronize(*stream));
+	}
 
 	/**
 	 * We have separate kernels, optimized for different number of dimensions for reductions
@@ -950,6 +958,12 @@ double NativeOps::execReduceScalarDouble(
 
 	//dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[22], 1, sizeof(double), 1);
     dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hostXShapeInfo), 16, funcAttributes[22]);
+
+	// for LogExpSum op we need to know max value, and store it
+	if (opNum == 19) {
+		double tmp = execReduceScalarDouble(extraPointers, 3, x, xShapeInfo, extraParams);
+		extraParams = resultPointer;
+	};
 
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(reduceScalarSimple, double, PARAMS(x, xShapeInfo, extraParams, resultPointer, nullptr, nullptr,1 , reductionPointer, deviceTADShapeInfo), OPS_A(REDUCE_OPS))
@@ -2421,6 +2435,10 @@ void   NativeOps::execReduceFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF7 opNum:[%i]\n", opNum);
 
+	if (opNum == 19) {
+		execReduceFloat(extraPointers, 3, x, xShapeInfo, extraParams, result, resultShapeInfo);
+	}
+
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(reduceScalarSimple, float, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, nullptr,1 , reductionPointer, deviceTADShapeInfo), OPS_A(REDUCE_OPS))
 
@@ -2451,6 +2469,10 @@ void   NativeOps::execReduceHalf(
 
 	if (verbose && launchDims.x == 1)
 		printf("AH7 opNum:[%i]\n", opNum);
+
+	if (opNum == 19) {
+		execReduceHalf(extraPointers, 3, x, xShapeInfo, extraParams, result, resultShapeInfo);
+	}
 
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(reduceScalarSimple, float16, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, nullptr,1 , reductionPointer, deviceTADShapeInfo), OPS_A(REDUCE_OPS))
@@ -2490,6 +2512,10 @@ void   NativeOps::execReduceFloat(
 	float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
 //	dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[8], dimensionLength, sizeof(float), 1);
+
+	if (opNum == 19) {
+		execReduceFloat(extraPointers, 3, x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength);
+	}
 
 	// we call different kernels optimized for different number of dimensions in TAD
 	if (dimensionLength == 1) {
@@ -2539,6 +2565,10 @@ void   NativeOps::execReduceHalf(
 
 	if (verbose && launchDims.x == 1)
 		printf("AH8 opNum:[%i]\n", opNum);
+
+	if (opNum == 19) {
+		execReduceHalf(extraPointers, 3, x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength);
+	}
 
 	// calling different kernels, depending on number of dimensions in TAD
 	if (dimensionLength == 1) {
@@ -2590,6 +2620,12 @@ float NativeOps::execReduceScalarFloat(
 	if (verbose && launchDims.x == 1)
 		printf("AF9 opNum:[%i]\n", opNum);
 
+	// for LogExpSum op we need to know max value, and store it
+	if (opNum == 19) {
+		float tmp = execReduceScalarFloat(extraPointers, 3, x, xShapeInfo, extraParams);
+		extraParams = resultPointer;
+	};
+
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(reduceScalarSimple, float, PARAMS(x, xShapeInfo, extraParams, resultPointer, nullptr, nullptr,1 , reductionPointer, deviceTADShapeInfo), OPS_A(REDUCE_OPS))
 
@@ -2622,6 +2658,12 @@ float NativeOps::execReduceScalarHalf(
 
 	if (verbose && launchDims.x == 1)
 		printf("AH9 opNum:[%i]\n", opNum);
+
+	// for LogExpSum op we need to know max value, and store it
+	if (opNum == 19) {
+		float tmp = execReduceScalarHalf(extraPointers, 3, x, xShapeInfo, extraParams);
+		extraParams = resultPointer;
+	};
 
 	// this macro builds bunch of IF/ELSE selectors for kernel launch
     DISPATCH_SIMPLE(reduceScalarSimple, float16, PARAMS(x, xShapeInfo, extraParams, resultPointer, nullptr, nullptr,1 , reductionPointer, deviceTADShapeInfo), OPS_A(REDUCE_OPS))

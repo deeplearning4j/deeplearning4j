@@ -1,3 +1,6 @@
+
+#ifndef REDUCE_H
+#define REDUCE_H
 #include <dll.h>
 //#include <string>
 #include <helpers/sharedmem.h>
@@ -11,6 +14,7 @@
 #include <nd4jmalloc.h>
 #include <pairwise_util.h>
 #include <ops/ops.h>
+#include <ops/special_accumulation_ops.h>
 #include <op_boilerplate.h>
 
 #pragma once
@@ -35,7 +39,7 @@
         (7, simdOps::NormMax), \
         (8, simdOps::Prod), \
         (9, simdOps::StandardDeviation), \
-        (10,simdOps::Variance), \
+        (10, simdOps::Variance), \
 		(11, simdOps::ASum), \
         (12, simdOps::MatchCondition) ,\
         (13, simdOps::AMax) ,\
@@ -43,7 +47,8 @@
         (15, simdOps::AMean) ,\
         (16, simdOps::Entropy) ,\
         (17, simdOps::LogEntropy) ,\
-        (18, simdOps::ShannonEntropy)
+        (18, simdOps::ShannonEntropy) ,\
+        (19, simdOps::LogSumExp)
 
 
 //an op for the kernel
@@ -70,6 +75,11 @@ namespace functions {
 				int *dimension,
 				int dimensionLength,
 				T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
+
+                if (OpType::requiresSpecialAccumulation) {
+                    OpType::execSpecialCuda(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
+                    return;
+                }
 
 				//shared memory space for storing intermediate results
 				__shared__ T *sPartials;// = (T *)manager->getSharedReductionBuffer();
@@ -251,6 +261,11 @@ template<typename OpType>
 				int dimensionLength,
 				T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
 
+                if (OpType::requiresSpecialAccumulation) {
+                    OpType::execSpecialCuda(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
+                    return;
+                }
+
 				//shared memory space for storing intermediate results
 				__shared__ T *sPartials; // = (T *)manager->getSharedReductionBuffer();
 
@@ -309,8 +324,13 @@ template<typename OpType>
 				int *tadOnlyShapeInfo,
 				Nd4jIndex *tadOffsets) {
 
+                if (OpType::requiresSpecialAccumulation) {
+                    OpType::execSpecialCuda(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
+                    return;
+                }
+
 				//shared memory space for storing intermediate results
-				T *sPartials = (T *)manager->getSharedReductionBuffer();
+				__shared__ T *sPartials;
 
 				//                __shared__ shape::TAD *tad;
 				__shared__ int tadLength;
@@ -319,6 +339,8 @@ template<typename OpType>
 				__shared__ int *tadShape;
 				__shared__ int *tadStride;
 				if (threadIdx.x == 0) {
+				    extern __shared__ unsigned char shmem[];
+				    sPartials = (T *) shmem;
 					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 					tadRank = shape::rank(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;
@@ -512,6 +534,11 @@ template<typename OpType>
                 // || tad.wholeThing
                 if (resultLength == 1 || dimension == nullptr || dimensionLength == shape::rank(xShapeInfo)) {
                     result[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
+                    return;
+                }
+
+                if (OpType::requiresSpecialAccumulation) {
+                    OpType::execSpecial(x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffset);
                     return;
                 }
 
@@ -931,6 +958,8 @@ DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float, INPUT
 DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, double, INPUT(double *x, int *xShape, double *extraParams, double *z, int *zShape, int *dimension, int dimensionLength, double *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
 DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float16, INPUT(float16 *x, int *xShape, float16 *extraParams, float16 *z, int *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
 
+
+#endif
 
 #endif
 
