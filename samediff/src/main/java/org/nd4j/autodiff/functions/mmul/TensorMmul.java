@@ -93,10 +93,10 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
         List<DifferentialFunction<ArrayField>> ret = new ArrayList<>();
-        int[] bAxes = range(0, i_v1.get(1).getResultShape().length);
-        int[] aAxes = range(0, i_v1.get(0).getResultShape().length);
-        int aRank = i_v1.get(0).getResultShape().length;
-        int bRank = i_v1.get(1).getResultShape().length;
+        int[] bAxes = range(0, rarg().getResultShape().length);
+        int[] aAxes = range(0, larg().getResultShape().length);
+        int aRank = larg().getResultShape().length;
+        int bRank = rarg().getResultShape().length;
         int[][] sumAxes = new int[][]{
                 mod(axes[0], aRank), mod(axes[1], bRank)
         };

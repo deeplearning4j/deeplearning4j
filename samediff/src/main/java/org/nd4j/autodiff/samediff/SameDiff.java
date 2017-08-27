@@ -1357,7 +1357,7 @@ public class SameDiff {
      */
     public SDVariable reshape(SDVariable iX,
                               int...shape) {
-        shape = Shape.resolveNegativeShapeIfNeccessary(shape);
+        shape = Shape.resolveNegativeShapeIfNeccessary(shape,iX.getShape());
 
         SDVariable ret = SDVariable.builder()
                 .arr(null)
