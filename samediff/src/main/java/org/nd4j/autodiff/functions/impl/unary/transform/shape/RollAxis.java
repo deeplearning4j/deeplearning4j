@@ -26,14 +26,13 @@ public class RollAxis extends AbstractUnaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().rollAxis(arg().getValue(true),axis);
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
+
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(this);
+        DifferentialFunction<ArrayField> ret = this;
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

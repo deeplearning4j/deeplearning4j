@@ -26,10 +26,7 @@ public class CosineSimilarity extends AbstractBinaryReduceFunction<ArrayField>  
         return numerator.div(denom);
     }
 
-    @Override
-    public double getReal() {
-        return formula().getReal();
-    }
+
 
     @Override
     public String doGetFormula(List<Variable<ArrayField> > variables) {

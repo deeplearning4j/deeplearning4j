@@ -15,7 +15,7 @@ public class Mean extends AbstractReduceUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().mean(arg().doGetValue(),dimensions);
+        return a().mean(arg().doGetValue(),dimensions);
     }
 
 
@@ -29,8 +29,10 @@ public class Mean extends AbstractReduceUnaryFunction<ArrayField> {
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
-        return Collections.singletonList(sameDiff.getFunctionFactory().doRepeat(this,i_v1.get(0),dimensions)
-                .div(sameDiff.getFunctionFactory().one(i_v1.get(0).getResultShape()).mul(
-                        sameDiff.getFunctionFactory().getInputLength(i_v1.get(0)))));
+        DifferentialFunction<ArrayField> ret = f().doRepeat(this,i_v1.get(0),dimensions)
+                .div(f().one(i_v1.get(0).getResultShape()).mul(
+                        f().getInputLength(i_v1.get(0))));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 }

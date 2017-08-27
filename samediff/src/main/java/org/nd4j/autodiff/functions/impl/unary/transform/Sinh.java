@@ -22,7 +22,9 @@ public class Sinh extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(f().cosh(arg()));
+        DifferentialFunction<ArrayField> ret = f().cosh(arg());
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

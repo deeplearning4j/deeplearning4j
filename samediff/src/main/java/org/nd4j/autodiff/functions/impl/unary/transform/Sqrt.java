@@ -24,8 +24,10 @@ public class Sqrt extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(f().sqrt(arg()).inverse()
-                .div(f().val(a().one(getResultShape()).mul(2L))));
+        DifferentialFunction<ArrayField> ret = f().sqrt(arg()).inverse()
+                .div(f().val(a().one(getResultShape()).mul(2L)));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

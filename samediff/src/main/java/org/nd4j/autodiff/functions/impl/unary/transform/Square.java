@@ -24,7 +24,9 @@ public class Square extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(arg().mul(f().val(a().one(getResultShape()).mul(2L))));
+        DifferentialFunction<ArrayField> ret = arg().mul(f().val(a().one(getResultShape()).mul(2L)));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

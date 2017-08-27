@@ -18,7 +18,7 @@ public class Min extends AbstractReduceUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().max(arg().doGetValue(),dimensions);
+        return a().max(arg().doGetValue(),dimensions);
     }
 
 
@@ -31,6 +31,8 @@ public class Min extends AbstractReduceUnaryFunction<ArrayField> {
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
-        return Collections.singletonList(sameDiff.getFunctionFactory().doGradChoose(this,i_v1.get(0),dimensions));
+        DifferentialFunction<ArrayField> ret = f().doGradChoose(this,i_v1.get(0),dimensions);
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 }

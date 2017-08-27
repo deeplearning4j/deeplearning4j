@@ -21,12 +21,8 @@ public class Transpose extends AbstractUnaryFunction<ArrayField> {
     }
 
     @Override
-    public double getReal() {
-        return Math.tan(arg().getReal());
-    }
-
-    @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        arg().setGradient(this);
         return Collections.singletonList(this);
     }
 

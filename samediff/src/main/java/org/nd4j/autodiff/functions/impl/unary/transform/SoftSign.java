@@ -23,7 +23,9 @@ public class SoftSign extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(f().softsignDerivative(i_v.get(0)));
+        DifferentialFunction<ArrayField> ret = f().softsignDerivative(i_v.get(0));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

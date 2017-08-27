@@ -34,6 +34,6 @@ public class EuclideanDistance  extends AbstractBinaryReduceFunction<ArrayField>
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 }

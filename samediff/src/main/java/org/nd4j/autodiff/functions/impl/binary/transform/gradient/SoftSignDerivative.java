@@ -30,7 +30,9 @@ public class SoftSignDerivative extends AbstractBinaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(sameDiff.getFunctionFactory().zero(getResultShape()));
+        DifferentialFunction<ArrayField> ret = f().zero(getResultShape());
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

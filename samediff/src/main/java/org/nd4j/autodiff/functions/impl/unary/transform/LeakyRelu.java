@@ -25,7 +25,9 @@ public class LeakyRelu  extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(f().leakyReluDerivative(arg(),i_v.get(0) , cutoff));
+        DifferentialFunction<ArrayField> ret = f().leakyReluDerivative(arg(),i_v.get(0) , cutoff);
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

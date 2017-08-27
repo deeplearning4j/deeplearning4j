@@ -34,7 +34,9 @@ public class SELUDerivative extends AbstractBinaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Arrays.asList(arg().div(sameDiff.getFunctionFactory().seluDerivative(arg())));
+        DifferentialFunction<ArrayField> ret = arg().div(f().seluDerivative(arg()));
+        arg().setGradient(ret);
+        return Arrays.asList(ret);
     }
 
 

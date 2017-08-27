@@ -23,7 +23,9 @@ public class Relu extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(f().val(a().step(arg().getValue(true))));
+        DifferentialFunction<ArrayField> ret = f().val(a().step(arg().getValue(true)));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

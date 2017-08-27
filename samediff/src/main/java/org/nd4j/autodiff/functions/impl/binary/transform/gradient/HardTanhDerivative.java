@@ -26,13 +26,10 @@ public class HardTanhDerivative extends AbstractBinaryFunction<ArrayField> {
     }
 
     @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
-
-    @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Arrays.asList(f().one(getResultShape()));
+        DifferentialFunction<ArrayField> ret = f().one(getResultShape());
+        arg().setGradient(ret);
+        return Arrays.asList(ret);
     }
 
 

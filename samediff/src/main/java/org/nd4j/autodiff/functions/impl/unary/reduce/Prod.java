@@ -31,12 +31,13 @@ public class Prod extends AbstractReduceUnaryFunction<ArrayField> {
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
-        return Collections.singletonList(sameDiff.getFunctionFactory().doRepeat(
+        DifferentialFunction<ArrayField> ret = f().doRepeat(
                 this,
                 i_v1.get(0)
                 ,dimensions)
-                .div(sameDiff.getFunctionFactory()
-                .one(getResultShape()).mul(sameDiff.getFunctionFactory()
-                .getInputLength(i_v1.get(0)))));
+                .div(f().one(getResultShape()).mul(f()
+                                .getInputLength(i_v1.get(0))));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 }

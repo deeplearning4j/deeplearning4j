@@ -23,10 +23,10 @@ public class ASin extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(sameDiff.getFunctionFactory().one(getResultShape()).div(
-                sameDiff.getFunctionFactory()
-                .sqrt(sameDiff.getFunctionFactory()
-                .one(getResultShape()).sub(arg().pow(2)))));
+        DifferentialFunction<ArrayField> ret = f().one(getResultShape()).div(
+                f().sqrt(f().one(getResultShape()).sub(arg().pow(2))));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

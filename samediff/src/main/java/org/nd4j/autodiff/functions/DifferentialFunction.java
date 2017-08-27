@@ -32,6 +32,10 @@ public abstract class DifferentialFunction<X extends Field<X>>
     @Getter
     @Setter
     protected int vertexId;
+    @Getter
+    @Setter
+    protected DifferentialFunction<X> gradient;
+
     protected Object[] extraArgs;
 
 
@@ -152,7 +156,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
 
-    public boolean isVariable() {
+    public boolean isvariable() {
         return false;
     }
 

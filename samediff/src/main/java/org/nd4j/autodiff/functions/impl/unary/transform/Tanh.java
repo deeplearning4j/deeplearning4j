@@ -22,7 +22,9 @@ public class Tanh extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(f().tanhDerivative(arg(), i_v.get(0)));
+        DifferentialFunction<ArrayField> ret = f().tanhDerivative(arg(), i_v.get(0));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

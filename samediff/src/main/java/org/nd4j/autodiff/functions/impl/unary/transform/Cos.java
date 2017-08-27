@@ -15,7 +15,7 @@ public class Cos extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().cos(arg().getValue(true));
+        return a().cos(arg().getValue(true));
     }
 
     @Override
@@ -26,7 +26,9 @@ public class Cos extends AbstractUnaryFunction<ArrayField> {
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
-        return Collections.singletonList(sameDiff.getFunctionFactory().sin(arg()).negate());
+        DifferentialFunction<ArrayField> ret = f().sin(arg()).negate();
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

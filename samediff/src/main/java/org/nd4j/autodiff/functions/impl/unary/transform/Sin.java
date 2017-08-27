@@ -24,7 +24,9 @@ public class Sin extends AbstractUnaryFunction<ArrayField> {
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
-        return Collections.singletonList(f().cos(arg()));
+        DifferentialFunction<ArrayField> ret = f().cos(arg());
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

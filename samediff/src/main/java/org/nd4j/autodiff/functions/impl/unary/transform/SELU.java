@@ -23,7 +23,9 @@ public class SELU extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(arg().div(f().selu(arg())));
+        DifferentialFunction<ArrayField> ret = arg().div(f().selu(arg()));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

@@ -19,14 +19,12 @@ public class Cosh extends AbstractUnaryFunction<ArrayField> {
         return a().cosh(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.cosh(arg().getReal());
-    }
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(f().sinh(arg()));
+        DifferentialFunction<ArrayField> ret = f().sinh(arg());
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

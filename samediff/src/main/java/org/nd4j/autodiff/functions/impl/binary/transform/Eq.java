@@ -25,10 +25,13 @@ public class Eq extends AbstractBinaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        Constant<ArrayField> ym1 = sameDiff.getFunctionFactory()
-                .val(rarg().getValue(true).sub(sameDiff.getArrayFactory().one(getResultShape())));
-        return Collections.singletonList(rarg().mul(sameDiff.getFunctionFactory().pow(larg(), ym1))
-                .mul(larg()));
+        Constant<ArrayField> ym1 = f()
+                .val(rarg().getValue(true).sub(a().one(getResultShape())));
+        DifferentialFunction<ArrayField> ret = rarg().mul(f().pow(larg(), ym1))
+                .mul(larg());
+        larg().setGradient(ret);
+        rarg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

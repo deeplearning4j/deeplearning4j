@@ -29,6 +29,7 @@ public class Log extends AbstractUnaryFunction<ArrayField> {
         validateDifferentialFunctionsameDiff(i_v);
         validateDifferentialFunctionsameDiff(arg());
         DifferentialFunction<ArrayField> toInverse = arg().div(i_v.get(0));
+        arg().setGradient(toInverse);
         return Collections.singletonList(toInverse);
     }
 

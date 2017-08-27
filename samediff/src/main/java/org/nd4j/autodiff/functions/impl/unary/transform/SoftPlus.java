@@ -23,7 +23,9 @@ public class SoftPlus extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(f().sigmoid(arg()));
+        DifferentialFunction<ArrayField> ret = f().sigmoid(arg());
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

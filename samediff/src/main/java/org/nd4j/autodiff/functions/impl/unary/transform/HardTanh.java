@@ -21,7 +21,9 @@ public class HardTanh extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(f().hardTanhDerivative(f().val(getValue(true))));
+        DifferentialFunction<ArrayField> ret = f().hardTanhDerivative(f().val(getValue(true)));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

@@ -16,7 +16,7 @@ public class Norm2 extends AbstractReduceUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().norm1(arg().doGetValue(),dimensions);
+        return a().norm1(arg().doGetValue(),dimensions);
     }
 
 
@@ -29,6 +29,8 @@ public class Norm2 extends AbstractReduceUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
-        return Collections.singletonList(sameDiff.getFunctionFactory().doNormGrad(this,i_v1.get(0),"norm2",dimensions));
+        DifferentialFunction<ArrayField> ret = f().doNormGrad(this,i_v1.get(0),"norm2",dimensions);
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 }

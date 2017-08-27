@@ -34,6 +34,7 @@ public class Sum extends AbstractReduceUnaryFunction<ArrayField> {
         DifferentialFunction<ArrayField> repeat =  sameDiff.getFunctionFactory().doRepeat(
                 getDiffFunctionInput(i_v1.get(0)),
                arg(),dimensions);
+        arg().setGradient(repeat);
         return Collections.singletonList(repeat);
     }
 }

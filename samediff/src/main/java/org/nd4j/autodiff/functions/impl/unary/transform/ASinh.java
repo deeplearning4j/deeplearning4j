@@ -17,14 +17,16 @@ public class ASinh extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().asinh(arg().getValue(true));
+        return a().asinh(arg().getValue(true));
     }
 
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(sameDiff.getFunctionFactory().one(getResultShape()).div(sameDiff.getFunctionFactory().sqrt(arg().pow(2).add(
-                sameDiff.getFunctionFactory().one(getResultShape())))));
+        DifferentialFunction<ArrayField> ret = f().one(getResultShape()).div(f().sqrt(arg().pow(2).add(
+                f().one(getResultShape()))));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

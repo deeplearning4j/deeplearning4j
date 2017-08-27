@@ -34,6 +34,7 @@ public class Max extends AbstractReduceUnaryFunction<ArrayField> {
         validateDifferentialFunctionsameDiff(i_v1);
         List<DifferentialFunction<ArrayField>> ret = new ArrayList<>(1);
         ret.add(sameDiff.getFunctionFactory().doGradChoose(this,i_v1.get(0),dimensions));
+        arg().setGradient(ret.get(0));
         return ret;
     }
 }

@@ -23,14 +23,11 @@ public class ExpandDims extends AbstractUnaryFunction<ArrayField> {
     }
 
     @Override
-    public double getReal() {
-        return Math.abs(arg().getReal());
-    }
-
-    @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
-        return Collections.singletonList(arg().div(sameDiff.getFunctionFactory().abs(arg())));
+        DifferentialFunction<ArrayField> ret = arg().div(sameDiff.getFunctionFactory().abs(arg()));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

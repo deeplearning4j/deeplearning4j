@@ -21,14 +21,12 @@ public class Elu extends AbstractUnaryFunction<ArrayField> {
         return a().elu(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(f().eluDerivative(arg()));
+        DifferentialFunction<ArrayField> ret = f().eluDerivative(arg());
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

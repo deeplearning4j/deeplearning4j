@@ -16,18 +16,16 @@ public class ACos extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().acos(arg().getValue(true));
+        return a().acos(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.acos(arg().getReal());
-    }
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(sameDiff.getFunctionFactory().one(getResultShape()).div(sameDiff.getFunctionFactory().sqrt(sameDiff.getFunctionFactory()
-                .one(getResultShape()).sub(arg().pow(2)))).negate());
+        DifferentialFunction<ArrayField> ret = f().one(getResultShape()).div(f().sqrt(f()
+                .one(getResultShape()).sub(arg().pow(2)))).negate();
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

@@ -22,7 +22,9 @@ public class Sign extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(f().zero(getResultShape()));
+        DifferentialFunction<ArrayField> ret = f().zero(getResultShape());
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

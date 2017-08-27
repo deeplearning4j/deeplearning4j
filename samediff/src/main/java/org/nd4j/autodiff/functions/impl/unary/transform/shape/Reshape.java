@@ -27,7 +27,9 @@ public class Reshape extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(this);
+        DifferentialFunction<ArrayField> ret = this;
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

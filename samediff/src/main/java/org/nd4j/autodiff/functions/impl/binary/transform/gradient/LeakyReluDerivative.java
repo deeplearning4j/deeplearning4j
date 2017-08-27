@@ -42,7 +42,9 @@ public class LeakyReluDerivative  extends AbstractBinaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Arrays.asList(f().zero(getResultShape()));
+        DifferentialFunction<ArrayField> ret = f().zero(getResultShape());
+        arg().setGradient(ret);
+        return Arrays.asList(ret);
     }
 
     @Override

@@ -21,10 +21,6 @@ public class Repeat  extends AbstractUnaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().repeat(arg().getValue(true),axis);
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {

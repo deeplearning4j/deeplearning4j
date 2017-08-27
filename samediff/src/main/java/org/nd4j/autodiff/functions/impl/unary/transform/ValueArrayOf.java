@@ -26,7 +26,9 @@ public class ValueArrayOf extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(new One<>(sameDiff,i_v.get(0).getResultShape()));
+        DifferentialFunction<ArrayField> grad = new One<>(sameDiff,i_v.get(0).getResultShape());
+        arg().setGradient(grad);
+        return Collections.singletonList(grad);
     }
 
 

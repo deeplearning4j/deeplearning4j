@@ -16,7 +16,7 @@ public class ACosh extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().acosh(arg().getValue(true));
+        return a().acosh(arg().getValue(true));
     }
 
     @Override
@@ -26,9 +26,11 @@ public class ACosh extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Collections.singletonList(sameDiff.getFunctionFactory().one(getResultShape()).div(
-                sameDiff.getFunctionFactory().sqrt(arg().sub(sameDiff.getFunctionFactory().one(getResultShape())))
-                        .mul(sameDiff.getFunctionFactory().sqrt(arg().add(sameDiff.getFunctionFactory().one(getResultShape()))))));
+        DifferentialFunction<ArrayField> ret = f().one(getResultShape()).div(
+                f().sqrt(arg().sub(f().one(getResultShape())))
+                        .mul(f().sqrt(arg().add(f().one(getResultShape())))));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override
