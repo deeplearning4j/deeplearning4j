@@ -11,7 +11,7 @@
 
 namespace nd4j {
     namespace ops {
-        class Registrator {
+        class OpRegistrator {
 
         protected:
             //std::map<std::string>
@@ -22,7 +22,7 @@ namespace nd4j {
              *
              * @param op
              */
-            void pickOperation(nd4j::ops::DeclarableOp *op);
+            static bool registerOperation(nd4j::ops::DeclarableOp *op);
 
             /**
              * This method returns registered Op by name
@@ -30,7 +30,7 @@ namespace nd4j {
              * @param name
              * @return
              */
-            nd4j::ops::DeclarableOp *getOperation(std::string *name);
+            static nd4j::ops::DeclarableOp *getOperation(std::string *name);
         };
     }
 }

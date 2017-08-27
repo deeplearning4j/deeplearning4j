@@ -12,13 +12,48 @@ namespace nd4j {
 
         class OpDescriptor {
         protected:
+            int _opNum = 0;
+            std::string _opName;
 
+            int _numInputs;
+            int _numOutputs;
 
         public:
-            int getNumberOfInputs();
-            int getNumberOfOutputs();
+            // default constructor
+            OpDescriptor(int numInputs, int numOutputs, std::string opName) {
+                _numInputs = numInputs;
+                _numOutputs = numOutputs;
+                _opName = opName;
+            }
 
-            std::string *getName();
+            OpDescriptor(int numInputs, int numOutputs, const char *opName) {
+                _numInputs = numInputs;
+                _numOutputs = numOutputs;
+
+                std::string tmp(opName);
+                _opName = tmp;
+            }
+
+            // default destructor
+            ~OpDescriptor() {
+                //
+            }
+
+            int getNumberOfInputs() {
+                return _numInputs;
+            }
+
+            int getNumberOfOutputs() {
+                return _numOutputs;
+            }
+
+            std::string *getOpName() {
+                return &_opName;
+            }
+
+            int getOpNum() {
+                return _opNum;
+            }
         };
     }
 }

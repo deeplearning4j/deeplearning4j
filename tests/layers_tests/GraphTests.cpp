@@ -8,7 +8,6 @@
 #include <graph/generated/graph_generated.h>
 #include <graph/Node.h>
 #include <graph/Graph.h>
-#include <graph/NodeFactory.h>
 #include <NDArray.h>
 
 using namespace nd4j::graph;
