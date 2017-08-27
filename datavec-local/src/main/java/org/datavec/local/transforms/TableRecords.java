@@ -770,7 +770,7 @@ public class TableRecords {
         INDArray arr = Nd4j.create(table.rowCount(), table.columnCount());
         for (int i = 0; i < table.rowCount(); i++) {
             for (int j = 0; j < table.columnCount(); j++) {
-                arr.putScalar(i, j, Double.valueOf(table.get(j, i)));
+                arr.putScalar(i, j, Double.valueOf(table.get(i, j)));
             }
         }
 
@@ -789,7 +789,7 @@ public class TableRecords {
         for (int i = 0; i < table.rowCount(); i++) {
             ret.add(new ArrayList<>());
             for (int j = 0; j < table.columnCount(); j++) {
-                ret.get(i).add(new DoubleWritable(Double.valueOf(table.get(j, i))));
+                ret.get(i).add(new DoubleWritable(Double.valueOf(table.get(i, j))));
             }
         }
         return ret;
