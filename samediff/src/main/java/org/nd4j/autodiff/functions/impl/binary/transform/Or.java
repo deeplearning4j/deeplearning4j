@@ -14,7 +14,7 @@ public class Or extends AbstractBinaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().or(larg().getValue(true), rarg().getValue(true));
+        return a().or(larg().getValue(true), rarg().getValue(true));
     }
 
 
@@ -30,16 +30,6 @@ public class Or extends AbstractBinaryFunction<ArrayField> {
         return Collections.singletonList(ret);
     }
 
-    @Override
-    public String toString() {
-        return "or(" + larg().toString() + ", " + rarg().toString() + ")";
-    }
-
-    @Override
-    public String doGetFormula(List<Variable<ArrayField> > variables) {
-        return "or(" + larg().doGetFormula(variables) + ","
-                + rarg().doGetFormula(variables) + ")";
-    }
 
     @Override
     public String functionName() {

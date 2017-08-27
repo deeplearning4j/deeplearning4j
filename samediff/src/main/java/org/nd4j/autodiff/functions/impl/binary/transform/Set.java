@@ -32,16 +32,6 @@ public class Set extends AbstractBinaryFunction<ArrayField> {
         return Collections.singletonList(ret);
     }
 
-    @Override
-    public String toString() {
-        return "set(" + larg().toString() + ", " + rarg().toString() + ")";
-    }
-
-    @Override
-    public String doGetFormula(List<Variable<ArrayField> > variables) {
-        return "set(" + larg().doGetFormula(variables) + ","
-                + rarg().doGetFormula(variables) + ")";
-    }
 
     @Override
     public String functionName() {

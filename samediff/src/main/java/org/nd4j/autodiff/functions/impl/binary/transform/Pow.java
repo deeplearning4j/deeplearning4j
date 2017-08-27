@@ -17,10 +17,6 @@ public class Pow extends AbstractBinaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().pow(larg().getValue(true), rarg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.pow(larg().getReal(), rarg().getReal());
-    }
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
@@ -33,16 +29,7 @@ public class Pow extends AbstractBinaryFunction<ArrayField> {
         return Collections.singletonList(ret);
     }
 
-    @Override
-    public String toString() {
-        return "pow(" + larg().toString() + ", " + rarg().toString() + ")";
-    }
 
-    @Override
-    public String doGetFormula(List<Variable<ArrayField> > variables) {
-        return "pow(" + larg().doGetFormula(variables) + ","
-                + rarg().doGetFormula(variables) + ")";
-    }
 
     @Override
     public String functionName() {

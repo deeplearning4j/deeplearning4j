@@ -82,6 +82,8 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         return i_x.minus(value.doubleValue());
     }
 
+
+
     @Override
     public ArrayField mul(ArrayField i_x, Number value) {
         return i_x.mul((long) value.doubleValue());
