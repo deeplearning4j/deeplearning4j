@@ -30,7 +30,7 @@ public class TableRecordsTest {
         assertEquals(2, table.rows().length);
         for (int i = 0; i < table.rows().length; i++) {
             for (int j = 0; j < table.columns().size(); j++) {
-                assertEquals(linspace.getDouble(i, j), Double.valueOf(table.get(j, i)), 1e-1);
+                assertEquals(linspace.getDouble(i, j), Double.valueOf(table.get(i, j)), 1e-1);
             }
         }
 
