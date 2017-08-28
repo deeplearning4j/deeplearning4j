@@ -97,6 +97,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     // for Spark and model serialization
     protected int iterationCount = 0;
 
+    //Counter for the number of epochs completed so far. Used for per-epoch schedules
+    protected int epochCount = 0;
+
 
     /**
      * @return JSON representation of configuration

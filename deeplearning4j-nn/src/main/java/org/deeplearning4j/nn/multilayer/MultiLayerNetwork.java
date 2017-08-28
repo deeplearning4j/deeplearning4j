@@ -1266,6 +1266,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         if (destructable)
             ((AsyncDataSetIterator) iter).shutdown();
+
+        incrementEpochCount();
     }
 
     /** Calculate and set gradients for MultiLayerNetwork, based on OutputLayer and labels*/
@@ -3054,6 +3056,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             layers[f].setMaskArray(null);
             layers[f].clear();
         }
+    }
+
+    /**
+     * Increment the epoch count (in the underlying {@link MultiLayerConfiguration} by 1).
+     * Note that this is done <i>automatically</i> when using iterator-based fitting methods, such as
+     * {@link #fit(DataSetIterator)}. However, when using non-iterator fit methods (DataSet, INDArray/INDArray etc),
+     * the network has no way to know when one epoch ends and another starts. In such situations, this method
+     * can be used to increment the epoch counter.<br>
+     * Note that the epoch counter is used for situations such as some learning rate schedules, and the like.
+     *
+     * The current epoch count can be obtained using {@code MultiLayerConfiguration.getLayerwiseConfiguration().getEpochCount()}
+     */
+    public void incrementEpochCount(){
+        layerWiseConfigurations.setEpochCount(layerWiseConfigurations.getEpochCount() + 1);
     }
 
     /**

@@ -962,6 +962,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         if (destructable)
             ((AsyncDataSetIterator) dataSetIterator).shutdown();
+        incrementEpochCount();
     }
 
     /**
@@ -1060,6 +1061,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         if (destructable)
             ((AsyncMultiDataSetIterator) multiDataSetIterator).shutdown();
+        incrementEpochCount();
     }
 
     protected void migrate(MultiDataSet ds) {
@@ -3180,6 +3182,20 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (int f = 0; f < vertices.length; f++) {
             vertices[f].clearVertex();
         }
+    }
+
+    /**
+     * Increment the epoch count (in the underlying {@link MultiLayerConfiguration} by 1).
+     * Note that this is done <i>automatically</i> when using iterator-based fitting methods, such as
+     * {@link #fit(DataSetIterator)} or {@link #fit(MultiDataSet)}. However, when using non-iterator fit methods
+     * (DataSet, MultiDataSet, INDArrays etc), the network has no way to know when one epoch ends and another starts.
+     * In such situations, this method can be used to increment the epoch counter.<br>
+     * Note that the epoch counter is used for situations such as some learning rate schedules, and the like.
+     *
+     * The current epoch count can be obtained using {@code ComputationGraph.getConfiguration().getEpochCount()}
+     */
+    public void incrementEpochCount(){
+        configuration.setEpochCount(configuration.getEpochCount() + 1);
     }
 
     /**
