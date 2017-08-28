@@ -210,18 +210,24 @@ namespace nd4j {
 
                 auto variable = block.getVariableSpace()->getVariable(block.getNodeId());
 
+                Nd4jIndex len = shape::length(shape);
                 if (variable->getNDArray() == nullptr) {
-                    Nd4jIndex len = shape::length(shape);
+                    T *buffer = new T[len];
+                    variable ->setNDArray(new NDArray<T>(buffer, shape));
+                    variable->getNDArray()->_allocated = true;
+                } else if(variable->getNDArray()->lengthOf() != len) {
+                    delete variable->getNDArray();
                     T *buffer = new T[len];
                     variable ->setNDArray(new NDArray<T>(buffer, shape));
                     variable->getNDArray()->_allocated = true;
                 } else {
-
                     delete[] shape;
                 }
 
                 concatCpuGeneric(_dimension, block.getVariables().size(), buffers, shapes, variable->getNDArray()->_buffer, variable->getNDArray()->_shapeInfo);
 
+                delete[] buffers;
+                delete[] shapes;
                 return ND4J_STATUS_OK;
             }
         };
