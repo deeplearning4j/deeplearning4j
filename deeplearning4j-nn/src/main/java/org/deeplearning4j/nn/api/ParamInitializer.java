@@ -34,6 +34,10 @@ public interface ParamInitializer {
 
     int numParams(org.deeplearning4j.nn.conf.layers.Layer layer);
 
+    boolean isWeightParam(String key);
+
+    boolean isBiasParam(String key);
+
     /**
      * Initialize the parameters
      *
