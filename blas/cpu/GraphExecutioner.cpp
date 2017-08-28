@@ -6,6 +6,8 @@
 #include <graph/generated/graph_generated.h>
 #include <graph/generated/result_generated.h>
 
+#include <protobuf/core/framework/graph.pb.h>
+
 #include <Variable.h>
 #include <VariableSpace.h>
 #include <Node.h>
@@ -461,6 +463,12 @@ namespace nd4j{
             delete nativeGraph;
 
             return (Nd4jPointer) builder.GetBufferPointer();
+        }
+
+        template <typename T>
+        Graph<T> *importFromTensorFlow(const char *fileName) {
+            tensorflow::GraphDef graphDef = new tensorflow::GraphDef();
+            graphDef->
         }
     }
 }

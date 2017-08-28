@@ -10,4 +10,4 @@ for i in `find tensorflow/core/framework | grep \.proto$`
 
 echo $FILES
 
-protoc --proto_path=./tensorflow/core/framework --cpp_out=protobuf-generated/ --java_out=protobuf-java/ $FILES
+protoc --proto_path=/Users/raver119/develop/tensorflow --cpp_out=cpp_output/ --java_out=java_output/ $FILES

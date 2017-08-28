@@ -39,6 +39,9 @@ namespace nd4j {
              * @return pointer to FlatBuffer with result
              */
             static Nd4jPointer executeFlatBuffer(Nd4jPointer pointer);
+
+
+            static Graph<T> *importFromTensorFlow(const char *fileName);
         };
     }
 }
