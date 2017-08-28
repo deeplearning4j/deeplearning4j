@@ -66,6 +66,7 @@ public class TestJsonYaml {
                         .addColumnDouble("Dbl2", null, 100.0, true, false).addColumnInteger("Int")
                         .addColumnInteger("Int2", 0, 10).addColumnLong("Long").addColumnLong("Long2", -100L, null)
                         .addColumnString("Str").addColumnString("Str2", "someregexhere", 1, null)
+                        .addColumnString("Str3")
                         .addColumnTime("TimeCol", DateTimeZone.UTC)
                         .addColumnTime("TimeCol2", DateTimeZone.UTC, null, 1000L).build();
 
@@ -75,6 +76,7 @@ public class TestJsonYaml {
 
         TransformProcess tp =
                         new TransformProcess.Builder(schema).categoricalToInteger("Cat").categoricalToOneHot("Cat2")
+                                        .appendStringColumnTransform("Str3", "ToAppend")
                                         .integerToCategorical("Cat", Arrays.asList("State1", "State2"))
                                         .stringToCategorical("Str", Arrays.asList("State1", "State2"))
                                         .duplicateColumn("Str", "Str2a").removeColumns("Str2a")

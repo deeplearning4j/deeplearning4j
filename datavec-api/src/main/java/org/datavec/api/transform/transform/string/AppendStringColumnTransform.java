@@ -21,6 +21,8 @@ import org.datavec.api.transform.metadata.StringMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Append a String to the
@@ -28,11 +30,12 @@ import org.datavec.api.writable.Writable;
  *
  * @author Alex Black
  */
+@JsonIgnoreProperties({"inputSchema", "columnNumber"})
 public class AppendStringColumnTransform extends BaseColumnTransform {
 
     private String toAppend;
 
-    public AppendStringColumnTransform(String columnName, String toAppend) {
+    public AppendStringColumnTransform(@JsonProperty("columnName") String columnName, @JsonProperty("toAppend") String toAppend) {
         super(columnName);
         this.toAppend = toAppend;
     }
