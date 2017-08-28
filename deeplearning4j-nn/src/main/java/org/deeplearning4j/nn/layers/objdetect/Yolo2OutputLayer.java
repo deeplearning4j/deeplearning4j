@@ -10,29 +10,22 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
-import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.Min;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -261,7 +254,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         double sizeScaleLoss = layerConf().getLossPositionScale().computeScore(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d, false);
         double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false)
                 + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
-
 //        double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false);
 //                + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
 
@@ -299,7 +291,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         double loss =
                 layerConf().getLambdaCoord() * positionLoss +
                 layerConf().getLambdaCoord() * sizeScaleLoss +
-                confidenceLoss +
+                confidenceLoss  +
                 classPredictionLoss +
                 fullNetworkL1 +
                 fullNetworkL2
@@ -309,7 +301,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         this.score = loss;
 
-        //===============================================
+        //==============================================================
         // ----- Gradient Calculation (specifically: return dL/dIn -----
 
         if(DEBUG_PRINT) {
@@ -358,33 +350,34 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedCondidence2d, identity, mask1_ij_obj_2d, false)
         //  + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedCondidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
 
-        ActivationSigmoid s = new ActivationSigmoid();
-        INDArray gradConfidence2dA = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, s, mask1_ij_obj_2d);
-        INDArray gradConfidence2dB = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, s, mask1_ij_noobj_2d);
+        INDArray gradConfidence2dA = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d);
+        INDArray gradConfidence2dB = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d);
 
-        INDArray gradConfidence2d = gradConfidence2dA.addi(gradConfidence2dB);  //dL/dC; C = sigmoid(tc)
+        INDArray dLc_dC_2d = gradConfidence2dA.addi(gradConfidence2dB);  //dL/dC; C = sigmoid(tc)
+        INDArray dLc_dzc_2d = new ActivationSigmoid().backprop( predictedConfidence2dPreSigmoid, dLc_dC_2d).getFirst();
         //Calculate dL/dtc
-        INDArray epsConfidence4d = gradConfidence2d.dup('c').reshape(mb, b, h, w);   //[mb*b*h*w, 2] to [mb, b, h, w]
+        INDArray epsConfidence4d = dLc_dzc_2d.dup('c').reshape('c', mb, b, h, w);   //[mb*b*h*w, 2] to [mb, b, h, w]
         epsC.assign(epsConfidence4d);
 
         //Note that we ALSO have components to x,y,w,h  from confidence loss (via IOU)
-        //that is: dL_conf/dx, dL_conf/dy, dL_conf/dw, dL_conf/dh
+        //that is: dLc/dx, dLc/dy, dLc/dw, dLc/dh
         //For any value v, d(I/U)/dv = (U * dI/dv + I * dU/dv) / U^2
 
         //Confidence loss: sum squared errors + masking.
         //C == IOU when label present
+
+        //Lc = (predicted-iou)^2 -> dLc/diou = 2*(iou-predicted)
         INDArray dLc_dClabel = iou.sub(predictedConfidence).muli(2.0);  //Shape: [mb, b, h, w]
-//        dLc_dClabel.mul(mask1_ij_obj.add(mask1_ij_noobj));
         INDArray newMask = mask1_ij_obj.dup();
         BooleanIndexing.applyWhere(newMask, Conditions.equals(0), layerConf().getLambdaNoObj());    //1 or lambda, for object or no-object respectively
-        dLc_dClabel.mul(newMask);
+        dLc_dClabel.muli(newMask);
 
 
         INDArray dLc_dIOU = dLc_dClabel;    //TODO - dL_C / dIOU, shape [mb, b, h, w]
 
         INDArray u = iouRet.getUnion();
         INDArray i = iouRet.getIntersection();
-        INDArray u2 = iouRet.getUnion().mul(iouRet.getUnion());
+        INDArray u2 = u.mul(u);
 
         INDArray iuDivU2 = u.add(i).divi(u2);   //Shape: [mb, b, h, w]
         BooleanIndexing.replaceWhere(iuDivU2, 0.0, Conditions.isNan());     //Handle 0/0
@@ -392,23 +385,31 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         INDArray dIOU_dxy = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
-        Broadcast.mul(iouRet.dIdxy_predicted, iuDivU2, dIOU_dxy, 0, 1, 3, 4);   //[mb, b, h, w] x [mb, b, 2, h, w]
-        INDArray dLcdxy = Nd4j.createUninitialized(dIOU_dxy.shape(), dIOU_dxy.ordering());
-        Broadcast.mul(dIOU_dxy, dLc_dIOU, dLcdxy, 0, 1, 3, 4);
+        Broadcast.mul(iouRet.dIdxy, iuDivU2, dIOU_dxy, 0, 1, 3, 4);   //[mb, b, h, w] x [mb, b, 2, h, w]
+        INDArray dLc_dxy = Nd4j.createUninitialized(dIOU_dxy.shape(), dIOU_dxy.ordering());
+        Broadcast.mul(dIOU_dxy, dLc_dIOU, dLc_dxy, 0, 1, 3, 4);
 
         INDArray uSubI = u.sub(i);  //Shape: [mb, b, h, w]
 
-        INDArray Iwh = Nd4j.createUninitialized(predictedWH.shape(), predictedWH.ordering());
-        Broadcast.mul(predictedWH, iouRet.getIntersection(), Iwh, 0, 1, 3, 4 );    //Predicted_wh: [mb, b, 2, h, w]; intersection: [mb, b, h, w]
-        INDArray dIOU_dwh = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, iouRet.dIdwh_predicted.ordering());    //iouRet.dIdwh_predicted.mul(uSubI).add(Iwh).div(u2);
-        Broadcast.mul(iouRet.dIdwh_predicted, uSubI, dIOU_dwh, 0, 1, 3, 4);
+        //dIoU/dw = 1/u^2 * ( dI/dw * (U-I) + I*h)
+        //dIoU/dh = 1/u^2 * ( dI/dh * (U-I) + I*w)
+        INDArray predictedHW = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, predictedWH.ordering());
+            //Next 2 lines: permuting the order... WH to HW along dimension 2
+        predictedHW.get(all(), all(), point(0), all(), all())
+                .assign(predictedWH.get(all(), all(), point(1), all(), all()));
+        predictedHW.get(all(), all(), point(1), all(), all())
+                .assign(predictedWH.get(all(), all(), point(0), all(), all()));
+
+        INDArray Ihw = Nd4j.createUninitialized(predictedHW.shape(), predictedHW.ordering());
+        Broadcast.mul(predictedHW, i, Ihw, 0, 1, 3, 4 );    //Predicted_wh: [mb, b, 2, h, w]; intersection: [mb, b, h, w]
+        INDArray dIOU_dwh = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, iouRet.dIdwh.ordering());    //iouRet.dIdwh_predicted.mul(uSubI).add(Iwh).div(u2);
+        Broadcast.mul(iouRet.dIdwh, uSubI, dIOU_dwh, 0, 1, 3, 4);
+        dIOU_dwh.addi(Ihw);
         Broadcast.div(dIOU_dwh, u2, dIOU_dwh, 0, 1, 3, 4);
         BooleanIndexing.replaceWhere(dIOU_dwh, 0.0, Conditions.isNan());     //Handle division by 0 (due to masking, etc)
 
         INDArray dLc_dwh = Nd4j.createUninitialized(dIOU_dwh.shape(), dIOU_dwh.ordering());
-        INDArray dLc_dxy = Nd4j.createUninitialized(dIOU_dxy.shape(), dIOU_dxy.ordering());
         Broadcast.mul(dIOU_dwh, dLc_dIOU, dLc_dwh, 0, 1, 3, 4);    //[mb, b, h, w] x [mb, b, 2, h, w]
-        Broadcast.mul(dIOU_dxy, dLc_dIOU, dLc_dxy, 0, 1, 3, 4);
 
 
         //Backprop through the wh and xy activation functions...
@@ -550,8 +551,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Mask the intersection area: should be 0 if no intersection
         intersectionArea.muli(intMask);
 
-        int totalCount = intMask.length();
-        int countOne = intMask.sumNumber().intValue();
+//        int totalCount = intMask.length();
+//        int countOne = intMask.sumNumber().intValue();
 //        System.out.println("intMask counts: total, number of 1s: " + totalCount + ", " + countOne);
 
         double minIntArea = intersectionArea.minNumber().doubleValue();
@@ -621,8 +622,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         private INDArray iou;
         private INDArray intersection;
         private INDArray union;
-        private INDArray dIdxy_predicted;
-        private INDArray dIdwh_predicted;
+        private INDArray dIdxy;
+        private INDArray dIdwh;
 
     }
 
