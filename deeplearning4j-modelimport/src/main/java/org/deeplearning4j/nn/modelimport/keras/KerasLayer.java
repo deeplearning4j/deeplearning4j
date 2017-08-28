@@ -145,7 +145,7 @@ public class KerasLayer {
      * @param layerName name of custom layer
      * @param configClass class of custom layer
      */
-     static void registerCustomLayer(String layerName, Class<? extends KerasLayer> configClass) {
+     public static void registerCustomLayer(String layerName, Class<? extends KerasLayer> configClass) {
         customLayers.put(layerName, configClass);
     }
 
