@@ -1,5 +1,7 @@
 package org.deeplearning4j.nn.layers.objdetect;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
@@ -176,9 +178,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         // ----- Step 3: Calculate IOU(predicted, labels) to infer 1_ij^obj mask array (for loss function) -----
-        //Calculate IOU (intersection over union - aka Jaccard index) - for the labels and bounding box priors
-        //http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/
-        INDArray iou = null;    //calculateIOULabelPredicted(labelTLXYImg, labelBRXYImg, predictedTLXYImage, predictedBRXYImage);  //IOU shape: [minibatch, B, H, W]
+        //Calculate IOU (intersection over union - aka Jaccard index) - for the labels and predicted values
+        IOURet iouRet = calculateIOULabelPredicted(labelTLXYImg, labelBRXYImg, predictedTLXYImage, predictedBRXYImage);  //IOU shape: [minibatch, B, H, W]
+        INDArray iou = iouRet.getIou();
 
         double iouMin = iou.minNumber().doubleValue();
         double iouMax = iou.maxNumber().doubleValue();
@@ -297,7 +299,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         double loss =
                 layerConf().getLambdaCoord() * positionLoss +
                 layerConf().getLambdaCoord() * sizeScaleLoss +
-                confidenceLoss +
+//                confidenceLoss +
                 classPredictionLoss +
                 fullNetworkL1 +
                 fullNetworkL2
@@ -329,7 +331,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         epsClassPredictions.assign(gradPredictionLoss4d);
 
 
-        //Calculate gradient component from position (x,y)
+        //Calculate gradient component from position (x,y) loss - dL_position/dx and dL_position/dy
         INDArray gradXYCenter2d = layerConf().getLossPositionScale().computeGradient(labelXYCenter2d, predictedXYCenter2d, identity, mask1_ij_obj_2d);
         gradXYCenter2d.muli(layerConf().getLambdaCoord());
         INDArray gradXYCenter5d = gradXYCenter2d.dup('c')
@@ -339,7 +341,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         gradXYCenter5d = new ActivationSigmoid().backprop(preSigmoidPredictedXYCenterGrid, gradXYCenter5d).getFirst();
         epsXY.assign(gradXYCenter5d);
 
-        //Calculate gradient component from width/height (w,h)
+        //Calculate gradient component from width/height (w,h) loss - dL_size/dw and dL_size/dw
         //Note that loss function gets sqrt(w) and sqrt(h)
         //gradWHSqrt2d = dL/dsqrt(w) and dL/dsqrt(h)
         INDArray gradWHSqrt2d = layerConf().getLossPositionScale().computeGradient(labelWHSqrt2d, predictedWHSqrt2d.dup(), identity, mask1_ij_obj_2d);   //Shape: [mb*b*h*w, 2]
@@ -356,17 +358,43 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedCondidence2d, identity, mask1_ij_obj_2d, false)
         //  + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedCondidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
 
-//        INDArray gradConfidence2dA = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d);
-        INDArray gradConfidence2dA = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, new ActivationSigmoid(), mask1_ij_obj_2d);
-//        INDArray gradConfidence2dB = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d);
-//        gradConfidence2dA = new ActivationSigmoid().backprop(predictedConfidence2dPreSigmoid.dup(), gradConfidence2dA).getFirst();
-//        gradConfidence2dB.muli(layerConf().getLambdaNoObj());
-//        gradConfidence2dB = new ActivationSigmoid().backprop(predictedConfidence2dPreSigmoid.dup(), gradConfidence2dB).getFirst();
-        INDArray gradConfidence2d = gradConfidence2dA;  //.addi(gradConfidence2dB);  //dL/dC; C = sigmoid(tc)
+        ActivationSigmoid s = new ActivationSigmoid();
+        INDArray gradConfidence2dA = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, s, mask1_ij_obj_2d);
+        INDArray gradConfidence2dB = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, s, mask1_ij_noobj_2d);
+
+        INDArray gradConfidence2d = gradConfidence2dA.addi(gradConfidence2dB);  //dL/dC; C = sigmoid(tc)
         //Calculate dL/dtc
         INDArray epsConfidence4d = gradConfidence2d.dup('c').reshape(mb, b, h, w);   //[mb*b*h*w, 2] to [mb, b, h, w]
-        epsC.assign(epsConfidence4d);
+//        epsC.assign(epsConfidence4d);
 
+        //Note that we ALSO have components to x,y,w,h  from confidence loss (via IOU)
+        //that is: dL_conf/dx, dL_conf/dy, dL_conf/dw, dL_conf/dh
+        //For any value v, d(I/U)/dv = (U * dI/dv + I * dU/dv) / U^2
+
+        INDArray dLc_dIOU = null;    //TODO - dL_C / dIOU, shape [mb, b, h, w]
+
+        INDArray u = iouRet.getUnion();
+        INDArray i = iouRet.getIntersection();
+        INDArray u2 = iouRet.getUnion().mul(iouRet.getUnion());
+
+        INDArray iuDivU2 = u.add(i).divi(u2);   //Shape: [mb, b, h, w]
+
+
+
+        INDArray dIOU_dxy = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
+        Broadcast.mul(iouRet.dIdxy_predicted, iuDivU2, dIOU_dxy, 0, 1, 3, 4);   //[mb, b, h, w] x [mb, b, 2, h, w]
+        INDArray dLcdxy = Nd4j.createUninitialized(dIOU_dxy.shape(), dIOU_dxy.ordering());
+        Broadcast.mul(dIOU_dxy, dLc_dIOU, dLcdxy, 0, 1, 3, 4);
+
+        INDArray uSubI = u.sub(i);  //Shape: [mb, b, h, w]
+
+//        INDArray Ihw = Nd4j.createUninitialized(iouRet.getIntersection().shape(), iouRet.getIntersection().ordering());
+//        Broadcast.mul(iouRet.getIntersection(), predictedWH, Ihw, );    //Predicted_wh: [mb, b, h, w],
+        INDArray Iwh = iouRet.getIntersection().mul(predictedWH);   //[mb, b, h, w]
+        INDArray dIOU_dwh = iouRet.dIdwh_predicted.mul(uSubI).add(Iwh).div(u2);
+
+        INDArray dLc_dwh = dLc_dIOU.mul(dIOU_dwh);
+        INDArray dLc_dxy = dLc_dIOU.mul(dIOU_dxy);
 
 
         return epsOut;
@@ -440,13 +468,13 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
      * Calculate IOU(truth, predicted). Returns 5d array, [mb, b, 2, H, W]
      *
      * @param labelTL   4d [mb, 2, H, W], label top/left (x,y) in terms of grid boxes
-     * @param labelWH   4d [mb, 2, H, W], label W/H in terms of number of grid boxes
-     * @param labelXY   4d [mb, 2, H, W], label X/Y in terms of number of grid boxes
      * @param predictedWH 5d [mb, b, 2, H, W] - predicted H/W in terms of number of grid boxes.
      * @param predictedXY 5d [mb, b, 2, H, W] - predicted X/Y in terms of number of grid boxes. Values 0 to 1, center box value being 0.5
      * @return
      */
-    private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray labelWH, INDArray labelXY, INDArray predictedWH, INDArray predictedXY){
+    private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray predictedWH, INDArray predictedXY){
+
+        INDArray labelWH = labelBR.sub(labelTL);                //4d [mb, 2, H, W], label W/H in terms of number of grid boxes
 
         INDArray halfWH = predictedWH.div(0.5);
         INDArray predictedTL_XY = halfWH.rsub(predictedXY);     //xy - 0.5 * wh
@@ -454,9 +482,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         INDArray maxTL = Nd4j.createUninitialized(predictedTL_XY.shape(), predictedTL_XY.ordering());   //Shape: [mb, b, 2, H, W]
-        Broadcast.min(labelTL, predictedTL_XY, maxTL, 0, 2, 3, 4);
+        Broadcast.min(predictedTL_XY, labelTL, maxTL, 0, 2, 3, 4);
         INDArray minBR = Nd4j.createUninitialized(predictedBR_XY.shape(), predictedBR_XY.ordering());
-        Broadcast.min(labelTL, predictedBR_XY, minBR, 0, 2, 3, 4);
+        Broadcast.min(predictedBR_XY, labelBR, minBR, 0, 2, 3, 4);
 
         INDArray diff = minBR.sub(maxTL);
         INDArray intersectionArea = diff.prod(2);   //[mb, b, 2, H, W] to [mb, b, H, W]
@@ -473,34 +501,71 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         Broadcast.lt(predictedBR_XY, labelTL, noIntMask1, 0, 2, 3, 4);  //Predicted BR < label TL
         Broadcast.gt(predictedTL_XY, labelBR, noIntMask2, 0, 2, 3, 4);  //predicted TL > label BR
 
-        INDArray noIntMask = noIntMask1.prod(2).muli(noIntMask2.prod(2));   //Shape: [mb, b, H, W]. Values 1 if no intersection
+//        INDArray noIntMask = noIntMask1.prod(2).muli(noIntMask2.prod(2));   //Shape: [mb, b, H, W]. Values 1 if no intersection
+        INDArray noIntMask = Transforms.or(noIntMask1.get(all(), all(), point(0), all(), all()), noIntMask1.get(all(), all(), point(1), all(), all()) );
+        Transforms.or(noIntMask2.get(all(), all(), point(0), all(), all()), noIntMask2.get(all(), all(), point(1), all(), all()) );
+        Transforms.or(noIntMask1, noIntMask2 );
+
         INDArray intMask = Nd4j.getExecutioner().execAndReturn(new Not(noIntMask, noIntMask, 0.0)); //Values 0 if no intersection
 
         //Mask the intersection area: should be 0 if no intersection
-        Broadcast.mul(intersectionArea, intMask, intersectionArea, 0,1,3,4);
+        intersectionArea.muli(intMask);
+
+        double minIntArea = intersectionArea.minNumber().doubleValue();
+        double maxIntArea = intersectionArea.maxNumber().doubleValue();
+
+        if(minIntArea < 0.0){
+            throw new IllegalStateException("Min intersection area: " + minIntArea);
+        }
+
+        if(maxIntArea < 0.0){
+            throw new IllegalStateException("max intersection area: " + maxIntArea);
+        }
 
 
         //Next, union area is simple: U = A1 + A2 - intersection
         INDArray areaPredicted = predictedWH.prod(2);   //[mb, b, 2, H, W] to [mb, b, H, W]
         INDArray areaLabel = labelWH.prod(1);           //[mb, 2, H, W] to [mb, H, W]
 
+        INDArray unionArea = Broadcast.add(areaPredicted, areaLabel, areaPredicted, 0, 2, 3);
+        unionArea.subi(intersectionArea);
 
+        INDArray iou = intersectionArea.div(unionArea);
+        BooleanIndexing.replaceWhere(iou, 0.0, Conditions.isNan()); //0/0 -> NaN -> 0
+
+        double minIou = iou.minNumber().doubleValue();
+        double maxIou = iou.maxNumber().doubleValue();
+
+        if(minIou < 0 ){
+            throw new IllegalStateException("Min IOU: " + minIou);
+        }
+        if(maxIou < 0 || maxIou > 1.0 ){
+            throw new IllegalStateException("Max IOU: " + maxIou);
+        }
+
+        //Finally, calculate derivatives:
         INDArray maskMaxTL = Nd4j.create(maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
         Broadcast.gt(predictedTL_XY, labelTL, maskMaxTL, 0, 2, 3, 4);   // z = x > y
 
         INDArray maskMinBR = Nd4j.create(maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
         Broadcast.lt(predictedBR_XY, labelBR, maskMinBR, 0, 2, 3, 4);   // z = x < y
 
-        return null;
+        INDArray dIdxy_predicted = maskMinBR.sub(maskMaxTL);
+        INDArray dIdwh_predicted = maskMinBR.add(maskMaxTL).muli(0.5);
+
+        return new IOURet(iou, intersectionArea, unionArea, dIdxy_predicted, dIdwh_predicted);
     }
 
 
+    @AllArgsConstructor
+    @Data
     private static class IOURet {
         private INDArray iou;
-        private INDArray dIouDx;
-        private INDArray dIouDy;
-        private INDArray dIouDw;
-        private INDArray dIouDh;
+        private INDArray intersection;
+        private INDArray union;
+        private INDArray dIdxy_predicted;
+        private INDArray dIdwh_predicted;
+
     }
 
 //    private static INDArray calculateIOULabelPredicted(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2){
