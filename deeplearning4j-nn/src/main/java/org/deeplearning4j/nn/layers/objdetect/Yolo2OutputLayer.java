@@ -17,6 +17,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Min;
@@ -177,7 +178,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         // ----- Step 3: Calculate IOU(predicted, labels) to infer 1_ij^obj mask array (for loss function) -----
         //Calculate IOU (intersection over union - aka Jaccard index) - for the labels and bounding box priors
         //http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/
-        INDArray iou = calculateIOULabelPredicted(labelTLXYImg, labelBRXYImg, predictedTLXYImage, predictedBRXYImage);  //IOU shape: [minibatch, B, H, W]
+        INDArray iou = null;    //calculateIOULabelPredicted(labelTLXYImg, labelBRXYImg, predictedTLXYImage, predictedBRXYImage);  //IOU shape: [minibatch, B, H, W]
 
         double iouMin = iou.minNumber().doubleValue();
         double iouMax = iou.maxNumber().doubleValue();
@@ -435,33 +436,99 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         return score;
     }
 
+    /**
+     * Calculate IOU(truth, predicted). Returns 5d array, [mb, b, 2, H, W]
+     *
+     * @param labelTL   4d [mb, 2, H, W], label top/left (x,y) in terms of grid boxes
+     * @param labelWH   4d [mb, 2, H, W], label W/H in terms of number of grid boxes
+     * @param labelXY   4d [mb, 2, H, W], label X/Y in terms of number of grid boxes
+     * @param predictedWH 5d [mb, b, 2, H, W] - predicted H/W in terms of number of grid boxes.
+     * @param predictedXY 5d [mb, b, 2, H, W] - predicted X/Y in terms of number of grid boxes. Values 0 to 1, center box value being 0.5
+     * @return
+     */
+    private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray labelWH, INDArray labelXY, INDArray predictedWH, INDArray predictedXY){
 
-    private static INDArray calculateIOULabelPredicted(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2){
+        INDArray halfWH = predictedWH.div(0.5);
+        INDArray predictedTL_XY = halfWH.rsub(predictedXY);     //xy - 0.5 * wh
+        INDArray predictedBR_XY = halfWH.addi(predictedXY);     //xy + 0.5 * wh
 
-        //Labels, 4d: [mb, 2, H, W] - order (x,y) for dimension 1
-        //Predictions, 5d: [minibatch, B, 2, H, W] - order (x,y) for dimension 2
-        //Return: 5d, same shape as predictions
 
-        INDArray intersection = intersectionArea5d(tl1, br1, tl2, br2);
+        INDArray maxTL = Nd4j.createUninitialized(predictedTL_XY.shape(), predictedTL_XY.ordering());   //Shape: [mb, b, 2, H, W]
+        Broadcast.min(labelTL, predictedTL_XY, maxTL, 0, 2, 3, 4);
+        INDArray minBR = Nd4j.createUninitialized(predictedBR_XY.shape(), predictedBR_XY.ordering());
+        Broadcast.min(labelTL, predictedBR_XY, minBR, 0, 2, 3, 4);
 
-//        System.out.println("Intersection, min/max: " + intersection.minNumber() + "\t" + intersection.maxNumber());
+        INDArray diff = minBR.sub(maxTL);
+        INDArray intersectionArea = diff.prod(2);   //[mb, b, 2, H, W] to [mb, b, H, W]
+        int[] is = intersectionArea.shape();
+        char io = intersectionArea.ordering();
 
-        INDArray diff1 = br1.sub(tl1);
-        INDArray area1 = diff1.get(all(), point(0), all(), all()).add(1.0)
-                .muli(diff1.get(all(), point(1), all(), all()).add(1.0));           //Shape: [minibatch, H, W]
-        INDArray diff2 = br2.sub(tl2);
-        INDArray area2 = diff2.get(all(), all(), point(0), all(), all()).add(1.0)
-                .muli(diff2.get(all(), all(), point(1), all(), all()).add(1.0));    //Shape: [minibatch, B, H, W]
+        //Need to mask the calculated intersection values, to avoid returning non-zero values for 0 intersection
+        //No intersection if: xP + wP/2 < xL - wL/2 i.e., BR_xPred < TL_xLab   OR  TL_xPred > BR_xLab (similar for Y axis)
+        //Here, 1 if intersection exists, 0 otherwise. This is doing x/w and y/h simultaneously
 
-        INDArray union = Nd4j.createUninitialized(area2.shape(), area2.ordering());
-        Broadcast.add(area2, area1, union, 0, 2, 3);
+        INDArray noIntMask1 = Nd4j.create(maxTL.shape(), maxTL.ordering());
+        INDArray noIntMask2 = Nd4j.create(maxTL.shape(), maxTL.ordering());
+        //Does both x and y on different dims
+        Broadcast.lt(predictedBR_XY, labelTL, noIntMask1, 0, 2, 3, 4);  //Predicted BR < label TL
+        Broadcast.gt(predictedTL_XY, labelBR, noIntMask2, 0, 2, 3, 4);  //predicted TL > label BR
 
-//        System.out.println("Union, min/max: " + union.minNumber() + "\t" + union.maxNumber());
+        INDArray noIntMask = noIntMask1.prod(2).muli(noIntMask2.prod(2));   //Shape: [mb, b, H, W]. Values 1 if no intersection
+        INDArray intMask = Nd4j.getExecutioner().execAndReturn(new Not(noIntMask, noIntMask, 0.0)); //Values 0 if no intersection
 
-        INDArray iou = intersection.div(union);
-        BooleanIndexing.replaceWhere(iou, 0.0, Conditions.isNan()); //Replace NaNs (0 intersection, 0 area etc) with 0s
-        return iou;
+        //Mask the intersection area: should be 0 if no intersection
+        Broadcast.mul(intersectionArea, intMask, intersectionArea, 0,1,3,4);
+
+
+        //Next, union area is simple: U = A1 + A2 - intersection
+        INDArray areaPredicted = predictedWH.prod(2);   //[mb, b, 2, H, W] to [mb, b, H, W]
+        INDArray areaLabel = labelWH.prod(1);           //[mb, 2, H, W] to [mb, H, W]
+
+
+        INDArray maskMaxTL = Nd4j.create(maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
+        Broadcast.gt(predictedTL_XY, labelTL, maskMaxTL, 0, 2, 3, 4);   // z = x > y
+
+        INDArray maskMinBR = Nd4j.create(maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
+        Broadcast.lt(predictedBR_XY, labelBR, maskMinBR, 0, 2, 3, 4);   // z = x < y
+
+        return null;
     }
+
+
+    private static class IOURet {
+        private INDArray iou;
+        private INDArray dIouDx;
+        private INDArray dIouDy;
+        private INDArray dIouDw;
+        private INDArray dIouDh;
+    }
+
+//    private static INDArray calculateIOULabelPredicted(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2){
+//
+//        //Labels, 4d: [mb, 2, H, W] - order (x,y) for dimension 1
+//        //Predictions, 5d: [minibatch, B, 2, H, W] - order (x,y) for dimension 2
+//        //Return: 5d, same shape as predictions
+//
+//        INDArray intersection = intersectionArea5d(tl1, br1, tl2, br2);
+//
+////        System.out.println("Intersection, min/max: " + intersection.minNumber() + "\t" + intersection.maxNumber());
+//
+//        INDArray diff1 = br1.sub(tl1);
+//        INDArray area1 = diff1.get(all(), point(0), all(), all()).add(1.0)
+//                .muli(diff1.get(all(), point(1), all(), all()).add(1.0));           //Shape: [minibatch, H, W]
+//        INDArray diff2 = br2.sub(tl2);
+//        INDArray area2 = diff2.get(all(), all(), point(0), all(), all()).add(1.0)
+//                .muli(diff2.get(all(), all(), point(1), all(), all()).add(1.0));    //Shape: [minibatch, B, H, W]
+//
+//        INDArray union = Nd4j.createUninitialized(area2.shape(), area2.ordering());
+//        Broadcast.add(area2, area1, union, 0, 2, 3);
+//
+////        System.out.println("Union, min/max: " + union.minNumber() + "\t" + union.maxNumber());
+//
+//        INDArray iou = intersection.div(union);
+//        BooleanIndexing.replaceWhere(iou, 0.0, Conditions.isNan()); //Replace NaNs (0 intersection, 0 area etc) with 0s
+//        return iou;
+//    }
 
     private static INDArray intersectionArea5d(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2){
         //Broadcast max/min op - compare 4d with 5d, 5d result
