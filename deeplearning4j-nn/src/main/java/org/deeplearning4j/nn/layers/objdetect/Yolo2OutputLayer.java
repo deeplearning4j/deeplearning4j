@@ -179,7 +179,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         // ----- Step 3: Calculate IOU(predicted, labels) to infer 1_ij^obj mask array (for loss function) -----
         //Calculate IOU (intersection over union - aka Jaccard index) - for the labels and predicted values
-        IOURet iouRet = calculateIOULabelPredicted(labelTLXYImg, labelBRXYImg, predictedTLXYImage, predictedBRXYImage);  //IOU shape: [minibatch, B, H, W]
+        IOURet iouRet = calculateIOULabelPredicted(labelTLXYImg, labelBRXYImg, predictedWH, predictedXYCenterGrid, maskArray);  //IOU shape: [minibatch, B, H, W]
         INDArray iou = iouRet.getIou();
 
         double iouMin = iou.minNumber().doubleValue();
@@ -299,7 +299,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         double loss =
                 layerConf().getLambdaCoord() * positionLoss +
                 layerConf().getLambdaCoord() * sizeScaleLoss +
-//                confidenceLoss +
+                confidenceLoss +
                 classPredictionLoss +
                 fullNetworkL1 +
                 fullNetworkL2
@@ -365,13 +365,22 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray gradConfidence2d = gradConfidence2dA.addi(gradConfidence2dB);  //dL/dC; C = sigmoid(tc)
         //Calculate dL/dtc
         INDArray epsConfidence4d = gradConfidence2d.dup('c').reshape(mb, b, h, w);   //[mb*b*h*w, 2] to [mb, b, h, w]
-//        epsC.assign(epsConfidence4d);
+        epsC.assign(epsConfidence4d);
 
         //Note that we ALSO have components to x,y,w,h  from confidence loss (via IOU)
         //that is: dL_conf/dx, dL_conf/dy, dL_conf/dw, dL_conf/dh
         //For any value v, d(I/U)/dv = (U * dI/dv + I * dU/dv) / U^2
 
-        INDArray dLc_dIOU = null;    //TODO - dL_C / dIOU, shape [mb, b, h, w]
+        //Confidence loss: sum squared errors + masking.
+        //C == IOU when label present
+        INDArray dLc_dClabel = iou.sub(predictedConfidence).muli(2.0);  //Shape: [mb, b, h, w]
+//        dLc_dClabel.mul(mask1_ij_obj.add(mask1_ij_noobj));
+        INDArray newMask = mask1_ij_obj.dup();
+        BooleanIndexing.applyWhere(newMask, Conditions.equals(0), layerConf().getLambdaNoObj());    //1 or lambda, for object or no-object respectively
+        dLc_dClabel.mul(newMask);
+
+
+        INDArray dLc_dIOU = dLc_dClabel;    //TODO - dL_C / dIOU, shape [mb, b, h, w]
 
         INDArray u = iouRet.getUnion();
         INDArray i = iouRet.getIntersection();
@@ -396,6 +405,14 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray dLc_dwh = dLc_dIOU.mul(dIOU_dwh);
         INDArray dLc_dxy = dLc_dIOU.mul(dIOU_dxy);
 
+        //Backprop through the wh and xy activation functions...
+        INDArray labelWH = labelBRXYImg.sub(labelTLXYImg);
+        INDArray dLc_din_wh = dLc_dwh.mul(labelWH); //dL/dw and dL/dh, w = pw * exp(tw), //dL/dinWH = dL/dw * dw/dInWH = dL/dw * pw * exp(tw)
+        INDArray dLc_din_xy = new ActivationSigmoid().backprop(preSigmoidPredictedXYCenterGrid, dLc_dxy).getFirst();
+
+
+        epsWH.addi(dLc_din_wh);
+        epsXY.addi(dLc_din_xy);
 
         return epsOut;
     }
@@ -472,24 +489,38 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
      * @param predictedXY 5d [mb, b, 2, H, W] - predicted X/Y in terms of number of grid boxes. Values 0 to 1, center box value being 0.5
      * @return
      */
-    private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray predictedWH, INDArray predictedXY){
+    private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray predictedWH, INDArray predictedXY, INDArray objectPresentMask){
+
+        double minwh = predictedWH.minNumber().doubleValue();
+        if(minwh < 0.0){
+            throw new IllegalStateException("Min width/height: " + minwh);
+        }
+
+        //Predicted x/y shouldbe in 0 to 1 (due to sigmoid - it is position in grid...)
+        double minPredXY = predictedXY.minNumber().doubleValue();
+        double maxPredXY = predictedXY.maxNumber().doubleValue();
+        if(minPredXY < 0.0){
+            throw new IllegalStateException("Min predicted XY: " + minPredXY);
+        }
+        if(maxPredXY > 1.0){
+            throw new IllegalStateException("Max predicted XY: " + minPredXY);
+        }
 
         INDArray labelWH = labelBR.sub(labelTL);                //4d [mb, 2, H, W], label W/H in terms of number of grid boxes
 
         INDArray halfWH = predictedWH.div(0.5);
         INDArray predictedTL_XY = halfWH.rsub(predictedXY);     //xy - 0.5 * wh
-        INDArray predictedBR_XY = halfWH.addi(predictedXY);     //xy + 0.5 * wh
+        INDArray predictedBR_XY = halfWH.add(predictedXY);      //xy + 0.5 * wh
 
 
         INDArray maxTL = Nd4j.createUninitialized(predictedTL_XY.shape(), predictedTL_XY.ordering());   //Shape: [mb, b, 2, H, W]
-        Broadcast.min(predictedTL_XY, labelTL, maxTL, 0, 2, 3, 4);
+        Broadcast.max(predictedTL_XY, labelTL, maxTL, 0, 2, 3, 4);
         INDArray minBR = Nd4j.createUninitialized(predictedBR_XY.shape(), predictedBR_XY.ordering());
         Broadcast.min(predictedBR_XY, labelBR, minBR, 0, 2, 3, 4);
 
         INDArray diff = minBR.sub(maxTL);
         INDArray intersectionArea = diff.prod(2);   //[mb, b, 2, H, W] to [mb, b, H, W]
-        int[] is = intersectionArea.shape();
-        char io = intersectionArea.ordering();
+        Broadcast.mul(intersectionArea, objectPresentMask, intersectionArea, 0, 2, 3);
 
         //Need to mask the calculated intersection values, to avoid returning non-zero values for 0 intersection
         //No intersection if: xP + wP/2 < xL - wL/2 i.e., BR_xPred < TL_xLab   OR  TL_xPred > BR_xLab (similar for Y axis)
@@ -507,9 +538,15 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         Transforms.or(noIntMask1, noIntMask2 );
 
         INDArray intMask = Nd4j.getExecutioner().execAndReturn(new Not(noIntMask, noIntMask, 0.0)); //Values 0 if no intersection
+        Broadcast.mul(intMask, objectPresentMask, intMask, 0, 2, 3);
 
         //Mask the intersection area: should be 0 if no intersection
         intersectionArea.muli(intMask);
+
+        int totalCount = intMask.length();
+        int countOne = intMask.sumNumber().intValue();
+
+        System.out.println("intMask counts: total, number of 1s: " + totalCount + ", " + countOne);
 
         double minIntArea = intersectionArea.minNumber().doubleValue();
         double maxIntArea = intersectionArea.maxNumber().doubleValue();
@@ -525,13 +562,25 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //Next, union area is simple: U = A1 + A2 - intersection
         INDArray areaPredicted = predictedWH.prod(2);   //[mb, b, 2, H, W] to [mb, b, H, W]
+        Broadcast.mul(areaPredicted, objectPresentMask, areaPredicted, 0,2,3);
         INDArray areaLabel = labelWH.prod(1);           //[mb, 2, H, W] to [mb, H, W]
 
-        INDArray unionArea = Broadcast.add(areaPredicted, areaLabel, areaPredicted, 0, 2, 3);
+        INDArray unionArea = Broadcast.add(areaPredicted, areaLabel, areaPredicted.dup(), 0, 2, 3);
         unionArea.subi(intersectionArea);
+        unionArea.muli(intMask);
+
+        double minUnion = unionArea.minNumber().doubleValue();
+        double maxUnion = unionArea.maxNumber().doubleValue();
+        if(minUnion < 0.0){
+            throw new IllegalStateException("Min union area: " + minUnion);
+        }
 
         INDArray iou = intersectionArea.div(unionArea);
         BooleanIndexing.replaceWhere(iou, 0.0, Conditions.isNan()); //0/0 -> NaN -> 0
+
+        //Apply the "object present" mask (of shape [mb, h, w]
+        Broadcast.mul(iou, objectPresentMask, iou, 0, 2, 3);
+
 
         double minIou = iou.minNumber().doubleValue();
         double maxIou = iou.maxNumber().doubleValue();

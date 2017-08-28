@@ -41,14 +41,15 @@ public class YoloGradientCheckTests {
 
     @Test
     public void testYoloOutputLayer() {
+        Nd4j.getRandom().setSeed(12345);
         int depthIn = 2;
 
 
         int[] minibatchSizes = {2};
-        int w = 5;
-        int h = 5;
-        int c = 5;
-        int b = 4;
+        int w = 3;
+        int h = 3;
+        int c = 2;
+        int b = 2;
 
         int yoloDepth = 5*b + c;
 
