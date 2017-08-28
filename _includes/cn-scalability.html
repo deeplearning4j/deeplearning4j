@@ -1,0 +1,105 @@
+<div class="row">
+  <div class="col-sm-12">
+    <form>
+      <div>
+        <table class="table">
+          <thead>
+          <th>
+            迭代时间
+          </th>
+          <th>
+            编码时间
+          </th>
+          <th>
+            解码时间
+          </th>
+          <th>
+            更新时间
+          </th>
+          <th>
+            服务开销
+          </th>
+          </thead>
+          <tr>
+            <td><input type="text" id="iter" value="550" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+            <td><input type="text" id="enc" value="50" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+            <td><input type="text" id="dec" value="5" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+            <td><input type="text" id="upd" value="50" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+            <td><input type="text" id="srv" value="20" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+          </tr>
+        </table>
+      </div>
+      <div>
+        <table class="table">
+          <thead>
+          <th>
+            节点数量
+          </th>
+          <th>
+            每个节点的工作器数量
+          </th>
+          </thead>
+          <tr>
+            <td><input type="text" id="nodes" value="8" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+            <td><input type="text" id="workers" value="4" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+          </tr>
+        </table>
+      </div>
+      <div style="padding-bottom: 30px;">
+        <h4>可扩展性：<span id="rscal">0%</span></h4>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script language="JavaScript">
+  function getValue(id) {
+    return document.getElementById(id).value;
+  }
+
+  function refreshCalculations() {
+    // to be implemented
+    // 60000 / (A2 + B2 + (C2 * (A5 * B5)) + E2) * (A5 * B5)
+    var a2 = parseInt(getValue("iter"));
+    var b2 = parseInt(getValue("enc"));
+    var c2 = parseInt(getValue("dec"));
+    var d2 = parseInt(getValue("upd"));
+    var e2 = parseInt(getValue("srv"));
+
+    var a5 = parseInt(getValue("nodes"));
+    var b5 = parseInt(getValue("workers"));
+
+    var ab = (a5 * b5);
+    var g12 = 60000.00 / a2;
+    var gP = (a2 + b2 + (c2 * ab) + e2);
+    var g13 = (60000.00 / gP) * ab;
+
+    /*
+    console.log("a2: " + a2);
+    console.log("b2: " + b2);
+    console.log("c2: " + c2);
+    console.log("e2: " + e2);
+    console.log("ab: " + ab);
+    console.log("g12: " + g12);
+    console.log("gP: " + gP);
+    console.log("g13: " + g13);
+    console.log("h13: " + h13);
+    */
+
+    var h13 = g13 / g12;
+
+    var i13 = parseFloat((h13 * 100) / (a5 * b5)).toFixed(2);
+
+    document.getElementById("rscal").innerHTML = i13 + '%';
+  }
+
+  // fire this one, once document is loaded
+  refreshCalculations();
+</script>
