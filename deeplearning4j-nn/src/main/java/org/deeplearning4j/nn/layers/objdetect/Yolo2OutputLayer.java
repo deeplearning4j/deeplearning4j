@@ -259,10 +259,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         IActivation identity = new ActivationIdentity();
         double positionLoss = layerConf().getLossPositionScale().computeScore(labelXYCenter2d, predictedXYCenter2d, identity, mask1_ij_obj_2d, false );
         double sizeScaleLoss = layerConf().getLossPositionScale().computeScore(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d, false);
-//        double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false)
-//                + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
+        double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false)
+                + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
 
-        double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false);
+//        double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false);
 //                + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
 
         double classPredictionLoss = layerConf().getLossClassPredictions().computeScore(classLabels2d, classPredictionsPreSoftmax2d, new ActivationSoftmax(), mask2d, false);
@@ -387,6 +387,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray u2 = iouRet.getUnion().mul(iouRet.getUnion());
 
         INDArray iuDivU2 = u.add(i).divi(u2);   //Shape: [mb, b, h, w]
+        BooleanIndexing.replaceWhere(iuDivU2, 0.0, Conditions.isNan());     //Handle 0/0
 
 
 
@@ -397,17 +398,23 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray uSubI = u.sub(i);  //Shape: [mb, b, h, w]
 
-//        INDArray Ihw = Nd4j.createUninitialized(iouRet.getIntersection().shape(), iouRet.getIntersection().ordering());
-//        Broadcast.mul(iouRet.getIntersection(), predictedWH, Ihw, );    //Predicted_wh: [mb, b, h, w],
-        INDArray Iwh = iouRet.getIntersection().mul(predictedWH);   //[mb, b, h, w]
-        INDArray dIOU_dwh = iouRet.dIdwh_predicted.mul(uSubI).add(Iwh).div(u2);
+        INDArray Iwh = Nd4j.createUninitialized(predictedWH.shape(), predictedWH.ordering());
+        Broadcast.mul(predictedWH, iouRet.getIntersection(), Iwh, 0, 1, 3, 4 );    //Predicted_wh: [mb, b, 2, h, w]; intersection: [mb, b, h, w]
+        INDArray dIOU_dwh = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, iouRet.dIdwh_predicted.ordering());    //iouRet.dIdwh_predicted.mul(uSubI).add(Iwh).div(u2);
+        Broadcast.mul(iouRet.dIdwh_predicted, uSubI, dIOU_dwh, 0, 1, 3, 4);
+        Broadcast.div(dIOU_dwh, u2, dIOU_dwh, 0, 1, 3, 4);
+        BooleanIndexing.replaceWhere(dIOU_dwh, 0.0, Conditions.isNan());     //Handle division by 0 (due to masking, etc)
 
-        INDArray dLc_dwh = dLc_dIOU.mul(dIOU_dwh);
-        INDArray dLc_dxy = dLc_dIOU.mul(dIOU_dxy);
+        INDArray dLc_dwh = Nd4j.createUninitialized(dIOU_dwh.shape(), dIOU_dwh.ordering());
+        INDArray dLc_dxy = Nd4j.createUninitialized(dIOU_dxy.shape(), dIOU_dxy.ordering());
+        Broadcast.mul(dIOU_dwh, dLc_dIOU, dLc_dwh, 0, 1, 3, 4);    //[mb, b, h, w] x [mb, b, 2, h, w]
+        Broadcast.mul(dIOU_dxy, dLc_dIOU, dLc_dxy, 0, 1, 3, 4);
+
 
         //Backprop through the wh and xy activation functions...
         INDArray labelWH = labelBRXYImg.sub(labelTLXYImg);
-        INDArray dLc_din_wh = dLc_dwh.mul(labelWH); //dL/dw and dL/dh, w = pw * exp(tw), //dL/dinWH = dL/dw * dw/dInWH = dL/dw * pw * exp(tw)
+        //dL/dw and dL/dh, w = pw * exp(tw), //dL/dinWH = dL/dw * dw/dInWH = dL/dw * pw * exp(tw)
+        INDArray dLc_din_wh = Broadcast.mul(dLc_dwh, labelWH, dLc_dwh, 0, 2, 3);    //[mb, h, w] x [mb, b, 2, h, w]
         INDArray dLc_din_xy = new ActivationSigmoid().backprop(preSigmoidPredictedXYCenterGrid, dLc_dxy).getFirst();
 
 
@@ -508,7 +515,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray labelWH = labelBR.sub(labelTL);                //4d [mb, 2, H, W], label W/H in terms of number of grid boxes
 
-        INDArray halfWH = predictedWH.div(0.5);
+        INDArray halfWH = predictedWH.mul(0.5);
         INDArray predictedTL_XY = halfWH.rsub(predictedXY);     //xy - 0.5 * wh
         INDArray predictedBR_XY = halfWH.add(predictedXY);      //xy + 0.5 * wh
 
@@ -545,8 +552,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         int totalCount = intMask.length();
         int countOne = intMask.sumNumber().intValue();
-
-        System.out.println("intMask counts: total, number of 1s: " + totalCount + ", " + countOne);
+//        System.out.println("intMask counts: total, number of 1s: " + totalCount + ", " + countOne);
 
         double minIntArea = intersectionArea.minNumber().doubleValue();
         double maxIntArea = intersectionArea.maxNumber().doubleValue();
@@ -558,6 +564,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         if(maxIntArea < 0.0){
             throw new IllegalStateException("max intersection area: " + maxIntArea);
         }
+
+        //*** deBUG ***
+        Broadcast.mul(predictedWH, objectPresentMask, predictedWH, 0,3,4);
 
 
         //Next, union area is simple: U = A1 + A2 - intersection
@@ -617,58 +626,12 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     }
 
-//    private static INDArray calculateIOULabelPredicted(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2){
-//
-//        //Labels, 4d: [mb, 2, H, W] - order (x,y) for dimension 1
-//        //Predictions, 5d: [minibatch, B, 2, H, W] - order (x,y) for dimension 2
-//        //Return: 5d, same shape as predictions
-//
-//        INDArray intersection = intersectionArea5d(tl1, br1, tl2, br2);
-//
-////        System.out.println("Intersection, min/max: " + intersection.minNumber() + "\t" + intersection.maxNumber());
-//
-//        INDArray diff1 = br1.sub(tl1);
-//        INDArray area1 = diff1.get(all(), point(0), all(), all()).add(1.0)
-//                .muli(diff1.get(all(), point(1), all(), all()).add(1.0));           //Shape: [minibatch, H, W]
-//        INDArray diff2 = br2.sub(tl2);
-//        INDArray area2 = diff2.get(all(), all(), point(0), all(), all()).add(1.0)
-//                .muli(diff2.get(all(), all(), point(1), all(), all()).add(1.0));    //Shape: [minibatch, B, H, W]
-//
-//        INDArray union = Nd4j.createUninitialized(area2.shape(), area2.ordering());
-//        Broadcast.add(area2, area1, union, 0, 2, 3);
-//
-////        System.out.println("Union, min/max: " + union.minNumber() + "\t" + union.maxNumber());
-//
-//        INDArray iou = intersection.div(union);
-//        BooleanIndexing.replaceWhere(iou, 0.0, Conditions.isNan()); //Replace NaNs (0 intersection, 0 area etc) with 0s
-//        return iou;
-//    }
-
-    private static INDArray intersectionArea5d(INDArray tl1, INDArray br1, INDArray tl2, INDArray br2){
-        //Broadcast max/min op - compare 4d with 5d, 5d result
-        int[] s = tl2.shape();
-        char o = tl2.ordering();
-
-        INDArray xyMaxTL = Broadcast.max(tl2, tl1, Nd4j.createUninitialized(s, o), 0, 2, 3, 4 );
-        INDArray xyMinBR = Broadcast.min(br2, br2, Nd4j.createUninitialized(s, o), 0, 2, 3, 4 );
-
-        INDArray xMaxTL = xyMaxTL.get(all(), all(), point(0), all(), all());
-        INDArray xMinBR = xyMinBR.get(all(), all(), point(0), all(), all());
-        INDArray yMaxTL = xyMaxTL.get(all(), all(), point(1), all(), all());
-        INDArray yMinBR = xyMinBR.get(all(), all(), point(1), all(), all());
-
-        INDArray xTerm = xMinBR.sub(xMaxTL).addi(1.0);
-        INDArray yTerm = yMinBR.sub(yMaxTL).addi(1.0);
-
-        return xTerm.mul(yTerm);
-    }
-
     @Override
     public void computeGradientAndScore(){
         //Assume full network l1/l2 is already provided...
 
         //TODO
-
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override

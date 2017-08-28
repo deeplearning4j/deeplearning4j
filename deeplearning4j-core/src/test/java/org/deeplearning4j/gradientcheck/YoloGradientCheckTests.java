@@ -45,10 +45,10 @@ public class YoloGradientCheckTests {
         int depthIn = 2;
 
 
-        int[] minibatchSizes = {2};
-        int w = 3;
-        int h = 3;
-        int c = 2;
+        int[] minibatchSizes = {1}; //2};
+        int w = 4;
+        int h = 4;
+        int c = 3;
         int b = 2;
 
         int yoloDepth = 5*b + c;
