@@ -21,14 +21,20 @@ namespace nd4j {
             std::vector<int> _inputs;
             std::vector<nd4j::graph::Variable<T> *> _variables;
             nd4j::graph::VariableSpace<T> * _variableSpace;
+            int _nodeId;
 
         public:
-            Block(VariableSpace<T> *variableSpace) {
+            Block(int nodeId, VariableSpace<T> *variableSpace) {
+                _nodeId = nodeId;
                 _variableSpace = variableSpace;
             }
 
             ~Block() {
                 //
+            }
+
+            int getNodeId() {
+                return _nodeId;
             }
 
             /**

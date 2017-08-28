@@ -27,6 +27,12 @@ TEST_F(DeclarableOpsTests, BasicInitialization1) {
     NDArray<float> x3(1, 5, 'c');
     NDArray<float> x4(1, 5, 'c');
 
+    x0.assign(1.0f);
+    x1.assign(1.0f);
+    x2.assign(1.0f);
+    x3.assign(1.0f);
+    x4.assign(1.0f);
+
     auto variableSpace = new VariableSpace<float>();
 
     variableSpace->putVariable(-1, &x0);
@@ -35,12 +41,23 @@ TEST_F(DeclarableOpsTests, BasicInitialization1) {
     variableSpace->putVariable(-4, &x3);
     variableSpace->putVariable(-5, &x4);
 
-    Block<float> block(variableSpace);
+    auto nodeVar = new Variable<float>();
+
+    variableSpace->putVariable(1, nodeVar);
+
+    Block<float> block(1, variableSpace);
 
     block.fillInputs({-1, -2, -3, -4, -5});
 
-    Nd4jStatus result = concat->validateAndExecute(&block);
+    ASSERT_TRUE(nodeVar->getNDArray() == nullptr);
 
+    Nd4jStatus result = concat->execute(&block);
+
+    ASSERT_TRUE(nodeVar->getNDArray() != nullptr);
+
+    ASSERT_EQ(25, nodeVar->getNDArray()->lengthOf());
+
+    ASSERT_NEAR(25.0, nodeVar->getNDArray()->reduceNumber<simdOps::Sum<float>>(), 1e-5);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 }

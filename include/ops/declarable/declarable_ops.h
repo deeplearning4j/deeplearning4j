@@ -36,6 +36,10 @@ namespace nd4j {
             Block<T> *_block;
             OpDescriptor *_descriptor;
 
+            /**
+             * This method executes this Op b
+             */
+            virtual Nd4jStatus validateAndExecute(Block<T>& block) = 0;
         public:
             DeclarableOp(int numInputs, int numOutputs, const char *opName) {
                 _descriptor = new OpDescriptor(numInputs, numOutputs, opName);
@@ -70,14 +74,12 @@ namespace nd4j {
              */
             void getResults();
 
-
-            virtual Nd4jStatus validate() = 0;
-            virtual Nd4jStatus execute() = 0;
-
             /**
-             * This method executes this Op b
+             * This method executes everything
+             * @param block
+             * @return
              */
-            Nd4jStatus validateAndExecute(Block<T>* block);
+            Nd4jStatus execute(Block<T>* block);
 
             // There methods provide various validation options
             Nd4jStatus validateNonEmptyInput(Block<T>& block);
@@ -86,6 +88,16 @@ namespace nd4j {
             Nd4jStatus validateOrdersMatch(Block<T>& block);
         };
     }
+}
+
+template <typename T>
+Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(Block<T>* block) {
+    if (block != nullptr)
+        _block = block;
+    else
+        throw std::invalid_argument("Block is NULL");
+
+    return this->validateAndExecute(*block);
 }
 
 template <typename T>
@@ -151,56 +163,65 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInputLengthMatch(Block<T>& block)
 }
 
 
-template <typename T>
-Nd4jStatus nd4j::ops::DeclarableOp<T>::validateAndExecute(Block<T>* block) {
-    if (block == nullptr)
-        return ND4J_STATUS_BAD_INPUT;
-
-    _block = block;
-
-    // doing validation
-    Nd4jStatus status = validate();
-    if (status != ND4J_STATUS_OK)
-        return status;
-
-    // executing op
-    return execute();
-}
-
-
 namespace nd4j {
     namespace ops {
 
         template <typename T>
         class Concat: public nd4j::ops::DeclarableOp<T> {
-        protected:
-            Nd4jIndex _length;
-
         public:
             Concat() : nd4j::ops::DeclarableOp<T>(-1, 1, "Concat") {
 
             }
 
+        protected:
+            Nd4jIndex _length;
+            int _dimension = 0;
+
             // do something here
-            Nd4jStatus validate() {
-                REQUIRE_OK(this->validateNonEmptyInput(*(this->_block)));
+            Nd4jStatus validateAndExecute(Block<T>& block) {
+                // basic checks are happening here
+                REQUIRE_OK(this->validateNonEmptyInput(block));
 
                 // we want to ensure that all
-                _length = 0;
-                for (int e = 0; e < this->_block->getVariables().size(); e++) {
-                    auto var = this->_block->getVariables().at(e);
+                NDArray<T> *first = block.getVariables().at(0)->getNDArray();
+
+                int *shape = new int[first->_shapeInfo[0] * 2 + 4];
+                std::memcpy(shape, first->_shapeInfo, (first->_shapeInfo[0] * 2 + 4) * sizeof(int));
+                _length = shape::length(shape);
+
+                Nd4jPointer *buffers = new Nd4jPointer[block.getVariables().size()];
+                Nd4jPointer *shapes = new Nd4jPointer[block.getVariables().size()];
+
+                buffers[0] = (Nd4jPointer) first->_buffer;
+                shapes[0] = (Nd4jPointer) first->_shapeInfo;
+
+                for (int e = 1; e < block.getVariables().size(); e++) {
+                    Variable<T> *var = block.getVariables().at(e);
                     _length += var->getNDArray()->lengthOf();
+
+                    shape[_dimension + 1] += var->getNDArray()->shapeOf()[_dimension];
+
+                    buffers[e] = (Nd4jPointer) var->getNDArray()->_buffer;
+                    shapes[e] = (Nd4jPointer) var->getNDArray()->_shapeInfo;
                 }
 
-                return ND4J_STATUS_OK;
-            }
+                if (!block.getVariableSpace()->hasVariable(block.getNodeId()))
+                    throw "VariableSpace has no registered node";
 
-            // do something here
-            Nd4jStatus execute() {
-                auto z = new NDArray<T>('c', {});
+                auto variable = block.getVariableSpace()->getVariable(block.getNodeId());
 
+                if (variable->getNDArray() == nullptr) {
+                    Nd4jIndex len = shape::length(shape);
+                    T *buffer = new T[len];
+                    variable ->setNDArray(new NDArray<T>(buffer, shape));
+                    variable->getNDArray()->_allocated = true;
+                } else {
 
-                delete z;
+                    delete[] shape;
+                }
+
+                concatCpuGeneric(_dimension, block.getVariables().size(), buffers, shapes, variable->getNDArray()->_buffer, variable->getNDArray()->_shapeInfo);
+
                 return ND4J_STATUS_OK;
             }
         };
