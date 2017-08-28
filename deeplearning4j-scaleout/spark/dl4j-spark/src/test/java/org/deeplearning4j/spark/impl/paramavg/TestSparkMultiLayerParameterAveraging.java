@@ -46,6 +46,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -973,6 +974,54 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
             assertEquals(sparkROC.calculateAUC(i), sparkROC.calculateAUC(i), 1e-6);
 
             assertEquals(local.getRocCurve(i), sparkROC.getRocCurve(i));
+        }
+    }
+
+
+    @Test
+    public void testEpochCounter() throws Exception {
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new OutputLayer.Builder().nIn(4).nOut(3).build())
+                .build();
+
+        ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("out", new OutputLayer.Builder().nIn(4).nOut(3).build(), "in")
+                .setOutputs("out")
+                .build();
+
+        DataSetIterator iter = new IrisDataSetIterator(1, 150);
+
+        List<DataSet> l = new ArrayList<>();
+        while(iter.hasNext()){
+            l.add(iter.next());
+        }
+
+        JavaRDD<DataSet> rdd = sc.parallelize(l);
+
+
+        int rddDataSetNumExamples = 1;
+        int averagingFrequency = 3;
+        ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(rddDataSetNumExamples)
+                .averagingFrequency(averagingFrequency).batchSizePerWorker(rddDataSetNumExamples)
+                .saveUpdater(true).workerPrefetchNumBatches(0).build();
+        Nd4j.getRandom().setSeed(12345);
+
+
+        SparkDl4jMultiLayer sn1 = new SparkDl4jMultiLayer(sc, conf.clone(), tm);
+        SparkComputationGraph sn2 = new SparkComputationGraph(sc, conf2.clone(), tm);
+
+
+        for(int i=0; i<4; i++ ){
+            assertEquals(i, sn1.getNetwork().getLayerWiseConfigurations().getEpochCount());
+            assertEquals(i, sn2.getNetwork().getConfiguration().getEpochCount());
+            sn1.fit(rdd);
+            sn2.fit(rdd);
+            assertEquals(i+1, sn1.getNetwork().getLayerWiseConfigurations().getEpochCount());
+            assertEquals(i+1, sn2.getNetwork().getConfiguration().getEpochCount());
         }
     }
 }

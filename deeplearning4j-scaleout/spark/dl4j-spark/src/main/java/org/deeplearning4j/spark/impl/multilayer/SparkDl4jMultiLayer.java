@@ -216,6 +216,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         trainingMaster.executeTraining(this, trainingData);
+        network.incrementEpochCount();
         return network;
     }
 
@@ -257,6 +258,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public MultiLayerNetwork fitPaths(JavaRDD<String> paths) {
         trainingMaster.executeTrainingPaths(this, paths);
+        network.incrementEpochCount();
         return network;
     }
 
