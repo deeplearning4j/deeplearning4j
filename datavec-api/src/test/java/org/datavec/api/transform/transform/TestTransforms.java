@@ -41,6 +41,7 @@ import org.datavec.api.transform.transform.integer.*;
 import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
 import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
 import org.datavec.api.transform.transform.nlp.TextToCharacterIndexTransform;
+import org.datavec.api.transform.transform.nlp.TextToTermIndexSequenceTransform;
 import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
 import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
 import org.datavec.api.transform.transform.sequence.SequenceOffsetTransform;
@@ -1446,6 +1447,43 @@ public class TestTransforms {
 
         List<List<Writable>> out = t.mapSequence(inSeq);
 
+        assertEquals(exp, out);
+    }
+
+    @Test
+    public void testTextToWordIndexSequenceTransform(){
+
+        Schema schema = new Schema.Builder()
+                .addColumnString("ID")
+                .addColumnString("TEXT")
+                .addColumnDouble("FEATURE")
+                .build();
+        List<String> vocab = Arrays.asList("zero", "one", "two", "three");
+        List<List<Writable>> inSeq = Arrays.asList(
+                Arrays.<Writable>asList(new Text("a"), new Text("zero four two"), new DoubleWritable(4.2)),
+                Arrays.<Writable>asList(new Text("b"), new Text("six one two four three five"), new DoubleWritable(87.9)));
+
+        Schema expSchema = new Schema.Builder()
+                .addColumnString("ID")
+                .addColumnInteger("INDEXSEQ")
+                .addColumnDouble("FEATURE")
+                .build();
+        List<List<Writable>> exp = Arrays.asList(
+                Arrays.<Writable>asList(new Text("a"), new IntWritable(0), new DoubleWritable(4.2)),
+                Arrays.<Writable>asList(new Text("a"), new IntWritable(2), new DoubleWritable(4.2)),
+                Arrays.<Writable>asList(new Text("b"), new IntWritable(1), new DoubleWritable(87.9)),
+                Arrays.<Writable>asList(new Text("b"), new IntWritable(2), new DoubleWritable(87.9)),
+                Arrays.<Writable>asList(new Text("b"), new IntWritable(3), new DoubleWritable(87.9)));
+
+        Transform t = new TextToTermIndexSequenceTransform("TEXT", "INDEXSEQ", vocab, " ", false);
+        t.setInputSchema(schema);
+
+        Schema outSchema = t.transform(schema);
+        assertEquals(expSchema.getColumnNames(), outSchema.getColumnNames());
+        assertEquals(expSchema.getColumnTypes(), outSchema.getColumnTypes());
+        assertEquals(expSchema, outSchema);
+
+        List<List<Writable>> out = t.mapSequence(inSeq);
         assertEquals(exp, out);
     }
 }
