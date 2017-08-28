@@ -21,6 +21,7 @@ lazy val commonSettings = Seq(
   name := "nd4s",
   version := sys.props.getOrElse("currentVersion", default = "0.9.2-SNAPSHOT"),
   organization := "org.nd4j",
+  resolvers += Resolver.mavenLocal,
   resolvers in ThisBuild ++= Seq(Opts.resolver.sonatypeSnapshots),
   nd4jVersion := sys.props.getOrElse("nd4jVersion", default = "0.9.2-SNAPSHOT"),
   libraryDependencies ++= Seq(
