@@ -231,4 +231,40 @@ public class KerasConvolutionUtils {
         }
         return padding;
     }
+
+    /**
+     * Get zero padding from Keras layer configuration.
+     *
+     * @param layerConfig       dictionary containing Keras layer configuration
+     * @param conf              KerasLayerConfiguration
+     * @param dimension         Dimension of the padding layer
+     * @return padding list of integers
+     * @throws InvalidKerasConfigurationException Invalid keras configuration
+     */
+    public static int[] getPaddingFromConfig(Map<String, Object> layerConfig, KerasLayerConfiguration conf, int dimension)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_ZERO_PADDING()))
+            throw new InvalidKerasConfigurationException(
+                    "Field " + conf.getLAYER_FIELD_ZERO_PADDING() + " not found in Keras ZeroPadding layer");
+        int[] padding;
+        if (dimension == 2) {
+            List<Integer> paddingList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_ZERO_PADDING());
+            if (paddingList.size() == 2) {
+                paddingList.add(paddingList.get(1));
+                paddingList.add(1, paddingList.get(0));
+                padding = ArrayUtil.toArray(paddingList);
+            }
+            else
+                throw new InvalidKerasConfigurationException("Found Keras ZeroPadding2D layer with invalid "
+                        + paddingList.size() + "D padding.");
+        } else if (dimension == 1) {
+            int paddingInt = (int) innerConfig.get(conf.getLAYER_FIELD_ZERO_PADDING());
+            padding = new int[]{ paddingInt };
+        } else {
+            throw new UnsupportedKerasConfigurationException(
+                    "Keras padding layer not supported");
+        }
+        return padding;
+    }
 }

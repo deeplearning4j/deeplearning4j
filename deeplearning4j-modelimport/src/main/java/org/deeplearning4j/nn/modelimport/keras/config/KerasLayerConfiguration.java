@@ -134,6 +134,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_FILTER_LENGTH = ""; // 1: filter_length, 2: kernel_size
     private final String LAYER_FIELD_SUBSAMPLE_LENGTH = ""; // 1: subsample_length, 2: strides
     private final String LAYER_FIELD_DILATION_RATE = ""; // 1: atrous_rate, 2: dilation_rate
+    private final String LAYER_FIELD_ZERO_PADDING = "padding";
 
     /* Pooling / Upsampling layer properties */
     private final String LAYER_FIELD_POOL_STRIDES = "strides";

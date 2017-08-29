@@ -211,7 +211,7 @@ public class KerasLayerUtils {
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_RESHAPE())) {
             layer = new KerasReshape(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ZERO_PADDING_2D())) {
-            layer = new KerasZeroPadding(layerConfig, enforceTrainingConfig);
+            layer = new KerasZeroPadding2D(layerConfig, enforceTrainingConfig);
         } else {
             // check if user registered a custom config
             Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
