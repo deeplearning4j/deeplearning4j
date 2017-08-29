@@ -51,7 +51,7 @@ public class CNN1DGradientCheckTest {
         int zeroPadding = 2;
         int paddedLength = length + 2 * zeroPadding;
 
-        Activation[] activations = {Activation.SIGMOID};
+        Activation[] activations = {Activation.SIGMOID, Activation.TANH};
         SubsamplingLayer.PoolingType[] poolingTypes =
                 new SubsamplingLayer.PoolingType[] {SubsamplingLayer.PoolingType.MAX,
                         SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
@@ -68,7 +68,7 @@ public class CNN1DGradientCheckTest {
                             }
                         }
 
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
+                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .learningRate(1.0).updater(Updater.SGD).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                                 .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
