@@ -38,8 +38,8 @@ import java.util.*;
  * @author Dave Kale
  */
 @Data
-@EqualsAndHashCode(callSuper = true, exclude = {""})
-@JsonIgnoreProperties({"wordIndexMap", "writableMap"})
+@EqualsAndHashCode(callSuper = true, exclude = {"writableMap"})
+@JsonIgnoreProperties({"writableMap"})
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class TextToTermIndexSequenceTransform extends BaseSequenceExpansionTransform {
 

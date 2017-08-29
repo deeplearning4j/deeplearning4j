@@ -1451,7 +1451,7 @@ public class TestTransforms {
     }
 
     @Test
-    public void testTextToWordIndexSequenceTransform(){
+    public void testTextToTermIndexSequenceTransform(){
 
         Schema schema = new Schema.Builder()
                 .addColumnString("ID")
@@ -1485,5 +1485,10 @@ public class TestTransforms {
 
         List<List<Writable>> out = t.mapSequence(inSeq);
         assertEquals(exp, out);
+
+        TransformProcess tp = new TransformProcess.Builder(schema).transform(t).build();
+        String json = tp.toJson();
+        TransformProcess tp2 = TransformProcess.fromJson(json);
+        assertEquals(tp, tp2);
     }
 }
