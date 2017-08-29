@@ -16,6 +16,8 @@
 #include <loops/pairwise_transform.h>
 #include <loops/transform.h>
 
+#include <fcntl.h>
+
 namespace nd4j{
     namespace graph {
 
@@ -466,9 +468,28 @@ namespace nd4j{
         }
 
         template <typename T>
-        Graph<T> *importFromTensorFlow(const char *fileName) {
-            tensorflow::GraphDef graphDef = new tensorflow::GraphDef();
-            graphDef->
+        Graph<T>* nd4j::graph::GraphExecutioner<T>::importFromTensorFlow(const char *fileName) {
+            if (fileName == nullptr)
+                return nullptr;
+
+            int fd = open(fileName, O_RDONLY, 0);
+
+            if (fd < 0) {
+                nd4j_printf("File not found: [%s]\n", fileName);
+                return nullptr;
+            }
+
+            nd4j_verbose("Trying to load TF GraphDef from file [%s]\n", fileName);
+
+            tensorflow::GraphDef graphDef;
+            bool res = graphDef.ParseFromFileDescriptor(fd);
+
+            close(fd);
+
+            if (!res)
+                return false;
+
+            return nullptr;
         }
     }
 }
