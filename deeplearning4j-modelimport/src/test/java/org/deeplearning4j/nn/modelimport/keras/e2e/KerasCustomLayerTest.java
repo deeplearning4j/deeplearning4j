@@ -15,11 +15,13 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.nn.modelimport.keras;
+package org.deeplearning4j.nn.modelimport.keras.e2e;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.layers.custom.KerasLRN;
 import org.deeplearning4j.nn.modelimport.keras.layers.custom.KerasPoolHelper;
 import org.deeplearning4j.util.ModelSerializer;
@@ -38,8 +40,8 @@ import java.net.URL;
 @Slf4j
 public class KerasCustomLayerTest {
 
-    // run manually
-    @Test
+    // run manually, might take a long time to load (too long for unit tests)
+    // @Test
     public void testCustomLayerImport() throws Exception {
         // file paths
         String kerasWeightsAndConfigUrl = "http://blob.deeplearning4j.org/models/googlenet_keras_weightsandconfig.h5";

@@ -15,10 +15,12 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.nn.modelimport.keras;
+package org.deeplearning4j.nn.modelimport.keras.e2e;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.eval.ROCMultiClass;
+import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
+import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;

@@ -129,7 +129,7 @@ public class KerasSequentialModel extends KerasModel {
             KerasModelUtils.importWeights(weightsArchive, weightsRoot, layers);
     }
 
-    protected KerasSequentialModel() {
+    public KerasSequentialModel() {
         super();
     }
 
@@ -138,7 +138,7 @@ public class KerasSequentialModel extends KerasModel {
      *
      * @return          MultiLayerConfiguration
      */
-    MultiLayerConfiguration getMultiLayerConfiguration()
+    public MultiLayerConfiguration getMultiLayerConfiguration()
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         if (!this.className.equals(config.getFieldClassNameSequential()))
             throw new InvalidKerasConfigurationException(
@@ -204,7 +204,7 @@ public class KerasSequentialModel extends KerasModel {
      *
      * @return          MultiLayerNetwork
      */
-    MultiLayerNetwork getMultiLayerNetwork()
+    public MultiLayerNetwork getMultiLayerNetwork()
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return getMultiLayerNetwork(true);
     }
@@ -214,7 +214,7 @@ public class KerasSequentialModel extends KerasModel {
      *
      * @return          MultiLayerNetwork
      */
-    MultiLayerNetwork getMultiLayerNetwork(boolean importWeights)
+    public MultiLayerNetwork getMultiLayerNetwork(boolean importWeights)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         MultiLayerNetwork model = new MultiLayerNetwork(getMultiLayerConfiguration());
         model.init();
