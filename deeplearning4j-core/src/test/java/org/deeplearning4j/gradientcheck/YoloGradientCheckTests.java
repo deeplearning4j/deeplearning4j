@@ -41,10 +41,7 @@ public class YoloGradientCheckTests {
 
     @Test
     public void testYoloOutputLayer() {
-        Nd4j.getRandom().setSeed(12345);
         int depthIn = 2;
-
-
         int[] minibatchSizes = {1, 3};
         int[] widths = new int[]{4, 7};
         int[] heights = new int[]{4, 5};
@@ -64,6 +61,7 @@ public class YoloGradientCheckTests {
             int w = widths[wh];
             int h = heights[wh];
 
+            Nd4j.getRandom().setSeed(12345);
             INDArray bbPrior = Nd4j.rand(b, 2).muliRowVector(Nd4j.create(new double[]{w, h})).addi(0.1);
 
             for (int mb : minibatchSizes) {
