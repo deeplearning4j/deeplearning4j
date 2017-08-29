@@ -52,8 +52,11 @@ public class KerasGlobalPooling extends KerasLayer {
         super(layerConfig, enforceTrainingConfig);
         this.dimensions = mapPoolingDimensions(this.className, conf);
         GlobalPoolingLayer.Builder builder =
-                        new GlobalPoolingLayer.Builder(mapPoolingType(this.className, conf)).poolingDimensions(dimensions)
-                                        .collapseDimensions(true).name(this.layerName).dropOut(this.dropout);
+                        new GlobalPoolingLayer.Builder(mapPoolingType(this.className, conf))
+                                .poolingDimensions(dimensions)
+                                .collapseDimensions(true)
+                                .name(this.layerName)
+                                .dropOut(this.dropout);
         this.layer = builder.build();
         this.vertex = null;
     }
