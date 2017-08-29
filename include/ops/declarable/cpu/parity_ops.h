@@ -13,12 +13,11 @@
 namespace nd4j {
     namespace ops {
 
-        DECLARE_OP(Concat, -1, 1)
-            Nd4jIndex _length;
-            int _dimension = 0;
+        DECLARE_OP(Concat, -1, 1){
+            // do something here{
+                Nd4jIndex _length;
+                int _dimension = 0;
 
-            // do something here
-            Nd4jStatus validateAndExecute(Block<T>& block) {
                 // basic checks are happening here
                 REQUIRE_OK(this->validateNonEmptyInput(block));
 
@@ -70,13 +69,11 @@ namespace nd4j {
                 delete[] shapes;
                 return ND4J_STATUS_OK;
             }
-        };
 
 
-        DECLARE_OP(BiasAdd, 2, 1)
-            Nd4jStatus validateAndExecute(Block<T>& block) {
-                REQUIRE_OK(validateNonEmptyInput(block));
-                REQUIRE_OK(validateInput2D(block));
+        DECLARE_OP(BiasAdd, 2, 1) {
+                REQUIRE_OK(this->validateNonEmptyInput(block));
+                REQUIRE_OK(this->validateInput2D(block));
 
                 NDArray<T> *x = block.getVariables().at(0)->getNDArray();
                 NDArray<T> *y = block.getVariables().at(1)->getNDArray();
@@ -89,14 +86,13 @@ namespace nd4j {
 
                 return ND4J_STATUS_OK;
             }
-        };
 
-        DECLARE_OP(MatMul, 2, 1)
-            Nd4jStatus validateAndExecute(Block<T>& block) {
-                REQUIRE_OK(validateNonEmptyInput(block));
+        DECLARE_OP(MatMul, 2, 1) {
+
+                REQUIRE_OK(this->validateNonEmptyInput(block));
 
                 // FIXME: we might want to have gemv/dot fallback here
-                REQUIRE_OK(validateInput2D(block));
+                REQUIRE_OK(this->validateInput2D(block));
 
 
                 NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -118,46 +114,38 @@ namespace nd4j {
 
                 return ND4J_STATUS_OK;
             }
-        };
 
 
-        DECLARE_OP(Conv2D, 2, 1)
-            Nd4jStatus validateAndExecute(Block<T>& block) {
+        DECLARE_OP(Conv2D, 2, 1) {
                 return ND4J_STATUS_OK;
             }
-        };
 
 
-        DECLARE_OP(Conv3D, 2, 1)
-            Nd4jStatus validateAndExecute(Block<T>& block) {
+        DECLARE_OP(Conv3D, 2, 1) {
                 return ND4J_STATUS_OK;
             }
-        };
 
 
-        DECLARE_OP(Relu, 1, 1)
-            Nd4jStatus validateAndExecute(Block<T>& block) {
-                REQUIRE_OK(validateNonEmptyInput(block));
+
+        DECLARE_OP(Relu, 1, 1) {
+                REQUIRE_OK(this->validateNonEmptyInput(block));
 
                 NDArray<T> *first = block.getVariables().at(0)->getNDArray();
                 first->template applyTransform<simdOps::RELU<T>>();
 
                 return ND4J_STATUS_OK;
             }
-        };
 
 
 
-        DECLARE_OP(Identity, 1, 1)
-            Nd4jStatus validateAndExecute(Block<T>& block) {
-                REQUIRE_OK(validateNonEmptyInput(block));
+        DECLARE_OP(Identity, 1, 1) {
+                REQUIRE_OK(this->validateNonEmptyInput(block));
 
                 NDArray<T> *first = block.getVariables().at(0)->getNDArray();
                 first->template applyTransform<simdOps::Identity<T>>();
 
                 return ND4J_STATUS_OK;
             }
-        };
     }
 }
 

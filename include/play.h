@@ -23,14 +23,22 @@
         (2, float16)
 
 
-#define DECLARE_OP(NAME, NIN, NOUT)   template <typename T> \
-                                      class NAME: public nd4j::ops::DeclarableOp<T> { \
-                                      public:\
-                                      NAME() : nd4j::ops::DeclarableOp<T>(-1, 1, #NAME) { } \
-                                      protected:
+#define DECLARE_OP(NAME, NIN, NOUT)   DECLARE_OP_UNIQ(__COUNTER__, NAME, NIN, NOUT)
+#define DECLARE_OP_UNIQ(CTR, NAME, NIN, NOUT)   template <typename T> \
+                                                class NAME: public nd4j::ops::DeclarableOp<T> { \
+                                                public:\
+                                                NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME) { } \
+                                                protected: \
+                                                    Nd4jStatus validateAndExecute(Block<T>& block); \
+                                                };\
+                                                template <typename T> \
+                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
 
+//#define END_OP(NAME) }; static nd4j::ops::__registrator<NAME<float>> register_op##Name;
 
-//DECLARE_OP("Concat", -1, 1)
+DECLARE_OP(Concat, -1, 1)
+
+//END_OP(Concat)
 
 
 //BUILD_LAYERS_FACTORY(float, OPS_A(NATIVE_LAYERS), OPS_B(ACTIVATIONS))

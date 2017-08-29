@@ -10,18 +10,25 @@
 #include <Variable.h>
 #include <Block.h>
 #include "OpDescriptor.h"
-#include "OpRegistrator.h
+#include "OpRegistrator.h"
 
 #define REQUIRE_OK(A) nd4j::ops::resultHelper( (A), #A, __FILE__, __LINE__ );
 
 
-#define DECLARE_OP(NAME, NIN, NOUT)   static \
-                                      template <typename T> \
-                                      class NAME: public nd4j::ops::DeclarableOp<T> { \
-                                      public:\
-                                      NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME) { } \
-                                      protected:
+#define DECLARE_OP(NAME, NIN, NOUT)   DECLARE_OP_UNIQ(__COUNTER__, NAME, NIN, NOUT)
+#define DECLARE_OP_UNIQ(CTR, NAME, NIN, NOUT)   template <typename T> \
+                                                class NAME: public nd4j::ops::DeclarableOp<T> { \
+                                                public:\
+                                                    NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME) { } \
+                                                protected: \
+                                                    Nd4jStatus validateAndExecute(Block<T>& block); \
+                                                };\
+                                                static nd4j::ops::__registratorFloat<NAME<float>> register_opf_##NAME; \
+                                                static nd4j::ops::__registratorDouble<NAME<double>> register_opd_##NAME; \
+                                                template <typename T> \
+                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
 
+//#define END_OP(NAME) };
 
 
 using namespace nd4j::graph;

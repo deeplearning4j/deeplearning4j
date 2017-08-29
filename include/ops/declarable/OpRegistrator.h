@@ -16,7 +16,7 @@ namespace nd4j {
         class OpRegistrator {
 
         protected:
-            static std::map<std::string *, DeclarableOp> _declarables;
+            //static std::map<std::string *, nd4j::ops::DeclarableOp<float> *> _declarables;
 
         public:
             /**
@@ -24,7 +24,7 @@ namespace nd4j {
              *
              * @param op
              */
-            static bool registerOperation(nd4j::ops::DeclarableOp *op);
+            //static bool registerOperation(nd4j::ops::DeclarableOp *op);
 
             /**
              * This method returns registered Op by name
@@ -32,12 +32,24 @@ namespace nd4j {
              * @param name
              * @return
              */
-            static nd4j::ops::DeclarableOp *getOperation(std::string *name);
+           // static nd4j::ops::DeclarableOp *getOperation(std::string *name);
         };
 
 
-        struct __registrator {
+        template <typename OpName>
+        struct __registratorFloat {
+            __registratorFloat() {
+                OpName *ptr = new OpName();
+                nd4j_printf("Float OpCreated: %s\n", ptr->getOpName()->c_str());
+            }
+        };
 
+        template <typename OpName>
+        struct __registratorDouble {
+            __registratorDouble() {
+                OpName *ptr = new OpName();
+                nd4j_printf("Double OpCreated: %s\n", ptr->getOpName()->c_str());
+            }
         };
     }
 }
