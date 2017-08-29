@@ -375,41 +375,12 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray dLc_dIOU = dLc_dClabel;    //TODO - dL_C / dIOU, shape [mb, b, h, w]
 
-        INDArray u = iouRet.getUnion();
-        INDArray i = iouRet.getIntersection();
-        INDArray u2 = u.mul(u);
+        INDArray dLc_dxy = Nd4j.createUninitialized(iouRet.dIOU_dxy.shape(), iouRet.dIOU_dxy.ordering());
+        Broadcast.mul(iouRet.dIOU_dxy, dLc_dIOU, dLc_dxy, 0, 1, 3, 4);    //[mb, b, h, w] x [mb, b, 2, h, w]
 
-        INDArray iuDivU2 = u.add(i).divi(u2);   //Shape: [mb, b, h, w]
-        BooleanIndexing.replaceWhere(iuDivU2, 0.0, Conditions.isNan());     //Handle 0/0
+        INDArray dLc_dwh = Nd4j.createUninitialized(iouRet.dIOU_dwh.shape(), iouRet.dIOU_dwh.ordering());
+        Broadcast.mul(iouRet.dIOU_dwh, dLc_dIOU, dLc_dwh, 0, 1, 3, 4);    //[mb, b, h, w] x [mb, b, 2, h, w]
 
-
-
-        INDArray dIOU_dxy = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
-        Broadcast.mul(iouRet.dIdxy, iuDivU2, dIOU_dxy, 0, 1, 3, 4);   //[mb, b, h, w] x [mb, b, 2, h, w]
-        INDArray dLc_dxy = Nd4j.createUninitialized(dIOU_dxy.shape(), dIOU_dxy.ordering());
-        Broadcast.mul(dIOU_dxy, dLc_dIOU, dLc_dxy, 0, 1, 3, 4);
-
-        INDArray uSubI = u.sub(i);  //Shape: [mb, b, h, w]
-
-        //dIoU/dw = 1/u^2 * ( dI/dw * (U-I) + I*h)
-        //dIoU/dh = 1/u^2 * ( dI/dh * (U-I) + I*w)
-        INDArray predictedHW = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, predictedWH.ordering());
-            //Next 2 lines: permuting the order... WH to HW along dimension 2
-        predictedHW.get(all(), all(), point(0), all(), all())
-                .assign(predictedWH.get(all(), all(), point(1), all(), all()));
-        predictedHW.get(all(), all(), point(1), all(), all())
-                .assign(predictedWH.get(all(), all(), point(0), all(), all()));
-
-        INDArray Ihw = Nd4j.createUninitialized(predictedHW.shape(), predictedHW.ordering());
-        Broadcast.mul(predictedHW, i, Ihw, 0, 1, 3, 4 );    //Predicted_wh: [mb, b, 2, h, w]; intersection: [mb, b, h, w]
-        INDArray dIOU_dwh = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, iouRet.dIdwh.ordering());    //iouRet.dIdwh_predicted.mul(uSubI).add(Iwh).div(u2);
-        Broadcast.mul(iouRet.dIdwh, uSubI, dIOU_dwh, 0, 1, 3, 4);
-        dIOU_dwh.addi(Ihw);
-        Broadcast.div(dIOU_dwh, u2, dIOU_dwh, 0, 1, 3, 4);
-        BooleanIndexing.replaceWhere(dIOU_dwh, 0.0, Conditions.isNan());     //Handle division by 0 (due to masking, etc)
-
-        INDArray dLc_dwh = Nd4j.createUninitialized(dIOU_dwh.shape(), dIOU_dwh.ordering());
-        Broadcast.mul(dIOU_dwh, dLc_dIOU, dLc_dwh, 0, 1, 3, 4);    //[mb, b, h, w] x [mb, b, 2, h, w]
 
 
         //Backprop through the wh and xy activation functions...
@@ -498,6 +469,11 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
      * @return
      */
     private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray predictedWH, INDArray predictedXY, INDArray objectPresentMask){
+
+        int mb = labelTL.size(0);
+        int h = labelTL.size(2);
+        int w = labelTL.size(3);
+        int b = predictedWH.size(1);
 
         double minwh = predictedWH.minNumber().doubleValue();
         if(minwh < 0.0){
@@ -609,10 +585,49 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray maskMinBR = Nd4j.create(maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
         Broadcast.lt(predictedBR_XY, labelBR, maskMinBR, 0, 2, 3, 4);   // z = x < y
 
-        INDArray dIdxy_predicted = maskMinBR.sub(maskMaxTL);
-        INDArray dIdwh_predicted = maskMinBR.add(maskMaxTL).muli(0.5);
+        //dI/dx = lambda * (1^(min(x1+w1/2) - 1^(max(x1-w1/2))
+        //dI/dy = omega * (1^(min(y1+h1/2) - 1^(max(y1-h1/2))
+        //omega = min(x1+w1/2,x2+w2/2) - max(x1-w1/2,x2+w2/2)       i.e., from diff = minBR.sub(maxTL), which has shape [mb, b, 2, h, w]
+        //lambda = min(y1+h1/2,y2+h2/2) - max(y1-h1/2,y2+h2/2)
+        INDArray dI_dxy = maskMinBR.sub(maskMaxTL);              //Shape: [mb, b, 2, h, w]
+        INDArray dI_dwh = maskMinBR.add(maskMaxTL).muli(0.5);    //Shape: [mb, b, 2, h, w]
 
-        return new IOURet(iou, intersectionArea, unionArea, dIdxy_predicted, dIdwh_predicted);
+        dI_dxy.get(all(), all(), point(0), all(), all())
+                .muli(diff.get(all(), all(), point(1), all(), all()));
+        dI_dxy.get(all(), all(), point(1), all(), all())
+                .muli(diff.get(all(), all(), point(0), all(), all()));
+
+        dI_dwh.get(all(), all(), point(0), all(), all())
+                .muli(diff.get(all(), all(), point(1), all(), all()));
+        dI_dwh.get(all(), all(), point(1), all(), all())
+                .muli(diff.get(all(), all(), point(0), all(), all()));
+
+        //And derivatives WRT IOU:
+        INDArray uPlusI = unionArea.add(intersectionArea);
+        INDArray u2 = unionArea.mul(unionArea);
+        INDArray uPlusIDivU2 = uPlusI.divi(u2);   //Shape: [mb, b, h, w]
+        BooleanIndexing.replaceWhere(uPlusIDivU2, 0.0, Conditions.isNan());     //Handle 0/0
+
+        INDArray dIOU_dxy = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
+        Broadcast.mul(dI_dxy, uPlusIDivU2, dIOU_dxy, 0, 1, 3, 4);   //[mb, b, h, w] x [mb, b, 2, h, w]
+
+        INDArray predictedHW = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, predictedWH.ordering());
+        //Next 2 lines: permuting the order... WH to HW along dimension 2
+        predictedHW.get(all(), all(), point(0), all(), all())
+                .assign(predictedWH.get(all(), all(), point(1), all(), all()));
+        predictedHW.get(all(), all(), point(1), all(), all())
+                .assign(predictedWH.get(all(), all(), point(0), all(), all()));
+
+        INDArray Ihw = Nd4j.createUninitialized(predictedHW.shape(), predictedHW.ordering());
+        Broadcast.mul(predictedHW, intersectionArea, Ihw, 0, 1, 3, 4 );    //Predicted_wh: [mb, b, 2, h, w]; intersection: [mb, b, h, w]
+
+        INDArray dIOU_dwh = Nd4j.createUninitialized(new int[]{mb, b, 2, h, w}, 'c');
+        Broadcast.mul(dI_dwh, uPlusI, dIOU_dwh, 0, 1, 3, 4);
+        dIOU_dwh.subi(Ihw);
+        Broadcast.div(dIOU_dwh, u2, dIOU_dwh, 0, 1, 3, 4);
+        BooleanIndexing.replaceWhere(dIOU_dwh, 0.0, Conditions.isNan());     //Handle division by 0 (due to masking, etc)
+
+        return new IOURet(iou, intersectionArea, unionArea, dIOU_dxy, dIOU_dwh);
     }
 
 
@@ -622,8 +637,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         private INDArray iou;
         private INDArray intersection;
         private INDArray union;
-        private INDArray dIdxy;
-        private INDArray dIdwh;
+        private INDArray dIOU_dxy;
+        private INDArray dIOU_dwh;
 
     }
 
