@@ -14,6 +14,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
@@ -154,7 +155,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray yVector = Nd4j.linspace(0, 1.0-1.0/h, h);  //[0 to h-1]/h
         INDArray gridYX = Nd4j.create(2,h,w);
         gridYX.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()).putiRowVector(xVector);
-        gridYX.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).putiRowVector(yVector);
+        gridYX.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).putiColumnVector(yVector.transpose());
 
         INDArray predictedXYCenterImage = Nd4j.createUninitialized(predictedXYCenterGrid.shape(), predictedXYCenterGrid.ordering());
         Broadcast.div(predictedXYCenterGrid, wh, predictedXYCenterImage, 2 );   //[1,2] to [minibatch, B, 2, H, W]
@@ -503,10 +504,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         Broadcast.lt(predictedBR_XY, labelTL, noIntMask1, 0, 2, 3, 4);  //Predicted BR < label TL
         Broadcast.gt(predictedTL_XY, labelBR, noIntMask2, 0, 2, 3, 4);  //predicted TL > label BR
 
-//        INDArray noIntMask = noIntMask1.prod(2).muli(noIntMask2.prod(2));   //Shape: [mb, b, H, W]. Values 1 if no intersection
-        INDArray noIntMask = Transforms.or(noIntMask1.get(all(), all(), point(0), all(), all()), noIntMask1.get(all(), all(), point(1), all(), all()) );
-        Transforms.or(noIntMask2.get(all(), all(), point(0), all(), all()), noIntMask2.get(all(), all(), point(1), all(), all()) );
-        Transforms.or(noIntMask1, noIntMask2 );
+        noIntMask1 = Transforms.or(noIntMask1.get(all(), all(), point(0), all(), all()), noIntMask1.get(all(), all(), point(1), all(), all()) );    //Shape: [mb, b, H, W]. Values 1 if no intersection
+        noIntMask2 = Transforms.or(noIntMask2.get(all(), all(), point(0), all(), all()), noIntMask2.get(all(), all(), point(1), all(), all()) );
+        INDArray noIntMask = Transforms.or(noIntMask1, noIntMask2 );
 
         INDArray intMask = Nd4j.getExecutioner().execAndReturn(new Not(noIntMask, noIntMask, 0.0)); //Values 0 if no intersection
         Broadcast.mul(intMask, objectPresentMask, intMask, 0, 2, 3);
@@ -517,6 +517,48 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 //        int totalCount = intMask.length();
 //        int countOne = intMask.sumNumber().intValue();
 //        System.out.println("intMask counts: total, number of 1s: " + totalCount + ", " + countOne);
+
+        //*** Debugging - sanity check - intersection area must be <= A1 and <= A2 ***
+        NdIndexIterator iter = new NdIndexIterator(intersectionArea.shape());   //[mb, b, h, w]
+        INDArray areaPredicted_TEMP = predictedWH.prod(2);   //[mb, b, 2, H, W] to [mb, b, H, W]
+        Broadcast.mul(areaPredicted_TEMP, objectPresentMask, areaPredicted_TEMP, 0,2,3);
+        INDArray areaLabel_TEMP = labelWH.prod(1);           //[mb, 2, H, W] to [mb, H, W]
+        while(iter.hasNext()){
+            int[] nextPos = iter.next();
+            double aInt = intersectionArea.getDouble(nextPos);
+            double aPredicted = areaPredicted_TEMP.getDouble(nextPos);
+            int[] lPos = new int[]{nextPos[0], nextPos[2], nextPos[3]};
+            double aLabel = areaLabel_TEMP.getDouble(lPos);
+
+            double xp = predictedXY.getDouble(nextPos[0], nextPos[1], 0, nextPos[2], nextPos[3]);
+            double yp = predictedXY.getDouble(nextPos[0], nextPos[1], 1, nextPos[2], nextPos[3]);
+            double wp = predictedWH.getDouble(nextPos[0], nextPos[1], 0, nextPos[2], nextPos[3]);
+            double hp = predictedWH.getDouble(nextPos[0], nextPos[1], 1, nextPos[2], nextPos[3]);
+
+            double ap = wp * hp;
+
+            double xl_TL = labelTL.getDouble(nextPos[0], 0, nextPos[2], nextPos[3]);
+            double yl_TL = labelTL.getDouble(nextPos[0], 1, nextPos[2], nextPos[3]);
+            double wl = labelWH.getDouble(nextPos[0], 0, nextPos[2], nextPos[3]);
+            double hl = labelWH.getDouble(nextPos[0], 1, nextPos[2], nextPos[3]);
+
+            double al = wl * hl;
+
+            double intMaskVal = intMask.getDouble(nextPos);
+
+            if(aPredicted < 0){
+                throw new IllegalStateException(Arrays.toString(nextPos));
+            }
+            if(aLabel < 0){
+                throw new IllegalStateException(Arrays.toString(nextPos) + "\t" + Arrays.toString(lPos));
+            }
+            if(aInt > aPredicted + 1e-6){
+                throw new IllegalStateException(aInt + "\t" + aPredicted + "\t" + aLabel + "\t" + Arrays.toString(nextPos));
+            }
+            if(aInt > aLabel + 1e-6){
+                throw new IllegalStateException(aInt + "\t" + aPredicted + "\t" + aLabel + "\t" + Arrays.toString(nextPos));
+            }
+        }
 
         double minIntArea = intersectionArea.minNumber().doubleValue();
         double maxIntArea = intersectionArea.maxNumber().doubleValue();
@@ -537,6 +579,18 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray areaPredicted = predictedWH.prod(2);   //[mb, b, 2, H, W] to [mb, b, H, W]
         Broadcast.mul(areaPredicted, objectPresentMask, areaPredicted, 0,2,3);
         INDArray areaLabel = labelWH.prod(1);           //[mb, 2, H, W] to [mb, H, W]
+
+        double minPredictedArea = areaPredicted.minNumber().doubleValue();
+        double maxPredictedArea = areaPredicted.maxNumber().doubleValue();
+
+        if (minPredictedArea < 0) {
+            throw new IllegalStateException("Min predicted area: " + minPredictedArea);
+        }
+
+        double minLabelArea = areaLabel.minNumber().doubleValue();
+        if(minLabelArea < 0){
+            throw new IllegalStateException("Min label area: " + minLabelArea);
+        }
 
         INDArray unionArea = Broadcast.add(areaPredicted, areaLabel, areaPredicted.dup(), 0, 2, 3);
         unionArea.subi(intersectionArea);
