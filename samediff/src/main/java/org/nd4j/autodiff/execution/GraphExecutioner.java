@@ -5,6 +5,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.io.File;
+
 /**
  * This interface
  * @author raver119@gmail.com
@@ -55,4 +57,14 @@ public interface GraphExecutioner {
      * @return
      */
     int registerGraph(SameDiff graph);
+
+    /**
+     * This method executes TF graph
+     *
+     * PLEASE NOTE: This feature is under development yet
+     *
+     * @param file
+     * @return
+     */
+    INDArray[] importProto(File file);
 }

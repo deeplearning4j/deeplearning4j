@@ -21,6 +21,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -496,5 +497,12 @@ public class NativeGraphExecutioner implements GraphExecutioner {
     @Override
     public int registerGraph(SameDiff graph) {
         return 0;
+    }
+
+
+    @Override
+    public INDArray[] importProto(File file) {
+        // TODO: to be implemented
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

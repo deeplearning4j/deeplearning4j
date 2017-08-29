@@ -5,6 +5,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.io.File;
+
 /**
  * @author raver119@gmail.com
  */
@@ -65,6 +67,12 @@ public class BasicGraphExecutioner implements GraphExecutioner {
      */
     @Override
     public int registerGraph(SameDiff graph) {
+        // TODO: to be implemented
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public INDArray[] importProto(File file) {
         // TODO: to be implemented
         throw new UnsupportedOperationException("Not implemented yet");
     }
