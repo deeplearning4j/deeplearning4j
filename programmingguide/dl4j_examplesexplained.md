@@ -260,7 +260,9 @@ In this example, all the data is imported and used in each pass.
 
 In other situations, the data can be split into identified data. For example, allData.getFeatures and allData.getLabels. Each of these pull in an NDarray of features and an NDarray of labels. 
 
-**Set the data shuffle**
+**Shuffling the Data**
+
+Training progresses smoothly if the data has been shuffled. There are a number of ways to shuffle a dataset, in this case our data is small enough to fit as dataset in memory, so we can use the shuffle method of the dataset class. 
 
 ```allData.shuffle();```
 
@@ -270,7 +272,7 @@ In this example, the batch size is 150, which is all of the data in the sample. 
 
 A batch size is defined with either the iterator or the filepath. It can also be shuffled. This randomizes the data prior to reading it based on a random seed. Batch size and a random seed are set for reproducible results relative to the shuffle. 
 
-**Set percentages for test and train**
+**Split the data into a test set and a training set**
 
 ```
    SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.65);
@@ -278,7 +280,7 @@ A batch size is defined with either the iterator or the filepath. It can also be
    DataSet testData = testAndTrain.getTest();
 ```
 
-Splitting the data, sets a portion of the data for each function. This is used to prevent overfitting. Minimum required is two splits, for training the model and testing the model. It is common to have three splits: one each for training, testing, and validating. Optionally, the split allocation can be set at the file split point instead.
+Splitting the data, sets a portion of the data for each function, training and testing. This can be used to detect overfitting, when a network performs well on data it has trained on, but performs poorly on unseen data. Minimum required is two splits, for training the model and testing the model. It is common to have three splits: one each for training, testing, and validating. Optionally, the split allocation can be set at the file split point instead.
 
 Define the data sets for the training data and testing data. In this example, 65% of the data is set for training.
 
@@ -313,9 +315,18 @@ Instantiate the DataNormalization. Then set the data purposes. In order, the `no
 * Iterations.
   The number of times the passes and updates made with the data. See also epochs and batches.
 
-* Seed.
-  This is used with each batch and shuffle to ensure reproducibility. It sets a starting point for randomizing the data. In this example, the value is set to 6. Rather than set a specific number, another common option is using a random number generator (rng). 
+[epoch](https://deeplearning4j.org/glossary#epoch)
+[iteration](https://deeplearning4j.org/glossary#iteration)
 
+* Seed.
+  This is used with each batch and shuffle to ensure reproducibility. It sets a starting point for randomizing the data. In this example, the value is set to 6. Rather than set a specific number, another common option is using a random number generator (rng). Example of randomizing a FileSplit using a predefined Random **from another example**. 
+  
+  ```
+   int rngseed = 123;
+   Random randNumGen = new Random(rngseed);
+   FileSplit train = new FileSplit(trainData, NativeImageLoader.ALLOWED_FORMATS, randNumGen);
+
+  ```
 This completes the portion that defines the input and output options.
 
 #### Step 3
@@ -364,7 +375,7 @@ Other methods for process call the NeuralNetConfiguration.Builder.
     .weightInit(WeightInit.XAVIER) 
 ```
 
-This example uses the XAVIER method for randomizing the initial weights. 
+This example uses the XAVIER method for randomizing the initial weights. Xavier is a good randomized weight initialization algorithm that takes into account the number of connections a neuron has when choosing initial weights.  
 
 **Step size for each iteration**
 
@@ -381,9 +392,12 @@ Set the size of the steps to use to correct the error. Too large and you oversho
     .list()
 ```
 
-* Regularization is integrated with the builder method applied. It is a way to handle complex and variably sized inputs. 
+* Regularization is integrated with the builder method applied. Regularization helps by decreasing variance among the weights, L1 regularization favors a distribution with many zeros while L2 penalizes large weights. Both can help a neural network train more efficiently and avoid overfitting. 
 
-* List defines how to handle complex and variably sized inputs and is flexible with numbers. (Need data)
+[Good discussion here on quora.] 
+(https://www.quora.com/What-is-the-difference-between-L1-and-L2-regularization-How-does-it-solve-the-problem-of-overfitting-Which-regularizer-to-use-and-when)
+
+* If you are unfamiliar with using a builder pattern for creating complex objects see the [wikipedia page](https://en.wikipedia.org/wiki/Builder_pattern)
 
 #### Step 4
 Build the neural network model
