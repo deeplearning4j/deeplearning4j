@@ -25,12 +25,10 @@ import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasAtrousConvolution1D;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution1D;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasActivation;
-import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasDense;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasDropout;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasReshape;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
@@ -133,21 +131,9 @@ public class KerasLayerTest {
     }
 
     @Test
-    public void testDenseLayer() throws Exception {
-        buildDenseLayer(conf1, keras1);
-        buildDenseLayer(conf2, keras2);
-    }
-
-    @Test
     public void testGravesLstmLayer() throws Exception {
         buildGravesLstmLayer(conf1, keras1);
         buildGravesLstmLayer(conf2, keras2);
-    }
-
-    @Test
-    public void testDropoutLayer() throws Exception {
-        buildDropoutLayer(conf1, keras1);
-        buildDropoutLayer(conf2, keras2);
     }
 
     @Test
@@ -156,17 +142,6 @@ public class KerasLayerTest {
         buildBatchNormalizationLayer(conf2, keras2);
     }
 
-    @Test
-    public void testLeakyReLULayer() throws Exception {
-        buildLeakyReLULayer(conf1, keras1);
-        buildLeakyReLULayer(conf2, keras2);
-    }
-
-    @Test
-    public void testReshapeLayer() throws Exception {
-        buildLReshapeLayer(conf1, keras1);
-        buildLReshapeLayer(conf2, keras2);
-    }
 
     public void buildConvolution1DLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean withDilation)
             throws Exception {
@@ -301,87 +276,6 @@ public class KerasLayerTest {
         assertEquals(LAYER_NAME, layer.getLayerName());
     }
 
-    public void buildLeakyReLULayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LEAKY_RELU());
-        Map<String, Object> config = new HashMap<String, Object>();
-        String LAYER_FIELD_LEAKY_RELU_ALPHA = "alpha";
-        config.put(LAYER_FIELD_LEAKY_RELU_ALPHA, 0.3); // set leaky ReLU alpha
-        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
-        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
-        ActivationLayer layer = new KerasLeakyReLU(layerConfig).getActivationLayer();
-        assertEquals("leakyrelu(a=0.3)", layer.getActivationFn().toString());
-        assertEquals(LAYER_NAME, layer.getLayerName());
-    }
-
-    public void buildLReshapeLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_RESHAPE());
-        Map<String, Object> config = new HashMap<String, Object>();
-        int[] targetShape = new int[]{10, 5};
-        List<Integer> targetShapeList = new ArrayList<>();
-        targetShapeList.add(targetShape[0]);
-        targetShapeList.add(targetShape[1]);
-        String LAYER_FIELD_TARGET_SHAPE = "target_shape";
-        config.put(LAYER_FIELD_TARGET_SHAPE, targetShapeList);
-        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
-        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
-        InputType inputType = InputType.InputTypeFeedForward.feedForward(20);
-        ReshapePreprocessor preProcessor =
-                (ReshapePreprocessor) new KerasReshape(layerConfig).getInputPreprocessor(inputType);
-        assertEquals(preProcessor.getTargetShape()[0], targetShape[0]);
-        assertEquals(preProcessor.getTargetShape()[1], targetShape[1]);
-    }
-
-    public void buildDropoutLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_DROPOUT());
-        Map<String, Object> config = new HashMap<String, Object>();
-        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        config.put(conf.getLAYER_FIELD_DROPOUT(), DROPOUT_KERAS);
-        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
-        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
-        DropoutLayer layer = new KerasDropout(layerConfig).getDropoutLayer();
-        assertEquals(LAYER_NAME, layer.getLayerName());
-        assertEquals(DROPOUT_DL4J, layer.getDropOut(), 0.0);
-    }
-
-    public void buildDenseLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
-        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_DENSE());
-        Map<String, Object> config = new HashMap<String, Object>();
-        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
-        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        if (kerasVersion == 1) {
-            config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
-        } else {
-            Map<String, Object> init = new HashMap<String, Object>();
-            init.put("class_name", conf.getINIT_GLOROT_NORMAL());
-            config.put(conf.getLAYER_FIELD_INIT(), init);
-        }
-        Map<String, Object> W_reg = new HashMap<String, Object>();
-        W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
-        W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
-        config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
-        config.put(conf.getLAYER_FIELD_DROPOUT(), DROPOUT_KERAS);
-        config.put(conf.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
-        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
-        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
-        DenseLayer layer = new KerasDense(layerConfig, false).getDenseLayer();
-        assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
-        assertEquals(LAYER_NAME, layer.getLayerName());
-        assertEquals(INIT_DL4J, layer.getWeightInit());
-        assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
-        assertEquals(L2_REGULARIZATION, layer.getL2(), 0.0);
-        assertEquals(DROPOUT_DL4J, layer.getDropOut(), 0.0);
-        assertEquals(N_OUT, layer.getNOut());
-    }
 
     public void buildConvolution2DLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean withDilation)
             throws Exception {
