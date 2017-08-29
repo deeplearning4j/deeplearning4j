@@ -278,3 +278,58 @@ TEST_F(NDArrayTest, TestVectors1) {
         ASSERT_EQ(cShape[e], vecShape.at(e));
     }
 }
+
+
+TEST_F(NDArrayTest, TestChecks1) {
+    NDArray<float> array(1, 5, 'c');
+
+    ASSERT_FALSE(array.isMatrix());
+    ASSERT_FALSE(array.isScalar());
+    ASSERT_TRUE(array.isVector());
+    ASSERT_FALSE(array.isColumnVector());
+    ASSERT_TRUE(array.isRowVector());
+}
+
+
+TEST_F(NDArrayTest, TestChecks2) {
+    NDArray<float> array(5, 5, 'c');
+
+    ASSERT_TRUE(array.isMatrix());
+    ASSERT_FALSE(array.isScalar());
+    ASSERT_FALSE(array.isVector());
+    ASSERT_FALSE(array.isColumnVector());
+    ASSERT_FALSE(array.isRowVector());
+}
+
+
+TEST_F(NDArrayTest, TestChecks3) {
+    NDArray<float> array(5, 1, 'c');
+
+    ASSERT_FALSE(array.isMatrix());
+    ASSERT_FALSE(array.isScalar());
+    ASSERT_TRUE(array.isVector());
+    ASSERT_TRUE(array.isColumnVector());
+    ASSERT_FALSE(array.isRowVector());
+}
+
+
+TEST_F(NDArrayTest, TestChecks4) {
+    NDArray<float> array(1, 1, 'c');
+
+    ASSERT_FALSE(array.isMatrix());
+    ASSERT_FALSE(array.isVector());
+    ASSERT_FALSE(array.isColumnVector());
+    ASSERT_FALSE(array.isRowVector());
+    ASSERT_TRUE(array.isScalar());
+}
+
+
+TEST_F(NDArrayTest, TestChecks5) {
+    NDArray<float> array('c', {5, 5, 5});
+
+    ASSERT_FALSE(array.isMatrix());
+    ASSERT_FALSE(array.isVector());
+    ASSERT_FALSE(array.isColumnVector());
+    ASSERT_FALSE(array.isRowVector());
+    ASSERT_FALSE(array.isScalar());
+}

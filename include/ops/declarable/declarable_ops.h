@@ -86,6 +86,10 @@ namespace nd4j {
             Nd4jStatus validateInputLengthMatch(Block<T>& block);
             Nd4jStatus validateInputDimensionsMatch(Block<T>& block);
             Nd4jStatus validateOrdersMatch(Block<T>& block);
+            Nd4jStatus validateInput2D(Block<T>& block);
+            Nd4jStatus validateInput3D(Block<T>& block);
+            Nd4jStatus validateInput4D(Block<T>& block);
+            Nd4jStatus validateInputDimensions(Block<T>& block, int rank);
         };
     }
 }
@@ -98,6 +102,39 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(Block<T>* block) {
         throw std::invalid_argument("Block is NULL");
 
     return this->validateAndExecute(*block);
+}
+
+template <typename T>
+Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInputDimensions(Block<T>& block, int rank) {
+    if (block.getVariables().size() == 0)
+        return ND4J_STATUS_OK;
+
+    for (auto v: block.getVariables()) {
+        NDArray<T> *aV = v->getNDArray();
+
+        if (aV == nullptr)
+            return ND4J_STATUS_BAD_INPUT;
+
+        if (aV->rankOf() != rank)
+            return ND4J_STATUS_BAD_DIMENSIONS;
+    }
+
+    return ND4J_STATUS_OK;
+}
+
+template <typename T>
+Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInput2D(Block<T>& block) {
+    return validateInputDimensions(block, 2);
+}
+
+template <typename T>
+Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInput3D(Block<T>& block) {
+    return validateInputDimensions(block, 3);
+}
+
+template <typename T>
+Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInput4D(Block<T>& block) {
+    return validateInputDimensions(block, 4);
 }
 
 template <typename T>
@@ -161,78 +198,5 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInputLengthMatch(Block<T>& block)
 
     return ND4J_STATUS_OK;
 }
-
-
-namespace nd4j {
-    namespace ops {
-
-        template <typename T>
-        class Concat: public nd4j::ops::DeclarableOp<T> {
-        public:
-            Concat() : nd4j::ops::DeclarableOp<T>(-1, 1, "Concat") {
-
-            }
-
-        protected:
-            Nd4jIndex _length;
-            int _dimension = 0;
-
-            // do something here
-            Nd4jStatus validateAndExecute(Block<T>& block) {
-                // basic checks are happening here
-                REQUIRE_OK(this->validateNonEmptyInput(block));
-
-                // we want to ensure that all
-                NDArray<T> *first = block.getVariables().at(0)->getNDArray();
-
-                int *shape = new int[first->_shapeInfo[0] * 2 + 4];
-                std::memcpy(shape, first->_shapeInfo, (first->_shapeInfo[0] * 2 + 4) * sizeof(int));
-                _length = shape::length(shape);
-
-                Nd4jPointer *buffers = new Nd4jPointer[block.getVariables().size()];
-                Nd4jPointer *shapes = new Nd4jPointer[block.getVariables().size()];
-
-                buffers[0] = (Nd4jPointer) first->_buffer;
-                shapes[0] = (Nd4jPointer) first->_shapeInfo;
-
-                for (int e = 1; e < block.getVariables().size(); e++) {
-                    Variable<T> *var = block.getVariables().at(e);
-                    _length += var->getNDArray()->lengthOf();
-
-                    shape[_dimension + 1] += var->getNDArray()->shapeOf()[_dimension];
-
-                    buffers[e] = (Nd4jPointer) var->getNDArray()->_buffer;
-                    shapes[e] = (Nd4jPointer) var->getNDArray()->_shapeInfo;
-                }
-
-                if (!block.getVariableSpace()->hasVariable(block.getNodeId()))
-                    throw "VariableSpace has no registered node";
-
-                auto variable = block.getVariableSpace()->getVariable(block.getNodeId());
-
-                Nd4jIndex len = shape::length(shape);
-                if (variable->getNDArray() == nullptr) {
-                    T *buffer = new T[len];
-                    variable ->setNDArray(new NDArray<T>(buffer, shape));
-                    variable->getNDArray()->_allocated = true;
-                } else if(variable->getNDArray()->lengthOf() != len) {
-                    delete variable->getNDArray();
-                    T *buffer = new T[len];
-                    variable ->setNDArray(new NDArray<T>(buffer, shape));
-                    variable->getNDArray()->_allocated = true;
-                } else {
-                    delete[] shape;
-                }
-
-                concatCpuGeneric(_dimension, block.getVariables().size(), buffers, shapes, variable->getNDArray()->_buffer, variable->getNDArray()->_shapeInfo);
-
-                delete[] buffers;
-                delete[] shapes;
-                return ND4J_STATUS_OK;
-            }
-        };
-    }
-}
-
 
 #endif //LIBND4J_DECLARABLE_OPS_H

@@ -6,7 +6,7 @@
 #include <Block.h>
 #include <Variable.h>
 #include <VariableSpace.h>
-#include <ops/declarable/declarable_ops.h>
+#include <ops/declarable/cpu/parity_ops.h>
 
 using namespace nd4j::graph;
 

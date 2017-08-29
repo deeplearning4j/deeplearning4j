@@ -165,6 +165,31 @@ namespace nd4j {
         // this method returns number of bytes used by buffer & shapeInfo
         Nd4jIndex memoryFootprint();
 
+        // this method returns true if this ndarray is 2d
+        bool isMatrix() {
+            return shape::isMatrix(this->_shapeInfo);
+        }
+
+        // this method returns true if this ndarray is vector
+        bool isVector() {
+            return !isScalar() && shape::isVector(this->_shapeInfo);
+        }
+
+        // this method returns true if this ndarray is column vector
+        bool isColumnVector() {
+            return !isScalar() && shape::isColumnVector(this->_shapeInfo);
+        }
+
+        // this method returns true if this ndarray is row vector
+        bool isRowVector() {
+            return !isScalar() && shape::isRowVector(this->_shapeInfo);
+        }
+
+        // this method returns true if this ndarray is scalar
+        bool isScalar() {
+            return this->lengthOf() == 1;
+        }
+
         // these methods suited for FlatBuffers use.
         std::vector<T> getBufferAsVector();
 
