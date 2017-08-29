@@ -26,7 +26,7 @@ import java.util.Arrays;
 import static org.junit.Assert.*;
 
 /**
- * Created by nyghtowl on 9/1/15.
+ * @author Alex Black
  */
 public class YoloGradientCheckTests {
     private static final boolean PRINT_RESULTS = true;

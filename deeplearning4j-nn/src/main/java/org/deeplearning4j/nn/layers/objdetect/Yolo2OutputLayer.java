@@ -161,8 +161,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         Broadcast.add(predictedXYCenterImage, gridYX, predictedXYCenterImage, 2,3,4); // [2,H,W] to [minibatch, B, 2, H, W]
 
         INDArray halfWidth = predictedWH.mul(0.5);
-        INDArray predictedTLXYImage = predictedXYCenterImage.sub(halfWidth);
-        INDArray predictedBRXYImage = halfWidth.addi(predictedXYCenterImage);
+//        INDArray predictedTLXYImage = predictedXYCenterImage.sub(halfWidth);
+//        INDArray predictedBRXYImage = halfWidth.addi(predictedXYCenterImage);
 
         //Apply sqrt to W/H in preparation for loss function
         INDArray predictedWHSqrt = Transforms.sqrt(predictedWH, true);
@@ -188,6 +188,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Mask 1_ij^obj: isMax (dimension 1) + apply object present mask. Result: [minibatch, B, H, W]
         //In this mask: 1 if (a) object is present in cell [for each mb/H/W], and (b) for the anchor box with the max IOU
         INDArray mask1_ij_obj = Nd4j.getExecutioner().execAndReturn(new IsMax(iou.dup(iou.ordering()), 1));
+        INDArray mask1_ij_noobj = Transforms.not(mask1_ij_obj);
         Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, maskArray, mask1_ij_obj, 0,2,3));
 
         // ----- Step 4: Calculate confidence, and confidence label -----
@@ -206,11 +207,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray mask1_ij_obj_2d = mask1_ij_obj.dup('c').reshape(mb*b*h*w, 1);
         INDArray mask1_ij_noobj_2d = Transforms.not(mask1_ij_obj_2d);   //Not op is copy op; mask has 1 where box is not responsible for prediction
-//        INDArray mask2d = maskArray.dup('c').reshape(mb*h*w, 1);
         INDArray mask2d = maskArray.dup('c').reshape('c', new int[]{mb*h*w, 1});
 
         INDArray predictedXYCenter2d = predictedXYCenterGrid.permute(0,1,3,4,2)  //From: [mb, B, 2, H, W] to [mb, B, H, W, 2]
-                .dup('c').reshape('c', mb*b*h*w, 2);        //TODO need permute first??
+                .dup('c').reshape('c', mb*b*h*w, 2);
         /*
         //Don't use INDArray.broadcast(int...) until ND4J issue is fixed:
         // https://github.com/deeplearning4j/nd4j/issues/2066
@@ -254,9 +254,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         double sizeScaleLoss = layerConf().getLossPositionScale().computeScore(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d, false);
         double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false)
                 + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
-//        double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false);
-//                + layerConf().getLambdaNoObj() * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
-
         double classPredictionLoss = layerConf().getLossClassPredictions().computeScore(classLabels2d, classPredictionsPreSoftmax2d, new ActivationSoftmax(), mask2d, false);
 
         if(DEBUG_PRINT){
@@ -275,18 +272,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             System.out.println(positionLoss + "\t" + sizeScaleLoss + "\t" + confidenceLoss + "\t" + classPredictionLoss);
         }
         //----------
-
-//        double loss = layerConf().getLambdaCoord() * (positionLoss + sizeScaleLoss)
-//                + confidenceLoss
-//                + classPredictionLoss
-//                + fullNetworkL1
-//                + fullNetworkL2;
-
-//        double loss = layerConf().getLambdaCoord() * (positionLoss + sizeScaleLoss)
-//                + confidenceLoss
-//                + classPredictionLoss
-//                + fullNetworkL1
-//                + fullNetworkL2;
 
         double loss =
                 layerConf().getLambdaCoord() * positionLoss +
@@ -353,7 +338,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray gradConfidence2dA = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d);
         INDArray gradConfidence2dB = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d);
 
-        INDArray dLc_dC_2d = gradConfidence2dA.addi(gradConfidence2dB);  //dL/dC; C = sigmoid(tc)
+        double lambdaNoObj = layerConf().getLambdaNoObj();
+        INDArray dLc_dC_2d = gradConfidence2dA.addi(gradConfidence2dB.mul(lambdaNoObj));  //dL/dC; C = sigmoid(tc)
         INDArray dLc_dzc_2d = new ActivationSigmoid().backprop( predictedConfidence2dPreSigmoid, dLc_dC_2d).getFirst();
         //Calculate dL/dtc
         INDArray epsConfidence4d = dLc_dzc_2d.dup('c').reshape('c', mb, b, h, w);   //[mb*b*h*w, 2] to [mb, b, h, w]
@@ -366,14 +352,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Confidence loss: sum squared errors + masking.
         //C == IOU when label present
 
-        //Lc = (predicted-iou)^2 -> dLc/diou = 2*(iou-predicted)
-        INDArray dLc_dClabel = iou.sub(predictedConfidence).muli(2.0);  //Shape: [mb, b, h, w]
-        INDArray newMask = mask1_ij_obj.dup();
-        BooleanIndexing.applyWhere(newMask, Conditions.equals(0), layerConf().getLambdaNoObj());    //1 or lambda, for object or no-object respectively
-        dLc_dClabel.muli(newMask);
+        //Lc = 1^(obj)*(iou - predicted)^2 + lambdaNoObj * 1^(noobj) * (iou - predicted)^2 -> dLc/diou = 2*1^(obj)*(iou-predicted) + 2 * lambdaNoObj * 1^(noobj) * (iou-predicted) = 2*(iou-predicted) * (1^(obj) + lambdaNoObj * 1^(noobj))
+        INDArray twoIOUSubPredicted = iou.sub(predictedConfidence).muli(2.0);  //Shape: [mb, b, h, w]. Note that when an object is present, IOU and confidence are the same
+        INDArray dLc_dIOU = twoIOUSubPredicted.mul(mask1_ij_obj.add(mask1_ij_noobj.mul(lambdaNoObj)));
 
-
-        INDArray dLc_dIOU = dLc_dClabel;    //TODO - dL_C / dIOU, shape [mb, b, h, w]
 
         INDArray dLc_dxy = Nd4j.createUninitialized(iouRet.dIOU_dxy.shape(), iouRet.dIOU_dxy.ordering());
         Broadcast.mul(iouRet.dIOU_dxy, dLc_dIOU, dLc_dxy, 0, 1, 3, 4);    //[mb, b, h, w] x [mb, b, 2, h, w]
@@ -382,16 +364,21 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         Broadcast.mul(iouRet.dIOU_dwh, dLc_dIOU, dLc_dwh, 0, 1, 3, 4);    //[mb, b, h, w] x [mb, b, 2, h, w]
 
 
-
         //Backprop through the wh and xy activation functions...
-        INDArray labelWH = labelBRXYImg.sub(labelTLXYImg);
-        //dL/dw and dL/dh, w = pw * exp(tw), //dL/dinWH = dL/dw * dw/dInWH = dL/dw * pw * exp(tw)
-        INDArray dLc_din_wh = Broadcast.mul(dLc_dwh, labelWH, dLc_dwh, 0, 2, 3);    //[mb, h, w] x [mb, b, 2, h, w]
-        INDArray dLc_din_xy = new ActivationSigmoid().backprop(preSigmoidPredictedXYCenterGrid, dLc_dxy).getFirst();
+        //dL/dw and dL/dh, w = pw * exp(tw), //dL/dinWH = dL/dw * dw/dInWH = dL/dw * pw * exp(in_w)
+        //as w = pw * exp(in_w) and dw/din_w = w
+        INDArray dLc_din_wh = dLc_dwh.mul(predictedWH);
+        INDArray dLc_din_xy = new ActivationSigmoid().backprop(preSigmoidPredictedXYCenterGrid, dLc_dxy).getFirst();    //Shape: same as subset of input... [mb, b, 2, h, w]
+
+        //Finally, apply masks: dLc_dwh and dLc_dxy should be 0 if no object is present in that box
+        //Apply mask 1^obj_ij with shape [mb, b, h, w]
+        Broadcast.mul(dLc_din_wh, mask1_ij_obj, dLc_din_wh, 0, 1, 3, 4);
+        Broadcast.mul(dLc_din_xy, mask1_ij_obj, dLc_din_xy, 0, 1, 3, 4);
 
 
         epsWH.addi(dLc_din_wh);
         epsXY.addi(dLc_din_xy);
+
 
         return epsOut;
     }
