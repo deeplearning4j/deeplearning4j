@@ -45,7 +45,6 @@ namespace nd4j {
 
                 throw "Validation failed";
             }
-
         }
 
         template <typename T>
@@ -109,8 +108,81 @@ namespace nd4j {
             Nd4jStatus validateInput4D(Block<T>& block);
             Nd4jStatus validateInputDimensions(Block<T>& block, int rank);
         };
+
+
+        class OpRegistrator {
+        private:
+            static OpRegistrator* _INSTANCE;
+            OpRegistrator() {};
+            ~OpRegistrator() {};
+
+            std::map<std::string, nd4j::ops::DeclarableOp<float> *> _declarablesF;
+            std::map<std::string, nd4j::ops::DeclarableOp<double> *> _declarablesD;
+        public:
+            static OpRegistrator* getInstance() {
+                if (!_INSTANCE)
+                    _INSTANCE = new nd4j::ops::OpRegistrator();
+
+                return _INSTANCE;
+            }
+
+            /**
+             * This method registers operation
+             *
+             * @param op
+             */
+            bool registerOperationFloat(nd4j::ops::DeclarableOp<float>* op) {
+                std::pair<std::string, nd4j::ops::DeclarableOp<float>*> pair(*(op->getOpName()), op);
+                _declarablesF.insert(pair);
+                return true;
+            }
+
+            bool registerOperationDouble(nd4j::ops::DeclarableOp<double > *op) {
+                std::pair<std::string, nd4j::ops::DeclarableOp<double>*> pair(*(op->getOpName()), op);
+                _declarablesD.insert(pair);
+                return true;
+            }
+
+            nd4j::ops::DeclarableOp<float>* getOperationFloat(const char *name) {
+                std::string str(name);
+                return getOperationFloat(str);
+            }
+
+            /**
+             * This method returns registered Op by name
+             *
+             * @param name
+             * @return
+             */
+             nd4j::ops::DeclarableOp<float> *getOperationFloat(std::string& name) {
+                if (!_declarablesF.count(name)) {
+                    nd4j_verbose("Unknown operation requested: [%s]\n", name.c_str())
+                    throw "Unknown operation requested";
+                }
+
+                return _declarablesF.at(name);
+            }
+        };
+
+        template <typename OpName>
+        struct __registratorFloat {
+            __registratorFloat() {
+                OpName *ptr = new OpName();
+                OpRegistrator::getInstance()->registerOperationFloat(ptr);
+            }
+        };
+
+        template <typename OpName>
+        struct __registratorDouble {
+            __registratorDouble() {
+                OpName *ptr = new OpName();
+                OpRegistrator::getInstance()->registerOperationDouble(ptr);
+            }
+        };
     }
 }
+
+nd4j::ops::OpRegistrator* nd4j::ops::OpRegistrator::_INSTANCE = 0;
 
 template <typename T>
 Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(Block<T>* block) {

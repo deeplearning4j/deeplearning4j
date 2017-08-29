@@ -6,6 +6,7 @@
 #include <Block.h>
 #include <Variable.h>
 #include <VariableSpace.h>
+#include <ops/declarable/declarable_ops.h>
 #include <ops/declarable/cpu/parity_ops.h>
 
 using namespace nd4j::graph;
@@ -60,4 +61,13 @@ TEST_F(DeclarableOpsTests, BasicInitialization1) {
     ASSERT_NEAR(25.0, nodeVar->getNDArray()->reduceNumber<simdOps::Sum<float>>(), 1e-5);
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
+}
+
+
+TEST_F(DeclarableOpsTests, BasicInitialization2) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("Concat");
+
+    ASSERT_TRUE(op != nullptr);
+    std::string expName("Concat");
+    ASSERT_EQ(expName, *(op->getOpName()));
 }
