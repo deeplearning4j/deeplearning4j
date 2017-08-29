@@ -63,6 +63,8 @@ public class SameDiff {
     private MemoryWorkspace workspace;
     private Map<String,SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
     private Map<String,SameDiff> sameDiffFunctionInstances;
+    private Map<Integer,DifferentialFunction<ArrayField>> functionInstances;
+    private Map<Integer,ArrayField> arrayFieldInstances;
     private static Cloner cloner = new Cloner();
 
     private static Map<String,Method> opMethods;
@@ -167,17 +169,14 @@ public class SameDiff {
             //for the graph transition
             if(variable.getArrayField() != null) {
                 int vertexId = variable.getArrayField().getVertexId();
-                deepClone.getArrayField().setVertexId(vertexId);
-                deepClone.getArrayField().getM_x().setOps(sameDiff);
-                deepClone.getArrayField().setSameDiff(sameDiff);
-                if(variable.getArrayField() instanceof Variable) {
-                    Variable<ArrayField> variable1 = deepClone.getArrayField();
-                    variable1.setSameDiff(sameDiff);
-                    variable1.setVertexId(vertexId);
-                    variable1.getM_x().setOps(sameDiff);
-
-
-                }
+                Variable<ArrayField> variable1 = deepClone.getArrayField();
+                variable1.setSameDiff(sameDiff);
+                variable1.setVertexId(vertexId);
+                variable1.getM_x().setOps(sameDiff);
+                variable1.setVertexId(vertexId);
+                variable1.getM_x().setOps(sameDiff);
+                variable1.setSameDiff(sameDiff);
+                ensureSameDiffInstance(sameDiff,variable1);
             }
             else if(variable.getDifferentialFunction() != null) {
                 DifferentialFunction<ArrayField> val = deepClone.getDifferentialFunction();
@@ -187,6 +186,8 @@ public class SameDiff {
 
             deepClone.setSameDiff(sameDiff);
             sameDiff.addVariable(deepClone);
+
+
         }
 
         sameDiff.vertexToArray.putAll(vertexToArray);
@@ -292,9 +293,79 @@ public class SameDiff {
         vertexIdxToInfo = new HashMap<>();
         sameDiffFunctionDefinitionMap = new HashMap<>();
         sameDiffFunctionInstances = new HashMap<>();
+        arrayFieldInstances = new HashMap<>();
+        functionInstances = new HashMap<>();
     }
 
 
+    /**
+     * Attempts to insert the {@link DifferentialFunction}
+     * reference in to this {@link SameDiff}
+     * instance.
+     * If the given array field with the given
+     * index already exists, it will do a reference
+     * check to ensure that the 2 array fields are the same.
+     *
+     * If not, an exception is thrown.
+     * If the instances are the same (by semantics, not reference)
+     * then it will just return the original instance.
+     * This is to ensure that instances that are created are unique
+     * and reference checked.
+     * @param function the array field to attempt to create
+     * @return
+     */
+    public <X extends DifferentialFunction<ArrayField>> X setupFunction(X  function) {
+        int idx = function.getVertexId();
+        if(functionInstances.containsKey(idx)) {
+            DifferentialFunction<ArrayField> get = functionInstances.get(idx);
+            //note that we check if the graph is frozen
+            //if the graph is frozen this reference is disposable
+            if(!graph().isFrozen() && !function.equals(get)) {
+                throw new IllegalStateException("Attempted to override Differential Function instance with idx " + idx + " with instance " + function);
+            }
+            //return the  checked instance
+            return (X) get;
+        }
+        else {
+            functionInstances.put(idx,function);
+            return function;
+        }
+    }
+
+
+    /**
+     * Attempts to insert the {@link ArrayField}
+     * reference in to this {@link SameDiff}
+     * instance.
+     * If the given array field with the given
+     * index already exists, it will do a reference
+     * check to ensure that the 2 array fields are the same.
+     *
+     * If not, an exception is thrown.
+     * If the instances are the same (by semantics, not reference)
+     * then it will just return the original instance.
+     * This is to ensure that instances that are created are unique
+     * and reference checked.
+     * @param arrayField the array field to attempt to create
+     * @return
+     */
+    public ArrayField setupArrayField(ArrayField arrayField) {
+        int idx = arrayField.getVertex().getIdx();
+        if(arrayFieldInstances.containsKey(idx)) {
+            ArrayField get = arrayFieldInstances.get(idx);
+            //note that we check if the graph is frozen
+            //if the graph is frozen this reference is disposable
+            if(!graph().isFrozen() && !arrayField.equals(get)) {
+                throw new IllegalStateException("Attempted to override array field instance with idx " + idx + " with instance " + arrayField);
+            }
+            //return the  checked instance
+            return get;
+        }
+        else {
+            arrayFieldInstances.put(idx,arrayField);
+            return arrayField;
+        }
+    }
 
 
     /**

@@ -19,6 +19,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeNotNull;
 
 /**
  * Created by agibsonccc on 4/11/17.
@@ -560,8 +561,12 @@ public class SameDiffTests {
             }
         },inputs);
 
-
         List<Op> ops = sameDiff.getFunction("mmulGradient").execBackwards();
+
+        assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad"));
+        assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad").getVariableMap().get("x").gradient());
+        assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad").getVariableMap().get("y").gradient());
+
 
         INDArray executions = ops.get(ops.size() - 1).z();
         INDArray assertion = Nd4j.create(new double[][]{

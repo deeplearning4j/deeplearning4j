@@ -20,6 +20,14 @@ import java.util.Map;
 
 /**
  *
+ * A variable representing a component within a
+ * {@@link SameDiff} graph.
+ *
+ * SDVariable is used for symbolic declaration
+ * of equations.
+ *
+ * @author Adam Gibson
+ *
  */
 @Data
 public class SDVariable  implements Serializable {
@@ -28,6 +36,8 @@ public class SDVariable  implements Serializable {
     private String varName;
     private SameDiff sameDiff;
     private int[] shape;
+    private SDVariable gradient;
+
     protected DifferentialFunction<ArrayField> differentialFunction;
 
     @Builder
@@ -43,8 +53,56 @@ public class SDVariable  implements Serializable {
         this.arr = arr;
         this.arrayField = arrayField;
         this.sameDiff = sameDiff;
+
     }
 
+
+    /**
+     * Nicer looking alias
+     * for the gradient variable.
+     * The gradient variable is meant to be an
+     * a variable representation
+     * of the gradient represented
+     * in the underlying {@link DifferentialFunction}
+     * @return
+     */
+    public SDVariable gradient() {
+        return getGradient();
+    }
+
+    /**
+     * A getter for the variable gradient.
+     * Note here that a lazy initialization of the
+     * gradient variable will happen if the gradient
+     * isn't present at this variable's initialization
+     * but is set later.
+     * @return
+     */
+    public SDVariable getGradient() {
+        if(gradient == null && differentialFunction != null && differentialFunction.getGradient() != null) {
+            this.gradient = differentialFunction != null && differentialFunction.getGradient() != null ? SDVariable.builder()
+                    .sameDiff(sameDiff)
+                    .differentialFunction(differentialFunction.getGradient())
+                    .varName(varName + "-grad")
+                    .shape(differentialFunction.getGradient() != null ? differentialFunction.getGradient().getResultShape() : null)
+                    .build() : null;
+        }
+
+        else if(gradient == null && arrayField != null && arrayField.getGradient() != null) {
+            this.gradient = arrayField != null && arrayField.getGradient() != null ? SDVariable.builder()
+                    .sameDiff(sameDiff)
+                    .differentialFunction(arrayField.getGradient())
+                    .varName(varName + "-grad")
+                    .shape(arrayField.getGradient() != null ? arrayField.getGradient().getResultShape() : null)
+                    .build() : null;
+        }
+
+        return gradient;
+    }
+
+    public void setGradient(SDVariable gradient) {
+        this.gradient = gradient;
+    }
 
     /**
      *

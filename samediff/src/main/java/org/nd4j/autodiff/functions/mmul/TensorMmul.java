@@ -203,16 +203,15 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
         }
 
 
-        DifferentialFunction<ArrayField> at = getSameDiff()
-                .getFunctionFactory()
-                .reshape(getSameDiff().getFunctionFactory().permute
+        DifferentialFunction<ArrayField> at = f()
+                .reshape(f().permute
                         (a,newAxesA),newShapeA);
-        DifferentialFunction<ArrayField> bt = getSameDiff().getFunctionFactory()
-                .reshape(getSameDiff().getFunctionFactory()
+        DifferentialFunction<ArrayField> bt = f()
+                .reshape(f()
                         .permute(b,newAxesB),newShapeB);
 
-        DifferentialFunction<ArrayField> ret = getSameDiff().getFunctionFactory().mmul(at,bt);
+        DifferentialFunction<ArrayField> ret = f().mmul(at,bt);
         int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
-        return getSameDiff().getFunctionFactory().reshape(ret,aPlusB);
+        return f().reshape(ret,aPlusB);
     }
 }

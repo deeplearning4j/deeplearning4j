@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
@@ -138,5 +139,47 @@ public class OpState implements Serializable {
     }
 
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
 
+        OpState opState = (OpState) o;
+
+        if (n != opState.n) return false;
+        if (opType != opState.opType) return false;
+        if (opName != null ? !opName.equals(opState.opName) : opState.opName != null) return false;
+        if (scalarValue != null ? !scalarValue.equals(opState.scalarValue) : opState.scalarValue != null) return false;
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        if (!Arrays.equals(vertexIds, opState.vertexIds)) return false;
+        if (id != null ? !id.equals(opState.id) : opState.id != null) return false;
+        if (!Arrays.equals(axes, opState.axes)) return false;
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        if (!Arrays.equals(extraArgs, opState.extraArgs)) return false;
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        if (!Arrays.equals(extraArgsWithoutInPlace, opState.extraArgsWithoutInPlace)) return false;
+        if (result != null ? !result.equals(opState.result) : opState.result != null) return false;
+        if (differentialFunction != null ? !differentialFunction.equals(opState.differentialFunction) : opState.differentialFunction != null)
+            return false;
+        return arrayField != null ? arrayField.equals(opState.arrayField) : opState.arrayField == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result1 = super.hashCode();
+        result1 = 31 * result1 + (int) (n ^ (n >>> 32));
+        result1 = 31 * result1 + (opType != null ? opType.hashCode() : 0);
+        result1 = 31 * result1 + (opName != null ? opName.hashCode() : 0);
+        result1 = 31 * result1 + (scalarValue != null ? scalarValue.hashCode() : 0);
+        result1 = 31 * result1 + Arrays.hashCode(vertexIds);
+        result1 = 31 * result1 + (id != null ? id.hashCode() : 0);
+        result1 = 31 * result1 + Arrays.hashCode(axes);
+        result1 = 31 * result1 + Arrays.hashCode(extraArgs);
+        result1 = 31 * result1 + Arrays.hashCode(extraArgsWithoutInPlace);
+        result1 = 31 * result1 + (result != null ? result.hashCode() : 0);
+        result1 = 31 * result1 + (differentialFunction != null ? differentialFunction.hashCode() : 0);
+        result1 = 31 * result1 + (arrayField != null ? arrayField.hashCode() : 0);
+        return result1;
+    }
 }

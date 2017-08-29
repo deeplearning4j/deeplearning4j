@@ -39,10 +39,6 @@ public abstract class DifferentialFunction<X extends Field<X>>
     protected Object[] extraArgs;
 
 
-    @Override
-    public double getReal() {
-        throw new UnsupportedOperationException("Get real not supported for array operations");
-    }
 
 
     /**
@@ -64,6 +60,11 @@ public abstract class DifferentialFunction<X extends Field<X>>
         if(opState == null)
             throw new IllegalStateException("Unable to get result shape with null op state");
         return opState.getResult().getShape();
+    }
+
+
+    public  boolean isVariable() {
+        return false;
     }
 
     /**
@@ -1050,6 +1051,12 @@ public abstract class DifferentialFunction<X extends Field<X>>
         result = 31 * result + Arrays.hashCode(extraArgs);
         return result;
     }
+
+    @Override
+    public double getReal() {
+        throw new UnsupportedOperationException("Get real not supported for array operations");
+    }
+
 
     protected void validateDifferentialFunctionsameDiff(
             List<DifferentialFunction<X>> function) {
