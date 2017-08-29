@@ -69,11 +69,6 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean isOutputVertex() {
-        return false;
-    }
-
-    @Override
     public Layer getLayer() {
         return null;
     }
