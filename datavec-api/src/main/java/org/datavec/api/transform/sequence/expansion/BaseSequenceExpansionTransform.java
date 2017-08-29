@@ -16,14 +16,13 @@
 
 package org.datavec.api.transform.sequence.expansion;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.util.*;
 
@@ -34,6 +33,9 @@ import java.util.*;
  *
  * @author Alex Black
  */
+@EqualsAndHashCode(exclude = {"inputSchema"})
+@JsonIgnoreProperties({"inputSchema"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class BaseSequenceExpansionTransform implements Transform {
 
     protected List<String> requiredColumns;
