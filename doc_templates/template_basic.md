@@ -26,11 +26,11 @@ Include a summary description of the topic/subject. Consider the 5 W's.
 
 The template is a blend of html and md tagging. Tips for formatting are in /gh-pages/README.md. 
 
-## <a name=“head_link1”>Head Title1</a>
+## <a name="head_link1">Head Title1</a>
 
 Text for topic. 
 
-## <a name=“head_link2”> Head Title2</a>
+## <a name="head_link2"> Head Title2</a>
 
 Text for topic. 
 
@@ -55,7 +55,7 @@ sample of different code format
 Sample link to footnote.<sup>[1](#one)</sup>
 
 <p align="center">
-<a href=“link_file” type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">FANCY_LINK_TEXT</a>
+<a href="link_file” type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">FANCY_LINK_TEXT</a>
 </p>
 
 Sample link to a script. Except it's not working here. 
