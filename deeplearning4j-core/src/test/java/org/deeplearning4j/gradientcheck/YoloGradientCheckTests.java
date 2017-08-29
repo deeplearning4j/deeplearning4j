@@ -1,27 +1,18 @@
 package org.deeplearning4j.gradientcheck;
 
-import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -81,7 +72,7 @@ public class YoloGradientCheckTests {
                             .layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
                                     .nIn(depthIn).nOut(yoloDepth).build())//output: (5-2+0)/1+1 = 4
                             .layer(new Yolo2OutputLayer.Builder()
-                                    .boundingBoxePriors(bbPrior)
+                                    .boundingBoxPriors(bbPrior)
                                     .build())
                             .build();
 

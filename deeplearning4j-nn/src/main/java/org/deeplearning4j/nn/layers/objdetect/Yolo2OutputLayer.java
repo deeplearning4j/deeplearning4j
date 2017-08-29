@@ -15,6 +15,7 @@ import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
@@ -25,6 +26,8 @@ import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.impl.LossL2;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -34,21 +37,28 @@ import java.util.List;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
- *
- * Label format: [minibatch, 4+C, H, W]
- * Order for labels depth: [x1,y1,x2,y2,(class labels)]
- * x1 = box top left position
- * y1 = as above, y axis
- * x2 = box bottom right position
- * y2 = as above y axis
- * Note: labels are represented as a multiple of grid size - for a 13x13 grid, (0,0) is top left, (13,13) is bottom right
- *
- * Input format: [minibatch, 5B+C, H, W]    ->      Reshape to [minibatch, B, 5+C, H, W]
- * Layout for dimension 2 (of size 5+C) after reshaping: [xInGrid,yInGrid,w,h]
- *
- *
- * Masks: not required. This implementation infers the presence or absence of objects in each grid cell from the
- * class labels.
+ * Output (loss) layer for YOLOv2 object detection model, based on the papers:
+ * YOLO9000: Better, Faster, Stronger - Redmon & Farhadi (2016) - https://arxiv.org/abs/1612.08242<br>
+ * and<br>
+ * You Only Look Once: Unified, Real-Time Object Detection - Redmon et al. (2016) -
+ * http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Redmon_You_Only_Look_CVPR_2016_paper.pdf<br>
+ * <br>
+ * This loss function implementation is based on the YOLOv2 version of the paper. However, note that it doesn't
+ * currently support simultaneous training on both detection and classification datasets as described in the
+ * YOlO9000 paper.<br>
+ * <br>
+ * Label format: [minibatch, 4+C, H, W]<br>
+ * Order for labels depth: [x1,y1,x2,y2,(class labels)]<br>
+ * x1 = box top left position<br>
+ * y1 = as above, y axis<br>
+ * x2 = box bottom right position<br>
+ * y2 = as above y axis<br>
+ * Note: labels are represented as a multiple of grid size - for a 13x13 grid, (0,0) is top left, (13,13) is bottom right<br>
+ * <br>
+ * Input format: [minibatch, 5B+C, H, W]    ->      Reshape (subset 1) to [minibatch, B, 5, H, W] with subset 2 being [minibatch, C, H, W]<br>
+ * <br>
+ * Note that mask arrays are not required - this implementation infers the presence or absence of objects in each grid
+ * cell from the class labels (which should be 1-hot if an object is present, or all 0s otherwise).
  *
  * @author Alex Black
  */
@@ -207,11 +217,12 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray classLabels2d = classLabels.permute(0,2,3,1).dup('c').reshape('c', new int[]{mb*h*w, c});
 
         //Calculate the loss:
+        ILossFunction lossConfidence = new LossL2();
         IActivation identity = new ActivationIdentity();
         double positionLoss = layerConf().getLossPositionScale().computeScore(labelXYCenter2d, predictedXYCenter2d, identity, mask1_ij_obj_2d, false );
         double sizeScaleLoss = layerConf().getLossPositionScale().computeScore(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d, false);
-        double confidenceLoss = layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false)
-                + lambdaNoObj * layerConf().getLossConfidence().computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
+        double confidenceLoss = lossConfidence.computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d, false)
+                + lambdaNoObj * lossConfidence.computeScore(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d, false);    //TODO: possible to optimize this?
         double classPredictionLoss = layerConf().getLossClassPredictions().computeScore(classLabels2d, classPredictionsPreSoftmax2d, new ActivationSoftmax(), mask2d, false);
 
         this.score = lambdaCoord * (positionLoss + sizeScaleLoss) +
@@ -264,8 +275,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         //Calculate gradient component from confidence loss... 2 parts (object present, no object present)
-        INDArray gradConfidence2dA = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d);
-        INDArray gradConfidence2dB = layerConf().getLossConfidence().computeGradient(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d);
+        INDArray gradConfidence2dA = lossConfidence.computeGradient(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_obj_2d);
+        INDArray gradConfidence2dB = lossConfidence.computeGradient(labelConfidence2d, predictedConfidence2d, identity, mask1_ij_noobj_2d);
 
 
         INDArray dLc_dC_2d = gradConfidence2dA.addi(gradConfidence2dB.muli(lambdaNoObj));  //dL/dC; C = sigmoid(tc)
@@ -344,7 +355,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         //Softmax
-        //TODO OPTIMIZE
+        //TODO OPTIMIZE?
         INDArray inputClasses = input.get(all(), interval(5*b, 5*b+c), all(), all());   //Shape: [minibatch, C, H, W]
         INDArray classPredictionsPreSoftmax2d = inputClasses.permute(0,2,3,1).dup('c')  //Shape before reshape: [mb, h, w, c]
                 .reshape(mb*h*w, c);
@@ -376,7 +387,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     /**
-     * Calculate IOU(truth, predicted). Returns 5d array, [mb, b, 2, H, W]
+     * Calculate IOU(truth, predicted) and gradients. Returns 5d arrays [mb, b, 2, H, W]
      *
      * @param labelTL   4d [mb, 2, H, W], label top/left (x,y) in terms of grid boxes
      * @param labelBR   4d [mb, 2, H, W], label bottom/right (x,y) in terms of grid boxes

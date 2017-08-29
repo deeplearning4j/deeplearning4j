@@ -122,7 +122,7 @@ public class TestYolo2OutputLayer {
                 .list()
                 .layer(new ConvolutionLayer.Builder().nIn(1).nOut(1).kernelSize(1,1).build())
                 .layer(new Yolo2OutputLayer.Builder()
-                        .boundingBoxePriors(bbPrior)
+                        .boundingBoxPriors(bbPrior)
                         .build())
                 .build();
 
