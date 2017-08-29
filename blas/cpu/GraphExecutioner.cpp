@@ -16,6 +16,9 @@
 #include <loops/pairwise_transform.h>
 #include <loops/transform.h>
 
+#include <google/protobuf/text_format.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+
 #include <fcntl.h>
 
 namespace nd4j{
@@ -472,7 +475,7 @@ namespace nd4j{
             if (fileName == nullptr)
                 return nullptr;
 
-            int fd = open(fileName, O_RDONLY, 0);
+            int fd = open(fileName, O_RDONLY);
 
             if (fd < 0) {
                 nd4j_printf("File not found: [%s]\n", fileName);
@@ -484,10 +487,41 @@ namespace nd4j{
             tensorflow::GraphDef graphDef;
             bool res = graphDef.ParseFromFileDescriptor(fd);
 
+            // trying to read graph as text
+            if(!res) {
+                close(fd);
+                fd = open(fileName, O_RDONLY);
+
+                google::protobuf::io::FileInputStream fileInput(fd);
+                fileInput.SetCloseOnDelete(true);
+
+                if (!google::protobuf::TextFormat::Parse(&fileInput, &graphDef)) {
+                    nd4j_printf("Failed to read file\n","");
+                } else {
+                    res = true;
+                }
+            }
+
             close(fd);
 
             if (!res)
-                return false;
+                return nullptr;
+
+            nd4j_verbose("Number of nodes in graphDef: %i\n", graphDef.node_size());
+            for (int n = 0; n < graphDef.node_size(); n++) {
+                auto node = graphDef.node(n);
+
+                nd4j_verbose("Node id: [%i]; name: [%s]; opName: [%s]\n", n+1, node.name().c_str(), node.op().c_str());
+
+                printf("             Inputs: [");
+                for (int i = 0; i < node.input_size(); i++) {
+                    printf("%s", node.input(i).c_str());
+
+                    if (i < node.input_size() + 1)
+                        printf(", ");
+                }
+                printf("]\n");
+            }
 
             return nullptr;
         }
