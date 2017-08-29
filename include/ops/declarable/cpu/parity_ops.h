@@ -12,14 +12,8 @@
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        class Concat: public nd4j::ops::DeclarableOp<T> {
-        public:
-            Concat() : nd4j::ops::DeclarableOp<T>(-1, 1, "Concat") {
 
-            }
-
-        protected:
+        DECLARE_OP(Concat, -1, 1)
             Nd4jIndex _length;
             int _dimension = 0;
 
@@ -79,15 +73,7 @@ namespace nd4j {
         };
 
 
-        template <typename T>
-        class BiasAdd: public nd4j::ops::DeclarableOp<T> {
-        public:
-            BiasAdd() : nd4j::ops::DeclarableOp<T>(2, 1, "BiasAdd") {
-
-            }
-
-        protected:
-
+        DECLARE_OP(BiasAdd, 2, 1)
             Nd4jStatus validateAndExecute(Block<T>& block) {
                 REQUIRE_OK(validateNonEmptyInput(block));
                 REQUIRE_OK(validateInput2D(block));
@@ -105,19 +91,7 @@ namespace nd4j {
             }
         };
 
-        /**
-         * gemm
-         * @tparam T
-         */
-        template <typename T>
-        class MatMul: public nd4j::ops::DeclarableOp<T> {
-        public:
-            MatMul() : nd4j::ops::DeclarableOp<T>(2, 1, "MatMul") {
-                //
-            }
-
-        protected:
-
+        DECLARE_OP(MatMul, 2, 1)
             Nd4jStatus validateAndExecute(Block<T>& block) {
                 REQUIRE_OK(validateNonEmptyInput(block));
 
@@ -147,45 +121,21 @@ namespace nd4j {
         };
 
 
-        template <typename T>
-        class Conv2D: public nd4j::ops::DeclarableOp<T> {
-        public:
-            Conv2D() : nd4j::ops::DeclarableOp<T>(2, 1, "Conv2D") {
-                //
-            }
-
-        protected:
-
+        DECLARE_OP(Conv2D, 2, 1)
             Nd4jStatus validateAndExecute(Block<T>& block) {
                 return ND4J_STATUS_OK;
             }
         };
 
 
-        template <typename T>
-        class Conv3D: public nd4j::ops::DeclarableOp<T> {
-        public:
-            Conv3D() : nd4j::ops::DeclarableOp<T>(2, 1, "Conv3D") {
-                //
-            }
-
-        protected:
-
+        DECLARE_OP(Conv3D, 2, 1)
             Nd4jStatus validateAndExecute(Block<T>& block) {
                 return ND4J_STATUS_OK;
             }
         };
 
 
-        template <typename T>
-        class Relu: public nd4j::ops::DeclarableOp<T> {
-        public:
-            Relu() : nd4j::ops::DeclarableOp<T>(1, 1, "Relu") {
-                //
-            }
-
-        protected:
-
+        DECLARE_OP(Relu, 1, 1)
             Nd4jStatus validateAndExecute(Block<T>& block) {
                 REQUIRE_OK(validateNonEmptyInput(block));
 
@@ -198,15 +148,7 @@ namespace nd4j {
 
 
 
-        template <typename T>
-        class Identity: public nd4j::ops::DeclarableOp<T> {
-        public:
-            Identity() : nd4j::ops::DeclarableOp<T>(1, 1, "Identity") {
-                //
-            }
-
-        protected:
-
+        DECLARE_OP(Identity, 1, 1)
             Nd4jStatus validateAndExecute(Block<T>& block) {
                 REQUIRE_OK(validateNonEmptyInput(block));
 

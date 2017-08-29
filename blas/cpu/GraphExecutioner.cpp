@@ -21,6 +21,18 @@
 
 #include <fcntl.h>
 
+typedef struct FT  {
+    int alpha;
+    int beta;
+
+    FT() {
+        printf("Struct initialized\n");
+        fflush(stdout);
+    }
+};
+
+static FT ft;
+
 namespace nd4j{
     namespace graph {
 

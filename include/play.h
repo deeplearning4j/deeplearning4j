@@ -5,7 +5,7 @@
 #ifndef LIBND4J_PLAY_H
 #define LIBND4J_PLAY_H
 
-#include <op_boilerplate.h>
+//#include <op_boilerplate.h>
 
 #define ACTIVATIONS \
         (0, nd4j::activations::Identity) ,\
@@ -23,9 +23,17 @@
         (2, float16)
 
 
+#define DECLARE_OP(NAME, NIN, NOUT)   template <typename T> \
+                                      class NAME: public nd4j::ops::DeclarableOp<T> { \
+                                      public:\
+                                      NAME() : nd4j::ops::DeclarableOp<T>(-1, 1, #NAME) { } \
+                                      protected:
 
 
-BUILD_LAYERS_FACTORY(float, OPS_A(NATIVE_LAYERS), OPS_B(ACTIVATIONS))
+//DECLARE_OP("Concat", -1, 1)
+
+
+//BUILD_LAYERS_FACTORY(float, OPS_A(NATIVE_LAYERS), OPS_B(ACTIVATIONS))
 
 
 //DISPATCH_SIMPLE(scalarAlongDimension_, float, PARAMS(x, xShapeInfo, extraParamx, z, zShapeInfo, scalars, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), OPS_A(SCALAR_OPS))

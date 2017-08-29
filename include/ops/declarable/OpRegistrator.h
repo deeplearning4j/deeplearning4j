@@ -9,12 +9,14 @@
 #include <map>
 #include <ops/declarable/declarable_ops.h>
 
+
+
 namespace nd4j {
     namespace ops {
         class OpRegistrator {
 
         protected:
-            //std::map<std::string>
+            static std::map<std::string *, DeclarableOp> _declarables;
 
         public:
             /**
@@ -31,6 +33,11 @@ namespace nd4j {
              * @return
              */
             static nd4j::ops::DeclarableOp *getOperation(std::string *name);
+        };
+
+
+        struct __registrator {
+
         };
     }
 }

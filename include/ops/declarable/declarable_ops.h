@@ -5,13 +5,24 @@
 #ifndef LIBND4J_DECLARABLE_OPS_H
 #define LIBND4J_DECLARABLE_OPS_H
 
-#define REQUIRE_OK(A) nd4j::ops::resultHelper( (A), #A, __FILE__, __LINE__ );
-
 #include <pointercast.h>
 #include <NDArray.h>
 #include <Variable.h>
 #include <Block.h>
 #include "OpDescriptor.h"
+#include "OpRegistrator.h
+
+#define REQUIRE_OK(A) nd4j::ops::resultHelper( (A), #A, __FILE__, __LINE__ );
+
+
+#define DECLARE_OP(NAME, NIN, NOUT)   static \
+                                      template <typename T> \
+                                      class NAME: public nd4j::ops::DeclarableOp<T> { \
+                                      public:\
+                                      NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME) { } \
+                                      protected:
+
+
 
 using namespace nd4j::graph;
 
