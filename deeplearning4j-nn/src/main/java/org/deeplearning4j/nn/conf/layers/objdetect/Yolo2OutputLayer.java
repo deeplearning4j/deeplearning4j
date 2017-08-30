@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers.objdetect;
 
+import lombok.Data;
 import lombok.Getter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -13,6 +14,11 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossL2;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
+import org.nd4j.shade.serde.jackson.VectorDeSerializer;
+import org.nd4j.shade.serde.jackson.VectorSerializer;
+import org.nd4j.shade.serde.jackson.shaded.NDArraySerializer;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,14 +37,20 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-@Getter
+@Data
 public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     private double lambdaCoord;
     private double lambdaNoObj;
     private ILossFunction lossPositionScale;
     private ILossFunction lossClassPredictions;
+    @JsonSerialize(using = VectorSerializer.class)
+    @JsonDeserialize(using = VectorDeSerializer.class)
     private INDArray boundingBoxes;
+
+    private Yolo2OutputLayer(){
+        //No-arg costructor for Jackson JSON
+    }
 
     private Yolo2OutputLayer(Builder builder){
         super(builder);
