@@ -106,12 +106,16 @@ public class KerasLstm extends KerasLayer {
                 log.warn("Specifying different initialization for recurrent weights not supported.");
         getRecurrentDropout(layerConfig);
         this.unroll = getUnrollRecurrentLayer(layerConfig);
-        this.layer = new GravesLSTM.Builder().gateActivationFunction(getGateActivationFromConfig(layerConfig))
+        this.layer = new GravesLSTM.Builder()
+                        .gateActivationFunction(getGateActivationFromConfig(layerConfig))
                         .forgetGateBiasInit(getForgetBiasInitFromConfig(layerConfig, enforceTrainingConfig))
-                        .name(this.layerName).nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
+                        .name(this.layerName)
+                        .nOut(getNOutFromConfig(layerConfig, conf))
+                        .dropOut(this.dropout)
                         .activation(getActivationFromConfig(layerConfig, conf))
                         .weightInit(weightInit).biasInit(0.0)
-                        .l1(this.weightL1Regularization).l2(this.weightL2Regularization).build();
+                        .l1(this.weightL1Regularization)
+                        .l2(this.weightL2Regularization).build();
     }
 
     /**
