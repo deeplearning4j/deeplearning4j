@@ -165,7 +165,7 @@ namespace nd4j {
              nd4j::ops::DeclarableOp<float> *getOperationFloat(std::string& name) {
                 if (!_declarablesF.count(name)) {
                     nd4j_verbose("Unknown operation requested: [%s]\n", name.c_str())
-                    throw "Unknown operation requested";
+                    return nullptr;
                 }
 
                 return _declarablesF.at(name);
@@ -174,7 +174,7 @@ namespace nd4j {
             nd4j::ops::DeclarableOp<double> *getOperationDouble(std::string& name) {
                 if (!_declarablesD.count(name)) {
                     nd4j_verbose("Unknown operation requested: [%s]\n", name.c_str())
-                    throw "Unknown operation requested";
+                    return nullptr;
                 }
 
                 return _declarablesD.at(name);

@@ -59,4 +59,9 @@ TEST_F(ProtoBufTests, TestTextLoad2) {
 
     // now we're veryfying op graph
     ASSERT_EQ(1, graph->totalNodes());
+
+    GraphExecutioner<float>::execute(graph);
+
+    ASSERT_NEAR(12.0f, var0->getNDArray()->reduceNumber<simdOps::Sum<float>>(), 1e-5);
+    ASSERT_NEAR(1.0f, var0->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }

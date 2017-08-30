@@ -15,6 +15,7 @@
 #include <loops/scalar.h>
 #include <loops/pairwise_transform.h>
 #include <loops/transform.h>
+#include <ops/declarable/declarable_ops.h>
 
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
@@ -50,8 +51,10 @@ namespace nd4j{
 
             nd4j_printf("Executing node_%i{%i}\n", node->id(), opNum);
             fflush(stdout);
+            if (node->hasCustomOp()) {
 
-            if (opType == OpType_TRANSFORM) {
+                node->getCustomOp()->execute(node->getBlock());
+            } else if (opType == OpType_TRANSFORM) {
                 int in = node->input()->at(0);
 
                 auto x = variableSpace->getVariable(in);
@@ -522,8 +525,10 @@ namespace nd4j{
             auto graph = new Graph<T>();
             auto variableSpace = graph->getVariableSpace();
 
+            std::map<const std::string, int> variablesMap;
 
             int variablesCounter = 0;
+            int nodesCounter = 0;
             nd4j_verbose("Number of nodes in graphDef: %i\n", graphDef.node_size());
             for (int n = 0; n < graphDef.node_size(); n++) {
                 auto node = graphDef.node(n);
@@ -536,6 +541,8 @@ namespace nd4j{
                     variable->setId(--variablesCounter);
                     variableSpace->putVariable(variable->id(), variable);
 
+                    std::pair<const std::string, int> pair(node.name(), variable->id());
+                    variablesMap.insert(pair);
 
                     // TODO: we might want to have something like that.
                     // it basically just gives input validation option, since settles expectations for input
@@ -610,15 +617,34 @@ namespace nd4j{
                     nd4j_verbose("Node id: [%i]; name: [%s]; opName: [%s]\n", n + 1, node.name().c_str(),
                                  node.op().c_str());
 
+                    nd4j::ops::DeclarableOp<T> *op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(node.name().c_str());
+
+                    if (op == nullptr) {
+                        nd4j_verbose("Op wasn't found: %s\n", node.name().c_str());
+                        return nullptr;
+                    }
+
+                    auto jNode = new nd4j::graph::Node<T>();
+                    jNode->setName(node.name());
+                    jNode->setId(++nodesCounter);
+                    jNode->setCustomOp(op);
+                    jNode->setBlock(new Block<T>(jNode->id(), variableSpace));
+
                     printf("             Inputs: [");
                     for (int i = 0; i < node.input_size(); i++) {
-                        printf("%s", node.input(i).c_str());
+                        printf("%s (%i)", node.input(i).c_str(), variablesMap.at(node.input(i)));
+
+
+                        jNode->pickInput(variablesMap.at(node.input(i)));
+                        jNode->getBlock()->pickInput(variablesMap.at(node.input(i)));
+
 
                         if (i < node.input_size() + 1)
                             printf(", ");
                     }
                     printf("]\n");
 
+                    graph->addNode(jNode);
                 }
             }
 

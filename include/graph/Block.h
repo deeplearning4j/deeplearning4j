@@ -53,26 +53,26 @@ namespace nd4j {
                 return _variableSpace;
             }
 
+
+            void pickInput(int input) {
+                _inputs.push_back(input);
+
+                if (!_variableSpace->hasVariable(input))
+                    throw "Unknown variable was referenced";
+
+                _variables.push_back(_variableSpace->getVariable(input));
+            }
+
             void fillInputs(std::initializer_list<int> inputs) {
                 for (auto v: inputs) {
-                    _inputs.push_back(v);
-
-                    if (!_variableSpace->hasVariable(v))
-                        throw "Unknown variable was referenced";
-
-                    _variables.push_back(_variableSpace->getVariable(v));
+                    pickInput(v);
                 }
             }
 
             void fillInputs(std::vector<int> *inputs) {
                 for (int e = 0; e < inputs->size(); e++) {
                     auto v = inputs->at(e);
-                    _inputs.push_back(v);
-
-                    if (!_variableSpace->hasVariable(v))
-                        throw "Unknown variable was referenced";
-
-                    _variables.push_back(_variableSpace->getVariable(v));
+                    pickInput(v);
                 }
             }
 
