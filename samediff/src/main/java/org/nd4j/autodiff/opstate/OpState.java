@@ -143,7 +143,6 @@ public class OpState implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
 
         OpState opState = (OpState) o;
 
@@ -160,9 +159,7 @@ public class OpState implements Serializable {
         // Probably incorrect - comparing Object[] arrays with Arrays.equals
         if (!Arrays.equals(extraArgsWithoutInPlace, opState.extraArgsWithoutInPlace)) return false;
         if (result != null ? !result.equals(opState.result) : opState.result != null) return false;
-        if (differentialFunction != null ? !differentialFunction.equals(opState.differentialFunction) : opState.differentialFunction != null)
-            return false;
-        return arrayField != null ? arrayField.equals(opState.arrayField) : opState.arrayField == null;
+        return true;
     }
 
     @Override
@@ -178,8 +175,6 @@ public class OpState implements Serializable {
         result1 = 31 * result1 + Arrays.hashCode(extraArgs);
         result1 = 31 * result1 + Arrays.hashCode(extraArgsWithoutInPlace);
         result1 = 31 * result1 + (result != null ? result.hashCode() : 0);
-        result1 = 31 * result1 + (differentialFunction != null ? differentialFunction.hashCode() : 0);
-        result1 = 31 * result1 + (arrayField != null ? arrayField.hashCode() : 0);
         return result1;
     }
 }

@@ -37,7 +37,7 @@ public class SDVariable  implements Serializable {
     private SameDiff sameDiff;
     private int[] shape;
     private SDVariable gradient;
-
+    private int vertexId;
     protected DifferentialFunction<ArrayField> differentialFunction;
 
     @Builder
@@ -53,6 +53,10 @@ public class SDVariable  implements Serializable {
         this.arr = arr;
         this.arrayField = arrayField;
         this.sameDiff = sameDiff;
+        if(differentialFunction != null)
+            this.vertexId = differentialFunction.getVertexId();
+        else if(arrayField != null)
+            this.vertexId = arrayField.getVertexId();
 
     }
 

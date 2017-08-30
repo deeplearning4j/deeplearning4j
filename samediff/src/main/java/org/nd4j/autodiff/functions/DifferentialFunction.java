@@ -108,13 +108,14 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
         X val = doGetValue();
         if(val instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) val;
+            ArrayField arrayField = sameDiff.setupArrayField((ArrayField) val);
+            val = (X) arrayField;
             Preconditions.checkState(arrayField.getOps() == this.sameDiff,"Same diff instances for get value not the same.");
 
         }
 
         if(val instanceof ArrayField && !freeze) {
-            ArrayField arrayField = (ArrayField) val;
+            ArrayField arrayField = sameDiff.setupArrayField((ArrayField) val);
             Preconditions.checkState(arrayField.getOps() == this.sameDiff,"Same diff instances for get value not the same.");
             NDArrayVertex vertex = (NDArrayVertex) getSameDiff().getGraph().getVertex(getVertexId());
             arrayField.setVertex(vertex);
@@ -157,9 +158,6 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
 
-    public boolean isvariable() {
-        return false;
-    }
 
     @Override
     public abstract List<DifferentialFunction<X>> diff(List<DifferentialFunction<X>> i_v1);
@@ -1035,19 +1033,21 @@ public abstract class DifferentialFunction<X extends Field<X>>
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
 
         DifferentialFunction<?> that = (DifferentialFunction<?>) o;
 
         if (vertexId != that.vertexId) return false;
-        // Probably incorrect - comparing Object[] arrays with Arrays.equals
-        return Arrays.equals(extraArgs, that.extraArgs);
+        if (opState != null ? !opState.equals(that.opState) : that.opState != null) return false;
+        if (gradient != null ? !gradient.equals(that.gradient) : that.gradient != null) return false;
+        return true;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
+        result = 31 * result + (opState != null ? opState.hashCode() : 0);
         result = 31 * result + vertexId;
+        result = 31 * result + (gradient != null ? gradient.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(extraArgs);
         return result;
     }

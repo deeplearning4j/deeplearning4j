@@ -77,7 +77,6 @@ public class NDArrayInformation implements Serializable {
 
         if (!Arrays.equals(shape, that.shape)) return false;
         if (id != null ? !id.equals(that.id) : that.id != null) return false;
-        if (owner != null ? !owner.equals(that.owner) : that.owner != null) return false;
         if (scalarValue != null ? !scalarValue.equals(that.scalarValue) : that.scalarValue != null) return false;
         return arrId != null ? arrId.equals(that.arrId) : that.arrId == null;
     }
