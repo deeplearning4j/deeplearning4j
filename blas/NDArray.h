@@ -202,6 +202,12 @@ namespace nd4j {
         std::vector<T> getBufferAsVector();
 
         std::vector<int32_t> getShapeAsVector();
+		
+		// set new order and shape in case of suitable array length 
+		bool reshape(char order, const std::initializer_list<int>& shape);
+	
+		// set new order and shape in case of suitable array length 
+		bool reshape(char order, const std::vector<int>& shape);
 
         // default destructor
         ~NDArray();
@@ -231,7 +237,7 @@ namespace nd4j {
                 return false;
 
         return true;
-    }
+    }	
 
 }
 #endif

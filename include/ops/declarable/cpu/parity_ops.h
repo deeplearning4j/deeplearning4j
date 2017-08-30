@@ -131,13 +131,6 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(Reshape, 2, 1) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
-            return ND4J_STATUS_OK;
-        }
-
-//////////////////////////////////////////////////////////////////////////
         DECLARE_OP(Identity, 1, 1) {
             REQUIRE_OK(this->validateNonEmptyInput(block));
 
@@ -323,6 +316,21 @@ namespace nd4j {
 			
             }
 			return ND4J_STATUS_OK;
+        }
+
+//////////////////////////////////////////////////////////////////////////				
+		DECLARE_OP(Reshape, 2, 1) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));            
+
+            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *y = block.getVariables().at(1)->getNDArray();	
+			
+			vector<int> newShape(y->shapeOf(), y->shapeOf() + y->rankOf());
+			char order = y->ordering();
+			if (x->reshape(order, vector))
+				return ND4J_STATUS_OK;
+			
+			return ND4J_STATUS_BAD;
         }
 		
     }
