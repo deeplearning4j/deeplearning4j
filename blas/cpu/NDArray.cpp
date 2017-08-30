@@ -8,61 +8,65 @@
 
 namespace nd4j {
 
+////////////////////////////////////////////////////////////////////////
 // default constructor, do not allocate memory, memory for array is passed from outside 
-    template<typename T>
-    NDArray<T>::NDArray(T *buffer, int *shapeInfo) {
+template <typename T> NDArray<T>::NDArray(T *buffer, int *shapeInfo ) {        
+    
+    _buffer    = buffer;
+    _shapeInfo = shapeInfo;
+    _isBuffAlloc = false;                                  // indicate that memory for array is passed from outside
+    _isShapeAlloc = false;
+}
 
-        _buffer = buffer;
-        _shapeInfo = shapeInfo;
-        _allocated = false;                                  // indicate that memory for array is passed from outside
+
+////////////////////////////////////////////////////////////////////////
+// this constructor creates 2D NDArray, memory for array is allocated in this constructor 
+template <typename T> NDArray<T>::NDArray(const int rows, const int columns, const char order) {
+    
+    _buffer = new T[rows * columns];
+    memset(_buffer, 0, rows * columns * sizeOfT());              // set all elements in new array to be zeros
+
+    int *shape = new int[2] {rows, columns};
+
+    if (order == 'f') {
+        _shapeInfo = shape::shapeBufferFortran(2, shape);
+        _shapeInfo[7] = 102;
+    } else {
+        _shapeInfo = shape::shapeBuffer(2, shape);
+        _shapeInfo[7] = 99;
     }
 
+    _shapeInfo[6] = 1;
+    _isBuffAlloc = true; 
+    _isShapeAlloc = true;
+    
+    delete[] shape;    
+}
 
 // this constructor creates 2D NDArray, memory for array is allocated in this constructor 
-    template<typename T>
-    NDArray<T>::NDArray(const int rows, const int columns, const char order) {
+template <typename T> NDArray<T>::NDArray(const int rows, const int columns, const char order) {
+    
+    _buffer = new T[rows * columns];
+    memset(_buffer, 0, rows * columns * sizeOfT());              // set all elements in new array to be zeros
 
-        _buffer = new T[rows * columns];
-        memset(_buffer, 0, rows * columns * sizeOfT());              // set all elements in new array to be zeros
+    int *shape = new int[2] {rows, columns};
 
-        int *shape = new int[2]{rows, columns};
-
-        if (order == 'f') {
-            _shapeInfo = shape::shapeBufferFortran(2, shape);
-            _shapeInfo[7] = 102;
-        } else {
-            _shapeInfo = shape::shapeBuffer(2, shape);
-            _shapeInfo[7] = 99;
-        }
-
-        _shapeInfo[6] = 1;
-        _allocated = true;
-
-        delete[] shape;
+    if (order == 'f') {
+        _shapeInfo = shape::shapeBufferFortran(2, shape);
+        _shapeInfo[7] = 102;
+    } else {
+        _shapeInfo = shape::shapeBuffer(2, shape);
+        _shapeInfo[7] = 99;
     }
 
+    _shapeInfo[6] = 1;
+    _isBuffAlloc = true; 
+    _isShapeAlloc = true;
+    
+    delete[] shape;    
+}
 
-// this constructor creates NDArray as single row (dimension is 1xlength), memory for array is allocated in constructor 
-    template<typename T>
-    NDArray<T>::NDArray(const int length, const char order) {
-
-        _buffer = new T[length];
-        memset(_buffer, 0, length * sizeOfT());
-
-        int *shape = new int[2]{1, length};
-
-        if (order == 'f') {
-            _shapeInfo = shape::shapeBufferFortran(2, shape);
-            _shapeInfo[7] = 102;
-        } else {
-            _shapeInfo = shape::shapeBuffer(2, shape);
-            _shapeInfo[7] = 99;
-        }
-
-        _allocated = true;
-        delete[] shape;
-    }
-
+////////////////////////////////////////////////////////////////////////
     template<typename T>
     std::vector<T> NDArray<T>::getBufferAsVector() {
         std::vector<T> vector;
@@ -88,45 +92,52 @@ namespace nd4j {
         return vector;
     }
 
-// creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
-    template<typename T>
-    NDArray<T>::NDArray(const NDArray<T> *other) {
+////////////////////////////////////////////////////////////////////////
+// copy constructor
+template <typename T> NDArray<T>::NDArray(const NDArray<T>& other)
+{
+    int arrLength = shape::length(other._shapeInfo);
+    int shapeLength = shape::rank(other._shapeInfo)*2 + 4;
+    
+    _buffer = new T[arrLength];
+    memcpy(_buffer, other._buffer, arrLength*sizeOfT());      // copy other._buffer information into new array
+ 
+    _shapeInfo = new int[shapeLength];             
+    memcpy(_shapeInfo, other._shapeInfo, shapeLength*sizeof(int));     // copy shape information into new array
+    
+    _isBuffAlloc = true; 
+   _isShapeAlloc = true;
+}
 
-        _buffer = new T[other->lengthOf()];
-        memset(_buffer, 0, other->lengthOf() * sizeOfT());          // set all elements in new array to be zeros
-
-        _shapeInfo = new int[other->rankOf() * 2 + 4];
-        memcpy(_shapeInfo, other->_shapeInfo,
-               (other->rankOf() * 2 + 4) * sizeof(int));     // copy shape information into new array
-        _allocated = true;
-    }
-
-
+////////////////////////////////////////////////////////////////////////
 // this constructor creates new array using rank information contained in initializer_list argument
-    template<typename T>
-    NDArray<T>::NDArray(const char order, const std::initializer_list<int> &shape) {
+template <typename T> NDArray<T>::NDArray(const char order, const std::initializer_list<int>& shape) {
+    
+    int rank = (int) shape.size();
 
-        int rank = (int) shape.size();
+    if (rank > MAX_RANK)
+        throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
-        if (rank > MAX_RANK)
-            throw std::invalid_argument("Rank of NDArray can't exceed 32");
+    int *shapeOf = new int[rank];
+    int cnt = 0;
 
-        std::unique_ptr<int> shapeOf(new int[rank]);
-        int cnt = 0;
+    for (auto& item: shape)
+        shapeOf[cnt++] = item;
 
-        for (auto &item: shape)
-            shapeOf.get()[cnt++] = item;
+    if (order == 'f')
+        _shapeInfo = shape::shapeBufferFortran(rank, shapeOf);
+    else 
+        _shapeInfo = shape::shapeBuffer(rank, shapeOf);
 
-        if (order == 'f') {
-            _shapeInfo = shape::shapeBufferFortran(rank, shapeOf.get());
-        } else {
-            _shapeInfo = shape::shapeBuffer(rank, shapeOf.get());
-        }
+    _buffer = new T[shape::length(_shapeInfo)];
+    memset(_buffer, 0, sizeOfT() * shape::length(_shapeInfo));
+    
+    _isBuffAlloc = true; 
+    _isShapeAlloc = true;
+    
+    delete[] shapeOf;
+}
 
-        _buffer = new T[shape::length(_shapeInfo)];
-        memset(_buffer, 0, sizeOfT() * shape::length(_shapeInfo));
-        _allocated = true;
-    }
 
 
     template<typename T>
@@ -151,24 +162,26 @@ namespace nd4j {
 
         _buffer = new T[shape::length(_shapeInfo)];
         memset(_buffer, 0, sizeOfT() * shape::length(_shapeInfo));
-        _allocated = true;
+        
+		_isBuffAlloc = true; 
+		_isShapeAlloc = true;
+	
     }
 
 
-// This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
-    template<typename T>
-    void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting) {
-
-        if (_allocated && releaseExisting) {
-            printf("Deleting original memory\n");
-            delete[] _buffer;
-            delete[] _shapeInfo;
-        }
-        _allocated = false;
-        _buffer = buffer;
-        _shapeInfo = shapeInfo;
-    }
-
+// This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)        
+template<typename T> void NDArray<T>::replacePointers(T* buffer, int* shapeInfo, const bool releaseExisting = true) {
+	if (releaseExisting) {
+		if (_isBuffAlloc) 
+			delete []_buffer; 
+		if (_isShapeAlloc)
+			delete[] _shapeInfo;
+	}
+	_isBuffAlloc = false;
+	_isShapeAlloc = false;
+	_buffer    = buffer;
+	_shapeInfo = shapeInfo;
+} 
 
 // This method assigns values of given NDArray to this one, wrt order
     template<typename T>
@@ -196,31 +209,31 @@ namespace nd4j {
     }
 
 
+////////////////////////////////////////////////////////////////////////
 // This method returns new copy of this NDArray, optionally in different order
-    template<typename T>
-    NDArray<T> *NDArray<T>::dup(const char newOrder) {
-        // op
-        Nd4jIndex newLength = shape::length(_shapeInfo);
-        T *newBuffer = new T[newLength];
-        int *newShapeInfo;
-        int *shape = shapeOf();
+template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
+    // op
+    Nd4jIndex newLength = shape::length(_shapeInfo);
+    T * newBuffer = new T[newLength];
+    int *newShapeInfo;
 
-        if (newOrder == 'f')
-            newShapeInfo = shape::shapeBufferFortran(rankOf(), shapeOf());
-        else
-            newShapeInfo = shape::shapeBuffer(rankOf(), shapeOf());
+    if (newOrder == 'f')
+        newShapeInfo = shape::shapeBufferFortran(rankOf(), shapeOf());
+    else
+        newShapeInfo = shape::shapeBuffer(rankOf(), shapeOf());
 
-        // FIXME: we know that EWS is always 1 after dup() result
-        newShapeInfo[rankOf() * 2 + 2] = 1;
+    // FIXME: we know that EWS is always 1 after dup() result
+    newShapeInfo[rankOf() * 2 + 2] = 1;
 
-        NDArray<T> *result = new NDArray<T>(newBuffer, newShapeInfo);
-        // this value should be set, to avoid memleak
-        result->_allocated = true;
+    NDArray<T> *result = new NDArray<T>(newBuffer, newShapeInfo);
+    // this value should be set, to avoid memleak
+    result->_isBuffAlloc = true;
+    result->_isShapeAlloc = true;
 
-        result->assign(this);
+    result->assign(this);
 
-        return result;
-    }
+    return result;
+}
 
 
 // This method returns sum of all elements of this NDArray
@@ -314,68 +327,72 @@ namespace nd4j {
 
 
 // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
-    template<typename T>
-    NDArray<T> *NDArray<T>::transpose() const {
-        int *rearrange = new int[rankOf()];
-        int cnt = 0;
-        for (int d = rankOf() - 1; d >= 0; d--) {
-            rearrange[cnt++] = d;
-        }
+template <typename T> NDArray<T>* NDArray<T>::transpose() const {
+    int *rearrange = new int[rankOf()];
+    int cnt = 0;
+    for (int d = rankOf() - 1; d >= 0; d--) {
+        rearrange[cnt++] = d;
+    }
 
-        int sLen = rankOf() * 2 + 4;
-        int *newShapeBuffer = new int[sLen];
-        memcpy(newShapeBuffer, _shapeInfo, sizeof(int) * sLen);
+    int sLen = rankOf() * 2 + 4;
+    int *newShapeBuffer = new int[sLen];
+    memcpy(newShapeBuffer, _shapeInfo, sizeof(int) * sLen);
 
-        shape::doPermuteShapeBuffer(newShapeBuffer, rearrange);
+    shape::doPermuteShapeBuffer(newShapeBuffer, rearrange);
 
-        // fixme: this is bad
-        newShapeBuffer[sLen - 2] = 1;
+    // fixme: this is bad
+    newShapeBuffer[sLen - 2] = 1;
+
+    T *newBuffer = new T[lengthOf()];
+    memcpy(newBuffer, _buffer, sizeOfT() * lengthOf());
+
+    NDArray<T> *result = new NDArray(newBuffer, newShapeBuffer);
+    result->_isBuffAlloc = true;
+    result->_isShapeAlloc = true;
+
+    delete[] rearrange;
+
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////
+// This method applies in-place transpose to this array, so this array becomes transposed 
+template <typename T> void NDArray<T>::transposei() {
+    
+    int *rearrange = new int[rankOf()];
+    int cnt = 0;
+    for (int d = rankOf() - 1; d >= 0; d--) {
+        rearrange[cnt++] = d;
+    }
+
+    int *newShapeBuffer;
+    int sLen = rankOf() * 2 + 4;  
+    if (!_isBuffAlloc) {
+        // if we're going for transpose - we'll have to detach this array from original one
+        _isBuffAlloc = true;
 
         T *newBuffer = new T[lengthOf()];
         memcpy(newBuffer, _buffer, sizeOfT() * lengthOf());
-
-        NDArray<T> *result = new NDArray(newBuffer, newShapeBuffer);
-        result->_allocated = true;
-
-        delete[] rearrange;
-
-        return result;
+        _buffer = newBuffer;
+                
+       
+    }
+    else if(!_isShapeAlloc) {
+        _isShapeAlloc = true;
+        newShapeBuffer = new int[sLen];
+        memcpy(newShapeBuffer, _shapeInfo, sizeof(int) * sLen);
+    }
+    else {
+        newShapeBuffer = _shapeInfo;
     }
 
+    shape::doPermuteShapeBuffer(newShapeBuffer, rearrange);
 
-// This method applies in-place transpose to this array, so this array becomes transposed 
-    template<typename T>
-    void NDArray<T>::transposei() {
-
-        int *rearrange = new int[rankOf()];
-        int cnt = 0;
-        for (int d = rankOf() - 1; d >= 0; d--) {
-            rearrange[cnt++] = d;
-        }
-
-        int *newShapeBuffer;
-        int sLen = rankOf() * 2 + 4;
-        if (!_allocated) {
-            // if we're going for transpose - we'll have to detach this array from original one
-            _allocated = true;
-
-            T *newBuffer = new T[lengthOf()];
-            memcpy(newBuffer, _buffer, sizeOfT() * lengthOf());
-
-            _buffer = newBuffer;
-            newShapeBuffer = new int[sLen];
-            memcpy(newShapeBuffer, _shapeInfo, sizeof(int) * sLen);
-        } else {
-            newShapeBuffer = _shapeInfo;
-        }
-
-        shape::doPermuteShapeBuffer(newShapeBuffer, rearrange);
-
-        // fixme: this is bad
-        newShapeBuffer[sLen - 2] = 1;
-        _shapeInfo = newShapeBuffer;
-    }
-
+    // fixme: this is bad
+    newShapeBuffer[sLen - 2] = 1;
+    _shapeInfo = newShapeBuffer;
+    delete []rearrange;
+}
 
 // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
     template<typename T>
