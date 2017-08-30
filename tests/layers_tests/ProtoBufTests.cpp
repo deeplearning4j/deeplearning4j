@@ -38,8 +38,8 @@ TEST_F(ProtoBufTests, TestTextLoad2) {
 
     ASSERT_EQ(2, graph->getVariableSpace()->externalEntries());
 
-    auto var0 = graph->getVariableSpace()->getVariable(std::string("zeros"));
-    auto var1 = graph->getVariableSpace()->getVariable(std::string("ones"));
+    auto var0 = graph->getVariableSpace()->getVariable(new std::string("zeros"));
+    auto var1 = graph->getVariableSpace()->getVariable(new std::string("ones"));
 
     ASSERT_TRUE(var0 != nullptr);
     ASSERT_TRUE(var1 != nullptr);
