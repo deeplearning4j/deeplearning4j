@@ -18,6 +18,7 @@ package org.datavec.image.loader;
 
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.util.ArchiveUtils;
+import org.datavec.image.data.Image;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
@@ -59,6 +60,11 @@ public abstract class BaseImageLoader implements Serializable {
     public abstract INDArray asMatrix(File f) throws IOException;
 
     public abstract INDArray asMatrix(InputStream inputStream) throws IOException;
+
+    public abstract Image asImageMatrix(File f) throws IOException;
+
+    public abstract Image asImageMatrix(InputStream inputStream) throws IOException;
+
 
     public static void downloadAndUntar(Map urlMap, File fullDir) {
         try {
