@@ -78,10 +78,12 @@ TEST_F(DeclarableOpsTests, BasicInitialization2) {
 
 TEST_F(DeclarableOpsTests, SynonymInitialization2) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("Mul");
+    auto op2 = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("Multiply");
 
     ASSERT_TRUE(op != nullptr);
     std::string expName("Multiply");
     ASSERT_EQ(expName, *(op->getOpName()));
+    ASSERT_TRUE(op == op2);
 }
 
 //////////////////////////////////////////////////////////////////////

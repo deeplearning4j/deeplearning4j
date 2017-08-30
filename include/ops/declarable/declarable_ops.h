@@ -28,7 +28,8 @@
                                                 template <typename T> \
                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
 
-#define DECLARE_SYN(NAME, ORIGINAL)     static nd4j::ops::__registratorSynonymFloat<ORIGINAL<float>> register_opf_##NAME(#NAME); \
+#define DECLARE_SYN(NAME, ORIGINAL)     static nd4j::ops::__registratorSynonymFloat<ORIGINAL<float>> register_opf_##NAME(#NAME, #ORIGINAL); \
+                                        static nd4j::ops::__registratorSynonymDouble<ORIGINAL<double>> register_opd_##NAME(#NAME, #ORIGINAL)
 
 //#define END_OP(NAME) };
 
@@ -154,6 +155,13 @@ namespace nd4j {
                 return true;
             }
 
+            bool registerOperationDouble(const char* name, nd4j::ops::DeclarableOp<double>* op) {
+                auto str = new std::string(name);
+                std::pair<std::string, nd4j::ops::DeclarableOp<double>*> pair(*str, op);
+                _declarablesD.insert(pair);
+                return true;
+            }
+
             bool registerOperationDouble(nd4j::ops::DeclarableOp<double > *op) {
                 std::pair<std::string, nd4j::ops::DeclarableOp<double>*> pair(*(op->getOpName()), op);
                 _declarablesD.insert(pair);
@@ -180,6 +188,12 @@ namespace nd4j {
                 return _declarablesF.at(name);
             }
 
+
+            nd4j::ops::DeclarableOp<double >* getOperationDouble(const char *name) {
+                std::string str(name);
+                return getOperationDouble(str);
+            }
+
             nd4j::ops::DeclarableOp<double> *getOperationDouble(std::string& name) {
                 if (!_declarablesD.count(name)) {
                     nd4j_verbose("Unknown operation requested: [%s]\n", name.c_str())
@@ -192,9 +206,17 @@ namespace nd4j {
 
         template <typename OpName>
         struct __registratorSynonymFloat {
-            __registratorSynonymFloat(const char *name) {
-                OpName *ptr = new OpName();
+            __registratorSynonymFloat(const char *name, const char *oname) {
+                OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationFloat(oname);
                 OpRegistrator::getInstance()->registerOperationFloat(name, ptr);
+            }
+        };
+
+        template <typename OpName>
+        struct __registratorSynonymDouble {
+            __registratorSynonymDouble(const char *name, const char *oname) {
+                OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationDouble(oname);
+                OpRegistrator::getInstance()->registerOperationDouble(name, ptr);
             }
         };
 

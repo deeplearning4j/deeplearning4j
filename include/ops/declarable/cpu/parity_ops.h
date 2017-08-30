@@ -107,6 +107,7 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+        DECLARE_SYN(MMul, MatMul);
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_OP(Conv2D, 2, 1) {
@@ -190,7 +191,7 @@ namespace nd4j {
 			}
 			return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(Sub, Subtract)
+        DECLARE_SYN(Sub, Subtract);
 
 //////////////////////////////////////////////////////////////////////////		
 		DECLARE_OP(ReverseSubtract, 2, 1) {
@@ -216,7 +217,7 @@ namespace nd4j {
 			}
 			return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(RSub, ReverseSubtract)
+        DECLARE_SYN(RSub, ReverseSubtract);
 
 //////////////////////////////////////////////////////////////////////////		
 		DECLARE_OP(Multiply, 2, 1) {
@@ -243,7 +244,7 @@ namespace nd4j {
             }
 			return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(Mul, Multiply)
+        DECLARE_SYN(Mul, Multiply);
 
 //////////////////////////////////////////////////////////////////////////		
 		DECLARE_OP(Divide, 2, 1) {
@@ -270,7 +271,7 @@ namespace nd4j {
             }
 			return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(Div, Divide)
+        DECLARE_SYN(Div, Divide);
 
 //////////////////////////////////////////////////////////////////////////				
 		DECLARE_OP(ReverseDivide, 2, 1) {
@@ -297,7 +298,7 @@ namespace nd4j {
             }
 			return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(RDiv, ReverseDivide)
+        DECLARE_SYN(RDiv, ReverseDivide);
 
 //////////////////////////////////////////////////////////////////////////				
 		DECLARE_OP(Reshape, 2, 1) {
