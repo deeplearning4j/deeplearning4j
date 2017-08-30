@@ -186,6 +186,45 @@ namespace nd4j {
 			return ND4J_STATUS_OK;
         }
 		
+		DECLARE_OP(Subtract, 2, 1) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));            
+
+            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *y = block.getVariables().at(1)->getNDArray();			
+
+			if ((x->isMatrix() && y->isMatrix()) || (x->isVector() && y->isVector())) {
+				REQUIRE_OK(this->validateInputLengthMatch(block));
+				x->template applyPairwiseTransform<simdOps::Subtract<T>>(y, nullptr);                
+            
+			} else if (x->isMatrix() && y->isVector()) {
+				REQUIRE_OK(this->validateInputLengthMatch(block));
+				REQUIRE_OK(this->validateInput2D(block));			
+                x->addiRowVector(y);
+	
+            } else if (x->isVector() && y->isMatrix()) {
+                REQUIRE_OK(this->validateInputLengthMatch(block));
+				REQUIRE_OK(this->validateInput2D(block));
+                y->addiRowVector(x);
+	
+            } else if (!x->isScalar() && y->isScalar()) {
+               x->template applyScalar<simdOps::Subtract<T>>(*y, x);
+
+            } else if (x->isScalar() && !y->isScalar()) {
+                y->template applyScalar<simdOps::Subtract<T>>(*x, y);
+
+            }						
+			else if (x->isScalar() && y->isScalar()) {
+				x->putScalar(0, x->getScalar(0) - y->getScalar(0));
+
+			}
+			else { // (!x->isScalar() && !y->isScalar())
+				REQUIRE_OK(this->validateInputLengthMatch(block));
+				x->template applyPairwiseTransform<simdOps::Subtract<T>>(y, nullptr);                
+
+            }
+			return ND4J_STATUS_OK;
+        }
+
 		DECLARE_OP(Multiply, 2, 1) {
             REQUIRE_OK(this->validateNonEmptyInput(block));            
 
@@ -210,8 +249,31 @@ namespace nd4j {
             }
 			return ND4J_STATUS_OK;
         }
+		
+		DECLARE_OP(Divide, 2, 1) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));            
 
+            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *y = block.getVariables().at(1)->getNDArray();			
 
+			if (!x->isScalar() && !y->isScalar()) {
+				REQUIRE_OK(this->validateInputLengthMatch(block));
+				// REQUIRE_OK(this->validateInputDimensionsMatch(block));
+				x->template applyPairwiseTransform<simdOps::Divide<T>>(y, nullptr);                
+	
+            } else if (!x->isScalar() && y->isScalar()) {
+               x->template applyScalar<simdOps::Divide<T>>(*y, x);
+
+            } else if (x->isScalar() && !y->isScalar()) {
+                y->template applyScalar<simdOps::Divide<T>>(*x, y);
+
+            }						
+			else { // (x->isScalar() && y->isScalar())
+				x->putScalar(0, x->getScalar(0) * y->getScalar(0));
+			
+            }
+			return ND4J_STATUS_OK;
+        }
 		
     }
 }
