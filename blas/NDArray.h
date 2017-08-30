@@ -12,10 +12,9 @@ namespace nd4j {
     template<typename T>
     class NDArray {
     public:
-        T    *_buffer;                          // pointer on flattened data array in memory
-        int  *_shapeInfo;                       // contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
-        bool  _isShapeAlloc;                    // indicates whether user allocates memory for _shapeInfo by himself, in opposite case the memory must be allocated from outside       
-		bool _isBuffAlloc; 						// indicates whether user allocates memory for _buffer by himself, in opposite case the memory must be allocated from outside       
+        T *_buffer;                   // pointer on flattened data array in memory
+        int *_shapeInfo;                // contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
+        bool _allocated;                // indicates whether user allocates memory for array by himself, in opposite case the memory must be allocated from outside
 
 
         // default constructor, do not allocate memory, memory for array is passed from outside 
