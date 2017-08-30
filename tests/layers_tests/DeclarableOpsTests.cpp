@@ -15,8 +15,11 @@ class DeclarableOpsTests : public testing::Test {
 public:
     int *cShape = new int[8]{2, 2, 2, 2, 1, 0, 1, 99};
     int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
+		
+
 };
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests, BasicInitialization1) {
     auto concat = new nd4j::ops::Concat<float>();
     std::string expName("Concat");
@@ -63,11 +66,34 @@ TEST_F(DeclarableOpsTests, BasicInitialization1) {
     ASSERT_EQ(ND4J_STATUS_OK, result);
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests, BasicInitialization2) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("Concat");
 
     ASSERT_TRUE(op != nullptr);
     std::string expName("Concat");
     ASSERT_EQ(expName, *(op->getOpName()));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, AddMatrices) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(5, 3, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(2);
+	y.assign(1);
+	exp.assign(3);
+
+	VariableSpace<float> variableSpace();
+    variableSpace.putVariable(-1, &x);
+    variableSpace.putVariable(-2, &y);    
+	Block<float> block(1, variableSpace);
+    block.fillInputs({-1, -2});
+
+	nd4j::ops::Add<float> addOp();
+ 
+	addOp.execute(&block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));    
 }
