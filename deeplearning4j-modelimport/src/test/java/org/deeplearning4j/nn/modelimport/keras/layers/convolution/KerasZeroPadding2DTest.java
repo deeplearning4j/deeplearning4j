@@ -47,10 +47,12 @@ public class KerasZeroPadding2DTest {
     public void testZeroPadding2DLayer() throws Exception {
         buildZeroPadding2DLayer(conf1, keras1);
         buildZeroPadding2DLayer(conf2, keras2);
+        buildZeroPaddingSingleDim2DLayer(conf1, keras1);
+        buildZeroPaddingSingleDim2DLayer(conf2, keras2);
     }
 
 
-    public void buildZeroPadding2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    void buildZeroPadding2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_1D());
         Map<String, Object> config = new HashMap<>();
@@ -69,6 +71,20 @@ public class KerasZeroPadding2DTest {
         assertEquals(ZERO_PADDING[1], layer.getPadding()[2]);
         assertEquals(ZERO_PADDING[1], layer.getPadding()[3]);
 
+    }
 
+    void buildZeroPaddingSingleDim2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        Map<String, Object> layerConfig = new HashMap<>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_1D());
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        config.put(conf.getLAYER_FIELD_ZERO_PADDING(), ZERO_PADDING[0]);
+        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+
+        ZeroPaddingLayer layer = new KerasZeroPadding2D(layerConfig).getZeroPadding2DLayer();
+        assertEquals(LAYER_NAME, layer.getLayerName());
+        assertEquals(ZERO_PADDING[0], layer.getPadding()[0]);
+        assertEquals(ZERO_PADDING[0], layer.getPadding()[1]);
     }
 }

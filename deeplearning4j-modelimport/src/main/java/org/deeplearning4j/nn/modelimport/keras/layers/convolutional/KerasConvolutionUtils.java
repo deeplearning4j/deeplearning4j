@@ -241,7 +241,7 @@ public class KerasConvolutionUtils {
      * @return padding list of integers
      * @throws InvalidKerasConfigurationException Invalid keras configuration
      */
-    public static int[] getPaddingFromConfig(Map<String, Object> layerConfig, KerasLayerConfiguration conf, int dimension)
+    public static int[] getZeroPaddingFromConfig(Map<String, Object> layerConfig, KerasLayerConfiguration conf, int dimension)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_ZERO_PADDING()))
@@ -249,15 +249,23 @@ public class KerasConvolutionUtils {
                     "Field " + conf.getLAYER_FIELD_ZERO_PADDING() + " not found in Keras ZeroPadding layer");
         int[] padding;
         if (dimension == 2) {
-            List<Integer> paddingList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_ZERO_PADDING());
-            if (paddingList.size() == 2) {
-                paddingList.add(paddingList.get(1));
-                paddingList.add(1, paddingList.get(0));
-                padding = ArrayUtil.toArray(paddingList);
+            List<Integer> paddingList;
+            // For 2D layers, padding can either be a pair [x, y] or a single integer x.
+            try {
+                paddingList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_ZERO_PADDING());
+                if (paddingList.size() == 2) {
+                    paddingList.add(paddingList.get(1));
+                    paddingList.add(1, paddingList.get(0));
+                    padding = ArrayUtil.toArray(paddingList);
+                }
+                else
+                    throw new InvalidKerasConfigurationException("Found Keras ZeroPadding2D layer with invalid "
+                            + paddingList.size() + "D padding.");
+            } catch (Exception e) {
+                int paddingInt = (int) innerConfig.get(conf.getLAYER_FIELD_ZERO_PADDING());
+                padding = new int[]{ paddingInt, paddingInt };
             }
-            else
-                throw new InvalidKerasConfigurationException("Found Keras ZeroPadding2D layer with invalid "
-                        + paddingList.size() + "D padding.");
+
         } else if (dimension == 1) {
             int paddingInt = (int) innerConfig.get(conf.getLAYER_FIELD_ZERO_PADDING());
             padding = new int[]{ paddingInt };
