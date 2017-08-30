@@ -14,6 +14,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
@@ -32,6 +33,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
@@ -584,5 +587,77 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     @Override
     public boolean isPretrainLayer() {
         return false;
+    }
+
+    /**
+     * Given the network output and a detection threshold (in range 0 to 1) determine the objects detected by
+     * the network.<br>
+     * Supports minibatches - the returned {@link DetectedObject} instances have an example number index.<br>
+     *
+     * Note that the dimensions are grid cell units - for example, with 416x416 input, 32x downsampling by the network
+     * (before getting to the Yolo2OutputLayer) we have 13x13 grid cells (each corresponding to 32 pixels in the input
+     * image). Thus, a centerX of 5.5 would be xPixels=5.5x32 = 176 pixels from left. Widths and heights are similar:
+     * in this example, a with of 13 would be the entire image (416 pixels), and a height of 6.5 would be 6.5/13 = 0.5
+     * of the image (208 pixels).
+     *
+     * @param networkOutput 4d activations out of the network
+     * @param threshold Detection threshold, in range 0 (most strict) to 1 (least strict). Objects are returned where
+     *                  predicted confidence is >= threshold
+     * @return List of detected objects
+     */
+    public List<DetectedObject> getPredictedObjects(INDArray networkOutput, double threshold){
+        if(networkOutput.rank() != 4){
+            throw new IllegalStateException("Invalid network output activations array: should be rank 4. Got array "
+                    + "with shape " + Arrays.toString(networkOutput.shape()));
+        }
+        if(threshold < 0.0 || threshold > 1.0){
+            throw new IllegalStateException("Invalid threshold: must be in range [0,1]. Got: " + threshold);
+        }
+
+        //Activations format: [mb, 5b+c, h, w]
+        int mb = networkOutput.size(0);
+        int h = networkOutput.size(2);
+        int w = networkOutput.size(3);
+        int b = layerConf().getBoundingBoxes().size(0);
+        int c = networkOutput.size(1)-5*b;
+
+        //Reshape from [minibatch, 5B+C, H, W] to [minibatch, 5B, H, W] to [minibatch, B, 5, H, W]
+        INDArray output5 = networkOutput.get(all(), interval(0,5*b), all(), all()).dup('c').reshape(mb, b, 5, h, w);
+        INDArray predictedConfidence = output5.get(all(), all(), point(4), all(), all());    //Shape: [mb, B, H, W]
+        INDArray softmax = networkOutput.get(all(), interval(5*b, 5*b+c), all(), all());
+
+        List<DetectedObject> out = new ArrayList<>();
+        for( int i=0; i<mb; i++ ){
+            for( int x=0; x<w; x++ ){
+                for( int y=0; y<h; y++ ){
+                    INDArray sm = null;
+                    for( int box=0; box<b; box++ ){
+                        double conf = predictedConfidence.getDouble(i, box, h, w);
+                        if(conf < threshold){
+                            continue;
+                        }
+
+                        double px = output5.getDouble(i, box, 0, x, y); //Originally: in 0 to 1 in grid cell
+                        double py = output5.getDouble(i, box, 1, x, y); //Originally: in 0 to 1 in grid cell
+                        double pw = output5.getDouble(i, box, 2, x, y); //In grid units
+                        double ph = output5.getDouble(i, box, 3, x, y); //In grid units
+
+                        //Convert the "position in grid cell" to "position in image (in grid cell units)"
+                        px += x;
+                        py += y;
+
+                        if(sm == null){
+                            try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                sm = softmax.get(point(mb), all(), point(x), point(y)).dup();
+                            }
+                        }
+
+                        out.add(new DetectedObject(i, px, py, pw, ph, sm));
+                    }
+                }
+            }
+        }
+
+        return out;
     }
 }

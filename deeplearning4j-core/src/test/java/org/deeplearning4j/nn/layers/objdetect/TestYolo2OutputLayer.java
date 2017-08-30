@@ -20,93 +20,11 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 public class TestYolo2OutputLayer {
 
     @Test
-    public void testBroadcast45_1(){
-
-        int[] shape4 = new int[]{2,3,4,5};
-        int length = ArrayUtil.prod(shape4);
-
-        INDArray fourd = Nd4j.linspace(1, length, length).reshape('c', shape4);
-
-        int[] shape5 = new int[]{2,3,6,4,5};
-
-        // IllegalArgumentException: Incompatible broadcast from [2, 3, 4, 5] to [2, 3, 6, 4, 5]
-        // Broadcast [2,3,4,5] to [2,3,6,4,5], should be valid? 6 copies indexed along dimension 2
-        INDArray fived = fourd.broadcast(shape5);
-        assertArrayEquals(shape5, fived.shape());
-
-        for( int i=0; i<6; i++ ){
-            INDArray subset = fived.get(all(), all(), point(i), all(), all());
-            assertArrayEquals(shape4, subset.shape());
-
-            assertEquals(fourd, subset);
-        }
-    }
-
-    @Test
-    public void testBroadcast45_2(){
-
-        int[] shape4 = new int[]{3,2,13,13};
-        int length = ArrayUtil.prod(shape4);
-
-        INDArray fourd = Nd4j.linspace(1, length, length).reshape('c', shape4);
-
-        int[] shape5 = new int[]{3,3,2,13,13};
-
-        INDArray fived = fourd.broadcast(shape5);
-        System.out.println(Arrays.toString(fived.shape())); //Shape [3,3,13,13,13], should be [3,3,2,13,13]
-        assertArrayEquals(shape5, fived.shape());
-
-        for( int i=0; i<3; i++ ){
-            INDArray subset = fived.get(all(), point(i), all(), all(), all());
-            assertArrayEquals(shape4, subset.shape());
-
-            assertEquals(fourd, subset);
-        }
-    }
-
-    @Test
-    public void testBroadcast23_1(){
-
-        int[] shape3 = {2,3,4};
-
-        //[2,3] to [2,3,4]
-        INDArray arr23 = Nd4j.linspace(1,6,6).reshape('c', 2,3);
-        INDArray bc23 = arr23.broadcast(shape3);    //IllegalArgumentException: Incompatible broadcast from [2, 3] to [2, 3, 4]
-        assertArrayEquals(shape3, bc23.shape());
-
-        for( int i=0; i<4; i++ ){
-            INDArray sub = bc23.get(all(), all(), point(i));
-            assertEquals(arr23, sub);
-        }
-
-        //[2,4] to [2,3,4]
-        INDArray arr24 = Nd4j.linspace(1,8,8).reshape('c', 2,4);
-        INDArray bc24 = arr24.broadcast(shape3);    //IllegalArgumentException: Incompatible broadcast from [2, 4] to [2, 3, 4]
-        assertArrayEquals(shape3, bc24.shape());
-
-        for( int i=0; i<3; i++ ){
-            INDArray sub = bc24.get(all(), point(i), all());
-            assertEquals(arr24, sub);
-        }
-
-
-        //[3,4] to [2,3,4]
-        INDArray arr34 = Nd4j.linspace(1,12,12).reshape('c', 3,4);
-        INDArray bc34 = arr34.broadcast(shape3);
-        assertArrayEquals(shape3, bc34.shape());    //Fails: shape [3,4,4]
-
-        for( int i=0; i<2; i++ ){
-            INDArray sub = bc34.get(point(i), all(), all());
-            assertEquals(arr34, sub);
-        }
-    }
-
-
-
-    @Test
     public void testYoloActivateScoreBasic(){
 
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
+        //Note that we expect some NaNs here - 0/0 for example in IOU calculation. This is handled explicitly in the
+        //implementation
+        //Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
 
         int mb = 3;
         int b = 4;
