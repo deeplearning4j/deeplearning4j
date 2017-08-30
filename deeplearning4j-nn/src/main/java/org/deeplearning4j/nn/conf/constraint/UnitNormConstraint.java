@@ -21,7 +21,7 @@ public class UnitNormConstraint extends BaseConstraint{
     @Override
     public void apply(INDArray param, boolean isBias) {
         INDArray norm2 = param.norm2(dimensions);
-        Broadcast.div(param, norm2, param, dimensions );
+        Broadcast.div(param, norm2, param, getBroadcastDims(dimensions, param.rank()) );
     }
 
     @Override

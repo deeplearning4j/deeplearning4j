@@ -32,9 +32,7 @@ public class MaxNormConstraint extends BaseConstraint {
         norm.addi(epsilon);
         clipped.divi(norm);
 
-        //Determine broadcast dimensions:
-
-        Broadcast.mul(param, clipped, param, dimensions );
+        Broadcast.mul(param, clipped, param, getBroadcastDims(dimensions, param.rank()) );
     }
 
     @Override

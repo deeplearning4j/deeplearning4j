@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.constraint;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
@@ -48,4 +49,15 @@ public abstract class BaseConstraint implements LayerConstraint {
     public abstract void apply(INDArray param, boolean isBias);
 
     public abstract BaseConstraint clone();
+
+    public static int[] getBroadcastDims(int[] reduceDimensions, int rank){
+        int[] out = new int[rank-reduceDimensions.length];
+        int outPos = 0;
+        for( int i=0; i<rank; i++ ){
+            if(!ArrayUtils.contains(reduceDimensions, i)){
+                out[outPos++] = i;
+            }
+        }
+        return out;
+    }
 }

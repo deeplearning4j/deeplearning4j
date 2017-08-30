@@ -64,14 +64,14 @@ public class TestConstraints {
             INDArray w1 = net.getParam("1_W");
             INDArray b1 = net.getParam("1_b");
 
-            System.out.println(w0.norm2(1));
-
             if(lc instanceof MaxNormConstraint){
                 assertTrue(w0.norm2(1).maxNumber().doubleValue() <= 0.5 );
                 assertTrue(w1.norm2(1).maxNumber().doubleValue() <= 0.5 );
             } else if(lc instanceof MinMaxNormConstraint){
-                assertTrue(w0.minNumber().doubleValue() >= 0.3 );
-                assertTrue(w1.maxNumber().doubleValue() <= 0.4 );
+                assertTrue(w0.norm2(1).minNumber().doubleValue() >= 0.3 );
+                assertTrue(w0.norm2(1).maxNumber().doubleValue() <= 0.4 );
+                assertTrue(w1.norm2(1).minNumber().doubleValue() >= 0.3 );
+                assertTrue(w1.norm2(1).maxNumber().doubleValue() <= 0.4 );
             } else if(lc instanceof NonNegativeConstraint ){
                 assertTrue(w0.minNumber().doubleValue() >= 0.0 );
             } else if(lc instanceof UnitNormConstraint ){
