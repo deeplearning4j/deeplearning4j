@@ -8,6 +8,7 @@
 #include <atomic>
 #include <string>
 #include <NDArray.h>
+#include <ops/declarable/declarable_ops.h>
 #include <graph/generated/node_generated.h>
 
 
@@ -19,6 +20,7 @@ namespace nd4j {
         protected:
             DataType _dataType;
             OpType _opType;
+            Block<T>* _block;
             int _opNum;
             int _id;
             std::vector<int> _input;
@@ -43,6 +45,8 @@ namespace nd4j {
             bool _hasInternalOutputs;
             bool _hasInternalInputs;
 
+            nd4j::ops::DeclarableOp<T> *_customOp = nullptr;
+
         public:
             Node(OpType opType = OpType_TRANSFORM, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f);
             Node(const nd4j::graph::FlatNode *node);
@@ -55,6 +59,8 @@ namespace nd4j {
             int id();
             std::vector<int> *input();
             std::vector<int> *output();
+
+            void setId(int id);
 
             T *extraParams();
 
@@ -80,14 +86,58 @@ namespace nd4j {
             void pickInput(int inputId);
 
             void setName(std::string *name);
+            void setName(const std::string& name);
             std::string * getName();
+
+
+            void setBlock(Block<T> *block);
+            Block<T>* getBlock();
+
+            void setCustomOp(nd4j::ops::DeclarableOp<T> *customOp = nullptr);
+            nd4j::ops::DeclarableOp<T>* getCustomOp();
+            bool hasCustomOp();
         };
     }
 }
 
 template <typename T>
+Block<T> * nd4j::graph::Node<T>::getBlock() {
+    return _block;
+}
+
+template <typename T>
+void nd4j::graph::Node<T>::setBlock(Block<T> *block) {
+    _block = block;
+}
+
+template <typename T>
+void nd4j::graph::Node<T>::setId(int id) {
+    _id = id;
+}
+
+template <typename T>
+nd4j::ops::DeclarableOp<T>* nd4j::graph::Node<T>::getCustomOp() {
+    return _customOp;
+}
+
+template <typename T>
+void nd4j::graph::Node<T>::setCustomOp(nd4j::ops::DeclarableOp<T> *customOp) {
+    _customOp = customOp;
+}
+
+template <typename T>
+bool nd4j::graph::Node<T>::hasCustomOp() {
+    return _customOp != nullptr;
+}
+
+template <typename T>
 std::string * nd4j::graph::Node<T>::getName() {
     return &_name;
+}
+
+template <typename T>
+void nd4j::graph::Node<T>::setName(const std::string& name) {
+    _name = name.c_str();
 }
 
 template <typename T>
