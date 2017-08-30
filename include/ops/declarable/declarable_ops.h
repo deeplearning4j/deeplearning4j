@@ -28,6 +28,8 @@
                                                 template <typename T> \
                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
 
+#define DECLARE_SYN(NAME, ORIGINAL)     static nd4j::ops::__registratorSynonymFloat<ORIGINAL<float>> register_opf_##NAME(#NAME); \
+
 //#define END_OP(NAME) };
 
 
@@ -145,6 +147,13 @@ namespace nd4j {
                 return true;
             }
 
+            bool registerOperationFloat(const char* name, nd4j::ops::DeclarableOp<float>* op) {
+                auto str = new std::string(name);
+                std::pair<std::string, nd4j::ops::DeclarableOp<float>*> pair(*str, op);
+                _declarablesF.insert(pair);
+                return true;
+            }
+
             bool registerOperationDouble(nd4j::ops::DeclarableOp<double > *op) {
                 std::pair<std::string, nd4j::ops::DeclarableOp<double>*> pair(*(op->getOpName()), op);
                 _declarablesD.insert(pair);
@@ -178,6 +187,14 @@ namespace nd4j {
                 }
 
                 return _declarablesD.at(name);
+            }
+        };
+
+        template <typename OpName>
+        struct __registratorSynonymFloat {
+            __registratorSynonymFloat(const char *name) {
+                OpName *ptr = new OpName();
+                OpRegistrator::getInstance()->registerOperationFloat(name, ptr);
             }
         };
 
