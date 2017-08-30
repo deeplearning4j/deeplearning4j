@@ -574,6 +574,7 @@ namespace nd4j{
                         if (attr.tensor().dtype() == ::tensorflow::DataType::DT_INT32) {
                             nd4j_verbose("Int size: %i\n", attr.tensor().int_val_size());
 
+                            Nd4jIndex __length = 0;
 
                             nd4j_verbose("Tensor has shape: %i\n", attr.tensor().has_tensor_shape());
                             if (attr.tensor().has_tensor_shape()) {
@@ -592,10 +593,16 @@ namespace nd4j{
                                     }
 
                                     variable->setNDArray(new NDArray<T>('c', __shape));
+                                    __length = variable->getNDArray()->lengthOf();
 
                                     nd4j_printf("Tensor shape found: %i dims;\n", dims);
                                     variable->getNDArray()->printShapeInfo();
                                 }
+                            }
+
+                            // it can be valueOf array
+                            if (attr.tensor().int_val_size() == 1 && __length > 0) {
+                                variable->getNDArray()->assign((T) attr.tensor().int_val(0));
                             }
                         }
                     }

@@ -43,4 +43,14 @@ TEST_F(ProtoBufTests, TestTextLoad2) {
 
     ASSERT_TRUE(var0 != nullptr);
     ASSERT_TRUE(var1 != nullptr);
+
+    ASSERT_TRUE(var0->getNDArray() != nullptr);
+    ASSERT_TRUE(var1->getNDArray() != nullptr);
+
+    ASSERT_EQ(12, var0->getNDArray()->lengthOf());
+    ASSERT_EQ(12, var1->getNDArray()->lengthOf());
+
+    ASSERT_NEAR(0.0f, var0->getNDArray()->reduceNumber<simdOps::Sum<float>>(), 1e-5);
+    ASSERT_NEAR(12.0f, var1->getNDArray()->reduceNumber<simdOps::Sum<float>>(), 1e-5);
+    ASSERT_NEAR(1.0f, var1->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
