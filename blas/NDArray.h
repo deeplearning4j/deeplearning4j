@@ -128,6 +128,13 @@ namespace nd4j {
         template<typename OpName>
         void applyPairwiseTransform(NDArray<T> *other, NDArray<T> *target, T *extraParams);
 
+        template<typename OpName>
+        void applyScalar(T scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr);
+
+        template<typename OpName>
+        void applyScalar(NDArray<T>& scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr);
+
+
         // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
         NDArray<T> *transpose() const;
 

@@ -321,11 +321,11 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::validateOrdersMatch(Block<T>& block) {
 
 template <typename T>
 Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInputDimensionsMatch(Block<T>& block) {
-    if (block.getVariables()->size() == 0)
+    if (block.getVariables().size() == 0)
         return ND4J_STATUS_OK;
 
 
-    NDArray<T> *a0 = block.getVariables()->at(0)->getNDArray();
+    NDArray<T> *a0 = block.getVariables().at(0)->getNDArray();
     for (auto v: block.getVariables()) {
         NDArray<T> *aV = v->getNDArray();
         if (!shape::equalsSoft(a0->shapeOf(), aV->shapeOf()))
@@ -337,13 +337,13 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInputDimensionsMatch(Block<T>& bl
 
 template <typename T>
 Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInputLengthMatch(Block<T>& block) {
-    if (block.getVariables()->size() == 0)
+    if (block.getVariables().size() == 0)
         return ND4J_STATUS_OK;
 
 
-    Nd4jIndex l0 = block.getVariables()->at(0);
-    for (int e = 0; e < block.getVariables()->size(); e++) {
-        if (l0 != block.getVariables()->at(e)->getNDArray()->lengthOf())
+    Nd4jIndex l0 = block.getVariables().at(0)->getNDArray()->lengthOf();
+    for (int e = 0; e < block.getVariables().size(); e++) {
+        if (l0 != block.getVariables().at(e)->getNDArray()->lengthOf())
             return ND4J_STATUS_BAD_LENGTH;
     }
 

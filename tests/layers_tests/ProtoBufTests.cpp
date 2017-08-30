@@ -27,3 +27,20 @@ TEST_F(ProtoBufTests, TestTextLoad1) {
 
     ASSERT_FALSE(graph == nullptr);
 }
+
+
+TEST_F(ProtoBufTests, TestTextLoad2) {
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+    auto graph = GraphExecutioner<float>::importFromTensorFlow("../../../tests/resources/max_add_2.pb.txt");
+
+    ASSERT_FALSE(graph == nullptr);
+
+    ASSERT_EQ(2, graph->getVariableSpace()->externalEntries());
+
+    auto var0 = graph->getVariableSpace()->getVariable(std::string("zeros"));
+    auto var1 = graph->getVariableSpace()->getVariable(std::string("ones"));
+
+    ASSERT_TRUE(var0 != nullptr);
+    ASSERT_TRUE(var1 != nullptr);
+}

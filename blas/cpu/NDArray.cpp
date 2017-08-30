@@ -506,6 +506,27 @@ namespace nd4j {
     }
 
 
+    template<typename T>
+    template<typename OpName>
+    void NDArray<T>::applyScalar(T scalar, NDArray<T>* target, T *extraParams) {
+
+        if (target == nullptr)
+            functions::scalar::ScalarTransform<T>::template transform(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar, extraParams);
+        else
+            functions::scalar::ScalarTransform<T>::template transform(this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, scalar, extraParams);
+    }
+
+    template<typename T>
+    template<typename OpName>
+    void NDArray<T>::applyScalar(NDArray<T>& scalar, NDArray<T>* target, T *extraParams) {
+        if (!scalar.isScalar()) {
+            throw "Operand is not a scalar!";
+        }
+
+        applyScalar<OpName>(scalar, target, extraParams);
+    }
+
+
 // default destructor
     template<typename T>
     NDArray<T>::~NDArray() {
