@@ -208,6 +208,8 @@ public class KerasLayerTest {
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
+        config.put(conf.getLAYER_FIELD_RETURN_SEQUENCES(), true);
+
         config.put(conf.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
         config.put(conf.getLAYER_FIELD_DROPOUT_U(), 0.0);
         config.put(conf.getLAYER_FIELD_FORGET_BIAS_INIT(), lstmForgetBiasString);

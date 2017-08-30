@@ -54,7 +54,7 @@ public class KerasGlobalPooling extends KerasLayer {
         GlobalPoolingLayer.Builder builder =
                         new GlobalPoolingLayer.Builder(mapPoolingType(this.className, conf))
                                 .poolingDimensions(dimensions)
-                                .collapseDimensions(true)
+                                .collapseDimensions(false) // while this is true by default in dl4j, it's false in keras.
                                 .name(this.layerName)
                                 .dropOut(this.dropout);
         this.layer = builder.build();
