@@ -145,6 +145,19 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+		
+		DECLARE_OP(Add, 2, 1) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));
+            REQUIRE_OK(this->validateInputLengthMatch(block));
+
+            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *y = block.getVariables().at(1)->getNDArray();			
+	
+			x->template applyPairwiseTransform<simdOps::Add<T>>(y, nullptr);		
+
+            return ND4J_STATUS_OK;
+        }
+		
     }
 }
 
