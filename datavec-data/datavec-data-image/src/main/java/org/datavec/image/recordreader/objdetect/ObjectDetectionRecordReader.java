@@ -40,10 +40,10 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 /**
  * An image record reader for object detection.
- *
+ * <p>
  * Format of returned values: 4d array, with dimensions [minibatch, 4+C, h, w]
  * Where the image is quantized into h x w grid locations.
- *
+ * <p>
  * Note that this matches the format required for Deeplearning4j's Yolo2OutputLayer
  *
  * @author Alex Black
@@ -54,7 +54,7 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
     private final int gridH;
     private final ImageObjectLabelProvider labelProvider;
 
-    public ObjectDetectionRecordReader(int height, int width, int channels, int gridH, int gridW, ImageObjectLabelProvider labelProvider){
+    public ObjectDetectionRecordReader(int height, int width, int channels, int gridH, int gridW, ImageObjectLabelProvider labelProvider) {
         super(height, width, channels, null);
         this.gridW = gridW;
         this.gridH = gridH;
@@ -77,10 +77,9 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
         Set<String> labelSet = new HashSet<>();
         if (locations != null && locations.length >= 1) {
             for (URI location : locations) {
-                File imgFile = new File(location);
-                File parentDir = imgFile.getParentFile();
+                System.out.println("ODRR: " + location);
                 List<ImageObject> imageObjects = labelProvider.getImageObjectsForPath(location);
-                for(ImageObject io : imageObjects ){
+                for (ImageObject io : imageObjects) {
                     String name = io.getLabel();
                     if (!labelSet.contains(name)) {
                         labelSet.add(name);
@@ -103,16 +102,14 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
     }
 
     @Override
-    public List<Writable> next(int num){
+    public List<Writable> next(int num) {
         List<File> files = new ArrayList<>(num);
         List<List<ImageObject>> objects = new ArrayList<>(num);
 
-        for( int i=0; i<num && hasNext(); i++ ){
+        for (int i = 0; i < num && hasNext(); i++) {
             File f = iter.next();
             this.currentFile = f;
-            if(f.isDirectory()) {
-                return this.next();
-            } else {
+            if (!f.isDirectory()) {
                 files.add(f);
                 objects.add(labelProvider.getImageObjectsForPath(f.getPath()));
             }
@@ -122,11 +119,11 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
         int nClasses = labels.size();
 
         INDArray outImg = Nd4j.create(files.size(), channels, height, width);
-        INDArray outLabel = Nd4j.create(files.size(), 4 + nClasses, gridH, gridW );
+        INDArray outLabel = Nd4j.create(files.size(), 4 + nClasses, gridH, gridW);
 
         int exampleNum = 0;
-        if(iter != null) {
-            File imageFile = iter.next();
+        for (int i = 0; i < files.size(); i++) {
+            File imageFile = files.get(i);
             this.currentFile = imageFile;
             try {
                 this.invokeListeners(imageFile);
@@ -141,17 +138,17 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
                 double oH = image.getOrigH();
 
                 //put the label data into the output label array
-                for(ImageObject io : objectsThisImg){
+                for (ImageObject io : objectsThisImg) {
                     double cx = io.getXCenterPixels();
                     double cy = io.getYCenterPixels();
 
-                    double[] cxyPostScaling = ImageUtils.translateCoordsScaleImage(cx, cy, oW, oH, width, height );
+                    double[] cxyPostScaling = ImageUtils.translateCoordsScaleImage(cx, cy, oW, oH, width, height);
                     double[] tlPost = ImageUtils.translateCoordsScaleImage(io.getX1(), io.getY1(), oW, oH, width, height);
                     double[] brPost = ImageUtils.translateCoordsScaleImage(io.getX2(), io.getY2(), oW, oH, width, height);
 
                     //Get grid position for image
-                    int imgGridX = (int)(cxyPostScaling[0] / width * gridW);
-                    int imgGridY = (int)(cxyPostScaling[1] / height * gridH);
+                    int imgGridX = (int) (cxyPostScaling[0] / width * gridW);
+                    int imgGridY = (int) (cxyPostScaling[1] / height * gridH);
 
                     //Convert pixels to grid position, for TL and BR X/Y
                     tlPost[0] = tlPost[0] / width * gridW;
@@ -169,11 +166,11 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
                     int labelIdx = labels.indexOf(io.getLabel());
                     outLabel.putScalar(exampleNum, 4 + labelIdx, imgGridY, imgGridX, 1.0);
                 }
-
-                exampleNum++;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+
+            exampleNum++;
         }
 
         return Arrays.<Writable>asList(new NDArrayWritable(outImg), new NDArrayWritable(outLabel));

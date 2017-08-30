@@ -251,6 +251,16 @@ public class ImageLoader extends BaseImageLoader {
         }
     }
 
+    @Override
+    public org.datavec.image.data.Image asImageMatrix(File f) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public org.datavec.image.data.Image asImageMatrix(InputStream inputStream) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Convert an BufferedImage to a matrix
      * @param image the BufferedImage to convert

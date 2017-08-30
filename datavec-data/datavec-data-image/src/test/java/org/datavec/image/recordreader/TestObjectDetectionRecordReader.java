@@ -25,6 +25,8 @@ import org.datavec.image.recordreader.objdetect.ImageObject;
 import org.datavec.image.recordreader.objdetect.ImageObjectLabelProvider;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.net.URI;
@@ -32,52 +34,86 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestObjectDetectionRecordReader {
 
     @Test
     public void test() throws Exception {
-
         ImageObjectLabelProvider lp = new TestImageObjectDetectionLabelProvider();
         String path = new ClassPathResource("objdetect/000012.jpg").getFile().getParent();
 
+        int h = 32;
+        int w = 32;
+        int c = 3;
         int gW = 13;
-        int gH = 13;
+        int gH = 10;
 
-        RecordReader rr = new ObjectDetectionRecordReader(64, 64, 3, gH, gW, lp);
+        RecordReader rr = new ObjectDetectionRecordReader(h, w, c, gH, gW, lp);
         rr.initialize(new FileSplit(new File(path)));
 
-        RecordReader imgRR = new ImageRecordReader(64, 64, 3);
+        RecordReader imgRR = new ImageRecordReader(h, w, c);
         imgRR.initialize(new FileSplit(new File(path)));
 
         List<String> labels = rr.getLabels();
         assertEquals(Arrays.asList("car", "cat"), labels);
 
-        assertEquals(imgRR.getLabels(), rr.getLabels());
-
-        assertTrue(rr.hasNext());
-        List<Writable> first = rr.next();
-        assertEquals(2, first.size());
-        assertTrue(first.get(0) instanceof NDArrayWritable);
-        assertTrue(first.get(1) instanceof NDArrayWritable);
 
         //000012.jpg - originally 500x333
-        double fracImageX1 = 156 / 500.0;
-        double fracImageY1 = 97 / 333.0;
-        double fracImageX2 = 351 / 500.0;
-        double fracImageY2 = 270 / 333.0;
+        //000019.jpg - originally 500x375
+        double[] origW = new double[]{500, 500};
+        double[] origH = new double[]{333, 375};
+        List<List<ImageObject>> l = Arrays.asList(
+                Collections.singletonList(new ImageObject(156, 97, 351, 270, "car")),
+                Arrays.asList(new ImageObject(11, 113, 266, 259, "cat"), new ImageObject(231, 88, 483, 256, "cat"))
+        );
 
-        double x1C = (fracImageX1 + fracImageX2)/2.0;
-        double y1C = (fracImageY1 + fracImageY2)/2.0;
+        for (int idx = 0; idx < 2; idx++) {
+            assertTrue(rr.hasNext());
+            List<Writable> next = rr.next();
+            List<Writable> nextImgRR = imgRR.next();
 
-        int gridX = (int)(x1C * gW);
-        int gridY = (int)(y1C * gH);
+            //Check features:
+            assertEquals(next.get(0), nextImgRR.get(0));
 
-        //Check labels:
+            //Check labels
+            assertEquals(2, next.size());
+            assertTrue(next.get(0) instanceof NDArrayWritable);
+            assertTrue(next.get(1) instanceof NDArrayWritable);
 
+            List<ImageObject> objects = l.get(idx);
 
+            INDArray expLabels = Nd4j.create(1, 4 + 2, gH, gW);
+            for (ImageObject io : objects) {
+                double fracImageX1 = io.getX1() / origW[idx];
+                double fracImageY1 = io.getY1() / origH[idx];
+                double fracImageX2 = io.getX2() / origW[idx];
+                double fracImageY2 = io.getY2() / origH[idx];
+
+                double x1C = (fracImageX1 + fracImageX2) / 2.0;
+                double y1C = (fracImageY1 + fracImageY2) / 2.0;
+
+                int labelGridX = (int) (x1C * gW);
+                int labelGridY = (int) (y1C * gH);
+
+                int labelIdx;
+                if (io.getLabel().equals("car")) {
+                    labelIdx = 4;
+                } else {
+                    labelIdx = 5;
+                }
+                expLabels.putScalar(0, labelIdx, labelGridY, labelGridX, 1.0);
+
+                expLabels.putScalar(0, 0, labelGridY, labelGridX, fracImageX1 * gW);
+                expLabels.putScalar(0, 1, labelGridY, labelGridX, fracImageY1 * gH);
+                expLabels.putScalar(0, 2, labelGridY, labelGridX, fracImageX2 * gW);
+                expLabels.putScalar(0, 3, labelGridY, labelGridX, fracImageY2 * gH);
+            }
+
+            INDArray lArr = ((NDArrayWritable) next.get(1)).get();
+            assertArrayEquals(new int[]{1, 4 + 2, gH, gW}, lArr.shape());
+            assertEquals(expLabels, lArr);
+        }
     }
 
     //2 images: 000012.jpg and 000019.jpg
@@ -90,9 +126,9 @@ public class TestObjectDetectionRecordReader {
 
         @Override
         public List<ImageObject> getImageObjectsForPath(String path) {
-            if(path.endsWith("000012.jpg")){
+            if (path.endsWith("000012.jpg")) {
                 return Collections.singletonList(new ImageObject(156, 97, 351, 270, "car"));
-            } else if(path.equals("000019.jpg")){
+            } else if (path.endsWith("000019.jpg")) {
                 return Arrays.asList(
                         new ImageObject(11, 113, 266, 259, "cat"),
                         new ImageObject(231, 88, 483, 256, "cat"));

@@ -23,6 +23,7 @@ import org.datavec.api.io.labels.PatternPathLabelGenerator;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
+import org.datavec.image.data.Image;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -229,6 +230,16 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
 
     @Override
     public INDArray asMatrix(InputStream inputStream) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Image asImageMatrix(File f) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Image asImageMatrix(InputStream inputStream) throws IOException {
         throw new UnsupportedOperationException();
     }
 
