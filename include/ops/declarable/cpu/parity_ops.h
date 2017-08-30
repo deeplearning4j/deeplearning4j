@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <ops/ops.h>
+#include <NDArray.h>
 #include <ops/declarable/declarable_ops.h>
 
 namespace nd4j {
@@ -167,14 +168,12 @@ namespace nd4j {
                 y->addiRowVector(x);
 	
             } else if (!x->isScalar() && y->isScalar()) {
-                x->template applyScalar<simdOps::Add<T>>(y, x, nullptr);
-
+               x->template applyScalar<simdOps::Add<T>>(*y, x);
             } else if (x->isScalar() && !y->isScalar()) {
-                y->template applyScalar<simdOps::Add<T>>(x, y, nullptr);
-
+                y->template applyScalar<simdOps::Add<T>>(*x, y);
             }						
 			else if (x->isScalar() && y->isScalar()) {
-				x = x*y;
+				x->putScalar(0, x->getScalar(0) * y->getScalar(0));
 
 			}
 			else { // (!x->isScalar() && !y->isScalar())

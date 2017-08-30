@@ -523,7 +523,7 @@ namespace nd4j {
             throw "Operand is not a scalar!";
         }
 
-        applyScalar<OpName>(scalar, target, extraParams);
+        applyScalar<OpName>(scalar.getScalar(0), target, extraParams);
     }
 
 
