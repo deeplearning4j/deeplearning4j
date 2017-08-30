@@ -11,7 +11,7 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 
 import java.util.Map;
 
-import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getPaddingFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getZeroPaddingFromConfig;
 
 /**
  * Imports a Keras ZeroPadding 1D layer.
@@ -47,7 +47,7 @@ public class KerasZeroPadding1D extends KerasLayer {
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         ZeroPadding1DLayer.Builder builder = new ZeroPadding1DLayer.Builder(
-                getPaddingFromConfig(layerConfig, conf, 1))
+                getZeroPaddingFromConfig(layerConfig, conf, 1))
                 .name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
         this.vertex = null;
