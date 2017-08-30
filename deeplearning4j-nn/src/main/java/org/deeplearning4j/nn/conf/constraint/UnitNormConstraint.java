@@ -14,6 +14,10 @@ import org.nd4j.linalg.factory.Broadcast;
 @EqualsAndHashCode(callSuper = true)
 public class UnitNormConstraint extends BaseConstraint{
 
+    private UnitNormConstraint(){
+        //No arg for json ser/de
+    }
+
     /**
      * Apply to weights but not biases by default
      *

@@ -23,6 +23,10 @@ public abstract class BaseConstraint implements LayerConstraint {
     protected double epsilon = 1e-6;
     protected int[] dimensions;
 
+    protected BaseConstraint(){
+        //No arg for json ser/de
+    }
+
     protected BaseConstraint(boolean applyToWeights, boolean applyToBiases, int... dimensions){
         this(applyToWeights, applyToBiases, DEFAULT_EPSILON, dimensions);
     }

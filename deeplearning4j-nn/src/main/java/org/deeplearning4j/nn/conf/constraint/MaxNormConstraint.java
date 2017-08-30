@@ -19,6 +19,10 @@ public class MaxNormConstraint extends BaseConstraint {
 
     private double maxNorm;
 
+    private MaxNormConstraint(){
+        //No arg for json ser/de
+    }
+
     /**
      * Apply to weights but not biases by default
      *

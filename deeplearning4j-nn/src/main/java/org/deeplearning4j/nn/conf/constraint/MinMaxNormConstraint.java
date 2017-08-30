@@ -26,6 +26,10 @@ public class MinMaxNormConstraint extends BaseConstraint {
     private double max;
     private double rate;
 
+    private MinMaxNormConstraint(){
+        //No arg for json ser/de
+    }
+
     /**
      * Apply to weights but not biases by default
      *
