@@ -541,18 +541,22 @@ public class SameDiffTests {
         SDVariable gradWrtY = sameDiff.getFunction("mmulGradient").grad("y");
         assumeNotNull(gradWrtX.getArr());
         assumeNotNull(gradWrtY.getArr());
-        System.out.println(gradWrtX);
 
-/*
-        INDArray executions = ops.get(ops.size() - 1).z();
-        INDArray assertion = Nd4j.create(new double[][]{
-                {2.7183  , 7.3891},
-                {20.0855  ,54.5981}
+
+        INDArray xGradAssertion = Nd4j.create(new double[][]{
+                {3,7},
+                {3,7}
         });
-        assertArrayEquals(sumInput.shape(),executions.shape());
-        assertEquals(assertion,executions);*/
-      //  System.out.println(executions);
-        //assertEquals(Nd4j.ones(2,2),executions);
+
+        INDArray yGradAssertoion = Nd4j.create(new double[][]{
+                {4,6},
+                {4,6}
+        });
+
+
+        assertEquals(xGradAssertion,gradWrtX.getArr());
+        assertEquals(yGradAssertoion,gradWrtY.getArr());
+
     }
 
     @Test
