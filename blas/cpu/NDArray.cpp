@@ -511,9 +511,9 @@ namespace nd4j {
     void NDArray<T>::applyScalar(T scalar, NDArray<T>* target, T *extraParams) {
 
         if (target == nullptr)
-            functions::scalar::ScalarTransform<T>::template transform(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar, extraParams);
+            functions::scalar::ScalarTransform<T>::template transform<OpName>(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar, extraParams);
         else
-            functions::scalar::ScalarTransform<T>::template transform(this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, scalar, extraParams);
+            functions::scalar::ScalarTransform<T>::template transform<OpName>(this->_buffer, this->_shapeInfo, target->_buffer, target->_shapeInfo, scalar, extraParams);
     }
 
     template<typename T>

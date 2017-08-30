@@ -41,6 +41,8 @@ TEST_F(ProtoBufTests, TestTextLoad2) {
     auto var0 = graph->getVariableSpace()->getVariable(new std::string("zeros"));
     auto var1 = graph->getVariableSpace()->getVariable(new std::string("ones"));
 
+
+    // first we're veryfying variable states
     ASSERT_TRUE(var0 != nullptr);
     ASSERT_TRUE(var1 != nullptr);
 
@@ -53,4 +55,8 @@ TEST_F(ProtoBufTests, TestTextLoad2) {
     ASSERT_NEAR(0.0f, var0->getNDArray()->reduceNumber<simdOps::Sum<float>>(), 1e-5);
     ASSERT_NEAR(12.0f, var1->getNDArray()->reduceNumber<simdOps::Sum<float>>(), 1e-5);
     ASSERT_NEAR(1.0f, var1->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+
+
+    // now we're veryfying op graph
+    ASSERT_EQ(1, graph->totalNodes());
 }
