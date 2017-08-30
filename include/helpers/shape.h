@@ -591,6 +591,11 @@ namespace shape {
 
     Nd4jIndex length(int *shapeInfo);
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    Nd4jIndex length(std::initializer_list<int>& shape);
+
 /***
  * Returns the offset portion of an information buffer
  */
@@ -3852,6 +3857,17 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 
     INLINEDEF Nd4jIndex length(int *shapeInfo) {
         return shape::prodLong(shape::shapeOf(shapeInfo), shape::rank(shapeInfo));
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF Nd4jIndex length(std::initializer_list<int>& shape) {
+        Nd4jIndex ret = 0;
+        for (auto v : shape) {
+            ret *= v;
+        }
+        return ret;
     }
 
 /***

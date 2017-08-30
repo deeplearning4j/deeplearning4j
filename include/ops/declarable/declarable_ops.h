@@ -54,9 +54,17 @@ namespace nd4j {
             OpDescriptor *_descriptor;
 
             /**
-             * This method executes this Op b
+             * This method executes this Op
              */
             virtual Nd4jStatus validateAndExecute(Block<T>& block) = 0;
+
+            /**
+             * This method ensures that target variable has enough space for op execution
+             *
+             * TODO: we want workspaces support right here
+             */
+            bool allocateResult(Block<T>& block, std::initializer_list<int>& shape, char order = 'c');
+            bool allocateResult(Block<T>& block, int* shape);
         public:
             DeclarableOp(int numInputs, int numOutputs, const char *opName) {
                 _descriptor = new OpDescriptor(numInputs, numOutputs, opName);
@@ -162,6 +170,15 @@ namespace nd4j {
 
                 return _declarablesF.at(name);
             }
+
+            nd4j::ops::DeclarableOp<double> *getOperationDouble(std::string& name) {
+                if (!_declarablesD.count(name)) {
+                    nd4j_verbose("Unknown operation requested: [%s]\n", name.c_str())
+                    throw "Unknown operation requested";
+                }
+
+                return _declarablesD.at(name);
+            }
         };
 
         template <typename OpName>
@@ -183,6 +200,50 @@ namespace nd4j {
 }
 
 nd4j::ops::OpRegistrator* nd4j::ops::OpRegistrator::_INSTANCE = 0;
+
+
+template <typename T>
+bool nd4j::ops::DeclarableOp<T>::allocateResult(Block<T>& block, int* shape) {
+    auto var = block.getVariableSpace()->getVariable(block.getNodeId());
+
+    Nd4jIndex len = shape::length(shape);
+    int* __shape = new int[shape[0] * 2 + 4];
+    memcpy(__shape, shape, sizeof(int) * (shape[0] * 2 + 4));
+
+    // if that's first run - we probably have nothing here
+    if (var->getNDArray() == nullptr) {
+        T* buffer = new T[len];
+        var ->setNDArray(new NDArray<T>(buffer, __shape));
+        var->getNDArray()->_allocated = true;
+    } else if(var->getNDArray()->lengthOf() != len) {
+        // if length not match - lets reallocate array
+        delete var->getNDArray();
+        T* buffer = new T[len];
+        var ->setNDArray(new NDArray<T>(buffer, __shape));
+        var->getNDArray()->_allocated = true;
+    }
+
+    return true;
+}
+
+template <typename T>
+bool nd4j::ops::DeclarableOp<T>::allocateResult(Block<T>& block, std::initializer_list<int>& shape, char order) {
+    auto var = block.getVariableSpace()->getVariable(block.getNodeId());
+
+    Nd4jIndex len = shape::length(shape);
+    // if that's first run - we probably have nothing here
+    if (var->getNDArray() == nullptr) {
+        var ->setNDArray(new NDArray<T>(order, shape));
+        var->getNDArray()->_allocated = true;
+    } else if(var->getNDArray()->lengthOf() != len) {
+        // if length not match - lets reallocate array
+        delete var->getNDArray();
+        var ->setNDArray(new NDArray<T>(order, shape));
+        var->getNDArray()->_allocated = true;
+    }
+
+    return true;
+}
 
 template <typename T>
 Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(Block<T>* block) {
