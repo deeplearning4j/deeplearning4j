@@ -24,8 +24,6 @@ import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution1D;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasBatchNormalization;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling1D;
@@ -94,9 +92,9 @@ public class KerasLayerTest {
     }
 
     @Test
-    public void testGravesLstmLayer() throws Exception {
-        buildGravesLstmLayer(conf1, keras1);
-        buildGravesLstmLayer(conf2, keras2);
+    public void testLstmLayer() throws Exception {
+        buildLstmLayer(conf1, keras1);
+        buildLstmLayer(conf2, keras2);
     }
 
     @Test
@@ -182,7 +180,7 @@ public class KerasLayerTest {
         assertEquals(VALID_PADDING[0], layer.getPadding()[0]);
     }
 
-    public void buildGravesLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    public void buildLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         String innerActivation = "hard_sigmoid";
         double lstmForgetBiasDouble = 1.0;
         String lstmForgetBiasString = "one";
@@ -218,7 +216,7 @@ public class KerasLayerTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        GravesLSTM layer = new KerasLstm(layerConfig).getGravesLSTMLayer();
+        LSTM layer = new KerasLstm(layerConfig).getLSTMLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());

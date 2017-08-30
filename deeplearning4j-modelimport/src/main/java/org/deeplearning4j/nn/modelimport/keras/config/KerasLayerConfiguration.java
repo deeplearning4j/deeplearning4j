@@ -99,7 +99,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_INNER_ACTIVATION = ""; // 1: inner_activation, 2: recurrent_activation
     private final String LAYER_FIELD_FORGET_BIAS_INIT = "forget_bias_init"; // keras 1 only: string
     private final String LAYER_FIELD_UNIT_FORGET_BIAS = "unit_forget_bias"; // keras 1 only: bool
-
+    private final String LAYER_FIELD_RETURN_SEQUENCES = "return_sequences";
 
     /* Embedding layer properties */
     private final String LAYER_FIELD_INPUT_DIM = "input_dim";
