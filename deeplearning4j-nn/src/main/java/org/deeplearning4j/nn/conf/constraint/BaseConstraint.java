@@ -8,9 +8,6 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Broadcast;
-import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.Map;
 
