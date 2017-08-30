@@ -169,11 +169,13 @@ namespace nd4j {
 	
             } else if (!x->isScalar() && y->isScalar()) {
                x->template applyScalar<simdOps::Add<T>>(*y, x);
+
             } else if (x->isScalar() && !y->isScalar()) {
                 y->template applyScalar<simdOps::Add<T>>(*x, y);
+
             }						
 			else if (x->isScalar() && y->isScalar()) {
-				x->putScalar(0, x->getScalar(0) * y->getScalar(0));
+				x->putScalar(0, x->getScalar(0) + y->getScalar(0));
 
 			}
 			else { // (!x->isScalar() && !y->isScalar())
@@ -183,6 +185,33 @@ namespace nd4j {
             }
 			return ND4J_STATUS_OK;
         }
+		
+		DECLARE_OP(Multiply, 2, 1) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));            
+
+            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *y = block.getVariables().at(1)->getNDArray();			
+
+			if (!x->isScalar() && !y->isScalar()) {
+				REQUIRE_OK(this->validateInputLengthMatch(block));
+				// REQUIRE_OK(this->validateInputDimensionsMatch(block));
+				x->template applyPairwiseTransform<simdOps::Multiply<T>>(y, nullptr);                
+	
+            } else if (!x->isScalar() && y->isScalar()) {
+               x->template applyScalar<simdOps::Multiply<T>>(*y, x);
+
+            } else if (x->isScalar() && !y->isScalar()) {
+                y->template applyScalar<simdOps::Multiply<T>>(*x, y);
+
+            }						
+			else { // (x->isScalar() && y->isScalar())
+				x->putScalar(0, x->getScalar(0) * y->getScalar(0));
+			
+            }
+			return ND4J_STATUS_OK;
+        }
+
+
 		
     }
 }
