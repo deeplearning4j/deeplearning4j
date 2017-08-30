@@ -1035,6 +1035,7 @@ public class MultiLayerTest {
         MultiLayerNetwork modelMow = new TransferLearning.Builder(modelExpectedArch).setFeatureExtractor(2).build();
         System.out.println(modelExpectedArch.summary());
         System.out.println(modelMow.summary());
+        System.out.println(modelMow.summary(InputType.convolutional(V_HEIGHT,V_WIDTH,3)));
     }
 
 
