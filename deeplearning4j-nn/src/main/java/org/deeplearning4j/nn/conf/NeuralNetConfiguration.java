@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -119,6 +120,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     // This is important for learning rate schedules, for example, and is stored here to ensure it is persisted
     // for Spark and model serialization
     protected int iterationCount = 0;
+
+    //Counter for the number of epochs completed so far. Used for per-epoch schedules
+    protected int epochCount = 0;
 
     private static ObjectMapper mapper = initMapper();
     private static final ObjectMapper mapperYaml = initMapperYaml();
@@ -631,6 +635,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double lrPolicySteps = Double.NaN;
         protected double lrPolicyPower = Double.NaN;
         protected boolean pretrain = false;
+        protected List<LayerConstraint> constraints = null;
 
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
@@ -1222,8 +1227,36 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /**
+         * Sets the convolution mode for convolutional layers, which impacts padding and output sizes.
+         * See {@link ConvolutionMode} for details. Defaults to ConvolutionMode.TRUNCATE
+         * @param convolutionMode Convolution mode to use
+         */
         public Builder convolutionMode(ConvolutionMode convolutionMode) {
             this.convolutionMode = convolutionMode;
+            return this;
+        }
+
+        /**
+         * Set constraints to be applied to all layers. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to all layers
+         */
+        public Builder constraints(LayerConstraint... constraints){
+            return constraints(Arrays.asList(constraints));
+        }
+
+        /**
+         * Set constraints to be applied to all layers. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to all layers
+         */
+        public Builder constraints(List<LayerConstraint> constraints){
+            this.constraints = constraints;
             return this;
         }
 

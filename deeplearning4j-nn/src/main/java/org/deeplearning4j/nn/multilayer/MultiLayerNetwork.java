@@ -277,6 +277,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 }
             }
         }
+
+        int ec = getLayer(layerIdx).conf().getEpochCount() + 1;
+        getLayer(layerIdx).conf().setEpochCount(ec);
     }
 
     /**
@@ -2271,6 +2274,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         input = null;
         labels = null;
         solver = null;
+    }
+
+    @Override
+    public void applyConstraints(int iteration, int epoch) {
+        for(Layer l : layers){
+            l.applyConstraints(iteration, epoch);
+        }
     }
 
     /**

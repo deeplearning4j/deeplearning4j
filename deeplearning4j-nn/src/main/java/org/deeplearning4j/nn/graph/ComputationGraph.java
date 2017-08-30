@@ -2323,6 +2323,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         labelMaskArrays = null;
     }
 
+    @Override
+    public void applyConstraints(int iteration, int epoch) {
+        for(Layer l : layers){
+            l.applyConstraints(iteration, epoch);
+        }
+    }
+
     //------------------------------------------------------------------------------
     //RNN-specific functionality
 

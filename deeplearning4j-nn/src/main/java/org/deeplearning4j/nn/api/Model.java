@@ -264,4 +264,10 @@ public interface Model {
      * Clear input
      */
     void clear();
+
+
+    /**
+     * Apply any constraints to the model
+     */
+    void applyConstraints(int iteration, int epoch);
 }
