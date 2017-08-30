@@ -637,6 +637,11 @@ namespace nd4j{
                     printf("             Inputs: [");
                     for (int i = 0; i < node.input_size(); i++) {
                         nd4j_printf("Trying input: %s\n", node.input(i).c_str());
+
+                        // if this fails - we're probably on partial input :)
+                        if (!variablesMap.count(node.input(i)))
+                            return nullptr;
+
                         printf("%s (%i)", node.input(i).c_str(), variablesMap.at(node.input(i)));
 
 
