@@ -1,10 +1,15 @@
 package org.deeplearning4j.nn.conf.constraint;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class MaxNormConstraint extends BaseConstraint {
 
     private double maxNorm;
@@ -25,9 +30,15 @@ public class MaxNormConstraint extends BaseConstraint {
         INDArray clipped = norm.unsafeDuplication();
         BooleanIndexing.replaceWhere(clipped, maxNorm, Conditions.greaterThan(maxNorm));
         norm.addi(epsilon);
-
         clipped.divi(norm);
 
+        //Determine broadcast dimensions:
+
         Broadcast.mul(param, clipped, param, dimensions );
+    }
+
+    @Override
+    public MaxNormConstraint clone() {
+        return new MaxNormConstraint(maxNorm, applyToWeights, applyToBiases, dimensions);
     }
 }

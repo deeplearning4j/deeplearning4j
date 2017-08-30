@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -18,6 +19,7 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -76,6 +78,7 @@ public class FineTuneConfiguration {
     protected Double lrPolicySteps;
     protected Double lrPolicyPower;
     protected ConvolutionMode convolutionMode;
+    protected List<LayerConstraint> constraints;
 
     protected Boolean pretrain;
     protected Boolean backprop;
@@ -284,7 +287,7 @@ public class FineTuneConfiguration {
                             adamMeanDecay, adamVarDecay, rho, rmsDecay, epsilon);
 
             boolean useDropCon = (useDropConnect == null ? nnc.isUseDropConnect() : useDropConnect);
-            LayerValidation.generalValidation(l.getLayerName(), l, useDropCon, dropOut, l2, l2Bias, l1, l1Bias, dist);
+            LayerValidation.generalValidation(l.getLayerName(), l, useDropCon, dropOut, l2, l2Bias, l1, l1Bias, dist, constraints);
         }
 
         //Also: update the LR, L1 and L2 maps, based on current config (which might be different to original config)

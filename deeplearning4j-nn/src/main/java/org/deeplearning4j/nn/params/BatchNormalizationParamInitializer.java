@@ -52,6 +52,16 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     }
 
     @Override
+    public boolean isWeightParam(String key) {
+        return false;
+    }
+
+    @Override
+    public boolean isBiasParam(String key) {
+        return false;
+    }
+
+    @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramView, boolean initializeParams) {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         // TODO setup for RNN

@@ -299,6 +299,11 @@ public class BarnesHutTsne implements Model {
     @Override
     public void clear() {}
 
+    @Override
+    public void applyConstraints(int iteration, int epoch) {
+        //No op
+    }
+
     /* compute the gradient given the current solution, the probabilities and the constant */
     protected Pair<Double, INDArray> gradient(INDArray p) {
         throw new UnsupportedOperationException();

@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.constraint;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
@@ -11,6 +13,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import java.util.Map;
 
 @AllArgsConstructor
+@Data
 public class NonNegativeConstraint implements LayerConstraint {
 
     protected boolean applyToWeights;
@@ -33,5 +36,10 @@ public class NonNegativeConstraint implements LayerConstraint {
                 BooleanIndexing.replaceWhere(e.getValue(), 0.0, Conditions.lessThan(0.0));
             }
         }
+    }
+
+    @Override
+    public LayerConstraint clone() {
+        return new NonNegativeConstraint(applyToWeights, applyToBiases);
     }
 }

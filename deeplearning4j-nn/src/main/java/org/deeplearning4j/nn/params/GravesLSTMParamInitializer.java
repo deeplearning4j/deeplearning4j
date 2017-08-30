@@ -70,6 +70,16 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
     }
 
     @Override
+    public boolean isWeightParam(String key) {
+        return RECURRENT_WEIGHT_KEY.equals(key) || INPUT_WEIGHT_KEY.equals(key);
+    }
+
+    @Override
+    public boolean isBiasParam(String key) {
+        return BIAS_KEY.equals(key);
+    }
+
+    @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =

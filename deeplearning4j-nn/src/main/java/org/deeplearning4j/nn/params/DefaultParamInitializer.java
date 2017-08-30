@@ -62,6 +62,16 @@ public class DefaultParamInitializer implements ParamInitializer {
     }
 
     @Override
+    public boolean isWeightParam(String key) {
+        return WEIGHT_KEY.equals(key);
+    }
+
+    @Override
+    public boolean isBiasParam(String key) {
+        return BIAS_KEY.equals(key);
+    }
+
+    @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         if (!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
             throw new IllegalArgumentException("unsupported layer type: " + conf.getLayer().getClass().getName());

@@ -30,6 +30,16 @@ public class EmptyParamInitializer implements ParamInitializer {
     }
 
     @Override
+    public boolean isWeightParam(String key) {
+        return false;
+    }
+
+    @Override
+    public boolean isBiasParam(String key) {
+        return false;
+    }
+
+    @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         return Collections.EMPTY_MAP;
     }

@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.constraint;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
@@ -13,6 +15,8 @@ import java.util.Map;
 
 
 @AllArgsConstructor
+@EqualsAndHashCode
+@Data
 public abstract class BaseConstraint implements LayerConstraint {
     public static final double DEFAULT_EPSILON = 1e-6;
 
@@ -42,4 +46,6 @@ public abstract class BaseConstraint implements LayerConstraint {
     }
 
     public abstract void apply(INDArray param, boolean isBias);
+
+    public abstract BaseConstraint clone();
 }

@@ -1368,7 +1368,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 }
             }
             LayerValidation.generalValidation(layerName, layer, useDropConnect, dropOut, l2, l2Bias,
-                            l1, l1Bias, dist);
+                            l1, l1Bias, dist, constraints);
         }
 
         private void copyConfigToLayer(String layerName, Layer layer) {
