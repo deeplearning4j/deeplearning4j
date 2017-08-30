@@ -3,7 +3,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
+import org.deeplearning4j.nn.conf.layers.ZeroPadding1DLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -46,7 +46,7 @@ public class KerasZeroPadding1D extends KerasLayer {
     public KerasZeroPadding1D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        ZeroPaddingLayer.Builder builder = new ZeroPaddingLayer.Builder(
+        ZeroPadding1DLayer.Builder builder = new ZeroPadding1DLayer.Builder(
                 getPaddingFromConfig(layerConfig, conf, 1))
                 .name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
@@ -58,8 +58,8 @@ public class KerasZeroPadding1D extends KerasLayer {
      *
      * @return  SubsamplingLayer
      */
-    public ZeroPaddingLayer getZeroPaddingLayer() {
-        return (ZeroPaddingLayer) this.layer;
+    public ZeroPadding1DLayer getZeroPadding1DLayer() {
+        return (ZeroPadding1DLayer) this.layer;
     }
 
     /**
@@ -74,6 +74,6 @@ public class KerasZeroPadding1D extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                             "Keras ZeroPadding layer accepts only one input (received " + inputType.length + ")");
-        return this.getZeroPaddingLayer().getOutputType(-1, inputType[0]);
+        return this.getZeroPadding1DLayer().getOutputType(-1, inputType[0]);
     }
 }

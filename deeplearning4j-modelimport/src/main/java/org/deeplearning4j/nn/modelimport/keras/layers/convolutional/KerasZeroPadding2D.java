@@ -7,9 +7,7 @@ import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getPaddingFromConfig;
@@ -59,7 +57,7 @@ public class KerasZeroPadding2D extends KerasLayer {
      *
      * @return  SubsamplingLayer
      */
-    public ZeroPaddingLayer getZeroPaddingLayer() {
+    public ZeroPaddingLayer getZeroPadding2DLayer() {
         return (ZeroPaddingLayer) this.layer;
     }
 
@@ -75,6 +73,6 @@ public class KerasZeroPadding2D extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                             "Keras ZeroPadding layer accepts only one input (received " + inputType.length + ")");
-        return this.getZeroPaddingLayer().getOutputType(-1, inputType[0]);
+        return this.getZeroPadding2DLayer().getOutputType(-1, inputType[0]);
     }
 }
