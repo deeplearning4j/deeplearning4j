@@ -519,23 +519,103 @@ namespace nd4j{
             if (!res)
                 return nullptr;
 
+            auto graph = new Graph<T>();
+            auto variableSpace = graph->getVariableSpace();
+
+
+            int variablesCounter = 0;
             nd4j_verbose("Number of nodes in graphDef: %i\n", graphDef.node_size());
             for (int n = 0; n < graphDef.node_size(); n++) {
                 auto node = graphDef.node(n);
 
-                nd4j_verbose("Node id: [%i]; name: [%s]; opName: [%s]\n", n+1, node.name().c_str(), node.op().c_str());
+                // if that's external variable - we put it to variable space
+                if (strcmp(TF_VAR, node.op().c_str()) == 0 || strcmp(TF_CONST, node.op().c_str()) == 0 || strcmp(TF_INPUT, node.op().c_str()) == 0) {
+                    nd4j_printf("Variable found: %s\n", node.name().c_str());
+                    auto variable = new Variable<T>();
+                    variable->setName(new std::string(node.name().c_str()));
+                    variable->setId(--variablesCounter);
+                    variableSpace->putVariable(variable->id(), variable);
 
-                printf("             Inputs: [");
-                for (int i = 0; i < node.input_size(); i++) {
-                    printf("%s", node.input(i).c_str());
 
-                    if (i < node.input_size() + 1)
-                        printf(", ");
+                    // TODO: we might want to have something like that.
+                    // it basically just gives input validation option, since settles expectations for input
+                    if (strcmp(TF_INPUT, node.op().c_str()) == 0)
+                        continue;
+
+                    // checking shape, not applicable to input, since it can vary
+                    if (node.attr().count("shape")) {
+                        auto attr = node.attr().at("shape");
+                        int dims = attr.shape().dim_size();
+
+                        if (dims > 0) {
+                            std::vector<int> __shape;
+
+                            // we don't have rank1 arrays. vector is 2d.
+                            if (dims == 1)
+                                __shape.push_back(1);
+
+                            // roll through dimensions
+                            for (auto s: attr.shape().dim()) {
+                                __shape.push_back((int) s.size()) ;
+                            }
+
+                            variable->setNDArray(new NDArray<T>('c', __shape));
+
+                            nd4j_printf("Shape found: %i dims;\n", dims);
+                            variable->getNDArray()->printShapeInfo();
+                        }
+                    }
+
+                    // checking tensor attached
+                    if (node.attr().count("value")) {
+                        auto attr = node.attr().at("value");
+
+                        // int
+                        if (attr.tensor().dtype() == ::tensorflow::DataType::DT_INT32) {
+                            nd4j_verbose("Int size: %i\n", attr.tensor().int_val_size());
+
+
+                            nd4j_verbose("Tensor has shape: %i\n", attr.tensor().has_tensor_shape());
+                            if (attr.tensor().has_tensor_shape()) {
+                                auto shape = attr.tensor().tensor_shape();
+                                int dims = shape.dim_size();
+
+                                if (dims > 0) {
+                                    std::vector<int> __shape;
+                                    // we don't have rank1 arrays. vector is 2d.
+                                    if (dims == 1)
+                                        __shape.push_back(1);
+
+                                    // roll through dimensions
+                                    for (auto s: shape.dim()) {
+                                        __shape.push_back((int) s.size());
+                                    }
+
+                                    variable->setNDArray(new NDArray<T>('c', __shape));
+
+                                    nd4j_printf("Tensor shape found: %i dims;\n", dims);
+                                    variable->getNDArray()->printShapeInfo();
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    nd4j_verbose("Node id: [%i]; name: [%s]; opName: [%s]\n", n + 1, node.name().c_str(),
+                                 node.op().c_str());
+
+                    printf("             Inputs: [");
+                    for (int i = 0; i < node.input_size(); i++) {
+                        printf("%s", node.input(i).c_str());
+
+                        if (i < node.input_size() + 1)
+                            printf(", ");
+                    }
+                    printf("]\n");
+
                 }
-                printf("]\n");
             }
 
-            return nullptr;
+            return graph;
         }
     }
 }

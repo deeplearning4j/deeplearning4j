@@ -13,6 +13,9 @@
 #include <graph/Node.h>
 #include <graph/Graph.h>
 
+#define TF_INPUT "Placeholder"
+#define TF_CONST "Const"
+#define TF_VAR "VariableV2"
 
 namespace nd4j {
     namespace graph {

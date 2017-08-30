@@ -3,6 +3,7 @@
 
 #include "../NDArray.h"
 #include <stdexcept>
+#include <memory>
 
 
 namespace nd4j {
@@ -110,23 +111,47 @@ namespace nd4j {
         if (rank > MAX_RANK)
             throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
-        int *shapeOf = new int[rank];
+        std::unique_ptr<int> shapeOf(new int[rank]);
         int cnt = 0;
 
         for (auto &item: shape)
-            shapeOf[cnt++] = item;
+            shapeOf.get()[cnt++] = item;
 
         if (order == 'f') {
-            _shapeInfo = shape::shapeBufferFortran(rank, shapeOf);
+            _shapeInfo = shape::shapeBufferFortran(rank, shapeOf.get());
         } else {
-            _shapeInfo = shape::shapeBuffer(rank, shapeOf);
+            _shapeInfo = shape::shapeBuffer(rank, shapeOf.get());
         }
 
         _buffer = new T[shape::length(_shapeInfo)];
         memset(_buffer, 0, sizeOfT() * shape::length(_shapeInfo));
         _allocated = true;
+    }
 
-        delete[] shapeOf;
+
+    template<typename T>
+    NDArray<T>::NDArray(const char order, const std::vector<int> &shape) {
+
+        int rank = (int) shape.size();
+
+        if (rank > MAX_RANK)
+            throw std::invalid_argument("Rank of NDArray can't exceed 32");
+
+        std::unique_ptr<int> shapeOf(new int[rank]);
+        int cnt = 0;
+
+        for (auto &item: shape)
+            shapeOf.get()[cnt++] = item;
+
+        if (order == 'f') {
+            _shapeInfo = shape::shapeBufferFortran(rank, shapeOf.get());
+        } else {
+            _shapeInfo = shape::shapeBuffer(rank, shapeOf.get());
+        }
+
+        _buffer = new T[shape::length(_shapeInfo)];
+        memset(_buffer, 0, sizeOfT() * shape::length(_shapeInfo));
+        _allocated = true;
     }
 
 
