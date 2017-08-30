@@ -3,6 +3,7 @@ include_directories(../../include ../../layers ../../include/helpers ../../inclu
 if(LINUX)
     link_directories(/usr/local/lib)
     link_directories(/usr/lib)
+    link_directories(/lib)
 endif()
 
 if(APPLE)
