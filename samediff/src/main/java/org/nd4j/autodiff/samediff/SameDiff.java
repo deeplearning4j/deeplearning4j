@@ -660,6 +660,26 @@ public class SameDiff {
         return getVariableMap().get(name);
     }
 
+
+    /**
+     * Gradient with respect
+     * to the given variable name.
+     * Note that in order to run this function,
+     * execBackwards()  must be executed first.
+     * All gradient functions are obtained within that time.
+     * @param varName the variable name to get the gradient for.
+     * @return
+     */
+    public SDVariable grad(String varName) {
+        if(!sameDiffFunctionInstances.containsKey("grad")) {
+            throw new IllegalStateException("Unable to obtain gradient. Please run execBackwards() first.");
+        }
+
+        return getFunction("grad").getVariable(varName).gradient();
+    }
+
+
+
     /**
      *
      * @param name
@@ -670,28 +690,7 @@ public class SameDiff {
         return var(name,Nd4j.scalar(value));
     }
 
-    /**
-     *
-     * @param iX
-     * @return
-     */
-    public SDVariable grad(SDVariable iX, SDVariable wrt) {
-        Preconditions.checkState(iX.getSameDiff() == wrt.getSameDiff(),"Same diff instances must be the same.");
-        Preconditions.checkArgument(getFunctionInput(iX).getSameDiff() == this);
-        Preconditions.checkArgument(getFunctionInput(wrt).getSameDiff() == this);
 
-        List<DifferentialFunction<ArrayField>> arrField = getFunctionInput(iX).diff(Arrays.asList(getFunctionInput(wrt)));
-        Preconditions.checkArgument(arrField.get(0).getSameDiff() == this);
-
-        SDVariable ret = SDVariable.builder()
-                .arr(null).shape(arrField.get(0).getResultShape())
-                .differentialFunction(arrField.get(0))
-                .varName("grad(" + iX.getVarName() + ")").sameDiff(this)
-                .build();
-        //Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
-        addVariable(ret);
-        return ret;
-    }
 
     /**
      *

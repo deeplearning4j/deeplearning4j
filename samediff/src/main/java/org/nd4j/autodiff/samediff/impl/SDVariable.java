@@ -133,18 +133,6 @@ public class SDVariable  implements Serializable {
 
 
     /**
-     * Invokes this wrt itself starting as 1.
-     * @return
-     */
-    public SDVariable backward() {
-        if(ArrayUtil.prod(getShape()) != 1) {
-            throw new IllegalStateException("Backward invocations must involve calling a scalar.");
-        }
-
-        return sameDiff.grad(this,this);
-    }
-
-    /**
      * Returns the shape of this variable
      * @return
      */

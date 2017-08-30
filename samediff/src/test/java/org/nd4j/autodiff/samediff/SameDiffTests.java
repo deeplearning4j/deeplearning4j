@@ -249,36 +249,6 @@ public class SameDiffTests {
         assertEquals(sameDiff.graph(), tg2.graph());
     }
 
-    @Test
-    public void testOpExecutionWithAutoDiff() {
-        SameDiff sameDiff = SameDiff.create();
-
-        INDArray arr = Nd4j.linspace(1, 4, 4);
-
-        SDVariable x = sameDiff.var("x", arr);
-        SDVariable sigmoid = sameDiff.sigmoid(x);
-        SDVariable grad = sameDiff.grad(sigmoid, x);
-
-        List<OpExecAction> actions = sameDiff.graph().getOpOrder().getActions();
-
-        OpState opState = actions.get(0).getOpState();
-        assertEquals("sigmoid", opState.getOpName());
-
-        OpState opState2 = actions.get(1).getOpState();
-        assertEquals("sigmoidderivative", opState2.getOpName());
-
-        sameDiff.allocate();
-
-        Op op1 = sameDiff.createOp(actions.get(0).getOpState().getOpType(), actions.get(0));
-        assertTrue(op1 instanceof Sigmoid);
-        Nd4j.getExecutioner().exec(op1);
-        assertEquals(Transforms.sigmoid(arr), op1.z());
-
-        Op op2 = sameDiff.createOp(actions.get(1).getOpState().getOpType(), actions.get(1));
-        assertTrue(op2 instanceof org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative);
-        Nd4j.getExecutioner().exec(op2);
-    }
-
 
     @Test
     public void testLogGrad() {
@@ -564,8 +534,12 @@ public class SameDiffTests {
         List<Op> ops = sameDiff.getFunction("mmulGradient").execBackwards();
 
         assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad"));
-        assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad").getVariable("x").gradient());
-        assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad").getVariable("y").gradient());
+        assumeNotNull(sameDiff.getFunction("mmulGradient").grad("x"));
+        assumeNotNull(sameDiff.getFunction("mmulGradient").grad("y"));
+
+        SDVariable gradWrtX = sameDiff.getFunction("mmulGradient").grad("x");
+        SDVariable gradWrtY = sameDiff.getFunction("mmulGradient").grad("y");
+        System.out.println(gradWrtX);
 
 /*
         INDArray executions = ops.get(ops.size() - 1).z();
@@ -883,18 +857,6 @@ public class SameDiffTests {
             }
         },inputs);
 
-
-
-        sameDiffOuter.defineFunction("lossGrad", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                SDVariable outputs = sameDiffOuter.invokeFunctionOn("loss",sameDiff);
-                SDVariable wrtWeights = sameDiff.var("w",inputs.get("w"));
-                SDVariable y2 = sameDiff.var("y2",inputs.get("y"));
-                SDVariable grad = sameDiff.grad(outputs,y2);
-                return grad;
-            }
-        },inputs);
 
 
 
