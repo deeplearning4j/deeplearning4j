@@ -579,7 +579,7 @@ public class SameDiff {
     }
 
 
-    public void initWorkspace() {
+    private void initWorkspace() {
         workspace = Nd4j.getWorkspaceManager().createNewWorkspace(
                 WorkspaceConfiguration.builder()
                         .initialSize(memoryForGraph())
@@ -648,6 +648,16 @@ public class SameDiff {
         variableMap.put(name,ret);
         return ret;
 
+    }
+
+    /**
+     * Get the variable based on the name
+     * @param name the name of the variable
+     * @return the variabel instance if there is one
+     *
+     */
+    public SDVariable getVariable(String name) {
+        return getVariableMap().get(name);
     }
 
     /**

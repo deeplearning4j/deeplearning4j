@@ -564,8 +564,8 @@ public class SameDiffTests {
         List<Op> ops = sameDiff.getFunction("mmulGradient").execBackwards();
 
         assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad"));
-        assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad").getVariableMap().get("x").gradient());
-        assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad").getVariableMap().get("y").gradient());
+        assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad").getVariable("x").gradient());
+        assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad").getVariable("y").gradient());
 
 /*
         INDArray executions = ops.get(ops.size() - 1).z();
