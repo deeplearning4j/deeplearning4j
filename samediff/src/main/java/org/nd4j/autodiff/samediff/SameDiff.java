@@ -691,6 +691,17 @@ public class SameDiff {
     }
 
 
+    /**
+     * Returns the ndarrays
+     * allocated for a given
+     * {@link NDArrayInformation}
+     * @param info the informaton to get the array for
+     * @return
+     */
+    public INDArray getNDArray(NDArrayInformation info) {
+        return getVertexToArray().get(info.getArrId());
+    }
+
 
     /**
      *

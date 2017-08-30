@@ -539,6 +539,8 @@ public class SameDiffTests {
 
         SDVariable gradWrtX = sameDiff.getFunction("mmulGradient").grad("x");
         SDVariable gradWrtY = sameDiff.getFunction("mmulGradient").grad("y");
+        assumeNotNull(gradWrtX.getArr());
+        assumeNotNull(gradWrtY.getArr());
         System.out.println(gradWrtX);
 
 /*
