@@ -19,7 +19,6 @@ package org.datavec.image.recordreader.objdetect;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.util.files.FileFromPathIterator;
-import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.image.data.Image;
@@ -30,7 +29,6 @@ import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,7 +54,7 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
     private final int gridH;
     private final ImageObjectLabelProvider labelProvider;
 
-    public ObjectDetectionRecordReader(int height, int width, int channels, int gridW, int gridH, ImageObjectLabelProvider labelProvider){
+    public ObjectDetectionRecordReader(int height, int width, int channels, int gridH, int gridW, ImageObjectLabelProvider labelProvider){
         super(height, width, channels, null);
         this.gridW = gridW;
         this.gridH = gridH;
@@ -155,7 +153,21 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
                     int imgGridX = (int)(cxyPostScaling[0] / width * gridW);
                     int imgGridY = (int)(cxyPostScaling[1] / height * gridH);
 
-                    //Convert pixels to grid 
+                    //Convert pixels to grid position, for TL and BR X/Y
+                    tlPost[0] = tlPost[0] / width * gridW;
+                    tlPost[1] = tlPost[1] / height * gridH;
+                    brPost[0] = brPost[0] / width * gridW;
+                    brPost[1] = brPost[1] / height * gridH;
+
+                    //Put TL, BR into label array:
+                    outLabel.putScalar(exampleNum, 0, imgGridY, imgGridX, tlPost[0]);
+                    outLabel.putScalar(exampleNum, 1, imgGridY, imgGridX, tlPost[1]);
+                    outLabel.putScalar(exampleNum, 2, imgGridY, imgGridX, brPost[0]);
+                    outLabel.putScalar(exampleNum, 3, imgGridY, imgGridX, brPost[1]);
+
+                    //Put label class into label array: (one-hot representation)
+                    int labelIdx = labels.indexOf(io.getLabel());
+                    outLabel.putScalar(exampleNum, 4 + labelIdx, imgGridY, imgGridX, 1.0);
                 }
 
                 exampleNum++;
