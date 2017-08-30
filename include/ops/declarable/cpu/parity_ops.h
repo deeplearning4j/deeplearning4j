@@ -164,31 +164,7 @@ namespace nd4j {
 			}
 			return ND4J_STATUS_OK;
         }
-		
-//////////////////////////////////////////////////////////////////////////		
-		DECLARE_OP(Add, 2, 1) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));            
 
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();			
-
-			if (!x->isScalar() && !y->isScalar()) {
-				REQUIRE_OK(this->validateInputLengthMatch(block));
-				x->template applyPairwiseTransform<simdOps::Add<T>>(y, nullptr);                
-            
-            } else if (!x->isScalar() && y->isScalar()) {
-               x->template applyScalar<simdOps::Add<T>>(*y, x);
-
-            } else if (x->isScalar() && !y->isScalar()) {
-                y->template applyScalar<simdOps::Add<T>>(*x, y);
-
-            }						
-			else { // x->isScalar() && y->isScalar()
-				x->putScalar(0, x->getScalar(0) + y->getScalar(0));
-
-			}
-			return ND4J_STATUS_OK;
-        }
 
 //////////////////////////////////////////////////////////////////////////
 		DECLARE_OP(Subtract, 2, 1) {
@@ -325,12 +301,12 @@ namespace nd4j {
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();	
 			
-			vector<int> newShape(y->shapeOf(), y->shapeOf() + y->rankOf());
+			std::vector<int> newShape(y->shapeOf(), y->shapeOf() + y->rankOf());
 			char order = y->ordering();
-			if (x->reshape(order, vector))
+			if (x->reshape(order, newShape))
 				return ND4J_STATUS_OK;
 			
-			return ND4J_STATUS_BAD;
+			return ND4J_STATUS_BAD_INPUT;
         }
 		
     }

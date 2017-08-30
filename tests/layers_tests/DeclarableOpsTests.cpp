@@ -85,15 +85,15 @@ TEST_F(DeclarableOpsTests, AddMatrices) {
 	y.assign(1);
 	exp.assign(3);
 
-	VariableSpace<float> variableSpace();
-    variableSpace.putVariable(-1, &x);
-    variableSpace.putVariable(-2, &y);    
-	Block<float> block(1, variableSpace);
-    block.fillInputs({-1, -2});
+	auto variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	auto block = new Block<float> (1, variableSpace);
+    block->fillInputs({-1, -2});
 
-	nd4j::ops::Add<float> addOp();
+	nd4j::ops::Add<float> addOp;
  
-	addOp.execute(&block);
+	addOp.execute(block);
 
     ASSERT_TRUE(x.equalsTo(&exp));    
 }

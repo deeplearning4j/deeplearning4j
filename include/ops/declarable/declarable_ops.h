@@ -214,13 +214,15 @@ bool nd4j::ops::DeclarableOp<T>::allocateResult(Block<T>& block, int* shape) {
     if (var->getNDArray() == nullptr) {
         T* buffer = new T[len];
         var ->setNDArray(new NDArray<T>(buffer, __shape));
-        var->getNDArray()->_allocated = true;
+        var->getNDArray()->_isShapeAlloc = true;
+        var->getNDArray()->_isBuffAlloc = true;
     } else if(var->getNDArray()->lengthOf() != len) {
         // if length not match - lets reallocate array
         delete var->getNDArray();
         T* buffer = new T[len];
         var ->setNDArray(new NDArray<T>(buffer, __shape));
-        var->getNDArray()->_allocated = true;
+        var->getNDArray()->_isShapeAlloc = true;
+        var->getNDArray()->_isBuffAlloc = true;
     }
 
     return true;

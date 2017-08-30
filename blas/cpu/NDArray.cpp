@@ -18,31 +18,31 @@ template <typename T> NDArray<T>::NDArray(T *buffer, int *shapeInfo ) {
     _isShapeAlloc = false;
 }
 
- 
-////////////////////////////////////////////////////////////////////////
-// this constructor creates 2D NDArray, memory for array is allocated in this constructor 
-template <typename T> NDArray<T>::NDArray(const int rows, const int columns, const char order) {
-    
-    _buffer = new T[rows * columns];
-    memset(_buffer, 0, rows * columns * sizeOfT());              // set all elements in new array to be zeros
+    template <typename T> NDArray<T>::NDArray(const Nd4jIndex length, const char order) {
+        if (length < 1)
+            throw "Can't allocate non-positive number of elements";
 
-    int *shape = new int[2] {rows, columns};
+        _buffer = new T[length];
+        memset(_buffer, 0, length * sizeOfT());              // set all elements in new array to be zeros
 
-    if (order == 'f') {
-        _shapeInfo = shape::shapeBufferFortran(2, shape);
-        _shapeInfo[7] = 102;
-    } else {
-        _shapeInfo = shape::shapeBuffer(2, shape);
-        _shapeInfo[7] = 99;
+        int *shape = new int[2] {1, length};
+
+        if (order == 'f') {
+            _shapeInfo = shape::shapeBufferFortran(2, shape);
+            _shapeInfo[7] = 102;
+        } else {
+            _shapeInfo = shape::shapeBuffer(2, shape);
+            _shapeInfo[7] = 99;
+        }
+
+        _shapeInfo[6] = 1;
+        _isBuffAlloc = true;
+        _isShapeAlloc = true;
+
+        delete[] shape;
     }
 
-    _shapeInfo[6] = 1;
-    _isBuffAlloc = true; 
-    _isShapeAlloc = true;
-    
-    delete[] shape;    
-}
-
+////////////////////////////////////////////////////////////////////////
 // this constructor creates 2D NDArray, memory for array is allocated in this constructor 
 template <typename T> NDArray<T>::NDArray(const int rows, const int columns, const char order) {
     
@@ -92,6 +92,21 @@ template <typename T> NDArray<T>::NDArray(const int rows, const int columns, con
         return vector;
     }
 
+template <typename T>
+NDArray<T>::NDArray(const NDArray<T> *other) {
+    int arrLength = shape::length(other->_shapeInfo);
+    int shapeLength = shape::rank(other->_shapeInfo)*2 + 4;
+
+    _buffer = new T[arrLength];
+    memcpy(_buffer, other->_buffer, arrLength*sizeOfT());      // copy other._buffer information into new array
+
+    _shapeInfo = new int[shapeLength];
+    memcpy(_shapeInfo, other->_shapeInfo, shapeLength*sizeof(int));     // copy shape information into new array
+
+    _isBuffAlloc = true;
+    _isShapeAlloc = true;
+}
+
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
 template <typename T> NDArray<T>::NDArray(const NDArray<T>& other)
@@ -106,7 +121,7 @@ template <typename T> NDArray<T>::NDArray(const NDArray<T>& other)
     memcpy(_shapeInfo, other._shapeInfo, shapeLength*sizeof(int));     // copy shape information into new array
     
     _isBuffAlloc = true; 
-   _isShapeAlloc = true;
+    _isShapeAlloc = true;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -138,6 +153,20 @@ template <typename T> NDArray<T>::NDArray(const char order, const std::initializ
     delete[] shapeOf;
 }
 
+    template <typename T>
+    void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting ) {
+        this->_buffer = buffer;
+        this->_shapeInfo = shapeInfo;
+
+        if (releaseExisting) {
+            if (_isShapeAlloc)
+                delete[] _shapeInfo;
+
+            if (_isBuffAlloc)
+                delete[] _buffer;
+        }
+    }
+
 
 
     template<typename T>
@@ -168,20 +197,6 @@ template <typename T> NDArray<T>::NDArray(const char order, const std::initializ
 	
     }
 
-
-// This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)        
-template<typename T> void NDArray<T>::replacePointers(T* buffer, int* shapeInfo, const bool releaseExisting = true) {
-	if (releaseExisting) {
-		if (_isBuffAlloc) 
-			delete []_buffer; 
-		if (_isShapeAlloc)
-			delete[] _shapeInfo;
-	}
-	_isBuffAlloc = false;
-	_isShapeAlloc = false;
-	_buffer    = buffer;
-	_shapeInfo = shapeInfo;
-} 
 
 // This method assigns values of given NDArray to this one, wrt order
     template<typename T>
@@ -647,10 +662,11 @@ template <typename T> bool NDArray<T>::reshape(char order, const std::vector<int
     template<typename T>
     NDArray<T>::~NDArray() {
 
-        if (_allocated) {
+        if (_isBuffAlloc)
             delete[] _buffer;
+
+        if (_isShapeAlloc)
             delete[] _shapeInfo;
-        }
     }
 }
 
