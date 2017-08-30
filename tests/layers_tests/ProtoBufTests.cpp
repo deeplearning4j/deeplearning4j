@@ -65,3 +65,27 @@ TEST_F(ProtoBufTests, TestTextLoad2) {
     ASSERT_NEAR(12.0f, var0->getNDArray()->reduceNumber<simdOps::Sum<float>>(), 1e-5);
     ASSERT_NEAR(1.0f, var0->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
 }
+
+
+TEST_F(ProtoBufTests, TestTextLoad3) {
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+    auto graph = GraphExecutioner<float>::importFromTensorFlow("../../../tests/resources/max_multiply.pb.txt");
+
+    ASSERT_FALSE(graph == nullptr);
+
+    ASSERT_EQ(2, graph->getVariableSpace()->externalEntries());
+
+    auto var0 = graph->getVariableSpace()->getVariable(new std::string("Placeholder"));
+    auto var1 = graph->getVariableSpace()->getVariable(new std::string("Placeholder_1"));
+
+    ASSERT_TRUE(var0 != nullptr);
+    ASSERT_TRUE(var1 != nullptr);
+
+    // we expect both variables to be set to null here
+    ASSERT_TRUE(var0->getNDArray() == nullptr);
+    ASSERT_TRUE(var1->getNDArray() == nullptr);
+
+    // now we're veryfying op graph
+    ASSERT_EQ(1, graph->totalNodes());
+}

@@ -122,6 +122,50 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
+        DECLARE_OP(MaxPool, 2, 1) {
+            // MaxPooling
+            return ND4J_STATUS_OK;
+        }
+        DECLARE_SYN(MaxPool2D, MaxPool);
+
+//////////////////////////////////////////////////////////////////////////
+        DECLARE_OP(AvgPool, 2, 1) {
+            // AvgPooling
+            return ND4J_STATUS_OK;
+        }
+        DECLARE_SYN(AvgPool2D, AvgPool);
+
+//////////////////////////////////////////////////////////////////////////
+        DECLARE_OP(LRN, 2, 1) {
+            // LocalResponseNormalization
+            return ND4J_STATUS_OK;
+        }
+
+
+///////////////////////
+        DECLARE_OP(RandomUniform, 1, 1) {
+            // uniform distribution
+            return ND4J_STATUS_OK;
+        }
+
+        DECLARE_OP(Switch, 2, 1) {
+            // No ideas what's that
+            return ND4J_STATUS_OK;
+        }
+
+        DECLARE_OP(Assign, 2, 1) {
+            // NDArray->assign(NDArray)
+            return ND4J_STATUS_OK;
+        }
+        DECLARE_SYN(Set, Assign);
+
+//////////////////////////////////////////////////////////////////////////
+        DECLARE_OP(Softmax, 2, 1) {
+            // YaY
+            return ND4J_STATUS_OK;
+        }
+
+//////////////////////////////////////////////////////////////////////////
         DECLARE_OP(Relu, 1, 1) {
             REQUIRE_OK(this->validateNonEmptyInput(block));
 

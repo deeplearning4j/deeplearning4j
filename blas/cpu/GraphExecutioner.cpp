@@ -617,10 +617,10 @@ namespace nd4j{
                     nd4j_verbose("Node id: [%i]; name: [%s]; opName: [%s]\n", n + 1, node.name().c_str(),
                                  node.op().c_str());
 
-                    nd4j::ops::DeclarableOp<T> *op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(node.name().c_str());
+                    nd4j::ops::DeclarableOp<T> *op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(node.op().c_str());
 
                     if (op == nullptr) {
-                        nd4j_verbose("Op wasn't found: %s\n", node.name().c_str());
+                        nd4j_verbose("Op wasn't found: %s\n", node.op().c_str());
                         return nullptr;
                     }
 
@@ -630,8 +630,13 @@ namespace nd4j{
                     jNode->setCustomOp(op);
                     jNode->setBlock(new Block<T>(jNode->id(), variableSpace));
 
+
+                    std::pair<const std::string, int> pair(node.name(), jNode->id());
+                    variablesMap.insert(pair);
+
                     printf("             Inputs: [");
                     for (int i = 0; i < node.input_size(); i++) {
+                        nd4j_printf("Trying input: %s\n", node.input(i).c_str());
                         printf("%s (%i)", node.input(i).c_str(), variablesMap.at(node.input(i)));
 
 
