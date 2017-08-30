@@ -68,7 +68,7 @@ public class KerasModel {
     int truncatedBPTT = 0; // truncated BPTT value
     int kerasMajorVersion;
 
-    protected KerasModel() {
+    public KerasModel() {
     }
 
     public KerasModelBuilder modelBuilder() {

@@ -64,6 +64,7 @@ import java.util.Collection;
                 @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout"),
                 @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling"),
                 @JsonSubTypes.Type(value = ZeroPaddingLayer.class, name = "zeroPadding"),
+                @JsonSubTypes.Type(value = ZeroPadding1DLayer.class, name = "zeroPadding1d"),
                 @JsonSubTypes.Type(value = FrozenLayer.class, name = "FrozenLayer")})
 @Data
 @NoArgsConstructor
