@@ -265,6 +265,14 @@ public interface Layer extends Serializable, Cloneable, Model {
      */
     int getIndex();
 
+    int getIterationCount();
+
+    int getEpochCount();
+
+    void setIterationCount(int iterationCount);
+
+    void setEpochCount(int epochCount);
+
     /**
      * Get the layer input.
      */

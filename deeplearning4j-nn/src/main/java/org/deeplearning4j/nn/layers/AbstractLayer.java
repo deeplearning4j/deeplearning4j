@@ -54,6 +54,9 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     protected MaskState maskState;
     protected CacheMode cacheMode = CacheMode.NONE;
 
+    protected int iterationCount;
+    protected int epochCount;
+
     public AbstractLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
         cacheMode = conf.getCacheMode();

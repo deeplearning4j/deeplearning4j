@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.graph;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
@@ -84,9 +85,8 @@ import java.util.*;
  *
  * @author Alex Black
  */
+@Slf4j
 public class ComputationGraph implements Serializable, Model, NeuralNetwork {
-
-    private static final Logger log = LoggerFactory.getLogger(ComputationGraph.class);
 
     protected ComputationGraphConfiguration configuration;
     protected boolean initCalled = false;
@@ -598,6 +598,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
+        synchronizeIterEpochCounts();
         initCalled = true;
     }
 
@@ -1293,6 +1294,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public void computeGradientAndScore() {
+        synchronizeIterEpochCounts();
         //Calculate activations (which are stored in each layer, and used in backprop)
         if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
             Map<String, INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);
@@ -1834,7 +1836,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     /**
      * This method ADDS additional IterationListener to existing listeners
      *
-     * @param listener
+     * @param listeners Listeners to add
      */
     @Override
     public void addListeners(IterationListener... listeners) {
@@ -2992,7 +2994,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Perform evaluation on the given data (DataSetIterator) with the given {@link IEvaluation} instance
      *
      * @param iterator   Test data to evaluate on
-     * @param evaluation IEvaluation insntance
+     * @param evaluations IEvaluation instances
      * @param <T>        Type of the IEvaluation instance
      * @return The input IEvaluation instance, after performing evaluation on the test data
      */
@@ -3286,6 +3288,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public void incrementEpochCount(){
         configuration.setEpochCount(configuration.getEpochCount() + 1);
+    }
+
+    protected void synchronizeIterEpochCounts(){
+        //TODO: this is necessrry for some schedules - but the redundant values are a little ugly...
+        int currIter = getConfiguration().getIterationCount();
+        int currEpoch = getConfiguration().getEpochCount();
+        for(Layer l : layers){
+            l.setIterationCount(currIter);
+            l.setEpochCount(currEpoch);
+        }
     }
 
     /**

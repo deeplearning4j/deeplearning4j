@@ -410,6 +410,26 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
+    public int getIterationCount() {
+        return insideLayer.getIterationCount();
+    }
+
+    @Override
+    public int getEpochCount() {
+        return insideLayer.getEpochCount();
+    }
+
+    @Override
+    public void setIterationCount(int iterationCount) {
+        insideLayer.setIterationCount(iterationCount);
+    }
+
+    @Override
+    public void setEpochCount(int epochCount) {
+        insideLayer.setEpochCount(epochCount);
+    }
+
+    @Override
     public void setInput(INDArray input) {
         insideLayer.setInput(input);
     }

@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.multilayer;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -87,8 +88,8 @@ import static org.deeplearning4j.nn.graph.ComputationGraph.workspaceConfiguratio
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class MultiLayerNetwork implements Serializable, Classifier, Layer, NeuralNetwork {
-    private static final Logger log = LoggerFactory.getLogger(MultiLayerNetwork.class);
 
     //the hidden neural network layers (including output layer)
     protected Layer[] layers;
@@ -644,6 +645,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 solver.initOptimizer();
             }
         }
+
+        synchronizeIterEpochCounts();
     }
 
     /**
@@ -1502,6 +1505,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     /** Equivalent to backprop(), but calculates gradient for truncated BPTT instead. */
     protected void truncatedBPTTGradient() {
+        synchronizeIterEpochCounts();
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -2224,6 +2228,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             truncatedBPTTGradient();
         } else {
+            synchronizeIterEpochCounts();
+
             //First: do a feed-forward through the network
             //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
             // need the input to the output layer to be set (such that backprop can be done)
@@ -2560,6 +2566,26 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Override
     public int getIndex() {
         return layerIndex;
+    }
+
+    @Override
+    public int getIterationCount() {
+        return getLayerWiseConfigurations().getIterationCount();
+    }
+
+    @Override
+    public int getEpochCount() {
+        return getLayerWiseConfigurations().getEpochCount();
+    }
+
+    @Override
+    public void setIterationCount(int iterationCount) {
+        getLayerWiseConfigurations().setIterationCount(iterationCount);
+    }
+
+    @Override
+    public void setEpochCount(int epochCount) {
+        getLayerWiseConfigurations().setEpochCount(epochCount);
     }
 
     @Override
@@ -3122,6 +3148,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public void incrementEpochCount(){
         layerWiseConfigurations.setEpochCount(layerWiseConfigurations.getEpochCount() + 1);
+    }
+
+
+    protected void synchronizeIterEpochCounts(){
+        //TODO: this is necessrry for some schedules - but the redundant values are a little ugly...
+        int currIter = getIterationCount();
+        int currEpoch = getEpochCount();
+        for(Layer l : layers){
+            l.setIterationCount(currIter);
+            l.setEpochCount(currEpoch);
+        }
     }
 
     /**

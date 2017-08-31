@@ -142,10 +142,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             return TimeSeriesUtils.reshape2dTo3d(out2d, input.size(0));
         }
 
-        if (training) {
-            //TODO iteraiton/epoch counters
-            applyDropOutIfNecessary(training, -1, -1);
-        }
+        applyDropOutIfNecessary(training, getIterationCount(), getEpochCount());
         INDArray origInput = input;
         this.input = TimeSeriesUtils.reshape3dTo2d(input);
         INDArray out = super.activate(true);

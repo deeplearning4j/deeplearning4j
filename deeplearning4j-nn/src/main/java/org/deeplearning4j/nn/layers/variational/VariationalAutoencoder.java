@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers.variational;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
@@ -73,6 +74,11 @@ public class VariationalAutoencoder implements Layer {
     protected CacheMode cacheMode = CacheMode.NONE;
 
     protected boolean zeroedPretrainParamGradients = false;
+
+    @Getter @Setter
+    protected int iterationCount;
+    @Getter @Setter
+    protected int epochCount;
 
     public VariationalAutoencoder(NeuralNetConfiguration conf) {
         this.conf = conf;

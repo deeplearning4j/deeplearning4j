@@ -1093,5 +1093,25 @@ public class TestOptimizers {
         public void applyConstraints(int iteration, int epoch) {
 
         }
+
+        @Override
+        public int getIterationCount() {
+            return 0;
+        }
+
+        @Override
+        public int getEpochCount() {
+            return 0;
+        }
+
+        @Override
+        public void setIterationCount(int iterationCount) {
+
+        }
+
+        @Override
+        public void setEpochCount(int epochCount) {
+
+        }
     }
 }
