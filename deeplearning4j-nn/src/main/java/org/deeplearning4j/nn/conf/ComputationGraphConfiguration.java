@@ -475,7 +475,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             if (gv instanceof LayerVertex) {
                 //Add preprocessor, if necessary:
-                String in = vertexInputs.get(s).get(0);
+                String in = vertexInputs.get(s).get(i);
                 InputType layerInput = vertexOutputs.get(in);
                 inputTypeList.add(layerInput);
                 currLayerIdx++;
