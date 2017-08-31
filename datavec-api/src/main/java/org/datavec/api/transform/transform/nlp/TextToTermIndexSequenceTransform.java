@@ -89,7 +89,7 @@ public class TextToTermIndexSequenceTransform extends BaseSequenceExpansionTrans
 
     @Override
     protected List<ColumnMetaData> expandedColumnMetaDatas(List<ColumnMetaData> origColumnMeta, List<String> expandedColumnNames) {
-        return Collections.<ColumnMetaData>singletonList(new IntegerMetaData(expandedColumnNames.get(0)));
+        return Collections.<ColumnMetaData>singletonList(new IntegerMetaData(expandedColumnNames.get(0), 0, wordIndexMap.size()-1));
     }
 
     @Override
