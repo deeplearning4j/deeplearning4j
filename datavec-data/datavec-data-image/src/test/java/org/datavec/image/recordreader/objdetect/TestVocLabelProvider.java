@@ -20,6 +20,10 @@ import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
 import org.junit.Test;
 
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+
 public class TestVocLabelProvider {
 
     @Test
@@ -31,7 +35,10 @@ public class TestVocLabelProvider {
 
         String img5 = new ClassPathResource("voc/2007/JPEGImages/000005.jpg").getFile().getPath();
 
-        lp.getImageObjectsForPath(img5);
+        List<ImageObject> l = lp.getImageObjectsForPath(img5);
+
+        assertEquals(5, l.size());
+
 
     }
 

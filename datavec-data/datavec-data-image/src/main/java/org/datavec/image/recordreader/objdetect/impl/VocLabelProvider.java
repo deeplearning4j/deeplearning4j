@@ -16,32 +16,18 @@
 
 package org.datavec.image.recordreader.objdetect.impl;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 import org.datavec.image.recordreader.objdetect.ImageObject;
 import org.datavec.image.recordreader.objdetect.ImageObjectLabelProvider;
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
-import org.nd4j.shade.jackson.core.JsonParser;
-import org.nd4j.shade.jackson.core.JsonProcessingException;
-import org.nd4j.shade.jackson.databind.*;
-import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
-import org.nd4j.shade.jackson.dataformat.xml.XmlFactory;
-import org.nd4j.shade.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
-import org.nd4j.shade.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import org.nd4j.shade.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Label provider, for use with {@link org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader}, for use
@@ -52,6 +38,15 @@ import java.util.Map;
  * @author Alex Black
  */
 public class VocLabelProvider implements ImageObjectLabelProvider {
+
+    private static final String OBJECT_START_TAG = "<object>";
+    private static final String OBJECT_END_TAG = "</object>";
+    private static final String NAME_TAG = "<name>";
+    private static final String XMIN_TAG = "<xmin>";
+    private static final String YMIN_TAG = "<ymin>";
+    private static final String XMAX_TAG = "<xmax>";
+    private static final String YMAX_TAG = "<ymax>";
+
 
     private String baseDirectory;
     private String annotationsDir;
@@ -87,39 +82,71 @@ public class VocLabelProvider implements ImageObjectLabelProvider {
             throw new RuntimeException(e);
         }
 
-        //Parse XML, extract labels
-        ObjectMapper m = mapper.get();
-        if(m == null){
-//            XmlFactory f = new XmlFactory();
+        //Normally we'd use Jackson to parse XML, but Jackson has real trouble with multiple XML elements with
+        //  the same name. However, the structure is simple and we can parse it manually (even though it's not
+        // the most elegant thing to do :)
+        String[] lines = xmlContent.split("\n");
 
-            m = new ObjectMapper(new XmlFactory());
-            m.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            m.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-            mapper.set(m);
+        List<ImageObject> out = new ArrayList<>();
+        for( int i=0; i<lines.length; i++ ){
+            if(!lines[i].contains(OBJECT_START_TAG)){
+                continue;
+            }
+            String name = null;
+            int xmin = Integer.MIN_VALUE;
+            int ymin = Integer.MIN_VALUE;
+            int xmax = Integer.MIN_VALUE;
+            int ymax = Integer.MIN_VALUE;
+            while(!lines[i].contains(OBJECT_END_TAG)){
+                if(name == null && lines[i].contains(NAME_TAG)){
+                    int idxStartName = lines[i].indexOf('>') + 1;
+                    int idxEndName = lines[i].lastIndexOf('<');
+                    name = lines[i].substring(idxStartName, idxEndName);
+                    i++;
+                    continue;
+                }
+                if(xmin == Integer.MIN_VALUE && lines[i].contains(XMIN_TAG)){
+                    xmin = extractAndParse(lines[i]);
+                    i++;
+                    continue;
+                }
+                if(ymin == Integer.MIN_VALUE && lines[i].contains(YMIN_TAG)){
+                    ymin = extractAndParse(lines[i]);
+                    i++;
+                    continue;
+                }
+                if(xmax == Integer.MIN_VALUE && lines[i].contains(XMAX_TAG)){
+                    xmax = extractAndParse(lines[i]);
+                    i++;
+                    continue;
+                }
+                if(ymax == Integer.MIN_VALUE && lines[i].contains(YMAX_TAG)){
+                    ymax = extractAndParse(lines[i]);
+                    i++;
+                    continue;
+                }
+
+                i++;
+            }
+
+            if(name == null){
+                throw new IllegalStateException("Invalid object format: no name tag found for object in file " + xmlPath);
+            }
+            if(xmin == Integer.MIN_VALUE || ymin == Integer.MIN_VALUE || xmax == Integer.MIN_VALUE || ymax == Integer.MIN_VALUE){
+                throw new IllegalStateException("Invalid object format: did not find all of xmin/ymin/xmax/ymax tags in " + xmlPath);
+            }
+
+            out.add(new ImageObject(xmin, ymin, xmax, ymax, name));
         }
 
-//        JsonNode node;
-//        try {
-//            node = m.readTree(xmlContent);
-//        } catch (IOException e){
-//            //Should never happen
-//            throw new RuntimeException(e);
-//        }
-//
-//        Iterator<String> iter = node.fieldNames();
-//        while(iter.hasNext()){
-//            System.out.println(iter.next());
-//        }
-//
-//        System.out.println("----------");
-//        Iterator<Map.Entry<String,JsonNode>> iter2 = node.fields();
-//        while(iter2.hasNext()){
-//            Map.Entry<String,JsonNode> me = iter2.next();
-//            System.out.println(me.getKey() + "\t" + me.getValue().getNodeType());
-//        }
-//        System.out.println(node.size());
+        return out;
+    }
 
-        return null;
+    private int extractAndParse(String line){
+        int idxStartName = line.indexOf('>') + 1;
+        int idxEndName = line.lastIndexOf('<');
+        String substring = line.substring(idxStartName, idxEndName);
+        return Integer.parseInt(substring);
     }
 
     @Override
