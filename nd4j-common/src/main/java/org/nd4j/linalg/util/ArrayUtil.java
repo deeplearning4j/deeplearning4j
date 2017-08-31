@@ -897,7 +897,7 @@ public class ArrayUtil {
     /**
      * Get the tensor matrix multiply shape
      * @param aShape the shape of the first array
-     * @param bShape the shape of the seocnd array
+     * @param bShape the shape of the second array
      * @param axes the axes to do the multiply
      * @return the shape for tensor matrix multiply
      */

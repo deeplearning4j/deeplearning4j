@@ -9,6 +9,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.shape.Shape;
 
 import static org.nd4j.linalg.util.ArrayUtil.*;
 
@@ -55,7 +56,8 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
                     i_v2,
                     functionName(),
                     OpState.OpType.ACCUMULATION,
-                    getTensorMmulShape(a.getInput().getShape(), b.getInput().getShape(), dimensions)
+                    this instanceof Mmul ? Shape.getMatrixMultiplyShape(a.getInput().getShape(),b.getInput().getShape())
+                    : getTensorMmulShape(a.getInput().getShape(), b.getInput().getShape(), dimensions)
                     ,extraArgs);
             addedEdges = true;
         }

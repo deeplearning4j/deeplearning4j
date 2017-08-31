@@ -317,37 +317,6 @@ public class SameDiffTests {
     }
 
 
-    @Test
-    public void testGradCheck() {
-        SameDiff sameDiff = SameDiff.create();
-        Map<String, INDArray> inputs = variablesForInput();
-        SDVariable x = sameDiff.var("x", inputs.get("x"));
-        SDVariable y = sameDiff.var("y", inputs.get("y"));
-        SDVariable w = sameDiff.var("w", inputs.get("w"));
-
-        SDVariable learningRate = sameDiff.scalar("lr", 0.01);
-
-        SDVariable preOutput = sameDiff.mmul(x, w);
-
-        SDVariable outputs = sameDiff.sigmoid(preOutput);
-        List<Op> ops = sameDiff.exec();
-        assertEquals(2, ops.size());
-        assertEquals("mmul", ops.get(0).name());
-        assertEquals("sigmoid", ops.get(1).name());
-        assertEquals(6, sameDiff.graph().numVertices());
-        assertEquals(3, sameDiff.graph().getEdges().size());
-        //    label_probabilities = preds * targets + (1 - preds) * (1 - targets)
-        SDVariable outputTimesY = outputs.mul(y);
-        SDVariable oneMinusOutput = outputs.rsub(1.0);
-        SDVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(1.0)));
-        SDVariable logProbs = sameDiff.log(probs);
-        SDVariable sum = sameDiff.sum(logProbs, Integer.MAX_VALUE);
-        //ensure the output is scalar shape
-        assertEquals(1, ArrayUtil.prod(sum.getShape()));
-        SDVariable negSum = sameDiff.neg(sum);
-        GradCheckUtil.checkGradients(negSum, y, 1e-3, 1e-3, true, inputs);
-    }
-
 
     @Test
     public void testSumOp() {
@@ -868,63 +837,6 @@ public class SameDiffTests {
 
 
 
-
-    @Test
-    public void testLogisticRegression() throws Exception {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray inputs = Nd4j.create(new double[][]{
-                {0.52, 1.12,  0.77},
-                {0.88, -1.08, 0.15},
-                {0.52, 0.06, -1.30},
-                {0.74, -2.49, 1.39}
-        });
-
-        INDArray labels = Nd4j.create(new double[]{1,1,0,0}).reshape(4,1);
-
-        INDArray weights = Nd4j.zeros(3,1);
-
-        SDVariable x = sameDiff.var("x",inputs);
-        SDVariable y = sameDiff.var("y",labels);
-        SDVariable w = sameDiff.var("w",weights);
-
-        SDVariable learningRate = sameDiff.scalar("lr",0.01);
-
-        SDVariable preOutput = sameDiff.mmul(x,w);
-
-        SDVariable outputs = sameDiff.sigmoid(preOutput);
-        List<Op> ops = sameDiff.exec();
-        assertEquals(2,ops.size());
-        assertEquals("mmul",ops.get(0).name());
-        assertEquals("sigmoid",ops.get(1).name());
-        assertEquals(6,sameDiff.graph().numVertices());
-        assertEquals(3,sameDiff.graph().getEdges().size());
-        //    label_probabilities = preds * targets + (1 - preds) * (1 - targets)
-        SDVariable outputTimesY = outputs.mul(y);
-        SDVariable oneMinusOutput = outputs.rsub(1.0);
-        SDVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(1.0)));
-        SDVariable logProbs = sameDiff.log(probs);
-        SDVariable sum = sameDiff.sum(logProbs,Integer.MAX_VALUE);
-        //ensure the output is scalar shape
-        assertEquals(1,ArrayUtil.prod(sum.getShape()));
-        SDVariable negSum = sameDiff.neg(sum);
-        List<Op> backwards = sameDiff.execBackwards();
-        System.out.println(backwards);
-       /* SDVariable outputGrad = sameDiff.grad(negSum,w);
-        assertArrayEquals(new int[]{3,1},outputGrad.getShape());
-        SDVariable preUpdate = w.mul(outputGrad);
-        SDVariable update = preUpdate.mul(learningRate);
-        SDVariable inPlaceUpdate = w.subi(update);
-
-        System.out.println(sameDiff.graph().numVertices() + " and " + sameDiff.graph().getEdges().size());
-        ops = sameDiff.exec();
-        for(int i = 0; i < 10; i++) {
-            INDArray output =  w.getArr();
-            INDArray score = sameDiff.execAndEndResult(ops);
-            System .out.println("Update " + output + " with score " + score);
-        }
-
-        System.out.println(ops);*/
-    }
 
 
     @Test
