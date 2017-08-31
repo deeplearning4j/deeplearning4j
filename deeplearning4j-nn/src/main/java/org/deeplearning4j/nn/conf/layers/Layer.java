@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -37,7 +38,9 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo.Id;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * A neural network layer.
@@ -71,11 +74,13 @@ import java.util.Collection;
 public abstract class Layer implements Serializable, Cloneable {
     protected String layerName;
     protected double dropOut;
+    protected List<LayerConstraint> constraints;
 
 
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
         this.dropOut = builder.dropOut;
+        this.constraints = builder.constraints;
     }
 
     /**
@@ -214,6 +219,7 @@ public abstract class Layer implements Serializable, Cloneable {
     public abstract static class Builder<T extends Builder<T>> {
         protected String layerName = null;
         protected double dropOut = Double.NaN;
+        protected List<LayerConstraint> constraints = null;
 
         /**
          * Layer name assigns layer string name.
@@ -248,6 +254,29 @@ public abstract class Layer implements Serializable, Cloneable {
          */
         public T dropOut(double inputRetainProbability) {
             this.dropOut = inputRetainProbability;
+            return (T) this;
+        }
+
+        /**
+         * Set constraints to be applied to this layer. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to all layers
+         */
+        public T constraints(LayerConstraint... constraints) {
+            return constraints(Arrays.asList(constraints));
+        }
+
+        /**
+         * Set constraints to be applied to this layer. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to all layers
+         */
+        public T constraints(List<LayerConstraint> constraints) {
+            this.constraints = constraints;
             return (T) this;
         }
 

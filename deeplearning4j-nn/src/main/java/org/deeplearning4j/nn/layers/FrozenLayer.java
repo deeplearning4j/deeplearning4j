@@ -381,6 +381,11 @@ public class FrozenLayer implements Layer {
         insideLayer.clear();
     }
 
+    @Override
+    public void applyConstraints(int iteration, int epoch) {
+        //No-op
+    }
+
     /**
      * Init the model
      */

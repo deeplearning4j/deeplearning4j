@@ -34,6 +34,16 @@ public class FrozenLayerParamInitializer implements ParamInitializer {
     }
 
     @Override
+    public boolean isWeightParam(String key) {
+        return false;
+    }
+
+    @Override
+    public boolean isBiasParam(String key) {
+        return false;
+    }
+
+    @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         FrozenLayer fl = (FrozenLayer) conf.getLayer();
         Layer innerLayer = fl.getLayer();

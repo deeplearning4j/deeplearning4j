@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.layers;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
@@ -484,5 +485,15 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     public void accumulateScore(double accum) {
         throw new UnsupportedOperationException(
                         "Not supported for this layer, or should be overridden for layers requiring it");
+    }
+
+
+    @Override
+    public void applyConstraints(int iteration, int epoch){
+        if(layerConf().getConstraints() != null){
+            for(LayerConstraint lc : layerConf().getConstraints()){
+                lc.applyConstraint(this, iteration, epoch);
+            }
+        }
     }
 }

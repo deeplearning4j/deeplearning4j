@@ -166,6 +166,7 @@ public class SparkComputationGraph extends SparkListenable {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         trainingMaster.executeTraining(this, rdd);
+        network.incrementEpochCount();
         return network;
     }
 
@@ -207,6 +208,7 @@ public class SparkComputationGraph extends SparkListenable {
      */
     public ComputationGraph fitPaths(JavaRDD<String> paths) {
         trainingMaster.executeTrainingPaths(this, paths);
+        network.incrementEpochCount();
         return network;
     }
 
@@ -231,6 +233,7 @@ public class SparkComputationGraph extends SparkListenable {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         trainingMaster.executeTrainingMDS(this, rdd);
+        network.incrementEpochCount();
         return network;
     }
 
@@ -263,6 +266,7 @@ public class SparkComputationGraph extends SparkListenable {
      */
     public ComputationGraph fitPathsMultiDataSet(JavaRDD<String> paths) {
         trainingMaster.executeTrainingPathsMDS(this, paths);
+        network.incrementEpochCount();
         return network;
     }
 

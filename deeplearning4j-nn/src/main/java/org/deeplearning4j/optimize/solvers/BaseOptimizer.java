@@ -260,6 +260,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             //check for termination conditions based on absolute change in score
             checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
             incrementIterationCount(model, 1);
+            applyConstraints(model);
         }
         return true;
     }
@@ -377,6 +378,22 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         } else {
             model.conf().setIterationCount(model.conf().getIterationCount() + incrementBy);
         }
+    }
+
+    public static int getEpochCount(Model model){
+        if (model instanceof MultiLayerNetwork) {
+            return ((MultiLayerNetwork) model).getLayerWiseConfigurations().getEpochCount();
+        } else if (model instanceof ComputationGraph) {
+            return ((ComputationGraph) model).getConfiguration().getEpochCount();
+        } else {
+            return model.conf().getEpochCount();
+        }
+    }
+
+    public static void applyConstraints(Model model){
+        int iter = getIterationCount(model);
+        int epoch = getEpochCount(model);
+        model.applyConstraints(iter, epoch);
     }
 
 }

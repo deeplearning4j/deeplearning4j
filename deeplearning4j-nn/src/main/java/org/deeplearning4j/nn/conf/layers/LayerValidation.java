@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -10,6 +11,7 @@ import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.learning.config.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -290,15 +292,15 @@ public class LayerValidation {
 
     public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, Double dropOut,
                                          Double l2, Double l2Bias, Double l1, Double l1Bias,
-                    Distribution dist) {
+                                         Distribution dist, List<LayerConstraint> constraints) {
         generalValidation(layerName, layer, useDropConnect, dropOut == null ? 0.0 : dropOut,
                         l2 == null ? Double.NaN : l2, l2Bias == null ? Double.NaN : l2Bias,
-                        l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, dist);
+                        l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, dist, constraints);
     }
 
     public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, double dropOut,
                                          double l2, double l2Bias, double l1, double l1Bias,
-                    Distribution dist) {
+                                         Distribution dist, List<LayerConstraint> constraints) {
 
         if (layer != null) {
 
@@ -317,6 +319,12 @@ public class LayerValidation {
                 BaseLayer bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
                 configureBaseLayer(layerName, bLayer, useDropConnect, dropOut, l2, l2Bias, l1,
                                 l1Bias, dist);
+            }
+
+            if(constraints != null){
+                if(layer.getConstraints() == null){
+                    layer.setConstraints(constraints);
+                }
             }
         }
     }

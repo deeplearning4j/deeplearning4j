@@ -1079,6 +1079,42 @@ public class TestComputationGraphNetwork {
         assertNotNull(out[0]);
 
         assertArrayEquals(new int[]{minibatch, 1, 36, 48}, out[0].shape());
+    }
 
+    @Test
+    public void testEpochCounter() throws Exception {
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("out", new OutputLayer.Builder().nIn(4).nOut(3).build(), "in")
+                .setOutputs("out")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        assertEquals(0, net.getConfiguration().getEpochCount());
+
+
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+
+        for( int i=0; i<4; i++ ){
+            assertEquals(i, net.getConfiguration().getEpochCount());
+            net.fit(iter);
+            assertEquals(i+1, net.getConfiguration().getEpochCount());
+        }
+
+        assertEquals(4, net.getConfiguration().getEpochCount());
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        ModelSerializer.writeModel(net, baos, true);
+        byte[] bytes = baos.toByteArray();
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+
+        ComputationGraph restored = ModelSerializer.restoreComputationGraph(bais, true);
+        assertEquals(4, restored.getConfiguration().getEpochCount());
     }
 }

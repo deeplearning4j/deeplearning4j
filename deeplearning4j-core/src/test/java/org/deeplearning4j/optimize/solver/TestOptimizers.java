@@ -1088,5 +1088,10 @@ public class TestOptimizers {
         public INDArray getGradientsViewArray() {
             return gradientView;
         }
+
+        @Override
+        public void applyConstraints(int iteration, int epoch) {
+
+        }
     }
 }

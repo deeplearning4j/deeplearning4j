@@ -64,6 +64,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -1150,5 +1151,41 @@ public class MultiLayerTest {
                 .backprop(true).pretrain(false).build();
 
         assertEquals(conf1, conf2);
+    }
+
+
+    @Test
+    public void testEpochCounter() throws Exception {
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new OutputLayer.Builder().nIn(4).nOut(3).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(0, net.getLayerWiseConfigurations().getEpochCount());
+
+
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+
+        for( int i=0; i<4; i++ ){
+            assertEquals(i, net.getLayerWiseConfigurations().getEpochCount());
+            net.fit(iter);
+            assertEquals(i+1, net.getLayerWiseConfigurations().getEpochCount());
+        }
+
+        assertEquals(4, net.getLayerWiseConfigurations().getEpochCount());
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        ModelSerializer.writeModel(net, baos, true);
+        byte[] bytes = baos.toByteArray();
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+
+        MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
+        assertEquals(4, restored.getLayerWiseConfigurations().getEpochCount());
     }
 }

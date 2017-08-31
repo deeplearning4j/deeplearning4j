@@ -76,6 +76,17 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
     }
 
     @Override
+    public boolean isWeightParam(String key) {
+        return RECURRENT_WEIGHT_KEY_FORWARDS.equals(key) || INPUT_WEIGHT_KEY_FORWARDS.equals(key)
+                || RECURRENT_WEIGHT_KEY_BACKWARDS.equals(key) || INPUT_WEIGHT_KEY_BACKWARDS.equals(key);
+    }
+
+    @Override
+    public boolean isBiasParam(String key) {
+        return BIAS_KEY_FORWARDS.equals(key) || BIAS_KEY_BACKWARDS.equals(key);
+    }
+
+    @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 

@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers.variational;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
@@ -580,6 +581,15 @@ public class VariationalAutoencoder implements Layer {
     public void clear() {
         this.input = null;
         this.maskArray = null;
+    }
+
+    @Override
+    public void applyConstraints(int iteration, int epoch) {
+        if(layerConf().getConstraints() != null){
+            for(LayerConstraint lc : layerConf().getConstraints()){
+                lc.applyConstraint(this, iteration, epoch);
+            }
+        }
     }
 
     public boolean isPretrainParam(String param) {

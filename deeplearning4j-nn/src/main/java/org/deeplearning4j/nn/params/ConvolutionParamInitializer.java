@@ -67,6 +67,16 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     }
 
     @Override
+    public boolean isWeightParam(String key) {
+        return WEIGHT_KEY.equals(key);
+    }
+
+    @Override
+    public boolean isBiasParam(String key) {
+        return BIAS_KEY.equals(key);
+    }
+
+    @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         ConvolutionLayer layer = (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
         if (layer.getKernelSize().length != 2) throw new IllegalArgumentException("Filter size must be == 2");
