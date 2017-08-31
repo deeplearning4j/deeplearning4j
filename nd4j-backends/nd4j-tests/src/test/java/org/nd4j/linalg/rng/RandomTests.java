@@ -245,6 +245,26 @@ public class RandomTests extends BaseNd4jTest {
         assertEquals(z1, z2);
     }
 
+    @Test
+    public void testAlphaDropout1() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+
+        INDArray z1 = Nd4j.ones(300);
+        INDArray z2 = Nd4j.ones(300);
+        INDArray zDup = z1.dup();
+
+        AlphaDropOut op1 = new AlphaDropOut(z1, z1, 0.10, 0.3, 0.5, 0.7);
+        Nd4j.getExecutioner().exec(op1, random1);
+
+        AlphaDropOut op2 = new AlphaDropOut(z2, z2, 0.10, 0.3, 0.5, 0.7);
+        Nd4j.getExecutioner().exec(op2, random2);
+
+        assertNotEquals(zDup, z1);
+
+        assertEquals(z1, z2);
+    }
+
 
     @Test
     public void testGaussianDistribution1() throws Exception {
