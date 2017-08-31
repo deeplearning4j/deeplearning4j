@@ -29,7 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Replace the value in a specified column with a new value, if a condition is satisfied/true.<br>
+ * Replace the value in a specified column with a 'yes' value, if a condition is satisfied/true.<br>
+ * Replace the value of this same column with a 'no' value otherwise.
  * Note that the condition can be any generic condition, including on other column(s), different to the column
  * that will be modified if the condition is satisfied/true.<br>
  * <p>
@@ -38,7 +39,7 @@ import java.util.List;
  *
  * @author Alex Black
  * @author kepricon
- * @see ConditionalReplaceValueTransform the version without a default
+ * @see ConditionalReplaceValueTransform the version without a 'no' Value
  */
 @JsonIgnoreProperties({"filterColIdx"})
 @EqualsAndHashCode(exclude = {"filterColIdx"})
@@ -46,18 +47,18 @@ public class ConditionalReplaceValueTransformWithDefault implements Transform, C
 
 
     protected final String columnToReplace;
-    protected Writable newVal;
-    protected Writable defaultVal;
+    protected Writable yesVal;
+    protected Writable noVal;
     protected int filterColIdx;
     protected final Condition condition;
 
     public ConditionalReplaceValueTransformWithDefault(@JsonProperty("columnToReplace") String columnToReplace,
-                                @JsonProperty("newVal") Writable newVal,
-                                @JsonProperty("defaultVal") Writable defaultVal,
+                                @JsonProperty("yesVal") Writable yesVal,
+                                @JsonProperty("noVal") Writable noVal,
                                 @JsonProperty("condiiton") Condition condition) {
         this.columnToReplace = columnToReplace;
-        this.newVal = newVal;
-        this.defaultVal = defaultVal;
+        this.yesVal = yesVal;
+        this.noVal = noVal;
         this.condition = condition;
     }
 
@@ -105,8 +106,8 @@ public class ConditionalReplaceValueTransformWithDefault implements Transform, C
     @Override
     public String toString() {
         return "ConditionalReplaceValueTransformWithDefault(replaceColumn=\"" + columnToReplace
-            + "\",newValue=" + newVal
-            + "\",defaultvalue=" + defaultVal
+            + "\",yesValue=" + yesVal
+            + "\",noValue=" + noVal
             + ",condition=" + condition + ")";
     }
 
@@ -123,9 +124,9 @@ public class ConditionalReplaceValueTransformWithDefault implements Transform, C
     @Override
     public Object map(Object input) {
         if (condition.condition(input)){
-            return newVal;
+            return yesVal;
         } else {
-            return defaultVal;
+            return noVal;
         }
     }
 
@@ -142,14 +143,14 @@ public class ConditionalReplaceValueTransformWithDefault implements Transform, C
     @Override
     public List<Writable> map(List<Writable> writables) {
         if (condition.condition(writables)) {
-            //Condition holds -> set new value
+            //Condition holds -> set yes value
             List<Writable> newList = new ArrayList<>(writables);
-            newList.set(filterColIdx, newVal);
+            newList.set(filterColIdx, yesVal);
             return newList;
         } else {
-            //Condition does not hold -> set default value
+            //Condition does not hold -> set no value
             List<Writable> newList = new ArrayList<>(writables);
-            newList.set(filterColIdx, defaultVal);
+            newList.set(filterColIdx, noVal);
             return newList;
         }
     }
