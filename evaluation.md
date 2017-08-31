@@ -60,7 +60,7 @@ By default it displays Accuracy, Precision, Recall and F1 Score. Additionally th
 * False Positive/Negative Rate
 * True Positive/Negatice
 * Class Count
-* and more, see [JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/Evaluation.html)
+* and more, see [Evaluation JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/Evaluation.html)
 
 Display the Confusion Matrix. 
 
@@ -110,23 +110,45 @@ Column    MSE            MAE            RMSE           RSE            R^2
 col_0     7.98925e+00    2.00648e+00    2.82653e+00    5.01481e-01    7.25783e-01    
 ```
 
-Columns are Mean Squared Error, Mean Absolute Error, Root Mean Squared Error, Relative Squared Error, and R^2 Coefficient of Determination,
+Columns are Mean Squared Error, Mean Absolute Error, Root Mean Squared Error, Relative Squared Error, and R^2 Coefficient of Determination
+
+See [RegressionEvaluation JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/RegressionEvaluation.html)
 
 
 ## <a name="timeseries">Evaluation for Time Series</a>
 
 Work in Progess
 
+See [IEvaluation JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/IEvaluation.html)
+
 
 ## <a name="binary">Evaluation for Binary Classifiers</a>
 
-[EvaluationBinary](https://deeplearning4j.org/doc/org/deeplearning4j/eval/EvaluationBinary.html)
-Is used for evaluating networks with binary classification outputs. The typical classification metrics, such as accuracy, precision, recall, F1 score, etc. are calculated for each output.
+The EvaluationBinary is used for evaluating networks with binary classification outputs. The typical classification metrics, such as accuracy, precision, recall, F1 score, etc. are calculated for each output.
+
+```
+EvaluationBinary eval = new EvaluationBinary(int size)
+```
+
+See [EvaluationBinary JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/EvaluationBinary.html)
 
 
 ## <a name="roc">ROC</a>
 
-[The ROC class](https://deeplearning4j.org/doc/org/deeplearning4j/eval/ROC.html) is used to evaluate Binary Classifiers. Useful methods include: 
+ROC (Receiver Operating Characteristic) supports a single binary label (as a single column probability, or 2 column 'softmax' probability distribution).
+
+```
+ROC(int thresholdSteps) 
+```
+
+ROC (Receiver Operating Characteristic) for multi-task binary classifiers, using the specified number of threshold steps. The ROCBinary is also used internally to calculate AUC (Area Under Curve) for each output, but only when using an appropriate constructor, EvaluationBinary(int, Integer).
+
+```
+ROCBinary rocBinarySteps = new ROCBinary(int thresholdSteps)
+EvaluationBinary eval = new EvaluationBinary(int size, java.lang.Integer rocBinarySteps)
+```
+
+See [ROCBinary JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/ROC.html) is used to evaluate Binary Classifiers. Useful methods include: 
 
 * getResults
   * Returns a Results Curve
@@ -137,12 +159,11 @@ Is used for evaluating networks with binary classification outputs. The typical 
 
 A multi-task network is a network that is trained to produce multiple outputs. For example a network given audio samples can be trained to both predict the language spoken and the gender of the speaker. Multi-task configuration is briefly described [here](https://deeplearning4j.org/compgraph#multitask). 
 
-
 Evaluation Classes useful for Multi-Task Network
 
-[ROCMultiClass](https://deeplearning4j.org/doc/org/deeplearning4j/eval/ROCMultiClass.html)
+See [ROCMultiClass JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/ROCMultiClass.html)
 
-[ROCBinary](https://deeplearning4j.org/doc/org/deeplearning4j/eval/ROCBinary.html)
+See [ROCBinary JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/ROCBinary.html)
 
 
 
