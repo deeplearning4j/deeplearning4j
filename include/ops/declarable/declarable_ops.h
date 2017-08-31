@@ -379,7 +379,7 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInputLengthMatch(Block<T>& block)
 
 
     Nd4jIndex l0 = block.getVariables().at(0)->getNDArray()->lengthOf();
-    for (int e = 0; e < block.getVariables().size(); e++) {
+    for (uint32_t e = 0; e < block.getVariables().size(); e++) {
         if (l0 != block.getVariables().at(e)->getNDArray()->lengthOf())
             return ND4J_STATUS_BAD_LENGTH;
     }

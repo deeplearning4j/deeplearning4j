@@ -23,7 +23,7 @@ namespace nd4j {
             Block<T>* _block;
             int _opNum;
             int _id;
-            std::vector<int> _input;
+            std::vector<std::pair<int, int>> _input;
             std::vector<int> _output;
             std::vector<int> _dimensions;
 
@@ -57,7 +57,7 @@ namespace nd4j {
             OpType opType();
             int opNum();
             int id();
-            std::vector<int> *input();
+            std::vector<std::pair<int,int>> *input();
             std::vector<int> *output();
 
             void setId(int id);
@@ -84,6 +84,8 @@ namespace nd4j {
             void pickOutput(int outputId);
             void pickExternalOutput(int outputId);
             void pickInput(int inputId);
+            void pickInput(int nodeId, int outputId);
+            void pickInput(std::pair<int,int>& id);
 
             void setName(std::string *name);
             void setName(const std::string& name);
@@ -151,8 +153,19 @@ T nd4j::graph::Node<T>::scalar() {
 };
 
 template <typename T>
+void nd4j::graph::Node<T>::pickInput(std::pair<int,int>& pair) {
+    _input.push_back(pair);
+}
+
+template <typename T>
+void nd4j::graph::Node<T>::pickInput(int inputId, int outputId) {
+    std::pair<int,int> p(inputId,outputId);
+    pickInput(p);
+}
+
+template <typename T>
 void nd4j::graph::Node<T>::pickInput(int inputId) {
-    _input.push_back(inputId);
+    pickInput(inputId, 0);
 
     if (inputId < 0)
         _hasExternalInputs = true;
@@ -248,7 +261,7 @@ int nd4j::graph::Node<T>::opNum() {
 }
 
 template <typename T>
-std::vector<int> *nd4j::graph::Node<T>::input() {
+std::vector<std::pair<int,int>> *nd4j::graph::Node<T>::input() {
     return &_input;
 }
 
@@ -328,7 +341,7 @@ nd4j::graph::Node<T>::Node(const nd4j::graph::FlatNode *node) {
 
         if (node->dimensions() != nullptr && node->dimensions()->size() > 0) {
             _dim = new int[node->dimensions()->size()];
-            for (int e = 0; e < node->dimensions()->size(); e++) {
+            for (uint32_t e = 0; e < node->dimensions()->size(); e++) {
                 _dimensions.push_back(node->dimensions()->Get(e));
                 _dim[e] = node->dimensions()->Get(e);
             }

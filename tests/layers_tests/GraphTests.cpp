@@ -9,6 +9,7 @@
 #include <graph/Node.h>
 #include <graph/Graph.h>
 #include <NDArray.h>
+#include <ops/declarable/declarable_ops.h>
 
 using namespace nd4j::graph;
 
@@ -771,4 +772,55 @@ TEST_F(GraphTests, OutputValidation6) {
     ASSERT_EQ(4, graph->fetchOutputs()->size());
 
     //ASSERT_NEAR(1.4142135, graph->fetchOutputs()->at(1)->getNDArray()->reduceNumber<simdOps::Mean<float>>(), 1e-5);
+}
+
+TEST_F(GraphTests, TestMultiOutput1) {
+    auto graph = new Graph<float>();
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0);
+
+    auto y = new NDArray<float>(5, 5, 'c');
+    y->assign(-3.0);
+
+    graph->getVariableSpace()->putVariable(-1, x);
+    graph->getVariableSpace()->putVariable(-2, y);
+
+
+    // Abs
+    auto nodeA0 = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {11});
+    auto nodeB0 = new Node<float>(OpType_TRANSFORM, 0, 2, {-2}, {11});
+
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("TestOp2i2o");
+
+    // this op will add 1.0 to first input, and 2.0 for second input
+    auto nodeT = new Node<float>(OpType_CUSTOM, 0, 11, {1, 2}, {21, 31}, {}, 0.0f);
+    nodeT->setName("TestOp2i2o");
+    nodeT->setCustomOp(op);
+
+
+    // this op will subtract this value from 1.0
+    auto nodeX = new Node<float>(OpType_TRANSFORM, 35, 21);
+    nodeX->pickInput(11, 0);
+
+    // this op will subtract this value from 1.0
+    auto nodeY = new Node<float>(OpType_TRANSFORM, 35, 31);
+    nodeY->pickInput(11, 1);
+
+    graph->addNode(nodeA0);
+    graph->addNode(nodeB0);
+    graph->addNode(nodeT);
+    graph->addNode(nodeX);
+    graph->addNode(nodeY);
+
+    std::pair<int, int> pair0(11,0);
+    std::pair<int, int> pair1(11,1);
+
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(pair0));
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(pair1));
+
+    GraphExecutioner<float>::execute(graph);
+
+    ASSERT_NEAR(-2.0f, graph->getVariableSpace()->getVariable(21)->getNDArray()->meanNumber(), 1e-5);
+    ASSERT_NEAR(-4.0f, graph->getVariableSpace()->getVariable(31)->getNDArray()->meanNumber(), 1e-5);
 }

@@ -195,7 +195,23 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
     if (node->getName() != nullptr)
         nodeState->setName(node->getName());
 
+    // storing node state now
     _variableSpace->putVariable(node->id(), nodeState);
+
+    if (node->hasCustomOp()) {
+        // custom ops require Block inside. but we'll set it inside buildGraph
+
+        // and might have > 1 output
+        if (node->getCustomOp()->getOpDescriptor()->getNumberOfOutputs() > 1) {
+            for (int e = 0; e < node->getCustomOp()->getOpDescriptor()->getNumberOfOutputs(); e++) {
+                auto deepVar = new Variable<T>();
+                //deepVar->setId(node->id(), e);
+
+                std::pair<int,int> id(node->id(), e);
+                _variableSpace->putVariable(id, deepVar);
+            }
+        }
+    }
 
     // we're saving only ops that have internal outpus here
     if (_configuration->_outputMode == OutputMode_VARIABLE_SPACE)
@@ -246,8 +262,8 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
         if (node->hasInternalInputs() && !node->hasExternalInputs() && node->input()->size() == 1) {
 
             // we only can put single input nodes, whose outputs were not mapped yet
-            if (_mapped->count(node->input()->at(0)) == 1 && (node->output()->size() == 0 || _mapped->count(node->output()->at(0)) == 0)) {
-                auto parent = _mapped->at(node->input()->at(0));
+            if (_mapped->count(node->input()->at(0).first) == 1 && (node->output()->size() == 0 || _mapped->count(node->output()->at(0)) == 0)) {
+                auto parent = _mapped->at(node->input()->at(0).first);
                 int nLayer = parent->getLayer() + 1;
                 if (_onion->count(nLayer) != 1) {
                     expandOnion(nLayer);
@@ -283,7 +299,7 @@ Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
                 nd4j_verbose("Trying SI Node_%i\n", node->id());
 
 
-                int iNode = node->input()->at(0);
+                int iNode = node->input()->at(0).first;
                 if (_mapped->count(iNode) > 0) {
                     int maxLayer = _mapped->at(iNode)->getLayer() + 1;
 
@@ -300,10 +316,9 @@ Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
                 // multi-input node
                 nd4j_verbose("Trying MI Node_%i\n", node->id());
 
-
                 int maxLayer = 0;
-                for (int e = 0; e < node->input()->size(); e++) {
-                    int nodeId = node->input()->at(e);
+                for (unsigned int e = 0; e < node->input()->size(); e++) {
+                    int nodeId = node->input()->at(e).first;
 
                     // if input node wasn't mapped yet - we'll have skip it in this round
                     if (_mapped->count(nodeId) == 1) {
@@ -322,6 +337,17 @@ Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
                 node->setLayer(maxLayer);
                 injectNode(node);
 
+                if (node->hasCustomOp()) {
+                    auto block = new Block<T>(node->id(), _variableSpace);
+                    node->setBlock(block);
+
+                    for (uint32_t e = 0; e < node->input()->size(); e++) {
+                        auto var = _variableSpace->getVariable(node->input()->at(e));
+
+                        block->getVariables().push_back(var);
+                    }
+                }
+
                 _unmapped.erase(node->id());
             }
         }
@@ -337,7 +363,7 @@ Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
     if (_configuration->_outputMode == OutputMode_VARIABLE_SPACE) {
         auto ext = _variableSpace->getExternalVariables();
         nd4j_verbose("Number of external variables: %i\n", ext->size())
-        for (int e = 0; e < ext->size(); e++) {
+        for (unsigned int e = 0; e < ext->size(); e++) {
             pushToOutputOnce(ext->at(e)->id());
         }
     }
@@ -361,7 +387,7 @@ nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
 
     // parsing variables here
     if (flatGraph != nullptr && flatGraph->variables() != nullptr && flatGraph->variables()->size() > 0) {
-        for (int e = 0; e < flatGraph->variables()->size(); e++) {
+        for (unsigned int e = 0; e < flatGraph->variables()->size(); e++) {
             auto flatVar = flatGraph->variables()->Get(e);
 
             auto var = new Variable<T>(flatVar);
@@ -379,7 +405,7 @@ nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
     // we're saving outputs only if explicit mode is set
     if (_configuration->_outputMode == OutputMode_EXPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT) {
         if (flatGraph != nullptr && flatGraph->outputs() != nullptr) {
-            for (int e = 0; e < flatGraph->outputs()->size(); e++) {
+            for (unsigned int e = 0; e < flatGraph->outputs()->size(); e++) {
                 auto out = flatGraph->outputs()->Get(e);
                 if (!_variableSpace->hasVariable(out)) {
                     nd4j_verbose("Non-existent variable requested: %i\n", out);
@@ -397,7 +423,7 @@ nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
         // flag to be raised if there's nodes without output being set
         bool outputPassNeeded = false;
 
-        for (int e = 0; e < flatGraph->nodes()->size(); e++) {
+        for (unsigned int e = 0; e < flatGraph->nodes()->size(); e++) {
             auto node = flatGraph->nodes()->Get(e);
 
             if (node->output() == nullptr || node->output()->size() == 0) {

@@ -34,6 +34,7 @@ namespace nd4j {
             ~VariableSpace();
 
             bool hasVariable(int32_t id);
+            bool hasVariable(std::pair<int,int>& pair);
             bool hasVariable(std::string *symbol);
 
             nd4j::graph::Variable<T> *getVariable(const int32_t id);
@@ -74,12 +75,24 @@ nd4j::graph::Variable<T> * nd4j::graph::VariableSpace<T>::getVariable(std::strin
 
 template <typename T>
 nd4j::graph::Variable<T> * nd4j::graph::VariableSpace<T>::getVariable(std::pair<int, int>& pair) {
-    return _paired.at(pair);
+    if (_paired.count(pair) > 0)
+        return _paired.at(pair);
+    else {
+        if (hasVariable(pair.first) && pair.second == 0)
+            return getVariable(pair.first);
+    }
+
+    return nullptr;
 }
 
 template <typename T>
 bool nd4j::graph::VariableSpace<T>::hasVariable(int32_t id) {
     return _variables.count(id) == 1 || _temporary.count(id) == 1;
+}
+
+template <typename T>
+bool nd4j::graph::VariableSpace<T>::hasVariable(std::pair<int,int>& id) {
+    return _paired.count(id) > 0;
 }
 
 template <typename T>

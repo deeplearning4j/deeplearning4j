@@ -55,22 +55,28 @@ namespace nd4j{
 
                 node->getCustomOp()->execute(node->getBlock());
             } else if (opType == OpType_TRANSFORM) {
-                int in = node->input()->at(0);
+                auto in = node->input()->at(0);
 
                 auto x = variableSpace->getVariable(in);
-                auto z = x;
+                auto z = variableSpace->getVariable(node->id());
 
                 // if node has only one input - that's regular TRANSFORM
                 if (node->input()->size() == 1) {
 
                     // if output of previous node is used in different code branches - duplicate it
+                    if (in.first > 0)
+                        if (graph->getMapped()->at(in.first)->output()->size() > 1) {
+                            if (z->getNDArray() == nullptr) {
+                                auto array = new NDArray<T>(x->getNDArray());
+                                z->setNDArray(array);
+                            }
+                        }
 
-                    if (in > 0)
-                        if (graph->getMapped()->at(in)->output()->size() > 1) {
-                            auto array = new NDArray<T>(x->getNDArray());
-                            z = new Variable<T>(array);
-                            z->setName(node->getName());
-                        };
+
+                    // this assumes inplace operation
+                    if (z->getNDArray() == nullptr)
+                        z->setNDArray(x->getNDArray());
+
 
                     functions::transform::Transform<T>::template exec(opNum, x->getNDArray()->_buffer,
                                                                       x->getNDArray()->_shapeInfo,
@@ -85,10 +91,15 @@ namespace nd4j{
                     auto y = variableSpace->getVariable(node->input()->at(1));
 
                     if (node->output()->size() > 0) {
-                        z = new Variable<T>(new NDArray<T>(x->getNDArray()));
-                        z->setName(node->getName());
+                        if (z->getNDArray() == nullptr) {
+                            auto array = new NDArray<T>(x->getNDArray());
+                            z->setNDArray(array);
+                        }
                     }
 
+                    // this assumes inplace operation
+                    if (z->getNDArray() == nullptr)
+                        z->setNDArray(x->getNDArray());
 
                     functions::pairwise_transforms::PairWiseTransform<T>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
                                                                                         z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo, node->extraParams());
@@ -97,7 +108,7 @@ namespace nd4j{
                 variableSpace->putVariable(node->id(), z);
 
                 if (node->hasExternalOutputs()) {
-                    for (int e = 0; e < node->output()->size(); e++) {
+                    for (unsigned int e = 0; e < node->output()->size(); e++) {
                         if (node->output()->at(e) >= 0)
                             continue;
 
@@ -113,18 +124,21 @@ namespace nd4j{
                     }
                 }
             }  else if (opType == OpType_SCALAR) {
-                int in = node->input()->at(0);
+                auto in = node->input()->at(0);
 
                 auto x = variableSpace->getVariable(in);
 
                 // if output of previous node is used in different code branches - duplicate it
-                auto z = x;
-                if (in > 0)
-                    if (graph->getMapped()->at(in)->output()->size() > 1) {
+                auto z = variableSpace->getVariable(node->id());
+                if (in.first > 0)
+                    if (graph->getMapped()->at(in.first)->output()->size() > 1) {
                         auto array = new NDArray<T>(x->getNDArray());
-                        z = new Variable<T>(array);
-                        z->setName(node->getName());
+                        z->setNDArray(array);
                     };
+
+                // this assumes inplace op
+                if (z->getNDArray() == nullptr)
+                    z->setNDArray(x->getNDArray());
 
                 nd4j_verbose("xLength: %i\n", x->getNDArray()->lengthOf());
                 nd4j_verbose("SCALAR BEFORE: X[0]: %f; X[1]: %f; scalar: %f\n", x->getNDArray()->getScalar(0), x->getNDArray()->getScalar(1), node->scalar());
@@ -141,7 +155,7 @@ namespace nd4j{
                 variableSpace->putVariable(node->id(), z);
 
                 if (node->hasExternalOutputs()) {
-                    for (int e = 0; e < node->output()->size(); e++) {
+                    for (unsigned int e = 0; e < node->output()->size(); e++) {
                         if (node->output()->at(e) > 0)
                             continue;
 
@@ -159,11 +173,14 @@ namespace nd4j{
             }else if (opType == OpType_SUMMARYSTATS) {
                 auto x = variableSpace->getVariable(node->input()->at(0));
 
-                auto z = x;
+                auto z = variableSpace->getVariable(node->id());
                 // if there's no dimensions set - it's reduceToScalar
                 if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
-                    z = new Variable<T>(new NDArray<T>(1,1, 'c'));
-                    z->setName(node->getName());
+                    if (z->getNDArray() == nullptr) {
+                        //z = new Variable<T>(new NDArray<T>(1, 1, 'c'));
+                        //z->setName(node->getName());
+                        z->setNDArray(new NDArray<T>(1,1,'c'));
+                    }
                     z->getNDArray()->_buffer[0] = functions::summarystats::SummaryStatsReduce<T>::template execScalar(opNum, node->scalar() != 0.0, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
 
                 } else {
@@ -174,8 +191,12 @@ namespace nd4j{
 
                     int resultLength = x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
 
-                    z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
-                    z->setName(node->getName());
+                    if (z->getNDArray() == nullptr || z->getNDArray()->lengthOf() != resultLength) {
+                        if (z->getNDArray() != nullptr)
+                            delete z->getNDArray();
+
+                        z->setNDArray(new NDArray<T>(1, resultLength, 'c'));
+                    }
 
                     functions::summarystats::SummaryStatsReduce<T>::template exec(opNum, node->scalar() != 0.0, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
                                                                             node->getDimensionsPtr() , node->getDimensions()->size());
@@ -186,7 +207,7 @@ namespace nd4j{
                 variableSpace->putVariable(node->id(), z);
 
                 if (node->hasExternalOutputs()) {
-                    for (int e = 0; e < node->output()->size(); e++) {
+                    for (unsigned int e = 0; e < node->output()->size(); e++) {
                         if (node->output()->at(e) > 0)
                             continue;
 
@@ -203,7 +224,7 @@ namespace nd4j{
                 }
             } else if (opType == OpType_ACCUMULATION) {
                 auto x = variableSpace->getVariable(node->input()->at(0));
-                auto z = x;
+                auto z = variableSpace->getVariable(node->id());
 
                 //  regular accumulation with 1 argument
                 if (node->input()->size() == 1) {
@@ -214,8 +235,10 @@ namespace nd4j{
                                      x->getNDArray()->getScalar(0), x->getNDArray()->getScalar(1),
                                      x->getNDArray()->lengthOf());
 
-                        z = new Variable<T>(new NDArray<T>(1, 1, 'c'));
-                        z->setName(node->getName());
+                        if (z->getNDArray() == nullptr) {
+                            z->setNDArray(new NDArray<T>(1, 1, 'c'));
+                        }
+
                         z->getNDArray()->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar(opNum,
                                                                                                                 x->getNDArray()->_buffer,
                                                                                                                 x->getNDArray()->_shapeInfo,
@@ -233,7 +256,12 @@ namespace nd4j{
                         int resultLength =
                                 x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
 
-                        z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
+                        if (z->getNDArray() == nullptr || z->getNDArray()->lengthOf() != resultLength) {
+                            if (z->getNDArray() != nullptr)
+                                delete z->getNDArray();
+
+                            z->setNDArray(new NDArray<T>(1, resultLength, 'c'));
+                        }
 
                         functions::reduce::ReduceFunction<T>::template exec(opNum, x->getNDArray()->_buffer,
                                                                             x->getNDArray()->_shapeInfo,
@@ -258,7 +286,10 @@ namespace nd4j{
                                      x->getNDArray()->getScalar(0), x->getNDArray()->getScalar(1),
                                      x->getNDArray()->lengthOf());
 
-                        z = new Variable<T>(new NDArray<T>(1, 1, 'c'));
+                        if (z->getNDArray() == nullptr) {
+                            z->setNDArray(new NDArray<T>(1, 1, 'c'));
+                        }
+
                         z->getNDArray()->_buffer[0] = functions::reduce3::Reduce3<T>::template execScalar(opNum,
                                                                                                                 x->getNDArray()->_buffer,
                                                                                                                 x->getNDArray()->_shapeInfo,
@@ -278,8 +309,13 @@ namespace nd4j{
                         int resultLength =
                                 x->getNDArray()->lengthOf() / shape::length(tad->shapeInfoOnlyShapeAndStride());
 
-                        z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
-                        z->setName(node->getName());
+                        if (z->getNDArray() == nullptr || z->getNDArray()->lengthOf() != resultLength) {
+                            if (z->getNDArray() != nullptr)
+                                delete z->getNDArray();
+
+                            z->setNDArray(new NDArray<T>(1, resultLength, 'c'));
+                        }
+
                         functions::reduce3::Reduce3<T>::template exec(opNum, x->getNDArray()->_buffer,
                                                                             x->getNDArray()->_shapeInfo,
                                                                             node->extraParams(),
@@ -298,7 +334,7 @@ namespace nd4j{
                 variableSpace->putVariable(node->id(), z);
 
                 if (node->hasExternalOutputs()) {
-                    for (int e = 0; e < node->output()->size(); e++) {
+                    for (unsigned int e = 0; e < node->output()->size(); e++) {
                         if (node->output()->at(e) > 0)
                             continue;
 
@@ -344,7 +380,7 @@ namespace nd4j{
                 variableSpace->putVariable(node->id(), z);
 
                 if (node->hasExternalOutputs()) {
-                    for (int e = 0; e < node->output()->size(); e++) {
+                    for (unsigned int e = 0; e < node->output()->size(); e++) {
                         if (node->output()->at(e) > 0)
                             continue;
 
@@ -386,7 +422,7 @@ namespace nd4j{
                 variableSpace->putVariable(node->id(), z);
 
                 if (node->hasExternalOutputs()) {
-                    for (int e = 0; e < node->output()->size(); e++) {
+                    for (unsigned int e = 0; e < node->output()->size(); e++) {
                         if (node->output()->at(e) > 0)
                             continue;
 
