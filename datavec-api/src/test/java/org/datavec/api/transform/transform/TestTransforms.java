@@ -1445,8 +1445,16 @@ public class TestTransforms {
         Transform t = new TextToCharacterIndexTransform("col", "newName", map, false);
         t.setInputSchema(s);
 
-        List<List<Writable>> out = t.mapSequence(inSeq);
+        Schema outputSchema = t.transform(s);
+        assertEquals(2, outputSchema.getColumnNames().size());
+        assertEquals(ColumnType.Integer, outputSchema.getType(0));
+        assertEquals(ColumnType.Double, outputSchema.getType(1));
 
+        IntegerMetaData intMetadata = (IntegerMetaData)outputSchema.getMetaData(0);
+        assertEquals(0, (int)intMetadata.getMinAllowedValue());
+        assertEquals(4, (int)intMetadata.getMaxAllowedValue());
+
+        List<List<Writable>> out = t.mapSequence(inSeq);
         assertEquals(exp, out);
     }
 
@@ -1465,7 +1473,7 @@ public class TestTransforms {
 
         Schema expSchema = new Schema.Builder()
                 .addColumnString("ID")
-                .addColumnInteger("INDEXSEQ")
+                .addColumnInteger("INDEXSEQ", 0, 3)
                 .addColumnDouble("FEATURE")
                 .build();
         List<List<Writable>> exp = Arrays.asList(
@@ -1478,10 +1486,19 @@ public class TestTransforms {
         Transform t = new TextToTermIndexSequenceTransform("TEXT", "INDEXSEQ", vocab, " ", false);
         t.setInputSchema(schema);
 
-        Schema outSchema = t.transform(schema);
-        assertEquals(expSchema.getColumnNames(), outSchema.getColumnNames());
-        assertEquals(expSchema.getColumnTypes(), outSchema.getColumnTypes());
-        assertEquals(expSchema, outSchema);
+        Schema outputSchema = t.transform(schema);
+        assertEquals(expSchema.getColumnNames(), outputSchema.getColumnNames());
+        assertEquals(expSchema.getColumnTypes(), outputSchema.getColumnTypes());
+        assertEquals(expSchema, outputSchema);
+
+        assertEquals(3, outputSchema.getColumnNames().size());
+        assertEquals(ColumnType.String, outputSchema.getType(0));
+        assertEquals(ColumnType.Integer, outputSchema.getType(1));
+        assertEquals(ColumnType.Double, outputSchema.getType(2));
+
+        IntegerMetaData intMetadata = (IntegerMetaData)outputSchema.getMetaData(1);
+        assertEquals(0, (int)intMetadata.getMinAllowedValue());
+        assertEquals(3, (int)intMetadata.getMaxAllowedValue());
 
         List<List<Writable>> out = t.mapSequence(inSeq);
         assertEquals(exp, out);
