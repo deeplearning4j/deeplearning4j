@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ndarray;
 
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -1295,6 +1296,8 @@ public interface INDArray extends Serializable {
      */
     INDArray addRowVector(INDArray rowVector);
 
+    INDArray mmul(INDArray other, MMulTranspose mMulTranspose);
+
     /**
      * Perform a copy matrix multiplication
      *
@@ -1384,6 +1387,8 @@ public interface INDArray extends Serializable {
     INDArray add(INDArray other, INDArray result);
 
 
+    INDArray mmuli(INDArray other, MMulTranspose transpose);
+
     /**
      * Perform an inplace matrix multiplication
      *
@@ -1392,6 +1397,8 @@ public interface INDArray extends Serializable {
      */
     INDArray mmuli(INDArray other);
 
+
+    INDArray mmuli(INDArray other, INDArray result, MMulTranspose transpose);
 
     /**
      * Perform an inplace matrix multiplication

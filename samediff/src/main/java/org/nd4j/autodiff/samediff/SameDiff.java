@@ -1522,12 +1522,11 @@ public class SameDiff {
 
     /**
      *
-     * @param argNum
      * @param x
      * @param y
      * @return
      */
-    public SDVariable mmul(int argNum, SDVariable x, SDVariable y) {
+    public SDVariable mmul(SDVariable x, SDVariable y) {
         SDVariable ret = SDVariable.builder()
                 .arr(null)
                 .differentialFunction(functionFactory.mmul(x.getArrayField(), y.getArrayField()))

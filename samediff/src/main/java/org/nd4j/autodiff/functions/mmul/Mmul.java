@@ -9,9 +9,12 @@ import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.shape.Shape;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *  Specialized matrix multiply operations.
@@ -21,6 +24,20 @@ import java.lang.reflect.Array;
  */
 
 public class Mmul extends TensorMmul<ArrayField> {
+
+    private MMulTranspose mMulTranspose;
+    public Mmul(SameDiff sameDiff,
+                DifferentialFunction<ArrayField> i_v1,
+                DifferentialFunction<ArrayField> i_v2,
+                MMulTranspose mMulTranspose) {
+        super(sameDiff,
+                i_v1,
+                i_v2, new int[][] {
+                        {1},{0}
+                });
+
+        this.mMulTranspose = mMulTranspose;
+    }
 
 
     public Mmul(SameDiff sameDiff,
@@ -33,7 +50,17 @@ public class Mmul extends TensorMmul<ArrayField> {
                 });
     }
 
-
+    @Override
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
+        List<DifferentialFunction<ArrayField>> ret = new ArrayList<>();
+        DifferentialFunction<ArrayField> gradWrtX = f().reshape(f().mmul(i_v1.get(0),rarg()),larg().getResultShape());
+        DifferentialFunction<ArrayField> gradWrtY = f().reshape(f().mmul(larg(),i_v1.get(0)),rarg().getResultShape());
+        ret.add(gradWrtX);
+        ret.add(gradWrtY);
+        larg().setGradient(gradWrtX);
+        rarg().setGradient(gradWrtY);
+        return ret;
+    }
 
     @Override
     protected void addEdges(SameDiff sameDiff,

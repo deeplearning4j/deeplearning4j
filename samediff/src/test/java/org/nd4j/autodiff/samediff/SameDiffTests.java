@@ -1,9 +1,7 @@
 package org.nd4j.autodiff.samediff;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.gradcheck.GradCheckUtil;
-import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpExecOrder;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
@@ -144,7 +142,7 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(2, 2);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable y = sameDiff.var("y", arr);
-        SDVariable result = sameDiff.mmul(0, x, y);
+        SDVariable result = sameDiff.mmul(x, y);
         SDVariable otherResult = result.add(result);
         assertEquals("mmul(x,y)", result.getVarName());
         //3 vertices and 1 op result
@@ -161,7 +159,7 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(2, 2);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable y = sameDiff.var("y", arr);
-        SDVariable result = sameDiff.mmul(0, x, y);
+        SDVariable result = sameDiff.mmul(x, y);
         SDVariable otherResult = result.add(result);
         assertEquals(2, sameDiff.graph().getInputs().size());
     }
@@ -172,7 +170,7 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(2, 2);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable y = sameDiff.var("y", arr);
-        SDVariable result = sameDiff.mmul(0, x, y);
+        SDVariable result = sameDiff.mmul(x, y);
         SDVariable otherResult = result.add(result);
         assertEquals(1, sameDiff.graph().getOutputs().size());
     }
@@ -329,7 +327,7 @@ public class SameDiffTests {
 
         SDVariable learningRate = sameDiff.scalar("lr", 0.01);
 
-        SDVariable preOutput = sameDiff.mmul(0, x, w);
+        SDVariable preOutput = sameDiff.mmul(x, w);
 
         SDVariable outputs = sameDiff.sigmoid(preOutput);
         List<Op> ops = sameDiff.exec();
@@ -420,7 +418,7 @@ public class SameDiffTests {
 
         SDVariable x = sameDiff.var("x", inputs);
         SDVariable w = sameDiff.var("w", weights);
-        SDVariable preOutput = sameDiff.mmul(0, x, w);
+        SDVariable preOutput = sameDiff.mmul(x, w);
 
         SDVariable outputs = sameDiff.sigmoid(preOutput);
         List<Op> ops = sameDiff.exec();
@@ -437,7 +435,7 @@ public class SameDiffTests {
         sameDiffOuter.defineFunction(logisticForward, (sameDiff, inputs1) -> {
             SDVariable input = sameDiff.var("x", inputs1.get("x"));
             SDVariable w = sameDiff.var("w", inputs1.get("w"));
-            SDVariable preOutput = sameDiff.mmul(0, input, w);
+            SDVariable preOutput = sameDiff.mmul(input, w);
             SDVariable sigmoid = sameDiff.sigmoid(preOutput);
             return sigmoid;
         }, inputs);
@@ -525,7 +523,7 @@ public class SameDiffTests {
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable input = sameDiff.var("x",inputs.get("x"));
                 SDVariable input2 = sameDiff.var("y",inputs.get("y"));
-                SDVariable exp = sameDiff.mmul(0,input,input2);
+                SDVariable exp = sameDiff.mmul(input,input2);
                 SDVariable sum = sameDiff.sum(exp,Integer.MAX_VALUE);
                 return sum;
             }
@@ -548,14 +546,14 @@ public class SameDiffTests {
                 {3,7}
         });
 
-        INDArray yGradAssertoion = Nd4j.create(new double[][]{
+        INDArray yGradAssertion = Nd4j.create(new double[][]{
                 {4,6},
                 {4,6}
         });
 
 
         assertEquals(xGradAssertion,gradWrtX.getArr());
-        assertEquals(yGradAssertoion,gradWrtY.getArr());
+        assertEquals(yGradAssertion,gradWrtY.getArr());
 
     }
 
@@ -658,7 +656,7 @@ public class SameDiffTests {
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable input = sameDiff.var("x",inputs.get("x"));
                 SDVariable w = sameDiff.var("w",inputs.get("w"));
-                SDVariable preOutput = sameDiff.mmul(0,input,w);
+                SDVariable preOutput = sameDiff.mmul(input,w);
                 SDVariable sigmoid = sameDiff.sigmoid(preOutput);
                 return sigmoid;
             }
@@ -705,7 +703,7 @@ public class SameDiffTests {
         Map<String,INDArray> inputs = variablesForInput();
         SDVariable x = sameDiffOuter.var("x",inputs.get("x"));
         SDVariable w = sameDiffOuter.var("w",inputs.get("w"));
-        SDVariable output = sameDiffOuter.mmul(0,x,w);
+        SDVariable output = sameDiffOuter.mmul(x,w);
         assertEquals(1,sameDiffOuter.graph().getOpOrder().getActions().size());
     }
 
@@ -719,7 +717,7 @@ public class SameDiffTests {
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable input = sameDiff.var("x",inputs.get("x"));
                 SDVariable w = sameDiff.var("w",inputs.get("w"));
-                SDVariable preOutput = sameDiff.mmul(0,input,w);
+                SDVariable preOutput = sameDiff.mmul(input,w);
                 SDVariable sigmoid = sameDiff.sigmoid(preOutput);
                 return sigmoid;
             }
@@ -793,7 +791,7 @@ public class SameDiffTests {
                 SDVariable input = sameDiff.var("x",inputs.get("x"));
                 SDVariable w = sameDiff.var("w",inputs.get("w"));
                 SDVariable y = sameDiff.var("y",inputs.get("y"));
-                SDVariable preOutput = sameDiff.mmul(0,input,w);
+                SDVariable preOutput = sameDiff.mmul(input,w);
                 SDVariable sigmoid = sameDiff.sigmoid(preOutput);
 
                 return sigmoid;
@@ -840,7 +838,7 @@ public class SameDiffTests {
                 SDVariable input = sameDiff.var("x",inputs.get("x"));
                 SDVariable w = sameDiff.var("w",inputs.get("w"));
                 SDVariable y = sameDiff.var("y",inputs.get("y"));
-                SDVariable preOutput = sameDiff.mmul(0,input,w);
+                SDVariable preOutput = sameDiff.mmul(input,w);
                 SDVariable sigmoid = sameDiff.sigmoid(preOutput);
                 return sigmoid;
             }
@@ -891,7 +889,7 @@ public class SameDiffTests {
 
         SDVariable learningRate = sameDiff.scalar("lr",0.01);
 
-        SDVariable preOutput = sameDiff.mmul(0,x,w);
+        SDVariable preOutput = sameDiff.mmul(x,w);
 
         SDVariable outputs = sameDiff.sigmoid(preOutput);
         List<Op> ops = sameDiff.exec();

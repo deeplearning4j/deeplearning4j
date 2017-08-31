@@ -141,43 +141,4 @@ public @Data class GemmParams {
         }
         return arr;
     }
-
-
-
-    private void validate() {
-        if (ordering == 'c') {
-            if (transA == 'T' || transA == 't') {
-                if (m != a.rows())
-                    throw new IllegalArgumentException("M under transpose and c ordering must be A.columns()");
-                if (k != a.columns())
-                    throw new IllegalArgumentException("K under transpose and c ordering must be A.rows()");
-            }
-            //N
-            else {
-                if (m != a.columns())
-                    throw new IllegalArgumentException("M under no transpose and c ordering must be A.rows()");
-                if (k != a.rows())
-                    throw new IllegalArgumentException("K under no transpose and c ordering must be A.columns()");
-            }
-        } else {
-            if (transB == 't' || transB == 'T') {
-                if (n != b.columns())
-                    throw new IllegalArgumentException("N under transpose and c ordering ust be B.rows()");
-                if (k != b.rows())
-                    throw new IllegalArgumentException("K under tranpose and c ordering must be B.columns()");
-            }
-            //N
-            else {
-                if (n != b.rows())
-                    throw new IllegalArgumentException("N under no transpose and c ordering must be B.columns()");
-                if (k != b.columns())
-                    throw new IllegalArgumentException("K under no transpose and c ordering must be B.rows()");
-            }
-        }
-
-
-    }
-
-
-
 }

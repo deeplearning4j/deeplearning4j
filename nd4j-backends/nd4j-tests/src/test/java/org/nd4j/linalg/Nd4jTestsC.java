@@ -24,15 +24,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.linalg.api.ops.impl.accum.LogExpSum;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
-import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -45,6 +43,7 @@ import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.api.ops.impl.accum.LogExpSum;
 import org.nd4j.linalg.api.ops.impl.accum.Norm1;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
@@ -67,6 +66,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.MathUtils;
 
@@ -110,6 +110,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.setDataType(initialType);
     }
 
+    @Test
+    public void testMmulWithTranspose() {
+        MMulTranspose mMulTranspose = MMulTranspose
+                .builder()
+                .transposeA(true)
+                .build();
+
+
+
+    }
 
     @Test
     public void testSoftmaxDerivativeGradient() {
