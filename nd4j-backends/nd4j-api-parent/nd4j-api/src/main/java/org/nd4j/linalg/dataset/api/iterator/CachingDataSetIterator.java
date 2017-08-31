@@ -82,7 +82,7 @@ public class CachingDataSetIterator implements DataSetIterator {
 
     @Override
     public int batch() {
-        return sourceIterator.numExamples();
+        return sourceIterator.batch();
     }
 
     @Override
