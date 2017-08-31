@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.layers;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -162,8 +163,8 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(1.0, conf.getConf(0).getLayer().getDropOut(), 0.0);
-        assertEquals(1.0, conf.getConf(1).getLayer().getDropOut(), 0.0);
+        assertEquals(new Dropout(1.0), conf.getConf(0).getLayer().getIDropout());
+        assertEquals(new Dropout(1.0), conf.getConf(1).getLayer().getIDropout());
 
         conf = new NeuralNetConfiguration.Builder().dropOut(1.0).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
@@ -172,8 +173,8 @@ public class LayerConfigTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(1.0, conf.getConf(0).getLayer().getDropOut(), 0.0);
-        assertEquals(2.0, conf.getConf(1).getLayer().getDropOut(), 0.0);
+        assertEquals(new Dropout(1.0), conf.getConf(0).getLayer().getIDropout());
+        assertEquals(new Dropout(2.0), conf.getConf(0).getLayer().getIDropout());
     }
 
     @Test

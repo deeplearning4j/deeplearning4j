@@ -311,8 +311,9 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
     public INDArray preOutput(INDArray v, boolean training) {
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        if (training && conf.isUseDropConnect() && conf.getLayer().getDropOut() > 0) {
-            W = Dropout.applyDropConnect(this, DefaultParamInitializer.WEIGHT_KEY);
+        if (training && conf.isUseDropConnect() ){// && conf.getLayer().getDropOut() > 0) {
+//            W = Dropout.applyDropConnect(this, DefaultParamInitializer.WEIGHT_KEY);
+            throw new UnsupportedOperationException("Not yet reimplemented");
         }
         return v.mmul(W).addiRowVector(hBias);
     }
@@ -422,8 +423,9 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
      */
     @Override
     public INDArray activate(boolean training) {
-        if (training && conf.getLayer().getDropOut() > 0.0) {
-            Dropout.applyDropout(input, conf.getLayer().getDropOut());
+        if (training && conf.getLayer().getIDropout() != null) {
+//            Dropout.applyDropout(input, conf.getLayer().getDropOut());
+            applyDropOutIfNecessary(true, -1, -1);
         }
         //reconstructed: propUp ----> hidden propDown to transform
         INDArray propUp = propUp(input, training);
@@ -469,7 +471,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
             this.sigma = input.var(0).divi(input.rows());
 
         this.input = input.dup();
-        applyDropOutIfNecessary(true);
+        applyDropOutIfNecessary(true, -1, -1);
         contrastiveDivergence();
     }
 

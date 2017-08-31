@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
@@ -95,7 +96,7 @@ public class KerasAtrousConvolution1DTest {
         assertEquals(INIT_DL4J, layer.getWeightInit());
         assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
         assertEquals(L2_REGULARIZATION, layer.getL2(), 0.0);
-        assertEquals(DROPOUT_DL4J, layer.getDropOut(), 0.0);
+        assertEquals(new Dropout(DROPOUT_DL4J), layer.getIDropout());
         assertEquals(KERNEL_SIZE[0], layer.getKernelSize()[0]);
         assertEquals(STRIDE[0], layer.getStride()[0]);
         assertEquals(N_OUT, layer.getNOut());

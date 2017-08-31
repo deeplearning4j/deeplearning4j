@@ -269,8 +269,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop) {
         INDArray weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
-        if (conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
-            weights = Dropout.applyDropConnect(this, ConvolutionParamInitializer.WEIGHT_KEY);
+        if (conf.isUseDropConnect() && training ){// && conf.getLayer().getDropOut() > 0) {
+//            weights = Dropout.applyDropConnect(this, ConvolutionParamInitializer.WEIGHT_KEY);
+            throw new UnsupportedOperationException("Not yet reimplemented");
         }
 
         //Input validation: expect rank 4 matrix
@@ -409,7 +410,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
 
-        applyDropOutIfNecessary(training);
+        applyDropOutIfNecessary(training, -1, -1);
 
         INDArray z = preOutput(training);
 

@@ -252,7 +252,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
                 trainWorkingSizePerEx = im2colSizePerEx;
             }
 
-            if (getDropOut() > 0) {
+            if (getIDropout() != null) {
                 //Dup on the input before dropout, but only for training
                 trainWorkingSizePerEx += inputType.arrayElementsPerExample();
             }

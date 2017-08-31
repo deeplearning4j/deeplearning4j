@@ -155,10 +155,9 @@ public class GradientCheckUtil {
                 }
             }
 
-            double dropout = n.getLayer().getDropOut();
-            if (dropout != 0.0) {
-                throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
-                                + dropout + " for layer " + layerCount);
+            if (n.getLayer().getIDropout() != null) {
+                throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
+                                + n.getLayer().getIDropout() + " for layer " + layerCount);
             }
         }
 
@@ -335,10 +334,9 @@ public class GradientCheckUtil {
                 }
             }
 
-            double dropout = lv.getLayerConf().getLayer().getDropOut();
-            if (dropout != 0.0) {
-                throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
-                                + dropout + " for layer " + layerCount);
+            if (lv.getLayerConf().getLayer().getIDropout() != null) {
+                throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
+                        + lv.getLayerConf().getLayer().getIDropout() + " for layer " + layerCount);
             }
         }
 

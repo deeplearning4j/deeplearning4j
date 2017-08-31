@@ -80,7 +80,7 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         if (input == null) {
             throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
         }
-        applyDropOutIfNecessary(training);
+        applyDropOutIfNecessary(training, -1, -1);
 
         INDArray in;
         if (training) {

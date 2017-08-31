@@ -83,7 +83,7 @@ public class AutoEncoder extends BasePretrainNetwork {
         int updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         int trainSizePerEx = 0;
-        if (getDropOut() > 0) {
+        if (getIDropout() != null) {
             if (false) {
                 //TODO drop connect
                 //Dup the weights... note that this does NOT depend on the minibatch size...

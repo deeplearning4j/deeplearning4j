@@ -59,8 +59,9 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     // Encode
     public INDArray encode(INDArray v, boolean training) {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
-        if (training && conf.isUseDropConnect() && conf.getLayer().getDropOut() > 0) {
-            W = Dropout.applyDropConnect(this, PretrainParamInitializer.WEIGHT_KEY);
+        if (training && conf.isUseDropConnect() ){// && conf.getLayer().getDropOut() > 0) {
+//            W = Dropout.applyDropConnect(this, PretrainParamInitializer.WEIGHT_KEY);
+            throw new UnsupportedOperationException("Not yet reimplemented");
         }
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
         INDArray preAct = v.mmul(W).addiRowVector(hBias);

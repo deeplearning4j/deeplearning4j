@@ -2,6 +2,7 @@ package org.deeplearning4j.regressiontest;
 
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -98,7 +99,7 @@ public class RegressionTest071 {
         assertEquals(Updater.RMSPROP, l0.getUpdater());
         assertEquals(0.96, l0.getRmsDecay(), 1e-6);
         assertEquals(0.15, l0.getLearningRate(), 1e-6);
-        assertEquals(0.6, l0.getDropOut(), 1e-6);
+        assertEquals(new Dropout(0.6), l0.getIDropout());
         assertEquals(0.1, l0.getL1(), 1e-6);
         assertEquals(0.2, l0.getL2(), 1e-6);
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
@@ -115,7 +116,7 @@ public class RegressionTest071 {
         assertEquals(Updater.RMSPROP, l0.getUpdater());
         assertEquals(0.96, l1.getRmsDecay(), 1e-6);
         assertEquals(0.15, l1.getLearningRate(), 1e-6);
-        assertEquals(0.6, l1.getDropOut(), 1e-6);
+        assertEquals(new Dropout(0.6), l1.getIDropout());
         assertEquals(0.1, l1.getL1(), 1e-6);
         assertEquals(0.2, l1.getL2(), 1e-6);
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l1.getGradientNormalization());

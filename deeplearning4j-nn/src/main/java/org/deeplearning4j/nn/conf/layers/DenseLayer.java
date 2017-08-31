@@ -79,7 +79,7 @@ public class DenseLayer extends FeedForwardLayer {
 
         int trainSizeFixed = 0;
         int trainSizeVariable = 0;
-        if (getDropOut() > 0) {
+        if (getIDropout() != null) {
             if (false) {
                 //TODO drop connect
                 //Dup the weights... note that this does NOT depend on the minibatch size...

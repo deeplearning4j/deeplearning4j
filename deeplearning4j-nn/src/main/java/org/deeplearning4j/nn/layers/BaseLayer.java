@@ -174,7 +174,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void iterate(INDArray input) {
         setInput(input.dup());
-        applyDropOutIfNecessary(true);
+        applyDropOutIfNecessary(true, -1, -1);
         Gradient gradient = gradient();
         for (String paramType : gradient.gradientForVariable().keySet()) {
             update(gradient.getGradientFor(paramType), paramType);
@@ -297,7 +297,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     public INDArray preOutput(boolean training) {
-        applyDropOutIfNecessary(training);
+        applyDropOutIfNecessary(training, -1, -1);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
 
@@ -314,8 +314,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                                             + W.size(0) + ") " + layerId());
         }
 
-        if (conf.isUseDropConnect() && training && layerConf().getDropOut() > 0) {
-            W = Dropout.applyDropConnect(this, DefaultParamInitializer.WEIGHT_KEY);
+        if (conf.isUseDropConnect() && training ){// && layerConf().getDropOut() > 0) {
+//            W = Dropout.applyDropConnect(this, DefaultParamInitializer.WEIGHT_KEY);
+            throw new UnsupportedOperationException("Not yet reimplemented");
         }
 
         INDArray ret = input.mmul(W);
@@ -429,8 +430,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void fit(INDArray input) {
         if (input != null) {
-            setInput(input.dup());
-            applyDropOutIfNecessary(true);
+            applyDropOutIfNecessary(true, -1, -1);
         }
         if (solver == null) {
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();

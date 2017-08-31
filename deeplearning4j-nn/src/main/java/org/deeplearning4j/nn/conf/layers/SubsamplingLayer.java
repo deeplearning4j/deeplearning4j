@@ -176,7 +176,7 @@ public class SubsamplingLayer extends Layer {
 
         //Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         int trainingWorkingSizePerEx = im2colSizePerEx;
-        if (getDropOut() > 0) {
+        if (getIDropout() != null) {
             //Dup on the input before dropout, but only for training
             trainingWorkingSizePerEx += inputType.arrayElementsPerExample();
         }

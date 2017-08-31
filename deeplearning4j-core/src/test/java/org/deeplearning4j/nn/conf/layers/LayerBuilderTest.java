@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit;
 import org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -60,7 +61,7 @@ public class LayerBuilderTest {
         assertEquals(act, layer.getActivationFn());
         assertEquals(weight, layer.getWeightInit());
         assertEquals(dist, layer.getDist());
-        assertEquals(dropOut, layer.getDropOut(), DELTA);
+        assertEquals(new Dropout(dropOut), layer.getIDropout());
         assertEquals(updater, layer.getUpdater());
         assertEquals(gradNorm, layer.getGradientNormalization());
         assertEquals(gradNormThreshold, layer.getGradientNormalizationThreshold(), 0.0);
@@ -226,7 +227,7 @@ public class LayerBuilderTest {
         assertEquals("unequal YAML serialization", confExpected.getLayer(), confActual.getLayer());
 
         // check the layer's use of callSuper on equals method
-        confActual.getLayer().setDropOut(new java.util.Random().nextDouble());
+        confActual.getLayer().setIDropout(new Dropout(new java.util.Random().nextDouble()));
         assertNotEquals("broken equals method (missing callSuper?)", confExpected.getLayer(), confActual.getLayer());
     }
 
