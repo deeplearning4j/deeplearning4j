@@ -11,6 +11,14 @@ import java.io.Serializable;
  */
 public interface ISchedule extends Serializable, Cloneable {
 
+    /**
+     *
+     * @param currentValue By convention: if iteration==0 and epoch==0, currentValue may be undefined,
+     *                     and the initial value should be returned by the schedule
+     * @param iteration
+     * @param epoch
+     * @return
+     */
     double valueAt(double currentValue, int iteration, int epoch);
 
     ISchedule clone();

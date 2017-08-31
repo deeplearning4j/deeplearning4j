@@ -29,14 +29,13 @@ public class Dropout implements IDropout {
 
     @Override
     public INDArray applyDropout(INDArray inputActivations, int iteration, int epoch, boolean inPlace) {
-        INDArray result = inPlace ? inputActivations : inputActivations.dup(inputActivations.ordering());
-
         if(pSchedule != null){
             lastPValue = pSchedule.valueAt(lastPValue, iteration, epoch);
         } else {
             lastPValue = p;
         }
 
+        INDArray result = inPlace ? inputActivations : inputActivations.dup(inputActivations.ordering());
         Nd4j.getExecutioner().exec(new DropOutInverted(result, lastPValue));
 
         return result;
