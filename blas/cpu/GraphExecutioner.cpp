@@ -455,6 +455,9 @@ namespace nd4j{
 
             bool pe = graph->getExecutorConfiguration()->_executionMode == ExecutionMode_AUTO;
 
+            // TODO: add code divergence support here
+            // basically if at some point code diverges, code branch might be _DISABLED_, and all nodes within that branch will be disabled as well
+
             // we loop through op layers here
             for (int l = 0; l < graph->getOnion()->size(); l++) {
                 int layerSize = graph->getOnion()->count(l) == 1 ? graph->getOnion()->at(l)->size() : 0;

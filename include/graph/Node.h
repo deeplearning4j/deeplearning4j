@@ -47,6 +47,8 @@ namespace nd4j {
 
             nd4j::ops::DeclarableOp<T> *_customOp = nullptr;
 
+            bool _active = true;
+
         public:
             Node(OpType opType = OpType_TRANSFORM, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f);
             Node(const nd4j::graph::FlatNode *node);
@@ -69,6 +71,10 @@ namespace nd4j {
 
             int getLayer();
             void setLayer(int layer);
+
+            bool isDivergencePoint();
+            void setActive(bool reallyActive);
+            bool isActive();
 
             bool hasExternalOutputs();
             bool hasExternalInputs();
@@ -100,6 +106,24 @@ namespace nd4j {
             bool hasCustomOp();
         };
     }
+}
+
+template <typename T>
+bool nd4j::graph::Node<T>::isDivergencePoint() {
+    if (hasCustomOp()) {
+        return _customOp->getOpDescriptor()->isDivergent();
+    } else
+        return false;
+}
+
+template <typename T>
+void nd4j::graph::Node<T>::setActive(bool reallyActive) {
+    _active = reallyActive;
+}
+
+template <typename T>
+bool nd4j::graph::Node<T>::isActive() {
+    return _active;
 }
 
 template <typename T>

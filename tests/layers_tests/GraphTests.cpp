@@ -824,3 +824,12 @@ TEST_F(GraphTests, TestMultiOutput1) {
     ASSERT_NEAR(-2.0f, graph->getVariableSpace()->getVariable(21)->getNDArray()->meanNumber(), 1e-5);
     ASSERT_NEAR(-4.0f, graph->getVariableSpace()->getVariable(31)->getNDArray()->meanNumber(), 1e-5);
 }
+
+TEST_F(GraphTests, TestDivergentNode1) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("Switch");
+    auto nodeY = new Node<float>(OpType_CUSTOM, 0, 1);
+    nodeY->setCustomOp(op);
+
+    ASSERT_TRUE(nodeY->isDivergencePoint());
+    ASSERT_TRUE(nodeY->isActive());
+}
