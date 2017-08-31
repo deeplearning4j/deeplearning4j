@@ -1,12 +1,14 @@
 package org.nd4j.linalg.api.blas.params;
 
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 
 @Getter
+@EqualsAndHashCode
 public class MMulTranspose implements Serializable {
     private boolean transposeA = false;
     private boolean transposeB = false;

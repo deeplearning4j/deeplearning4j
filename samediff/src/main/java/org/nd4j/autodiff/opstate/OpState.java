@@ -91,15 +91,23 @@ public class OpState implements Serializable {
        throw new IllegalStateException("Illegal op type " + op.getClass().getName());
     }
 
+    /**
+     *
+     * @return
+     */
     public boolean isInPlace() {
         return getInPlace(extraArgs);
     }
 
+    /**
+     *
+     * @return
+     */
     public Object[] getExtraArgs() {
         if(extraArgs == null || extraArgs.length <= 0)
             return null;
         if(extraArgsWithoutInPlace == null || extraArgsWithoutInPlace.length <= 0) {
-            extraArgsWithoutInPlace = new Object[extraArgs.length > 1 ? extraArgs.length - 1 : 1];
+            extraArgsWithoutInPlace = new Object[extraArgs.length > 1 ? extraArgs.length : 1];
             int count = 0;
             for(int i = 0; i < extraArgs.length; i++) {
                 if(!(extraArgs[i] instanceof Boolean))
@@ -155,9 +163,9 @@ public class OpState implements Serializable {
         if (id != null ? !id.equals(opState.id) : opState.id != null) return false;
         if (!Arrays.equals(axes, opState.axes)) return false;
         // Probably incorrect - comparing Object[] arrays with Arrays.equals
-        if (!Arrays.equals(extraArgs, opState.extraArgs)) return false;
-        // Probably incorrect - comparing Object[] arrays with Arrays.equals
-        if (!Arrays.equals(extraArgsWithoutInPlace, opState.extraArgsWithoutInPlace)) return false;
+        if(extraArgs != null && opState.extraArgs != null)
+            if(extraArgs.length != opState.extraArgs.length)
+                return false;
         if (result != null ? !result.equals(opState.result) : opState.result != null) return false;
         return true;
     }

@@ -55,7 +55,8 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
                     i_v2,
                     functionName(),
                     OpState.OpType.ACCUMULATION,
-                    getTensorMmulShape(a.getInput().getShape(), b.getInput().getShape(), dimensions));
+                    getTensorMmulShape(a.getInput().getShape(), b.getInput().getShape(), dimensions)
+                    ,extraArgs);
             addedEdges = true;
         }
     }
@@ -77,7 +78,8 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
                     getTensorMmulShape(arrayField.getInput()
                                     .getShape(),
                             secondVal.getInput().getShape(),
-                            axes));
+                            axes)
+                    ,extraArgs);
 
         }
 

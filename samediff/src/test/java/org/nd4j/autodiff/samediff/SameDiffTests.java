@@ -547,8 +547,8 @@ public class SameDiffTests {
         });
 
         INDArray yGradAssertion = Nd4j.create(new double[][]{
-                {4,6},
-                {4,6}
+                {4,4},
+                {6,6}
         });
 
 

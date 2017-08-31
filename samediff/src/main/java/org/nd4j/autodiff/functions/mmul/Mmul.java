@@ -62,15 +62,19 @@ public class Mmul extends TensorMmul<ArrayField> {
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
         List<DifferentialFunction<ArrayField>> ret = new ArrayList<>();
+
         DifferentialFunction<ArrayField> gradWrtX = f().reshape(f().mmul(i_v1.get(0),rarg(),
                 MMulTranspose.builder()
                 .transposeB(!mMulTranspose.isTransposeB())
                 .transposeResult(mMulTranspose.isTransposeA())
                 .build()),larg().getResultShape());
-        DifferentialFunction<ArrayField> gradWrtY = f().reshape(f().mmul(larg(),i_v1.get(0), MMulTranspose.builder()
+
+        DifferentialFunction<ArrayField> gradWrtY = f().reshape(f().mmul(larg(),i_v1.get(0),
+                MMulTranspose.builder()
                 .transposeA(!mMulTranspose.isTransposeA())
                 .transposeResult(mMulTranspose.isTransposeB())
                 .build()),rarg().getResultShape());
+
         ret.add(gradWrtX);
         ret.add(gradWrtY);
         larg().setGradient(gradWrtX);
