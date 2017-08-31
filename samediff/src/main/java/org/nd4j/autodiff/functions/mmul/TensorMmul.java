@@ -10,6 +10,7 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import static org.nd4j.linalg.util.ArrayUtil.*;
 
@@ -45,19 +46,24 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
         this.mMulTranspose = mMulTranspose;
         this.axes = dimensions;
         this.extraArgs = new Object[] {axes,mMulTranspose};
+
+
         this.m_x1 = i_v1;
         this.m_x2 = i_v2;
         if(!addedEdges) {
             ArrayField a = i_v1.getValue(true);
             ArrayField b = i_v2.getValue(true);
+            int[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(a.getInput().getShape()) : a.getInput().getShape();
+            int[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(b.getInput().getShape()) : b.getInput().getShape();
+
 
             addEdges(sameDiff,
                     i_v1,
                     i_v2,
                     functionName(),
                     OpState.OpType.ACCUMULATION,
-                    this instanceof Mmul ? Shape.getMatrixMultiplyShape(a.getInput().getShape(),b.getInput().getShape())
-                    : getTensorMmulShape(a.getInput().getShape(), b.getInput().getShape(), dimensions)
+                    this instanceof Mmul ? Shape.getMatrixMultiplyShape(aShape,bShape)
+                            : getTensorMmulShape(aShape,bShape, dimensions)
                     ,extraArgs);
             addedEdges = true;
         }

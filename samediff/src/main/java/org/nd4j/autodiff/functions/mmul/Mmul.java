@@ -105,7 +105,7 @@ public class Mmul extends TensorMmul<ArrayField> {
      */
     @Override
     public ArrayField doGetValue() {
-        return a().mmul(larg(),rarg());
+        return a().mmul(larg(),rarg(),mMulTranspose);
     }
 
 
