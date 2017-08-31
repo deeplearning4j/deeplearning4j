@@ -22,7 +22,7 @@ public class UnitNormConstraint extends BaseConstraint{
      * Apply to weights but not biases by default
      *
      * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
-     *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] correspending to last 3 of
+     *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
     public UnitNormConstraint(int... dimensions){
@@ -35,7 +35,7 @@ public class UnitNormConstraint extends BaseConstraint{
      * @param applyToWeights If constraint should be applied to weights
      * @param applyToBiases  If constraint should be applied to biases (usually false)
      * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
-     *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] correspending to last 3 of
+     *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
     public UnitNormConstraint(boolean applyToWeights, boolean applyToBiases, int... dimensions){
@@ -43,7 +43,7 @@ public class UnitNormConstraint extends BaseConstraint{
     }
 
     @Override
-    public void apply(INDArray param, boolean isBias) {
+    public void apply(INDArray param) {
         INDArray norm2 = param.norm2(dimensions);
         Broadcast.div(param, norm2, param, getBroadcastDims(dimensions, param.rank()) );
     }

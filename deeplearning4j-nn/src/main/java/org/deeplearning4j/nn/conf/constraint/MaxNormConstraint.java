@@ -28,7 +28,7 @@ public class MaxNormConstraint extends BaseConstraint {
      *
      * @param maxNorm        Maximum L2 value
      * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
-     *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] correspending to last 3 of
+     *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
     public MaxNormConstraint(double maxNorm, int... dimensions) {
@@ -41,7 +41,7 @@ public class MaxNormConstraint extends BaseConstraint {
      * @param applyToWeights If constraint should be applied to weights
      * @param applyToBiases  If constraint should be applied to biases
      * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
-     *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] correspending to last 3 of
+     *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
     public MaxNormConstraint(double maxNorm, boolean applyToWeights, boolean applyToBiases, int... dimensions){
@@ -51,7 +51,7 @@ public class MaxNormConstraint extends BaseConstraint {
 
 
     @Override
-    public void apply(INDArray param, boolean isBias){
+    public void apply(INDArray param){
         INDArray norm = param.norm2(dimensions);
         INDArray clipped = norm.unsafeDuplication();
         BooleanIndexing.replaceWhere(clipped, maxNorm, Conditions.greaterThan(maxNorm));

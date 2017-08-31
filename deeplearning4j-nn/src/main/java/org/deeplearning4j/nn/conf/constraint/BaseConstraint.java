@@ -42,12 +42,12 @@ public abstract class BaseConstraint implements LayerConstraint {
         ParamInitializer i = layer.conf().getLayer().initializer();
         for(Map.Entry<String,INDArray> e : paramTable.entrySet()){
             if(applyToWeights && i.isWeightParam(e.getKey()) || applyToBiases && i.isBiasParam(e.getKey())){
-                apply(e.getValue(), i.isBiasParam(e.getKey()));
+                apply(e.getValue());
             }
         }
     }
 
-    public abstract void apply(INDArray param, boolean isBias);
+    public abstract void apply(INDArray param);
 
     public abstract BaseConstraint clone();
 
