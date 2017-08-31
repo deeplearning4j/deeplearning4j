@@ -114,41 +114,4 @@ public class TestYolo2OutputLayer {
 
         assertEquals(score, score2, 1e-8);
     }
-
-
-    @Test
-    public void sanityCheckYoloImpl(){
-        //Idea here: we should be able to overfit on a single image, and have the predictions match the label
-
-        /*
-        INDArray boxPriors = Nd4j.create(new double[][]{
-                {},
-                {},
-                {}
-        });
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .updater(Updater.ADAM)
-                .activation(Activation.LEAKYRELU)
-                .weightInit(WeightInit.RELU)
-                .convolutionMode(ConvolutionMode.Same)
-                .list()
-                .layer(new ConvolutionLayer.Builder().nIn(3).nOut(32).kernelSize(3,3).stride(2,2).build())
-                .layer(new ConvolutionLayer.Builder().nIn(32).nOut(64).kernelSize(3,3).stride(2,2).build())
-                .layer(new Yolo2OutputLayer.Builder()
-                        .boundingBoxPriors(boxPriors)
-                        .build())
-                .build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-        int nIter = 1000;
-        for( int i=0; i<nIter; i++ ){
-
-        }*/
-
-        fail("Not yet implemented");
-    }
-
 }

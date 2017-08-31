@@ -126,8 +126,14 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        //TODO
-        return null;
+        long numValues = inputType.arrayElementsPerExample();
+
+        //This is a VERY rough estimate...
+        return new LayerMemoryReport.Builder(layerName, Yolo2OutputLayer.class, inputType, inputType)
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, numValues, 0, 6 * numValues)
+                .cacheMemory(0, 0)  //No cache
+                .build();
     }
 
     public static class Builder extends org.deeplearning4j.nn.conf.layers.Layer.Builder<Builder> {
