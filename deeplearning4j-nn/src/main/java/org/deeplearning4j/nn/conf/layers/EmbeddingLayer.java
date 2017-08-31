@@ -31,8 +31,6 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class EmbeddingLayer extends FeedForwardLayer {
-
-    @Getter(AccessLevel.NONE)
     private boolean hasBias = true; //Default for pre-0.9.2 implementations
 
     private EmbeddingLayer(Builder builder) {
