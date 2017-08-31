@@ -38,7 +38,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public class ElementWiseVertex extends BaseGraphVertex {
 
     public enum Op {
-        Add, Subtract, Product
+        Add, Subtract, Product, Average
     }
 
     private Op op;
@@ -80,6 +80,12 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     sum.addi(inputs[i]);
                 }
                 return sum;
+            case Average:
+                INDArray average = inputs[0].dup();
+                for (int i = 1; i < inputs.length; i++) {
+                    average.addi(inputs[i]);
+                }
+                return average.divi(inputs.length);
             case Subtract:
                 if (inputs.length != 2)
                     throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
@@ -110,6 +116,11 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 for (int i = 0; i < nInForwardPass; i++)
                     out[i] = epsilon.dup();
                 return new Pair<>(null, out);
+            case Average:
+                INDArray[] outAverage = new INDArray[nInForwardPass];
+                for (int i = 0; i < nInForwardPass; i++)
+                    outAverage[i] = epsilon.dup().divi(nInForwardPass);
+                return new Pair<>(null, outAverage);
             case Subtract:
                 INDArray[] out2 = new INDArray[2];
                 out2[0] = epsilon;

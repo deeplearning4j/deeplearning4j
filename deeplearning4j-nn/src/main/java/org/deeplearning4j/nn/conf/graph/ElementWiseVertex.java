@@ -40,7 +40,7 @@ public class ElementWiseVertex extends GraphVertex {
     }
 
     public enum Op {
-        Add, Subtract, Product
+        Add, Subtract, Product, Average
     }
 
     protected Op op;
@@ -76,6 +76,7 @@ public class ElementWiseVertex extends GraphVertex {
     public int maxVertexInputs() {
         switch (op) {
             case Add:
+            case Average:
             case Product:
                 //No upper bound
                 return Integer.MAX_VALUE;
@@ -93,6 +94,9 @@ public class ElementWiseVertex extends GraphVertex {
         switch (this.op) {
             case Add:
                 op = org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op.Add;
+                break;
+            case Average:
+                op = org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op.Average;
                 break;
             case Subtract:
                 op = org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op.Subtract;
