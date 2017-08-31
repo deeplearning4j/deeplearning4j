@@ -632,7 +632,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 for( int y=0; y<h; y++ ){
                     INDArray sm = null;
                     for( int box=0; box<b; box++ ){
-                        double conf = predictedConfidence.getDouble(i, box, h, w);
+                        double conf = predictedConfidence.getDouble(i, box, y, x);
                         if(conf < threshold){
                             continue;
                         }
@@ -648,7 +648,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
                         if(sm == null){
                             try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                                sm = softmax.get(point(mb), all(), point(x), point(y)).dup();
+                                sm = softmax.get(point(i), all(), point(x), point(y)).dup();
                             }
                         }
 
