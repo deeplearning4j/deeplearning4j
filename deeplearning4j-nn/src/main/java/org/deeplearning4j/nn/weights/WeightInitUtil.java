@@ -105,7 +105,7 @@ public class WeightInitUtil {
                 ret = Nd4j.create(shape, order);
                 break;
             case ONES:
-                ret = Nd4j.create(shape, order).assign(1.0);    //No Nd4j.ones(int[], char)
+                ret = Nd4j.createUninitialized(shape, order).assign(1.0);    //No Nd4j.ones(int[], char)
                 break;
             case IDENTITY:
                 if(shape.length != 2 || shape[0] != shape[1]){
