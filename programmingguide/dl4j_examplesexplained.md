@@ -1,14 +1,13 @@
 ------
 title: DeepLearning4j Examples Explained
 layout: default 
-
 ------
 
 # DeepLearning4j Examples Explained
 
 The example files are located at: https://github.com/deeplearning4j/dl4j-examples
 
-Note that the DeepLearning4J project uses and recommends Maven for dependency management. Maven uses `pom.xml` files for configuration. Note that the examples make use of a two-level `pom.xml` structure, one `pom.xml` file in the main directory and another one in the base directory. 
+Note that the Deeplearning4j project uses and recommends Maven for dependency management. Maven uses `pom.xml` files for configuration. Note that the examples make use of a two-level `pom.xml` structure, one `pom.xml` file in the main directory and another one in the base directory. 
 
 Files that require editing for each specific training scenario. 
 
@@ -29,7 +28,7 @@ For most common neural net applications, you will find an example that correspon
 
 Locate the file that corresponds to the type of training you want. Review the content to define the particulars as listed below.
 
-Common Structure by example
+Common structure by example
 
 - Feed Forward or MLP 
 - Convolutional
@@ -39,7 +38,7 @@ Common Structure by example
 
 Extracted portion of an example for building the neural network layer in a dense multi-layer configuration. 
 
-Here is an example of a Feed Forward Neural Network Configuration also known as a Multi Layer Perceptron. A Feed Forward Neural Network consists of an Input Layer, an Output Layer and a user determined number of Fully Connected or Dense Layers. 
+Here is an example of a Feed Forward Neural Network Configuration also known as a Multilayer Perceptron. A Feed Forward Neural Network consists of an Input Layer, an Output Layer and a user determined number of Fully Connected or Dense Layers. 
 
 ```
  MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -65,11 +64,13 @@ Here is an example of a Feed Forward Neural Network Configuration also known as 
 ## Convolutional
 
 ### Convolutional Input
+
 A Convolutional Neural Network takes an input matrix that includes the depth of the input, for example an image has a value for each pixel to represent amount of green, amount of red, and amount of blue. A Convolutional Neural Networks input includes that structure. 
 
 [See](https://deeplearning4j.org/convolutionalnets.html)
 
 ### Convolutional Layers
+
 A Convolutional Layer 
 
 [See](https://deeplearning4j.org/convolutionalnets.html#work)
@@ -111,6 +112,7 @@ MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 
 A first step would be to find an example that is similar to your needs and use it as a template to build your own network. 
 Changes that will be required. 
+
 * Your Input Layer
 * Your Output Layer
 
@@ -193,7 +195,7 @@ int numLinesToSkip = 0;
 
 In this example, the CSV (comma-separated values) RecordReader handles loading and parsing the data. 
 
-There is no header in the csv file, so the first entry of data is at line 0. Specify 0 lines to skip in the file. The file delimiter, used to separate data is a comma.
+There is no header in the CSV file, so the first entry of data is at line 0. Specify 0 lines to skip in the file. The file delimiter, used to separate data is a comma. 
 
 **Instantiate the RecordReader class**
 
@@ -252,7 +254,8 @@ Python user tip: Standard Java classes that forward only have a next method. For
 
 **Set the DataSet class**
 
-```DataSet allData = iterator.next();```
+```DataSet allData = iterator.next();
+```
 
 Every iterator requires a next. 
 
@@ -264,7 +267,8 @@ In other situations, the data can be split into identified data. For example, al
 
 Training progresses smoothly if the data has been shuffled. There are a number of ways to shuffle a dataset, in this case our data is small enough to fit as dataset in memory, so we can use the shuffle method of the dataset class. 
 
-```allData.shuffle();```
+```allData.shuffle();
+```
 
 Set the data that is to be shuffled in each pass. The shuffle can be set when either the iterator or the filepath is defined. 
 
@@ -310,23 +314,25 @@ Instantiate the DataNormalization. Then set the data purposes. In order, the `no
 ```
 
 * Input and output nodes. 
-  For the layer, set the number of input nodes to the layer and the number of output nodes from the layer. Typically, for a classification model, the number of input nodes are the number of features and the number of output is the number of labels. 
+
+For the layer, set the number of input nodes to the layer and the number of output nodes from the layer. Typically, for a classification model, the number of input nodes are the number of features and the number of output is the number of labels. 
 
 * Iterations.
+
   The number of times the passes and updates made with the data. See also epochs and batches.
 
 [epoch](https://deeplearning4j.org/glossary#epoch)
 [iteration](https://deeplearning4j.org/glossary#iteration)
 
 * Seed.
-  This is used with each batch and shuffle to ensure reproducibility. It sets a starting point for randomizing the data. In this example, the value is set to 6. Rather than set a specific number, another common option is using a random number generator (rng). Example of randomizing a FileSplit using a predefined Random **from another example**. 
+This is used with each batch and shuffle to ensure reproducibility. It sets a starting point for randomizing the data. In this example, the value is set to 6. Rather than set a specific number, another common option is using a random number generator (rng). Example of randomizing a FileSplit using a predefined Random **from another example**. 
   
   ```
    int rngseed = 123;
    Random randNumGen = new Random(rngseed);
    FileSplit train = new FileSplit(trainData, NativeImageLoader.ALLOWED_FORMATS, randNumGen);
-
   ```
+
 This completes the portion that defines the input and output options.
 
 #### Step 3
@@ -345,7 +351,7 @@ This is performed referencing the objects defined above.
 ```
 
 * Reproducibility object. Using seed. Defined above, applied here.
-* Number of iterations. Number of updates applied to the data. Defined above, applied here.
+* Number of iterations. Number of updates applied to the data. Defined above, applied here. 
 
 **Activation**
 
