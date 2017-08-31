@@ -225,12 +225,15 @@ nd4j::ops::OpRegistrator* nd4j::ops::OpRegistrator::_INSTANCE = 0;
 
 template <typename T>
 void nd4j::ops::DeclarableOp<T>::storeResult(Block<T> &block, int outputNumber, NDArray<T>& array) {
+    // if that's the only output - treat it as singular variable
     if (outputNumber == 0 && this->getOpDescriptor()->getNumberOfOutputs() == 1) {
         auto variable = block.getVariableSpace()->getVariable(block.getNodeId());
         variable->setNDArray(&array);
     } else {
-        std::pair<int, int> pair(block.getNodeId(), outputNumber);
-
+        // otherwise - reference it as pair key
+        std::pair<int, int> pair((int) block.getNodeId(), outputNumber);
+        auto variable = block.getVariableSpace()->getVariable(pair);
+        variable->setNDArray(&array);
     }
 }
 

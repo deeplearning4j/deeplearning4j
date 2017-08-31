@@ -148,8 +148,34 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
+        DECLARE_OP(Shape, 2, 1) {
+            // ?
+            return ND4J_STATUS_OK;
+        }
+
+        DECLARE_OP(Floor, 1, 1) {
+            // ?
+            return ND4J_STATUS_OK;
+        }
+
+        DECLARE_OP(RealDiv, 2, 1) {
+            // ?
+            return ND4J_STATUS_OK;
+        }
+
+        DECLARE_OP(Merge, -1, 1) {
+            // basically hstack
+            return ND4J_STATUS_OK;
+        }
+
+
         DECLARE_DIVERGENT_OP(Switch, 2, 2) {
             // conditional op !!!
+            return ND4J_STATUS_OK;
+        }
+
+        DECLARE_DIVERGENT_OP(NoOp, -1, 2) {
+            // Fastest op ever.
             return ND4J_STATUS_OK;
         }
 
@@ -160,8 +186,8 @@ namespace nd4j {
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
 
-            x->applyScalar(1.0);
-            y->applyScalar(2.0);
+            x->template applyScalar<simdOps::Add<T>>(1.0);
+            y->template applyScalar<simdOps::Add<T>>(2.0);
 
             STORE_2_RESULTS(*x, *y);
 

@@ -630,9 +630,30 @@ namespace nd4j{
                     jNode->setCustomOp(op);
                     jNode->setBlock(new Block<T>(jNode->id(), variableSpace));
 
-
                     std::pair<const std::string, int> pair(node.name(), jNode->id());
                     variablesMap.insert(pair);
+
+                    // multi-output nodes require special treatment
+                    for (int e = 0; e < op->getOpDescriptor()->getNumberOfOutputs(); e++) {
+                        std::string deepName(node.name());
+                        deepName += ":" + std::to_string(e);
+                        auto deepVar = new Variable<T>();
+                        deepVar->setName(&deepName);
+
+                        if (e > 0)
+                            deepVar->setId(--variablesCounter);
+                        else
+                            deepVar->setId(jNode->id());
+
+                        std::pair<const std::string, int> pair(deepName, deepVar->id());
+                        variablesMap.insert(pair);
+
+                        variableSpace->putVariable(deepVar->id(), deepVar);
+
+                        std::pair<int, int> nodepair(jNode->id(), e);
+                        variableSpace->putVariable(nodepair, deepVar);
+                    }
+
 
                     printf("             Inputs: [");
                     for (int i = 0; i < node.input_size(); i++) {

@@ -18,6 +18,7 @@ namespace nd4j {
         template <typename T>
         class VariableSpace {
         protected:
+            std::map<std::pair<int, int>, nd4j::graph::Variable<T> *> _paired;
             std::map<std::string, nd4j::graph::Variable<T> *> _symbolic;
             std::map<const int32_t, nd4j::graph::Variable<T> *> _variables;
             std::vector<nd4j::graph::Variable<T> *> _external;
@@ -36,8 +37,10 @@ namespace nd4j {
             bool hasVariable(std::string *symbol);
 
             nd4j::graph::Variable<T> *getVariable(const int32_t id);
+            nd4j::graph::Variable<T> *getVariable(std::pair<int,int>& pair);
             nd4j::graph::Variable<T> *getVariable(std::string *symbol);
 
+            void putVariable(std::pair<int,int>& pair, Variable<T> *variable);
             void putVariable(int32_t id, Variable<T> *variable);
             void putVariable(int32_t id, NDArray<T> *array);
 
@@ -67,6 +70,11 @@ bool nd4j::graph::VariableSpace<T>::hasVariable(std::string *symbol) {
 template <typename T>
 nd4j::graph::Variable<T> * nd4j::graph::VariableSpace<T>::getVariable(std::string *symbol) {
     return _symbolic.at(*symbol);
+}
+
+template <typename T>
+nd4j::graph::Variable<T> * nd4j::graph::VariableSpace<T>::getVariable(std::pair<int, int>& pair) {
+    return _paired.at(pair);
 }
 
 template <typename T>
@@ -118,6 +126,16 @@ Nd4jIndex nd4j::graph::VariableSpace<T>::internalMemory() {
 template <typename T>
 Nd4jIndex nd4j::graph::VariableSpace<T>::totalMemory() {
     return externalMemory() + internalMemory();
+}
+
+template <typename T>
+void nd4j::graph::VariableSpace<T>::putVariable(std::pair<int,int>& pair, Variable<T> *variable) {
+    _varmap.lock();
+
+    std::pair<std::pair<int, int>, nd4j::graph::Variable<T> *> p(pair, variable);
+    _paired.insert(p);
+
+    _varmap.unlock();
 }
 
 template <typename T>

@@ -11,6 +11,7 @@ enum OpType:byte {
     SUMMARYSTATS = 7,
     SHAPE = 8,
     AGGREGATION = 9, // ???
+    CUSTOM = 10, // custom ops
     VARIABLE = 119,
 }
 
@@ -38,6 +39,7 @@ table FlatNode {
     dataType:DataType;
     output:[int]; // ID's of connected nodes for this node
     extraParams:[float]; // extra params for this op (if any)
+    extraInteger:[int]; // optional integer extra params
     dimensions:[int]; // dimension for this operation
     device:int; // default is -1, which means _auto_
     scalar:float; // optional scalar. used in scalar ops & SummaryStats

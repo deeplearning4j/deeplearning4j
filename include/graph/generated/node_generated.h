@@ -22,12 +22,13 @@ enum OpType {
   OpType_SUMMARYSTATS = 7,
   OpType_SHAPE = 8,
   OpType_AGGREGATION = 9,
+  OpType_CUSTOM = 10,
   OpType_VARIABLE = 119,
   OpType_MIN = OpType_TRANSFORM,
   OpType_MAX = OpType_VARIABLE
 };
 
-inline OpType (&EnumValuesOpType())[9] {
+inline OpType (&EnumValuesOpType())[10] {
   static OpType values[] = {
     OpType_TRANSFORM,
     OpType_ACCUMULATION,
@@ -37,6 +38,7 @@ inline OpType (&EnumValuesOpType())[9] {
     OpType_SUMMARYSTATS,
     OpType_SHAPE,
     OpType_AGGREGATION,
+    OpType_CUSTOM,
     OpType_VARIABLE
   };
   return values;
@@ -186,9 +188,10 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_DATATYPE = 14,
     VT_OUTPUT = 16,
     VT_EXTRAPARAMS = 18,
-    VT_DIMENSIONS = 20,
-    VT_DEVICE = 22,
-    VT_SCALAR = 24
+    VT_EXTRAINTEGER = 20,
+    VT_DIMENSIONS = 22,
+    VT_DEVICE = 24,
+    VT_SCALAR = 26
   };
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
@@ -214,6 +217,9 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<float> *extraParams() const {
     return GetPointer<const flatbuffers::Vector<float> *>(VT_EXTRAPARAMS);
   }
+  const flatbuffers::Vector<int32_t> *extraInteger() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_EXTRAINTEGER);
+  }
   const flatbuffers::Vector<int32_t> *dimensions() const {
     return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_DIMENSIONS);
   }
@@ -237,6 +243,8 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.Verify(output()) &&
            VerifyOffset(verifier, VT_EXTRAPARAMS) &&
            verifier.Verify(extraParams()) &&
+           VerifyOffset(verifier, VT_EXTRAINTEGER) &&
+           verifier.Verify(extraInteger()) &&
            VerifyOffset(verifier, VT_DIMENSIONS) &&
            verifier.Verify(dimensions()) &&
            VerifyField<int32_t>(verifier, VT_DEVICE) &&
@@ -272,6 +280,9 @@ struct FlatNodeBuilder {
   void add_extraParams(flatbuffers::Offset<flatbuffers::Vector<float>> extraParams) {
     fbb_.AddOffset(FlatNode::VT_EXTRAPARAMS, extraParams);
   }
+  void add_extraInteger(flatbuffers::Offset<flatbuffers::Vector<int32_t>> extraInteger) {
+    fbb_.AddOffset(FlatNode::VT_EXTRAINTEGER, extraInteger);
+  }
   void add_dimensions(flatbuffers::Offset<flatbuffers::Vector<int32_t>> dimensions) {
     fbb_.AddOffset(FlatNode::VT_DIMENSIONS, dimensions);
   }
@@ -287,7 +298,7 @@ struct FlatNodeBuilder {
   }
   FlatNodeBuilder &operator=(const FlatNodeBuilder &);
   flatbuffers::Offset<FlatNode> Finish() {
-    const auto end = fbb_.EndTable(start_, 11);
+    const auto end = fbb_.EndTable(start_, 12);
     auto o = flatbuffers::Offset<FlatNode>(end);
     return o;
   }
@@ -303,6 +314,7 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     DataType dataType = DataType_INHERIT,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> output = 0,
     flatbuffers::Offset<flatbuffers::Vector<float>> extraParams = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> extraInteger = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> dimensions = 0,
     int32_t device = 0,
     float scalar = 0.0f) {
@@ -310,6 +322,7 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
   builder_.add_scalar(scalar);
   builder_.add_device(device);
   builder_.add_dimensions(dimensions);
+  builder_.add_extraInteger(extraInteger);
   builder_.add_extraParams(extraParams);
   builder_.add_output(output);
   builder_.add_input(input);
@@ -331,6 +344,7 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     DataType dataType = DataType_INHERIT,
     const std::vector<int32_t> *output = nullptr,
     const std::vector<float> *extraParams = nullptr,
+    const std::vector<int32_t> *extraInteger = nullptr,
     const std::vector<int32_t> *dimensions = nullptr,
     int32_t device = 0,
     float scalar = 0.0f) {
@@ -344,6 +358,7 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
       dataType,
       output ? _fbb.CreateVector<int32_t>(*output) : 0,
       extraParams ? _fbb.CreateVector<float>(*extraParams) : 0,
+      extraInteger ? _fbb.CreateVector<int32_t>(*extraInteger) : 0,
       dimensions ? _fbb.CreateVector<int32_t>(*dimensions) : 0,
       device,
       scalar);
