@@ -2798,6 +2798,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return dup().addiRowVector(rowVector);
     }
 
+
+    /**
+     * Perform a copy matrix multiplication
+     *
+     * @param other the other matrix to perform matrix multiply with
+     * @return the result of the matrix multiplication
+     */
+    @Override
+    public INDArray mmul(INDArray other, INDArray result,MMulTranspose mMulTranspose) {
+        MMulTranspose mMulTranspose1 = MMulTranspose.builder()
+                .a(this)
+                .b(other)
+                .transposeA(mMulTranspose.isTransposeA())
+                .transposeB(mMulTranspose.isTransposeB())
+                .transposeResult(mMulTranspose.isTransposeResult())
+                .build();
+        return mMulTranspose1.getA().mmul(mMulTranspose1.getB(),result);
+    }
+
     /**
      * Perform a copy matrix multiplication
      *

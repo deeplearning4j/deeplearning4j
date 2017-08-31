@@ -19,9 +19,11 @@
 
 package org.nd4j.linalg.api.ops.factory;
 
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -192,11 +194,21 @@ public class DefaultOpFactory implements OpFactory {
             case "cosinesimilarity":
                 ret = new CosineSimilarity(x, y,z, x.length());
                 break;
+            case "cosinedistance":
+                ret = new CosineDistance(x,y,z,x.lengthLong());
+                break;
             case "manhattan":
                 ret = new ManhattanDistance(x, y,z, x.length());
                 break;
             case "mmul":
-                ret = new Mmul(x, y,z, x.length());
+                //of note here is that it's always the last arg
+                /**
+                 * The case to watch out for here is
+                 * tensor matrix multiply which has an args format of:
+                 * dimensions, mmul transpose
+                 */
+                MMulTranspose mMulTranspose = extraArgs != null  && extraArgs.length >= 1 ? (MMulTranspose) extraArgs[extraArgs.length - 1] : MMulTranspose.allFalse();
+                ret = new Mmul(x,y,z,mMulTranspose);
                 break;
             case "tensorMmul":
                 ret = new TensorMmul(x, y,z,(int[][]) extraArgs[0]);

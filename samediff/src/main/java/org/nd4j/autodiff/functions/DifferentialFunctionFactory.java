@@ -18,6 +18,7 @@ import org.nd4j.autodiff.functions.impl.unary.transform.shape.*;
 import org.nd4j.autodiff.functions.mmul.Mmul;
 import org.nd4j.autodiff.functions.mmul.TensorMmul;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -907,12 +908,20 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
         });
     }
 
+
+    @Override
+    public DifferentialFunction<ArrayField> mmul(DifferentialFunction<ArrayField> x,
+                                                 DifferentialFunction<ArrayField> y,
+                                                 MMulTranspose mMulTranspose) {
+        validateDifferentialFunctionsameDiff(x);
+        validateDifferentialFunctionsameDiff(y);
+        return sameDiff.setupFunction(new Mmul(sameDiff,x,y,mMulTranspose));
+    }
+
     @Override
     public DifferentialFunction<ArrayField> mmul(DifferentialFunction<ArrayField> x,
                                                  DifferentialFunction<ArrayField> y) {
-        validateDifferentialFunctionsameDiff(x);
-        validateDifferentialFunctionsameDiff(y);
-        return sameDiff.setupFunction(new Mmul(sameDiff,x,y));
+        return mmul(x,y,MMulTranspose.allFalse());
     }
 
     @Override

@@ -1316,6 +1316,15 @@ public interface INDArray extends Serializable {
      */
     INDArray mmul(INDArray other, INDArray result);
 
+    /**
+     * Perform an copy matrix multiplication
+     *
+     * @param other  the other matrix to perform matrix multiply with
+     * @param result the result ndarray
+     * @param mMulTranspose the transpose status of each array
+     * @return the result of the matrix multiplication
+     */
+    INDArray mmul(INDArray other, INDArray result,MMulTranspose mMulTranspose);
 
     /**
      * Copy (element wise) division of two NDArrays

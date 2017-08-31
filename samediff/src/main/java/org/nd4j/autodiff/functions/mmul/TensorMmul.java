@@ -8,6 +8,8 @@ import org.nd4j.autodiff.functions.AbstractBinaryReduceFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
+
 import static org.nd4j.linalg.util.ArrayUtil.*;
 
 import java.util.ArrayList;
@@ -23,15 +25,25 @@ import java.util.List;
 public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduceFunction<X> {
     private int[][] axes;
     protected boolean addedEdges;
+    protected MMulTranspose mMulTranspose;
 
     public TensorMmul(SameDiff sameDiff,
                       DifferentialFunction<ArrayField> i_v1,
                       DifferentialFunction<ArrayField> i_v2,
                       int[][] dimensions) {
+        this(sameDiff,i_v1,i_v2,dimensions,MMulTranspose.allFalse());
+    }
+
+    public TensorMmul(SameDiff sameDiff,
+                      DifferentialFunction<ArrayField> i_v1,
+                      DifferentialFunction<ArrayField> i_v2,
+                      int[][] dimensions,
+                      MMulTranspose mMulTranspose) {
         super(sameDiff);
         this.sameDiff = sameDiff;
+        this.mMulTranspose = mMulTranspose;
         this.axes = dimensions;
-        this.extraArgs = new Object[] {axes};
+        this.extraArgs = new Object[] {axes,mMulTranspose};
         this.m_x1 = i_v1;
         this.m_x2 = i_v2;
         if(!addedEdges) {

@@ -7,6 +7,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -655,7 +656,15 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
 
     @Override
     public ArrayField mmul(DifferentialFunction<ArrayField> input, DifferentialFunction<ArrayField> y) {
-        return sameDiff.setupArrayField(input.getValue(true).mmul(y.getValue(true)));
+        return mmul(input,y,MMulTranspose.allFalse());
+
+    }
+
+    @Override
+    public ArrayField mmul(DifferentialFunction<ArrayField> input,
+                           DifferentialFunction<ArrayField> y,
+                           MMulTranspose mMulTranspose) {
+        return sameDiff.setupArrayField(input.getValue(true).mmul(y.getValue(true),mMulTranspose));
 
     }
 

@@ -7,6 +7,7 @@ import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
@@ -1205,7 +1206,26 @@ public class ArrayField implements Field<ArrayField> {
                 '}';
     }
 
+    /**
+     * Matrix multiply with a
+     * transpose specifier.
+     * @param value
+     * @param mMulTranspose
+     * @return
+     */
+    public ArrayField mmul(ArrayField value,MMulTranspose mMulTranspose) {
+        return addPairReduceOp("mmul",value,
+                null,
+                Shape.getMatrixMultiplyShape(getInput().getShape(),
+                        value.getInput().getShape()),new Object[]{mMulTranspose});
+    }
 
+
+    /**
+     * Normal matrix multiply
+     * @param value
+     * @return
+     */
     public ArrayField mmul(ArrayField value) {
         return addPairReduceOp("mmul",value,
                 null,
@@ -1213,13 +1233,19 @@ public class ArrayField implements Field<ArrayField> {
                         value.getInput().getShape()),null);
     }
 
+    /**
+     * Transpsoe matrix multiply
+     * @param y
+     * @param dimensions
+     * @return
+     */
     public ArrayField tensorMmul(DifferentialFunction<ArrayField> y,
                                  int[][] dimensions) {
         return addPairReduceOp("tensorMmul",y.getValue(true),
                 null,
                 ArrayUtil.getTensorMmulShape(getInput().getShape(),
                         y.getValue(true).getInput().getShape(),
-                        dimensions),new Object[]{dimensions});
+                        dimensions),new Object[]{dimensions,MMulTranspose.allFalse()});
 
     }
 
@@ -1241,6 +1267,7 @@ public class ArrayField implements Field<ArrayField> {
         result = 31 * result + (vertex != null ? vertex.hashCode() : 0);
         return result;
     }
+
 
 
 }

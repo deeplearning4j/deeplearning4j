@@ -49,7 +49,7 @@ public class MMulTranspose implements Serializable {
             this.a = a.transpose();
         else
             this.a = a;
-        if(this.transposeB)
+        if(this.transposeB && b != null)
             this.b = b.transpose();
         else
             this.b = b;
