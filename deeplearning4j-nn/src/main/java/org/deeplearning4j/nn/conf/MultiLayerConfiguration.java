@@ -328,7 +328,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             }
 
             //Pass input type through preprocessor, if necessary
-            InputPreProcessor preproc = getInputPreProcess(0);
+            InputPreProcessor preproc = getInputPreProcess(i);
             //TODO memory requirements for preprocessor
             if (preproc != null) {
                 inputType = preproc.getOutputType(inputType);

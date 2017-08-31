@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
@@ -3011,22 +3012,57 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return Summary as a string
      */
     public String summary() {
+        return summary(null);
+    }
+
+    /**
+     * String detailing the architecture of the multilayernetwork.
+     * Will also display activation size when given an input type.
+     * Columns are LayerIndex with layer type, nIn, nOut, Total number of parameters, Shapes of the parameters, Input activation shape, Output activation shape
+     * Will also give information about frozen layers, if any.
+     * @return Summary as a string
+     */
+    public String summary(InputType inputType) {
         String ret = "\n";
-        ret += StringUtils.repeat("=", 140);
+        ret += StringUtils.repeat("=", 250);
         ret += "\n";
-        ret += String.format("%-40s%-15s%-15s%-30s\n", "LayerName (LayerType)", "nIn,nOut", "TotalParams",
-                        "ParamsShape");
-        ret += StringUtils.repeat("=", 140);
+        if (inputType != null) {
+            ret += String.format("%-40s%-10s%-12s%-40s%-75s%-75s\n", "LayerName (LayerType)", "nIn,nOut", "TotalParams",
+                    "ParamsShape","InputShape", "OutputShape");
+        }
+        else {
+            ret += String.format("%-40s%-10s%-12s%-40s\n", "LayerName (LayerType)", "nIn,nOut", "TotalParams",
+                    "ParamsShape");
+        }
+        ret += StringUtils.repeat("=", 250);
         ret += "\n";
         int frozenParams = 0;
-        for (Layer currentLayer : layers) {
-            String name = String.valueOf(currentLayer.getIndex());
+        for (org.deeplearning4j.nn.api.Layer currentLayer : getLayers()) {
+            String name = currentLayer.conf().getLayer().getLayerName();
+            if (name == null) {
+                name = String.valueOf(currentLayer.getIndex());
+            }
             String paramShape = "-";
             String in = "-";
             String out = "-";
             String[] classNameArr = currentLayer.getClass().getName().split("\\.");
             String className = classNameArr[classNameArr.length - 1];
             String paramCount = String.valueOf(currentLayer.numParams());
+            String inShape = "";
+            String outShape = "";
+            InputPreProcessor preProcessor;
+            InputType outType;
+            if (inputType != null) {
+                preProcessor = getLayerWiseConfigurations().getInputPreProcess(currentLayer.getIndex());
+                inShape = inputType.toString();
+                if (preProcessor != null) {
+                    inputType = preProcessor.getOutputType(inputType);
+                    inShape += "--> "+ inputType.toString();
+                }
+                outType = currentLayer.conf().getLayer().getOutputType(currentLayer.getIndex(), inputType);
+                outShape = outType.toString();
+                inputType = outType;
+            }
             if (currentLayer.numParams() > 0) {
                 paramShape = "";
                 in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
@@ -3043,16 +3079,22 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 classNameArr = ((FrozenLayer) currentLayer).getInsideLayer().getClass().getName().split("\\.");
                 className = "Frozen " + classNameArr[classNameArr.length - 1];
             }
-            ret += String.format("%-40s%-15s%-15s%-30s", name + " (" + className + ")", in + "," + out, paramCount,
-                            paramShape);
+            if (inputType!= null) {
+                ret += String.format("%-40s%-10s%-12s%-40s%-75s%-75s", name + " (" + className + ")", in + "," + out, paramCount,
+                        paramShape,inShape,outShape);
+            }
+            else {
+                ret += String.format("%-40s%-12s%-10s%-40s", name + " (" + className + ")", in + "," + out, paramCount,
+                        paramShape);
+            }
             ret += "\n";
         }
-        ret += StringUtils.repeat("-", 140);
+        ret += StringUtils.repeat("-", 250);
         ret += String.format("\n%30s %d", "Total Parameters: ", params().length());
         ret += String.format("\n%30s %d", "Trainable Parameters: ", params().length() - frozenParams);
         ret += String.format("\n%30s %d", "Frozen Parameters: ", frozenParams);
         ret += "\n";
-        ret += StringUtils.repeat("=", 140);
+        ret += StringUtils.repeat("=", 250);
         ret += "\n";
         return ret;
     }

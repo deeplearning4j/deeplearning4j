@@ -24,7 +24,10 @@ import org.deeplearning4j.nn.conf.layers.RBM;
 /**
  * Handles various cooccurrences for RBM specific cooccurrences
  * @author Adam Gibson
+ *
+ * @deprecated Use {@link org.deeplearning4j.nn.conf.layers.variational} instead
  */
+@Deprecated
 public class RBMUtil {
 
     private RBMUtil() {}

@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -266,6 +267,7 @@ public class TransferLearningComplex {
                         new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 3)});
         modelNow.fit(rand);
         log.info(modelNow.summary());
+        log.info(modelNow.summary(InputType.feedForward(2),InputType.feedForward(2)));
 
     }
 }
