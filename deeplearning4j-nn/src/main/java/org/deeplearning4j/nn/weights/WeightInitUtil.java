@@ -104,7 +104,20 @@ public class WeightInitUtil {
             case ZERO:
                 ret = Nd4j.create(shape, order);
                 break;
-
+            case ONES:
+                ret = Nd4j.create(shape, order).assign(1.0);    //No Nd4j.ones(int[], char)
+                break;
+            case IDENTITY:
+                if(shape.length != 2 || shape[0] != shape[1]){
+                    throw new IllegalStateException("Cannot use IDENTITY init with parameters of shape "
+                            + Arrays.toString(shape) + ": weights must be a square matrix for identity");
+                }
+                if(order == Nd4j.order()){
+                    ret = Nd4j.eye(shape[0]);
+                } else {
+                    ret = Nd4j.createUninitialized(shape, order).assign(Nd4j.eye(shape[0]));
+                }
+                break;
             default:
                 throw new IllegalStateException("Illegal weight init value: " + initScheme);
         }
