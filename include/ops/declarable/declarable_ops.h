@@ -46,6 +46,7 @@ namespace nd4j {
              */
             bool allocateResult(Block<T>& block, std::initializer_list<int>& shape, char order = 'c');
             bool allocateResult(Block<T>& block, int* shape);
+            void storeResult(Block<T> &block, int outputNumber, NDArray<T>& array);
         public:
             DeclarableOp(int numInputs, int numOutputs, const char *opName) {
                 _descriptor = new OpDescriptor(numInputs, numOutputs, opName);
@@ -222,6 +223,16 @@ namespace nd4j {
 
 nd4j::ops::OpRegistrator* nd4j::ops::OpRegistrator::_INSTANCE = 0;
 
+template <typename T>
+void nd4j::ops::DeclarableOp<T>::storeResult(Block<T> &block, int outputNumber, NDArray<T>& array) {
+    if (outputNumber == 0 && this->getOpDescriptor()->getNumberOfOutputs() == 1) {
+        auto variable = block.getVariableSpace()->getVariable(block.getNodeId());
+        variable->setNDArray(&array);
+    } else {
+        std::pair<int, int> pair(block.getNodeId(), outputNumber);
+
+    }
+}
 
 template <typename T>
 bool nd4j::ops::DeclarableOp<T>::allocateResult(Block<T>& block, int* shape) {

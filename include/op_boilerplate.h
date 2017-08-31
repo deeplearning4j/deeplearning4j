@@ -847,5 +847,12 @@
                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
 
 
+#define STORE_RESULT(A) this->storeResult(block, 0, A)
+#define STORE_2_RESULTS(A, B) this->storeResult(block, 0, A); this->storeResult(block, 1, B)
+#define STORE_3_RESULTS(A, B, C) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
+#define STORE_4_RESULTS(A, B, C, D) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
+#define STORE_5_RESULTS(A, B, C, D, E) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D); this->storeResult(block, 4, E)
+
+
 
 

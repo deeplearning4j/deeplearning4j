@@ -153,6 +153,21 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
+        // test op, non-divergent
+        DECLARE_OP(TestOp2i2o, 2, 2) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));
+
+            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+
+            x->applyScalar(1.0);
+            y->applyScalar(2.0);
+
+            STORE_2_RESULTS(*x, *y);
+
+            return ND4J_STATUS_OK;
+        }
+
         DECLARE_OP(Assign, 2, 1) {
             // NDArray->assign(NDArray)
             return ND4J_STATUS_OK;
