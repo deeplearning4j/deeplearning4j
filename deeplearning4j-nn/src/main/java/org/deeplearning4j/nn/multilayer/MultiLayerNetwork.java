@@ -3012,22 +3012,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public String summary(InputType inputType) {
         String ret = "\n";
-        ret += StringUtils.repeat("=", 175);
+        ret += StringUtils.repeat("=", 250);
         ret += "\n";
         if (inputType != null) {
-            ret += String.format("%-30s%-10s%-12s%-40s%-45s%-45s\n", "LayerName (LayerType)", "nIn,nOut", "TotalParams",
+            ret += String.format("%-40s%-10s%-12s%-40s%-75s%-75s\n", "LayerName (LayerType)", "nIn,nOut", "TotalParams",
                     "ParamsShape","InputShape", "OutputShape");
         }
         else {
-            ret += String.format("%-30s%-10s%-12s%-40s\n", "LayerName (LayerType)", "nIn,nOut", "TotalParams",
+            ret += String.format("%-40s%-10s%-12s%-40s\n", "LayerName (LayerType)", "nIn,nOut", "TotalParams",
                     "ParamsShape");
         }
-        ret += StringUtils.repeat("=", 175);
+        ret += StringUtils.repeat("=", 250);
         ret += "\n";
         int frozenParams = 0;
-        InputType currentInType = inputType;
         for (org.deeplearning4j.nn.api.Layer currentLayer : getLayers()) {
-            String name = String.valueOf(currentLayer.getIndex());
+            String name = currentLayer.conf().getLayer().getLayerName();
+            if (name == null) {
+                name = String.valueOf(currentLayer.getIndex());
+            }
             String paramShape = "-";
             String in = "-";
             String out = "-";
@@ -3038,16 +3040,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             String outShape = "";
             InputPreProcessor preProcessor;
             InputType outType;
-            if (currentInType != null) {
-                preProcessor = currentLayer.conf().getLayer().getPreProcessorForInputType(currentInType);
+            if (inputType != null) {
+                preProcessor = getLayerWiseConfigurations().getInputPreProcess(currentLayer.getIndex());
+                inShape = inputType.toString();
                 if (preProcessor != null) {
-                    outType = preProcessor.getOutputType(currentInType);
-                } else {
-                    outType = currentLayer.conf().getLayer().getOutputType(currentLayer.getIndex(), currentInType);
+                    inputType = preProcessor.getOutputType(inputType);
+                    inShape += "--> "+ inputType.toString();
                 }
-                inShape = currentInType.toString();
+                outType = currentLayer.conf().getLayer().getOutputType(currentLayer.getIndex(), inputType);
                 outShape = outType.toString();
-                currentInType = outType;
+                inputType = outType;
             }
             if (currentLayer.numParams() > 0) {
                 paramShape = "";
@@ -3066,21 +3068,21 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 className = "Frozen " + classNameArr[classNameArr.length - 1];
             }
             if (inputType!= null) {
-                ret += String.format("%-30s%-10s%-12s%-40s%-45s%-45s", name + " (" + className + ")", in + "," + out, paramCount,
+                ret += String.format("%-40s%-10s%-12s%-40s%-75s%-75s", name + " (" + className + ")", in + "," + out, paramCount,
                         paramShape,inShape,outShape);
             }
             else {
-                ret += String.format("%-30s%-12s%-10s%-40s", name + " (" + className + ")", in + "," + out, paramCount,
+                ret += String.format("%-40s%-12s%-10s%-40s", name + " (" + className + ")", in + "," + out, paramCount,
                         paramShape);
             }
             ret += "\n";
         }
-        ret += StringUtils.repeat("-", 175);
+        ret += StringUtils.repeat("-", 250);
         ret += String.format("\n%30s %d", "Total Parameters: ", params().length());
         ret += String.format("\n%30s %d", "Trainable Parameters: ", params().length() - frozenParams);
         ret += String.format("\n%30s %d", "Frozen Parameters: ", frozenParams);
         ret += "\n";
-        ret += StringUtils.repeat("=", 175);
+        ret += StringUtils.repeat("=", 250);
         ret += "\n";
         return ret;
     }

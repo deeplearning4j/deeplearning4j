@@ -990,6 +990,9 @@ public class MultiLayerTest {
         }
     }
 
+    /*
+        Summary should pick up preprocessors set manually on inputs as well
+     */
     @Test
     public void testSummary() {
         int V_WIDTH = 130;
@@ -1035,7 +1038,7 @@ public class MultiLayerTest {
         MultiLayerNetwork modelMow = new TransferLearning.Builder(modelExpectedArch).setFeatureExtractor(2).build();
         System.out.println(modelExpectedArch.summary());
         System.out.println(modelMow.summary());
-        System.out.println(modelMow.summary(InputType.convolutional(V_HEIGHT,V_WIDTH,3)));
+        System.out.println(modelMow.summary(InputType.recurrent(V_HEIGHT*V_WIDTH*3)));
     }
 
 
