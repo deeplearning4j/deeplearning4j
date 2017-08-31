@@ -41,4 +41,9 @@ public class Dropout implements IDropout {
 
         return result;
     }
+
+    @Override
+    public Dropout clone() {
+        return new Dropout(p, pSchedule == null ? null : pSchedule.clone());
+    }
 }

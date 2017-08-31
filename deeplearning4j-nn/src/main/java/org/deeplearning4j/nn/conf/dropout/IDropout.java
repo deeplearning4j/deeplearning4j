@@ -3,8 +3,10 @@ package org.deeplearning4j.nn.conf.dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
+import java.io.Serializable;
+
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
-public interface IDropout {
+public interface IDropout extends Serializable, Cloneable {
 
     /**
      *
@@ -17,5 +19,5 @@ public interface IDropout {
      */
     INDArray applyDropout(INDArray inputActivations, int iteration, int epoch, boolean inPlace);
 
-
+    IDropout clone();
 }
