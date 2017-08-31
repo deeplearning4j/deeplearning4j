@@ -17,7 +17,8 @@
         (8, randomOps::BinomialDistribution),\
         (9, randomOps::BinomialDistributionEx),\
         (10, randomOps::LogNormalDistribution) ,\
-        (11, randomOps::TruncatedNormalDistribution)
+        (11, randomOps::TruncatedNormalDistribution) ,\
+        (12, randomOps::AlphaDropOut)
 
 
 
