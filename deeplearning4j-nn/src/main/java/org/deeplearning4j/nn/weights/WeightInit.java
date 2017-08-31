@@ -25,6 +25,8 @@ package org.deeplearning4j.nn.weights;
  * <p>
  * <b>ZERO</b>: Generate weights as zeros<br>
  * <p>
+ * <b>ONES</b>: All weights are set to 1
+ * <p>
  * <b>SIGMOID_UNIFORM</b>: A version of XAVIER_UNIFORM for sigmoid activation functions. U(-r,r) with r=4*sqrt(6/(fanIn + fanOut))
  * <p>
  * <b>NORMAL</b>: Normal/Gaussian distribution, with mean 0 and standard deviation 1/sqrt(fanIn).
@@ -45,10 +47,11 @@ package org.deeplearning4j.nn.weights;
  * <p>
  * <b>RELU_UNIFORM</b>: He et al. (2015), "Delving Deep into Rectifiers". Uniform distribution U(-s,s) with s = sqrt(6/fanIn)
  * <p>
+ * <b>IDENTITY</b>: Weights are set to an identity matrix. Note: can only be used with square weight matrices
  *
  * @author Adam Gibson
  */
 public enum WeightInit {
-    DISTRIBUTION, ZERO, SIGMOID_UNIFORM, NORMAL, UNIFORM, XAVIER, XAVIER_UNIFORM, XAVIER_FAN_IN, XAVIER_LEGACY, RELU,
-    RELU_UNIFORM
+    DISTRIBUTION, ZERO, ONES, SIGMOID_UNIFORM, NORMAL, UNIFORM, XAVIER, XAVIER_UNIFORM, XAVIER_FAN_IN, XAVIER_LEGACY, RELU,
+    RELU_UNIFORM, IDENTITY
 }
