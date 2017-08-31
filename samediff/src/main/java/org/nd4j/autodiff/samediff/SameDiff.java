@@ -563,6 +563,8 @@ public class SameDiff {
                 if(func != null)
                     variableBuilder.shape(func.getResultShape());
 
+                variableBuilder.vertexId(i);
+
                 SDVariable variable = variableBuilder.build();
                 variable.setShape(info.getShape());
                 variableMap.put(info.getId(),variable);

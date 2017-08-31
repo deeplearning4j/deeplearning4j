@@ -340,6 +340,45 @@ public class SameDiffTests {
 
 
 
+    @Test
+    public void testLogisticRegression() {
+        Map<String,INDArray> vars = this.variablesForInput();
+        SameDiff outside = SameDiff.create();
+        outside.defineFunction("activate", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable x = sameDiff.var("x",inputs.get("x"));
+                SDVariable w = sameDiff.var("w",inputs.get("w"));
+                SDVariable y = sameDiff.var("y",inputs.get("y"));
+                SDVariable ret = sameDiff.sigmoid(sameDiff.mmul(x,w));
+                return ret;
+            }
+        },vars);
+
+        outside.defineFunction("loss", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable activation = outside.invokeFunctionOn("activate",sameDiff);
+                SDVariable y = sameDiff.getVariable("y");
+                SDVariable oneMinusY = y.rsub(1.0);
+                SDVariable oneMinusPredictions = activation.rsub(1.0);
+                SDVariable outputTimesY = y.mul(activation);
+                SDVariable yHat = oneMinusY.mul(oneMinusPredictions);
+                SDVariable probs = outputTimesY.add(yHat);
+                SDVariable logProbs = sameDiff.log(probs);
+                SDVariable ret = sameDiff.sum(logProbs,Integer.MAX_VALUE);
+                return ret;
+            }
+        });
+
+        List<Op> ops = outside.getFunction("loss").execBackwards();
+        System.out.println(ops);
+
+
+
+
+    }
+
 
 
     @Test

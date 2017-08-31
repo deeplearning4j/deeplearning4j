@@ -1214,10 +1214,12 @@ public class ArrayField implements Field<ArrayField> {
      * @return
      */
     public ArrayField mmul(ArrayField value,MMulTranspose mMulTranspose) {
+        int[] inputShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(getInput().getShape()) : getInput().getShape();
+        int[] otherShape =  mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(value.getInput().getShape()) : value.getInput().getShape();
         return addPairReduceOp("mmul",value,
                 null,
-                Shape.getMatrixMultiplyShape(getInput().getShape(),
-                        value.getInput().getShape()),new Object[]{mMulTranspose});
+                Shape.getMatrixMultiplyShape(inputShape,
+                        otherShape),new Object[]{mMulTranspose});
     }
 
 
@@ -1227,10 +1229,11 @@ public class ArrayField implements Field<ArrayField> {
      * @return
      */
     public ArrayField mmul(ArrayField value) {
-        return addPairReduceOp("mmul",value,
+        return addPairReduceOp("mmul",
+                value,
                 null,
                 Shape.getMatrixMultiplyShape(getInput().getShape(),
-                        value.getInput().getShape()),null);
+                        value.getInput().getShape()),new Object[]{MMulTranspose.allFalse()});
     }
 
     /**
