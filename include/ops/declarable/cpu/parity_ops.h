@@ -148,8 +148,8 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_OP(Switch, 2, 1) {
-            // No ideas what's that
+        DECLARE_DIVERGENT_OP(Switch, 2, 2) {
+            // conditional op !!!
             return ND4J_STATUS_OK;
         }
 

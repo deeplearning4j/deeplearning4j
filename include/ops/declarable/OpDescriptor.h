@@ -18,12 +18,15 @@ namespace nd4j {
             int _numInputs;
             int _numOutputs;
 
+            bool _divergent;
+
         public:
             // default constructor
             OpDescriptor(int numInputs, int numOutputs, std::string opName) {
                 _numInputs = numInputs;
                 _numOutputs = numOutputs;
                 _opName = opName;
+                _divergent = false;
             }
 
             OpDescriptor(int numInputs, int numOutputs, const char *opName) {
@@ -32,6 +35,15 @@ namespace nd4j {
 
                 std::string tmp(opName);
                 _opName = tmp;
+                _divergent = false;
+            }
+
+            OpDescriptor(int numInputs, int numOutputs, std::string opName, bool divergent) : OpDescriptor(numInputs, numOutputs, opName) {
+                _divergent = divergent;
+            }
+
+            OpDescriptor(int numInputs, int numOutputs, const char *opName, bool divergent) : OpDescriptor(numInputs, numOutputs, opName) {
+                _divergent = divergent;
             }
 
             // default destructor
@@ -49,6 +61,10 @@ namespace nd4j {
 
             std::string *getOpName() {
                 return &_opName;
+            }
+
+            bool isDivergent() {
+                return _divergent;
             }
 
             int getOpNum() {

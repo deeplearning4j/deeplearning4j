@@ -73,6 +73,9 @@ TEST_F(DeclarableOpsTests, BasicInitialization2) {
     ASSERT_TRUE(op != nullptr);
     std::string expName("Concat");
     ASSERT_EQ(expName, *(op->getOpName()));
+
+    ASSERT_EQ(-1, op->getOpDescriptor()->getNumberOfInputs());
+    ASSERT_EQ(1, op->getOpDescriptor()->getNumberOfOutputs());
 }
 
 
@@ -107,4 +110,14 @@ TEST_F(DeclarableOpsTests, AddMatrices) {
 	addOp.execute(block);
 
     ASSERT_TRUE(x.equalsTo(&exp));    
+}
+
+TEST_F(DeclarableOpsTests, DivergentCheck1) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("Switch");
+
+    ASSERT_TRUE(op != nullptr);
+    std::string expName("Switch");
+    ASSERT_EQ(expName, *(op->getOpName()));
+    ASSERT_TRUE(op->getOpDescriptor()->isDivergent());
+    ASSERT_EQ(2, op->getOpDescriptor()->getNumberOfOutputs());
 }

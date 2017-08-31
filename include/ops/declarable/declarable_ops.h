@@ -51,6 +51,10 @@ namespace nd4j {
                 _descriptor = new OpDescriptor(numInputs, numOutputs, opName);
             }
 
+            DeclarableOp(int numInputs, int numOutputs, const char *opName, bool divergent) {
+                _descriptor = new OpDescriptor(numInputs, numOutputs, opName, divergent);
+            }
+
             ~DeclarableOp() {
                 if (_descriptor != nullptr)
                     delete _descriptor;
@@ -58,7 +62,7 @@ namespace nd4j {
 
 
             OpDescriptor *getOpDescriptor() {
-                return &_descriptor;
+                return _descriptor;
             }
 
             /**
