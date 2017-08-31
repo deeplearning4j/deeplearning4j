@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -16,6 +17,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -31,6 +36,21 @@ public class NoBiasGradientCheckTests {
     static {
         Nd4j.zeros(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+    }
+
+    private static void checkSerialization(MultiLayerNetwork net){
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ModelSerializer.writeModel(net, baos, true);
+            byte[] bytes = baos.toByteArray();
+            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+            MultiLayerNetwork net2 = ModelSerializer.restoreMultiLayerNetwork(bais, true);
+            assertEquals(net.getLayerWiseConfigurations().toJson(), net2.getLayerWiseConfigurations().toJson());
+            assertEquals(net.params(), net2.params());
+        } catch (IOException e ){
+            throw new RuntimeException(e);
+        }
+
     }
 
     @Test
@@ -99,6 +119,8 @@ public class NoBiasGradientCheckTests {
                     boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                     assertTrue(msg, gradOK);
+
+                    checkSerialization(mln);
                 }
             }
         }
@@ -155,6 +177,8 @@ public class NoBiasGradientCheckTests {
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                 assertTrue(msg, gradOK);
+
+                checkSerialization(mln);
             }
         }
     }
@@ -214,6 +238,8 @@ public class NoBiasGradientCheckTests {
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                 assertTrue(msg, gradOK);
+
+                checkSerialization(mln);
             }
         }
     }
@@ -242,22 +268,22 @@ public class NoBiasGradientCheckTests {
             for(boolean cnnHasBias : new boolean[]{true, false}) {
 
                 MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().regularization(false).learningRate(1.0)
+                        new NeuralNetConfiguration.Builder().learningRate(1.0)
                                 .updater(Updater.SGD).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new NormalDistribution(0, 1))
-                                .list().layer(0,
-                                new ConvolutionLayer.Builder(kernel,
+                                .list()
+                                .layer(new ConvolutionLayer.Builder(kernel,
                                         stride, padding).nIn(inputDepth)
                                         .hasBias(false)
                                         .nOut(3).build())//output: (5-2+0)/1+1 = 4
-                                .layer(1, new SubsamplingLayer.Builder(PoolingType.MAX)
+                                .layer(new SubsamplingLayer.Builder(PoolingType.MAX)
                                         .kernelSize(kernel).stride(stride).padding(padding)
                                         .pnorm(pNorm).build()) //output: (4-2+0)/1+1 =3 -> 3x3x3
-                                .layer(2, new ConvolutionLayer.Builder(kernel, stride, padding)
+                                .layer(new ConvolutionLayer.Builder(kernel, stride, padding)
                                         .hasBias(cnnHasBias)
-                                        .nIn(3).nOut(2).build()) //Output: (3-2+0)/1+1 = 2
-                                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                        .activation(Activation.SOFTMAX).nIn(2 * 2 * 2)
+                                        .nOut(2).build()) //Output: (3-2+0)/1+1 = 2
+                                .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX)
                                         .nOut(4).build())
                                 .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
                                 .build();
@@ -278,6 +304,8 @@ public class NoBiasGradientCheckTests {
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                 assertTrue(msg, gradOK);
+
+                checkSerialization(net);
             }
         }
     }

@@ -40,8 +40,6 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class DenseLayer extends FeedForwardLayer {
-
-    @Getter(AccessLevel.NONE)
     private boolean hasBias = true;
 
     private DenseLayer(Builder builder) {

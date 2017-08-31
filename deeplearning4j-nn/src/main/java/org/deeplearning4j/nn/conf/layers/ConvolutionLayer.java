@@ -29,7 +29,6 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class ConvolutionLayer extends FeedForwardLayer {
-    @Getter(AccessLevel.NONE)
     protected boolean hasBias = true;
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate; //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
     protected int dilation[] = new int[]{1,1};
