@@ -63,7 +63,9 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
  *
  * @author Adam Gibson
  *
+ * @deprecated Use {@link org.deeplearning4j.nn.conf.layers.variational} instead
  */
+@Deprecated
 public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.RBM> {
 
     private long seed;

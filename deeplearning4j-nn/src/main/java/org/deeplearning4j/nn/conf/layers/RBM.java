@@ -56,8 +56,10 @@ import java.util.Map;
  * Great reference:
  * http://www.iro.umontreal.ca/~lisa/publications2/index.php/publications/show/239
  *
+ * @deprecated Use {@link org.deeplearning4j.nn.conf.layers.variational} instead
  */
 
+@Deprecated
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
