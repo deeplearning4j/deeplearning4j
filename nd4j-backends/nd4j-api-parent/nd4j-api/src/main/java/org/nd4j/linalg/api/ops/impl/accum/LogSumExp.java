@@ -26,33 +26,30 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- * LogExpSum - this op returns https://en.wikipedia.org/wiki/LogSumExp
+ * LogSumExp - this op returns https://en.wikipedia.org/wiki/LogSumExp
  *
  * @author raver119@gmail.com
  */
-public class LogExpSum extends BaseAccumulation {
+public class LogSumExp extends BaseAccumulation {
+    public LogSumExp() {}
 
-    private double max;
-
-    public LogExpSum() {}
-
-    public LogExpSum(INDArray x, INDArray y, INDArray z, long n) {
+    public LogSumExp(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public LogExpSum(INDArray x, INDArray y, long n) {
+    public LogSumExp(INDArray x, INDArray y, long n) {
         super(x, y, n);
     }
 
-    public LogExpSum(INDArray x) {
+    public LogSumExp(INDArray x) {
         super(x);
     }
 
-    public LogExpSum(INDArray x, INDArray y) {
+    public LogSumExp(INDArray x, INDArray y) {
         super(x, y);
     }
 
-    public LogExpSum(INDArray x, INDArray y, INDArray z) {
+    public LogSumExp(INDArray x, INDArray y, INDArray z) {
         super(x, y, z, x.lengthLong());
     }
 
@@ -146,9 +143,9 @@ public class LogExpSum extends BaseAccumulation {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new LogExpSum(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new LogSumExp(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new LogExpSum(xAlongDimension);
+            return new LogSumExp(xAlongDimension);
 
     }
 
@@ -157,8 +154,8 @@ public class LogExpSum extends BaseAccumulation {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new LogExpSum(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new LogSumExp(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new LogExpSum(xAlongDimension);
+            return new LogSumExp(xAlongDimension);
     }
 }

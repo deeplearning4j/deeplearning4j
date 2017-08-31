@@ -24,13 +24,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.ops.impl.accum.LogSumExp;
+import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -43,7 +44,6 @@ import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
-import org.nd4j.linalg.api.ops.impl.accum.LogExpSum;
 import org.nd4j.linalg.api.ops.impl.accum.Norm1;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
@@ -66,7 +66,6 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.MathUtils;
 
@@ -110,16 +109,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.setDataType(initialType);
     }
 
-    @Test
-    public void testMmulWithTranspose() {
-        MMulTranspose mMulTranspose = MMulTranspose
-                .builder()
-                .transposeA(true)
-                .build();
-
-
-
-    }
 
     @Test
     public void testSoftmaxDerivativeGradient() {
@@ -5298,7 +5287,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             matrix.getRow(r).assign(Nd4j.create(new double[]{1, 2, 3}));
         }
 
-        INDArray res = Nd4j.getExecutioner().exec(new LogExpSum(matrix), 1);
+        INDArray res = Nd4j.getExecutioner().exec(new LogSumExp(matrix), 1);
 
         for (int e = 0; e < res.length(); e++) {
             assertEquals(3.407605, res.getDouble(e), 1e-5);
@@ -5309,7 +5298,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testLogExpSum2() throws Exception {
         INDArray row = Nd4j.create(new double[]{1, 2, 3});
 
-        double res = Nd4j.getExecutioner().exec(new LogExpSum(row)).z().getDouble(0);
+        double res = Nd4j.getExecutioner().exec(new LogSumExp(row)).z().getDouble(0);
 
         assertEquals(3.407605, res, 1e-5);
     }
