@@ -30,6 +30,11 @@ public class MapSchedule implements ISchedule {
         }
     }
 
+    @Override
+    public ISchedule clone() {
+        return new MapSchedule(scheduleType, values);
+    }
+
     public static class Builder {
 
         private ScheduleType scheduleType;

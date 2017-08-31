@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -45,7 +46,8 @@ public class FineTuneConfiguration {
     protected Double l2;
     protected Double l1Bias;
     protected Double l2Bias;
-    protected Double dropOut;
+//    protected Double dropOut;
+    protected IDropout iDropout;
     @Deprecated
     protected Updater updater;
     protected IUpdater iUpdater;
@@ -147,8 +149,8 @@ public class FineTuneConfiguration {
         WeightInit origWeightInit = null;
 
         if (l != null) {
-            if (dropOut != null)
-                l.setDropOut(dropOut);
+            if (iDropout != null)
+                l.setIDropout(iDropout);
         }
 
         if (l != null && l instanceof BaseLayer) {
@@ -287,10 +289,9 @@ public class FineTuneConfiguration {
         if (l != null) {
             LayerValidation.updaterValidation(l.getLayerName(), l, learningRate, momentum, momentumSchedule,
                             adamMeanDecay, adamVarDecay, rho, rmsDecay, epsilon);
-
             boolean useDropCon = (useDropConnect == null ? nnc.isUseDropConnect() : useDropConnect);
-            LayerValidation.generalValidation(l.getLayerName(), l, useDropCon, dropOut, l2, l2Bias, l1, l1Bias,
-                    dist, constraints, null, null);
+            LayerValidation.generalValidation(l.getLayerName(), l, useDropCon, iDropout, l2, l2Bias, l1, l1Bias, dist,
+                    constraints, null, null);
         }
 
         //Also: update the LR, L1 and L2 maps, based on current config (which might be different to original config)
@@ -355,8 +356,8 @@ public class FineTuneConfiguration {
             confBuilder.setL1Bias(l1Bias);
         if (l2Bias != null)
             confBuilder.setL2Bias(l2Bias);
-        if (dropOut != null)
-            confBuilder.setDropOut(dropOut);
+        if (iDropout != null)
+            confBuilder.setIdropOut(iDropout);
         if (iUpdater != null)
             confBuilder.updater(iUpdater);
         if (updater != null)

@@ -28,6 +28,8 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.constraint.BaseConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -600,7 +602,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double l2 = Double.NaN;
         protected double l1Bias = Double.NaN;
         protected double l2Bias = Double.NaN;
-        protected double dropOut = 0;
+        protected IDropout idropOut = null;
         @Deprecated
         protected Updater updater = Updater.SGD;
         protected IUpdater iUpdater = new Sgd();
@@ -1039,7 +1041,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param inputRetainProbability Dropout probability (probability of retaining each input activation value for a layer)
          */
         public Builder dropOut(double inputRetainProbability) {
-            this.dropOut = inputRetainProbability;
+            return dropOut(new Dropout(inputRetainProbability));
+        }
+
+        public Builder dropOut(IDropout dropout){
+            this.idropOut = dropout;
             return this;
         }
 
@@ -1383,14 +1389,14 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     sl.setConvolutionMode(convolutionMode);
                 }
             }
-            LayerValidation.generalValidation(layerName, layer, useDropConnect, dropOut, l2, l2Bias,
+            LayerValidation.generalValidation(layerName, layer, useDropConnect, idropOut, l2, l2Bias,
                             l1, l1Bias, dist, allParamConstraints, weightConstraints, biasConstraints);
         }
 
         private void copyConfigToLayer(String layerName, Layer layer) {
 
-            if (Double.isNaN(layer.getDropOut()))
-                layer.setDropOut(dropOut);
+            if (layer.getIDropout() == null)
+                layer.setIDropout(idropOut);
 
             if (layer instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) layer;

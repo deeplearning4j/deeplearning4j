@@ -355,18 +355,18 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         input = null;
     }
 
-    protected void applyDropOutIfNecessary(boolean training) {
-        if (layerConf().getDropOut() > 0 && !conf.isUseDropConnect() && training && !dropoutApplied) {
+    protected void applyDropOutIfNecessary(boolean training, int iteration, int epoch) {
+        if(layerConf().getIDropout() != null && training ){
+            //TODO: Epoch + iteration counters...
             if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
                 try (MemoryWorkspace ws = Nd4j.getWorkspaceManager()
-                                .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)
-                                .notifyScopeBorrowed()) {
-                    input = input.isView() ? input.dup() : input.unsafeDuplication();
+                        .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)
+                        .notifyScopeBorrowed()) {
+                    input = layerConf().getIDropout().applyDropout(input, iteration, epoch, false);
                 }
-            } else
-                input = input.isView() ? input.dup() : input.unsafeDuplication();
-
-            Dropout.applyDropout(input, layerConf().getDropOut());
+            } else {
+                input = layerConf().getIDropout().applyDropout(input, iteration, epoch, false);
+            }
             dropoutApplied = true;
         }
     }

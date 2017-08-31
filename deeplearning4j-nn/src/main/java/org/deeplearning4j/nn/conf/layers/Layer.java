@@ -25,7 +25,12 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+<<<<<<< HEAD
 import org.deeplearning4j.nn.conf.constraint.BaseConstraint;
+=======
+import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
+>>>>>>> Start plugging new dropout in to layers/config
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
@@ -75,7 +80,7 @@ import java.util.*;
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {
     protected String layerName;
-    protected double dropOut;
+    protected IDropout iDropout;
     protected List<LayerConstraint> constraints;
 
 
@@ -112,6 +117,7 @@ public abstract class Layer implements Serializable, Cloneable {
             }
         }
         this.constraints = allConstraints;
+        this.iDropout = builder.iDropout;
     }
 
     /**
@@ -121,7 +127,7 @@ public abstract class Layer implements Serializable, Cloneable {
      */
     public void resetLayerDefaultConfig() {
         //clear the learning related params for all layers in the origConf and set to defaults
-        this.setDropOut(Double.NaN);
+        this.iDropout = null;
     }
 
     @Override
@@ -249,10 +255,10 @@ public abstract class Layer implements Serializable, Cloneable {
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {
         protected String layerName = null;
-        protected double dropOut = Double.NaN;
         protected List<LayerConstraint> allParamConstraints;
         protected List<LayerConstraint> weightConstraints;
         protected List<LayerConstraint> biasConstraints;
+        protected IDropout iDropout;
 
         /**
          * Layer name assigns layer string name.
@@ -286,8 +292,12 @@ public abstract class Layer implements Serializable, Cloneable {
          * @param inputRetainProbability Dropout probability (probability of retaining each input activation value for a layer)
          */
         public T dropOut(double inputRetainProbability) {
-            this.dropOut = inputRetainProbability;
-            return (T) this;
+            return dropOut(new Dropout(inputRetainProbability));
+        }
+
+        public T dropOut(IDropout dropout){
+            this.iDropout = dropout;
+            return (T)this;
         }
 
         /**

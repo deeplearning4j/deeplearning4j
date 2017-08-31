@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.OneTimeLogger;
@@ -288,7 +289,7 @@ public class LayerValidation {
         }
     }
 
-    public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, Double dropOut,
+    public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, IDropout iDropOut,
                                          Double l2, Double l2Bias, Double l1, Double l1Bias,
                                          Distribution dist, List<LayerConstraint> allParamConstraints,
                                          List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
@@ -297,27 +298,27 @@ public class LayerValidation {
                         l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, dist, allParamConstraints, weightConstraints, biasConstraints);
     }
 
-    public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, double dropOut,
+    public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, IDropout iDropout,
                                          double l2, double l2Bias, double l1, double l1Bias,
                                          Distribution dist, List<LayerConstraint> allParamConstraints,
                                          List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
 
         if (layer != null) {
 
-            if (useDropConnect && (Double.isNaN(dropOut) && (Double.isNaN(layer.getDropOut()))))
-                OneTimeLogger.warn(log, "Layer \"" + layerName
-                                + "\" dropConnect is set to true but dropout rate has not been added to configuration.");
-            if (useDropConnect && layer.getDropOut() == 0.0)
-                OneTimeLogger.warn(log,
-                                "Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
+//            if (useDropConnect && (Double.isNaN(dropOut) && (Double.isNaN(layer.getDropOut()))))
+//                OneTimeLogger.warn(log, "Layer \"" + layerName
+//                                + "\" dropConnect is set to true but dropout rate has not been added to configuration.");
+//            if (useDropConnect && layer.getDropOut() == 0.0)
+//                OneTimeLogger.warn(log,
+//                                "Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
 
             if (layer instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) layer;
-                configureBaseLayer(layerName, bLayer, useDropConnect, dropOut, l2, l2Bias, l1,
+                configureBaseLayer(layerName, bLayer, useDropConnect, iDropout, l2, l2Bias, l1,
                                 l1Bias, dist);
             } else if (layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
-                configureBaseLayer(layerName, bLayer, useDropConnect, dropOut, l2, l2Bias, l1,
+                configureBaseLayer(layerName, bLayer, useDropConnect, iDropout, l2, l2Bias, l1,
                                 l1Bias, dist);
             }
 
@@ -353,7 +354,7 @@ public class LayerValidation {
     }
 
     private static void configureBaseLayer(String layerName, BaseLayer bLayer,  boolean useDropConnect,
-                                           Double dropOut, Double l2, Double l2Bias, Double l1, Double l1Bias,
+                                           IDropout iDropout, Double l2, Double l2Bias, Double l1, Double l1Bias,
                     Distribution dist) {
 
         if (!Double.isNaN(l1) && Double.isNaN(bLayer.getL1())) {
@@ -380,6 +381,10 @@ public class LayerValidation {
         }
         if (Double.isNaN(l1Bias) && Double.isNaN(bLayer.getL1Bias())) {
             bLayer.setL1Bias(0.0);
+        }
+
+        if(bLayer.getIDropout() == null){
+            bLayer.setIDropout(iDropout);
         }
 
 

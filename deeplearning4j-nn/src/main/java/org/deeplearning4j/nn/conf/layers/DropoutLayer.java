@@ -7,6 +7,7 @@ import lombok.ToString;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -107,8 +108,9 @@ public class DropoutLayer extends FeedForwardLayer {
 
     @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<DropoutLayer.Builder> {
-        public Builder(double dropOut) {
-            this.dropOut = dropOut;
+
+        public Builder(double dropout){
+            this.dropOut(new Dropout(dropout));
         }
 
         @Override
