@@ -6,6 +6,9 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 
+import java.util.Collections;
+import java.util.List;
+
 public class Neg extends AbstractUnaryFunction<ArrayField> {
     public Neg(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
@@ -22,10 +25,12 @@ public class Neg extends AbstractUnaryFunction<ArrayField> {
     }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
         validateDifferentialFunctionsameDiff(arg());
-        return arg().negate().mul(arg().diff(i_v));
+        DifferentialFunction<ArrayField> ret = arg().negate();
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

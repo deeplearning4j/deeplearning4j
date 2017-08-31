@@ -3,6 +3,7 @@ package org.nd4j.autodiff;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 
 import java.util.List;
 
@@ -209,6 +210,8 @@ public interface AbstractFactory<X extends Field<X>>
 
     X mmul(DifferentialFunction<X> arrayField, DifferentialFunction<X> y);
 
+    ArrayField mmul(DifferentialFunction<ArrayField> input, DifferentialFunction<ArrayField> y, MMulTranspose mMulTranspose);
+
     X tensorMmul(DifferentialFunction<X> arrayField, DifferentialFunction<X> y, int[][] dimensions);
 
     /*
@@ -223,4 +226,8 @@ public interface AbstractFactory<X extends Field<X>>
     X seluDerivative(X value, X wrt);
 
     X tanhDerivative(X value, X wrt);
+
+
+
+    X logSoftmax(X value);
 }

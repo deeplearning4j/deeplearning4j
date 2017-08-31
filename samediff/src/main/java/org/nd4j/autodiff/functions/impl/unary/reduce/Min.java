@@ -5,6 +5,9 @@ import org.nd4j.autodiff.functions.AbstractReduceUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Collections;
+import java.util.List;
+
 public class Min extends AbstractReduceUnaryFunction<ArrayField> {
 
     public Min(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] dimensions) {
@@ -15,7 +18,7 @@ public class Min extends AbstractReduceUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().max(arg().doGetValue(),dimensions);
+        return a().max(arg().doGetValue(),dimensions);
     }
 
 
@@ -26,8 +29,10 @@ public class Min extends AbstractReduceUnaryFunction<ArrayField> {
 
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
-        return sameDiff.getFunctionFactory().doGradChoose(this,i_v1,dimensions);
+        DifferentialFunction<ArrayField> ret = f().doGradChoose(this,i_v1.get(0),dimensions);
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 }

@@ -2,6 +2,7 @@ package org.nd4j.autodiff.functions;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 
 /**
  * Created by agibsonccc on 4/9/17.
@@ -161,8 +162,12 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> lossSquaredHinge(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
 
 
-    DifferentialFunction<X> mmul(int argNum, DifferentialFunction<X> x, DifferentialFunction<X> y);
-    DifferentialFunction<X> tensorMmul(DifferentialFunction<X> x, DifferentialFunction<X> y, int[][] dimensions, int argNum);
+    DifferentialFunction<ArrayField> mmul(DifferentialFunction<ArrayField> x,
+                                          DifferentialFunction<ArrayField> y,
+                                          MMulTranspose mMulTranspose);
+
+    DifferentialFunction<X> mmul(DifferentialFunction<X> x, DifferentialFunction<X> y);
+    DifferentialFunction<X> tensorMmul(DifferentialFunction<X> x, DifferentialFunction<X> y, int[][] dimensions);
 
     DifferentialFunction<X> softmaxDerivative(DifferentialFunction<X> functionInput, DifferentialFunction<X> wrt);
 

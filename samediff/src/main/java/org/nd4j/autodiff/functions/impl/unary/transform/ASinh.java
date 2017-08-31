@@ -5,6 +5,9 @@ import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Collections;
+import java.util.List;
+
 public class ASinh extends AbstractUnaryFunction<ArrayField> {
 
     public ASinh(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
@@ -14,18 +17,16 @@ public class ASinh extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().asinh(arg().getValue(true));
+        return a().asinh(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        throw new IllegalStateException();
-    }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().one(getResultShape()).div(sameDiff.getFunctionFactory().sqrt(arg().pow(2).add(
-                sameDiff.getFunctionFactory().one(getResultShape()))));
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        DifferentialFunction<ArrayField> ret = f().one(getResultShape()).div(f().sqrt(arg().pow(2).add(
+                f().one(getResultShape()))));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

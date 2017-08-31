@@ -905,7 +905,10 @@ public class Nd4j {
      * @param transposeB if true: transpose matrix b before mmul
      * @return result
      */
-    public static INDArray gemm(INDArray a, INDArray b, boolean transposeA, boolean transposeB) {
+    public static INDArray gemm(INDArray a,
+                                INDArray b,
+                                boolean transposeA,
+                                boolean transposeB) {
         int cRows = (transposeA ? a.columns() : a.rows());
         int cCols = (transposeB ? b.rows() : b.columns());
         INDArray c = Nd4j.createUninitialized(new int[] {cRows, cCols}, 'f');
@@ -925,8 +928,13 @@ public class Nd4j {
      * @param transposeB if true: transpose matrix b before mmul
      * @return result, i.e., matrix c is returned for convenience
      */
-    public static INDArray gemm(INDArray a, INDArray b, INDArray c, boolean transposeA, boolean transposeB,
-                                double alpha, double beta) {
+    public static INDArray gemm(INDArray a,
+                                INDArray b,
+                                INDArray c,
+                                boolean transposeA,
+                                boolean transposeB,
+                                double alpha,
+                                double beta) {
         getBlasWrapper().level3().gemm(a, b, c, transposeA, transposeB, alpha, beta);
         return c;
     }

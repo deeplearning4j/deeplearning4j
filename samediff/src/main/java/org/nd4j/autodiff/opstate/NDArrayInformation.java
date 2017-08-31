@@ -14,7 +14,6 @@ import java.util.UUID;
  * Created by agibsonccc on 4/6/17.
  */
 @Data()
-@EqualsAndHashCode(exclude = "owner")
 @Builder
 public class NDArrayInformation implements Serializable {
     private int[] shape;
@@ -68,6 +67,31 @@ public class NDArrayInformation implements Serializable {
             throw new IllegalStateException("No owner set.");
         return owner.getScalarValue();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        NDArrayInformation that = (NDArrayInformation) o;
+
+        if (!Arrays.equals(shape, that.shape)) return false;
+        if (id != null ? !id.equals(that.id) : that.id != null) return false;
+        if (scalarValue != null ? !scalarValue.equals(that.scalarValue) : that.scalarValue != null) return false;
+        return arrId != null ? arrId.equals(that.arrId) : that.arrId == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + Arrays.hashCode(shape);
+        result = 31 * result + (id != null ? id.hashCode() : 0);
+        result = 31 * result + (owner != null ? owner.hashCode() : 0);
+        result = 31 * result + (scalarValue != null ? scalarValue.hashCode() : 0);
+        result = 31 * result + (arrId != null ? arrId.hashCode() : 0);
+        return result;
+    }
+
     @Override
     public String toString() {
         return "NDArrayInformation{" +

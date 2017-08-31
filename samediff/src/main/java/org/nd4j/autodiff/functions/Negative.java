@@ -1,9 +1,9 @@
 package org.nd4j.autodiff.functions;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
 
 
@@ -33,8 +33,8 @@ public class Negative<X extends Field<X>> extends AbstractUnaryFunction<X> {
     }
 
     @Override
-    public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
-        return (arg().diff(i_v)).negate();
+    public List<DifferentialFunction<X>> diff(List<DifferentialFunction<X>> i_v) {
+        return Arrays.asList(arg().diff(i_v).get(0).negate());
     }
 
     @Override

@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.google.common.base.Preconditions;
 import lombok.*;
+import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
@@ -31,13 +32,13 @@ public abstract class DifferentialFunction<X extends Field<X>>
     @Getter
     @Setter
     protected int vertexId;
+    @Getter
+    @Setter
+    protected DifferentialFunction<X> gradient;
+
     protected Object[] extraArgs;
 
 
-    @Override
-    public double getReal() {
-        throw new UnsupportedOperationException("Get real not supported for array operations");
-    }
 
 
     /**
@@ -61,6 +62,11 @@ public abstract class DifferentialFunction<X extends Field<X>>
         return opState.getResult().getShape();
     }
 
+
+    public  boolean isVariable() {
+        return false;
+    }
+
     /**
      * Get the value of this function
      * @return
@@ -68,6 +74,21 @@ public abstract class DifferentialFunction<X extends Field<X>>
     public abstract X doGetValue();
 
 
+    /**
+     * Shortcut for the {@link DifferentialFunctionFactory}
+     * @return
+     */
+    public DifferentialFunctionFactory<ArrayField> f() {
+        return sameDiff.getFunctionFactory();
+    }
+
+    /**
+     * Shortcut for the {@link ArrayFactory}
+     * @return
+     */
+    public ArrayFactory a() {
+        return sameDiff.getArrayFactory();
+    }
 
 
     /**
@@ -87,13 +108,14 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
         X val = doGetValue();
         if(val instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) val;
+            ArrayField arrayField = sameDiff.setupArrayField((ArrayField) val);
+            val = (X) arrayField;
             Preconditions.checkState(arrayField.getOps() == this.sameDiff,"Same diff instances for get value not the same.");
 
         }
 
         if(val instanceof ArrayField && !freeze) {
-            ArrayField arrayField = (ArrayField) val;
+            ArrayField arrayField = sameDiff.setupArrayField((ArrayField) val);
             Preconditions.checkState(arrayField.getOps() == this.sameDiff,"Same diff instances for get value not the same.");
             NDArrayVertex vertex = (NDArrayVertex) getSameDiff().getGraph().getVertex(getVertexId());
             arrayField.setVertex(vertex);
@@ -136,12 +158,9 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
 
-    public boolean isVariable() {
-        return false;
-    }
 
     @Override
-    public abstract DifferentialFunction<X> diff(DifferentialFunction<X> i_v1);
+    public abstract List<DifferentialFunction<X>> diff(List<DifferentialFunction<X>> i_v1);
 
     private void validateDifferentialFunctionGraph(DifferentialFunction<X> function) {
         Preconditions.checkState(function.getSameDiff() == this.getSameDiff(),"Function applications must be contained in same graph. The left " + function +" must match this function " + this);
@@ -196,8 +215,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> inversei() {
-        DifferentialFunction<X> ret = new Inverse<>(sameDiff,this,true);
-        return ret;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -208,15 +227,14 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> muli(double i_n) {
-        PolynomialTerm<X> ret =  new PolynomialTerm<>(sameDiff,i_n, this, 1,true);
-        return ret;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public DifferentialFunction<X> powi(int i_n) {
-        PolynomialTerm<X> ret = new PolynomialTerm<>(sameDiff,1L,
-                this, i_n,true);
-        return ret;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -235,7 +253,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> divi(double v) {
-        Scalar<X> constant = new Scalar<>(sameDiff, 
+        Scalar<X> constant = new Scalar<>(sameDiff,
                 v,true);
         return this.divi(constant);
     }
@@ -311,8 +329,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> inverse() {
-        DifferentialFunction<X> ret = new Inverse<>(sameDiff,this.mul(1.0));
-        return ret;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -329,8 +347,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> pow(int i_n) {
-        PolynomialTerm<X> ret = new PolynomialTerm<>(sameDiff,1L, this, i_n);
-        return ret;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -371,6 +388,11 @@ public abstract class DifferentialFunction<X extends Field<X>>
                 shape,
                 null);
 
+    }
+
+    @Override
+    public ArrayField logSoftmax() {
+        return null;
     }
 
     @Override
@@ -1001,7 +1023,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
 
     public DifferentialFunction<ArrayField> getDiffFunctionInput(DifferentialFunction<X> other) {
-      return   other == this ?
+        return   other == this ?
                 sameDiff.getFunctionFactory().var(UUID.randomUUID().toString(),
                         sameDiff.getArrayFactory().one(getResultShape())) :
                 arg();
@@ -1011,21 +1033,35 @@ public abstract class DifferentialFunction<X extends Field<X>>
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
 
         DifferentialFunction<?> that = (DifferentialFunction<?>) o;
 
         if (vertexId != that.vertexId) return false;
-        // Probably incorrect - comparing Object[] arrays with Arrays.equals
-        return Arrays.equals(extraArgs, that.extraArgs);
+        if (opState != null ? !opState.equals(that.opState) : that.opState != null) return false;
+        if (gradient != null ? !gradient.equals(that.gradient) : that.gradient != null) return false;
+        return true;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
+        result = 31 * result + (opState != null ? opState.hashCode() : 0);
         result = 31 * result + vertexId;
+        result = 31 * result + (gradient != null ? gradient.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(extraArgs);
         return result;
+    }
+
+    @Override
+    public double getReal() {
+        throw new UnsupportedOperationException("Get real not supported for array operations");
+    }
+
+
+    protected void validateDifferentialFunctionsameDiff(
+            List<DifferentialFunction<X>> function) {
+        for(DifferentialFunction<X> differentialFunction : function)
+            validateDifferentialFunctionsameDiff(differentialFunction);
     }
 
     protected void validateDifferentialFunctionsameDiff(

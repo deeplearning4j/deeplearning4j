@@ -5,6 +5,9 @@ import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Collections;
+import java.util.List;
+
 public class HardTanh extends AbstractUnaryFunction<ArrayField> {
     public HardTanh(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
@@ -12,17 +15,15 @@ public class HardTanh extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().hardTanh(arg().getValue(true));
+        return a().hardTanh(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().hardTanhDerivative(sameDiff.getFunctionFactory().val(getValue(true))).mul(arg().diff(i_v));
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        DifferentialFunction<ArrayField> ret = f().hardTanhDerivative(f().val(getValue(true)));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

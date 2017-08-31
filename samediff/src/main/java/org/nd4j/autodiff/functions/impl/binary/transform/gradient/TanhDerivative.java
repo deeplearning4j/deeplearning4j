@@ -2,10 +2,12 @@ package org.nd4j.autodiff.functions.impl.binary.transform.gradient;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractBinaryFunction;
-import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
+
+import java.util.Collections;
+import java.util.List;
 
 public class TanhDerivative extends AbstractBinaryFunction<ArrayField> {
 
@@ -25,14 +27,12 @@ public class TanhDerivative extends AbstractBinaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().tanhDerivative(larg().getValue(true),rarg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.tanh(arg().getReal());
-    }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().one(getResultShape()).div(sameDiff.getFunctionFactory().cosh(arg())).pow(2);
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        DifferentialFunction<ArrayField> ret = f().one(getResultShape()).div(sameDiff.getFunctionFactory().cosh(arg())).pow(2);
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

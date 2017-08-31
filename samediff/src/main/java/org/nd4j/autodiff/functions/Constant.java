@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
@@ -81,9 +82,9 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
     @Override
-    public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
+    public List<DifferentialFunction<X>> diff(List<DifferentialFunction<X>> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
-        return new Zero<>(sameDiff,shape);
+        return Arrays.asList(new Zero<>(sameDiff,shape));
     }
 
     @Override

@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.accum.LogSumExp;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
@@ -91,7 +92,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     public Nd4jTestsC(Nd4jBackend backend) {
         super(backend);
-          this.initialType = Nd4j.dataType();
+        this.initialType = Nd4j.dataType();
     }
 
 
@@ -231,6 +232,32 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray testMem = Nd4j.create(10, 10);
     }
 
+
+    @Test
+    public void testMmulWithTranspose() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray arr2 = Nd4j.linspace(1,4,4).reshape(2,2).transpose();
+        INDArray arrTransposeAssertion = arr.transpose().mmul(arr2);
+        MMulTranspose mMulTranspose = MMulTranspose.builder()
+                .transposeA(true)
+                .a(arr)
+                .b(arr2)
+                .build();
+
+        INDArray testResult = arr.mmul(arr2,mMulTranspose);
+        assertEquals(arrTransposeAssertion,testResult);
+
+
+        INDArray bTransposeAssertion = arr.mmul(arr2.transpose());
+        mMulTranspose = MMulTranspose.builder()
+                .transposeB(true)
+                .a(arr)
+                .b(arr2)
+                .build();
+
+        INDArray bTest = arr.mmul(arr2,mMulTranspose);
+        assertEquals(bTransposeAssertion,bTest);
+    }
 
 
     @Test

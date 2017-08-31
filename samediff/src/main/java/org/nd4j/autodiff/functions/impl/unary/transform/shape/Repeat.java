@@ -6,6 +6,8 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.List;
+
 public class Repeat  extends AbstractUnaryFunction<ArrayField> {
 
     private int axis;
@@ -19,13 +21,9 @@ public class Repeat  extends AbstractUnaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().repeat(arg().getValue(true),axis);
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         throw new UnsupportedOperationException();
     }
 

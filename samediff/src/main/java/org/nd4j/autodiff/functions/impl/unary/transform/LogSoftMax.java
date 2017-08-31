@@ -4,7 +4,9 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+
+import java.util.Collections;
+import java.util.List;
 
 public class LogSoftMax extends AbstractUnaryFunction<ArrayField> {
     public LogSoftMax(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
@@ -13,17 +15,16 @@ public class LogSoftMax extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().softmax(arg().getValue(true));
+        return a().logSoftmax(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().logSoftmax(i_v).mul(arg().diff(i_v));
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        DifferentialFunction<ArrayField> ret = f().logSoftmax(i_v.get(0));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

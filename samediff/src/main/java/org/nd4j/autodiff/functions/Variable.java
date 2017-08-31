@@ -6,6 +6,7 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -112,10 +113,16 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
     @Override
-    public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
+    public List<DifferentialFunction<X>> diff(List<DifferentialFunction<X>> i_v) {
         //default value is 1.0 (constant)
-        return (DifferentialFunction<X>) (i_v == this ? sameDiff.getFunctionFactory().one(i_v.getResultShape()) :
-                sameDiff.getFunctionFactory().zero(i_v.getResultShape()));
+        List<DifferentialFunction<X>> ret = new ArrayList<>();
+       if(i_v == this)
+           ret.add((DifferentialFunction<X>) sameDiff.getFunctionFactory().one(i_v.get(0)
+                   .getResultShape()));
+           else
+               ret.add((DifferentialFunction<X>) sameDiff.getFunctionFactory().zero(i_v.get(0).getResultShape()));
+        return ret;
+
 
     }
 

@@ -5,6 +5,9 @@ import org.nd4j.autodiff.functions.AbstractReduceUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Collections;
+import java.util.List;
+
 public class Norm2 extends AbstractReduceUnaryFunction<ArrayField> {
 
     public Norm2(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] dimensions) {
@@ -13,7 +16,7 @@ public class Norm2 extends AbstractReduceUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().norm1(arg().doGetValue(),dimensions);
+        return a().norm1(arg().doGetValue(),dimensions);
     }
 
 
@@ -25,7 +28,9 @@ public class Norm2 extends AbstractReduceUnaryFunction<ArrayField> {
 
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
-        return sameDiff.getFunctionFactory().doNormGrad(this,i_v1,"norm2",dimensions);
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
+        DifferentialFunction<ArrayField> ret = f().doNormGrad(this,i_v1.get(0),"norm2",dimensions);
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 }

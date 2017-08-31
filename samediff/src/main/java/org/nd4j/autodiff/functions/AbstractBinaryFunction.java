@@ -12,7 +12,7 @@ import java.util.List;
 public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extends DifferentialFunction<ArrayField> {
 
     protected DifferentialFunction<ArrayField> m_x1;
-    
+
     protected DifferentialFunction<ArrayField> m_x2;
 
     public AbstractBinaryFunction(SameDiff sameDiff,
@@ -21,7 +21,7 @@ public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extend
         this(sameDiff,i_v1,i_v2, OpState.OpType.TRANSFORM);
     }
 
-                                  public AbstractBinaryFunction(SameDiff sameDiff,
+    public AbstractBinaryFunction(SameDiff sameDiff,
                                   DifferentialFunction<ArrayField> i_v1,
                                   DifferentialFunction<ArrayField> i_v2,
                                   OpState.OpType opType) {

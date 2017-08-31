@@ -2,11 +2,13 @@ package org.nd4j.autodiff.functions.impl.binary.transform.gradient;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractBinaryFunction;
-import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLUDerivative;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class LeakyReluDerivative  extends AbstractBinaryFunction<ArrayField> {
     private double cutoff;
@@ -24,7 +26,10 @@ public class LeakyReluDerivative  extends AbstractBinaryFunction<ArrayField> {
     }
 
 
-    public LeakyReluDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v,DifferentialFunction<ArrayField> i_v2, double cutoff) {
+    public LeakyReluDerivative(SameDiff sameDiff,
+                               DifferentialFunction<ArrayField> i_v,
+                               DifferentialFunction<ArrayField> i_v2,
+                               double cutoff) {
         super(sameDiff, i_v, i_v2, OpState.OpType.GRADIENT,new Object[]{cutoff});
         this.cutoff = cutoff;
     }
@@ -34,14 +39,12 @@ public class LeakyReluDerivative  extends AbstractBinaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().leakyReluDerivative(larg().getValue(true),rarg().getValue(true) , cutoff);
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().zero(getResultShape());
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        DifferentialFunction<ArrayField> ret = f().zero(getResultShape());
+        arg().setGradient(ret);
+        return Arrays.asList(ret);
     }
 
     @Override

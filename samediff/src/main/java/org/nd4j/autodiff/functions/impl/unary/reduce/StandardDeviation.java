@@ -5,6 +5,9 @@ import org.nd4j.autodiff.functions.AbstractReduceUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Collections;
+import java.util.List;
+
 public class StandardDeviation  extends AbstractReduceUnaryFunction<ArrayField> {
     protected boolean biasCorrected;
 
@@ -20,7 +23,7 @@ public class StandardDeviation  extends AbstractReduceUnaryFunction<ArrayField> 
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().std(arg().doGetValue(),
+        return a().std(arg().doGetValue(),
                 biasCorrected ,
                 dimensions);
     }
@@ -33,10 +36,13 @@ public class StandardDeviation  extends AbstractReduceUnaryFunction<ArrayField> 
 
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
-        int inputs = sameDiff.getFunctionFactory().getInputLength(i_v1);
-        DifferentialFunction<ArrayField> g =  sameDiff.getFunctionFactory().doRepeat(this,i_v1,dimensions);
-        return g.mul(arg().sub(sameDiff.getFunctionFactory().mean(arg(),dimensions))).div(sameDiff.getFunctionFactory().one(g.getResultShape()).mul(inputs));
+        int inputs = f().getInputLength(i_v1.get(0));
+        DifferentialFunction<ArrayField> g =  f().doRepeat(this,i_v1.get(0),dimensions);
+        DifferentialFunction<ArrayField> ret = g.mul(arg().sub(f().mean(arg(),dimensions))).div(f()
+                .one(g.getResultShape()).mul(inputs));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 }

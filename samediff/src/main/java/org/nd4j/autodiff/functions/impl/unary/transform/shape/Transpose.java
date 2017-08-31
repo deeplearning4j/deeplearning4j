@@ -7,6 +7,9 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Collections;
+import java.util.List;
+
 public class Transpose extends AbstractUnaryFunction<ArrayField> {
     public Transpose(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff,i_v, ArrayUtil.reverseCopy(i_v.getValue(true).getInput().getShape()), OpState.OpType.SHAPE,extraArgs);
@@ -18,13 +21,9 @@ public class Transpose extends AbstractUnaryFunction<ArrayField> {
     }
 
     @Override
-    public double getReal() {
-        return Math.tan(arg().getReal());
-    }
-
-    @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return this;
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        arg().setGradient(this);
+        return Collections.singletonList(this);
     }
 
 

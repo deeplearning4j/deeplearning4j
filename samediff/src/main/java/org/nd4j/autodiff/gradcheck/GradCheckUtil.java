@@ -66,7 +66,6 @@ public class GradCheckUtil {
         sameDiff.graph().setGraphApply(gradGraph);
         //set the graph back to normal
         sameDiff.graph().setGraphApply(null);
-        sameDiff.grad(function,wrt);
         SameDiff opExec = SameDiff.create(sameDiff, sameDiff.graph());
 
         INDArray[] eval = opExec.eval(inputParameters);
