@@ -5,7 +5,6 @@ import lombok.Getter;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.samediff.SameDiff;
-import sun.plugin.javascript.navig.Array;
 
 import java.util.ArrayList;
 import java.util.Arrays;
