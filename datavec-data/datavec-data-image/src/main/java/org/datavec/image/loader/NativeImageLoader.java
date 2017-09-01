@@ -21,6 +21,7 @@ import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.*;
 import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.datavec.image.data.Image;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
@@ -211,6 +212,32 @@ public class NativeImageLoader extends BaseImageLoader {
         INDArray a = asMatrix(image);
         image.deallocate();
         return a;
+    }
+
+    @Override
+    public Image asImageMatrix(File f) throws IOException {
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
+            return asImageMatrix(bis);
+        }
+    }
+
+    @Override
+    public Image asImageMatrix(InputStream is) throws IOException {
+        byte[] bytes = IOUtils.toByteArray(is);
+        Mat image = imdecode(new Mat(bytes), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        if (image == null || image.empty()) {
+            PIX pix = pixReadMem(bytes, bytes.length);
+            if (pix == null) {
+                throw new IOException("Could not decode image from input stream");
+            }
+            image = convert(pix);
+            pixDestroy(pix);
+        }
+        INDArray a = asMatrix(image);
+        Image i = new Image(a, image.channels(), image.rows(), image.cols());
+
+        image.deallocate();
+        return i;
     }
 
     /**
