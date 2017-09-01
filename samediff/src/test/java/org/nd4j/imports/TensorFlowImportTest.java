@@ -58,4 +58,11 @@ public class TensorFlowImportTest {
         assertNotNull(graph);
     }
 
+
+    @Test
+    public void importGraph3() throws Exception {
+        SameDiff graph = TensorFlowImport.importGraph(new ClassPathResource("tf_graphs/max_log_reg.pb.txt").getFile());
+
+        assertNotNull(graph);
+    }
 }
