@@ -16,6 +16,7 @@ import play.server.Server;
 import java.io.File;
 import java.io.IOException;
 
+import static play.mvc.Controller.request;
 import static play.mvc.Results.*;
 
 /**
@@ -70,7 +71,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
         //return the host information for a given id
         routingDsl.POST("/transformprocess").routeTo(FunctionUtil.function0((() -> {
             try {
-                ImageTransformProcess transformProcess = ImageTransformProcess.fromJson(getJsonText());
+                ImageTransformProcess transformProcess = ImageTransformProcess.fromJson(getObjectFromRequest(request(), String.class));
                 setImageTransformProcess(transformProcess);
                 log.info("Transform process initialized");
                 return ok(Json.toJson(transformProcess));
@@ -83,7 +84,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
         //return the host information for a given id
         routingDsl.POST("/transformincrementalarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                SingleImageRecord record = objectMapper.readValue(getJsonText(), SingleImageRecord.class);
+                SingleImageRecord record = getObjectFromRequest(request(), SingleImageRecord.class);
                 if (record == null)
                     return badRequest();
                 return ok(Json.toJson(transformIncrementalArray(record)));
@@ -96,7 +97,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
         //return the host information for a given id
         routingDsl.POST("/transformarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                BatchImageRecord batch = objectMapper.readValue(getJsonText(), BatchImageRecord.class);
+                BatchImageRecord batch = getObjectFromRequest(request(), BatchImageRecord.class);
                 if (batch == null)
                     return badRequest();
                 return ok(Json.toJson(transformArray(batch)));
