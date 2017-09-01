@@ -1,10 +1,10 @@
 package org.deeplearning4j.nn.conf.dropout;
 
 import lombok.Data;
-import org.deeplearning4j.nn.conf.schedule.ISchedule;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**

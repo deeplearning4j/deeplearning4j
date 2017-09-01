@@ -1,10 +1,32 @@
 package org.deeplearning4j.nn.conf.schedule;
 
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.dropout.AlphaDropout;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.junit.Test;
+import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.linalg.schedule.MapSchedule;
+import org.nd4j.linalg.schedule.ScheduleType;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class TestSchedules {
+
+    @Test
+    public void testJson(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .learningRateSchedule()
+                .list()
+                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new DenseLayer.Builder().nIn(10).nOut(10).dropOut(0.7).build())
+                .layer(new DenseLayer.Builder().nIn(10).nOut(10).dropOut(new AlphaDropout(0.5)).build())
+                .build();
+
+        fail();
+    }
 
     @Test
     public void testMapSchedule(){

@@ -46,6 +46,7 @@ import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.databind.*;
 import org.nd4j.shade.jackson.databind.deser.BeanDeserializerModifier;
 import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
@@ -87,8 +88,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     public static final String CUSTOM_FUNCTIONALITY = "org.deeplearning4j.config.custom.enabled";
 
     protected Layer layer;
-    @Deprecated
-    protected double leakyreluAlpha;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected boolean miniBatch = true;
     protected int numIterations;
@@ -108,10 +107,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected Map<String, Double> learningRateByParam = new HashMap<>();
     protected Map<String, Double> l1ByParam = new HashMap<>();
     protected Map<String, Double> l2ByParam = new HashMap<>();
-    protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
-    protected double lrPolicyDecayRate;
-    protected double lrPolicySteps;
-    protected double lrPolicyPower;
+//    protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
+//    protected double lrPolicyDecayRate;
+//    protected double lrPolicySteps;
+//    protected double lrPolicyPower;
+    protected ISchedule learningRateSchedule;
+    protected ISchedule biasLearningRateSchedule;
     protected boolean pretrain;
 
     // this field defines preOutput cache
@@ -596,8 +597,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected Distribution dist = null;
         protected double learningRate = 1e-1;
         protected double biasLearningRate = Double.NaN;
-        protected Map<Integer, Double> learningRateSchedule = null;
-        protected double lrScoreBasedDecay;
+//        protected Map<Integer, Double> learningRateSchedule = null;
+//        protected double lrScoreBasedDecay;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
         protected double l1Bias = Double.NaN;
@@ -633,10 +634,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected boolean minimize = true;
         protected GradientNormalization gradientNormalization = GradientNormalization.None;
         protected double gradientNormalizationThreshold = 1.0;
-        protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
-        protected double lrPolicyDecayRate = Double.NaN;
-        protected double lrPolicySteps = Double.NaN;
-        protected double lrPolicyPower = Double.NaN;
+//        protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
+//        protected double lrPolicyDecayRate = Double.NaN;
+//        protected double lrPolicySteps = Double.NaN;
+//        protected double lrPolicyPower = Double.NaN;
+        protected ISchedule learningRateSchedule;
+        protected ISchedule biasLearningRateSchedule;
         protected boolean pretrain = false;
         protected List<LayerConstraint> allParamConstraints;
         protected List<LayerConstraint> weightConstraints;
@@ -663,10 +666,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 stepFunction = newConf.stepFunction;
                 useDropConnect = newConf.useDropConnect;
                 miniBatch = newConf.miniBatch;
-                learningRatePolicy = newConf.learningRatePolicy;
-                lrPolicyDecayRate = newConf.lrPolicyDecayRate;
-                lrPolicySteps = newConf.lrPolicySteps;
-                lrPolicyPower = newConf.lrPolicyPower;
+//                learningRatePolicy = newConf.learningRatePolicy;
+//                lrPolicyDecayRate = newConf.lrPolicyDecayRate;
+//                lrPolicySteps = newConf.lrPolicySteps;
+//                lrPolicyPower = newConf.lrPolicyPower;
+                learningRateSchedule = newConf.learningRateSchedule;
+                biasLearningRateSchedule = newConf.biasLearningRateSchedule;
                 pretrain = newConf.pretrain;
             }
         }
@@ -771,6 +776,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * Options: DefaultStepFunction (default), NegativeDefaultStepFunction
          * GradientStepFunction (for SGD), NegativeGradientStepFunction
          */
+        @Deprecated
         public Builder stepFunction(StepFunction stepFunction) {
             this.stepFunction = stepFunction;
             return this;
@@ -972,6 +978,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         /**
          * Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration.
          */
+        @Deprecated
         public Builder learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
             this.learningRateSchedule = learningRateSchedule;
             return this;
@@ -981,8 +988,14 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * Rate to decrease learningRate by when the score stops improving.
          * Learning rate is multiplied by this rate so ideally keep between 0 and 1.
          */
+        @Deprecated
         public Builder learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
             this.lrScoreBasedDecay = lrScoreBasedDecay;
+            return this;
+        }
+
+        public Builder learningRateSchedule(ISchedule learningRateSchedule){
+            this.learningRateSchedule = learningRateSchedule;
             return this;
         }
 
