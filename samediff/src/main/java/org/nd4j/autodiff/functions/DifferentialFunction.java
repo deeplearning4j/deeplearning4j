@@ -827,6 +827,31 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
+    public DifferentialFunction arg() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> max(double v) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> min(double v) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> fmod(double v) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> set(double v) {
+        return null;
+    }
+
+    @Override
     public DifferentialFunction<X> lossSquaredHinge(DifferentialFunction<X> i_y, int... dimensions) {
         return null;
     }

@@ -476,6 +476,26 @@ public class ArrayField implements Field<ArrayField> {
         return addTransformOp(new SELUDerivative().name());
     }
 
+    @Override
+    public ArrayField max(double v) {
+        return addScalarTransformOp(new ScalarMax().name(),v);
+    }
+
+    @Override
+    public ArrayField min(double v) {
+        return addScalarTransformOp(new ScalarMin().name(),v);
+    }
+
+    @Override
+    public ArrayField fmod(double v) {
+        return addScalarTransformOp(new ScalarFMod().name(),v);
+    }
+
+    @Override
+    public ArrayField set(double v) {
+        return addScalarTransformOp(new ScalarSet().name(),v);
+    }
+
 
     @Override
     public ArrayField sigmoid() {

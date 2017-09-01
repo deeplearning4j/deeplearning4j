@@ -26,7 +26,7 @@ public class ScalarSet extends AbstractScalarFunction<ArrayField> {
      */
     @Override
     public ArrayField doGetValue() {
-        return null;
+        return arg().getValue(true).set(scalarValue.doubleValue());
     }
 
     @Override

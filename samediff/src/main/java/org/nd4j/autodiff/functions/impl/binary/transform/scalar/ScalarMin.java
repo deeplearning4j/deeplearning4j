@@ -27,7 +27,7 @@ public class ScalarMin extends AbstractScalarFunction<ArrayField> {
      */
     @Override
     public ArrayField doGetValue() {
-        return arg().getValue(true).add(scalarValue.doubleValue());
+        return arg().getValue(true).min(scalarValue.doubleValue());
     }
 
     @Override

@@ -26,7 +26,7 @@ public class ScalarFMod extends AbstractScalarFunction<ArrayField> {
      */
     @Override
     public ArrayField doGetValue() {
-        return null;
+        return arg().getValue(true).fmod(scalarValue.doubleValue());
     }
 
     @Override

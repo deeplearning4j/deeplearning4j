@@ -27,7 +27,7 @@ public class ScalarRSub extends AbstractScalarFunction<ArrayField> {
      */
     @Override
     public ArrayField doGetValue() {
-        return arg().getValue(true).sub(scalarValue.doubleValue());
+        return arg().getValue(true).rsub(scalarValue.doubleValue());
     }
 
     @Override

@@ -27,7 +27,7 @@ public class ScalarMax extends AbstractScalarFunction<ArrayField> {
      */
     @Override
     public ArrayField doGetValue() {
-        return arg().getValue(true).add(scalarValue.doubleValue());
+        return arg().getValue(true).max(scalarValue.doubleValue());
     }
 
     @Override

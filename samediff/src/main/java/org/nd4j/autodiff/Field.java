@@ -229,4 +229,15 @@ public interface Field<X> extends CommutativeRing<X> {
     X tanhDerivative(X wrt);
 
     X seluDerivative(X wrt);
+
+    X max(double v);
+
+    X min(double v);
+
+    X fmod(double v);
+
+    X set(double v);
+
+
+
 }
