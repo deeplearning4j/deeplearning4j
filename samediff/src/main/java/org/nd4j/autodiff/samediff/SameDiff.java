@@ -2207,8 +2207,10 @@ public class SameDiff {
                     List<DifferentialFunction<ArrayField>> currentDiff = Arrays.asList(sameDiff.functionFactory.one(new int[]{1,1}));
 
                     for(OpExecAction action : opOrder) {
-                        if(action.getOpState() != null) {
-                            DifferentialFunction<ArrayField> func = action.getOpState().getDifferentialFunction();
+                        OpState opState = action.getOpState();
+                        if(opState != null) {
+                            DifferentialFunction<ArrayField> func = opState.getDifferentialFunction() != null ?
+                                    sameDiff.setupFunction(opState.getDifferentialFunction()) : null;
                             if(func != null) {
                                 currentDiff = func.diff(currentDiff);
                             }

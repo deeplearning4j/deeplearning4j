@@ -5,6 +5,7 @@ import lombok.Getter;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.samediff.SameDiff;
+import sun.plugin.javascript.navig.Array;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,6 +22,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
                        String i_name,
                        X i_v) {
         this(sameDiff,i_name, i_v, null);
+        validateFunctionReference(this);
     }
 
     protected Variable(SameDiff sameDiff,
@@ -31,6 +33,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
         setName(i_name);
         if (i_v != null) {
             m_x = i_v;
+            validateFunctionReference(this);
         } else {
             throw new IllegalArgumentException("Input not null value.");
         }
@@ -117,10 +120,10 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
         //default value is 1.0 (constant)
         List<DifferentialFunction<X>> ret = new ArrayList<>();
        if(i_v == this)
-           ret.add((DifferentialFunction<X>) sameDiff.getFunctionFactory().one(i_v.get(0)
-                   .getResultShape()));
+           ret.add((DifferentialFunction<X>) sameDiff.setupFunction(f().one(i_v.get(0)
+                   .getResultShape())));
            else
-               ret.add((DifferentialFunction<X>) sameDiff.getFunctionFactory().zero(i_v.get(0).getResultShape()));
+               ret.add((DifferentialFunction<X>) sameDiff.setupFunction(f().zero(i_v.get(0).getResultShape())));
         return ret;
 
 
@@ -156,8 +159,8 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public DifferentialFunction<X> dup() {
-        return new Variable<>(sameDiff, getName(),
-                m_x);
+        return (DifferentialFunction<X>)  sameDiff.setupFunction(new Variable<>(sameDiff, getName(),
+                (ArrayField) m_x));
     }
 
     @Override

@@ -11,11 +11,13 @@ import java.util.List;
 public class Sigmoid extends AbstractUnaryFunction<ArrayField> {
     public Sigmoid(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+        validateFunctionReference(i_v);
+        validateFunctionReference(this);
     }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().sigmoid(arg().getValue(true));
+        return a().sigmoid(arg().getValue(true));
     }
 
 

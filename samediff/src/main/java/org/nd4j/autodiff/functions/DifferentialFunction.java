@@ -854,6 +854,9 @@ public abstract class DifferentialFunction<X extends Field<X>>
                             String opName,
                             OpState.OpType opType,
                             int[] shape, Object[] extraArgs) {
+        validateFunctionReference(i_v1);
+        validateFunctionReference(i_v2);
+
         if(i_v1.getValue(true) instanceof ArrayField) {
             validateDifferentialFunctionGraph(i_v1);
             validateDifferentialFunctionGraph(i_v2);
@@ -966,6 +969,9 @@ public abstract class DifferentialFunction<X extends Field<X>>
                             String opName) {
         validateDifferentialFunctionGraph(i_v1);
         validateDifferentialFunctionGraph(i_v2);
+        validateFunctionReference(i_v1);
+        validateFunctionReference(i_v2);
+
         if(i_v1.getValue(true) instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) i_v1.getValue(true);
             addEdges(sameDiff,
@@ -996,8 +1002,33 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
 
+    /**
+     * Duplicate this function
+     * @return
+     */
     public abstract DifferentialFunction<X> dup();
 
+
+    protected void validateFunctionReference(List<DifferentialFunction<X>> reference) {
+        for(int i = 0; i < reference.size(); i++) {
+            validateFunctionReference(reference.get(i));
+        }
+
+    }
+    protected void validateFunctionReference(DifferentialFunction<X> reference) {
+        if(sameDiff.getFunctionInstances().containsKey(reference.getVertexId()))
+            Preconditions.checkState(reference == sameDiff.getFunctionInstances().get(reference.getVertexId()),"Found invalid reference " + reference + " for vertex id " + reference.getVertexId());
+
+
+    }
+
+    /**
+     * Return the vertex id
+     * of the result
+     * of this equation.
+     *
+     * @return
+     */
     public  int resultVertexId() {
         return vertexId;
     }

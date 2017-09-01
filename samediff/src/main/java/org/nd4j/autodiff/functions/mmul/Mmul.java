@@ -62,21 +62,23 @@ public class Mmul extends TensorMmul<ArrayField> {
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
         List<DifferentialFunction<ArrayField>> ret = new ArrayList<>();
-
-        DifferentialFunction<ArrayField> gradWrtX = f().reshape(f().mmul(i_v1.get(0),rarg(),
+        DifferentialFunction<ArrayField> setup = sameDiff.setupFunction(i_v1.get(0));
+        DifferentialFunction<ArrayField> gradWrtX = f().reshape(f().mmul(setup,rarg(),
                 MMulTranspose.builder()
-                .transposeB(!mMulTranspose.isTransposeB())
-                .transposeResult(mMulTranspose.isTransposeA())
-                .build()),larg().getResultShape());
+                        .transposeB(!mMulTranspose.isTransposeB())
+                        .transposeResult(mMulTranspose.isTransposeA())
+                        .build()),larg().getResultShape());
 
-        DifferentialFunction<ArrayField> gradWrtY = f().reshape(f().mmul(larg(),i_v1.get(0),
+        DifferentialFunction<ArrayField> gradWrtY = f().reshape(f().mmul(larg(),setup,
                 MMulTranspose.builder()
-                .transposeA(!mMulTranspose.isTransposeA())
-                .transposeResult(mMulTranspose.isTransposeB())
-                .build()),rarg().getResultShape());
+                        .transposeA(!mMulTranspose.isTransposeA())
+                        .transposeResult(mMulTranspose.isTransposeB())
+                        .build()),rarg().getResultShape());
 
         ret.add(gradWrtX);
         ret.add(gradWrtY);
+        validateFunctionReference(larg());
+        validateFunctionReference(rarg());
         larg().setGradient(gradWrtX);
         rarg().setGradient(gradWrtY);
         return ret;

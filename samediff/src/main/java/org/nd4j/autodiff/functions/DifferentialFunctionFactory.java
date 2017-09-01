@@ -388,7 +388,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
 
     @Override
     public DifferentialFunction<ArrayField> sigmoidDerivative(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> wrt) {
-        return sameDiff.setupFunction(new SigmoidDerivative(sameDiff,iX,wrt));
+        return sameDiff.setupFunction(new SigmoidDerivative(sameDiff,sameDiff.setupFunction(iX),sameDiff.setupFunction(wrt)));
 
     }
 
@@ -1008,7 +1008,6 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
     public  DifferentialFunction<ArrayField> doRepeat(DifferentialFunction<ArrayField> func,
                                                       DifferentialFunction<ArrayField> input,
                                                       int...axes) {
-        ArrayField arrayField = input.getValue(true);
         int[] inputShape = input.getResultShape();
         validateDifferentialFunctionsameDiff(func);
         validateDifferentialFunctionsameDiff(input);
