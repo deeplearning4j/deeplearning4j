@@ -6,7 +6,7 @@
 #include <graph/generated/graph_generated.h>
 #include <graph/generated/result_generated.h>
 
-#include <protobuf/core/framework/graph.pb.h>
+//#include <protobuf/core/framework/graph.pb.h>
 
 #include <Variable.h>
 #include <VariableSpace.h>
@@ -17,8 +17,8 @@
 #include <loops/transform.h>
 #include <ops/declarable/declarable_ops.h>
 
-#include <google/protobuf/text_format.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
+//#include <google/protobuf/text_format.h>
+//#include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include <fcntl.h>
 
@@ -524,8 +524,10 @@ namespace nd4j{
             return (Nd4jPointer) builder.GetBufferPointer();
         }
 
+
         template <typename T>
         Graph<T>* nd4j::graph::GraphExecutioner<T>::importFromTensorFlow(const char *fileName) {
+            /*
             if (fileName == nullptr)
                 return nullptr;
 
@@ -719,6 +721,8 @@ namespace nd4j{
             }
 
             return graph;
+             */
+            return nullptr;
         }
     }
 }

@@ -20,7 +20,7 @@ if(WIN32)
 endif()
 
 
-set(CMAKE_CXX_FLAGS  " -Wall -O3 -std=c++11 -fassociative-math -funsafe-math-optimizations -lprotobuf -lprotoc")
+set(CMAKE_CXX_FLAGS  " -Wall -O3 -std=c++11 -fassociative-math -funsafe-math-optimizations")
 
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -46,7 +46,7 @@ ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 message("CPU BLAS")
 add_definitions(-D__CPUBLAS__=true)
-add_library(nd4jcpu SHARED ../../blas/cpu/NativeOps.cpp ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h ../../include/protobuf/core/framework/allocation_description.pb.cc ../../include/protobuf/core/framework/attr_value.pb.cc ../../include/protobuf/core/framework/cost_graph.pb.cc ../../include/protobuf/core/framework/device_attributes.pb.cc ../../include/protobuf/core/framework/function.pb.cc ../../include/protobuf/core/framework/graph.pb.cc ../../include/protobuf/core/framework/graph_transfer_info.pb.cc ../../include/protobuf/core/framework/kernel_def.pb.cc ../../include/protobuf/core/framework/log_memory.pb.cc ../../include/protobuf/core/framework/node_def.pb.cc ../../include/protobuf/core/framework/op_def.pb.cc ../../include/protobuf/core/framework/op_gen_overrides.pb.cc ../../include/protobuf/core/framework/reader_base.pb.cc ../../include/protobuf/core/framework/remote_fused_graph_execute_info.pb.cc ../../include/protobuf/core/framework/resource_handle.pb.cc ../../include/protobuf/core/framework/step_stats.pb.cc ../../include/protobuf/core/framework/summary.pb.cc ../../include/protobuf/core/framework/tensor.pb.cc ../../include/protobuf/core/framework/tensor_description.pb.cc ../../include/protobuf/core/framework/tensor_shape.pb.cc ../../include/protobuf/core/framework/tensor_slice.pb.cc ../../include/protobuf/core/framework/types.pb.cc ../../include/protobuf/core/framework/variable.pb.cc ../../include/protobuf/core/framework/versions.pb.cc ../../include/ops/declarable/cpu/parity_ops.h)
+add_library(nd4jcpu SHARED ../../blas/cpu/NativeOps.cpp ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h ../../include/ops/declarable/cpu/parity_ops.h)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
     message(FATAL_ERROR "You need at least GCC 4.9")

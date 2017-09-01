@@ -6,6 +6,8 @@
 #include "testlayers.h"
 #include <GraphExecutioner.h>
 
+/*
+
 using namespace nd4j::graph;
 
 class ProtoBufTests : public testing::Test {
@@ -89,3 +91,4 @@ TEST_F(ProtoBufTests, TestTextLoad3) {
     // now we're veryfying op graph
     ASSERT_EQ(1, graph->totalNodes());
 }
+*/
