@@ -19,10 +19,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.*;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This class provides TensorFlow graphs & models import
@@ -201,7 +198,9 @@ public class TensorFlowImport {
 
             for (int e = 0; e < dims; e++) {
                 // TODO: eventually we want long shapes :(
-                dimensions.add((int) tfTensor.getTensorShape().getDim(e).getSize());
+                int dim = (int) tfTensor.getTensorShape().getDim(e).getSize();
+
+                dimensions.add(dim);
             }
         }
         arrayShape = Ints.toArray(dimensions);
@@ -210,6 +209,9 @@ public class TensorFlowImport {
             // valueOf
             if (tfTensor.getIntValCount() == 1) {
                 int val = tfTensor.getIntVal(0);
+
+                if (arrayShape == null || arrayShape.length == 0)
+                    arrayShape = new int[]{1, 1};
 
                 INDArray array = Nd4j.valueArrayOf(arrayShape, (double) val);
                 return array;
@@ -229,6 +231,9 @@ public class TensorFlowImport {
         } else if (tfTensor.getDtype() == DataType.DT_FLOAT) {
             if (tfTensor.getFloatValCount() == 1) {
                 float val = tfTensor.getFloatVal(0);
+
+                if (arrayShape == null || arrayShape.length == 0)
+                    arrayShape = new int[]{1, 1};
 
                 INDArray array = Nd4j.valueArrayOf(arrayShape, (double) val);
                 return array;
@@ -253,6 +258,9 @@ public class TensorFlowImport {
             if (tfTensor.getDoubleValCount() == 1) {
                 double val = tfTensor.getDoubleVal(0);
 
+                if (arrayShape == null || arrayShape.length == 0)
+                    arrayShape = new int[]{1, 1};
+
                 INDArray array = Nd4j.valueArrayOf(arrayShape, val);
                 return array;
             } else if (tfTensor.getDoubleValCount() > 0) {
@@ -274,6 +282,9 @@ public class TensorFlowImport {
         } else if (tfTensor.getDtype() == DataType.DT_INT64) {
             if (tfTensor.getInt64ValCount() == 1) {
                 double val = (double) tfTensor.getInt64Val(0);
+
+                if (arrayShape == null || arrayShape.length == 0)
+                    arrayShape = new int[]{1, 1};
 
                 INDArray array = Nd4j.valueArrayOf(arrayShape, val);
                 return array;
