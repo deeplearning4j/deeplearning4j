@@ -1,5 +1,7 @@
 package org.nd4j.linalg.schedule;
 
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+
 import java.io.Serializable;
 
 /**
@@ -12,6 +14,7 @@ import java.io.Serializable;
  *
  * @author Alex Black
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface ISchedule extends Serializable, Cloneable {
 
     /**
