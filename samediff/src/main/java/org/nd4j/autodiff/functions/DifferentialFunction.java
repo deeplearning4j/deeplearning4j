@@ -134,7 +134,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
             this.sameDiff.getGraph().unfreeze();
         }
 
-        return val;
+        return (X) sameDiff.setupArrayField((ArrayField) val);
     }
 
 

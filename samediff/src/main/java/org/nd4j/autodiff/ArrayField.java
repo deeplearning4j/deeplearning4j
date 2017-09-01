@@ -1025,7 +1025,7 @@ public class ArrayField implements Field<ArrayField> {
                 .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(opType).build();
         xToZ.setResult(resultInfo);
-        if(vertex.vertexID() == newVertex.vertexID())
+        if(!ops.graph().isFrozen() && vertex.vertexID() == newVertex.vertexID())
             throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
                     " when next vertex id was " + this.ops.getGraph().getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
 
