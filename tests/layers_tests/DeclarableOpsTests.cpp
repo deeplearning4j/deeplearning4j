@@ -101,7 +101,7 @@ TEST_F(DeclarableOpsTests, DivergentCheck1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, AddMatrices) {
+TEST_F(DeclarableOpsTests, AddMatrices1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(5, 3, 'c');
@@ -124,7 +124,7 @@ TEST_F(DeclarableOpsTests, AddMatrices) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, AddMatrixVector) {
+TEST_F(DeclarableOpsTests, AddMatrixVector1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(1, 15, 'c');
@@ -147,7 +147,7 @@ TEST_F(DeclarableOpsTests, AddMatrixVector) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, AddVectorVector) {
+TEST_F(DeclarableOpsTests, AddVectorVector1) {
 	
 	NDArray<float> x(1, 15, 'c');
 	NDArray<float> y(1, 15, 'c');
@@ -171,7 +171,7 @@ TEST_F(DeclarableOpsTests, AddVectorVector) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, AddMatrixScalar) {
+TEST_F(DeclarableOpsTests, AddMatrixScalar1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(1, 1, 'c');
@@ -195,7 +195,7 @@ TEST_F(DeclarableOpsTests, AddMatrixScalar) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, AddScalarScalar) {
+TEST_F(DeclarableOpsTests, AddScalarScalar1) {
 	
 	NDArray<float> x(1, 1, 'c');
 	NDArray<float> y(1, 1, 'c');
@@ -219,7 +219,7 @@ TEST_F(DeclarableOpsTests, AddScalarScalar) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, SubtractMatrices) {
+TEST_F(DeclarableOpsTests, SubtractMatrices1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(5, 3, 'c');
@@ -242,7 +242,7 @@ TEST_F(DeclarableOpsTests, SubtractMatrices) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, SubtractMatrixVector) {
+TEST_F(DeclarableOpsTests, SubtractMatrixVector1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(1, 15, 'c');
@@ -265,7 +265,7 @@ TEST_F(DeclarableOpsTests, SubtractMatrixVector) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, SubtractVectorVector) {
+TEST_F(DeclarableOpsTests, SubtractVectorVector1) {
 	
 	NDArray<float> x(1, 15, 'c');
 	NDArray<float> y(1, 15, 'c');
@@ -289,7 +289,7 @@ TEST_F(DeclarableOpsTests, SubtractVectorVector) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, SubtractMatrixScalar) {
+TEST_F(DeclarableOpsTests, SubtractMatrixScalar1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(1, 1, 'c');
@@ -313,7 +313,7 @@ TEST_F(DeclarableOpsTests, SubtractMatrixScalar) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, SubtractScalarScalar) {
+TEST_F(DeclarableOpsTests, SubtractScalarScalar1) {
 	
 	NDArray<float> x(1, 1, 'c');
 	NDArray<float> y(1, 1, 'c');
@@ -336,7 +336,7 @@ TEST_F(DeclarableOpsTests, SubtractScalarScalar) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseSubtractMatrices) {
+TEST_F(DeclarableOpsTests, ReverseSubtractMatrices1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(5, 3, 'c');
@@ -359,7 +359,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractMatrices) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseSubtractMatrixVector) {
+TEST_F(DeclarableOpsTests, ReverseSubtractMatrixVector1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(1, 15, 'c');
@@ -382,7 +382,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractMatrixVector) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseSubtractVectorVector) {
+TEST_F(DeclarableOpsTests, ReverseSubtractVectorVector1) {
 	
 	NDArray<float> x(1, 15, 'c');
 	NDArray<float> y(1, 15, 'c');
@@ -406,7 +406,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractVectorVector) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseSubtractMatrixScalar) {
+TEST_F(DeclarableOpsTests, ReverseSubtractMatrixScalar1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(1, 1, 'c');
@@ -430,7 +430,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractMatrixScalar) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseSubtractScalarScalar) {
+TEST_F(DeclarableOpsTests, ReverseSubtractScalarScalar1) {
 	
 	NDArray<float> x(1, 1, 'c');
 	NDArray<float> y(1, 1, 'c');
@@ -453,7 +453,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractScalarScalar) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, MultiplyMatrices) {
+TEST_F(DeclarableOpsTests, MultiplyMatrices1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(5, 3, 'c');
@@ -476,7 +476,7 @@ TEST_F(DeclarableOpsTests, MultiplyMatrices) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, MultiplyMatrixVector) {
+TEST_F(DeclarableOpsTests, MultiplyMatrixVector1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(1, 15, 'c');
@@ -499,7 +499,7 @@ TEST_F(DeclarableOpsTests, MultiplyMatrixVector) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, MultiplyVectorVector) {
+TEST_F(DeclarableOpsTests, MultiplyVectorVector1) {
 	
 	NDArray<float> x(1, 15, 'c');
 	NDArray<float> y(1, 15, 'c');
@@ -547,7 +547,7 @@ TEST_F(DeclarableOpsTests, MultiplyMatrixScalar) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, MultiplyScalarScalar) {
+TEST_F(DeclarableOpsTests, MultiplyScalarScalar1) {
 	
 	NDArray<float> x(1, 1, 'c');
 	NDArray<float> y(1, 1, 'c');
@@ -571,7 +571,7 @@ TEST_F(DeclarableOpsTests, MultiplyScalarScalar) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, DivideMatrices) {
+TEST_F(DeclarableOpsTests, DivideMatrices1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(5, 3, 'c');
@@ -594,7 +594,7 @@ TEST_F(DeclarableOpsTests, DivideMatrices) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, DivideMatrixVector) {
+TEST_F(DeclarableOpsTests, DivideMatrixVector1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(1, 15, 'c');
@@ -617,7 +617,7 @@ TEST_F(DeclarableOpsTests, DivideMatrixVector) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, DivideVectorVector) {
+TEST_F(DeclarableOpsTests, DivideVectorVector1) {
 	
 	NDArray<float> x(1, 15, 'c');
 	NDArray<float> y(1, 15, 'c');
@@ -641,7 +641,7 @@ TEST_F(DeclarableOpsTests, DivideVectorVector) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, DivideMatrixScalar) {
+TEST_F(DeclarableOpsTests, DivideMatrixScalar1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(1, 1, 'c');
@@ -665,7 +665,7 @@ TEST_F(DeclarableOpsTests, DivideMatrixScalar) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, DivideScalarScalar) {
+TEST_F(DeclarableOpsTests, DivideScalarScalar1) {
 	
 	NDArray<float> x(1, 1, 'c');
 	NDArray<float> y(1, 1, 'c');
@@ -689,7 +689,7 @@ TEST_F(DeclarableOpsTests, DivideScalarScalar) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseDivideMatrices) {
+TEST_F(DeclarableOpsTests, ReverseDivideMatrices1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(5, 3, 'c');
@@ -712,7 +712,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideMatrices) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseDivideMatrixVector) {
+TEST_F(DeclarableOpsTests, ReverseDivideMatrixVector1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(1, 15, 'c');
@@ -735,7 +735,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideMatrixVector) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseDivideVectorVector) {
+TEST_F(DeclarableOpsTests, ReverseDivideVectorVector1) {
 	
 	NDArray<float> x(1, 15, 'c');
 	NDArray<float> y(1, 15, 'c');
@@ -759,7 +759,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideVectorVector) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseDivideMatrixScalar) {
+TEST_F(DeclarableOpsTests, ReverseDivideMatrixScalar1) {
 	
 	NDArray<float> x(5, 3, 'c');
 	NDArray<float> y(1, 1, 'c');
@@ -783,7 +783,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideMatrixScalar) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, ReverseDivideScalarScalar) {
+TEST_F(DeclarableOpsTests, ReverseDivideScalarScalar1) {
 	
 	NDArray<float> x(1, 1, 'c');
 	NDArray<float> y(1, 1, 'c');
@@ -807,7 +807,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideScalarScalar) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests, Reshape) {
+TEST_F(DeclarableOpsTests, Reshape1) {
 	const std::vector<int> xShape = {5,4,3};
 	const std::vector<int> yShape = {3,5,4};
 	
