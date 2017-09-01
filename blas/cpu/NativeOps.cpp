@@ -32,6 +32,7 @@
 #include "GraphExecutioner.cpp"
 #include <layers/layers_factory.h>
 #include <ops/declarable/declarable_ops.h>
+#include <ops/declarable/cpu/parity_ops.h>
 
 char *name;
 bool nameSet = false;

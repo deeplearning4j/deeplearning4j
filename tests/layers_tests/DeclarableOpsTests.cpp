@@ -827,3 +827,10 @@ TEST_F(DeclarableOpsTests, Reshape1) {
     ASSERT_TRUE(x.isSameShape(&y));	
 
 }
+
+
+TEST_F(DeclarableOpsTests, TestRegistrator1) {
+    auto res = nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
+
+    nd4j_printf("Ops: %s\n", res)
+}
