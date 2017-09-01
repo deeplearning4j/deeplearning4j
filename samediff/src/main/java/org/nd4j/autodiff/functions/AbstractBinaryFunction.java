@@ -31,7 +31,8 @@ public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extend
             m_x2 = i_v2;
             validateDifferentialFunctionsameDiff(i_v1);
             validateDifferentialFunctionsameDiff(i_v2);
-
+            validateFunctionReference(i_v1);
+            validateFunctionReference(i_v2);
             this.sameDiff = sameDiff;
 
             addEdges(sameDiff,i_v1,i_v2,functionName(),opType,i_v1.getResultShape(),null);
@@ -76,15 +77,15 @@ public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extend
 
     public DifferentialFunction<ArrayField> larg() {
         if(m_x1 == this)
-            return m_x1.dup();
-        return m_x1;
+            return sameDiff.setupFunction(m_x1.dup());
+        return sameDiff.setupFunction(m_x1);
     }
 
 
     public DifferentialFunction<ArrayField> rarg() {
         if(m_x2 == this)
-            return m_x2.dup();
-        return m_x2;
+            return sameDiff.setupFunction(m_x2.dup());
+        return sameDiff.setupFunction(m_x2);
     }
 
 

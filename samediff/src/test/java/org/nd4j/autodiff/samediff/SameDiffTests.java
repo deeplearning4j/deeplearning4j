@@ -371,10 +371,20 @@ public class SameDiffTests {
             }
         });
 
+
         List<Op> ops = outside.getFunction("loss").execBackwards();
         System.out.println(ops);
 
+        SDVariable gradWrtX = outside.getFunction("loss").grad("x");
+        SDVariable gradWrtW = outside.getFunction("loss").grad("w");
+        assumeNotNull(gradWrtX);
+        assumeNotNull(gradWrtW);
 
+
+        INDArray assertion = Nd4j.create(new double[]{0.81,-1.255,1.80499983}).reshape(3,1);
+        assertEquals(assertion,gradWrtW.getArr());
+        System.out.println(gradWrtX);
+        System.out.println(gradWrtW);
 
 
     }

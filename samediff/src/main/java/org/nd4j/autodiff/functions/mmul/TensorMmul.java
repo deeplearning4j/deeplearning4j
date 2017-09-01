@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions.mmul;
 
+import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.ArrayField;
@@ -50,6 +51,9 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
 
         this.m_x1 = i_v1;
         this.m_x2 = i_v2;
+        validateFunctionReference(i_v1);
+        validateFunctionReference(i_v2);
+
         if(!addedEdges) {
             ArrayField a = i_v1.getValue(true);
             ArrayField b = i_v2.getValue(true);

@@ -80,6 +80,24 @@ public class SameDiff {
 
 
     /**
+     * Returns this samediff instance's
+     * {@link DifferentialFunctionFactory}
+     * @return
+     */
+    public DifferentialFunctionFactory<ArrayField> f() {
+        return functionFactory;
+    }
+
+    /**
+     * Returns this samediff instances'
+     * {@link ArrayFactory}
+     * @return
+     */
+    public ArrayFactory a() {
+        return arrayFactory;
+    }
+
+    /**
      *
      * @param sameDiff
      * @return
@@ -2207,8 +2225,10 @@ public class SameDiff {
                     List<DifferentialFunction<ArrayField>> currentDiff = Arrays.asList(sameDiff.functionFactory.one(new int[]{1,1}));
 
                     for(OpExecAction action : opOrder) {
-                        if(action.getOpState() != null) {
-                            DifferentialFunction<ArrayField> func = action.getOpState().getDifferentialFunction();
+                        OpState opState = action.getOpState();
+                        if(opState != null) {
+                            DifferentialFunction<ArrayField> func = opState.getDifferentialFunction() != null ?
+                                    sameDiff.setupFunction(opState.getDifferentialFunction()) : null;
                             if(func != null) {
                                 currentDiff = func.diff(currentDiff);
                             }

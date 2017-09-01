@@ -50,6 +50,9 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     private Graph<V,E> graphApply;
     @Getter
     private int nextVertexId;
+    private Edge<E> lastEdgeAdded;
+    private Edge<E> lastEdgeBeforeLastAdded;
+    private Vertex<V> lastVertexAdded;
 
     public Graph() {
         this(true);
@@ -102,12 +105,13 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         // the graph
         if(graphApply != null) {
             log.trace("Adding to another graph instead " + vVertex);
-            ArrayField arrayField = (ArrayField) vVertex.getValue();
             graphApply.addVertex(vVertex);
         }
         else
             this.vertices.put(vVertex.getIdx(),vVertex);
 
+        //track the last vertex added
+        lastVertexAdded = vVertex;
     }
 
 
@@ -202,6 +206,13 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         }
 
         addEdgeHelper(edge, fromList);
+        //track last 2 edges added
+        if(lastEdgeAdded != null)
+            lastEdgeBeforeLastAdded = lastEdgeAdded;
+        else
+            lastEdgeBeforeLastAdded = edge;
+
+        lastEdgeAdded = edge;
 
         List<Edge<E>> incomingList =  incomingEdges.get(edge.getTo());
         if(incomingList == null) {

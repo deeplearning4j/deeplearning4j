@@ -9,6 +9,8 @@ import lombok.*;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
+import org.nd4j.autodiff.functions.impl.binary.transform.Add;
+import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
@@ -132,7 +134,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
             this.sameDiff.getGraph().unfreeze();
         }
 
-        return val;
+        return (X) sameDiff.setupArrayField((ArrayField) val);
     }
 
 
@@ -170,37 +172,32 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> rdivi(DifferentialFunction<X> i_v) {
-        validateDifferentialFunctionGraph(i_v);
-        X ret = i_v.getValue(true).rdivi(getValue(true));
-        return new Constant<>(sameDiff, ret, i_v.getResultShape());
+        return null;
+
     }
 
     @Override
     public DifferentialFunction<X> rsubi(DifferentialFunction<X> i_v) {
-        validateDifferentialFunctionGraph(i_v);
-        X ret = i_v.getValue(true).rsubi(getValue(true));
-        return new Constant<>(sameDiff, ret, i_v.getResultShape());
+        return null;
+
     }
 
     @Override
     public DifferentialFunction<X> addi(DifferentialFunction<X> i_v) {
-        validateDifferentialFunctionGraph(i_v);
-        X ret = i_v.getValue(true).addi(getValue(true));
-        return new Constant<>(sameDiff, ret, i_v.getResultShape());
+        return null;
+
     }
 
     @Override
     public DifferentialFunction<X> muli(DifferentialFunction<X> i_v) {
-        validateDifferentialFunctionGraph(i_v);
-        X ret = i_v.getValue(true).muli(getValue(true));
-        return new Constant<>(sameDiff, ret, i_v.getResultShape());
+        return null;
+
     }
 
     @Override
     public DifferentialFunction<X> subi(DifferentialFunction<X> i_v) {
-        validateDifferentialFunctionGraph(i_v);
-        X ret = i_v.getValue(true).subi(getValue(true));
-        return new Constant<>(sameDiff, ret, i_v.getResultShape());
+        return null;
+
     }
 
 
@@ -208,9 +205,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> divi(DifferentialFunction<X> i_v) {
-        validateDifferentialFunctionGraph(i_v);
-        X ret = i_v.getValue(true).divi(getValue(true));
-        return new Constant<>(sameDiff, ret, i_v.getResultShape());
+        return null;
+
     }
 
     @Override
@@ -221,8 +217,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> negatei() {
-        DifferentialFunction<X> ret = new Negative<>(sameDiff,this,true);
-        return ret;
+        return null;
+
     }
 
     @Override
@@ -239,82 +235,71 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> addi(double i_v) {
-        Scalar<X> constant = new Scalar<>(sameDiff, i_v,true);
-        return constant.addi(this);
+        return null;
+
     }
 
     @Override
     public DifferentialFunction<X> subi(double i_v) {
-        Scalar<X> constant = new Scalar<>(sameDiff, i_v,true);
-        return constant.subi(this);
+        return null;
+
     }
 
 
 
     @Override
     public DifferentialFunction<X> divi(double v) {
-        Scalar<X> constant = new Scalar<>(sameDiff,
-                v,true);
-        return this.divi(constant);
+        return null;
+
     }
 
 
     @Override
     public DifferentialFunction<X> rsubi(double v) {
-        Scalar<X> constant = new Scalar<>(sameDiff, v,true);
-        return this.rsubi(constant);
+        return null;
+
     }
 
     @Override
     public DifferentialFunction<X> rdivi(double v) {
-        Scalar<X> constant = new Scalar<>(sameDiff, v,true);
-        return this.rdivi(constant);
+        return null;
+
     }
 
     @Override
     public DifferentialFunction<X> set(DifferentialFunction<X> i_v) {
-        validateDifferentialFunctionGraph(i_v);
-        X ret = getValue(true).set(i_v.getValue(true));
-        return new Constant<>(sameDiff, ret, i_v.getResultShape());
+        return null;
+
 
     }
 
 
     @Override
     public DifferentialFunction<X> rdiv(DifferentialFunction<X> i_v) {
-        validateDifferentialFunctionGraph(i_v);
-        X ret = i_v.getValue(true).rdiv(getValue(true));
-        return new Constant<>(sameDiff, ret, i_v.getResultShape());
+        return null;
 
     }
 
     @Override
     public DifferentialFunction<X> rsub(DifferentialFunction<X> i_v) {
-        validateDifferentialFunctionGraph(i_v);
-        X ret = i_v.getValue(true).rsub(getValue(true));
-        return new Constant<>(sameDiff, ret, i_v.getResultShape());
+        return null;
 
     }
 
     @Override
     public DifferentialFunction<X> add(DifferentialFunction<X> i_v) {
-        validateDifferentialFunctionGraph(i_v);
-        X ret = i_v.getValue(true).add(getValue(true));
-        return new Constant<>(sameDiff, ret, i_v.getResultShape());
+        return null;
+
     }
 
     @Override
     public DifferentialFunction<X> mul(DifferentialFunction<X> i_v) {
-        validateDifferentialFunctionGraph(i_v);
-        X ret = i_v.getValue(true).mul(getValue(true));
-        return new Constant<>(sameDiff, ret, i_v.getResultShape());
+        return null;
     }
 
     @Override
     public DifferentialFunction<X> sub(DifferentialFunction<X> i_v) {
-        validateDifferentialFunctionGraph(i_v);
-        X ret = i_v.getValue(true).sub(getValue(true));
-        return new Constant<>(sameDiff, ret, i_v.getResultShape());
+        return null;
     }
 
 
@@ -322,9 +307,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> div(DifferentialFunction<X> i_v) {
-        validateDifferentialFunctionGraph(i_v);
-        X ret = i_v.getValue(true).div(getValue(true));
-        return new Constant<>(sameDiff, ret, i_v.getResultShape());
+        return null;
     }
 
     @Override
@@ -341,8 +324,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> mul(double i_n) {
-        Scalar<X> constant = new Scalar<>(sameDiff, i_n);
-        return this.mul(constant);
+       return null;
     }
 
     @Override
@@ -352,27 +334,28 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> add(double i_v) {
-        Scalar<X> constant = new Scalar<>(sameDiff, i_v);
-        return constant.add(this);
+        return null;
+
     }
 
     @Override
     public DifferentialFunction<X> sub(double i_v) {
-        Scalar<X> constant = new Scalar<>(sameDiff, i_v);
-        return constant.sub(this);
+        return null;
+
     }
 
     @Override
     public DifferentialFunction<X> rsub(double v) {
-        Scalar<X> constant = new Scalar<>(sameDiff, v);
-        return this.rsub(constant);
+        return null;
+
     }
 
     @Override
     public DifferentialFunction<X> rdiv(double v) {
-        Scalar<X> constant = new Scalar<>(sameDiff, v);
-        return this.rdiv(constant);
+        return null;
+
     }
+
 
     protected void addEdges(SameDiff sameDiff,
                             DifferentialFunction<X> i_v1,
@@ -854,6 +837,9 @@ public abstract class DifferentialFunction<X extends Field<X>>
                             String opName,
                             OpState.OpType opType,
                             int[] shape, Object[] extraArgs) {
+        validateFunctionReference(i_v1);
+        validateFunctionReference(i_v2);
+
         if(i_v1.getValue(true) instanceof ArrayField) {
             validateDifferentialFunctionGraph(i_v1);
             validateDifferentialFunctionGraph(i_v2);
@@ -966,6 +952,9 @@ public abstract class DifferentialFunction<X extends Field<X>>
                             String opName) {
         validateDifferentialFunctionGraph(i_v1);
         validateDifferentialFunctionGraph(i_v2);
+        validateFunctionReference(i_v1);
+        validateFunctionReference(i_v2);
+
         if(i_v1.getValue(true) instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) i_v1.getValue(true);
             addEdges(sameDiff,
@@ -996,8 +985,33 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
 
+    /**
+     * Duplicate this function
+     * @return
+     */
     public abstract DifferentialFunction<X> dup();
 
+
+    protected void validateFunctionReference(List<DifferentialFunction<X>> reference) {
+        for(int i = 0; i < reference.size(); i++) {
+            validateFunctionReference(reference.get(i));
+        }
+
+    }
+    protected void validateFunctionReference(DifferentialFunction<X> reference) {
+        if(sameDiff.getFunctionInstances().containsKey(reference.getVertexId()))
+            Preconditions.checkState(reference == sameDiff.getFunctionInstances().get(reference.getVertexId()),"Found invalid reference " + reference + " for vertex id " + reference.getVertexId());
+
+
+    }
+
+    /**
+     * Return the vertex id
+     * of the result
+     * of this equation.
+     *
+     * @return
+     */
     public  int resultVertexId() {
         return vertexId;
     }
