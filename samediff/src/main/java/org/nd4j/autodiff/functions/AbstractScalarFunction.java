@@ -12,18 +12,22 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.UUID;
 
 public abstract class AbstractScalarFunction <X extends Field<X>> extends AbstractUnaryFunction<X> {
+    protected Number scalarValue;
+
     public AbstractScalarFunction() {
         super();
     }
 
     public AbstractScalarFunction(SameDiff sameDiff, DifferentialFunction<X> i_v, int[] shape, Object[] extraArgs) {
         super(sameDiff, i_v, shape, OpState.OpType.SCALAR_TRANSFORM, extraArgs);
+        this.scalarValue = (Number) extraArgs[0];
     }
 
 
 
     public AbstractScalarFunction(SameDiff sameDiff, DifferentialFunction<X> i_v, Object[] extraArgs) {
         super(sameDiff, i_v,i_v.getResultShape(), OpState.OpType.SCALAR_TRANSFORM,extraArgs);
+        this.scalarValue = (Number) extraArgs[0];
     }
 
 

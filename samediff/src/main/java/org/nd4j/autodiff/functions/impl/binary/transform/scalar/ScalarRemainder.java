@@ -14,7 +14,7 @@ public class ScalarRemainder extends AbstractScalarFunction<ArrayField> {
      */
     @Override
     public ArrayField doGetValue() {
-        return null;
+       throw new UnsupportedOperationException();
     }
 
     @Override

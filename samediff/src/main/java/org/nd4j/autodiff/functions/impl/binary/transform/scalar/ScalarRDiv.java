@@ -3,10 +3,23 @@ package org.nd4j.autodiff.functions.impl.binary.transform.scalar;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractScalarFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
 public class ScalarRDiv extends AbstractScalarFunction<ArrayField> {
+
+    public ScalarRDiv() {
+    }
+
+    public ScalarRDiv(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, extraArgs);
+    }
+
+    public ScalarRDiv(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
     /**
      * Get the value of this function
      *
@@ -14,7 +27,7 @@ public class ScalarRDiv extends AbstractScalarFunction<ArrayField> {
      */
     @Override
     public ArrayField doGetValue() {
-        return null;
+        return arg().getValue(true).rdiv(scalarValue.doubleValue());
     }
 
     @Override

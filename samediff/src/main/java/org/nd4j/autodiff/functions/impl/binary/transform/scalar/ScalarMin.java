@@ -7,16 +7,16 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-public class ScalarMul extends AbstractScalarFunction<ArrayField> {
+public class ScalarMin extends AbstractScalarFunction<ArrayField> {
 
-    public ScalarMul() {
+    public ScalarMin() {
     }
 
-    public ScalarMul(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape, Object[] extraArgs) {
+    public ScalarMin(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape, Object[] extraArgs) {
         super(sameDiff, i_v, shape, extraArgs);
     }
 
-    public ScalarMul(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public ScalarMin(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -27,12 +27,12 @@ public class ScalarMul extends AbstractScalarFunction<ArrayField> {
      */
     @Override
     public ArrayField doGetValue() {
-        return arg().getValue(true).mul(scalarValue.doubleValue());
+        return arg().getValue(true).add(scalarValue.doubleValue());
     }
 
     @Override
     public String functionName() {
-        return new org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication().name();
+        return new org.nd4j.linalg.api.ops.impl.scalar.ScalarMin().name();
     }
 
     @Override
