@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.schedule.ISchedule;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -47,7 +48,11 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     protected Distribution dist;
     protected double learningRate;
     protected double biasLearningRate;
+    protected ISchedule lrSchedule;
+    protected ISchedule biasLRSchedule;
+
     //learning rate after n iterations
+    @Deprecated
     protected Map<Integer, Double> learningRateSchedule;
     @Deprecated
     protected double momentum;
@@ -87,6 +92,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.learningRate = builder.learningRate;
         this.biasLearningRate = builder.biasLearningRate;
         this.learningRateSchedule = builder.learningRateSchedule;
+        this.lrSchedule = builder.lrSchedule;
+        this.biasLRSchedule = builder.biasLRSchedule;
         this.momentum = builder.momentum;
         this.momentumSchedule = builder.momentumAfter;
         this.l1 = builder.l1;
@@ -178,7 +185,10 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         protected Distribution dist = null;
         protected double learningRate = Double.NaN;
         protected double biasLearningRate = Double.NaN;
+        @Deprecated
         protected Map<Integer, Double> learningRateSchedule = null;
+        protected ISchedule lrSchedule;
+        protected ISchedule biasLRSchedule;
         @Deprecated
         protected double momentum = Double.NaN;
         @Deprecated
@@ -202,6 +212,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         protected double adamVarDecay = Double.NaN;
         protected GradientNormalization gradientNormalization = null;
         protected double gradientNormalizationThreshold = Double.NaN;
+        @Deprecated
         protected LearningRatePolicy learningRatePolicy = null;
 
 
@@ -284,8 +295,19 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         /**
          * Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration.
          */
+        @Deprecated
         public T learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
             this.learningRateSchedule = learningRateSchedule;
+            return (T) this;
+        }
+
+        public T learningRateSchedule(ISchedule learningRateSchedule){
+            this.lrSchedule = learningRateSchedule;
+            return (T) this;
+        }
+
+        public T biasLearningRateSchedule(ISchedule biasLearningRateSchedule){
+            this.biasLRSchedule = biasLearningRateSchedule;
             return (T) this;
         }
 
@@ -446,6 +468,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @param policy Type of policy to use. Defaults to None.
          * @see GradientNormalization
          */
+        @Deprecated
         public T learningRateDecayPolicy(LearningRatePolicy policy) {
             this.learningRatePolicy = policy;
             return (T) this;

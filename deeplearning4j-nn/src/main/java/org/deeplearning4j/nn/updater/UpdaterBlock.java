@@ -12,6 +12,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.schedule.ISchedule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -139,7 +140,16 @@ public class UpdaterBlock {
             return;
         }
         BaseLayer baseLayer = (BaseLayer) l0.conf().getLayer();
-        LearningRatePolicy lrPolicy = l0.conf().getLearningRatePolicy();
+        String firstParam = layersAndVariablesInBlock.get(0).getParamName();
+        boolean isBias = l0.conf().getLayer().initializer().isBiasParam(firstParam);
+        ISchedule lrSchedule;
+        if(isBias){
+            //TODO should this
+            lrSchedule = l0.conf().getLearningRateSchedule();
+        } else {
+
+        }
+
         if (lrPolicy != LearningRatePolicy.None || baseLayer.getIUpdater() instanceof Nesterovs) {
             applyLrDecayPolicy(lrPolicy, iteration);
         }

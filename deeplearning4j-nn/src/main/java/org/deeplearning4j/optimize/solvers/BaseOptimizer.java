@@ -276,10 +276,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             if (condition.terminate(score, oldScore, new Object[] {gradient})) {
                 log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score,
                                 oldScore, condition);
-                if (condition instanceof EpsTermination && conf.getLayer() != null
-                                && conf.getLearningRatePolicy() == LearningRatePolicy.Score) {
-                    model.applyLearningRateScoreDecay();
-                }
+//                if (condition instanceof EpsTermination && conf.getLayer() != null
+//                                && conf.getLearningRatePolicy() == LearningRatePolicy.Score) {
+//                    model.applyLearningRateScoreDecay();
+//                }
                 return true;
             }
         }
