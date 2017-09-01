@@ -80,6 +80,24 @@ public class SameDiff {
 
 
     /**
+     * Returns this samediff instance's
+     * {@link DifferentialFunctionFactory}
+     * @return
+     */
+    public DifferentialFunctionFactory<ArrayField> f() {
+        return functionFactory;
+    }
+
+    /**
+     * Returns this samediff instances'
+     * {@link ArrayFactory}
+     * @return
+     */
+    public ArrayFactory a() {
+        return arrayFactory;
+    }
+
+    /**
      *
      * @param sameDiff
      * @return

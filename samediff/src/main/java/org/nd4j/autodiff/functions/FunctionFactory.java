@@ -176,4 +176,35 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> selu(DifferentialFunction<X> arg);
 
     DifferentialFunction<X> seluDerivative(DifferentialFunction<X> arg);
+
+    DifferentialFunction<X> rsub(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> rdiv(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> rdivi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> rsubi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> add(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> addi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> sub(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> subi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> mul(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> muli(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> div(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> divi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+
+
+
+
+
+    DifferentialFunction<X> rsub(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> rdiv(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> rdivi(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> rsubi(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> add(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> addi(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> sub(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> subi(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> mul(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> muli(DifferentialFunction<X> xDifferentialFunction,double i_v);
+    DifferentialFunction<X> div(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> divi(DifferentialFunction<X> xDifferentialFunction,double i_v);
+
 }

@@ -11,6 +11,7 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.functions.impl.binary.reduce.EuclideanDistance;
 import org.nd4j.autodiff.functions.impl.binary.reduce.ManhattanDistance;
+import org.nd4j.autodiff.functions.impl.binary.transform.*;
 import org.nd4j.autodiff.functions.impl.binary.transform.gradient.*;
 import org.nd4j.autodiff.functions.impl.unary.reduce.Prod;
 import org.nd4j.autodiff.functions.impl.unary.transform.*;
@@ -959,6 +960,165 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
         return sameDiff.setupFunction(new SELUDerivative(sameDiff,arg,null));
     }
 
+    @Override
+    public DifferentialFunction<ArrayField> rsub(DifferentialFunction<ArrayField> differentialFunction, DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new RSub(sameDiff,differentialFunction,i_v));
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> rdiv(DifferentialFunction<ArrayField> differentialFunction, DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new RDiv(sameDiff,differentialFunction,i_v));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> rdivi(DifferentialFunction<ArrayField> differentialFunction, DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new RDiv(sameDiff,differentialFunction,i_v));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> rsubi(DifferentialFunction<ArrayField> differentialFunction, DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new RSub(sameDiff,differentialFunction,i_v));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> add(DifferentialFunction<ArrayField> differentialFunction, DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Add(sameDiff,differentialFunction,i_v));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> addi(DifferentialFunction<ArrayField> differentialFunction, DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Add(sameDiff,differentialFunction,i_v));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> sub(DifferentialFunction<ArrayField> differentialFunction, DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Sub(sameDiff,differentialFunction,i_v));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> subi(DifferentialFunction<ArrayField> differentialFunction, DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Sub(sameDiff,differentialFunction,i_v));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> mul(DifferentialFunction<ArrayField> differentialFunction, DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Mul(sameDiff,differentialFunction,i_v));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> muli(DifferentialFunction<ArrayField> differentialFunction, DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Mul(sameDiff,differentialFunction,i_v));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> div(DifferentialFunction<ArrayField> differentialFunction, DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Div(sameDiff,differentialFunction,i_v));
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> divi(DifferentialFunction<ArrayField> differentialFunction, DifferentialFunction<ArrayField> i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Div(sameDiff,differentialFunction,i_v));
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> rsub(DifferentialFunction<ArrayField> differentialFunction, double i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new RSub(sameDiff,differentialFunction,sameDiff.setupFunction(sameDiff.setupFunction(new Scalar<>(sameDiff,i_v)))));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> rdiv(DifferentialFunction<ArrayField> differentialFunction, double i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new RDiv(sameDiff,differentialFunction,sameDiff.setupFunction(new Scalar<>(sameDiff,i_v))));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> rdivi(DifferentialFunction<ArrayField> differentialFunction, double i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new RDiv(sameDiff,differentialFunction,sameDiff.setupFunction(new Scalar<>(sameDiff,i_v))));
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> rsubi(DifferentialFunction<ArrayField> differentialFunction, double i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new RSub(sameDiff,differentialFunction,sameDiff.setupFunction(new Scalar<>(sameDiff,i_v))));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> add(DifferentialFunction<ArrayField> differentialFunction, double i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Add(sameDiff,differentialFunction,sameDiff.setupFunction(new Scalar<>(sameDiff,i_v))));
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> addi(DifferentialFunction<ArrayField> differentialFunction, double i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Add(sameDiff,differentialFunction,sameDiff.setupFunction(new Scalar<>(sameDiff,i_v))));
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> sub(DifferentialFunction<ArrayField> differentialFunction, double i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Sub(sameDiff,differentialFunction,sameDiff.setupFunction(new Scalar<>(sameDiff,i_v))));
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> subi(DifferentialFunction<ArrayField> differentialFunction, double i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Sub(sameDiff,differentialFunction,sameDiff.setupFunction(new Scalar<>(sameDiff,i_v))));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> mul(DifferentialFunction<ArrayField> differentialFunction, double i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Mul(sameDiff,differentialFunction,sameDiff.setupFunction(new Scalar<>(sameDiff,i_v))));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> muli(DifferentialFunction<ArrayField> differentialFunction, double i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new RSub(sameDiff,differentialFunction,sameDiff.setupFunction(new Scalar<>(sameDiff,i_v))));
+
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> div(DifferentialFunction<ArrayField> differentialFunction, double i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Div(sameDiff,differentialFunction,sameDiff.setupFunction(new Scalar<>(sameDiff,i_v))));
+    }
+
+    @Override
+    public DifferentialFunction<ArrayField> divi(DifferentialFunction<ArrayField> differentialFunction, double i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return sameDiff.setupFunction(new Div(sameDiff,differentialFunction,sameDiff.setupFunction(new Scalar<>(sameDiff,i_v))));
+    }
+
     /**
      *
      * @param func
@@ -966,13 +1126,12 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
      */
     public int getInputLength(DifferentialFunction<ArrayField> func) {
         validateDifferentialFunctionsameDiff(func);
-        if(func.getValue(true) instanceof ArrayField) {
-            ArrayField arrayField = func.getValue(true);
-            int[] inputShape = arrayField.getInput().getShape();
-            return ArrayUtil.prod(inputShape);
-        }
+        ArrayField arrayField = func.getValue(true);
+        int[] inputShape = arrayField.getInput().getShape();
+        return ArrayUtil.prod(inputShape);
 
-        throw new IllegalStateException("Only able to compute on array field");
+
+
     }
 
 
