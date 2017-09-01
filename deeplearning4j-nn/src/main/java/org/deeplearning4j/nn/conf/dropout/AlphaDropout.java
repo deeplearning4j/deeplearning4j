@@ -58,7 +58,7 @@ public class AlphaDropout implements IDropout {
 
         double pValue;
         if(pSchedule != null){
-            pValue = pSchedule.valueAt(lastPValue, iteration, epoch);
+            pValue = pSchedule.valueAt(iteration, epoch);
         } else {
             pValue = p;
         }

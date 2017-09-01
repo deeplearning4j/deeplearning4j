@@ -1,43 +1,42 @@
 package org.deeplearning4j.nn.conf.schedule;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * Inverse schedule, with 3 parameters: initial value, gamma and power.<br>
- * value(i) = initialValue * (1 + gamma * iter)^(-power)
+ * Sigmoid decay schedule, with 3 parameters: initial value, gamma and stepSize.<br>
+ * value(i) = initialValue * 1.0 / (1 + exp(-gamma * (iter - stepSize)))
  * where i is the iteration or epoch (depending on the setting)
  *
  * @author Alex Black
  */
 @Data
-@EqualsAndHashCode
-public class InverseSchedule implements ISchedule {
+public class SigmoidSchedule implements ISchedule {
 
     private final ScheduleType scheduleType;
     private final double initialValue;
     private final double gamma;
-    private final double power;
+    private final int stepSize;
 
-    public InverseSchedule(@JsonProperty("scheduleType") ScheduleType scheduleType,
+    public SigmoidSchedule(@JsonProperty("scheduleType") ScheduleType scheduleType,
                            @JsonProperty("initialValue") double initialValue,
                            @JsonProperty("gamma") double gamma,
-                           @JsonProperty("power") double power){
+                           @JsonProperty("stepSize") int stepSize){
         this.scheduleType = scheduleType;
         this.initialValue = initialValue;
         this.gamma = gamma;
-        this.power = power;
+        this.stepSize = stepSize;
     }
+
 
     @Override
     public double valueAt(int iteration, int epoch) {
         int i = (scheduleType == ScheduleType.ITERATION ? iteration : epoch);
-        return initialValue / Math.pow(1 + gamma * i, power);
+        return initialValue / (1.0 + Math.exp(-gamma * (i - stepSize)));
     }
 
     @Override
     public ISchedule clone() {
-        return new InverseSchedule(scheduleType, initialValue, gamma, power);
+        return new SigmoidSchedule(scheduleType, initialValue, gamma, stepSize);
     }
 }

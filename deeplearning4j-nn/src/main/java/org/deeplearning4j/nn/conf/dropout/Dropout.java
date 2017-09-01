@@ -11,8 +11,6 @@ public class Dropout implements IDropout {
     private double p;
     private ISchedule pSchedule;
 
-    private double lastPValue;
-
     public Dropout(double activationRetainProbability) {
         this(activationRetainProbability, null);
     }
@@ -29,14 +27,15 @@ public class Dropout implements IDropout {
 
     @Override
     public INDArray applyDropout(INDArray inputActivations, int iteration, int epoch, boolean inPlace) {
+        double currP;
         if(pSchedule != null){
-            lastPValue = pSchedule.valueAt(lastPValue, iteration, epoch);
+            currP = pSchedule.valueAt(iteration, epoch);
         } else {
-            lastPValue = p;
+            currP = p;
         }
 
         INDArray result = inPlace ? inputActivations : inputActivations.dup(inputActivations.ordering());
-        Nd4j.getExecutioner().exec(new DropOutInverted(result, lastPValue));
+        Nd4j.getExecutioner().exec(new DropOutInverted(result, currP));
 
         return result;
     }

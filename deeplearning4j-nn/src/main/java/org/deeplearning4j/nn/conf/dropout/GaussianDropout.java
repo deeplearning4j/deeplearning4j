@@ -30,7 +30,7 @@ public class GaussianDropout implements IDropout {
     @Override
     public INDArray applyDropout(INDArray inputActivations, int iteration, int epoch, boolean inPlace) {
         if(rateSchedule != null){
-            lastRate = rateSchedule.valueAt(lastRate, iteration, epoch);
+            lastRate = rateSchedule.valueAt(iteration, epoch);
         } else {
             lastRate = rate;
         }

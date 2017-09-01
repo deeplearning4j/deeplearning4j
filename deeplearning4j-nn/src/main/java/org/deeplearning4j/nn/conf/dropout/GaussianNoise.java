@@ -11,8 +11,6 @@ public class GaussianNoise implements IDropout {
     private double stddev;
     private ISchedule stddevSchedule;
 
-    private double lastStddev;
-
     public GaussianNoise(double stddev){
         this(stddev, null);
     }
@@ -28,17 +26,16 @@ public class GaussianNoise implements IDropout {
 
     @Override
     public INDArray applyDropout(INDArray inputActivations, int iteration, int epoch, boolean inPlace) {
-
-
+        double currS;
         if(stddevSchedule != null){
-            lastStddev = stddevSchedule.valueAt(stddev, iteration, epoch);
+            currS = stddevSchedule.valueAt(iteration, epoch);
         } else {
-            lastStddev = stddev;
+            currS = stddev;
         }
 
         INDArray result = inPlace ? inputActivations : inputActivations.dup(inputActivations.ordering());
         INDArray noise = Nd4j.createUninitialized(inputActivations.shape(), inputActivations.ordering());
-        Nd4j.getExecutioner().exec(new GaussianDistribution(noise, 0, lastStddev));
+        Nd4j.getExecutioner().exec(new GaussianDistribution(noise, 0, currS));
 
         result.muli(noise);
 

@@ -5,21 +5,21 @@ import java.io.Serializable;
 /**
  * ISchedule: a general purpose interface for getting values according to some schedule.
  * Used for implementing learning rate, dropout and momentum schedules - and in principle, any univariate (double)
- * value that deponds on the current iteration and epochs numbers.
+ * value that deponds on the current iteration and epochs numbers.<br>
+ * <br>
+ * Note: ISchedule objects should not have mutable state - i.e., they should be safe to share between multiple
+ * locations/layers.
  *
  * @author Alex Black
  */
 public interface ISchedule extends Serializable, Cloneable {
 
     /**
-     *
-     * @param currentValue By convention: if iteration==0 and epoch==0, currentValue may be undefined,
-     *                     and the initial value should be returned by the schedule
-     * @param iteration
-     * @param epoch
-     * @return
+     * @param iteration Current iteration number. Starts at 0
+     * @param epoch     Current epoch number. Starts at 0
+     * @return Value at the current iteration/epoch for this schedule
      */
-    double valueAt(double currentValue, int iteration, int epoch);
+    double valueAt(int iteration, int epoch);
 
     ISchedule clone();
 
