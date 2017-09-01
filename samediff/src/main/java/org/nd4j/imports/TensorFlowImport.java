@@ -10,7 +10,9 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -36,27 +38,31 @@ public class TensorFlowImport {
      * @return
      */
     public static SameDiff importGraph(File graphFile) {
+        GraphDef def = null;
         try (FileInputStream fis = new FileInputStream(graphFile); BufferedInputStream bis = new BufferedInputStream(fis)) {
-            GraphDef def = GraphDef.parseFrom(bis);
-            return importGraph(def);
+            def = GraphDef.parseFrom(bis);
         } catch (Exception e) {
-            try (FileInputStream fis = new FileInputStream(graphFile); BufferedInputStream bis = new BufferedInputStream(fis); BufferedReader reader = new BufferedReader(new InputStreamReader(bis))) {
+            try (FileInputStream fis2 = new FileInputStream(graphFile); BufferedInputStream bis2 = new BufferedInputStream(fis2); BufferedReader reader = new BufferedReader(new InputStreamReader(bis2))) {
                 GraphDef.Builder builder = GraphDef.newBuilder();
 
                 StringBuilder str = new StringBuilder();
                 String line = null;
                 while ((line = reader.readLine()) != null) {
-                    str.append(line).append("\n");
+                    str.append(line);//.append("\n");
                 }
 
                 TextFormat.getParser().merge(str.toString(), builder);
-                GraphDef def = builder.build();
-                return importGraph(def);
+                def = builder.build();
             } catch (Exception e2) {
-                e2.printStackTrace();
-                throw new ND4JIllegalStateException("Can't parse graph: unknown format");
+                //
             }
         }
+
+        if (def == null)
+            throw new ND4JIllegalStateException("Unknown format");
+
+
+        return importGraph(def);
     }
 
     /**
@@ -161,6 +167,8 @@ public class TensorFlowImport {
                 OpState opState = getOpStateFromNodeDef(tfNode, tfNode.getInputCount());
                 opState.setResult(varInformation);
 
+                reverseVertexMap.put(tfNode.getName(), nodesCnt);
+
 
                 for (int e = 0; e < tfNode.getInputCount(); e++) {
                     String input = tfNode.getInput(e);
@@ -203,10 +211,9 @@ public class TensorFlowImport {
             if (tfTensor.getIntValCount() == 1) {
                 int val = tfTensor.getIntVal(0);
 
-
                 INDArray array = Nd4j.valueArrayOf(arrayShape, (double) val);
                 return array;
-            } else {
+            } else if (tfTensor.getInt64ValCount() > 0) {
                 double[] jArray = new double[tfTensor.getIntValCount()];
                 for (int e = 0; e < tfTensor.getIntValCount(); e++) {
                     jArray[e] = (double) tfTensor.getIntVal(e);
@@ -215,6 +222,9 @@ public class TensorFlowImport {
                 // TF arrays are always C
                 INDArray array = Nd4j.create(jArray, arrayShape, 0, 'c');
                 return array;
+            } else {
+                // FIXME: INT bytebuffers should be converted to floating point
+                throw new UnsupportedOperationException("To be implemented yet");
             }
         } else if (tfTensor.getDtype() == DataType.DT_FLOAT) {
             if (tfTensor.getFloatValCount() == 1) {
@@ -222,7 +232,7 @@ public class TensorFlowImport {
 
                 INDArray array = Nd4j.valueArrayOf(arrayShape, (double) val);
                 return array;
-            } else {
+            } else if (tfTensor.getFloatValCount() > 0) {
                 float[] jArray = new float[tfTensor.getFloatValCount()];
                 for (int e = 0; e < tfTensor.getFloatValCount(); e++) {
                     jArray[e] = tfTensor.getFloatVal(e);
@@ -231,6 +241,13 @@ public class TensorFlowImport {
                 // FIXME: we're missing float[] signature
                 INDArray array = Nd4j.create(ArrayUtil.toDoubles(jArray), arrayShape, 0, 'c');
                 return array;
+            } else if (tfTensor.getTensorContent().size() > 0){
+
+                long length = ArrayUtil.prodLong(arrayShape);
+                // binary representation
+                DataBuffer buffer = Nd4j.createBuffer(tfTensor.getTensorContent().asReadOnlyByteBuffer(), DataBuffer.Type.FLOAT, (int) length);
+                INDArray array = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(arrayShape, 'c'));
+                return array;
             }
         } else if (tfTensor.getDtype() == DataType.DT_DOUBLE) {
             if (tfTensor.getDoubleValCount() == 1) {
@@ -238,7 +255,7 @@ public class TensorFlowImport {
 
                 INDArray array = Nd4j.valueArrayOf(arrayShape, val);
                 return array;
-            } else {
+            } else if (tfTensor.getDoubleValCount() > 0) {
                 double[] jArray = new double[tfTensor.getDoubleValCount()];
                 for (int e = 0; e < tfTensor.getDoubleValCount(); e++) {
                     jArray[e] =  tfTensor.getDoubleVal(e);
@@ -247,6 +264,12 @@ public class TensorFlowImport {
                 // TF arrays are always C
                 INDArray array = Nd4j.create(jArray, arrayShape, 0, 'c');
                 return array;
+            } else if (tfTensor.getTensorContent().size() > 0) {
+                long length = ArrayUtil.prodLong(arrayShape);
+                // binary representation
+                DataBuffer buffer = Nd4j.createBuffer(tfTensor.getTensorContent().asReadOnlyByteBuffer(), DataBuffer.Type.FLOAT, (int) length);
+                INDArray array = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(arrayShape, 'c'));
+                return array;
             }
         } else if (tfTensor.getDtype() == DataType.DT_INT64) {
             if (tfTensor.getInt64ValCount() == 1) {
@@ -254,7 +277,7 @@ public class TensorFlowImport {
 
                 INDArray array = Nd4j.valueArrayOf(arrayShape, val);
                 return array;
-            } else {
+            } else if (tfTensor.getInt64ValCount() > 0)  {
                 double[] jArray = new double[tfTensor.getInt64ValCount()];
                 for (int e = 0; e < tfTensor.getInt64ValCount(); e++) {
                     jArray[e] =  (double) tfTensor.getInt64Val(e);
@@ -263,10 +286,15 @@ public class TensorFlowImport {
                 // TF arrays are always C
                 INDArray array = Nd4j.create(jArray, arrayShape, 0, 'c');
                 return array;
+            } else if (tfTensor.getTensorContent().size() > 0){
+                // FIXME: INT bytebuffers should be converted to floating point
+                throw new UnsupportedOperationException("To be implemented yet");
             }
         }  else {
             throw new UnsupportedOperationException("Unknown dataType found: [" + tfTensor.getDtype() + "]");
         }
+
+        throw new RuntimeException("Wtf?");
     }
 
     protected static OpState getOpStateFromNodeDef(NodeDef tfNode, int numInputs) {
