@@ -29,6 +29,7 @@ public class OpState implements Serializable {
     private String id;
     private int[] axes;
     private Object[] extraArgs;
+    private Integer[] extraBits;
     private Object[] extraArgsWithoutInPlace;
     private NDArrayInformation result;
 
@@ -130,7 +131,8 @@ public class OpState implements Serializable {
         BROADCAST,
         INDEX_ACCUMULATION,
         AGGREGATE,
-        SHAPE
+        SHAPE,
+        CUSTOM,
     }
 
 

@@ -706,4 +706,28 @@ public class DefaultOpFactory implements OpFactory {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public int getOpNumIfExists(String opName) {
+        if(opClazzes.containsKey(opName)) {
+            return getOpNumByName(opName);
+        } else
+            return -1;
+    }
+
+    @Override
+    public Op getOpByName(String opName) {
+        if(opClazzes.containsKey(opName)) {
+            Class<? extends Op> cls = opClazzes.get(opName);
+
+            try {
+                Op op = cls.newInstance();
+
+                return op;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else
+            return null;
+    }
 }
