@@ -90,6 +90,17 @@ TEST_F(DeclarableOpsTests, SynonymInitialization2) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, DivergentCheck1) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("Switch");
+
+    ASSERT_TRUE(op != nullptr);
+    std::string expName("Switch");
+    ASSERT_EQ(expName, *(op->getOpName()));
+    ASSERT_TRUE(op->getOpDescriptor()->isDivergent());
+    ASSERT_EQ(2, op->getOpDescriptor()->getNumberOfOutputs());
+}
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests, AddMatrices) {
 	
 	NDArray<float> x(5, 3, 'c');
@@ -99,25 +110,720 @@ TEST_F(DeclarableOpsTests, AddMatrices) {
 	y.assign(1);
 	exp.assign(3);
 
-	auto variableSpace = new VariableSpace<float>();
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	auto block = new Block<float> (1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::Add<float> addOp;
  
 	addOp.execute(block);
 
-    ASSERT_TRUE(x.equalsTo(&exp));    
+    ASSERT_TRUE(x.equalsTo(&exp));	
 }
 
-TEST_F(DeclarableOpsTests, DivergentCheck1) {
-    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("Switch");
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, AddMatrixVector) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(1, 15, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(2);
+	y.assign(1);
+	exp.assign(3);
 
-    ASSERT_TRUE(op != nullptr);
-    std::string expName("Switch");
-    ASSERT_EQ(expName, *(op->getOpName()));
-    ASSERT_TRUE(op->getOpDescriptor()->isDivergent());
-    ASSERT_EQ(2, op->getOpDescriptor()->getNumberOfOutputs());
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Add<float> addOp;
+ 
+	addOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, AddVectorVector) {
+	
+	NDArray<float> x(1, 15, 'c');
+	NDArray<float> y(1, 15, 'c');
+	NDArray<float> exp(1, 15, 'c'); 
+	x.assign(2);
+	y.assign(1);
+	exp.assign(3);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Add<float> addOp;
+ 
+	addOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, AddMatrixScalar) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(1, 1, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(2);
+	y.assign(1);
+	exp.assign(3);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Add<float> addOp;
+ 
+	addOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, AddScalarScalar) {
+	
+	NDArray<float> x(1, 1, 'c');
+	NDArray<float> y(1, 1, 'c');
+	NDArray<float> exp(1, 1, 'c'); 
+	x.assign(2);
+	y.assign(1);
+	exp.assign(3);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Add<float> addOp;
+ 
+	addOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, SubtractMatrices) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(5, 3, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(3);
+	y.assign(1);
+	exp.assign(2);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Subtract<float> subOp;
+ 
+	subOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, SubtractMatrixVector) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(1, 15, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(3);
+	y.assign(1);
+	exp.assign(2);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Subtract<float> subOp;
+ 
+	subOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, SubtractVectorVector) {
+	
+	NDArray<float> x(1, 15, 'c');
+	NDArray<float> y(1, 15, 'c');
+	NDArray<float> exp(1, 15, 'c'); 
+	x.assign(3);
+	y.assign(1);
+	exp.assign(2);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Subtract<float> subOp;
+ 
+	subOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, SubtractMatrixScalar) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(1, 1, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(3);
+	y.assign(1);
+	exp.assign(2);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Subtract<float> subOp;
+ 
+	subOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, SubtractScalarScalar) {
+	
+	NDArray<float> x(1, 1, 'c');
+	NDArray<float> y(1, 1, 'c');
+	NDArray<float> exp(1, 1, 'c'); 
+	x.assign(3);
+	y.assign(1);
+	exp.assign(2);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Subtract<float> subOp;
+ 
+	subOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, ReverseSubtractMatrices) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(5, 3, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(3);
+	y.assign(1);
+	exp.assign(-2);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::ReverseSubtract<float> subOp;
+ 
+	subOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, ReverseSubtractMatrixVector) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(1, 15, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(3);
+	y.assign(1);
+	exp.assign(-2);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::ReverseSubtract<float> subOp;
+ 
+	subOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, ReverseSubtractVectorVector) {
+	
+	NDArray<float> x(1, 15, 'c');
+	NDArray<float> y(1, 15, 'c');
+	NDArray<float> exp(1, 15, 'c'); 
+	x.assign(3);
+	y.assign(1);
+	exp.assign(-2);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::ReverseSubtract<float> subOp;
+ 
+	subOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, ReverseSubtractMatrixScalar) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(1, 1, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(3);
+	y.assign(1);
+	exp.assign(-2);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::ReverseSubtract<float> subOp;
+ 
+	subOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, ReverseSubtractScalarScalar) {
+	
+	NDArray<float> x(1, 1, 'c');
+	NDArray<float> y(1, 1, 'c');
+	NDArray<float> exp(1, 1, 'c'); 
+	x.assign(3);
+	y.assign(1);
+	exp.assign(-2);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::ReverseSubtract<float> subOp;
+ 
+	subOp.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, MultiplyMatrices) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(5, 3, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(2);
+	y.assign(3);
+	exp.assign(6);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Multiply<float> mul;
+ 
+	mul.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, MultiplyMatrixVector) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(1, 15, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(2);
+	y.assign(3);
+	exp.assign(6);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Multiply<float> mul;
+ 
+	mul.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, MultiplyVectorVector) {
+	
+	NDArray<float> x(1, 15, 'c');
+	NDArray<float> y(1, 15, 'c');
+	NDArray<float> exp(1, 15, 'c'); 
+	x.assign(2);
+	y.assign(3);
+	exp.assign(6);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Multiply<float> mul;
+ 
+	mul.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, MultiplyMatrixScalar) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(1, 1, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(2);
+	y.assign(3);
+	exp.assign(6);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Multiply<float> mul;
+ 
+	mul.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, MultiplyScalarScalar) {
+	
+	NDArray<float> x(1, 1, 'c');
+	NDArray<float> y(1, 1, 'c');
+	NDArray<float> exp(1, 1, 'c'); 
+	x.assign(2);
+	y.assign(3);
+	exp.assign(6);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Multiply<float> mul;
+ 
+	mul.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, DivideMatrices) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(5, 3, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(6);
+	y.assign(2);
+	exp.assign(3);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Divide<float> div;
+ 
+	div.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, DivideMatrixVector) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(1, 15, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(6);
+	y.assign(2);
+	exp.assign(3);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Divide<float> div;
+ 
+	div.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, DivideVectorVector) {
+	
+	NDArray<float> x(1, 15, 'c');
+	NDArray<float> y(1, 15, 'c');
+	NDArray<float> exp(1, 15, 'c'); 
+	x.assign(6);
+	y.assign(2);
+	exp.assign(3);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Divide<float> div;
+ 
+	div.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, DivideMatrixScalar) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(1, 1, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(6);
+	y.assign(2);
+	exp.assign(3);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Divide<float> div;
+ 
+	div.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, DivideScalarScalar) {
+	
+	NDArray<float> x(1, 1, 'c');
+	NDArray<float> y(1, 1, 'c');
+	NDArray<float> exp(1, 1, 'c'); 
+	x.assign(6);
+	y.assign(2);
+	exp.assign(3);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Divide<float> div;
+ 
+	div.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, ReverseDivideMatrices) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(5, 3, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(2);
+	y.assign(6);
+	exp.assign(3);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::ReverseDivide<float> div;
+ 
+	div.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, ReverseDivideMatrixVector) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(1, 15, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(2);
+	y.assign(6);
+	exp.assign(3);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::ReverseDivide<float> div;
+ 
+	div.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, ReverseDivideVectorVector) {
+	
+	NDArray<float> x(1, 15, 'c');
+	NDArray<float> y(1, 15, 'c');
+	NDArray<float> exp(1, 15, 'c'); 
+	x.assign(2);
+	y.assign(6);
+	exp.assign(3);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::ReverseDivide<float> div;
+ 
+	div.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, ReverseDivideMatrixScalar) {
+	
+	NDArray<float> x(5, 3, 'c');
+	NDArray<float> y(1, 1, 'c');
+	NDArray<float> exp(5, 3, 'c'); 
+	x.assign(2);
+	y.assign(6);
+	exp.assign(3);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::ReverseDivide<float> div;
+ 
+	div.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, ReverseDivideScalarScalar) {
+	
+	NDArray<float> x(1, 1, 'c');
+	NDArray<float> y(1, 1, 'c');
+	NDArray<float> exp(1, 1, 'c'); 
+	x.assign(2);
+	y.assign(6);
+	exp.assign(3);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::ReverseDivide<float> div;
+ 
+	div.execute(block);
+
+    ASSERT_TRUE(x.equalsTo(&exp));	
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Reshape) {
+	const std::vector<int> xShape = {5,4,3};
+	const std::vector<int> yShape = {3,5,4};
+	
+	NDArray<float> x('c', xShape);
+	NDArray<float> y('f', yShape);
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+	Block<float>* block = new Block<float>(1, variableSpace);
+    block->fillInputs({-1, -2});
+
+	nd4j::ops::Reshape<float> reshape;
+ 
+	reshape.execute(block);
+
+    ASSERT_TRUE(x.isSameShape(&y));	
+
 }
