@@ -249,17 +249,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     @Override
     public INDArray activate(boolean training) {
         if (training && !dropoutApplied && layerConf().getIDropout() != null) {
-            //TODO: Epoch + iteration counters...
-            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
-                try (MemoryWorkspace ws = Nd4j.getWorkspaceManager()
-                        .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)
-                        .notifyScopeBorrowed()) {
-                    input = layerConf().getIDropout().applyDropout(input, -1, -1, false);
-                }
-            } else {
-                input = layerConf().getIDropout().applyDropout(input, -1, -1, false);
-            }
-            dropoutApplied = true;
+            applyDropOutIfNecessary(true);
         }
 
         //Input validation: expect rank 4 matrix

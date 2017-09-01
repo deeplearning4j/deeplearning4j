@@ -53,7 +53,7 @@ public class MapSchedule implements ISchedule {
         } else {
             //Key doesn't exist - find nearest key...
             if (i >= allKeysSorted[allKeysSorted.length - 1]) {
-                return allKeysSorted[allKeysSorted.length - 1];
+                return values.get(allKeysSorted[allKeysSorted.length - 1]);
             } else {
                 /*
                 Returned:
@@ -62,11 +62,9 @@ public class MapSchedule implements ISchedule {
                   of the first element greater than the key
                  */
                 int pt = Arrays.binarySearch(allKeysSorted, i);
-                if (pt >= -1) {
-                    return values.get(allKeysSorted[0]);
-                } else {
-                    return values.get(allKeysSorted[-(pt + 1)]);
-                }
+                int iPt = -(pt + 1);
+                double d = values.get(allKeysSorted[iPt-1]);
+                return d;
             }
         }
     }
@@ -87,9 +85,8 @@ public class MapSchedule implements ISchedule {
         /**
          * @param scheduleType Schedule type to use
          */
-        public Builder builder(ScheduleType scheduleType) {
+        public Builder(ScheduleType scheduleType) {
             this.scheduleType = scheduleType;
-            return this;
         }
 
         /**

@@ -173,7 +173,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
      */
     @Override
     public void iterate(INDArray input) {
-        applyDropOutIfNecessary(true, getIterationCount(), getEpochCount());
+        applyDropOutIfNecessary(true);
         Gradient gradient = gradient();
         for (String paramType : gradient.gradientForVariable().keySet()) {
             update(gradient.getGradientFor(paramType), paramType);
@@ -296,7 +296,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     public INDArray preOutput(boolean training) {
-        applyDropOutIfNecessary(training, getIterationCount(), getEpochCount());
+        applyDropOutIfNecessary(training);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
 
@@ -429,7 +429,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void fit(INDArray input) {
         if (input != null) {
-            applyDropOutIfNecessary(true, getIterationCount(), getEpochCount());
+            applyDropOutIfNecessary(true);
         }
         if (solver == null) {
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();

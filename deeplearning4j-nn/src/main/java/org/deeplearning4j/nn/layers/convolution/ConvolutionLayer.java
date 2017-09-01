@@ -410,7 +410,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
 
-        applyDropOutIfNecessary(training, getIterationCount(), getEpochCount());
+        applyDropOutIfNecessary(training);
 
         INDArray z = preOutput(training);
 

@@ -106,11 +106,11 @@ public class AlphaDropout implements IDropout {
         return new AlphaDropout(p, pSchedule == null ? null : pSchedule.clone(), alpha, lambda);
     }
 
-    private double a(double p){
-        return Math.sqrt(p + alphaPrime*alphaPrime * p * (1-p));
+    public double a(double p){
+        return 1.0 / Math.sqrt(p + alphaPrime*alphaPrime * p * (1-p));
     }
 
-    private double b(double p){
+    public double b(double p){
         return -a(p) * (1-p)*alphaPrime;
     }
 }

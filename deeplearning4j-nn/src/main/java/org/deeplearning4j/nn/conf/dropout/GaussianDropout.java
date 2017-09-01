@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.dropout;
 
+import lombok.Data;
 import org.deeplearning4j.nn.conf.schedule.ISchedule;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
@@ -24,6 +25,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author Alex Black
  */
+@Data
 public class GaussianDropout implements IDropout {
 
     private final double rate;
@@ -60,7 +62,7 @@ public class GaussianDropout implements IDropout {
         double stdev = Math.sqrt(r / (1.0 - r));
 
         INDArray noise = Nd4j.createUninitialized(inputActivations.shape(), inputActivations.ordering());
-        Nd4j.getExecutioner().execAndReturn(new GaussianDistribution(noise, 1.0, stdev));
+        Nd4j.getExecutioner().exec(new GaussianDistribution(noise, 1.0, stdev));
 
         if(inPlace){
             return inputActivations.muli(noise);

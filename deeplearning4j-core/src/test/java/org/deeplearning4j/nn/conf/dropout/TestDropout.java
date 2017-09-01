@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.dropout;
 
 import lombok.Data;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -8,12 +9,20 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.schedule.MapSchedule;
+import org.deeplearning4j.nn.conf.schedule.ScheduleType;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
+import org.nd4j.linalg.activations.impl.ActivationSELU;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.transforms.SELU;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Triple;
 
@@ -22,6 +31,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestDropout {
 
@@ -84,16 +95,17 @@ public class TestDropout {
                 new Triple<>(0, 0, false),
                 new Triple<>(1, 0, false),
                 new Triple<>(2, 0, false),
-                new Triple<>(0, 1, false),
-                new Triple<>(1, 1, false),
-                new Triple<>(2, 1, false));
+                new Triple<>(3, 1, false),
+                new Triple<>(4, 1, false),
+                new Triple<>(5, 1, false));
 
-        assertEquals(expList, d1.getAllCalls());
-        assertEquals(expList, d2.getAllCalls());
+//        assertEquals(expList, d1.getAllCalls());
+//        assertEquals(expList, d2.getAllCalls());
 
 
+        d1 = new CustomDropout();
+        d2 = new CustomDropout();
         ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                .dropOut(0.6)
                 .graphBuilder()
                 .addInputs("in")
                 .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(3).dropOut(d1).build(), "in")
@@ -101,6 +113,14 @@ public class TestDropout {
                 .setOutputs("1")
                 .build();
 
+        ComputationGraph net2 = new ComputationGraph(conf2);
+        net2.init();
+
+        net2.fit(iter);
+        net2.fit(iter);
+
+        assertEquals(expList, d1.getAllCalls());
+        assertEquals(expList, d2.getAllCalls());
     }
 
     @Data
@@ -121,8 +141,162 @@ public class TestDropout {
     }
 
     @Test
-    public void testValues(){
+    public void testSerialization(){
 
+        IDropout[] dropouts = new IDropout[]{
+                new Dropout(0.5),
+                new AlphaDropout(0.5),
+                new GaussianDropout(0.1),
+                new GaussianNoise(0.1)};
+
+        for(IDropout id : dropouts) {
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .dropOut(id)
+                    .list()
+                    .layer(new DenseLayer.Builder().nIn(4).nOut(3).build())
+                    .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(3).nOut(3).build())
+                    .build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            TestUtils.testModelSerialization(net);
+
+            ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                    .dropOut(id)
+                    .graphBuilder()
+                    .addInputs("in")
+                    .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "in")
+                    .addLayer("1", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(3).nOut(3).build(), "0")
+                    .setOutputs("1")
+                    .build();
+
+            ComputationGraph net2 = new ComputationGraph(conf2);
+            net2.init();
+
+            TestUtils.testModelSerialization(net2);
+        }
+    }
+
+    @Test
+    public void testDropoutValues(){
+        Nd4j.getRandom().setSeed(12345);
+
+        Dropout d = new Dropout(0.5);
+
+        INDArray in = Nd4j.ones(10, 10);
+        INDArray out = d.applyDropout(in, 0, 0, false);
+
+        assertEquals(in, Nd4j.ones(10, 10));
+
+        int countZeros = Nd4j.getExecutioner().exec(new MatchCondition(out, Conditions.equals(0))).z().getInt(0);
+        int countTwos = Nd4j.getExecutioner().exec(new MatchCondition(out, Conditions.equals(2))).z().getInt(0);
+
+        assertEquals(100, countZeros + countTwos);  //Should only be 0 or 2
+        //Stochastic, but this should hold for most cases
+        assertTrue(countZeros >= 25 && countZeros <= 75);
+        assertTrue(countTwos >= 25 && countTwos <= 75);
+
+        //Test schedule:
+        d = new Dropout(new MapSchedule.Builder(ScheduleType.ITERATION).add(0, 0.5).add(5, 0.1).build());
+        for( int i=0; i<10; i++ ) {
+            out = d.applyDropout(in, i, 0, false);
+            assertEquals(in, Nd4j.ones(10, 10));
+            countZeros = Nd4j.getExecutioner().exec(new MatchCondition(out, Conditions.equals(0))).z().getInt(0);
+
+            if(i < 5){
+                countTwos = Nd4j.getExecutioner().exec(new MatchCondition(out, Conditions.equals(2))).z().getInt(0);
+                assertEquals(String.valueOf(i), 100, countZeros + countTwos);  //Should only be 0 or 2
+                //Stochastic, but this should hold for most cases
+                assertTrue(countZeros >= 25 && countZeros <= 75);
+                assertTrue(countTwos >= 25 && countTwos <= 75);
+            } else {
+                int countInverse = Nd4j.getExecutioner().exec(new MatchCondition(out, Conditions.equals(1.0/0.1))).z().getInt(0);
+                assertEquals(100, countZeros + countInverse);  //Should only be 0 or 10
+                //Stochastic, but this should hold for most cases
+                assertTrue(countZeros >= 80);
+                assertTrue(countInverse <= 20);
+            }
+        }
+
+
+    }
+
+    @Test
+    public void testGaussianDropoutValues(){
+        Nd4j.getRandom().setSeed(12345);
+
+        GaussianDropout d = new GaussianDropout(0.1);   //sqrt(0.1/(1-0.1)) = 0.3333 stdev
+
+        INDArray in = Nd4j.ones(50, 50);
+        INDArray out = d.applyDropout(in, 0, 0, false);
+
+        assertEquals(in, Nd4j.ones(50, 50));
+
+        double mean = out.meanNumber().doubleValue();
+        double stdev = out.stdNumber().doubleValue();
+
+        assertEquals(1.0, mean, 0.05);
+        assertEquals(0.333, stdev, 0.02);
+    }
+
+    @Test
+    public void testGaussianNoiseValues(){
+        Nd4j.getRandom().setSeed(12345);
+
+        GaussianNoise d = new GaussianNoise(0.1);   //sqrt(0.1/(1-0.1)) = 0.3333 stdev
+
+        INDArray in = Nd4j.ones(50, 50);
+        INDArray out = d.applyDropout(in, 0, 0, false);
+
+        assertEquals(in, Nd4j.ones(50, 50));
+
+        double mean = out.meanNumber().doubleValue();
+        double stdev = out.stdNumber().doubleValue();
+
+        assertEquals(1.0, mean, 0.05);
+        assertEquals(0.1, stdev, 0.01);
+    }
+
+    @Test
+    public void testAlphaDropoutValues(){
+        Nd4j.getRandom().setSeed(12345);
+
+        double p = 0.4;
+        AlphaDropout d = new AlphaDropout(p);
+
+        double SELU_ALPHA = 1.6732632423543772;
+        double SELU_LAMBDA = 1.0507009873554804;
+        double alphaPrime = - SELU_LAMBDA * SELU_ALPHA;
+        double a = 1.0 / Math.sqrt((p + alphaPrime * alphaPrime * p * (1-p)));
+        double b = -1.0 / Math.sqrt(p + alphaPrime * alphaPrime * p * (1-p)) * (1-p) * alphaPrime;
+
+        double actA = d.a(p);
+        double actB = d.b(p);
+
+        assertEquals(a, actA, 1e-6);
+        assertEquals(b, actB, 1e-6);
+
+        INDArray in = Nd4j.ones(10, 10);
+        INDArray out = d.applyDropout(in, 0, 0, false);
+
+        int countValueDropped = 0;
+        int countEqn = 0;
+        double eqn = a * 1 + b;
+        double valueDropped = a * alphaPrime + b;
+        for(int i=0; i<100; i++ ){
+            double v = out.getDouble(i);
+            if(v >= valueDropped - 1e-6 && v <= valueDropped + 1e-6){
+                countValueDropped++;
+            } else if(v >= eqn - 1e-6 && v <= eqn + 1e-6){
+                countEqn++;
+            }
+
+        }
+
+        assertEquals(100, countValueDropped+ countEqn);
+        assertTrue(countValueDropped >= 25 && countValueDropped <= 75);
+        assertTrue(countEqn >= 25 && countEqn <= 75);
     }
 
 }

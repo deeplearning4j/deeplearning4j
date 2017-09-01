@@ -55,7 +55,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
-        applyDropOutIfNecessary(training, getIterationCount(), getEpochCount());
+        applyDropOutIfNecessary(training);
 
         if (maskArray != null) {
             input.muliColumnVector(maskArray);

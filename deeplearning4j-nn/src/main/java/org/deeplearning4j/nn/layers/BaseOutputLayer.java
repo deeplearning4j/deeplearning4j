@@ -325,7 +325,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public void fit(INDArray input, INDArray labels) {
         setInput(input);
         setLabels(labels);
-        applyDropOutIfNecessary(true, getIterationCount(), getEpochCount());
+        applyDropOutIfNecessary(true);
         if (solver == null) {
             solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively

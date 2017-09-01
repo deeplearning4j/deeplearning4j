@@ -882,6 +882,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         } else
             dataSetIterator = iterator;
 
+        if(!iterator.hasNext() && iterator.resetSupported()){
+            iterator.reset();
+        }
+
         if (trainingListeners.size() > 0) {
             for (TrainingListener tl : trainingListeners) {
                 tl.onEpochStart(this);
