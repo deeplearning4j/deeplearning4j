@@ -1,6 +1,9 @@
 package org.deeplearning4j.nn.conf.dropout;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.ToString;
 import org.deeplearning4j.nn.conf.schedule.ISchedule;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.AlphaDropOut;
@@ -28,6 +31,9 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author Alex Black
  */
+@Data
+@EqualsAndHashCode(exclude = {"lastPValue","alphaPrime","a","b"})
+@ToString(exclude = {"lastPValue","alphaPrime","a","b"})
 @JsonIgnoreProperties({"lastPValue", "alphaPrime", "a", "b"})
 public class AlphaDropout implements IDropout {
 

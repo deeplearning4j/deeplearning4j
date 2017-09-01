@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.dropout;
 
+import lombok.Data;
 import org.deeplearning4j.nn.conf.schedule.ISchedule;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
@@ -13,6 +14,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author Alex Black
  */
+@Data
 public class GaussianNoise implements IDropout {
 
     private double stddev;
