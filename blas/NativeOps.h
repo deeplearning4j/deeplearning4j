@@ -2963,6 +2963,9 @@ public:
     // protobuf execution
     Nd4jPointer executeProtoGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer protoBufferPointer);
     Nd4jPointer executeProtoGraphFloat(Nd4jPointer *extraPointers, const char *fileName);
+
+    const char* getAllCustomOps();
+
 };
 
 

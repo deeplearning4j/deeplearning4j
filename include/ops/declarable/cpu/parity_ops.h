@@ -173,14 +173,20 @@ namespace nd4j {
             // conditional op !!!
             return ND4J_STATUS_OK;
         }
+        DECLARE_SYN(switch, Switch);
 
         DECLARE_DIVERGENT_OP(noOp, -1, 2) {
             // Fastest op ever.
             return ND4J_STATUS_OK;
         }
 
+        DECLARE_OP(BroadcastGradientArgs, 2, 2) {
+
+            return ND4J_STATUS_OK;
+        }
+
         // test op, non-divergent
-        DECLARE_OP(testOp2i2o, 2, 2) {
+        DECLARE_OP(testop2i2o, 2, 2) {
             REQUIRE_OK(this->validateNonEmptyInput(block));
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -193,6 +199,7 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+        DECLARE_SYN(TestOp2i2o, testop2i2o);
 
         DECLARE_OP(assign, 2, 1) {
             // NDArray->assign(NDArray)
@@ -277,6 +284,7 @@ namespace nd4j {
 			return ND4J_STATUS_OK;
         }
         DECLARE_SYN(Sub, subtract);
+        DECLARE_SYN(sub, subtract);
 
 //////////////////////////////////////////////////////////////////////////		
 		DECLARE_OP(reverseSubtract, 2, 1) {

@@ -112,12 +112,32 @@ namespace nd4j {
 
             std::map<std::string, nd4j::ops::DeclarableOp<float> *> _declarablesF;
             std::map<std::string, nd4j::ops::DeclarableOp<double> *> _declarablesD;
+
+            std::mutex _locker;
+            std::string _opsList;
+            bool isInit = false;
         public:
             static OpRegistrator* getInstance() {
                 if (!_INSTANCE)
                     _INSTANCE = new nd4j::ops::OpRegistrator();
 
                 return _INSTANCE;
+            }
+
+            const char * getAllCustomOperations() {
+                _locker.lock();
+
+                if (!isInit) {
+                    for (std::map<std::string, nd4j::ops::DeclarableOp<float>*>::iterator it=_declarablesF.begin(); it!=_declarablesF.end(); ++it) {
+                        _opsList += it->first + ":" + std::to_string(it->second->getOpDescriptor()->getNumberOfInputs()) + ":" + std::to_string(it->second->getOpDescriptor()->getNumberOfOutputs()) + ";";
+                    }
+
+                    isInit = true;
+                }
+
+                _locker.unlock();
+
+                return _opsList.c_str();
             }
 
             /**

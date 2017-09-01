@@ -81,10 +81,10 @@ TEST_F(DeclarableOpsTests, BasicInitialization2) {
 
 TEST_F(DeclarableOpsTests, SynonymInitialization2) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("Mul");
-    auto op2 = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("Multiply");
+    auto op2 = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("multiply");
 
     ASSERT_TRUE(op != nullptr);
-    std::string expName("Multiply");
+    std::string expName("multiply");
     ASSERT_EQ(expName, *(op->getOpName()));
     ASSERT_TRUE(op == op2);
 }
@@ -94,7 +94,7 @@ TEST_F(DeclarableOpsTests, DivergentCheck1) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("switch");
 
     ASSERT_TRUE(op != nullptr);
-    std::string expName("switch");
+    std::string expName("Switch");
     ASSERT_EQ(expName, *(op->getOpName()));
     ASSERT_TRUE(op->getOpDescriptor()->isDivergent());
     ASSERT_EQ(2, op->getOpDescriptor()->getNumberOfOutputs());

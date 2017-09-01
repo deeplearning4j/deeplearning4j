@@ -31,6 +31,7 @@
 #include "NDArray.cpp"
 #include "GraphExecutioner.cpp"
 #include <layers/layers_factory.h>
+#include <ops/declarable/declarable_ops.h>
 
 char *name;
 bool nameSet = false;
@@ -3087,6 +3088,10 @@ Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, Nd4jPo
 
 Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, const char *fileName) {
     return nullptr;
+}
+
+const char* NativeOps::getAllCustomOps() {
+    return nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
 }
 
 #endif
