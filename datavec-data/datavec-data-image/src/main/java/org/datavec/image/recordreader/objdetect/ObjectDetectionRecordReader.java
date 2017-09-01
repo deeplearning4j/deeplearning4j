@@ -54,6 +54,15 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
     private final int gridH;
     private final ImageObjectLabelProvider labelProvider;
 
+    /**
+     *
+     * @param height        Height of the output images
+     * @param width         Width of the output images
+     * @param channels      Number of channels for the output images
+     * @param gridH         Grid/quantization size (along  height dimension) - Y axis
+     * @param gridW         Grid/quantization size (along  height dimension) - X axis
+     * @param labelProvider ImageObjectLabelProvider - used to look up which objects are in each image
+     */
     public ObjectDetectionRecordReader(int height, int width, int channels, int gridH, int gridW, ImageObjectLabelProvider labelProvider) {
         super(height, width, channels, null);
         this.gridW = gridW;
