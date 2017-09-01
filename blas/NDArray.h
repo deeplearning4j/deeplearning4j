@@ -211,6 +211,12 @@ namespace nd4j {
 	
 		// set new order and shape in case of suitable array length 
 		bool reshape(char order, const std::vector<int>& shape);
+	
+		// calculate strides 
+		void updateStrides();
+
+		// change an array by repeating it the number of times given by reps.
+		void tile(const std::vector<int>& reps);
 
         // default destructor
         ~NDArray();
