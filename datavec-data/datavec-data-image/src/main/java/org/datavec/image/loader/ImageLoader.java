@@ -211,6 +211,16 @@ public class ImageLoader extends BaseImageLoader {
         }
     }
 
+    private org.datavec.image.data.Image toBgrImage(InputStream inputStream){
+        try {
+            BufferedImage image = ImageIO.read(inputStream);
+            INDArray img = toBgr(image);
+            return new org.datavec.image.data.Image(img, image.getData().getNumBands(), image.getHeight(), image.getWidth());
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to load image", e);
+        }
+    }
+
     /**
      * Convert an BufferedImage to an bgr spectrum image
      *
@@ -253,12 +263,22 @@ public class ImageLoader extends BaseImageLoader {
 
     @Override
     public org.datavec.image.data.Image asImageMatrix(File f) throws IOException {
-        throw new UnsupportedOperationException();
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
+            return asImageMatrix(bis);
+        }
     }
 
     @Override
     public org.datavec.image.data.Image asImageMatrix(InputStream inputStream) throws IOException {
-        throw new UnsupportedOperationException();
+        if (channels == 3)
+            return toBgrImage(inputStream);
+        try {
+            BufferedImage image = ImageIO.read(inputStream);
+            INDArray asMatrix = asMatrix(image);
+            return new org.datavec.image.data.Image(asMatrix, image.getData().getNumBands(), image.getHeight(), image.getWidth());
+        } catch (IOException e) {
+            throw new IOException("Unable to load image", e);
+        }
     }
 
     /**
