@@ -5,6 +5,12 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
+/**
+ * IDropout instances operate on an activations array, modifying or dropping values at training time only.
+ * IDropout instances are not applied at test time.
+ *
+ * @author Alex Black
+ */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface IDropout extends Serializable, Cloneable {
 

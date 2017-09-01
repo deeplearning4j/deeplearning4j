@@ -8,6 +8,26 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+/**
+ * AlphaDropout is a dropout technique proposed by Klaumbauer et al. 2017 - Self-Normalizing Neural Networks
+ * <a href="https://arxiv.org/abs/1706.02515">https://arxiv.org/abs/1706.02515</a> <br>
+ * <br>
+ * This dropout technique was designed specifically for self-normalizing neural networks - i.e., networks using
+ * {@link org.nd4j.linalg.activations.impl.ActivationSELU} / {@link org.nd4j.linalg.activations.Activation#SELU}
+ * activation function, combined with the N(0,stdev=1/sqrt(fanIn)) "SNN" weight initialization,
+ * {@link org.deeplearning4j.nn.weights.WeightInit#NORMAL}<br>
+ * <br>
+ * In conjuction with the aforementioned activation function and weight initialization, AlphaDropout attempts to keep
+ * both the mean and variance of the post-dropout activations to the the same (in expectation) as before alpha
+ * dropout was applied.<br>
+ * Specifically, AlphaDropout implements a * (x * d + alphaPrime * (1-d)) + b, where d ~ Bernoulli(p), i.e., d \in {0,1}.
+ * Where x is the input activations, a, b, alphaPrime are constants determined from the SELU alpha/lambda parameters.
+ * Users should use the default alpha/lambda values in virtually all cases.<br>
+ * <br>
+ * Dropout schedules (i.e., varying probability p as a function of iteration/epoch) are also supported.<br>
+ *
+ * @author Alex Black
+ */
 @JsonIgnoreProperties({"lastPValue", "alphaPrime", "a", "b"})
 public class AlphaDropout implements IDropout {
 
