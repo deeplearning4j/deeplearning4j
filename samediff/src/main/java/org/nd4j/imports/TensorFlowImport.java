@@ -198,10 +198,11 @@ public class TensorFlowImport {
         }
         arrayShape = Ints.toArray(dimensions);
 
-        if (tfTensor.getDtype() == DataType.DT_INT32) {
+        if (tfTensor.getDtype() == DataType.DT_INT32 || tfTensor.getDtype() == DataType.DT_INT16 || tfTensor.getDtype() == DataType.DT_INT8) {
             // valueOf
             if (tfTensor.getIntValCount() == 1) {
                 int val = tfTensor.getIntVal(0);
+
 
                 INDArray array = Nd4j.valueArrayOf(arrayShape, (double) val);
                 return array;
@@ -247,7 +248,23 @@ public class TensorFlowImport {
                 INDArray array = Nd4j.create(jArray, arrayShape, 0, 'c');
                 return array;
             }
-        } else {
+        } else if (tfTensor.getDtype() == DataType.DT_INT64) {
+            if (tfTensor.getInt64ValCount() == 1) {
+                double val = (double) tfTensor.getInt64Val(0);
+
+                INDArray array = Nd4j.valueArrayOf(arrayShape, val);
+                return array;
+            } else {
+                double[] jArray = new double[tfTensor.getInt64ValCount()];
+                for (int e = 0; e < tfTensor.getInt64ValCount(); e++) {
+                    jArray[e] =  (double) tfTensor.getInt64Val(e);
+                }
+
+                // TF arrays are always C
+                INDArray array = Nd4j.create(jArray, arrayShape, 0, 'c');
+                return array;
+            }
+        }  else {
             throw new UnsupportedOperationException("Unknown dataType found: [" + tfTensor.getDtype() + "]");
         }
     }
