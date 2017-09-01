@@ -1328,16 +1328,16 @@ public class TransformProcess implements Serializable {
         }
 
         /**
-         * Replace the values in a specified column with a specified new value, if some condition holds.
-         * If the condition does not hold, the original values are not modified.
+         * Replace the values in a specified column with a specified "yes" value, if some condition holds.
+         * Replace it with a "no" value, otherwise.
          *
          * @param column    Column to operate on
-         * @param newVal  Value to use as replacement, if condition is satisfied
-         * @param defaultVal  Value to use as replacement, if condition is satisfied
+         * @param yesval  Value to use as replacement, if condition is satisfied
+         * @param noVal  Value to use as replacement, if condition is not satisfied
          * @param condition Condition that must be satisfied for replacement
          */
-        public Builder conditionalReplaceValueTransformWithDefault(String column, Writable newVal, Writable defaultVal, Condition condition) {
-            return transform(new ConditionalReplaceValueTransformWithDefault(column, newVal, defaultVal, condition));
+        public Builder conditionalReplaceValueTransformWithDefault(String column, Writable yesVal, Writable noVal, Condition condition) {
+            return transform(new ConditionalReplaceValueTransformWithDefault(column, yesVal, noVal, condition));
         }
 
         /**
