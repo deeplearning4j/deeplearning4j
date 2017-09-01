@@ -558,6 +558,25 @@ template <typename T> void NDArray<T>::transposei() {
         applyScalar<OpName>(scalar.getScalar(0), target, extraParams);
     }
 
+
+//////////////////////////////////////////////////////////////////////////
+// calculate strides 
+template <typename T> void NDArray<T>::updateStrides() {
+	
+	int rank = rankOf();	
+	int doubleRank = 2*rank;
+	if(ordering() == 'c') {
+        _shapeInfo[doubleRank] = 1;          // set unity as last stride for c order
+        for(int j=1; j<rank; ++j)
+            _shapeInfo[doubleRank-j] = _shapeInfo[doubleRank-j+1]*_shapeInfo[rank+1-j];
+    }
+    else {
+        _shapeInfo[rank+1] = 1;             // set unity as first stride for f order
+        for(int j=rank+1; j<doubleRank; ++j)
+            _shapeInfo[j+1] = _shapeInfo[j]*_shapeInfo[j-rank];
+    }
+}
+
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length 
 template <typename T> bool NDArray<T>::reshape(char order, const std::initializer_list<int>& shape) {
@@ -571,7 +590,6 @@ template <typename T> bool NDArray<T>::reshape(char order, const std::initialize
         return false;
 
     int shapeLength = rank*2 + 4;
-    int doubleRank = 2*rank;
     // remember old values
 
     int elemWiseStride = _shapeInfo[rankOf()*2 + 2];
@@ -589,16 +607,7 @@ template <typename T> bool NDArray<T>::reshape(char order, const std::initialize
     for(const auto& item : shape)
         _shapeInfo[i++] = item;                 // exclude first element -> rank
     // set strides in correspondence to dimensions and order
-    if(order=='c') {
-        _shapeInfo[doubleRank] = 1;          // set unity as last stride for c order
-        for(int j=1; j<rank; ++j)
-            _shapeInfo[doubleRank-j] = _shapeInfo[doubleRank-j+1]*_shapeInfo[rank+1-j];
-    }
-    else {
-        _shapeInfo[rank+1] = 1;             // set unity as first stride for f order
-        for(int j=rank+1; j<doubleRank; ++j)
-            _shapeInfo[j+1] = _shapeInfo[j]*_shapeInfo[j-rank];
-    }
+	updateStrides();
     // restore last 3 elements in _shapeInfo
     _shapeInfo[shapeLength-3] = 0;                  // always zero at this position
     _shapeInfo[shapeLength-2] = elemWiseStride;
@@ -621,7 +630,6 @@ template <typename T> bool NDArray<T>::reshape(char order, const std::vector<int
         return false;
 
     int shapeLength = rank*2 + 4;
-    int doubleRank = 2*rank;
     // remember old values
 
     int elemWiseStride = _shapeInfo[rankOf()*2 + 2];
@@ -639,16 +647,7 @@ template <typename T> bool NDArray<T>::reshape(char order, const std::vector<int
     for(const auto& item : shape)
         _shapeInfo[i++] = item;                 // exclude first element -> rank
     // set strides in correspondence to dimensions and order
-    if(order=='c') {
-        _shapeInfo[doubleRank] = 1;          // set unity as last stride for c order
-        for(int j=1; j<rank; ++j)
-            _shapeInfo[doubleRank-j] = _shapeInfo[doubleRank-j+1]*_shapeInfo[rank+1-j];
-    }
-    else {
-        _shapeInfo[rank+1] = 1;             // set unity as first stride for f order
-        for(int j=rank+1; j<doubleRank; ++j)
-            _shapeInfo[j+1] = _shapeInfo[j]*_shapeInfo[j-rank];
-    }
+    updateStrides();
     // restore last 3 elements in _shapeInfo
     _shapeInfo[shapeLength-3] = 0;                  // always zero at this position
     _shapeInfo[shapeLength-2] = elemWiseStride;
