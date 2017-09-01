@@ -28,7 +28,7 @@ public class Log extends AbstractUnaryFunction<ArrayField> {
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
         validateDifferentialFunctionsameDiff(arg());
-        DifferentialFunction<ArrayField> toInverse = i_v.get(0).div(arg());
+        DifferentialFunction<ArrayField> toInverse = sameDiff.setupFunction(f().div(i_v.get(0),arg()));
         arg().setGradient(toInverse);
         return Collections.singletonList(toInverse);
     }

@@ -103,8 +103,7 @@ public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extend
     @Override
     public DifferentialFunction<ArrayField> dup() {
         try {
-            return getClass().getConstructor(sameDiff.getClass(),larg()
-                    .getClass(),rarg().getClass()).newInstance(sameDiff,larg(),
+            return getClass().getConstructor(sameDiff.getClass(),DifferentialFunction.class,DifferentialFunction.class).newInstance(sameDiff,larg(),
                     rarg());
         } catch (Exception e) {
             throw new RuntimeException(e);

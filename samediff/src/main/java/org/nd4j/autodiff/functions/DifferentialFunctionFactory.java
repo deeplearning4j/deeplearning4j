@@ -1032,7 +1032,7 @@ public class DifferentialFunctionFactory<X extends Field<ArrayField>> implements
     @Override
     public DifferentialFunction<ArrayField> div(DifferentialFunction<ArrayField> differentialFunction, DifferentialFunction<ArrayField> i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff.setupFunction(new Div(sameDiff,differentialFunction,i_v));
+        return sameDiff.setupFunction(new Div(sameDiff,sameDiff.setupFunction(differentialFunction),sameDiff.setupFunction(i_v)));
     }
 
     @Override

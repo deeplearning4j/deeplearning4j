@@ -28,8 +28,7 @@ public class RDiv extends AbstractBinaryFunction<ArrayField> {
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         Constant<ArrayField> ym1 = f()
                 .val(rarg().getValue(true).sub(a().one(getResultShape())));
-        DifferentialFunction<ArrayField> ret = rarg().mul(f().pow(larg(), ym1))
-                .mul(larg());
+        DifferentialFunction<ArrayField> ret = f().mul(rarg(),f().mul(f().pow(larg(), ym1),larg()));
         larg().setGradient(ret);
         rarg().setGradient(ret);
         return Collections.singletonList(ret);

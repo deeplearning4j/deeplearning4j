@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class Add extends AbstractBinaryFunction<ArrayField> {
+
     public Add(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
@@ -28,8 +29,7 @@ public class Add extends AbstractBinaryFunction<ArrayField> {
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         Constant<ArrayField> ym1 = f()
                 .val(rarg().getValue(true).sub(a().one(getResultShape())));
-        DifferentialFunction<ArrayField> ret = rarg().mul(f().pow(larg(), ym1))
-                .mul(larg());
+        DifferentialFunction<ArrayField> ret = f().mul(rarg(),f().mul(f().pow(larg(), ym1), larg()));
         larg().setGradient(ret);
         rarg().setGradient(ret);
         return Collections.singletonList(ret);
