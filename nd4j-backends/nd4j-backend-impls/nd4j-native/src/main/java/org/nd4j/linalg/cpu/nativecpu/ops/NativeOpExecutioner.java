@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.primitives.ImmutablePair;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.compression.impl.AbstractCompressor;
@@ -1444,5 +1445,32 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         return target;
+    }
+
+
+    @Override
+    public Map<String, ImmutablePair<Integer, Integer>> getCustomOperations() {
+        String list = loop.getAllCustomOps();
+
+        HashMap<String, ImmutablePair<Integer, Integer>> map = new HashMap<>();
+
+        if (list == null || list.isEmpty()) {
+            log.warn("No customs ops available!");
+            return map;
+        }
+
+        String[] split = list.split(";");
+        for (String op: split) {
+            if (op == null || op.isEmpty())
+                continue;
+
+            String[] another = op.split(":");
+
+            ImmutablePair<Integer, Integer> pair = new ImmutablePair<>(Integer.valueOf(another[1]), Integer.valueOf(another[2]));
+            map.put(another[0], pair);
+        }
+
+
+        return map;
     }
 }

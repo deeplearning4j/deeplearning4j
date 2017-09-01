@@ -1,6 +1,9 @@
 package org.nd4j.imports;
 
 import com.google.protobuf.TextFormat;
+import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.autodiff.opstate.OpExecAction;
@@ -8,15 +11,29 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.util.List;
 
 import static org.junit.Assert.*;
 
+
+@Slf4j
 public class TensorFlowImportTest {
     @Before
     public void setUp() throws Exception {
+    }
+
+    @Test
+    public void testCustomOps1() {
+        val map = Nd4j.getExecutioner().getCustomOperations();
+
+        assertTrue(map.size() > 0);
+
+        for (val key: map.keySet()) {
+            log.info("OpName: {}; NumInputs: {}; NumOutputs: {}", key, map.get(key).getFirst(), map.get(key).getSecond());
+        }
     }
 
     @Test

@@ -22,6 +22,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.primitives.ImmutablePair;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -2391,6 +2392,33 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         AtomicAllocator.getInstance().getFlowController().registerAction(context, target);
 
         return target;
+    }
+
+
+    @Override
+    public Map<String, ImmutablePair<Integer, Integer>> getCustomOperations() {
+        String list = nativeOps.getAllCustomOps();
+
+        HashMap<String, ImmutablePair<Integer, Integer>> map = new HashMap<>();
+
+        if (list == null) {
+            log.warn("No customs ops available!");
+            return map;
+        }
+
+        String[] split = list.split(";");
+        for (String op: split) {
+            if (op == null || op.isEmpty())
+                continue;
+
+            String[] another = op.split(":");
+
+            ImmutablePair<Integer, Integer> pair = new ImmutablePair<>(Integer.valueOf(another[1]), Integer.valueOf(another[2]));
+            map.put(another[0], pair);
+        }
+
+
+        return map;
     }
 }
 
