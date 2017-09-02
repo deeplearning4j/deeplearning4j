@@ -27,8 +27,8 @@ public abstract class AbstractBinaryFunction extends DifferentialFunction {
                                   OpState.OpType opType) {
         super(sameDiff,new Object[] {i_v2});
         if (i_v1 != null && i_v2 != null) {
-            m_x1 = i_v1;
-            m_x2 = i_v2;
+            m_x1 = sameDiff.setupFunction(i_v1);
+            m_x2 = sameDiff.setupFunction(i_v2);
             validateDifferentialFunctionsameDiff(i_v1);
             validateDifferentialFunctionsameDiff(i_v2);
             validateFunctionReference(i_v1);
@@ -76,12 +76,12 @@ public abstract class AbstractBinaryFunction extends DifferentialFunction {
     }
 
     public DifferentialFunction larg() {
-        return sameDiff.setupFunction(m_x1);
+        return m_x1;
     }
 
 
     public DifferentialFunction rarg() {
-        return sameDiff.setupFunction(m_x2);
+        return m_x2;
     }
 
 

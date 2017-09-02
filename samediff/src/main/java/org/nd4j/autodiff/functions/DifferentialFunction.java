@@ -355,10 +355,12 @@ public abstract class DifferentialFunction implements Differential {
 
     }
     protected void validateFunctionReference(DifferentialFunction reference) {
-        if(sameDiff.getFunctionInstances().containsKey(reference.getVertexId()))
-            Preconditions.checkState(reference == sameDiff.getFunctionInstances()
-                    .get(reference.getVertexId()),"Found invalid reference " + reference + " for vertex id "
+        if(sameDiff.getFunctionInstances().containsKey(reference.getVertexId())) {
+            DifferentialFunction get = sameDiff.getFunctionInstances()
+                    .get(reference.getVertexId());
+            Preconditions.checkState(reference.equals(get), "Found invalid reference " + reference + " for vertex id "
                     + reference.getVertexId());
+        }
 
 
     }

@@ -40,6 +40,6 @@ public class ScalarFMod extends AbstractScalarFunction {
 
     @Override
     public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 }

@@ -42,6 +42,8 @@ public class ScalarRSub extends AbstractScalarFunction {
 
     @Override
     public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
-        return Arrays.asList(f().neg(i_v1.get(0)));
+        DifferentialFunction g = f().neg(i_v1.get(0));
+        arg().setGradient(g);
+        return Arrays.asList(g);
     }
 }

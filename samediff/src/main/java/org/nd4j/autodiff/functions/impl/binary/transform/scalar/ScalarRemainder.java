@@ -30,7 +30,7 @@ public class ScalarRemainder extends AbstractScalarFunction {
             scalarValue = (Number) extraArgs[0];
         }
 
-     return arg().getValue(true).fmod(scalarValue.doubleValue());
+        return arg().getValue(true).fmod(scalarValue.doubleValue());
     }
 
     @Override
@@ -40,6 +40,6 @@ public class ScalarRemainder extends AbstractScalarFunction {
 
     @Override
     public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 }

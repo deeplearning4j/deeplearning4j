@@ -2,6 +2,7 @@ package org.nd4j.autodiff.functions.impl.binary.transform.scalar;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractScalarFunction;
+import org.nd4j.autodiff.functions.Differential;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
@@ -42,6 +43,8 @@ public class ScalarPow extends AbstractScalarFunction {
 
     @Override
     public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
-        return Arrays.asList(f().mul(f().pow(arg(),scalarValue.doubleValue()),i_v1.get(0)));
+        DifferentialFunction g = f().mul(f().pow(arg(),scalarValue.doubleValue()),i_v1.get(0));
+        arg().setGradient(g);
+        return Arrays.asList(g);
     }
 }

@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions.impl.binary.transform.scalar;
 
+import com.sun.deploy.ui.DeployEmbeddedFrameIf;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractScalarFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -42,6 +43,8 @@ public class ScalarMul extends AbstractScalarFunction {
 
     @Override
     public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
-        return Arrays.asList(f().mul(i_v1.get(0),scalarValue.doubleValue()));
+        DifferentialFunction g = f().mul(i_v1.get(0),scalarValue.doubleValue());
+        arg().setGradient(g);
+        return Arrays.asList(g);
     }
 }
