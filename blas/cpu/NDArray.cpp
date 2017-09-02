@@ -656,6 +656,73 @@ template <typename T> bool NDArray<T>::reshape(char order, const std::vector<int
     return true;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// change an array by repeating it the number of times given by reps.
+template <typename T> void NDArray<T>::tile(const std::vector<int>& reps) {
+	int dim = reps.size();	
+	int product = 1;
+	for(const auto& item : reps)
+		product *= item;
+	if(check == 0)
+		throw "Tile method: one of the elements in reps array is zero !";
+	int rank = rankOf();
+	int diff = rank - dim;
+	if(product==1) {	    // in this case 2 possibilities are present: just reshape or nothing to do
+		if(diff < 0) {		// reshape to higher dimension			
+			vector<int> shapeNew = reps;				// need to have unities at first "diff" positions of new shape
+			memcpy(&shapeNew[-diff], _shapeInfo+1, rank*sizeof(int));   // put old shape numbers at rest of positions
+			reshape(ordering(), shapeNew);
+		}		
+		return;				// nothing to do, if diff >= 0 -> identity tile 
+	}	
+	// now in any case we have to increase memory for _buffer
+	
+	int shapeLength = rank*2 + 4;
+    // check if current object is _shapeInfo owner
+    // if(!_isShapeAlloc) {                    
+        // _shapeInfo = new int[rank*2+4];
+        // _shapeInfo[0] = rank;
+        // _isShapeAlloc = true;
+    // }
+	
+	// evaluate new shapeInfo
+	int* newShapeInfo = nullptr;	
+	if(diff < 0) {
+		newShapeInfo = new int[dim*2 + 4];
+		newShapeInfo[0] = dim;					// set new rank
+		for(int i=1; i <= -diff; ++i)
+			newShapeInfo[i] = 1;				// set unities to be new dimensions at left-hand side of newShapeInfo shape place
+		memcpy(newShapeInfo + 1 - diff, _shapeInfo + 1, rank*sizeof(int));		// copy old dimensions to the right-hand side of newShapeInfo shape place
+		for(int i=1; i <= dim; ++i)
+			newShapeInfo[i] *= reps[i - 1];		// set new shape by multiplying old dimensions by corresponding numbers from reps 
+	}
+	else {
+		newShapeInfo = new int[rank*2 + 4];
+		memcpy(newShapeInfo, _shapeInfo, (rank*2 + 4)*sizeof(int));		// copy all elements of _shapeInfo to newShapeInfo
+		for(int i=1; i <= dim; ++i)
+			newShapeInfo[rank + 1 - i] *= reps[dim - i];		// set new shape by multiplying old dimensions by corresponding numbers from reps 
+	}
+	
+	// fill new buffer
+	int newArrLength = shape::length(newShapeInfo);
+	T* newBuff = new T[newArrLength];
+	int step = _shapeInfo[rank]*sizeOfT()
+	if(diff < 0) {
+		for(int i=0;  i<_shapeInfo[2*rank-1]; ++i)
+			for(int j=0; j<reps[dim-1]; ++j)
+				memcpy(newBuff + j*step, _buffer + i*step, step);
+	}
+	else {
+		for(int i=0 i < dim; ++i) {
+			for(int j=0 j < reps[dim-1-i]; ++j)
+				memcpy(newBuff + j*_shapeInfo[rank-i]*sizeOfT(), _buffer + _shapeInfo[rank]*sizeOfT(), oldLength*sizeOfT());
+				
+
+		}
+		
+	}
+	delete []newShapeInfo;
+}
 
 // default destructor
     template<typename T>
