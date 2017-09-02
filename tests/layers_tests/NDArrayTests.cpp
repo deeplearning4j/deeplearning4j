@@ -129,6 +129,8 @@ TEST_F(NDArrayTest, TestTad1) {
 
     row2->assign(1.0);
 
+    //array->printBuffer();
+
     ASSERT_NEAR(3.0f, array->sumNumber(), 1e-5);
 
     delete row2;
