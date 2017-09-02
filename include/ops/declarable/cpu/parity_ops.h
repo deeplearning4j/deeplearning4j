@@ -240,23 +240,28 @@ namespace nd4j {
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
 
-
+            NDArray<T> *z = x;
+            if (block.getVariableSpace()->hasVariable(block.getNodeId())) {
+                auto var = block.getVariableSpace()->getVariable(block.getNodeId());
+                if (var->getNDArray() != nullptr) {
+                    z = var->getNDArray();
+                }
+            }
 
 			if (!x->isScalar() && !y->isScalar()) {
 				REQUIRE_OK(this->validateInputLengthMatch(block));
-				x->template applyPairwiseTransform<simdOps::Add<T>>(y, nullptr);                
+				x->template applyPairwiseTransform<simdOps::Add<T>>(y, z, nullptr);
             
             } else if (!x->isScalar() && y->isScalar()) {
-               x->template applyScalar<simdOps::Add<T>>(*y, x);
+               x->template applyScalar<simdOps::Add<T>>(*y, z);
 
             } else if (x->isScalar() && !y->isScalar()) {
-                y->template applyScalar<simdOps::Add<T>>(*x, y);
-
+                y->template applyScalar<simdOps::Add<T>>(*x, z);
             }						
 			else { // x->isScalar() && y->isScalar()
-				x->putScalar(0, x->getScalar(0) + y->getScalar(0));
-
+				z->putScalar(0, x->getScalar(0) + y->getScalar(0));
 			}
+
 			return ND4J_STATUS_OK;
         }
 

@@ -149,6 +149,13 @@ void nd4j::graph::VariableSpace<T>::putVariable(std::pair<int,int>& pair, Variab
     _paired.insert(p);
 
     _varmap.unlock();
+
+    // copying duplicate for compatibility
+    if (pair.second == 0 && !this->hasVariable(pair.first)) {
+        this->putVariable(pair.first, variable);
+    }
+
+
 }
 
 template <typename T>
