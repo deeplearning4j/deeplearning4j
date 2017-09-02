@@ -5,9 +5,10 @@ import org.nd4j.autodiff.functions.AbstractScalarFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Arrays;
 import java.util.List;
 
-public class ScalarAdd extends AbstractScalarFunction<ArrayField> {
+public class ScalarAdd extends AbstractScalarFunction {
 
     public ScalarAdd() {
     }
@@ -27,6 +28,10 @@ public class ScalarAdd extends AbstractScalarFunction<ArrayField> {
      */
     @Override
     public ArrayField doGetValue() {
+        if(scalarValue == null) {
+            scalarValue = (Number) extraArgs[0];
+        }
+
         return arg().getValue(true).add(scalarValue.doubleValue());
     }
 
@@ -37,6 +42,6 @@ public class ScalarAdd extends AbstractScalarFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
-        return null;
+        return Arrays.asList(i_v1.get(0));
     }
 }

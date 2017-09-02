@@ -1,6 +1,5 @@
 package org.nd4j.autodiff.functions.mmul;
 
-import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.ArrayField;
@@ -25,7 +24,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 @NoArgsConstructor
-public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduceFunction<X> {
+public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduceFunction {
     private int[][] axes;
     protected boolean addedEdges;
     protected MMulTranspose mMulTranspose;

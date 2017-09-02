@@ -9,7 +9,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 import java.util.Collections;
 import java.util.List;
 
-public class LeakyRelu  extends AbstractUnaryFunction<ArrayField> {
+public class LeakyRelu  extends AbstractUnaryFunction {
     private double cutoff;
 
     public LeakyRelu(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v,double cutoff) {

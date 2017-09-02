@@ -8,7 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class Variance extends AbstractReduceUnaryFunction<ArrayField> {
+public class Variance extends AbstractReduceUnaryFunction {
 
     protected  boolean biasCorrected;
 

@@ -8,7 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-public class Broadcast extends AbstractUnaryFunction<ArrayField> {
+public class Broadcast extends AbstractUnaryFunction {
 
     public Broadcast(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape) {
         super(sameDiff, i_v, shape,OpState.OpType.SHAPE,new Object[]{shape});

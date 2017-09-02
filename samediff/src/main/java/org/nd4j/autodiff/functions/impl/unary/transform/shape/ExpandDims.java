@@ -8,7 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class ExpandDims extends AbstractUnaryFunction<ArrayField> {
+public class ExpandDims extends AbstractUnaryFunction {
 
     protected int axis;
 

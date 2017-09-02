@@ -9,7 +9,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Arrays;
 import java.util.List;
 
-public class SELUDerivative extends AbstractBinaryFunction<ArrayField> {
+public class SELUDerivative extends AbstractBinaryFunction {
 
     public SELUDerivative() {
     }

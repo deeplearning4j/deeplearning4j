@@ -1,39 +1,35 @@
 package org.nd4j.autodiff.functions;
 
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.samediff.SameDiff;
+
 import java.util.Arrays;
 import java.util.List;
-
-import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.samediff.SameDiff;
 
 
 /**
  * Negative operation
- * @param <X>
  */
-public class Negative<X extends Field<X>> extends AbstractUnaryFunction<X> {
+public class Negative extends AbstractUnaryFunction {
 
-    public Negative(SameDiff sameDiff, DifferentialFunction<X> i_v, boolean inPlace) {
+    public Negative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, boolean inPlace) {
         super(sameDiff,i_v,new Object[]{inPlace});
     }
 
 
-    public Negative(SameDiff sameDiff, DifferentialFunction<X> i_v) {
+    public Negative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v) {
         this(sameDiff,i_v,false);
     }
 
     @Override
-    public X doGetValue() {
+    public ArrayField doGetValue() {
         return arg().getValue(true).negate();
     }
 
-    @Override
-    public double getReal() {
-        return -arg().getReal();
-    }
+
 
     @Override
-    public List<DifferentialFunction<X>> diff(List<DifferentialFunction<X>> i_v) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         return Arrays.asList(arg().diff(i_v).get(0).negate());
     }
 
@@ -43,7 +39,7 @@ public class Negative<X extends Field<X>> extends AbstractUnaryFunction<X> {
     }
 
     @Override
-    public String doGetFormula(List<Variable<X>> variables) {
+    public String doGetFormula(List<Variable> variables) {
         return "-" + arg().doGetFormula(variables);
     }
 
@@ -53,7 +49,7 @@ public class Negative<X extends Field<X>> extends AbstractUnaryFunction<X> {
     }
 
     @Override
-    public DifferentialFunction<X> negate() {
+    public DifferentialFunction<ArrayField> negate() {
         return arg();
     }
 

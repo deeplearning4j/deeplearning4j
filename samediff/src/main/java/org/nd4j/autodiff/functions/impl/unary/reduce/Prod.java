@@ -8,7 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class Prod extends AbstractReduceUnaryFunction<ArrayField> {
+public class Prod extends AbstractReduceUnaryFunction {
     public Prod(SameDiff sameDiff,
                DifferentialFunction<ArrayField> i_v,
                int[] dimensions) {

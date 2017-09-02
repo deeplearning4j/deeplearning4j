@@ -7,7 +7,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-public class ScalarMax extends AbstractScalarFunction<ArrayField> {
+public class ScalarMax extends AbstractScalarFunction {
 
     public ScalarMax() {
     }
@@ -27,6 +27,10 @@ public class ScalarMax extends AbstractScalarFunction<ArrayField> {
      */
     @Override
     public ArrayField doGetValue() {
+        if(scalarValue == null) {
+            scalarValue = (Number) extraArgs[0];
+        }
+
         return arg().getValue(true).max(scalarValue.doubleValue());
     }
 

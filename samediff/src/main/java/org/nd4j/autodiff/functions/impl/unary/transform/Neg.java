@@ -9,7 +9,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import java.util.Collections;
 import java.util.List;
 
-public class Neg extends AbstractUnaryFunction<ArrayField> {
+public class Neg extends AbstractUnaryFunction {
     public Neg(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }

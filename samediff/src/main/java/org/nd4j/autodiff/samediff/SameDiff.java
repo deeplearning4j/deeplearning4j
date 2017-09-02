@@ -215,7 +215,7 @@ public class SameDiff {
             //change the vertex id to the new value
             //for the graph transition
             if(variable.getArrayField() != null) {
-                Variable<ArrayField> variable1 = (Variable<ArrayField>)  sameDiff.functionInstances.get(newVertexMap);
+                Variable variable1 = (Variable)  sameDiff.functionInstances.get(newVertexMap);
                 deepClone.setArrayField(variable1);
             }
             else if(variable.getDifferentialFunction() != null) {
@@ -243,7 +243,7 @@ public class SameDiff {
     private void ensureSameDiffInstance(SameDiff sameDiff,DifferentialFunction<ArrayField> val) {
         val.setSameDiff(sameDiff);
         if(val instanceof Variable) {
-            Variable<ArrayField> variable1 = (Variable<ArrayField>) val;
+            Variable variable1 = (Variable) val;
             variable1.setSameDiff(sameDiff);
             variable1.setVertexId(val.getVertexId());
             variable1.getM_x().setOps(sameDiff);
@@ -252,7 +252,7 @@ public class SameDiff {
 
         }
         else if(val instanceof Constant) {
-            Constant<ArrayField> constant = (Constant<ArrayField>) val;
+            Constant constant = (Constant) val;
             constant.setSameDiff(sameDiff);
             constant.getM_x().setOps(sameDiff);
             sameDiff.setupFunction(constant);
@@ -573,7 +573,7 @@ public class SameDiff {
                 //associate the proper differential function with the given
                 //variable
                 if(func != null && func instanceof Variable) {
-                    variableBuilder.arrayField((Variable<ArrayField>) func);
+                    variableBuilder.arrayField((Variable) func);
                 }
                 else if(func != null)
                     variableBuilder.differentialFunction(func);
@@ -1028,13 +1028,13 @@ public class SameDiff {
     /**
      *
      * @param iX
-     * @param i_y
+     * @param value
      * @return
      */
-    public SDVariable pow(SDVariable iX, SDVariable i_y) {
+    public SDVariable pow(SDVariable iX,double value) {
         SDVariable ret = SDVariable.builder()
                 .arr(null).shape(iX.getShape())
-                .differentialFunction(functionFactory.pow(getFunctionInput(iX),null))
+                .differentialFunction(functionFactory.pow(getFunctionInput(iX),value))
                 .varName("pow(" + iX.getVarName() + ")").sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
@@ -2231,6 +2231,10 @@ public class SameDiff {
                                     sameDiff.setupFunction(opState.getDifferentialFunction()) : null;
                             if(func != null) {
                                 currentDiff = func.diff(currentDiff);
+                                List<DifferentialFunction<ArrayField>> currDiff2 = new ArrayList<>(currentDiff.size());
+                                for(DifferentialFunction<ArrayField> function : currentDiff)
+                                    currDiff2.add(sameDiff.setupFunction(function));
+                                currentDiff = currDiff2;
                             }
                             else if(action.getOpState().getArrayField() != null) {
 

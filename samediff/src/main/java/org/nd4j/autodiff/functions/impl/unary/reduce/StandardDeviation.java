@@ -8,7 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class StandardDeviation  extends AbstractReduceUnaryFunction<ArrayField> {
+public class StandardDeviation  extends AbstractReduceUnaryFunction {
     protected boolean biasCorrected;
 
     public StandardDeviation(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] dimensions) {

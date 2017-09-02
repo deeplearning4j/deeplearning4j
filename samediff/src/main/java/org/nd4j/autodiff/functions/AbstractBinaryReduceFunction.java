@@ -3,10 +3,7 @@ package org.nd4j.autodiff.functions;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.graph.Graph;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.shape.Shape;
 
@@ -17,7 +14,7 @@ import java.util.List;
  * Created by agibsonccc on 4/12/17.
  */
 @NoArgsConstructor
-public abstract class AbstractBinaryReduceFunction<X extends  Field<ArrayField>> extends AbstractBinaryFunction<X> {
+public abstract class AbstractBinaryReduceFunction extends AbstractBinaryFunction {
     protected int[] dimensions;
 
 
@@ -60,7 +57,7 @@ public abstract class AbstractBinaryReduceFunction<X extends  Field<ArrayField>>
     }
 
     @Override
-    public String doGetFormula(List<Variable<ArrayField>> variables) {
+    public String doGetFormula(List<Variable> variables) {
         return toString();
     }
 

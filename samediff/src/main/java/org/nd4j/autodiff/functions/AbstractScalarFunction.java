@@ -11,21 +11,21 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.UUID;
 
-public abstract class AbstractScalarFunction <X extends Field<X>> extends AbstractUnaryFunction<X> {
+public abstract class AbstractScalarFunction extends AbstractUnaryFunction {
     protected Number scalarValue;
 
     public AbstractScalarFunction() {
         super();
     }
 
-    public AbstractScalarFunction(SameDiff sameDiff, DifferentialFunction<X> i_v, int[] shape, Object[] extraArgs) {
+    public AbstractScalarFunction(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape, Object[] extraArgs) {
         super(sameDiff, i_v, shape, OpState.OpType.SCALAR_TRANSFORM, extraArgs);
         this.scalarValue = (Number) extraArgs[0];
     }
 
 
 
-    public AbstractScalarFunction(SameDiff sameDiff, DifferentialFunction<X> i_v, Object[] extraArgs) {
+    public AbstractScalarFunction(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v,i_v.getResultShape(), OpState.OpType.SCALAR_TRANSFORM,extraArgs);
         this.scalarValue = (Number) extraArgs[0];
     }
@@ -37,55 +37,56 @@ public abstract class AbstractScalarFunction <X extends Field<X>> extends Abstra
      * @param i_v1
      * @param opName
      */
+    @Override
     protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction<X> i_v1,
-                            String opName,double scalar) {
+                            DifferentialFunction<ArrayField> i_v1,
+                            String opName,
+                            int[] shape) {
         validateFunctionReference(i_v1);
-        if(i_v1.getValue(true) instanceof ArrayField) {
-            ArrayField v1 = (ArrayField) i_v1.getValue(true);
-            validateDifferentialFunctionsameDiff(v1);
+        ArrayField v1 = i_v1.getValue(true);
+        validateDifferentialFunctionsameDiff(v1);
 
-            NDArrayInformation information =    NDArrayInformation.builder()
-                    .arrId(UUID.randomUUID().toString())
-                    .id(opName + "(" + v1.getInput().getId() + " -> " +
-                            v1.getInput().getId() + ")")
-                    .shape(i_v1.getResultShape()).build();
-
-
-            //result
-            NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information);
-            this.vertexId = newVertex.vertexID();
-            sameDiff.graph().addVertex(newVertex);
-
-            OpState owner =  OpState.builder()
-                    .opType(OpState.OpType.SCALAR_TRANSFORM)
-                    .differentialFunction((DifferentialFunction<ArrayField>) this)
-                    .opName(opName).extraArgs(extraArgs).scalarValue(scalar)
-                    .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
-                    .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                    .n(ArrayUtil.prod(shape))
-                    .result(information)
-                    .build();
+        NDArrayInformation information =    NDArrayInformation.builder()
+                .arrId(UUID.randomUUID().toString())
+                .id(opName + "(" + v1.getInput().getId() + " -> " +
+                        v1.getInput().getId() + ")")
+                .shape(i_v1.getResultShape()).build();
 
 
-            sameDiff.getGraph().addEdge(
-                    v1.getVertex().vertexID(),
-                    newVertex.vertexID(),
-                    owner,
-                    true);
+        //result
+        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information);
+        this.vertexId = newVertex.vertexID();
+        sameDiff.graph().addVertex(newVertex);
+
+        OpState owner =  OpState.builder()
+                .opType(OpState.OpType.SCALAR_TRANSFORM)
+                .differentialFunction((DifferentialFunction<ArrayField>) this)
+                .opName(opName).extraArgs(extraArgs).scalarValue((Number) extraArgs[0])
+                .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
+                .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                .n(ArrayUtil.prod(shape)).scalarValue((Number) extraArgs[0])
+                .result(information)
+                .build();
 
 
-            newVertex.setOpState(owner);
-            information.setOwner(owner);
-            owner.setResult(information);
+        sameDiff.getGraph().addEdge(
+                v1.getVertex().vertexID(),
+                newVertex.vertexID(),
+                owner,
+                true);
 
-            if(owner.isInPlace()) {
-                information.setArrId(v1.getInput().getArrId());
-            }
 
-            this.opState = owner;
+        newVertex.setOpState(owner);
+        information.setOwner(owner);
+        owner.setResult(information);
 
+        if(owner.isInPlace()) {
+            information.setArrId(v1.getInput().getArrId());
         }
+
+        this.opState = owner;
+
+
     }
 
 

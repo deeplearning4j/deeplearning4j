@@ -3,12 +3,11 @@ package org.nd4j.autodiff.functions.impl.binary.transform;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.*;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.transforms.Not;
 
 import java.util.Collections;
 import java.util.List;
 
-public class Eq extends AbstractBinaryFunction<ArrayField> {
+public class Eq extends AbstractBinaryFunction {
     public Eq(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
@@ -21,9 +20,9 @@ public class Eq extends AbstractBinaryFunction<ArrayField> {
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        Constant<ArrayField> ym1 = f()
+        Constant ym1 = f()
                 .val(rarg().getValue(true).sub(a().one(getResultShape())));
-        DifferentialFunction<ArrayField> ret = rarg().mul(f().pow(larg(), ym1))
+        DifferentialFunction<ArrayField> ret = rarg().mul(f().pow(larg(), 2.0))
                 .mul(larg());
         larg().setGradient(ret);
         rarg().setGradient(ret);
@@ -33,6 +32,6 @@ public class Eq extends AbstractBinaryFunction<ArrayField> {
 
     @Override
     public String functionName() {
-        return new Not().name();
+        return new org.nd4j.linalg.api.ops.impl.transforms.comparison.EqualTo().name();
     }
 }

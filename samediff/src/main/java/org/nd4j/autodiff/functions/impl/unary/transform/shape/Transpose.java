@@ -10,7 +10,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.Collections;
 import java.util.List;
 
-public class Transpose extends AbstractUnaryFunction<ArrayField> {
+public class Transpose extends AbstractUnaryFunction {
     public Transpose(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff,i_v, ArrayUtil.reverseCopy(i_v.getValue(true).getInput().getShape()), OpState.OpType.SHAPE,extraArgs);
     }

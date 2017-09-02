@@ -8,7 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class Abs extends AbstractUnaryFunction<ArrayField> {
+public class Abs extends AbstractUnaryFunction {
 
     public Abs(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);

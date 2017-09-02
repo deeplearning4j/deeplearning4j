@@ -18,13 +18,13 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
+public abstract class AbstractReduceUnaryFunction extends DifferentialFunction<ArrayField> {
 
-    protected DifferentialFunction<X> m_x;
+    protected DifferentialFunction<ArrayField> m_x;
     protected int[] dimensions;
 
     public AbstractReduceUnaryFunction(SameDiff sameDiff,
-                                       DifferentialFunction<X> i_v,
+                                       DifferentialFunction<ArrayField> i_v,
                                        int[] dimensions) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
@@ -39,8 +39,8 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
     }
 
     @Override
-    public X doGetValue() {
-        return (X) sameDiff.getArrayFactory().prod((ArrayField) arg().doGetValue(),dimensions);
+    public ArrayField doGetValue() {
+        return a().prod(arg().doGetValue(),dimensions);
     }
 
 
@@ -55,7 +55,7 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
     }
 
     @Override
-    public String doGetFormula(List<Variable<X>> variables) {
+    public String doGetFormula(List<Variable> variables) {
         return functionName() + "(" + m_x.doGetFormula(new ArrayList<>()) + ",axes:" + Arrays.toString(dimensions) + ")";
     }
 
@@ -65,7 +65,7 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
      * @param i_v1
      * @param opName
      */
-    protected void addEdges(SameDiff sameDiff, DifferentialFunction<X> i_v1,String opName) {
+    protected void addEdges(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1,String opName) {
         if(i_v1.getValue(true) instanceof ArrayField) {
             ArrayField v1 = (ArrayField) i_v1.getValue(true);
             int[] resultShape = Shape.getReducedShape(v1.getInput().getShape(),dimensions);
@@ -96,17 +96,17 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
     }
 
     @Override
-    public DifferentialFunction<X>[] args() {
+    public DifferentialFunction<ArrayField>[] args() {
         return new DifferentialFunction[] {m_x};
     }
 
-    public DifferentialFunction<X> arg() {
+    public DifferentialFunction<ArrayField> arg() {
         return m_x;
     }
 
 
     @Override
-    public DifferentialFunction<X> dup() {
+    public DifferentialFunction<ArrayField> dup() {
         try {
             return getClass().getConstructor(sameDiff.getClass(),arg()
                     .getClass(),int[].class).newInstance(sameDiff,arg(),dimensions);

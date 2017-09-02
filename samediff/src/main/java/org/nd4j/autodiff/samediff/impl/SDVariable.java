@@ -33,7 +33,7 @@ import java.util.Map;
 @Data
 public class SDVariable  implements Serializable {
     private INDArray arr;
-    private Variable<ArrayField> arrayField;
+    private Variable arrayField;
     private String varName;
     private SameDiff sameDiff;
     private int[] shape;
@@ -46,7 +46,7 @@ public class SDVariable  implements Serializable {
                        String varName,
                        INDArray arr,
                        SameDiff sameDiff,
-                       Variable<ArrayField> arrayField,
+                       Variable arrayField,
                        int[] shape,
                        int vertexId) {
         this.shape = shape;
@@ -129,7 +129,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public String getFormula() {
-        List<Variable<ArrayField>> ret = new ArrayList<>();
+        List<Variable> ret = new ArrayList<>();
         if(arrayField != null)
             return arrayField.getFormula(ret);
         else {

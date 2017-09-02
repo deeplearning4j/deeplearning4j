@@ -9,7 +9,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class SoftSignDerivative extends AbstractBinaryFunction<ArrayField> {
+public class SoftSignDerivative extends AbstractBinaryFunction {
 
     public SoftSignDerivative() {
     }

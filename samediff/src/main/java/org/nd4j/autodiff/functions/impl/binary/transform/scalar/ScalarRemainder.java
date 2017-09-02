@@ -7,7 +7,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-public class ScalarRemainder extends AbstractScalarFunction<ArrayField> {
+public class ScalarRemainder extends AbstractScalarFunction {
     public ScalarRemainder() {
     }
 
@@ -26,6 +26,10 @@ public class ScalarRemainder extends AbstractScalarFunction<ArrayField> {
      */
     @Override
     public ArrayField doGetValue() {
+        if(scalarValue == null) {
+            scalarValue = (Number) extraArgs[0];
+        }
+
      return arg().getValue(true).fmod(scalarValue.doubleValue());
     }
 

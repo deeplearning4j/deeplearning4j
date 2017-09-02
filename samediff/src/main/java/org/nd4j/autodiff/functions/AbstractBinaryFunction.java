@@ -9,7 +9,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.List;
 
 @NoArgsConstructor
-public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extends DifferentialFunction<ArrayField> {
+public abstract class AbstractBinaryFunction extends DifferentialFunction<ArrayField> {
 
     protected DifferentialFunction<ArrayField> m_x1;
 
@@ -95,7 +95,7 @@ public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extend
     }
 
     @Override
-    public String doGetFormula(List<Variable<ArrayField> > variables) {
+    public String doGetFormula(List<Variable > variables) {
         return functionName() + "(" + larg().doGetFormula(variables) + ","
                 + rarg().doGetFormula(variables) + ")";
     }

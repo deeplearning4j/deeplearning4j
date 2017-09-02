@@ -9,7 +9,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
 import java.util.Collections;
 import java.util.List;
 
-public class Relu extends AbstractUnaryFunction<ArrayField> {
+public class Relu extends AbstractUnaryFunction {
     public Relu(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }

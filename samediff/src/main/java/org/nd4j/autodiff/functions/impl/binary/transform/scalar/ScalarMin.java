@@ -7,7 +7,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-public class ScalarMin extends AbstractScalarFunction<ArrayField> {
+public class ScalarMin extends AbstractScalarFunction {
 
     public ScalarMin() {
     }
@@ -27,6 +27,10 @@ public class ScalarMin extends AbstractScalarFunction<ArrayField> {
      */
     @Override
     public ArrayField doGetValue() {
+        if(scalarValue == null) {
+            scalarValue = (Number) extraArgs[0];
+        }
+
         return arg().getValue(true).min(scalarValue.doubleValue());
     }
 

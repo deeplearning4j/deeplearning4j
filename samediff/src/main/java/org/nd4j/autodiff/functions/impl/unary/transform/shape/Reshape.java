@@ -12,7 +12,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.Collections;
 import java.util.List;
 
-public class Reshape extends AbstractUnaryFunction<ArrayField> {
+public class Reshape extends AbstractUnaryFunction {
     public Reshape(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v,int[] shape) {
         super(sameDiff,i_v, Shape.resolveNegativeShapeIfNeccessary(shape,i_v.getResultShape()),
                 OpState.OpType.SHAPE,

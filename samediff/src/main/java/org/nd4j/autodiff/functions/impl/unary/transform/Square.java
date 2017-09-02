@@ -9,7 +9,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Pow;
 import java.util.Collections;
 import java.util.List;
 
-public class Square extends AbstractUnaryFunction<ArrayField> {
+public class Square extends AbstractUnaryFunction {
 
     public Square(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);

@@ -8,7 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class SoftSign extends AbstractUnaryFunction<ArrayField> {
+public class SoftSign extends AbstractUnaryFunction {
 
     public SoftSign(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);

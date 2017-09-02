@@ -8,7 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-public class Repeat  extends AbstractUnaryFunction<ArrayField> {
+public class Repeat  extends AbstractUnaryFunction {
 
     private int axis;
 

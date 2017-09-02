@@ -8,7 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-public class ManhattanDistance  extends AbstractBinaryReduceFunction<ArrayField> {
+public class ManhattanDistance  extends AbstractBinaryReduceFunction {
 
     public ManhattanDistance(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2, int... dimensions) {
         super(sameDiff, i_v1, i_v2, dimensions);
@@ -21,7 +21,7 @@ public class ManhattanDistance  extends AbstractBinaryReduceFunction<ArrayField>
 
 
     @Override
-    public String doGetFormula(List<Variable<ArrayField> > variables) {
+    public String doGetFormula(List<Variable > variables) {
         return null;
     }
 

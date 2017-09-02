@@ -7,7 +7,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-public class ScalarGreaterThan extends AbstractScalarFunction<ArrayField> {
+public class ScalarGreaterThan extends AbstractScalarFunction {
     public ScalarGreaterThan() {
     }
 

@@ -8,7 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class NormMax extends AbstractReduceUnaryFunction<ArrayField> {
+public class NormMax extends AbstractReduceUnaryFunction {
 
     public NormMax(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);

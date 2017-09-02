@@ -9,7 +9,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Arrays;
 import java.util.List;
 
-public class HardTanhDerivative extends AbstractBinaryFunction<ArrayField> {
+public class HardTanhDerivative extends AbstractBinaryFunction {
     public HardTanhDerivative() {
     }
 

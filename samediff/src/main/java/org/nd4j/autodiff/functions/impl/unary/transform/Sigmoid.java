@@ -8,7 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class Sigmoid extends AbstractUnaryFunction<ArrayField> {
+public class Sigmoid extends AbstractUnaryFunction {
     public Sigmoid(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
         validateFunctionReference(i_v);

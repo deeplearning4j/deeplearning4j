@@ -10,7 +10,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLUDerivative;
 import java.util.Arrays;
 import java.util.List;
 
-public class LeakyReluDerivative  extends AbstractBinaryFunction<ArrayField> {
+public class LeakyReluDerivative  extends AbstractBinaryFunction {
     private double cutoff;
 
 

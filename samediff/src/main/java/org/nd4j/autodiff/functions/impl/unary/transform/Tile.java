@@ -7,7 +7,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-public class Tile extends AbstractUnaryFunction<ArrayField> {
+public class Tile extends AbstractUnaryFunction {
 
     private int[] repeat;
 

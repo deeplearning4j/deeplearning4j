@@ -8,7 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-public class SigmoidDerivative extends AbstractBinaryFunction<ArrayField> {
+public class SigmoidDerivative extends AbstractBinaryFunction {
 
     public SigmoidDerivative() {
     }

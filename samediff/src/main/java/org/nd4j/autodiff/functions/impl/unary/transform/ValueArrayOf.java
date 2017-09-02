@@ -9,7 +9,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class ValueArrayOf extends AbstractUnaryFunction<ArrayField> {
+public class ValueArrayOf extends AbstractUnaryFunction {
     public ValueArrayOf(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape, Object[] extraArgs) {
         super(sameDiff, i_v, shape, extraArgs);
     }

@@ -11,7 +11,7 @@ import java.util.List;
 /**
  *
  */
-public class SoftMaxDerivative extends AbstractBinaryFunction<ArrayField> {
+public class SoftMaxDerivative extends AbstractBinaryFunction {
 
     public SoftMaxDerivative() {
     }

@@ -2,20 +2,23 @@ package org.nd4j.autodiff.functions.impl.binary.transform.scalar;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractScalarFunction;
+import org.nd4j.autodiff.functions.Constant;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Arrays;
 import java.util.List;
 
-public class ScalarFMod extends AbstractScalarFunction {
-    public ScalarFMod() {
+public class ScalarDiv extends AbstractScalarFunction {
+
+    public ScalarDiv() {
     }
 
-    public ScalarFMod(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape, Object[] extraArgs) {
+    public ScalarDiv(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape, Object[] extraArgs) {
         super(sameDiff, i_v, shape, extraArgs);
     }
 
-    public ScalarFMod(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public ScalarDiv(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -26,20 +29,16 @@ public class ScalarFMod extends AbstractScalarFunction {
      */
     @Override
     public ArrayField doGetValue() {
-        if(scalarValue == null) {
-            scalarValue = (Number) extraArgs[0];
-        }
-
-        return arg().getValue(true).fmod(scalarValue.doubleValue());
+        return arg().getValue(true).add(scalarValue.doubleValue());
     }
 
     @Override
     public String functionName() {
-        return new org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod().name();
+        return new org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision().name();
     }
 
     @Override
     public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
-        return null;
+        return Arrays.asList(f().div(f().mul(i_v1.get(0),scalarValue.doubleValue()),f().pow(arg(),2.0)));
     }
 }

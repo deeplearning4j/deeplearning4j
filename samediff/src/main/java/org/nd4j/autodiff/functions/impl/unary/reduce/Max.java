@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Max extends AbstractReduceUnaryFunction<ArrayField> {
+public class Max extends AbstractReduceUnaryFunction {
 
     public Max(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);

@@ -8,7 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class Sum extends AbstractReduceUnaryFunction<ArrayField> {
+public class Sum extends AbstractReduceUnaryFunction {
     public Sum(SameDiff sameDiff,
                DifferentialFunction<ArrayField> i_v,
                int[] dimensions) {

@@ -11,7 +11,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.Collections;
 import java.util.List;
 
-public class Permute extends AbstractUnaryFunction<ArrayField> {
+public class Permute extends AbstractUnaryFunction {
     protected  int[] dimensions;
 
     public Permute(SameDiff sameDiff,DifferentialFunction<ArrayField> iX, int... dimensions) {

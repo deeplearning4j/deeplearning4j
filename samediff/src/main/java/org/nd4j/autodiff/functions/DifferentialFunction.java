@@ -23,8 +23,8 @@ import org.nd4j.linalg.util.ArrayUtil;
 @Data
 @NoArgsConstructor
 public abstract class DifferentialFunction<X extends Field<X>>
-        implements Field<DifferentialFunction<X>>,
-        Differential<X, DifferentialFunction<X>> {
+        implements Field<DifferentialFunction<ArrayField>>,
+        Differential<ArrayField, DifferentialFunction<ArrayField>> {
 
     @Getter
     @Setter
@@ -36,7 +36,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     protected int vertexId;
     @Getter
     @Setter
-    protected DifferentialFunction<X> gradient;
+    protected DifferentialFunction<ArrayField> gradient;
 
     protected Object[] extraArgs;
 
@@ -139,14 +139,14 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
 
     @Override
-    public  String getFormula(List<Variable<X>> variables) {
+    public  String getFormula(List<Variable> variables) {
         sameDiff.getGraph().freeze();
         String ret = doGetFormula(variables);
         sameDiff.getGraph().unfreeze();
         return ret;
     }
 
-    public abstract String doGetFormula(List<Variable<X>> variables);
+    public abstract String doGetFormula(List<Variable> variables);
 
     public abstract String functionName();
 
@@ -162,40 +162,40 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
 
     @Override
-    public abstract List<DifferentialFunction<X>> diff(List<DifferentialFunction<X>> i_v1);
+    public abstract List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1);
 
-    private void validateDifferentialFunctionGraph(DifferentialFunction<X> function) {
+    private void validateDifferentialFunctionGraph(DifferentialFunction<ArrayField> function) {
         Preconditions.checkState(function.getSameDiff() == this.getSameDiff(),"Function applications must be contained in same graph. The left " + function +" must match this function " + this);
 
     }
 
 
     @Override
-    public DifferentialFunction<X> rdivi(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<ArrayField> rdivi(DifferentialFunction<ArrayField> i_v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> rsubi(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<ArrayField> rsubi(DifferentialFunction<ArrayField> i_v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> addi(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<ArrayField> addi(DifferentialFunction<ArrayField> i_v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> muli(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<ArrayField> muli(DifferentialFunction<ArrayField> i_v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> subi(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<ArrayField> subi(DifferentialFunction<ArrayField> i_v) {
         return null;
 
     }
@@ -204,43 +204,43 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
 
     @Override
-    public DifferentialFunction<X> divi(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<ArrayField> divi(DifferentialFunction<ArrayField> i_v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> inversei() {
+    public DifferentialFunction<ArrayField> inversei() {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    public DifferentialFunction<X> negatei() {
+    public DifferentialFunction<ArrayField> negatei() {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> muli(double i_n) {
+    public DifferentialFunction<ArrayField> muli(double i_n) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    public DifferentialFunction<X> powi(int i_n) {
+    public DifferentialFunction<ArrayField> powi(int i_n) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    public DifferentialFunction<X> addi(double i_v) {
+    public DifferentialFunction<ArrayField> addi(double i_v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> subi(double i_v) {
+    public DifferentialFunction<ArrayField> subi(double i_v) {
         return null;
 
     }
@@ -248,26 +248,26 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
 
     @Override
-    public DifferentialFunction<X> divi(double v) {
+    public DifferentialFunction<ArrayField> divi(double v) {
         return null;
 
     }
 
 
     @Override
-    public DifferentialFunction<X> rsubi(double v) {
+    public DifferentialFunction<ArrayField> rsubi(double v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> rdivi(double v) {
+    public DifferentialFunction<ArrayField> rdivi(double v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> set(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<ArrayField> set(DifferentialFunction<ArrayField> i_v) {
         return null;
 
 
@@ -275,30 +275,30 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
 
     @Override
-    public DifferentialFunction<X> rdiv(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<ArrayField> rdiv(DifferentialFunction<ArrayField> i_v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> rsub(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<ArrayField> rsub(DifferentialFunction<ArrayField> i_v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> add(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<ArrayField> add(DifferentialFunction<ArrayField> i_v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> mul(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<ArrayField> mul(DifferentialFunction<ArrayField> i_v) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> sub(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<ArrayField> sub(DifferentialFunction<ArrayField> i_v) {
         return null;
     }
 
@@ -306,60 +306,60 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
 
     @Override
-    public DifferentialFunction<X> div(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<ArrayField> div(DifferentialFunction<ArrayField> i_v) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> inverse() {
+    public DifferentialFunction<ArrayField> inverse() {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    public DifferentialFunction<X> negate() {
-        DifferentialFunction<X> ret = new Negative<>(sameDiff,this.mul(1.0));
+    public DifferentialFunction<ArrayField> negate() {
+        DifferentialFunction<ArrayField> ret = new Negative(sameDiff,this.mul(1.0));
         return ret;
     }
 
     @Override
-    public DifferentialFunction<X> mul(double i_n) {
+    public DifferentialFunction<ArrayField> mul(double i_n) {
        return null;
     }
 
     @Override
-    public DifferentialFunction<X> pow(int i_n) {
+    public DifferentialFunction<ArrayField> pow(int i_n) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public DifferentialFunction<X> add(double i_v) {
+    public DifferentialFunction<ArrayField> add(double i_v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> sub(double i_v) {
+    public DifferentialFunction<ArrayField> sub(double i_v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> rsub(double v) {
+    public DifferentialFunction<ArrayField> rsub(double v) {
         return null;
 
     }
 
     @Override
-    public DifferentialFunction<X> rdiv(double v) {
+    public DifferentialFunction<ArrayField> rdiv(double v) {
         return null;
 
     }
 
 
     protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction<X> i_v1,
-                            DifferentialFunction<X> i_v2,
+                            DifferentialFunction<ArrayField> i_v1,
+                            DifferentialFunction<ArrayField> i_v2,
                             String opName,
                             OpState.OpType opType,
                             int[] shape) {
@@ -379,450 +379,450 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> tanhDerivative(DifferentialFunction<X> wrt) {
+    public DifferentialFunction<ArrayField> tanhDerivative(DifferentialFunction<ArrayField> wrt) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> seluDerivative(DifferentialFunction<X> wrt) {
+    public DifferentialFunction<ArrayField> seluDerivative(DifferentialFunction<ArrayField> wrt) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> softmaxDerivative(ArrayField wrt) {
+    public DifferentialFunction<ArrayField> softmaxDerivative(ArrayField wrt) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X>[] args() {
+    public DifferentialFunction<ArrayField>[] args() {
         return new DifferentialFunction[0];
     }
 
     @Override
-    public DifferentialFunction<X> pow(DifferentialFunction<X> a) {
+    public DifferentialFunction<ArrayField> pow(DifferentialFunction<ArrayField> a) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> floor() {
+    public DifferentialFunction<ArrayField> floor() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> ceil() {
+    public DifferentialFunction<ArrayField> ceil() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> round() {
+    public DifferentialFunction<ArrayField> round() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> abs() {
+    public DifferentialFunction<ArrayField> abs() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> sqrt() {
+    public DifferentialFunction<ArrayField> sqrt() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> minus(double v) {
+    public DifferentialFunction<ArrayField> minus(double v) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> prod(double v) {
+    public DifferentialFunction<ArrayField> prod(double v) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> div(double v) {
+    public DifferentialFunction<ArrayField> div(double v) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> pow(double v) {
+    public DifferentialFunction<ArrayField> pow(double v) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> cos() {
+    public DifferentialFunction<ArrayField> cos() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> acos() {
+    public DifferentialFunction<ArrayField> acos() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> cosh() {
+    public DifferentialFunction<ArrayField> cosh() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> acosh() {
+    public DifferentialFunction<ArrayField> acosh() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> sin() {
+    public DifferentialFunction<ArrayField> sin() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> asin() {
+    public DifferentialFunction<ArrayField> asin() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> sinh() {
+    public DifferentialFunction<ArrayField> sinh() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> asinh() {
+    public DifferentialFunction<ArrayField> asinh() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> tan() {
+    public DifferentialFunction<ArrayField> tan() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> atan() {
+    public DifferentialFunction<ArrayField> atan() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> tanh() {
+    public DifferentialFunction<ArrayField> tanh() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> atanh() {
+    public DifferentialFunction<ArrayField> atanh() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> exp() {
+    public DifferentialFunction<ArrayField> exp() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> log() {
+    public DifferentialFunction<ArrayField> log() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> log10() {
+    public DifferentialFunction<ArrayField> log10() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> sgn() {
+    public DifferentialFunction<ArrayField> sgn() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> pwr(DifferentialFunction<X> y) {
+    public DifferentialFunction<ArrayField> pwr(DifferentialFunction<ArrayField> y) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> pwrs(DifferentialFunction<X> y) {
+    public DifferentialFunction<ArrayField> pwrs(DifferentialFunction<ArrayField> y) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> square() {
+    public DifferentialFunction<ArrayField> square() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> relu() {
+    public DifferentialFunction<ArrayField> relu() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> hardTanh() {
+    public DifferentialFunction<ArrayField> hardTanh() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> hardTanhDerivative(DifferentialFunction<X> wrt) {
+    public DifferentialFunction<ArrayField> hardTanhDerivative(DifferentialFunction<ArrayField> wrt) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> leakyRelu() {
+    public DifferentialFunction<ArrayField> leakyRelu() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> elu() {
+    public DifferentialFunction<ArrayField> elu() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> eluDerivative(DifferentialFunction<X> wrt) {
+    public DifferentialFunction<ArrayField> eluDerivative(DifferentialFunction<ArrayField> wrt) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> leakyRelu(double cutoff) {
+    public DifferentialFunction<ArrayField> leakyRelu(double cutoff) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> leakyReluDerivative() {
+    public DifferentialFunction<ArrayField> leakyReluDerivative() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> wrt, double cutoff) {
+    public DifferentialFunction<ArrayField> leakyReluDerivative(DifferentialFunction<ArrayField> wrt, double cutoff) {
         return null;
     }
     @Override
-    public DifferentialFunction<X> selu() {
+    public DifferentialFunction<ArrayField> selu() {
         return null;
     }
     @Override
-    public DifferentialFunction<X> sigmoid() {
+    public DifferentialFunction<ArrayField> sigmoid() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> sigmoidDerivative(DifferentialFunction<X> wrt) {
+    public DifferentialFunction<ArrayField> sigmoidDerivative(DifferentialFunction<ArrayField> wrt) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> step() {
+    public DifferentialFunction<ArrayField> step() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> softsign() {
+    public DifferentialFunction<ArrayField> softsign() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> softsignDerivative(DifferentialFunction<X> wrt) {
+    public DifferentialFunction<ArrayField> softsignDerivative(DifferentialFunction<ArrayField> wrt) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> softmax() {
+    public DifferentialFunction<ArrayField> softmax() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> softplus() {
+    public DifferentialFunction<ArrayField> softplus() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> reshape(int[] shape) {
+    public DifferentialFunction<ArrayField> reshape(int[] shape) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> transpose() {
+    public DifferentialFunction<ArrayField> transpose() {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> permute(int[] dimensions) {
+    public DifferentialFunction<ArrayField> permute(int[] dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> expandDims(int dim) {
+    public DifferentialFunction<ArrayField> expandDims(int dim) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> sum(int[] dimensions) {
+    public DifferentialFunction<ArrayField> sum(int[] dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> prod(int[] dimensions) {
+    public DifferentialFunction<ArrayField> prod(int[] dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> mean(int[] dimensions) {
+    public DifferentialFunction<ArrayField> mean(int[] dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> std(int[] dimensions, boolean biasCorrected) {
+    public DifferentialFunction<ArrayField> std(int[] dimensions, boolean biasCorrected) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> variance(int[] dimensions, boolean biasCorrected) {
+    public DifferentialFunction<ArrayField> variance(int[] dimensions, boolean biasCorrected) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> std(int[] dimensions) {
+    public DifferentialFunction<ArrayField> std(int[] dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> variance(int[] dimensions) {
+    public DifferentialFunction<ArrayField> variance(int[] dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> max(int[] dimensions) {
+    public DifferentialFunction<ArrayField> max(int[] dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> min(int[] dimensions) {
+    public DifferentialFunction<ArrayField> min(int[] dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> norm1(int[] dimensions) {
+    public DifferentialFunction<ArrayField> norm1(int[] dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> norm2(int[] dimensions) {
+    public DifferentialFunction<ArrayField> norm2(int[] dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> normmax(int[] dimensions) {
+    public DifferentialFunction<ArrayField> normmax(int[] dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> valueArrayOf(int[] shape) {
+    public DifferentialFunction<ArrayField> valueArrayOf(int[] shape) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> tile(int[] repeat) {
+    public DifferentialFunction<ArrayField> tile(int[] repeat) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> repeat(int axis) {
+    public DifferentialFunction<ArrayField> repeat(int axis) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> broadcast(int[] shape) {
+    public DifferentialFunction<ArrayField> broadcast(int[] shape) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> eq(DifferentialFunction<X> i_y) {
+    public DifferentialFunction<ArrayField> eq(DifferentialFunction<ArrayField> i_y) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> neq(DifferentialFunction<X> i_y) {
+    public DifferentialFunction<ArrayField> neq(DifferentialFunction<ArrayField> i_y) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> or(DifferentialFunction<X> i_y) {
+    public DifferentialFunction<ArrayField> or(DifferentialFunction<ArrayField> i_y) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> rollAxis(int axis) {
+    public DifferentialFunction<ArrayField> rollAxis(int axis) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> cosineSimilarity(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> cosineSimilarity(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> euclideanDistance(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> euclideanDistance(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> manhattanDistance(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> manhattanDistance(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossBinaryXENT(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossBinaryXENT(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossCosineSimilarity(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossCosineSimilarity(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossHinge(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossHinge(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossKLD(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossKLD(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossL1(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossL1(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossL2(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossL2(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossMAE(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossMAE(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossMAPE(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossMAPE(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossMSE(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossMSE(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossMCXENT(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossMCXENT(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossMSLE(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossMSLE(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossNegativeLogLikelihood(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossNegativeLogLikelihood(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossPoisson(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossPoisson(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
@@ -832,33 +832,33 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> max(double v) {
+    public DifferentialFunction<ArrayField> max(double v) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> min(double v) {
+    public DifferentialFunction<ArrayField> min(double v) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> fmod(double v) {
+    public DifferentialFunction<ArrayField> fmod(double v) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> set(double v) {
+    public DifferentialFunction<ArrayField> set(double v) {
         return null;
     }
 
     @Override
-    public DifferentialFunction<X> lossSquaredHinge(DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<ArrayField> lossSquaredHinge(DifferentialFunction<ArrayField> i_y, int... dimensions) {
         return null;
     }
 
     protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction<X> i_v1,
-                            DifferentialFunction<X> i_v2,
+                            DifferentialFunction<ArrayField> i_v1,
+                            DifferentialFunction<ArrayField> i_v2,
                             String opName,
                             OpState.OpType opType,
                             int[] shape, Object[] extraArgs) {
@@ -972,8 +972,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
 
     protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction<X> i_v1,
-                            DifferentialFunction<X> i_v2,
+                            DifferentialFunction<ArrayField> i_v1,
+                            DifferentialFunction<ArrayField> i_v2,
                             String opName) {
         validateDifferentialFunctionGraph(i_v1);
         validateDifferentialFunctionGraph(i_v2);
@@ -1014,16 +1014,16 @@ public abstract class DifferentialFunction<X extends Field<X>>
      * Duplicate this function
      * @return
      */
-    public abstract DifferentialFunction<X> dup();
+    public abstract DifferentialFunction<ArrayField> dup();
 
 
-    protected void validateFunctionReference(List<DifferentialFunction<X>> reference) {
+    protected void validateFunctionReference(List<DifferentialFunction<ArrayField>> reference) {
         for(int i = 0; i < reference.size(); i++) {
             validateFunctionReference(reference.get(i));
         }
 
     }
-    protected void validateFunctionReference(DifferentialFunction<X> reference) {
+    protected void validateFunctionReference(DifferentialFunction<ArrayField> reference) {
         if(sameDiff.getFunctionInstances().containsKey(reference.getVertexId()))
             Preconditions.checkState(reference == sameDiff.getFunctionInstances().get(reference.getVertexId()),"Found invalid reference " + reference + " for vertex id " + reference.getVertexId());
 
@@ -1061,7 +1061,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
 
-    public DifferentialFunction<ArrayField> getDiffFunctionInput(DifferentialFunction<X> other) {
+    public DifferentialFunction<ArrayField> getDiffFunctionInput(DifferentialFunction<ArrayField> other) {
         return   other == this ?
                 sameDiff.getFunctionFactory().var(UUID.randomUUID().toString(),
                         sameDiff.getArrayFactory().one(getResultShape())) :
@@ -1098,13 +1098,13 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
 
     protected void validateDifferentialFunctionsameDiff(
-            List<DifferentialFunction<X>> function) {
-        for(DifferentialFunction<X> differentialFunction : function)
+            List<DifferentialFunction<ArrayField>> function) {
+        for(DifferentialFunction<ArrayField> differentialFunction : function)
             validateDifferentialFunctionsameDiff(differentialFunction);
     }
 
     protected void validateDifferentialFunctionsameDiff(
-            DifferentialFunction<X> function) {
+            DifferentialFunction<ArrayField> function) {
 
         Preconditions.checkState(function != null,"Passed in function was null.");
         ArrayField a = (ArrayField)  getValue(true);

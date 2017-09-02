@@ -9,7 +9,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class RollAxis extends AbstractUnaryFunction<ArrayField> {
+public class RollAxis extends AbstractUnaryFunction {
 
    private int axis;
 
