@@ -119,12 +119,27 @@ TEST_F(NDArrayTest, EqualityTest1) {
     ASSERT_FALSE(arrayE->equalsTo(arrayB, 1e-5));
 }
 
+TEST_F(NDArrayTest, TestTad1) {
+    auto array = new NDArray<float>(3, 3, 'c');
 
+    auto row2 = array->tensorAlongDimension(1, {1});
+
+    ASSERT_TRUE(row2->isView());
+    ASSERT_EQ(3, row2->lengthOf());
+
+    row2->assign(1.0);
+
+    ASSERT_NEAR(3.0f, array->sumNumber(), 1e-5);
+
+    delete row2;
+
+    array->printBuffer();
+}
 
 TEST_F(NDArrayTest, TestSum1) {
     float *c = new float[4] {1, 2, 3, 4};
 
-    auto *array = new NDArray<float>(c, cShape);
+    auto array = new NDArray<float>(c, cShape);
 
     ASSERT_EQ(10.0f, array->sumNumber());
     ASSERT_EQ(2.5f, array->meanNumber());

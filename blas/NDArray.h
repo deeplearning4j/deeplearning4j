@@ -11,6 +11,9 @@ namespace nd4j {
 
     template<typename T>
     class NDArray {
+    protected:
+        bool _isView;
+
     public:
         T    *_buffer;                          // pointer on flattened data array in memory
         int  *_shapeInfo;                       // contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
@@ -42,6 +45,10 @@ namespace nd4j {
         // This method returns order of this NDArray
         char ordering() const {
             return shape::order(_shapeInfo);
+        }
+
+        bool isView() {
+            return _isView;
         }
 
         // This method returns shape portion of shapeInfo
@@ -84,6 +91,8 @@ namespace nd4j {
             //shape::printShapeInfo(_shapeInfo);
             shape::printShapeInfoLinear(_shapeInfo);
         }
+
+        void printBuffer();
 
         // This method assigns values of given NDArray to this one, wrt order
         void assign(NDArray<T> *other);
@@ -143,6 +152,10 @@ namespace nd4j {
 
         // This method applies in-place transpose to this array, so this array becomes transposed 
         void transposei();
+
+        NDArray<T>* tensorAlongDimension(int index, std::initializer_list<int> dimensions);
+
+        NDArray<T>* tensorAlongDimension(int index, std::vector<int>& dimensions);
 
         // This method returns true if buffer && shapeInfo were defined
         bool nonNull() const {
