@@ -1,0 +1,202 @@
+package org.nd4j.linalg.api.ops;
+
+import lombok.Getter;
+import lombok.val;
+import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.io.StringUtils;
+import org.nd4j.linalg.primitives.ImmutablePair;
+import org.nd4j.linalg.util.HashUtil;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Basic implementation for CustomOp
+ *
+ * @author raver119@gmail.com
+ */
+@Slf4j
+public class DynamicCustomOp implements CustomOp {
+    private String opName;
+    @Getter private List<INDArray> inputArguments;
+    @Getter private List<INDArray> outputArguments;
+    @Getter private List<Double> tArguments = new ArrayList<>();
+    @Getter private List<Integer> iArguments = new ArrayList<>();
+
+    protected DynamicCustomOp(String opName) {
+        this.opName = opName;
+    }
+
+    /**
+     * This method returns op name as string
+     *
+     * @return
+     */
+    @Override
+    public String opName() {
+        return opName;
+    }
+
+    /**
+     * This method returns LongHash of the opName()
+     *
+     * @return
+     */
+    @Override
+    public long opHash() {
+        return HashUtil.getLongHash(opName.toLowerCase());
+    }
+
+    /**
+     * This method takes custom opname, and return Op Builder instance
+     * @param opName
+     * @return
+     */
+    public static Builder builder(String opName) {
+        val map = Nd4j.getExecutioner().getCustomOperations();
+        val lcName = opName.toLowerCase();
+        val pair = map.get(lcName);
+
+        if (pair == null)
+            throw new ND4JIllegalStateException("Unknown operations requested: [" + opName + "]");
+
+        return new Builder(opName, pair.getFirst(), pair.getSecond());
+    }
+
+    public static class Builder {
+        protected String opName;
+        protected int numInputs;
+        protected int numOutputs;
+        protected int numTArguments;
+        protected int numIArguments;
+
+        private List<INDArray> inputArguments = new ArrayList<>();
+        private List<INDArray> outputArguments = new ArrayList<>();
+        private List<Double> tArguments = new ArrayList<>();
+        private List<Integer> iArguments = new ArrayList<>();
+
+        protected Builder(String opName, int numInputs, int numOutputs) {
+            this(opName, numInputs, numOutputs, 0, 0);
+        }
+
+        protected Builder(String opName, int numInputs, int numOutputs, int numTArguments, int numIArguments) {
+            this.opName = opName;
+            this.numInputs = numInputs;
+            this.numOutputs = numOutputs;
+            this.numIArguments = numIArguments;
+            this.numTArguments = numTArguments;
+        }
+
+        /**
+         * This methos takes arbitrary number of input INDArrays in, as Op input
+         *
+         * PLEASE NOTE: this method does NOT validate lengths/shapes.
+         *
+         * @param inputs
+         * @return
+         */
+        public Builder setInputs(INDArray... inputs) {
+            // if we have positive value as numInputs - we should ensure equal amount of arguments
+            if (numInputs >= 0) {
+                if (inputs == null)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numInputs + " arguments. Null was passed instead.");
+
+                if (numInputs != inputs.length)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numInputs + " arguments, but " + inputs.length + " was passed to constructor");
+            }
+
+            for (val in: inputs)
+                inputArguments.add(in);
+
+            return this;
+        }
+
+        /**
+         * This methos takes arbitrary number of output INDArrays in, to store operation result
+         *
+         * PLEASE NOTE: this method does NOT validate lengths/shapes.
+         *
+         * @param outputs
+         * @return
+         */
+        public Builder setOutputs(INDArray... outputs) {
+            if (numOutputs >= 0) {
+                if (outputs == null)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numOutputs + " arguments. Null was passed instead.");
+
+                if (numOutputs != outputs.length)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numOutputs + " arguments, but " + outputs.length + " was passed to constructor");
+            }
+
+            for (val in: outputs)
+                outputArguments.add(in);
+
+            return this;
+        }
+
+
+        /**
+         * This methos takes arbitrary number of Integer arguments for op,
+         *
+         * PLEASE NOTE: this method does NOT validate values.
+         *
+         * @param outputs
+         * @return
+         */
+        public Builder setIntegerArguments(Integer... iargs) {
+            if (numIArguments >= 0) {
+                if (iargs == null)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments. Null was passed instead.");
+
+                if (numOutputs != iargs.length)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments, but " + iargs.length + " was passed to constructor");
+            }
+
+            for (val in: iargs)
+                iArguments.add(in);
+
+            return this;
+        }
+
+        /**
+         * This methos takes arbitrary number of Double arguments for op,
+         *
+         * PLEASE NOTE: this method does NOT validate values.
+         *
+         * @param outputs
+         * @return
+         */
+        public Builder setIntegerArguments(Double... targs) {
+            if (numIArguments >= 0) {
+                if (targs == null)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numTArguments + " integer arguments. Null was passed instead.");
+
+                if (numOutputs != targs.length)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numTArguments + " integer arguments, but " + targs.length + " was passed to constructor");
+            }
+
+            for (val in: targs)
+                tArguments.add(in);
+
+            return this;
+        }
+
+
+
+
+
+        public DynamicCustomOp build() {
+            val result = new DynamicCustomOp(opName);
+            result.inputArguments = inputArguments;
+            result.outputArguments = outputArguments;
+            result.iArguments = iArguments;
+            result.tArguments = tArguments;
+
+            return result;
+        }
+    }
+}

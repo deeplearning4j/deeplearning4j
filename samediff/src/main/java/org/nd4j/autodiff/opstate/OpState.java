@@ -85,6 +85,8 @@ public class OpState implements Serializable {
            return OpType.SHAPE;
        else if(op instanceof BroadcastOp)
            return OpType.BROADCAST;
+       else if (op instanceof CustomOp)
+           return OpType.CUSTOM;
        throw new IllegalStateException("Illegal op type " + op.getClass().getName());
     }
 
