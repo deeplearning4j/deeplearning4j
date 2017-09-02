@@ -10,6 +10,7 @@
 #include <Variable.h>
 #include <Block.h>
 #include "OpDescriptor.h"
+#include <helpers/helper_hash.h>
 
 
 using namespace nd4j::graph;
@@ -75,6 +76,10 @@ namespace nd4j {
                 return _descriptor->getOpName();
             }
 
+            Nd4jIndex getOpHash() {
+                return 0;
+            }
+
             /**
              * This method sets arguments for op
              */
@@ -110,7 +115,10 @@ namespace nd4j {
             OpRegistrator() {};
             ~OpRegistrator() {};
 
+            std::map<Nd4jIndex, nd4j::ops::DeclarableOp<float> *> _declarablesLF;
             std::map<std::string, nd4j::ops::DeclarableOp<float> *> _declarablesF;
+
+            std::map<Nd4jIndex, nd4j::ops::DeclarableOp<double> *> _declarablesLD;
             std::map<std::string, nd4j::ops::DeclarableOp<double> *> _declarablesD;
 
             std::mutex _locker;
@@ -146,15 +154,17 @@ namespace nd4j {
              * @param op
              */
             bool registerOperationFloat(nd4j::ops::DeclarableOp<float>* op) {
-                std::pair<std::string, nd4j::ops::DeclarableOp<float>*> pair(*(op->getOpName()), op);
-                _declarablesF.insert(pair);
-                return true;
+                return registerOperationFloat(op->getOpName()->c_str(), op);
             }
 
             bool registerOperationFloat(const char* name, nd4j::ops::DeclarableOp<float>* op) {
                 auto str = new std::string(name);
                 std::pair<std::string, nd4j::ops::DeclarableOp<float>*> pair(*str, op);
                 _declarablesF.insert(pair);
+
+                auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(*str);
+                std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<float>*> pair2(hash, op);
+                _declarablesLF.insert(pair2);
                 return true;
             }
 
@@ -162,13 +172,15 @@ namespace nd4j {
                 auto str = new std::string(name);
                 std::pair<std::string, nd4j::ops::DeclarableOp<double>*> pair(*str, op);
                 _declarablesD.insert(pair);
+
+                auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(*str);
+                std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<double>*> pair2(hash, op);
+                _declarablesLD.insert(pair2);
                 return true;
             }
 
             bool registerOperationDouble(nd4j::ops::DeclarableOp<double > *op) {
-                std::pair<std::string, nd4j::ops::DeclarableOp<double>*> pair(*(op->getOpName()), op);
-                _declarablesD.insert(pair);
-                return true;
+                return registerOperationDouble(op->getOpName()->c_str(), op);
             }
 
             nd4j::ops::DeclarableOp<float>* getOperationFloat(const char *name) {
@@ -192,9 +204,29 @@ namespace nd4j {
             }
 
 
+            nd4j::ops::DeclarableOp<float> *getOperationFloat(Nd4jIndex hash) {
+                if (!_declarablesLF.count(hash)) {
+                    nd4j_verbose("Unknown operation requested by hash: [%lld]\n", hash);
+                    return nullptr;
+                }
+
+                return _declarablesLF.at(hash);
+            }
+
+
             nd4j::ops::DeclarableOp<double >* getOperationDouble(const char *name) {
                 std::string str(name);
                 return getOperationDouble(str);
+            }
+
+
+            nd4j::ops::DeclarableOp<double> *getOperationDouble(Nd4jIndex hash) {
+                if (!_declarablesLD.count(hash)) {
+                    nd4j_verbose("Unknown operation requested by hash: [%lld]\n", hash);
+                    return nullptr;
+                }
+
+                return _declarablesLD.at(hash);
             }
 
             nd4j::ops::DeclarableOp<double> *getOperationDouble(std::string& name) {

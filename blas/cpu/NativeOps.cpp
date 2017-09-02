@@ -3095,4 +3095,8 @@ const char* NativeOps::getAllCustomOps() {
     return nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
 }
 
+void NativeOps::execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer** inputBuffers, int** inputShapes, int numInputs, Nd4jPointer** outputBuffers, int** outputShapes, int numOutputs, float* tArgs, int numTArgs, int *iArgs, int numIArgs) {
+
+}
+
 #endif

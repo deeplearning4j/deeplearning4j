@@ -9,6 +9,7 @@
 #include "VariableSpaceTests.cpp"
 #include "GraphTests.cpp"
 #include "DeclarableOpsTests.cpp"
+#include "HashUtilsTests.cpp"
 // #include "ProtoBufTests.cpp"
 
 int main(int argc, char **argv) {

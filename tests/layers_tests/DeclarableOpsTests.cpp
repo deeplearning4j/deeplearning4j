@@ -8,6 +8,7 @@
 #include <VariableSpace.h>
 #include <ops/declarable/declarable_ops.h>
 #include <ops/declarable/cpu/parity_ops.h>
+#include <helpers/helper_hash.h>
 
 using namespace nd4j::graph;
 
@@ -76,6 +77,17 @@ TEST_F(DeclarableOpsTests, BasicInitialization2) {
 
     ASSERT_EQ(-1, op->getOpDescriptor()->getNumberOfInputs());
     ASSERT_EQ(1, op->getOpDescriptor()->getNumberOfOutputs());
+}
+
+
+TEST_F(DeclarableOpsTests, BasicInitialization3) {
+    auto op1 = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("concat");
+    std::string expName("concat");
+    auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(expName);
+
+    auto op2 = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(hash);
+
+    ASSERT_TRUE(op1 == op2);
 }
 
 
