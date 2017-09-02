@@ -355,7 +355,7 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
             if (e < lengthOf() - 1)
                 printf(", ");
         }
-        printf("\n");
+        printf("]\n");
         fflush(stdout);
     }
 
