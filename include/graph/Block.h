@@ -23,6 +23,9 @@ namespace nd4j {
             nd4j::graph::VariableSpace<T> * _variableSpace;
             int _nodeId;
 
+            std::vector<T> _tArgs;
+            std::vector<int> _iArgs;
+
         public:
             Block(int nodeId, VariableSpace<T> *variableSpace) {
                 _nodeId = nodeId;
@@ -51,6 +54,15 @@ namespace nd4j {
              */
             VariableSpace<T> *getVariableSpace() {
                 return _variableSpace;
+            }
+
+
+            std::vector<T>* getTArguments() {
+                return &_tArgs;
+            }
+
+            std::vector<int>* getIArguments() {
+                return &_iArgs;
             }
 
 

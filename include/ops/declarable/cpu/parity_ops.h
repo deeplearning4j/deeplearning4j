@@ -238,7 +238,9 @@ namespace nd4j {
             REQUIRE_OK(this->validateNonEmptyInput(block));            
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();			
+            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+
+
 
 			if (!x->isScalar() && !y->isScalar()) {
 				REQUIRE_OK(this->validateInputLengthMatch(block));
