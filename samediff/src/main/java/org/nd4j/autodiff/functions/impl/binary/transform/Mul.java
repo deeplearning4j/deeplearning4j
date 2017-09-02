@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Mul extends AbstractBinaryFunction {
-    public Mul(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
+    public Mul(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
 
@@ -22,10 +22,10 @@ public class Mul extends AbstractBinaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> gradWrtX = f().mul(i_v.get(0),rarg());
-        DifferentialFunction<ArrayField> gradWrtY = f().mul(i_v.get(0),larg());
-        List<DifferentialFunction<ArrayField>> ret = new ArrayList<>();
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction gradWrtX = f().mul(i_v.get(0),rarg());
+        DifferentialFunction gradWrtY = f().mul(i_v.get(0),larg());
+        List<DifferentialFunction> ret = new ArrayList<>();
         larg().setGradient(gradWrtX);
         rarg().setGradient(gradWrtY);
         return ret;

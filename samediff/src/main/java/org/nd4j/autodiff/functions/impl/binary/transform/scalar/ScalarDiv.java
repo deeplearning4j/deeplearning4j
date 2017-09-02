@@ -14,11 +14,11 @@ public class ScalarDiv extends AbstractScalarFunction {
     public ScalarDiv() {
     }
 
-    public ScalarDiv(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape, Object[] extraArgs) {
+    public ScalarDiv(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, Object[] extraArgs) {
         super(sameDiff, i_v, shape, extraArgs);
     }
 
-    public ScalarDiv(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public ScalarDiv(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -38,7 +38,7 @@ public class ScalarDiv extends AbstractScalarFunction {
     }
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
         return Arrays.asList(f().div(f().mul(i_v1.get(0),scalarValue.doubleValue()),f().pow(arg(),2.0)));
     }
 }

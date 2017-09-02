@@ -1,242 +1,238 @@
 package org.nd4j.autodiff;
 
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
-
 /**
  *
- * @param <X>
  */
-public interface Field<X> extends CommutativeRing<X> {
+public interface Field extends CommutativeRing {
 
 
-    X inverse();
+    ArrayField inverse();
 
 
-    X rsubi(X i_v);
+    ArrayField rsubi(ArrayField i_v);
 
-    X rdivi(X i_v);
+    ArrayField rdivi(ArrayField i_v);
 
-    X subi(X i_v);
+    ArrayField subi(ArrayField i_v);
 
-    X divi(X i_v);
+    ArrayField divi(ArrayField i_v);
 
-    X inversei();
+    ArrayField inversei();
 
-    X subi(double i_v);
 
-    X rsubi(double v);
+    ArrayField rsubi(double v);
 
-    X rdivi(double v);
+    ArrayField rdivi(double v);
 
-    X divi(double v);
+    ArrayField divi(double v);
 
-    X rdiv(X i_v);
+    ArrayField rdiv(ArrayField i_v);
 
-    X div(X i_v);
+    ArrayField div(ArrayField i_v);
 
     double getReal();
 
-    X[] args();
+    ArrayField[] args();
 
 
-    X rsub(double v);
+    ArrayField rsub(double v);
 
-    X rdiv(double v);
+    ArrayField rdiv(double v);
 
-    X pow(X a);
+    ArrayField pow(ArrayField a);
 
-    X floor();
+    ArrayField floor();
 
-    X ceil();
+    ArrayField ceil();
 
-    X round();
+    ArrayField round();
 
-    X abs();
+    ArrayField abs();
 
-    X sqrt();
+    ArrayField sqrt();
 
-    X minus(double v);
+    ArrayField minus(double v);
 
-    X prod(double v);
+    ArrayField prod(double v);
 
-    X div(double v);
+    ArrayField div(double v);
 
-    X pow(double v);
+    ArrayField pow(double v);
 
-    X cos();
+    ArrayField cos();
 
-    X acos();
+    ArrayField acos();
 
-    X cosh();
+    ArrayField cosh();
 
-    X acosh();
+    ArrayField acosh();
 
-    X sin();
+    ArrayField sin();
 
-    X asin();
+    ArrayField asin();
 
-    X sinh();
+    ArrayField sinh();
 
-    X asinh();
+    ArrayField asinh();
 
-    X tan();
+    ArrayField tan();
 
-    X atan();
+    ArrayField atan();
 
-    X tanh();
+    ArrayField tanh();
 
-    X atanh();
+    ArrayField atanh();
 
-    X exp();
+    ArrayField exp();
 
-    X log();
+    ArrayField log();
 
-    X log10();
+    ArrayField log10();
 
-    X sgn();
+    ArrayField sgn();
 
-    X pwr(X y);
+    ArrayField pwr(ArrayField y);
 
-    X pwrs(X y);
+    ArrayField pwrs(ArrayField y);
 
-    X square();
+    ArrayField square();
 
-    X relu();
+    ArrayField relu();
 
-    X hardTanh();
+    ArrayField hardTanh();
 
-    X hardTanhDerivative(X wrt);
+    ArrayField hardTanhDerivative(ArrayField wrt);
 
-    X leakyRelu();
+    ArrayField leakyRelu();
 
-    X elu();
+    ArrayField elu();
 
-    X eluDerivative(X wrt);
+    ArrayField eluDerivative(ArrayField wrt);
 
-    X leakyRelu(double cutoff);
+    ArrayField leakyRelu(double cutoff);
 
-    X leakyReluDerivative();
+    ArrayField leakyReluDerivative();
 
-    X leakyReluDerivative(X wrt, double cutoff);
+    ArrayField leakyReluDerivative(ArrayField wrt, double cutoff);
 
-    X sigmoid();
+    ArrayField sigmoid();
 
-    X sigmoidDerivative(X wrt);
+    ArrayField sigmoidDerivative(ArrayField wrt);
 
-    X step();
+    ArrayField step();
 
-    X softsign();
+    ArrayField softsign();
 
-    X softsignDerivative(X wrt);
+    ArrayField softsignDerivative(ArrayField wrt);
 
-    X softmax();
+    ArrayField softmax();
 
     ArrayField logSoftmax();
 
-    X softmaxDerivative(ArrayField wrt);
+    ArrayField softmaxDerivative(ArrayField wrt);
 
-    X softplus();
+    ArrayField softplus();
 
-    X reshape(int[] shape);
+    ArrayField reshape(int[] shape);
 
-    X transpose();
+    ArrayField transpose();
 
-    X permute(int[] dimensions);
+    ArrayField permute(int[] dimensions);
 
-    X expandDims(int dim);
+    ArrayField expandDims(int dim);
 
-    X sum(int[] dimensions);
+    ArrayField sum(int[] dimensions);
 
-    X prod(int[] dimensions);
+    ArrayField prod(int[] dimensions);
 
-    X mean(int[] dimensions);
+    ArrayField mean(int[] dimensions);
 
-    X std(int[] dimensions, boolean biasCorrected);
+    ArrayField std(int[] dimensions, boolean biasCorrected);
 
-    X variance(int[] dimensions, boolean biasCorrected);
+    ArrayField variance(int[] dimensions, boolean biasCorrected);
 
-    X std(int[] dimensions);
+    ArrayField std(int[] dimensions);
 
-    X variance(int[] dimensions);
+    ArrayField variance(int[] dimensions);
 
-    X max(int[] dimensions);
+    ArrayField max(int[] dimensions);
 
-    X min(int[] dimensions);
+    ArrayField min(int[] dimensions);
 
-    X norm1(int[] dimensions);
+    ArrayField norm1(int[] dimensions);
 
-    X norm2(int[] dimensions);
+    ArrayField norm2(int[] dimensions);
 
-    X normmax(int[] dimensions);
+    ArrayField normmax(int[] dimensions);
 
-    X valueArrayOf(int[] shape);
+    ArrayField valueArrayOf(int[] shape);
 
-    X tile(int[] repeat);
+    ArrayField tile(int[] repeat);
 
-    X repeat(int axis);
+    ArrayField repeat(int axis);
 
-    X set(X value1);
+    ArrayField set(ArrayField value1);
 
-    X broadcast(int[] shape);
+    ArrayField broadcast(int[] shape);
 
-    X eq(X i_y);
+    ArrayField eq(ArrayField i_y);
 
-    X neq(X i_y);
+    ArrayField neq(ArrayField i_y);
 
-    X or(X i_y);
+    ArrayField or(ArrayField i_y);
 
-    X rollAxis(int axis);
+    ArrayField rollAxis(int axis);
 
-    X cosineSimilarity(X i_y, int... dimensions);
+    ArrayField cosineSimilarity(ArrayField i_y, int... dimensions);
 
-    X euclideanDistance(X i_y, int... dimensions);
+    ArrayField euclideanDistance(ArrayField i_y, int... dimensions);
 
-    X manhattanDistance(X i_y, int... dimensions);
+    ArrayField manhattanDistance(ArrayField i_y, int... dimensions);
 
-    X lossBinaryXENT(X i_y, int... dimensions);
+    ArrayField lossBinaryXENT(ArrayField i_y, int... dimensions);
 
-    X lossCosineSimilarity(X i_y, int... dimensions);
+    ArrayField lossCosineSimilarity(ArrayField i_y, int... dimensions);
 
-    X lossHinge(X i_y, int... dimensions);
+    ArrayField lossHinge(ArrayField i_y, int... dimensions);
 
-    X lossKLD(X i_y, int... dimensions);
+    ArrayField lossKLD(ArrayField i_y, int... dimensions);
 
-    X lossL1(X i_y, int... dimensions);
+    ArrayField lossL1(ArrayField i_y, int... dimensions);
 
-    X lossL2(X i_y, int... dimensions);
+    ArrayField lossL2(ArrayField i_y, int... dimensions);
 
-    X lossMAE(X i_y, int... dimensions);
+    ArrayField lossMAE(ArrayField i_y, int... dimensions);
 
-    X lossMAPE(X i_y, int... dimensions);
+    ArrayField lossMAPE(ArrayField i_y, int... dimensions);
 
-    X lossMSE(X i_y, int... dimensions);
+    ArrayField lossMSE(ArrayField i_y, int... dimensions);
 
-    X lossMCXENT(X i_y, int... dimensions);
+    ArrayField lossMCXENT(ArrayField i_y, int... dimensions);
 
-    X lossMSLE(X i_y, int... dimensions);
+    ArrayField lossMSLE(ArrayField i_y, int... dimensions);
 
-    X lossNegativeLogLikelihood(X i_y, int... dimensions);
+    ArrayField lossNegativeLogLikelihood(ArrayField i_y, int... dimensions);
 
-    X lossPoisson(X i_y, int... dimensions);
+    ArrayField lossPoisson(ArrayField i_y, int... dimensions);
 
-    X lossSquaredHinge(X i_y, int... dimensions);
+    ArrayField lossSquaredHinge(ArrayField i_y, int... dimensions);
 
-    DifferentialFunction arg();
+    ArrayField arg();
 
-    X selu();
+    ArrayField selu();
 
-    X tanhDerivative(X wrt);
+    ArrayField tanhDerivative(ArrayField wrt);
 
-    X seluDerivative(X wrt);
+    ArrayField seluDerivative(ArrayField wrt);
 
-    X max(double v);
+    ArrayField max(double v);
 
-    X min(double v);
+    ArrayField min(double v);
 
-    X fmod(double v);
+    ArrayField fmod(double v);
 
-    X set(double v);
+    ArrayField set(double v);
 
 
 

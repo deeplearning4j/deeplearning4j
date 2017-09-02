@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Data
-public class Variable extends DifferentialFunction<ArrayField> {
+public class Variable extends DifferentialFunction {
     @Getter
     private ArrayField m_x;
     private String m_name;
@@ -96,33 +96,27 @@ public class Variable extends DifferentialFunction<ArrayField> {
         return m_x;
     }
 
-    @Override
-    public double getReal() {
-        if (preEvaluator != null) {
-            preEvaluator.update(this);
-        }
-        return m_x.getReal();
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField>[] args() {
+    public DifferentialFunction[] args() {
         return new DifferentialFunction[] {this};
     }
 
     @Override
-    public DifferentialFunction<ArrayField> arg() {
+    public DifferentialFunction arg() {
         return this;
     }
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         //default value is 1.0 (constant)
-        List<DifferentialFunction<ArrayField>> ret = new ArrayList<>();
+        List<DifferentialFunction> ret = new ArrayList<>();
        if(i_v == this)
-           ret.add((DifferentialFunction<ArrayField>) sameDiff.setupFunction(f().one(i_v.get(0)
+           ret.add(sameDiff.setupFunction(f().one(i_v.get(0)
                    .getResultShape())));
            else
-               ret.add((DifferentialFunction<ArrayField>) sameDiff.setupFunction(f().zero(i_v.get(0).getResultShape())));
+               ret.add(sameDiff.setupFunction(f().zero(i_v.get(0).getResultShape())));
         return ret;
 
 
@@ -151,13 +145,9 @@ public class Variable extends DifferentialFunction<ArrayField> {
         return m_name;
     }
 
-    @Override
-    public DifferentialFunction<ArrayField> div(DifferentialFunction<ArrayField> i_v) {
-        return (i_v == this) ? new One<>(sameDiff,i_v.getResultShape()) : super.div(i_v);
-    }
 
     @Override
-    public DifferentialFunction<ArrayField> dup() {
+    public DifferentialFunction dup() {
         return sameDiff.setupFunction(new Variable(sameDiff, getName(),
                 m_x));
     }

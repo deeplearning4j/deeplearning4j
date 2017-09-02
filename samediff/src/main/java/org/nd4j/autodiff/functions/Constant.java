@@ -10,7 +10,7 @@ import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.samediff.SameDiff;
 
 @Data
-public class Constant extends DifferentialFunction<ArrayField> {
+public class Constant extends DifferentialFunction {
 
     protected ArrayField m_x;
     protected int[] shape;
@@ -28,15 +28,14 @@ public class Constant extends DifferentialFunction<ArrayField> {
             throw new IllegalArgumentException("Input not null value.");
         }
 
-        if(i_v instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) i_v;
-            validateDifferentialFunctionsameDiff(arrayField);
-            this.vertexId = arrayField.getVertex().vertexID();
-            validateFunctionReference(this);
-            if(sameDiff.getGraph().getVertex(this.vertexId) == null)
-                sameDiff.getGraph().addVertex(arrayField.getVertex());
+        ArrayField arrayField = i_v;
+        validateDifferentialFunctionsameDiff(arrayField);
+        this.vertexId = arrayField.getVertex().vertexID();
+        validateFunctionReference(this);
+        if(sameDiff.getGraph().getVertex(this.vertexId) == null)
+            sameDiff.getGraph().addVertex(arrayField.getVertex());
 
-        }
+
     }
 
     protected Constant(SameDiff sameDiff,
@@ -67,26 +66,23 @@ public class Constant extends DifferentialFunction<ArrayField> {
         return m_x;
     }
 
-    @Override
-    public double getReal() {
-        return m_x.getReal();
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField>[] args() {
+    public DifferentialFunction[] args() {
         return new DifferentialFunction[] {this};
     }
 
     @Override
-    public DifferentialFunction<ArrayField> arg() {
+    public DifferentialFunction arg() {
         return this;
     }
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
         Zero ret = new Zero(sameDiff,shape);
-        DifferentialFunction<ArrayField> add = ret;
+        DifferentialFunction add = ret;
         return Arrays.asList(add);
     }
 
@@ -106,23 +102,8 @@ public class Constant extends DifferentialFunction<ArrayField> {
     }
 
 
-
     @Override
-    public Constant inverse() {
-        Constant ret = sameDiff.setupFunction(new Constant(sameDiff, m_x.inverse(), shape));
-        Constant differentialFunction = ret;
-        return differentialFunction;
-    }
-
-    @Override
-    public Constant negate() {
-        Constant ret = sameDiff.setupFunction(new Constant(sameDiff, m_x.negate(), shape));
-        Constant differentialFunction = (Constant) ret;
-        return differentialFunction;
-    }
-
-    @Override
-    public DifferentialFunction<ArrayField> dup() {
+    public DifferentialFunction dup() {
         Constant ret = sameDiff.setupFunction(new Constant(sameDiff, m_x, shape));
         Constant differentialFunction = (Constant) ret;
         return differentialFunction;    }

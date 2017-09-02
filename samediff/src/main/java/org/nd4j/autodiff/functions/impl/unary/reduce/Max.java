@@ -11,7 +11,7 @@ import java.util.List;
 
 public class Max extends AbstractReduceUnaryFunction {
 
-    public Max(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] dimensions) {
+    public Max(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
@@ -30,9 +30,9 @@ public class Max extends AbstractReduceUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
-        List<DifferentialFunction<ArrayField>> ret = new ArrayList<>(1);
+        List<DifferentialFunction> ret = new ArrayList<>(1);
         ret.add(sameDiff.getFunctionFactory().doGradChoose(this,i_v1.get(0),dimensions));
         arg().setGradient(ret.get(0));
         return ret;

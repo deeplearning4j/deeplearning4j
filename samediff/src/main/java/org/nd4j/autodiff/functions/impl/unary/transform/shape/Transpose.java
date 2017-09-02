@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class Transpose extends AbstractUnaryFunction {
-    public Transpose(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public Transpose(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff,i_v, ArrayUtil.reverseCopy(i_v.getValue(true).getInput().getShape()), OpState.OpType.SHAPE,extraArgs);
     }
 
@@ -21,7 +21,7 @@ public class Transpose extends AbstractUnaryFunction {
     }
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         arg().setGradient(this);
         return Collections.singletonList(this);
     }

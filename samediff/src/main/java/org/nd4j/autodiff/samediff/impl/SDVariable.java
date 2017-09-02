@@ -39,10 +39,10 @@ public class SDVariable  implements Serializable {
     private int[] shape;
     private SDVariable gradient;
     private int vertexId;
-    protected DifferentialFunction<ArrayField> differentialFunction;
+    protected DifferentialFunction differentialFunction;
 
     @Builder
-    private SDVariable(DifferentialFunction<ArrayField> differentialFunction,
+    private SDVariable(DifferentialFunction differentialFunction,
                        String varName,
                        INDArray arr,
                        SameDiff sameDiff,
@@ -210,7 +210,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable rsub(double sameDiffVariable) {
-        DifferentialFunction<ArrayField> function = sameDiff.f().rsub(getFunction(this),sameDiffVariable);
+        DifferentialFunction function = sameDiff.f().rsub(getFunction(this),sameDiffVariable);
 
         return SDVariable.builder()
                 .varName(varName + " + " + "scalar")
@@ -226,7 +226,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable rdiv(double sameDiffVariable) {
-        DifferentialFunction<ArrayField> function = sameDiff.f().rdiv(getFunction(this),sameDiffVariable);
+        DifferentialFunction function = sameDiff.f().rdiv(getFunction(this),sameDiffVariable);
 
         return SDVariable.builder()
                 .varName(varName + " + " + "scalar")
@@ -242,7 +242,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable add(double sameDiffVariable) {
-        DifferentialFunction<ArrayField> function = sameDiff.f().add(getFunction(this),sameDiffVariable);
+        DifferentialFunction function = sameDiff.f().add(getFunction(this),sameDiffVariable);
         return SDVariable.builder()
                 .varName(varName + " + " + "scalar")
                 .arr(null).sameDiff(getSameDiff())
@@ -257,8 +257,8 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable sub(double sameDiffVariable) {
-        DifferentialFunction<ArrayField> right = getFunction(this);
-        DifferentialFunction<ArrayField> result = sameDiff.f().sub(right,sameDiffVariable);
+        DifferentialFunction right = getFunction(this);
+        DifferentialFunction result = sameDiff.f().sub(right,sameDiffVariable);
         return SDVariable.builder()
                 .varName(varName + " - " + "scalar")
                 .arr(null).sameDiff(getSameDiff())
@@ -273,7 +273,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable div(double sameDiffVariable) {
-        DifferentialFunction<ArrayField> function = sameDiff.f().div(getFunction(this),sameDiffVariable);
+        DifferentialFunction function = sameDiff.f().div(getFunction(this),sameDiffVariable);
 
         return SDVariable.builder()
                 .varName(varName + " / " + "scalar")
@@ -289,7 +289,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable mul(double sameDiffVariable) {
-        DifferentialFunction<ArrayField> function = sameDiff.f().mul(getFunction(this)
+        DifferentialFunction function = sameDiff.f().mul(getFunction(this)
                 ,sameDiffVariable);
         return SDVariable.builder()
                 .varName(varName + " * " + "scalar")
@@ -306,7 +306,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable rsubi(double sameDiffVariable) {
-        DifferentialFunction<ArrayField> function = sameDiff.f().rsubi(getFunction(this),sameDiffVariable);
+        DifferentialFunction function = sameDiff.f().rsubi(getFunction(this),sameDiffVariable);
 
         return SDVariable.builder()
                 .varName(varName + " - " + "scalar")
@@ -322,7 +322,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable rdivi(double sameDiffVariable) {
-        DifferentialFunction<ArrayField> function = sameDiff.f().rdivi(getFunction(this)
+        DifferentialFunction function = sameDiff.f().rdivi(getFunction(this)
                 ,sameDiffVariable);
 
         return SDVariable.builder()
@@ -339,7 +339,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable addi(double sameDiffVariable) {
-        DifferentialFunction<ArrayField> function = sameDiff.f().addi(getFunction(this),sameDiffVariable);
+        DifferentialFunction function = sameDiff.f().addi(getFunction(this),sameDiffVariable);
 
         return SDVariable.builder()
                 .varName(varName + " + " + "scalar")
@@ -355,7 +355,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable subi(double sameDiffVariable) {
-        DifferentialFunction<ArrayField> function = sameDiff.f().subi(getFunction(this),sameDiffVariable);
+        DifferentialFunction function = sameDiff.f().subi(getFunction(this),sameDiffVariable);
 
         return SDVariable.builder()
                 .varName(varName + " - " + "scalar")
@@ -371,7 +371,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable divi(double sameDiffVariable) {
-        DifferentialFunction<ArrayField> function = sameDiff.f().divi(getFunction(this),sameDiffVariable);
+        DifferentialFunction function = sameDiff.f().divi(getFunction(this),sameDiffVariable);
 
         return SDVariable.builder()
                 .varName(varName + " / " + "scalar")
@@ -388,7 +388,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable muli(double sameDiffVariable) {
-        DifferentialFunction<ArrayField> function = sameDiff.f().muli(getFunction(this),sameDiffVariable);
+        DifferentialFunction function = sameDiff.f().muli(getFunction(this),sameDiffVariable);
 
         return SDVariable.builder()
                 .varName(varName + " * " + "scalar")
@@ -457,9 +457,9 @@ public class SDVariable  implements Serializable {
     public SDVariable sub(SDVariable sameDiffVariable) {
         assertShapeEquals(sameDiffVariable);
 
-        DifferentialFunction<ArrayField> left = getFunction(sameDiffVariable);
-        DifferentialFunction<ArrayField> right = getFunction(this);
-        DifferentialFunction<ArrayField> result = sameDiff.f().sub(left,right);
+        DifferentialFunction left = getFunction(sameDiffVariable);
+        DifferentialFunction right = getFunction(this);
+        DifferentialFunction result = sameDiff.f().sub(left,right);
         return SDVariable.builder()
                 .varName(varName + " - " + sameDiffVariable.getVarName())
                 .arr(null)
@@ -493,12 +493,12 @@ public class SDVariable  implements Serializable {
     public SDVariable mul(SDVariable sameDiffVariable) {
         assertShapeEquals(sameDiffVariable);
 
-        DifferentialFunction<ArrayField> left = getFunction(sameDiffVariable);
-        DifferentialFunction<ArrayField> right = getFunction(this);
+        DifferentialFunction left = getFunction(sameDiffVariable);
+        DifferentialFunction right = getFunction(this);
         Preconditions.checkState(left != null,"Left input is null!");
         Preconditions.checkState(right != null,"Right input is null!");
 
-        DifferentialFunction<ArrayField> result = sameDiff.f().mul(left,right);
+        DifferentialFunction result = sameDiff.f().mul(left,right);
 
         return SDVariable.builder()
                 .varName(varName + " * " + sameDiffVariable.getVarName())
@@ -563,9 +563,9 @@ public class SDVariable  implements Serializable {
     public SDVariable subi(SDVariable sameDiffVariable) {
         assertShapeEquals(sameDiffVariable);
 
-        DifferentialFunction<ArrayField> left = getFunction(sameDiffVariable);
-        DifferentialFunction<ArrayField> right = getFunction(this);
-        DifferentialFunction<ArrayField> result = sameDiff.f().subi(left,right);
+        DifferentialFunction left = getFunction(sameDiffVariable);
+        DifferentialFunction right = getFunction(this);
+        DifferentialFunction result = sameDiff.f().subi(left,right);
         return SDVariable.builder()
                 .varName(varName + " - " + sameDiffVariable.getVarName())
                 .arr(null)
@@ -598,9 +598,9 @@ public class SDVariable  implements Serializable {
     public SDVariable muli(SDVariable sameDiffVariable) {
         assertShapeEquals(sameDiffVariable);
 
-        DifferentialFunction<ArrayField> left = getFunction(sameDiffVariable);
-        DifferentialFunction<ArrayField> right = getFunction(this);
-        DifferentialFunction<ArrayField> result = left.muli(right);
+        DifferentialFunction left = getFunction(sameDiffVariable);
+        DifferentialFunction right = getFunction(this);
+        DifferentialFunction result = sameDiff.getFunctionFactory().muli(left,right);
         return SDVariable.builder()
                 .varName(varName + " * " + sameDiffVariable.getVarName())
                 .arr(null).sameDiff(sameDiffVariable.getSameDiff())
@@ -645,7 +645,7 @@ public class SDVariable  implements Serializable {
      * @param variable
      * @return
      */
-    public static DifferentialFunction<ArrayField> getFunction(SDVariable variable) {
+    public static DifferentialFunction getFunction(SDVariable variable) {
         if(variable == null)
             throw new IllegalArgumentException("Unable to get function for null variable");
         return variable.getDifferentialFunction() != null ? variable.getDifferentialFunction() : variable.getArrayField();

@@ -24,21 +24,21 @@ import java.util.List;
  * @author Adam Gibson
  */
 @NoArgsConstructor
-public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduceFunction {
+public class TensorMmul extends AbstractBinaryReduceFunction {
     private int[][] axes;
     protected boolean addedEdges;
     protected MMulTranspose mMulTranspose;
 
     public TensorMmul(SameDiff sameDiff,
-                      DifferentialFunction<ArrayField> i_v1,
-                      DifferentialFunction<ArrayField> i_v2,
+                      DifferentialFunction i_v1,
+                      DifferentialFunction i_v2,
                       int[][] dimensions) {
         this(sameDiff,i_v1,i_v2,dimensions,MMulTranspose.allFalse());
     }
 
     public TensorMmul(SameDiff sameDiff,
-                      DifferentialFunction<ArrayField> i_v1,
-                      DifferentialFunction<ArrayField> i_v2,
+                      DifferentialFunction i_v1,
+                      DifferentialFunction i_v2,
                       int[][] dimensions,
                       MMulTranspose mMulTranspose) {
         super(sameDiff);
@@ -75,8 +75,8 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
 
     @Override
     protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction<ArrayField> i_v1,
-                            DifferentialFunction<ArrayField> i_v2,
+                            DifferentialFunction i_v1,
+                            DifferentialFunction i_v2,
                             String opName) {
         if(axes != null
                 && !addedEdges) {
@@ -116,8 +116,8 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
-        List<DifferentialFunction<ArrayField>> ret = new ArrayList<>();
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+        List<DifferentialFunction> ret = new ArrayList<>();
         int[] bAxes = range(0, rarg().getResultShape().length);
         int[] aAxes = range(0, larg().getResultShape().length);
         int aRank = larg().getResultShape().length;
@@ -142,15 +142,15 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
 
         //tensor matrix multiply gradient wrt second variable
         int[] firstPerm = argsort(combine(deletedAxes[0],keep(argsort(sumAxes[1]),sumAxes[0])));
-        DifferentialFunction<ArrayField> firstResult = doTensorMmul(i_v1.get(0), rarg(), firstAxes);
-        DifferentialFunction<ArrayField> permuted = f().permute(firstResult,firstPerm);
+        DifferentialFunction firstResult = doTensorMmul(i_v1.get(0), rarg(), firstAxes);
+        DifferentialFunction permuted = f().permute(firstResult,firstPerm);
         ret.add(permuted);
         larg().setGradient(permuted);
 
         //tensor matrix multiply gradient wrt first variable
         int[] secondPerm = argsort(combine(keep(argsort(sumAxes[0]),sumAxes[1]),deletedAxes[1]));
-        DifferentialFunction<ArrayField> secondResult = doTensorMmul(i_v1.get(0), larg(), secondAxes);
-        DifferentialFunction<ArrayField> secondPermuted = f().permute(secondResult,secondPerm);
+        DifferentialFunction secondResult = doTensorMmul(i_v1.get(0), larg(), secondAxes);
+        DifferentialFunction secondPermuted = f().permute(secondResult,secondPerm);
         ret.add(secondPermuted);
         rarg().setGradient(secondPermuted);
         return ret;
@@ -158,8 +158,8 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
 
 
 
-    private DifferentialFunction<ArrayField> doTensorMmul(DifferentialFunction<ArrayField> a,
-                                                          DifferentialFunction<ArrayField> b,
+    private DifferentialFunction doTensorMmul(DifferentialFunction a,
+                                                          DifferentialFunction b,
                                                           int[][] axes) {
 
         ArrayField xField = a.getValue(true);
@@ -228,14 +228,14 @@ public class TensorMmul<X extends Field<ArrayField>> extends AbstractBinaryReduc
         }
 
 
-        DifferentialFunction<ArrayField> at = f()
+        DifferentialFunction at = f()
                 .reshape(f().permute
                         (a,newAxesA),newShapeA);
-        DifferentialFunction<ArrayField> bt = f()
+        DifferentialFunction bt = f()
                 .reshape(f()
                         .permute(b,newAxesB),newShapeB);
 
-        DifferentialFunction<ArrayField> ret = f().mmul(at,bt);
+        DifferentialFunction ret = f().mmul(at,bt);
         int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
         return f().reshape(ret,aPlusB);
     }

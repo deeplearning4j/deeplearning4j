@@ -13,11 +13,11 @@ public class ScalarAdd extends AbstractScalarFunction {
     public ScalarAdd() {
     }
 
-    public ScalarAdd(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape, Object[] extraArgs) {
+    public ScalarAdd(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, Object[] extraArgs) {
         super(sameDiff, i_v, shape, extraArgs);
     }
 
-    public ScalarAdd(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public ScalarAdd(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -41,7 +41,7 @@ public class ScalarAdd extends AbstractScalarFunction {
     }
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
         return Arrays.asList(i_v1.get(0));
     }
 }

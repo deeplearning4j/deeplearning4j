@@ -14,7 +14,7 @@ public class EluDerivative  extends AbstractBinaryFunction {
     public EluDerivative() {
     }
 
-    public EluDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
+    public EluDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2, OpState.OpType.GRADIENT);
     }
 
@@ -29,8 +29,8 @@ public class EluDerivative  extends AbstractBinaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().zero(getResultShape());
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().zero(getResultShape());
         arg().setGradient(ret);
         return Arrays.asList(ret);
     }

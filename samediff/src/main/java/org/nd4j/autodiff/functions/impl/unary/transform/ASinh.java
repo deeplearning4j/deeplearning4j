@@ -10,7 +10,7 @@ import java.util.List;
 
 public class ASinh extends AbstractUnaryFunction {
 
-    public ASinh(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public ASinh(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -22,8 +22,8 @@ public class ASinh extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().one(getResultShape()).div(f().sqrt(arg().pow(2).add(
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().div(f().one(getResultShape()),f().sqrt(f().add(f().pow(arg(),2),
                 f().one(getResultShape()))));
         arg().setGradient(ret);
         return Collections.singletonList(ret);

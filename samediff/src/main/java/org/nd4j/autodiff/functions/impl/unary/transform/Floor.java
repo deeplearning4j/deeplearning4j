@@ -9,7 +9,7 @@ import java.util.List;
 
 public class Floor extends AbstractUnaryFunction {
 
-    public Floor(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public Floor(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -22,7 +22,7 @@ public class Floor extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         throw new RuntimeException("not allowed");
     }
 

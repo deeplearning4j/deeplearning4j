@@ -18,14 +18,14 @@ import java.util.UUID;
 
 @Data
 @NoArgsConstructor
-public abstract class AbstractUnaryFunction extends DifferentialFunction<ArrayField> {
+public abstract class AbstractUnaryFunction extends DifferentialFunction {
 
-    protected DifferentialFunction<ArrayField> m_x;
+    protected DifferentialFunction m_x;
     protected int[] shape;
     protected OpState.OpType opType;
 
     public AbstractUnaryFunction(SameDiff sameDiff,
-                                 DifferentialFunction<ArrayField> i_v,
+                                 DifferentialFunction i_v,
                                  int[] shape,
                                  OpState.OpType opType,
                                  Object[] extraArgs) {
@@ -34,7 +34,7 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction<ArrayFi
         this.shape = shape;
 
         if (i_v != null) {
-            m_x = i_v;
+            m_x = sameDiff.setupFunction(i_v);
             validateFunctionReference(i_v);
             validateDifferentialFunctionsameDiff(i_v);
             addEdges(sameDiff,m_x,functionName(),shape);
@@ -44,7 +44,7 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction<ArrayFi
     }
 
     public AbstractUnaryFunction(SameDiff sameDiff,
-                                 DifferentialFunction<ArrayField> i_v,
+                                 DifferentialFunction i_v,
                                  int[] shape,
                                  Object[] extraArgs) {
         this(sameDiff,i_v,shape, OpState.OpType.TRANSFORM,extraArgs);
@@ -52,7 +52,7 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction<ArrayFi
 
 
     public AbstractUnaryFunction(SameDiff sameDiff,
-                                 DifferentialFunction<ArrayField> i_v,
+                                 DifferentialFunction i_v,
                                  Object[] extraArgs) {
         this(sameDiff,i_v,i_v.getResultShape(), OpState.OpType.TRANSFORM,extraArgs);
     }
@@ -75,7 +75,7 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction<ArrayFi
      * @param opName
      */
     protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction<ArrayField> i_v1,
+                            DifferentialFunction i_v1,
                             String opName,
                             int...shape) {
         validateFunctionReference(i_v1);
@@ -92,13 +92,17 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction<ArrayFi
         Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");
         sameDiff.getGraph().addVertex(newVertex);
         OpState owner =  OpState.builder()
-                .opType(opType).differentialFunction(this)
+                .opType(opType).differentialFunction(sameDiff.setupFunction(this))
                 .opName(opName).extraArgs(extraArgs)
                 .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                 .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                 .n(ArrayUtil.prod(shape)).result(information)
                 .build();
-        sameDiff.getGraph().addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),owner,true);
+        sameDiff.getGraph().addEdge(
+                v1.getVertex().vertexID(),
+                newVertex.vertexID(),
+                owner,
+                true);
         newVertex.setOpState(owner);
         information.setOwner(owner);
         owner.setResult(information);
@@ -112,20 +116,20 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction<ArrayFi
 
 
     @Override
-    public DifferentialFunction<ArrayField>[] args() {
+    public DifferentialFunction[] args() {
         return new DifferentialFunction[] {arg()};
     }
 
     @Override
-    public DifferentialFunction<ArrayField> arg() {
-        return m_x;
+    public DifferentialFunction arg() {
+        return sameDiff.setupFunction(m_x);
     }
 
 
     @Override
-    public DifferentialFunction<ArrayField> dup() {
+    public DifferentialFunction dup() {
         Cloner cloner = new Cloner();
-        return cloner.deepClone(this);
+        return sameDiff.setupFunction(cloner.deepClone(this));
     }
 
 

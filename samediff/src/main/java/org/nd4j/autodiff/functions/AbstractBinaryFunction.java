@@ -9,21 +9,21 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.List;
 
 @NoArgsConstructor
-public abstract class AbstractBinaryFunction extends DifferentialFunction<ArrayField> {
+public abstract class AbstractBinaryFunction extends DifferentialFunction {
 
-    protected DifferentialFunction<ArrayField> m_x1;
+    protected DifferentialFunction m_x1;
 
-    protected DifferentialFunction<ArrayField> m_x2;
+    protected DifferentialFunction m_x2;
 
     public AbstractBinaryFunction(SameDiff sameDiff,
-                                  DifferentialFunction<ArrayField> i_v1,
-                                  DifferentialFunction<ArrayField> i_v2) {
+                                  DifferentialFunction i_v1,
+                                  DifferentialFunction i_v2) {
         this(sameDiff,i_v1,i_v2, OpState.OpType.TRANSFORM);
     }
 
     public AbstractBinaryFunction(SameDiff sameDiff,
-                                  DifferentialFunction<ArrayField> i_v1,
-                                  DifferentialFunction<ArrayField> i_v2,
+                                  DifferentialFunction i_v1,
+                                  DifferentialFunction i_v2,
                                   OpState.OpType opType) {
         super(sameDiff,new Object[] {i_v2});
         if (i_v1 != null && i_v2 != null) {
@@ -46,8 +46,8 @@ public abstract class AbstractBinaryFunction extends DifferentialFunction<ArrayF
     }
 
     public AbstractBinaryFunction(SameDiff sameDiff,
-                                  DifferentialFunction<ArrayField> i_v1,
-                                  DifferentialFunction<ArrayField> i_v2,
+                                  DifferentialFunction i_v1,
+                                  DifferentialFunction i_v2,
                                   OpState.OpType opType, Object[] extraArgs) {
         super(sameDiff,extraArgs);
         if (i_v1 != null && i_v2 != null) {
@@ -66,25 +66,21 @@ public abstract class AbstractBinaryFunction extends DifferentialFunction<ArrayF
 
 
     @Override
-    public DifferentialFunction<ArrayField>[] args() {
+    public DifferentialFunction[] args() {
         return new DifferentialFunction[] {larg(),rarg()};
     }
 
     @Override
-    public DifferentialFunction<ArrayField> arg() {
+    public DifferentialFunction arg() {
         return larg();
     }
 
-    public DifferentialFunction<ArrayField> larg() {
-        if(m_x1 == this)
-            return sameDiff.setupFunction(m_x1.dup());
+    public DifferentialFunction larg() {
         return sameDiff.setupFunction(m_x1);
     }
 
 
-    public DifferentialFunction<ArrayField> rarg() {
-        if(m_x2 == this)
-            return sameDiff.setupFunction(m_x2.dup());
+    public DifferentialFunction rarg() {
         return sameDiff.setupFunction(m_x2);
     }
 
@@ -101,7 +97,7 @@ public abstract class AbstractBinaryFunction extends DifferentialFunction<ArrayF
     }
 
     @Override
-    public DifferentialFunction<ArrayField> dup() {
+    public DifferentialFunction dup() {
         try {
             return getClass().getConstructor(sameDiff.getClass(),DifferentialFunction.class,DifferentialFunction.class).newInstance(sameDiff,larg(),
                     rarg());

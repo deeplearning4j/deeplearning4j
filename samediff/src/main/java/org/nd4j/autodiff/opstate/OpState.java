@@ -35,7 +35,7 @@ public class OpState implements Serializable {
     private Object[] extraArgsWithoutInPlace;
     private NDArrayInformation result;
     //function handle mainly used for autodiff invocation
-    private DifferentialFunction<ArrayField> differentialFunction;
+    private DifferentialFunction differentialFunction;
     private ArrayField arrayField;
 
     /**

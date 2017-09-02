@@ -10,7 +10,7 @@ import java.util.List;
 
 public class ACos extends AbstractUnaryFunction {
 
-    public ACos(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public ACos(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -21,9 +21,9 @@ public class ACos extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().one(getResultShape()).div(f().sqrt(f()
-                .one(getResultShape()).sub(arg().pow(2)))).negate();
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().div(f().one(getResultShape()),
+                f().sqrt(f().sub(f().one(getResultShape()),f().pow(arg(),2))));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

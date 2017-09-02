@@ -29,24 +29,9 @@ public class Scalar extends Constant {
     }
 
 
-    @Override
-    public DifferentialFunction<ArrayField> mul(DifferentialFunction<ArrayField> i_v) {
-        DifferentialFunction<ArrayField> dup = i_v.dup();
-        ArrayField arrayField = i_v.getValue(true);
-        addEdges(sameDiff,
-                dup,
-                this,
-                new MulOp().name(),
-                OpState.OpType.TRANSFORM,
-                arrayField.getInput().getShape());
-
-
-        return dup;
-    }
-
 
     @Override
-    public DifferentialFunction<ArrayField> dup() {
+    public DifferentialFunction dup() {
         return new Scalar(sameDiff, value);
     }
 }

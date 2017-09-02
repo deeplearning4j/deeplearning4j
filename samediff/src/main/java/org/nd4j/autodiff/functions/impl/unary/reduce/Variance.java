@@ -12,11 +12,11 @@ public class Variance extends AbstractReduceUnaryFunction {
 
     protected  boolean biasCorrected;
 
-    public Variance(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] dimensions) {
+    public Variance(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public Variance(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] dimensions,boolean biasCorrected) {
+    public Variance(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions,boolean biasCorrected) {
         super(sameDiff, i_v, dimensions);
         this.biasCorrected = biasCorrected;
     }
@@ -36,14 +36,15 @@ public class Variance extends AbstractReduceUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
         int inputs = f().getInputLength(i_v1.get(0));
-        DifferentialFunction<ArrayField> g =  f().doRepeat(this,i_v1.get(0),dimensions);
-        DifferentialFunction<ArrayField> ret = f().one(getResultShape())
-                .mul(2).mul(g)
-                .mul(arg().sub(f().mean(arg(),dimensions))).div(
-                        f().one(getResultShape()).mul(inputs));
+        DifferentialFunction g =  f().doRepeat(this,i_v1.get(0),dimensions);
+        DifferentialFunction ret = f().mul(g,f().mul(f().mul(f().one(getResultShape()),2),g));
+        ret = f().mul(ret,arg());
+        ret = f().sub(ret,f().mean(arg(),dimensions));
+        ret = f().div(ret,f().one(getResultShape()));
+        ret = f().mul(ret,inputs);
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

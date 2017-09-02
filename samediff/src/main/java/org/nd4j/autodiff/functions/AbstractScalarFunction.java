@@ -18,14 +18,14 @@ public abstract class AbstractScalarFunction extends AbstractUnaryFunction {
         super();
     }
 
-    public AbstractScalarFunction(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape, Object[] extraArgs) {
+    public AbstractScalarFunction(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, Object[] extraArgs) {
         super(sameDiff, i_v, shape, OpState.OpType.SCALAR_TRANSFORM, extraArgs);
         this.scalarValue = (Number) extraArgs[0];
     }
 
 
 
-    public AbstractScalarFunction(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public AbstractScalarFunction(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v,i_v.getResultShape(), OpState.OpType.SCALAR_TRANSFORM,extraArgs);
         this.scalarValue = (Number) extraArgs[0];
     }
@@ -39,7 +39,7 @@ public abstract class AbstractScalarFunction extends AbstractUnaryFunction {
      */
     @Override
     protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction<ArrayField> i_v1,
+                            DifferentialFunction i_v1,
                             String opName,
                             int[] shape) {
         validateFunctionReference(i_v1);
@@ -60,7 +60,7 @@ public abstract class AbstractScalarFunction extends AbstractUnaryFunction {
 
         OpState owner =  OpState.builder()
                 .opType(OpState.OpType.SCALAR_TRANSFORM)
-                .differentialFunction((DifferentialFunction<ArrayField>) this)
+                .differentialFunction((DifferentialFunction) this)
                 .opName(opName).extraArgs(extraArgs).scalarValue((Number) extraArgs[0])
                 .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                 .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})

@@ -1,12 +1,9 @@
 package org.nd4j.autodiff.functions;
 
-import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.Field;
-
 import java.util.List;
 
 
-public interface Differential<X extends Field<ArrayField>, D> {
+public interface Differential {
 
 
     String getFormula(List<Variable> variables);
@@ -16,6 +13,6 @@ public interface Differential<X extends Field<ArrayField>, D> {
      * @param i_v
      * @return
      */
-    List<D> diff(List<DifferentialFunction<ArrayField>> i_v);
+    List<DifferentialFunction> diff(List<DifferentialFunction> i_v);
 
 }

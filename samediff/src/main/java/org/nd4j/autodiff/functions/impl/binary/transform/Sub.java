@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Sub extends AbstractBinaryFunction {
-    public Sub(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
+    public Sub(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
 
@@ -21,10 +21,10 @@ public class Sub extends AbstractBinaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> gradWrtX = i_v.get(0);
-        DifferentialFunction<ArrayField> gradWrtY = f().neg(i_v.get(0));
-        List<DifferentialFunction<ArrayField>> ret = new ArrayList<>();
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction gradWrtX = i_v.get(0);
+        DifferentialFunction gradWrtY = f().neg(i_v.get(0));
+        List<DifferentialFunction> ret = new ArrayList<>();
         ret.add(gradWrtX);
         ret.add(gradWrtY);
         larg().setGradient(gradWrtX);

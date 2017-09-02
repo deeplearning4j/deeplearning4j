@@ -14,7 +14,7 @@ public class TanhDerivative extends AbstractBinaryFunction {
     public TanhDerivative() {
     }
 
-    public TanhDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
+    public TanhDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2, OpState.OpType.GRADIENT);
     }
 
@@ -24,13 +24,13 @@ public class TanhDerivative extends AbstractBinaryFunction {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().tanhDerivative(larg().getValue(true),rarg().getValue(true));
+        return a().tanhDerivative(larg().getValue(true),rarg().getValue(true));
     }
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().one(getResultShape()).div(sameDiff.getFunctionFactory().cosh(arg())).pow(2);
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().div(f().one(getResultShape()),f().pow(f().cosh(arg()),2));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

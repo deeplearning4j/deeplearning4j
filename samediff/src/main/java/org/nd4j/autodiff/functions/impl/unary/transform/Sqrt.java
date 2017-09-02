@@ -10,7 +10,7 @@ import java.util.List;
 
 public class Sqrt extends AbstractUnaryFunction {
 
-    public Sqrt(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public Sqrt(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -23,11 +23,8 @@ public class Sqrt extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().sqrt(arg()).inverse()
-                .div(f().val(a().one(getResultShape()).mul(2L)));
-        arg().setGradient(ret);
-        return Collections.singletonList(ret);
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        throw new UnsupportedOperationException();
     }
 
 

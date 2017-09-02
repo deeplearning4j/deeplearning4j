@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class LogSoftMax extends AbstractUnaryFunction {
-    public LogSoftMax(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public LogSoftMax(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -21,8 +21,8 @@ public class LogSoftMax extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().logSoftmax(i_v.get(0));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().logSoftmax(i_v.get(0));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

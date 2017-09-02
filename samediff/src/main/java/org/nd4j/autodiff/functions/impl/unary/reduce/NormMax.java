@@ -10,7 +10,7 @@ import java.util.List;
 
 public class NormMax extends AbstractReduceUnaryFunction {
 
-    public NormMax(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] dimensions) {
+    public NormMax(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
@@ -28,8 +28,8 @@ public class NormMax extends AbstractReduceUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
-        DifferentialFunction<ArrayField> ret = f().doNormGrad(this,i_v1.get(0),"normmax",dimensions);
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+        DifferentialFunction ret = f().doNormGrad(this,i_v1.get(0),"normmax",dimensions);
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

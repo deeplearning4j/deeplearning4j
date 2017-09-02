@@ -14,7 +14,7 @@ public class RollAxis extends AbstractUnaryFunction {
    private int axis;
 
 
-    public RollAxis(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int axis) {
+    public RollAxis(SameDiff sameDiff, DifferentialFunction i_v, int axis) {
         super(sameDiff,i_v,null,
                 OpState.OpType.SHAPE,
                 new Object[]{axis});
@@ -29,8 +29,8 @@ public class RollAxis extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = this;
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = this;
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

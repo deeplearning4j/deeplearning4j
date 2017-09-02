@@ -1,38 +1,40 @@
 package org.nd4j.autodiff;
 
 
-public interface Group<X> {
+public interface Group {
 
 
-    X negate();
+    ArrayField negate();
 
 
-    X add(X i_v);
+    ArrayField add(ArrayField i_v);
 
-    X add(double i_v);
+    ArrayField add(double i_v);
 
-    X sub(X i_v);
-
-
-    X rsub(X i_v);
-
-    X mul(double i_n);
-
-    X sub(double i_v);
-
-    X negatei();
+    ArrayField sub(ArrayField i_v);
 
 
-    X addi(X i_v);
+    ArrayField rsub(ArrayField i_v);
 
-    X addi(double i_v);
+    ArrayField mul(double i_n);
 
-    X subi(X i_v);
+    ArrayField mul(ArrayField i_n);
+
+    ArrayField sub(double i_v);
+
+    ArrayField negatei();
 
 
-    X rsubi(X i_v);
+    ArrayField addi(ArrayField i_v);
 
-    X muli(double i_n);
+    ArrayField addi(double i_v);
 
-    X subi(double i_v);
+    ArrayField subi(ArrayField i_v);
+
+
+    ArrayField rsubi(ArrayField i_v);
+
+    ArrayField muli(double i_n);
+
+    ArrayField subi(double i_v);
 }

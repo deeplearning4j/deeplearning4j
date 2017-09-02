@@ -12,12 +12,12 @@ import java.util.List;
  */
 public class Negative extends AbstractUnaryFunction {
 
-    public Negative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, boolean inPlace) {
+    public Negative(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
         super(sameDiff,i_v,new Object[]{inPlace});
     }
 
 
-    public Negative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v) {
+    public Negative(SameDiff sameDiff, DifferentialFunction i_v) {
         this(sameDiff,i_v,false);
     }
 
@@ -29,8 +29,8 @@ public class Negative extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        return Arrays.asList(arg().diff(i_v).get(0).negate());
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        return Arrays.asList(f().neg(arg().diff(i_v).get(0)));
     }
 
     @Override
@@ -48,9 +48,5 @@ public class Negative extends AbstractUnaryFunction {
         return new  org.nd4j.linalg.api.ops.impl.transforms.Negative().name();
     }
 
-    @Override
-    public DifferentialFunction<ArrayField> negate() {
-        return arg();
-    }
 
 }

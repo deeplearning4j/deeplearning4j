@@ -1,16 +1,16 @@
 package org.nd4j.autodiff.functions;
 
-import org.nd4j.autodiff.Field;
+import org.nd4j.autodiff.ArrayField;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 
 /**
  * Created by agibsonccc on 4/9/17.
  */
-public interface FunctionFactory<ArrayField extends Field<ArrayField>> {
+public interface FunctionFactory {
 
 
 
-    DifferentialFunction<ArrayField> invoke(String name, Object[] args);
+    DifferentialFunction invoke(String name, Object[] args);
 
     Constant val(ArrayField iX);
 
@@ -26,184 +26,184 @@ public interface FunctionFactory<ArrayField extends Field<ArrayField>> {
     One one(int[] shape);
 
 
-    DifferentialFunction<ArrayField> tile(DifferentialFunction<ArrayField> iX, int[] repeat);
+    DifferentialFunction tile(DifferentialFunction iX, int[] repeat);
 
-    DifferentialFunction<ArrayField> valueArrayOf(DifferentialFunction<ArrayField> iX, int[] shape);
+    DifferentialFunction valueArrayOf(DifferentialFunction iX, int[] shape);
 
-    DifferentialFunction<ArrayField> sum(DifferentialFunction<ArrayField> i_x, int...dimensions);
+    DifferentialFunction sum(DifferentialFunction i_x, int...dimensions);
 
-    DifferentialFunction<ArrayField> prod(DifferentialFunction<ArrayField> i_x,int...dimensions);
+    DifferentialFunction prod(DifferentialFunction i_x,int...dimensions);
 
-    DifferentialFunction<ArrayField> mean(DifferentialFunction<ArrayField> i_x,int...dimensions);
+    DifferentialFunction mean(DifferentialFunction i_x,int...dimensions);
 
-    DifferentialFunction<ArrayField> std(DifferentialFunction<ArrayField> i_x, boolean biasCorrected, int... dimensions);
+    DifferentialFunction std(DifferentialFunction i_x, boolean biasCorrected, int... dimensions);
 
-    DifferentialFunction<ArrayField> variance(DifferentialFunction<ArrayField> i_x, boolean biasCorrected, int... dimensions);
+    DifferentialFunction variance(DifferentialFunction i_x, boolean biasCorrected, int... dimensions);
 
-    DifferentialFunction<ArrayField> max(DifferentialFunction<ArrayField> i_x,int...dimensions);
+    DifferentialFunction max(DifferentialFunction i_x,int...dimensions);
 
-    DifferentialFunction<ArrayField> min(DifferentialFunction<ArrayField> i_x,int...dimensions);
+    DifferentialFunction min(DifferentialFunction i_x,int...dimensions);
 
-    DifferentialFunction<ArrayField> norm1(DifferentialFunction<ArrayField> i_x,int...dimensions);
+    DifferentialFunction norm1(DifferentialFunction i_x,int...dimensions);
 
-    DifferentialFunction<ArrayField> norm2(DifferentialFunction<ArrayField> i_x,int...dimensions);
+    DifferentialFunction norm2(DifferentialFunction i_x,int...dimensions);
 
-    DifferentialFunction<ArrayField> normmax(DifferentialFunction<ArrayField> i_x,int...dimensions);
-
-
-    DifferentialFunction<ArrayField> expandDims(DifferentialFunction<ArrayField> iX, int axis);
-
-    DifferentialFunction<ArrayField> abs(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> neg(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> cos(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> sin(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> tan(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> permute(DifferentialFunction<ArrayField> iX, int... dimensions);
-
-    DifferentialFunction<ArrayField> transpose(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> acos(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> asin(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> atan(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> cosh(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> sinh(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> tanh(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> tanhDerivative(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> wrt);
-
-    DifferentialFunction<ArrayField> acosh(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> asinh(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> atanh(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> exp(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> log(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> or(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y);
-
-    DifferentialFunction<ArrayField> eq(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y);
-
-    DifferentialFunction<ArrayField> neq(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y);
-
-    DifferentialFunction<ArrayField> pow(DifferentialFunction<ArrayField> iX, double i_y);
-
-    DifferentialFunction<ArrayField> sqrt(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> square(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> floor(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> relu(DifferentialFunction<ArrayField> iX, double cutoff);
-
-    DifferentialFunction<ArrayField> softmax(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> hardTanh(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> hardTanhDerivative(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> sigmoid(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> sigmoidDerivative(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> wrt);
-
-    DifferentialFunction<ArrayField> sign(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> broadcast(DifferentialFunction<ArrayField> iX, int... shape);
-
-    DifferentialFunction<ArrayField> repeat(DifferentialFunction<ArrayField> iX, int axis);
-
-    DifferentialFunction<ArrayField> softsign(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> softsignDerivative(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> softplus(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> elu(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> eluDerivative(DifferentialFunction<ArrayField> iX);
-
-    DifferentialFunction<ArrayField> leakyRelu(DifferentialFunction<ArrayField> iX, double cutoff);
-
-    DifferentialFunction<ArrayField> leakyReluDerivative(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> iY, double cutoff);
-
-    DifferentialFunction<ArrayField> reshape(DifferentialFunction<ArrayField> arrayField, int[] shape);
+    DifferentialFunction normmax(DifferentialFunction i_x,int...dimensions);
 
 
-    DifferentialFunction<ArrayField> rollAxis(Variable iX, int axis);
+    DifferentialFunction expandDims(DifferentialFunction iX, int axis);
 
-    DifferentialFunction<ArrayField> cosineSimilarity(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int...dimensions);
-    DifferentialFunction<ArrayField> euclideanDistance(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> manhattanDistance(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> lossBinaryXENT(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int...dimensions);
-    DifferentialFunction<ArrayField> lossCosineSimilarity(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> lossHinge(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> lossKLD(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> lossL1(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> lossL2(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> lossMAE(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> lossMAPE(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> lossMSE(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> lossMCXENT(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> lossMSLE(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> lossNegativeLogLikelihood(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> lossPoisson(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
-    DifferentialFunction<ArrayField> lossSquaredHinge(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y,int...dimensions);
+    DifferentialFunction abs(DifferentialFunction iX);
+
+    DifferentialFunction neg(DifferentialFunction iX);
+
+    DifferentialFunction cos(DifferentialFunction iX);
+
+    DifferentialFunction sin(DifferentialFunction iX);
+
+    DifferentialFunction tan(DifferentialFunction iX);
+
+    DifferentialFunction permute(DifferentialFunction iX, int... dimensions);
+
+    DifferentialFunction transpose(DifferentialFunction iX);
+
+    DifferentialFunction acos(DifferentialFunction iX);
+
+    DifferentialFunction asin(DifferentialFunction iX);
+
+    DifferentialFunction atan(DifferentialFunction iX);
+
+    DifferentialFunction cosh(DifferentialFunction iX);
+
+    DifferentialFunction sinh(DifferentialFunction iX);
+
+    DifferentialFunction tanh(DifferentialFunction iX);
+
+    DifferentialFunction tanhDerivative(DifferentialFunction iX, DifferentialFunction wrt);
+
+    DifferentialFunction acosh(DifferentialFunction iX);
+
+    DifferentialFunction asinh(DifferentialFunction iX);
+
+    DifferentialFunction atanh(DifferentialFunction iX);
+
+    DifferentialFunction exp(DifferentialFunction iX);
+
+    DifferentialFunction log(DifferentialFunction iX);
+
+    DifferentialFunction or(DifferentialFunction iX, DifferentialFunction i_y);
+
+    DifferentialFunction eq(DifferentialFunction iX, DifferentialFunction i_y);
+
+    DifferentialFunction neq(DifferentialFunction iX, DifferentialFunction i_y);
+
+    DifferentialFunction pow(DifferentialFunction iX, double i_y);
+
+    DifferentialFunction sqrt(DifferentialFunction iX);
+
+    DifferentialFunction square(DifferentialFunction iX);
+
+    DifferentialFunction floor(DifferentialFunction iX);
+
+    DifferentialFunction relu(DifferentialFunction iX, double cutoff);
+
+    DifferentialFunction softmax(DifferentialFunction iX);
+
+    DifferentialFunction hardTanh(DifferentialFunction iX);
+
+    DifferentialFunction hardTanhDerivative(DifferentialFunction iX);
+
+    DifferentialFunction sigmoid(DifferentialFunction iX);
+
+    DifferentialFunction sigmoidDerivative(DifferentialFunction iX, DifferentialFunction wrt);
+
+    DifferentialFunction sign(DifferentialFunction iX);
+
+    DifferentialFunction broadcast(DifferentialFunction iX, int... shape);
+
+    DifferentialFunction repeat(DifferentialFunction iX, int axis);
+
+    DifferentialFunction softsign(DifferentialFunction iX);
+
+    DifferentialFunction softsignDerivative(DifferentialFunction iX);
+
+    DifferentialFunction softplus(DifferentialFunction iX);
+
+    DifferentialFunction elu(DifferentialFunction iX);
+
+    DifferentialFunction eluDerivative(DifferentialFunction iX);
+
+    DifferentialFunction leakyRelu(DifferentialFunction iX, double cutoff);
+
+    DifferentialFunction leakyReluDerivative(DifferentialFunction iX, DifferentialFunction iY, double cutoff);
+
+    DifferentialFunction reshape(DifferentialFunction arrayField, int[] shape);
 
 
-    DifferentialFunction<ArrayField> mmul(DifferentialFunction<ArrayField> x,
-                                          DifferentialFunction<ArrayField> y,
+    DifferentialFunction rollAxis(Variable iX, int axis);
+
+    DifferentialFunction cosineSimilarity(DifferentialFunction iX, DifferentialFunction i_y, int...dimensions);
+    DifferentialFunction euclideanDistance(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction manhattanDistance(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossBinaryXENT(DifferentialFunction iX, DifferentialFunction i_y, int...dimensions);
+    DifferentialFunction lossCosineSimilarity(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossHinge(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossKLD(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossL1(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossL2(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossMAE(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossMAPE(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossMSE(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossMCXENT(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossMSLE(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossNegativeLogLikelihood(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossPoisson(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossSquaredHinge(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+
+
+    DifferentialFunction mmul(DifferentialFunction x,
+                                          DifferentialFunction y,
                                           MMulTranspose mMulTranspose);
 
-    DifferentialFunction<ArrayField> mmul(DifferentialFunction<ArrayField> x, DifferentialFunction<ArrayField> y);
-    DifferentialFunction<ArrayField> tensorMmul(DifferentialFunction<ArrayField> x, DifferentialFunction<ArrayField> y, int[][] dimensions);
+    DifferentialFunction mmul(DifferentialFunction x, DifferentialFunction y);
+    DifferentialFunction tensorMmul(DifferentialFunction x, DifferentialFunction y, int[][] dimensions);
 
-    DifferentialFunction<ArrayField> softmaxDerivative(DifferentialFunction<ArrayField> functionInput, DifferentialFunction<ArrayField> wrt);
+    DifferentialFunction softmaxDerivative(DifferentialFunction functionInput, DifferentialFunction wrt);
 
-    DifferentialFunction<ArrayField> logSoftmax(DifferentialFunction<ArrayField> i_v);
+    DifferentialFunction logSoftmax(DifferentialFunction i_v);
 
-    DifferentialFunction<ArrayField> selu(DifferentialFunction<ArrayField> arg);
+    DifferentialFunction selu(DifferentialFunction arg);
 
-    DifferentialFunction<ArrayField> seluDerivative(DifferentialFunction<ArrayField> arg);
+    DifferentialFunction seluDerivative(DifferentialFunction arg);
 
-    DifferentialFunction<ArrayField> rsub(DifferentialFunction<ArrayField> xDifferentialFunction, DifferentialFunction<ArrayField> i_v);
-    DifferentialFunction<ArrayField> rdiv(DifferentialFunction<ArrayField> xDifferentialFunction, DifferentialFunction<ArrayField> i_v);
-    DifferentialFunction<ArrayField> rdivi(DifferentialFunction<ArrayField> xDifferentialFunction, DifferentialFunction<ArrayField> i_v);
-    DifferentialFunction<ArrayField> rsubi(DifferentialFunction<ArrayField> xDifferentialFunction, DifferentialFunction<ArrayField> i_v);
-    DifferentialFunction<ArrayField> add(DifferentialFunction<ArrayField> xDifferentialFunction, DifferentialFunction<ArrayField> i_v);
-    DifferentialFunction<ArrayField> addi(DifferentialFunction<ArrayField> xDifferentialFunction, DifferentialFunction<ArrayField> i_v);
-    DifferentialFunction<ArrayField> sub(DifferentialFunction<ArrayField> xDifferentialFunction, DifferentialFunction<ArrayField> i_v);
-    DifferentialFunction<ArrayField> subi(DifferentialFunction<ArrayField> xDifferentialFunction, DifferentialFunction<ArrayField> i_v);
-    DifferentialFunction<ArrayField> mul(DifferentialFunction<ArrayField> xDifferentialFunction, DifferentialFunction<ArrayField> i_v);
-    DifferentialFunction<ArrayField> muli(DifferentialFunction<ArrayField> xDifferentialFunction, DifferentialFunction<ArrayField> i_v);
-    DifferentialFunction<ArrayField> div(DifferentialFunction<ArrayField> xDifferentialFunction, DifferentialFunction<ArrayField> i_v);
-    DifferentialFunction<ArrayField> divi(DifferentialFunction<ArrayField> xDifferentialFunction, DifferentialFunction<ArrayField> i_v);
-
-
+    DifferentialFunction rsub(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction rdiv(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction rdivi(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction rsubi(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction add(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction addi(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction sub(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction subi(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction mul(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction muli(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction div(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction divi(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
 
 
 
-    DifferentialFunction<ArrayField> rsub(DifferentialFunction<ArrayField> xDifferentialFunction, double i_v);
-    DifferentialFunction<ArrayField> rdiv(DifferentialFunction<ArrayField> xDifferentialFunction, double i_v);
-    DifferentialFunction<ArrayField> rdivi(DifferentialFunction<ArrayField> xDifferentialFunction, double i_v);
-    DifferentialFunction<ArrayField> rsubi(DifferentialFunction<ArrayField> xDifferentialFunction, double i_v);
-    DifferentialFunction<ArrayField> add(DifferentialFunction<ArrayField> xDifferentialFunction, double i_v);
-    DifferentialFunction<ArrayField> addi(DifferentialFunction<ArrayField> xDifferentialFunction, double i_v);
-    DifferentialFunction<ArrayField> sub(DifferentialFunction<ArrayField> xDifferentialFunction, double i_v);
-    DifferentialFunction<ArrayField> subi(DifferentialFunction<ArrayField> xDifferentialFunction, double i_v);
-    DifferentialFunction<ArrayField> mul(DifferentialFunction<ArrayField> xDifferentialFunction, double i_v);
-    DifferentialFunction<ArrayField> muli(DifferentialFunction<ArrayField> xDifferentialFunction,double i_v);
-    DifferentialFunction<ArrayField> div(DifferentialFunction<ArrayField> xDifferentialFunction, double i_v);
-    DifferentialFunction<ArrayField> divi(DifferentialFunction<ArrayField> xDifferentialFunction,double i_v);
+
+
+    DifferentialFunction rsub(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction rdiv(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction rdivi(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction rsubi(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction add(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction addi(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction sub(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction subi(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction mul(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction muli(DifferentialFunction xDifferentialFunction,double i_v);
+    DifferentialFunction div(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction divi(DifferentialFunction xDifferentialFunction,double i_v);
 
 }

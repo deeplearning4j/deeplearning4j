@@ -11,11 +11,11 @@ public class ScalarGreatherThanOrEqualTo extends AbstractScalarFunction {
     public ScalarGreatherThanOrEqualTo() {
     }
 
-    public ScalarGreatherThanOrEqualTo(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape, Object[] extraArgs) {
+    public ScalarGreatherThanOrEqualTo(SameDiff sameDiff, DifferentialFunction i_v, int[] shape, Object[] extraArgs) {
         super(sameDiff, i_v, shape, extraArgs);
     }
 
-    public ScalarGreatherThanOrEqualTo(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public ScalarGreatherThanOrEqualTo(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -35,7 +35,7 @@ public class ScalarGreatherThanOrEqualTo extends AbstractScalarFunction {
     }
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
         return null;
     }
 }

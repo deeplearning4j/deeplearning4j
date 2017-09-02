@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class HardTanh extends AbstractUnaryFunction {
-    public HardTanh(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public HardTanh(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -20,8 +20,8 @@ public class HardTanh extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().hardTanhDerivative(f().val(getValue(true)));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().hardTanhDerivative(f().val(getValue(true)));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

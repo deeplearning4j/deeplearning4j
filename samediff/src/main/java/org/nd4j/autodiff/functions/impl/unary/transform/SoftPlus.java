@@ -10,7 +10,7 @@ import java.util.List;
 
 public class SoftPlus extends AbstractUnaryFunction {
 
-    public SoftPlus(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public SoftPlus(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -22,8 +22,8 @@ public class SoftPlus extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().sigmoid(arg());
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().sigmoid(arg());
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

@@ -10,7 +10,7 @@ import java.util.List;
 
 public class Sum extends AbstractReduceUnaryFunction {
     public Sum(SameDiff sameDiff,
-               DifferentialFunction<ArrayField> i_v,
+               DifferentialFunction i_v,
                int[] dimensions) {
         super(sameDiff, i_v, dimensions);
         validateDifferentialFunctionsameDiff(i_v);
@@ -29,10 +29,10 @@ public class Sum extends AbstractReduceUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
         validateFunctionReference(i_v1);
-        DifferentialFunction<ArrayField> repeat =  sameDiff.getFunctionFactory().doRepeat(
+        DifferentialFunction repeat =  sameDiff.getFunctionFactory().doRepeat(
                 i_v1.get(0),
                 arg(),dimensions);
         arg().setGradient(repeat);

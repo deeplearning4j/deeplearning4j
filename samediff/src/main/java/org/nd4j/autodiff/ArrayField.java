@@ -29,7 +29,7 @@ import java.util.UUID;
 @Getter
 @Builder
 @EqualsAndHashCode
-public class ArrayField implements Field<ArrayField> {
+public class ArrayField implements Field {
     @Getter
     @Setter
     private SameDiff ops;
@@ -849,7 +849,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public DifferentialFunction arg() {
+    public ArrayField arg() {
         throw new UnsupportedOperationException();
     }
 
@@ -1262,7 +1262,7 @@ public class ArrayField implements Field<ArrayField> {
      * @param dimensions
      * @return
      */
-    public ArrayField tensorMmul(DifferentialFunction<ArrayField> y,
+    public ArrayField tensorMmul(DifferentialFunction y,
                                  int[][] dimensions) {
         return addPairReduceOp("tensorMmul",y.getValue(true),
                 null,

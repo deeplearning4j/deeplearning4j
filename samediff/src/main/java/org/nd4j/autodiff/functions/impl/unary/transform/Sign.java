@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class Sign extends AbstractUnaryFunction {
-    public Sign(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public Sign(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -21,8 +21,8 @@ public class Sign extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().zero(getResultShape());
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().zero(getResultShape());
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

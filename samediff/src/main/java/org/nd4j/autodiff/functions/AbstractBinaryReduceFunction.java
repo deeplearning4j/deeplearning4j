@@ -19,8 +19,8 @@ public abstract class AbstractBinaryReduceFunction extends AbstractBinaryFunctio
 
 
     public AbstractBinaryReduceFunction(SameDiff sameDiff,
-                                        DifferentialFunction<ArrayField> i_v1,
-                                        DifferentialFunction<ArrayField> i_v2,
+                                        DifferentialFunction i_v1,
+                                        DifferentialFunction i_v2,
                                         int...dimensions) {
         super(sameDiff, i_v1, i_v2);
         this.dimensions = dimensions;
@@ -37,8 +37,8 @@ public abstract class AbstractBinaryReduceFunction extends AbstractBinaryFunctio
 
     @Override
     protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction<ArrayField> i_v1,
-                            DifferentialFunction<ArrayField> i_v2,
+                            DifferentialFunction i_v1,
+                            DifferentialFunction i_v2,
                             String opName) {
         if(i_v1.getValue(true) instanceof ArrayField) {
             ArrayField arrayField = i_v1.getValue(true);
@@ -61,10 +61,7 @@ public abstract class AbstractBinaryReduceFunction extends AbstractBinaryFunctio
         return toString();
     }
 
-    @Override
-    public double getReal() {
-        throw new UnsupportedOperationException();
-    }
+
 
     @Override
     public String toString() {
@@ -73,7 +70,7 @@ public abstract class AbstractBinaryReduceFunction extends AbstractBinaryFunctio
 
 
     @Override
-    public DifferentialFunction<ArrayField> dup() {
+    public DifferentialFunction dup() {
         try {
             return getClass().getConstructor(sameDiff.getClass(),larg()
                     .getClass(),rarg().getClass()).newInstance(sameDiff,larg(),rarg());

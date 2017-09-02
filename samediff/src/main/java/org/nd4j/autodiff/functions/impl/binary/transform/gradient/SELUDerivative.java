@@ -14,7 +14,7 @@ public class SELUDerivative extends AbstractBinaryFunction {
     public SELUDerivative() {
     }
 
-    public SELUDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
+    public SELUDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2, OpState.OpType.GRADIENT);
     }
 
@@ -27,14 +27,10 @@ public class SELUDerivative extends AbstractBinaryFunction {
         return sameDiff.getArrayFactory().seluDerivative(larg().getValue(true),rarg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.abs(arg().getReal());
-    }
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = arg().div(f().seluDerivative(arg()));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().div(arg(),f().seluDerivative(arg()));
         arg().setGradient(ret);
         return Arrays.asList(ret);
     }

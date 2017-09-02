@@ -10,7 +10,7 @@ import java.util.List;
 
 public class Exp extends AbstractUnaryFunction {
 
-    public Exp(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public Exp(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -20,13 +20,8 @@ public class Exp extends AbstractUnaryFunction {
     }
 
     @Override
-    public double getReal() {
-        return Math.exp(arg().getReal());
-    }
-
-    @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().exp(arg().mul(i_v.get(0)));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().mul(f().exp(arg()),i_v.get(0));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

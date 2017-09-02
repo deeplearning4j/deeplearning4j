@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class Eq extends AbstractBinaryFunction {
-    public Eq(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
+    public Eq(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
 
@@ -19,11 +19,10 @@ public class Eq extends AbstractBinaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         Constant ym1 = f()
                 .val(rarg().getValue(true).sub(a().one(getResultShape())));
-        DifferentialFunction<ArrayField> ret = rarg().mul(f().pow(larg(), 2.0))
-                .mul(larg());
+        DifferentialFunction ret = f().mul(f().mul(rarg(),f().pow(larg(), 2.0)),larg());
         larg().setGradient(ret);
         rarg().setGradient(ret);
         return Collections.singletonList(ret);

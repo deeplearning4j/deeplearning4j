@@ -17,7 +17,7 @@ public class LeakyReluDerivative  extends AbstractBinaryFunction {
     public LeakyReluDerivative() {
     }
 
-    public LeakyReluDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
+    public LeakyReluDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2, OpState.OpType.GRADIENT);
     }
 
@@ -27,8 +27,8 @@ public class LeakyReluDerivative  extends AbstractBinaryFunction {
 
 
     public LeakyReluDerivative(SameDiff sameDiff,
-                               DifferentialFunction<ArrayField> i_v,
-                               DifferentialFunction<ArrayField> i_v2,
+                               DifferentialFunction i_v,
+                               DifferentialFunction i_v2,
                                double cutoff) {
         super(sameDiff, i_v, i_v2, OpState.OpType.GRADIENT,new Object[]{cutoff});
         this.cutoff = cutoff;
@@ -41,8 +41,8 @@ public class LeakyReluDerivative  extends AbstractBinaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().zero(getResultShape());
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().zero(getResultShape());
         arg().setGradient(ret);
         return Arrays.asList(ret);
     }

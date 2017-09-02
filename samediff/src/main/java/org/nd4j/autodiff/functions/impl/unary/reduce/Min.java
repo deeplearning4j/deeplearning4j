@@ -10,7 +10,7 @@ import java.util.List;
 
 public class Min extends AbstractReduceUnaryFunction {
 
-    public Min(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] dimensions) {
+    public Min(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
@@ -29,9 +29,9 @@ public class Min extends AbstractReduceUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
-        DifferentialFunction<ArrayField> ret = f().doGradChoose(this,i_v1.get(0),dimensions);
+        DifferentialFunction ret = f().doGradChoose(this,i_v1.get(0),dimensions);
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

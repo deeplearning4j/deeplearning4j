@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class Neq extends AbstractBinaryFunction {
-    public Neq(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
+    public Neq(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
 
@@ -19,7 +19,7 @@ public class Neq extends AbstractBinaryFunction {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         return Collections.singletonList(f().neg(i_v.get(0)));
     }
 
