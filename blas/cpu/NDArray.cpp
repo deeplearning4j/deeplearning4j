@@ -612,11 +612,11 @@ template <typename T> void NDArray<T>::transposei() {
 
 //////////////////////////////////////////////////////////////////////////
 // calculate strides 
-template <typename T> void NDArray<T>::updateStrides() {
+template <typename T> void NDArray<T>::updateStrides(const char order) {
 	
 	int rank = rankOf();	
 	int doubleRank = 2*rank;
-	if(ordering() == 'c') {
+	if(order == 'c') {
         _shapeInfo[doubleRank] = 1;          // set unity as last stride for c order
         for(int j=1; j<rank; ++j)
             _shapeInfo[doubleRank-j] = _shapeInfo[doubleRank-j+1]*_shapeInfo[rank+1-j];
@@ -629,12 +629,12 @@ template <typename T> void NDArray<T>::updateStrides() {
 	// set last 3 elements in _shapeInfo
 	_shapeInfo[doubleRank + 1] = 0;                  
     _shapeInfo[doubleRank + 2] = 1;
-    _shapeInfo[doubleRank + 3] = (int)ordering();
+    _shapeInfo[doubleRank + 3] = (int)order;
 }
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length 
-template <typename T> bool NDArray<T>::reshape(char order, const std::initializer_list<int>& shape) {
+template <typename T> bool NDArray<T>::reshape(const char order, const std::initializer_list<int>& shape) {
 
     int rank = shape.size();
     int arrLength = 1;
@@ -662,7 +662,7 @@ template <typename T> bool NDArray<T>::reshape(char order, const std::initialize
     for(const auto& item : shape)
         _shapeInfo[i++] = item;                 // exclude first element -> rank
     // set strides in correspondence to dimensions and order
-	updateStrides();
+	updateStrides(order);
 
     return true;
 }
@@ -670,7 +670,7 @@ template <typename T> bool NDArray<T>::reshape(char order, const std::initialize
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length 
-template <typename T> bool NDArray<T>::reshape(char order, const std::vector<int>& shape) {
+template <typename T> bool NDArray<T>::reshape(const char order, const std::vector<int>& shape) {
 
     int rank = shape.size();
     int arrLength = 1;
@@ -698,7 +698,7 @@ template <typename T> bool NDArray<T>::reshape(char order, const std::vector<int
     for(const auto& item : shape)
         _shapeInfo[i++] = item;                 // exclude first element -> rank
     // set strides in correspondence to dimensions and order
-    updateStrides();
+    updateStrides(order);
 
     return true;
 }
@@ -786,7 +786,7 @@ template <typename T> void NDArray<T>::tile(const std::vector<int>& reps) {
 		_isBuffAlloc = true;
 	_buffer = newBuff;        
 
-	updateStrides();
+	updateStrides(order);
 	
 }
 

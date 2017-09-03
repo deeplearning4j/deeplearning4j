@@ -220,13 +220,13 @@ namespace nd4j {
         std::vector<int32_t> getShapeAsVector();
 		
 		// set new order and shape in case of suitable array length 
-		bool reshape(char order, const std::initializer_list<int>& shape);
+		bool reshape(const char order, const std::initializer_list<int>& shape);
 	
 		// set new order and shape in case of suitable array length 
-		bool reshape(char order, const std::vector<int>& shape);
+		bool reshape(const char order, const std::vector<int>& shape);
 	
 		// calculate strides 
-		void updateStrides();
+		void updateStrides(const char order);
 
 		// change an array by repeating it the number of times given by reps.
 		void tile(const std::vector<int>& reps);
