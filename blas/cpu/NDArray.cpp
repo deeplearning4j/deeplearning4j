@@ -630,6 +630,10 @@ template <typename T> void NDArray<T>::updateStrides() {
         for(int j=rank+1; j<doubleRank; ++j)
             _shapeInfo[j+1] = _shapeInfo[j]*_shapeInfo[j-rank];
     }
+	// set last 3 elements in _shapeInfo
+	_shapeInfo[doubleRank + 1] = 0;                  
+    _shapeInfo[doubleRank + 2] = 1;
+    _shapeInfo[doubleRank + 3] = (int)ordering();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -663,10 +667,6 @@ template <typename T> bool NDArray<T>::reshape(char order, const std::initialize
         _shapeInfo[i++] = item;                 // exclude first element -> rank
     // set strides in correspondence to dimensions and order
 	updateStrides();
-    // restore last 3 elements in _shapeInfo
-    _shapeInfo[shapeLength-3] = 0;                  // always zero at this position
-    _shapeInfo[shapeLength-2] = elemWiseStride;
-    _shapeInfo[shapeLength-1] = (int)order;
 
     return true;
 }
@@ -703,10 +703,6 @@ template <typename T> bool NDArray<T>::reshape(char order, const std::vector<int
         _shapeInfo[i++] = item;                 // exclude first element -> rank
     // set strides in correspondence to dimensions and order
     updateStrides();
-    // restore last 3 elements in _shapeInfo
-    _shapeInfo[shapeLength-3] = 0;                  // always zero at this position
-    _shapeInfo[shapeLength-2] = elemWiseStride;
-    _shapeInfo[shapeLength-1] = (int)order;
 
     return true;
 }
@@ -714,31 +710,23 @@ template <typename T> bool NDArray<T>::reshape(char order, const std::vector<int
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
 template <typename T> void NDArray<T>::tile(const std::vector<int>& reps) {
+	// check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities (then simply reshape or do nothing)
 	int dim = reps.size();	
 	int product = 1;
 	for(const auto& item : reps)
 		product *= item;
-	if(check == 0)
+	if(product == 0)
 		throw "Tile method: one of the elements in reps array is zero !";
 	int rank = rankOf();
 	int diff = rank - dim;
 	if(product==1) {	    // in this case 2 possibilities are present: just reshape or nothing to do
 		if(diff < 0) {		// reshape to higher dimension			
-			vector<int> shapeNew = reps;				// need to have unities at first "diff" positions of new shape
+			std::vector<int> shapeNew = reps;				// need to have unities at first "diff" positions of new shape
 			memcpy(&shapeNew[-diff], _shapeInfo+1, rank*sizeof(int));   // put old shape numbers at rest of positions
 			reshape(ordering(), shapeNew);
 		}		
 		return;				// nothing to do, if diff >= 0 -> identity tile 
 	}	
-	// now in any case we have to increase memory for _buffer
-	
-	int shapeLength = rank*2 + 4;
-    // check if current object is _shapeInfo owner
-    // if(!_isShapeAlloc) {                    
-        // _shapeInfo = new int[rank*2+4];
-        // _shapeInfo[0] = rank;
-        // _isShapeAlloc = true;
-    // }
 	
 	// evaluate new shapeInfo
 	int* newShapeInfo = nullptr;	
@@ -758,25 +746,52 @@ template <typename T> void NDArray<T>::tile(const std::vector<int>& reps) {
 			newShapeInfo[rank + 1 - i] *= reps[dim - i];		// set new shape by multiplying old dimensions by corresponding numbers from reps 
 	}
 	
-	// fill new buffer
-	int newArrLength = shape::length(newShapeInfo);
-	T* newBuff = new T[newArrLength];
-	int step = _shapeInfo[rank]*sizeOfT()
-	if(diff < 0) {
-		for(int i=0;  i<_shapeInfo[2*rank-1]; ++i)
-			for(int j=0; j<reps[dim-1]; ++j)
-				memcpy(newBuff + j*step, _buffer + i*step, step);
+	// create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
+	T* newBuff = new T[shape::length(newShapeInfo)];
+	char order = ordering();
+	int arrLengthInBitsNew = sizeOfT()*shape::length(newShapeInfo);		
+	int arrLengthInBitsOld = sizeOfT()*shape::length(_shapeInfo);		
+	int bitStepNew, bitStepOld, numCopies;
+	if(order == 'c') {
+		bitStepNew = sizeOfT()*newShapeInfo[rank];
+		bitStepOld = sizeOfT()*_shapeInfo[rank];
+		numCopies = reps[dim-1];
 	}
 	else {
-		for(int i=0 i < dim; ++i) {
-			for(int j=0 j < reps[dim-1-i]; ++j)
-				memcpy(newBuff + j*_shapeInfo[rank-i]*sizeOfT(), _buffer + _shapeInfo[rank]*sizeOfT(), oldLength*sizeOfT());
-				
-
-		}
-		
+		bitStepNew = sizeOfT()*newShapeInfo[1];
+		bitStepOld = sizeOfT()*_shapeInfo[1];
+		if(diff <= 0)
+			numCopies = reps[0];
+		else	
+			numCopies = 1;
+	}	
+	// fill newBuff, loop through all dimensions of newBuff except elementary dimension
+	// looping through _buffer goes automatically by means of "position" index 
+	int position = 0;
+	for(int i=0;  i<arrLengthInBitsNew; i+=bitStepNew) {		
+		for(int j=0; j<numCopies; j+=bitStepOld)
+				memcpy(newBuff + i + j, _buffer + position, bitStepOld);
+		position += bitStepOld;
+		if(position == arrLengthInBitsOld)		// if loop through _buffer has come to end then start it again from beginning
+			position = 0;
 	}
-	delete []newShapeInfo;
+	
+	// assign new shape to "this" array
+    // also check if current object is _shapeInfo and _buffer owner
+    if(_isShapeAlloc)       
+		delete []_shapeInfo;
+	else	
+		_isShapeAlloc = true;
+	_shapeInfo = newShapeInfo;    
+    // assign new buffer to "this" array
+    if(_isBuffAlloc)       
+		delete []_buffer;
+	else
+		_isBuffAlloc = true;
+	_buffer = newBuff;        
+
+	updateStrides();
+	
 }
 
 // default destructor
