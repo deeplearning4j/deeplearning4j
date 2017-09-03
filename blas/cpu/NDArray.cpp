@@ -382,9 +382,8 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-
         T* buffer = this->_buffer + tad->tadOffsets[index];
-        int* shapeInfo = new int[shape::shapeInfoLength(tad->tadRank)];
+        int* shapeInfo = new int[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
         std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
 
         auto array = new NDArray<T>(buffer, shapeInfo);
