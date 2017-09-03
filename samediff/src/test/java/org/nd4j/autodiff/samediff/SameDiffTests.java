@@ -229,7 +229,7 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 8, 8)).reshape(2, 2, 2);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable y = sameDiff.var("y", arr);
-        SDVariable result = sameDiff.tensorMmul(x, y, new int[][]{{0}, {1}}, 0);
+        SDVariable result = sameDiff.tensorMmul(x, y, new int[][]{{0}, {1}});
         assertEquals("tensorMmul(x,y)", result.getVarName());
         assertEquals(3, sameDiff.graph().numVertices());
         assertEquals(2, sameDiff.graph().getEdges().size());
@@ -350,7 +350,7 @@ public class SameDiffTests {
                 SDVariable x = sameDiff.var("x",inputs.get("x"));
                 SDVariable w = sameDiff.var("w",inputs.get("w"));
                 SDVariable y = sameDiff.var("y",inputs.get("y"));
-                SDVariable ret = sameDiff.sigmoid(sameDiff.mmul(x,w));
+                SDVariable ret = sameDiff.sigmoid("activateoutput",sameDiff.mmul(x,w));
                 return ret;
             }
         },vars);
@@ -358,9 +358,15 @@ public class SameDiffTests {
         outside.defineFunction("loss", new SameDiff.SameDiffFunctionDefinition() {
             @Override
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                SDVariable activation = outside.invokeFunctionOn("activate",sameDiff);
+               //double check activation value.this appears wrong which would explain
+                //the strange propagation
+                //of note here isthe sigmoid works fine?
+                //maybe it's t's the linking of the nodes
+                //from the original input whihc we might need to do
+                outside.invokeFunctionOn("activate",sameDiff);
                 SDVariable y = sameDiff.getVariable("y");
                 SDVariable oneMinusY = y.rsub(1.0);
+                SDVariable activation = sameDiff.getVariable("activateoutput");
                 SDVariable oneMinusPredictions = activation.rsub(1.0);
                 SDVariable outputTimesY = y.mul(activation);
                 SDVariable yHat = oneMinusY.mul(oneMinusPredictions);

@@ -40,7 +40,7 @@ public abstract class AbstractReduceUnaryFunction extends DifferentialFunction {
 
     @Override
     public ArrayField doGetValue() {
-        return a().prod(arg().doGetValue(),dimensions);
+        return a().prod(arg().getValue(true),dimensions);
     }
 
 

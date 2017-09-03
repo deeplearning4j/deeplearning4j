@@ -183,6 +183,7 @@ public class SDVariable  implements Serializable {
                 .differentialFunction(differentialFunction)
                 .arrayField(arrayField)
                 .varName(varName)
+                .shape(shape)
                 .sameDiff(sameDiff)
                 .arr(arr != null ? arr.dup() : null)
                 .build();

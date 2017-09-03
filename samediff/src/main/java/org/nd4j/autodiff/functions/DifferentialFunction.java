@@ -107,15 +107,13 @@ public abstract class DifferentialFunction implements Differential {
         }
 
         ArrayField val = doGetValue();
-        if(val instanceof ArrayField) {
-            ArrayField arrayField = sameDiff.setupArrayField((ArrayField) val);
-            val = (ArrayField) arrayField;
-            Preconditions.checkState(arrayField.getOps() == this.sameDiff,"Same diff instances for get value not the same.");
+        ArrayField arrayField = sameDiff.setupArrayField(val);
+        val = arrayField;
+        Preconditions.checkState(arrayField.getOps() == this.sameDiff,"Same diff instances for get value not the same.");
 
-        }
 
-        if(val instanceof ArrayField && !freeze) {
-            ArrayField arrayField = sameDiff.setupArrayField((ArrayField) val);
+
+        if(!freeze) {
             Preconditions.checkState(arrayField.getOps() == this.sameDiff,"Same diff instances for get value not the same.");
             NDArrayVertex vertex = (NDArrayVertex) getSameDiff().getGraph().getVertex(getVertexId());
             arrayField.setVertex(vertex);
@@ -132,7 +130,7 @@ public abstract class DifferentialFunction implements Differential {
             this.sameDiff.getGraph().unfreeze();
         }
 
-        return (ArrayField) sameDiff.setupArrayField((ArrayField) val);
+        return sameDiff.setupArrayField(val);
     }
 
 
@@ -314,16 +312,16 @@ public abstract class DifferentialFunction implements Differential {
         validateFunctionReference(i_v1);
         validateFunctionReference(i_v2);
 
-        
-            ArrayField arrayField = i_v1.getValue(true);
-            addEdges(sameDiff,
-                    i_v1,
-                    i_v2,
-                    opName,
-                    OpState.OpType.TRANSFORM,
-                    arrayField.getInput().getShape());
 
-        
+        ArrayField arrayField = i_v1.getValue(true);
+        addEdges(sameDiff,
+                i_v1,
+                i_v2,
+                opName,
+                OpState.OpType.TRANSFORM,
+                arrayField.getInput().getShape());
+
+
     }
 
     protected boolean getInPlace(Object[] extraArgs) {
@@ -398,6 +396,9 @@ public abstract class DifferentialFunction implements Differential {
 
 
     public void setGradient(DifferentialFunction gradient) {
+        DifferentialFunction functionRef = sameDiff.getFunctionInstances().get(vertexId);
+        if(functionRef != this)
+            functionRef.setGradient(gradient);
         this.gradient = sameDiff.setupFunction(gradient);
     }
 

@@ -87,22 +87,27 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction {
                         v1.getInput().getId() + ")")
                 .shape(shape).build();
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information);
+        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.graph().nextVertexId(),information);
         this.vertexId = newVertex.vertexID();
+        sameDiff.graph().addVertex(newVertex);
         Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");
-        sameDiff.getGraph().addVertex(newVertex);
         OpState owner =  OpState.builder()
-                .opType(opType).differentialFunction(sameDiff.setupFunction(this))
-                .opName(opName).extraArgs(extraArgs)
+                .opType(opType).differentialFunction(this)
+                .opName(opName)
+                .extraArgs(extraArgs)
                 .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                 .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                 .n(ArrayUtil.prod(shape)).result(information)
                 .build();
+
+
         sameDiff.getGraph().addEdge(
-                v1.getVertex().vertexID(),
+                arg().resultVertexId(),
                 newVertex.vertexID(),
                 owner,
                 true);
+
+
         newVertex.setOpState(owner);
         information.setOwner(owner);
         owner.setResult(information);
@@ -122,7 +127,7 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction {
 
     @Override
     public DifferentialFunction arg() {
-        return sameDiff.setupFunction(m_x);
+        return m_x;
     }
 
 

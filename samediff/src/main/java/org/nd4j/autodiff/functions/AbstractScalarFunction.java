@@ -45,22 +45,21 @@ public abstract class AbstractScalarFunction extends AbstractUnaryFunction {
         validateFunctionReference(i_v1);
         ArrayField v1 = i_v1.getValue(true);
         validateDifferentialFunctionsameDiff(v1);
-
         NDArrayInformation information =    NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString())
                 .id(opName + "(" + v1.getInput().getId() + " -> " +
                         v1.getInput().getId() + ")")
                 .shape(i_v1.getResultShape()).build();
 
-
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information);
+        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.graph().nextVertexId(),information);
         this.vertexId = newVertex.vertexID();
         sameDiff.graph().addVertex(newVertex);
 
+
         OpState owner =  OpState.builder()
                 .opType(OpState.OpType.SCALAR_TRANSFORM)
-                .differentialFunction((DifferentialFunction) this)
+                .differentialFunction(this)
                 .opName(opName).extraArgs(extraArgs).scalarValue((Number) extraArgs[0])
                 .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                 .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
@@ -70,7 +69,7 @@ public abstract class AbstractScalarFunction extends AbstractUnaryFunction {
 
 
         sameDiff.getGraph().addEdge(
-                v1.getVertex().vertexID(),
+                arg().resultVertexId(),
                 newVertex.vertexID(),
                 owner,
                 true);
