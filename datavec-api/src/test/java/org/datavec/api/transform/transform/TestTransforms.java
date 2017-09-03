@@ -36,6 +36,7 @@ import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
+import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransformWithDefault;
 import org.datavec.api.transform.transform.doubletransform.*;
 import org.datavec.api.transform.transform.integer.*;
 import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
@@ -1058,6 +1059,28 @@ public class TestTransforms {
                         transform.map(Collections.singletonList((Writable) new IntWritable(-1))));
         assertEquals(Collections.singletonList((Writable) new IntWritable(0)),
                         transform.map(Collections.singletonList((Writable) new IntWritable(-10))));
+    }
+
+    @Test
+    public void testConditionalReplaceValueTransformWithDefault() {
+        Schema schema = getSchema(ColumnType.Integer);
+
+        Condition condition = new IntegerColumnCondition("column", ConditionOp.LessThan, 0);
+        condition.setInputSchema(schema);
+
+        Transform transform = new ConditionalReplaceValueTransformWithDefault("column", new IntWritable(0), new IntWritable(1), condition);
+        transform.setInputSchema(schema);
+
+        assertEquals(Collections.singletonList((Writable) new IntWritable(1)),
+                transform.map(Collections.singletonList((Writable) new IntWritable(10))));
+        assertEquals(Collections.singletonList((Writable) new IntWritable(1)),
+                transform.map(Collections.singletonList((Writable) new IntWritable(1))));
+        assertEquals(Collections.singletonList((Writable) new IntWritable(1)),
+                transform.map(Collections.singletonList((Writable) new IntWritable(0))));
+        assertEquals(Collections.singletonList((Writable) new IntWritable(0)),
+                transform.map(Collections.singletonList((Writable) new IntWritable(-1))));
+        assertEquals(Collections.singletonList((Writable) new IntWritable(0)),
+                transform.map(Collections.singletonList((Writable) new IntWritable(-10))));
     }
 
     @Test

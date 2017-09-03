@@ -45,6 +45,7 @@ import org.datavec.api.transform.transform.categorical.StringToCategoricalTransf
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
+import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransformWithDefault;
 import org.datavec.api.transform.transform.doubletransform.*;
 import org.datavec.api.transform.transform.integer.ConvertToInteger;
 import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform;
@@ -1324,6 +1325,19 @@ public class TransformProcess implements Serializable {
          */
         public Builder conditionalReplaceValueTransform(String column, Writable newValue, Condition condition) {
             return transform(new ConditionalReplaceValueTransform(column, newValue, condition));
+        }
+
+        /**
+         * Replace the values in a specified column with a specified "yes" value, if some condition holds.
+         * Replace it with a "no" value, otherwise.
+         *
+         * @param column    Column to operate on
+         * @param yesval  Value to use as replacement, if condition is satisfied
+         * @param noVal  Value to use as replacement, if condition is not satisfied
+         * @param condition Condition that must be satisfied for replacement
+         */
+        public Builder conditionalReplaceValueTransformWithDefault(String column, Writable yesVal, Writable noVal, Condition condition) {
+            return transform(new ConditionalReplaceValueTransformWithDefault(column, yesVal, noVal, condition));
         }
 
         /**

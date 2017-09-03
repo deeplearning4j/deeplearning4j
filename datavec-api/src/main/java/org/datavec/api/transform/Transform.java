@@ -27,6 +27,7 @@ import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
+import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransformWithDefault;
 import org.datavec.api.transform.transform.doubletransform.*;
 import org.datavec.api.transform.transform.integer.*;
 import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
@@ -64,6 +65,8 @@ import java.util.List;
                 @JsonSubTypes.Type(value = ConditionalCopyValueTransform.class, name = "ConditionalCopyValueTransform"),
                 @JsonSubTypes.Type(value = ConditionalReplaceValueTransform.class,
                                 name = "ConditionalReplaceValueTransform"),
+                @JsonSubTypes.Type(value = ConditionalReplaceValueTransformWithDefault.class,
+                                name = "ConditionalReplaceValueTransformWithDefault"),
                 @JsonSubTypes.Type(value = DoubleColumnsMathOpTransform.class, name = "DoubleColumnsMathOpTransform"),
                 @JsonSubTypes.Type(value = DoubleMathOpTransform.class, name = "DoubleMathOpTransform"),
                 @JsonSubTypes.Type(value = Log2Normalizer.class, name = "Log2Normalizer"),
