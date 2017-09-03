@@ -48,6 +48,7 @@ namespace nd4j {
             bool allocateResult(Block<T>& block, std::initializer_list<int>& shape, char order = 'c');
             bool allocateResult(Block<T>& block, int* shape);
             void storeResult(Block<T> &block, int outputNumber, NDArray<T>& array);
+            nd4j::NDArray<T> *getZ(Block<T>& block, int inputId = 0);
         public:
             DeclarableOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace) {
                 _descriptor = new OpDescriptor(numInputs, numOutputs, opName, allowsInplace);
@@ -284,6 +285,24 @@ namespace nd4j {
 }
 
 nd4j::ops::OpRegistrator* nd4j::ops::OpRegistrator::_INSTANCE = 0;
+
+template <typename T>
+nd4j::NDArray<T>* nd4j::ops::DeclarableOp<T>::getZ(Block<T>& block, int inputId) {
+    NDArray<T>* z = nullptr;
+
+    if (block.isInplace()) {
+        z = block.getVariables().at(inputId)->getNDArray();
+    } else if (!block.isInplace() && block.getVariableSpace()->hasVariable(block.getNodeId())) {
+        auto var = block.getVariableSpace()->getVariable(block.getNodeId());
+        if (var->getNDArray() != nullptr && var->getNDArray()->nonNull()) {
+            z = var->getNDArray();
+        } else {
+            nd4j_printf("Can't get Z variable!\n","");
+        }
+    }
+
+    return z;
+}
 
 template <typename T>
 void nd4j::ops::DeclarableOp<T>::storeResult(Block<T> &block, int outputNumber, NDArray<T>& array) {

@@ -28,10 +28,10 @@ namespace nd4j {
             // we want to ensure that all
             NDArray<T> *first = block.getVariables().at(0)->getNDArray();
 
-            std::unique_ptr<int> shape(new int[first->_shapeInfo[0] * 2 + 4]);
+            std::unique_ptr<int> shapePtr(new int[first->_shapeInfo[0] * 2 + 4]);
 
-            std::memcpy(shape.get(), first->_shapeInfo, (first->_shapeInfo[0] * 2 + 4) * sizeof(int));
-            _length = shape::length(shape.get());
+            std::memcpy(shapePtr.get(), first->_shapeInfo, (first->_shapeInfo[0] * 2 + 4) * sizeof(int));
+            _length = shape::length(shapePtr.get());
 
             std::unique_ptr<Nd4jPointer> buffers(new Nd4jPointer[block.getVariables().size()]);
             std::unique_ptr<Nd4jPointer> shapes(new Nd4jPointer[block.getVariables().size()]);
@@ -43,7 +43,7 @@ namespace nd4j {
                 Variable<T> *var = block.getVariables().at(e);
                 _length += var->getNDArray()->lengthOf();
 
-                shape.get()[_dimension + 1] += var->getNDArray()->shapeOf()[_dimension];
+                shapePtr.get()[_dimension + 1] += var->getNDArray()->shapeOf()[_dimension];
 
                 buffers.get()[e] = (Nd4jPointer) var->getNDArray()->_buffer;
                 shapes.get()[e] = (Nd4jPointer) var->getNDArray()->_shapeInfo;
@@ -52,7 +52,7 @@ namespace nd4j {
             if (!block.getVariableSpace()->hasVariable(block.getNodeId()))
                 throw "VariableSpace has no registered node";
 
-            if (!this->allocateResult(block, shape.get())){
+            if (!this->allocateResult(block, shapePtr.get())){
                 nd4j_printf("Allocation failed: %i\n", block.getNodeId());
                 throw "Allocation failed";
             }
@@ -71,12 +71,15 @@ namespace nd4j {
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *z = this->getZ(block);
 
             if (x->isMatrix() && y->isVector()) {
                 x->addiRowVector(y);
             } else if (y->isMatrix() && x->isVector()) {
                 y->addiRowVector(x);
             }
+
+            STORE_RESULT(*z);
 
             return ND4J_STATUS_OK;
         }
@@ -91,6 +94,7 @@ namespace nd4j {
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *z = this->getZ(block);
 
             if (x->isMatrix() && y->isMatrix()) {
                 // gemm
@@ -105,6 +109,8 @@ namespace nd4j {
              } else if (x->isScalar() && y->isVector()) {
                 // elementwise mul, reverse op
             }
+
+            STORE_RESULT(*z);
 
             return ND4J_STATUS_OK;
         }
@@ -240,18 +246,7 @@ namespace nd4j {
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
-
-            NDArray<T> *z = x;
-            if (!block.isInplace() && block.getVariableSpace()->hasVariable(block.getNodeId())) {
-                auto var = block.getVariableSpace()->getVariable(block.getNodeId());
-                if (var->getNDArray() != nullptr && var->getNDArray()->nonNull()) {
-                    z = var->getNDArray();
-                } else {
-                    nd4j_printf("Can't get Z variable!\n","");
-
-                    return ND4J_STATUS_BAD_INPUT;
-                }
-            }
+            NDArray<T> *z = this->getZ(block);
 
 			if (!x->isScalar() && !y->isScalar()) {
 				REQUIRE_OK(this->validateInputLengthMatch(block));
@@ -278,23 +273,26 @@ namespace nd4j {
             REQUIRE_OK(this->validateNonEmptyInput(block));            
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();			
+            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *z = this->getZ(block);
 
 			if (!x->isScalar() && !y->isScalar()) {
 				REQUIRE_OK(this->validateInputLengthMatch(block));
-				x->template applyPairwiseTransform<simdOps::Subtract<T>>(y, nullptr);                
+				x->template applyPairwiseTransform<simdOps::Subtract<T>>(y, z, nullptr);
             
             } else if (!x->isScalar() && y->isScalar()) {
-               x->template applyScalar<simdOps::Subtract<T>>(*y, x);
+               x->template applyScalar<simdOps::Subtract<T>>(*y, z);
 
             } else if (x->isScalar() && !y->isScalar()) {
-                y->template applyScalar<simdOps::Subtract<T>>(*x, y);
+                y->template applyScalar<simdOps::Subtract<T>>(*x, z);
 
             }						
 			else { // x->isScalar() && y->isScalar()
-				x->putScalar(0, x->getScalar(0) - y->getScalar(0));
-
+				z->putScalar(0, x->getScalar(0) - y->getScalar(0));
 			}
+
+            STORE_RESULT(*z);
+
 			return ND4J_STATUS_OK;
         }
         DECLARE_SYN(Sub, subtract);
@@ -305,23 +303,26 @@ namespace nd4j {
             REQUIRE_OK(this->validateNonEmptyInput(block));            
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();			
+            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *z = this->getZ(block);
 
 			if (!x->isScalar() && !y->isScalar()) {
 				REQUIRE_OK(this->validateInputLengthMatch(block));
-				x->template applyPairwiseTransform<simdOps::ReverseSubtract<T>>(y, nullptr);                
+				x->template applyPairwiseTransform<simdOps::ReverseSubtract<T>>(y, z, nullptr);
             
             } else if (!x->isScalar() && y->isScalar()) {
-               x->template applyScalar<simdOps::ReverseSubtract<T>>(*y, x);
+               x->template applyScalar<simdOps::ReverseSubtract<T>>(*y, z);
 
             } else if (x->isScalar() && !y->isScalar()) {
-                y->template applyScalar<simdOps::ReverseSubtract<T>>(*x, y);
+                y->template applyScalar<simdOps::ReverseSubtract<T>>(*x, z);
 
             }						
 			else { // x->isScalar() && y->isScalar()
-				x->putScalar(0, y->getScalar(0) - x->getScalar(0));
-
+				z->putScalar(0, y->getScalar(0) - x->getScalar(0));
 			}
+
+            STORE_RESULT(*z);
+
 			return ND4J_STATUS_OK;
         }
         DECLARE_SYN(RSub, reverseSubtract);
@@ -331,24 +332,27 @@ namespace nd4j {
             REQUIRE_OK(this->validateNonEmptyInput(block));            
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();			
+            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *z = this->getZ(block);
 
 			if (!x->isScalar() && !y->isScalar()) {
 				REQUIRE_OK(this->validateInputLengthMatch(block));
 				// REQUIRE_OK(this->validateInputDimensionsMatch(block));
-				x->template applyPairwiseTransform<simdOps::Multiply<T>>(y, nullptr);                
+				x->template applyPairwiseTransform<simdOps::Multiply<T>>(y, z, nullptr);
 	
             } else if (!x->isScalar() && y->isScalar()) {
-               x->template applyScalar<simdOps::Multiply<T>>(*y, x);
+               x->template applyScalar<simdOps::Multiply<T>>(*y, z);
 
             } else if (x->isScalar() && !y->isScalar()) {
-                y->template applyScalar<simdOps::Multiply<T>>(*x, y);
+                y->template applyScalar<simdOps::Multiply<T>>(*z, y);
 
             }						
 			else { // (x->isScalar() && y->isScalar())
-				x->putScalar(0, x->getScalar(0) * y->getScalar(0));
-			
+				z->putScalar(0, x->getScalar(0) * y->getScalar(0));
             }
+
+            STORE_RESULT(*z);
+
 			return ND4J_STATUS_OK;
         }
         DECLARE_SYN(Mul, multiply);
@@ -358,24 +362,26 @@ namespace nd4j {
             REQUIRE_OK(this->validateNonEmptyInput(block));            
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();			
+            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *z = this->getZ(block);
 
 			if (!x->isScalar() && !y->isScalar()) {
 				REQUIRE_OK(this->validateInputLengthMatch(block));
 				// REQUIRE_OK(this->validateInputDimensionsMatch(block));
-				x->template applyPairwiseTransform<simdOps::Divide<T>>(y, nullptr);                
+				x->template applyPairwiseTransform<simdOps::Divide<T>>(y, z, nullptr);
 	
             } else if (!x->isScalar() && y->isScalar()) {
-               x->template applyScalar<simdOps::Divide<T>>(*y, x);
+               x->template applyScalar<simdOps::Divide<T>>(*y, z);
 
             } else if (x->isScalar() && !y->isScalar()) {
-                y->template applyScalar<simdOps::Divide<T>>(*x, y);
-
+                y->template applyScalar<simdOps::Divide<T>>(*x, z);
             }						
 			else { // (x->isScalar() && y->isScalar())
-				x->putScalar(0, x->getScalar(0) / y->getScalar(0));
-			
+				z->putScalar(0, x->getScalar(0) / y->getScalar(0));
             }
+
+            STORE_RESULT(*z);
+
 			return ND4J_STATUS_OK;
         }
         DECLARE_SYN(Div, divide);
@@ -385,24 +391,27 @@ namespace nd4j {
             REQUIRE_OK(this->validateNonEmptyInput(block));            
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *y = block.getVariables().at(1)->getNDArray();			
+            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *z = this->getZ(block);
 
 			if (!x->isScalar() && !y->isScalar()) {
 				REQUIRE_OK(this->validateInputLengthMatch(block));
 				// REQUIRE_OK(this->validateInputDimensionsMatch(block));
-				x->template applyPairwiseTransform<simdOps::ReverseDivide<T>>(y, nullptr);                
+				x->template applyPairwiseTransform<simdOps::ReverseDivide<T>>(y, z, nullptr);
 	
             } else if (!x->isScalar() && y->isScalar()) {
-               x->template applyScalar<simdOps::ReverseDivide<T>>(*y, x);
+               x->template applyScalar<simdOps::ReverseDivide<T>>(*y, z);
 
             } else if (x->isScalar() && !y->isScalar()) {
-                y->template applyScalar<simdOps::ReverseDivide<T>>(*x, y);
+                y->template applyScalar<simdOps::ReverseDivide<T>>(*x, z);
 
             }						
 			else { // (x->isScalar() && y->isScalar())
-				x->putScalar(0, y->getScalar(0) / x->getScalar(0));
-			
+				z->putScalar(0, y->getScalar(0) / x->getScalar(0));
             }
+
+            STORE_RESULT(*z);
+
 			return ND4J_STATUS_OK;
         }
         DECLARE_SYN(RDiv, reverseDivide);
@@ -418,6 +427,8 @@ namespace nd4j {
 			char order = y->ordering();
 			if (x->reshape(order, newShape))
 				return ND4J_STATUS_OK;
+
+            STORE_RESULT(*x);
 			
 			return ND4J_STATUS_BAD_INPUT;
         }
