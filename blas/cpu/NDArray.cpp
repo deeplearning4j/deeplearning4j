@@ -578,18 +578,15 @@ template <typename T> void NDArray<T>::transposei() {
         if (!shape::isRowVector(row->_shapeInfo))
             throw std::invalid_argument("Argument should be row vector");
 
-        int *dimension = new int[1]{1};
+        int dimension[1] = {1};
 
-        shape::TAD *tad = new shape::TAD(_shapeInfo, dimension, 1);
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
         NativeOpExcutioner<T>::execBroadcast(0, _buffer, _shapeInfo, row->_buffer, row->_shapeInfo, _buffer, _shapeInfo,
                                              dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets,
                                              tad->tadOnlyShapeInfo, tad->tadOffsets);
-
-        delete[] dimension;
-        delete tad;
     }
 
 
