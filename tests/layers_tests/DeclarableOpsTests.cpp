@@ -868,19 +868,19 @@ TEST_F(DeclarableOpsTests, TestLegacyExecution1) {
     auto hash = nd4j::ops::HashHelper::getInstance()->getInstance()->getLongHash(opName);
 
     auto inputBuffers = new Nd4jPointer[2];
-    auto inputShapes = new int*[2];
+    auto inputShapes = new Nd4jPointer[2];
 
     inputBuffers[0] = (Nd4jPointer) x->_buffer;
     inputBuffers[1] = (Nd4jPointer) y->_buffer;
 
-    inputShapes[0] = x->_shapeInfo;
-    inputShapes[1] = y->_shapeInfo;
+    inputShapes[0] = (Nd4jPointer) x->_shapeInfo;
+    inputShapes[1] = (Nd4jPointer) y->_shapeInfo;
 
     auto outputBuffers = new Nd4jPointer[1];
-    auto outputShapes = new int*[2];
+    auto outputShapes = new Nd4jPointer[1];
 
     outputBuffers[0] = (Nd4jPointer) z->_buffer;
-    outputShapes[0] = z->_shapeInfo;
+    outputShapes[0] = (Nd4jPointer) z->_shapeInfo;
 
 
     nativeOps.execCustomOpFloat(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, false);
