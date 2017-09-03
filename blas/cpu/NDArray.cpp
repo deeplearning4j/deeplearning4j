@@ -391,7 +391,7 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
         array->_isShapeAlloc = true;
         array->_isView = true;
 
-
+		array->printShapeInfo();
         return array;
     }
 

@@ -3,13 +3,13 @@
 //
 
 //#include "testlayers.h"
-#include "DenseLayerTests.cpp"
+// #include "DenseLayerTests.cpp"
 #include "NDArrayTests.cpp"
-#include "FlatBuffersTests.cpp"
-#include "VariableSpaceTests.cpp"
-#include "GraphTests.cpp"
-#include "DeclarableOpsTests.cpp"
-#include "HashUtilsTests.cpp"
+// #include "FlatBuffersTests.cpp"
+// #include "VariableSpaceTests.cpp"
+// #include "GraphTests.cpp"
+// #include "DeclarableOpsTests.cpp"
+// #include "HashUtilsTests.cpp"
 // #include "ProtoBufTests.cpp"
 
 int main(int argc, char **argv) {
