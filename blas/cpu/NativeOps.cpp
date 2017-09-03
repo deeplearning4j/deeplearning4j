@@ -3095,7 +3095,7 @@ const char* NativeOps::getAllCustomOps() {
     return nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
 }
 
-void NativeOps::execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, int** inputShapes, int numInputs, Nd4jPointer* outputBuffers, int** outputShapes, int numOutputs, float* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
+void NativeOps::execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, float* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(hash);
 
     if (op == nullptr)
@@ -3111,7 +3111,7 @@ void NativeOps::execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd
     // filling block now
     for (int e = 0; e < numInputs; e++) {
         auto buffer = (float *) inputBuffers[e];
-        auto shape = inputShapes[e];
+        auto shape = (int *) inputShapes[e];
 
         auto var = new Variable<float>(new NDArray<float>(buffer, shape));
         block.getVariables().push_back(var);
@@ -3119,7 +3119,7 @@ void NativeOps::execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd
 
     for (int e = 0; e < numOutputs; e++) {
         auto buffer = (float *) outputBuffers[e];
-        auto shape = outputShapes[e];
+        auto shape = (int *) outputShapes[e];
 
         auto var = new Variable<float>(new NDArray<float>(buffer, shape));
         std::pair<int, int> pair(nodeId, e);
