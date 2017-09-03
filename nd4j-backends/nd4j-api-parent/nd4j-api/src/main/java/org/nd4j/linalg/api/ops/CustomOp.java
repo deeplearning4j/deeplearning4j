@@ -24,6 +24,12 @@ public interface CustomOp {
      */
     long opHash();
 
+    /**
+     * This method returns true if op is supposed to be executed inplace
+     * @return
+     */
+    boolean isInplaceCall();
+
 
     List<INDArray> getInputArguments();
 

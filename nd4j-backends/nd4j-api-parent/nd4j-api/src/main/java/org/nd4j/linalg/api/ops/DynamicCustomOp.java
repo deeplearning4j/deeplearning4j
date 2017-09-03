@@ -26,6 +26,7 @@ public class DynamicCustomOp implements CustomOp {
     @Getter private List<INDArray> outputArguments;
     @Getter private List<Double> tArguments = new ArrayList<>();
     @Getter private List<Integer> iArguments = new ArrayList<>();
+    @Getter private boolean inplaceCall;
 
     protected DynamicCustomOp(String opName) {
         this.opName = opName;
@@ -59,12 +60,12 @@ public class DynamicCustomOp implements CustomOp {
     public static Builder builder(String opName) {
         val map = Nd4j.getExecutioner().getCustomOperations();
         val lcName = opName.toLowerCase();
-        val pair = map.get(lcName);
+        val desc = map.get(lcName);
 
-        if (pair == null)
+        if (desc == null)
             throw new ND4JIllegalStateException("Unknown operations requested: [" + opName + "]");
 
-        return new Builder(opName, pair.getFirst(), pair.getSecond());
+        return new Builder(opName, desc.getNumInputs(), desc.getNumOutputs(), desc.isAllowsInplace(), desc.getNumTArgs(), desc.getNumIArgs());
     }
 
     public static class Builder {
@@ -73,22 +74,21 @@ public class DynamicCustomOp implements CustomOp {
         protected int numOutputs;
         protected int numTArguments;
         protected int numIArguments;
+        protected boolean inplaceCall;
+        protected boolean inplaceAllowed;
 
         private List<INDArray> inputArguments = new ArrayList<>();
         private List<INDArray> outputArguments = new ArrayList<>();
         private List<Double> tArguments = new ArrayList<>();
         private List<Integer> iArguments = new ArrayList<>();
 
-        protected Builder(String opName, int numInputs, int numOutputs) {
-            this(opName, numInputs, numOutputs, 0, 0);
-        }
-
-        protected Builder(String opName, int numInputs, int numOutputs, int numTArguments, int numIArguments) {
+        protected Builder(String opName, int numInputs, int numOutputs, boolean inplaceAllowed, int numTArguments, int numIArguments) {
             this.opName = opName;
             this.numInputs = numInputs;
             this.numOutputs = numOutputs;
             this.numIArguments = numIArguments;
             this.numTArguments = numTArguments;
+            this.inplaceAllowed = inplaceAllowed;
         }
 
         /**
@@ -138,6 +138,13 @@ public class DynamicCustomOp implements CustomOp {
             return this;
         }
 
+        public Builder callInplace(boolean reallyCall) {
+            if (reallyCall && !inplaceAllowed)
+                throw new ND4JIllegalStateException("Resuested op can't be called inplace");
+
+            this.inplaceCall = reallyCall;
+            return this;
+        }
 
         /**
          * This methos takes arbitrary number of Integer arguments for op,
@@ -170,7 +177,7 @@ public class DynamicCustomOp implements CustomOp {
          * @param outputs
          * @return
          */
-        public Builder setIntegerArguments(Double... targs) {
+        public Builder setFloatingPointArguments(Double... targs) {
             if (numIArguments >= 0) {
                 if (targs == null)
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numTArguments + " integer arguments. Null was passed instead.");
@@ -190,11 +197,16 @@ public class DynamicCustomOp implements CustomOp {
 
 
         public DynamicCustomOp build() {
+            // Eventually we probably will lift this restriction
+            if (!inplaceCall && outputArguments.size() == 0)
+                throw new ND4JIllegalStateException("If operation is not-inplace, it must have outputs defined");
+
             val result = new DynamicCustomOp(opName);
             result.inputArguments = inputArguments;
             result.outputArguments = outputArguments;
             result.iArguments = iArguments;
             result.tArguments = tArguments;
+            result.inplaceCall = inplaceCall;
 
             return result;
         }

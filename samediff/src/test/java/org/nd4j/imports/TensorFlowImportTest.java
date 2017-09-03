@@ -11,9 +11,12 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.util.HashUtil;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -23,6 +26,28 @@ import static org.junit.Assert.*;
 public class TensorFlowImportTest {
     @Before
     public void setUp() throws Exception {
+    }
+
+    @Test
+    public void testHashEquality1() {
+        long hash = HashUtil.getLongHash("Conv2D");
+        assertEquals(-1637140380760460323L, hash);
+    }
+
+
+    @Test
+    public void testHashEquality2() {
+        long hash = HashUtil.getLongHash("switch");
+        assertEquals(-1988317239813741487L, hash);
+    }
+
+    @Test
+    public void testTile1() {
+        INDArray array = Nd4j.create(new double[] {1,2,3,4,5,6}, new int[]{1, 2,3});
+        INDArray tile = Nd4j.tile(array, 5, 6, 3);
+
+        log.info("New shape: {}", Arrays.toString(tile.shapeInfoDataBuffer().asInt()));
+        log.info("Data: {}", tile);
     }
 
     @Test

@@ -463,7 +463,19 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     }
 
     @Override
-    public Map<String, ImmutablePair<Integer, Integer>> getCustomOperations() {
+    public Map<String, CustomOpDescriptor> getCustomOperations() {
         return backendExecutioner.getCustomOperations();
+    }
+
+    /**
+     * This method executes given CustomOp
+     * <p>
+     * PLEASE NOTE: You're responsible for input/output validation
+     *
+     * @param op
+     */
+    @Override
+    public void exec(CustomOp op) {
+        backendExecutioner.exec(op);
     }
 }

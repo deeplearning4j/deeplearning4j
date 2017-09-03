@@ -316,5 +316,13 @@ public interface OpExecutioner {
      * This method returns names of all custom operations available in current backend, and their number of input/output arguments
      * @return
      */
-    Map<String, ImmutablePair<Integer, Integer>> getCustomOperations();
+    Map<String, CustomOpDescriptor> getCustomOperations();
+
+    /**
+     * This method executes given CustomOp
+     *
+     * PLEASE NOTE: You're responsible for input/output validation
+     * @param op
+     */
+    void exec(CustomOp op);
 }

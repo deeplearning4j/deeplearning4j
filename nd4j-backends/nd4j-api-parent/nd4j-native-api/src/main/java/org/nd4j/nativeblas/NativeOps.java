@@ -1574,4 +1574,6 @@ public abstract class NativeOps extends Pointer {
     public abstract Pointer executeFlatGraphFloat(PointerPointer extraPointers, Pointer flatBufferPointer);
 
     public abstract String getAllCustomOps();
+
+    public abstract void execCustomOpFloat(PointerPointer extraPointers, long opHashCode, PointerPointer inputBuffers, PointerPointer inputShapes, int numInput, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs, FloatPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs, boolean isInplace);
 }

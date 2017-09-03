@@ -618,7 +618,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     @Override
-    public Map<String, ImmutablePair<Integer, Integer>> getCustomOperations() {
+    public Map<String, CustomOpDescriptor> getCustomOperations() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void exec(CustomOp op) {
         throw new UnsupportedOperationException();
     }
 }

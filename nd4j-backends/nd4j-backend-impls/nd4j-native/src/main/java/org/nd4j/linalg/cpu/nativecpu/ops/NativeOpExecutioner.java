@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.linalg.primitives.ImmutablePair;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
@@ -1449,10 +1450,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public Map<String, ImmutablePair<Integer, Integer>> getCustomOperations() {
+    public Map<String, CustomOpDescriptor> getCustomOperations() {
         String list = loop.getAllCustomOps();
 
-        HashMap<String, ImmutablePair<Integer, Integer>> map = new HashMap<>();
+        val map = new HashMap<String, CustomOpDescriptor>();
+
 
         if (list == null || list.isEmpty()) {
             log.warn("No customs ops available!");
@@ -1466,11 +1468,63 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             String[] another = op.split(":");
 
-            ImmutablePair<Integer, Integer> pair = new ImmutablePair<>(Integer.valueOf(another[1]), Integer.valueOf(another[2]));
-            map.put(another[0], pair);
+            CustomOpDescriptor descriptor = CustomOpDescriptor.builder()
+                    .numInputs(Integer.valueOf(another[1]))
+                    .numOutputs(Integer.valueOf(another[2]))
+                    .allowsInplace(Integer.valueOf(another[3]) == 1)
+                    .numTArgs(Integer.valueOf(another[4]))
+                    .numIArgs(Integer.valueOf(another[5]))
+                    .build();
+
+            map.put(another[0], descriptor);
         }
 
 
         return map;
+    }
+
+
+    /**
+     * This method executes given CustomOp
+     *
+     * PLEASE NOTE: You're responsible for input/output validation
+     * @param op
+     */
+    public void exec(CustomOp op) {
+        val lc = op.opName().toLowerCase();
+        val hash = op.opHash();
+
+
+        val inputShapes = new PointerPointer<>(op.getInputArguments().size());
+        val inputBuffers = new PointerPointer<>(op.getInputArguments().size());
+
+        int cnt= 0;
+        for (val in: op.getInputArguments()) {
+            inputBuffers.put(cnt, in.data().addressPointer());
+            inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
+        }
+
+        val outputShapes = new PointerPointer<>(op.getOutputArguments().size());
+        val outputBuffers = new PointerPointer<>(op.getOutputArguments().size());
+
+        cnt= 0;
+        for (val out: op.getOutputArguments()) {
+            outputBuffers.put(cnt, out.data().addressPointer());
+            outputShapes.put(cnt++, out.shapeInfoDataBuffer().addressPointer());
+        }
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            val tArgs = op.getTArguments().size() > 0 ? new FloatPointer(op.getTArguments().size()) : null;
+            val iArgs = op.getIArguments().size() > 0 ? new IntPointer(op.getIArguments().size()) : null;
+
+            cnt = 0;
+            for (val t: op.getTArguments())
+                tArgs.put(cnt++, t.floatValue());
+
+            for (val i: op.getIArguments())
+                iArgs.put(cnt++, i.intValue());
+
+            loop.execCustomOpFloat(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall());
+        }
     }
 }

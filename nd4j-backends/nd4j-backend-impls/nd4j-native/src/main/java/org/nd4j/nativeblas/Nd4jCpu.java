@@ -5052,6 +5052,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     public native String getAllCustomOps();
 
+    // customOp executioner
+    public native void execCustomOpFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, FloatPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs, @Cast("bool") boolean isInplace);
+    public native void execCustomOpFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, FloatBuffer tArgs, int numTArgs, IntBuffer iArgs, int numIArgs, @Cast("bool") boolean isInplace);
+    public native void execCustomOpFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs, float[] tArgs, int numTArgs, int[] iArgs, int numIArgs, @Cast("bool") boolean isInplace);
+
 }
 
 
