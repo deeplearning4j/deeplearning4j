@@ -10,6 +10,12 @@ public:
 
     int *cShape = new int[8]{2, 2, 2, 2, 1, 0, 1, 99};
     int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
+
+	float arr1[6] = {1,2,3,4,5,6};
+	int shape1[8] = {2,2,3,3,1,0,1,99};
+	float arr2[48] = {1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6};
+	int shape2[10] = {3,2,4,6,24,6,1,0,1,99};
+	const std::vector<int> tileShape1 = {2,2,2};
 };
 
 
@@ -405,4 +411,15 @@ TEST_F(NDArrayTest, TestChecks5) {
     ASSERT_FALSE(array.isColumnVector());
     ASSERT_FALSE(array.isRowVector());
     ASSERT_FALSE(array.isScalar());
+}
+
+TEST_F(NDArrayTest, TestTile1) {
+   
+	NDArray<float> array1(arr1,shape1);
+	NDArray<float> array2(arr2,shape2);
+
+    array1.tile(tileShape1);
+	// array1.printBuffer();
+	ASSERT_TRUE(array1.isSameShape(&array2));
+	ASSERT_TRUE(array1.equalsTo(&array2));
 }

@@ -784,12 +784,12 @@ template <typename T> void NDArray<T>::tile(const std::vector<int>& reps) {
 		product *= item;
 	if(product == 0)
 		throw "Tile method: one of the elements in reps array is zero !";
-	int rank = rankOf();
-	int diff = rank - dim;
+	int rankOld = rankOf();
+	int diff = rankOld - dim;
 	if(product==1) {	    // in this case 2 possibilities are present: just reshape or nothing to do
 		if(diff < 0) {		// reshape to higher dimension			
 			std::vector<int> shapeNew = reps;				// need to have unities at first "diff" positions of new shape
-			memcpy(&shapeNew[-diff], _shapeInfo+1, rank*sizeof(int));   // put old shape numbers at rest of positions
+			memcpy(&shapeNew[-diff], _shapeInfo+1, rankOld*sizeof(int));   // put old shape numbers at rest of positions
 			reshape(ordering(), shapeNew);
 		}		
 		return;				// nothing to do, if diff >= 0 -> identity tile 
@@ -802,44 +802,46 @@ template <typename T> void NDArray<T>::tile(const std::vector<int>& reps) {
 		newShapeInfo[0] = dim;					// set new rank
 		for(int i=1; i <= -diff; ++i)
 			newShapeInfo[i] = 1;				// set unities to be new dimensions at left-hand side of newShapeInfo shape place
-		memcpy(newShapeInfo + 1 - diff, _shapeInfo + 1, rank*sizeof(int));		// copy old dimensions to the right-hand side of newShapeInfo shape place
+		memcpy(newShapeInfo + 1 - diff, _shapeInfo + 1, rankOld*sizeof(int));		// copy old dimensions to the right-hand side of newShapeInfo shape place
 		for(int i=1; i <= dim; ++i)
 			newShapeInfo[i] *= reps[i - 1];		// set new shape by multiplying old dimensions by corresponding numbers from reps 
 	}
 	else {
-		newShapeInfo = new int[rank*2 + 4];
-		memcpy(newShapeInfo, _shapeInfo, (rank*2 + 4)*sizeof(int));		// copy all elements of _shapeInfo to newShapeInfo
+		newShapeInfo = new int[rankOld*2 + 4];
+		memcpy(newShapeInfo, _shapeInfo, (rankOld*2 + 4)*sizeof(int));		// copy all elements of _shapeInfo to newShapeInfo
 		for(int i=1; i <= dim; ++i)
-			newShapeInfo[rank + 1 - i] *= reps[dim - i];		// set new shape by multiplying old dimensions by corresponding numbers from reps 
+			newShapeInfo[rankOld + 1 - i] *= reps[dim - i];		// set new shape by multiplying old dimensions by corresponding numbers from reps 
 	}
-	
+	int rankNew = newShapeInfo[0];
 	// create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
 	T* newBuff = new T[shape::length(newShapeInfo)];
 	char order = ordering();
-	int arrLengthInBitsNew = sizeOfT()*shape::length(newShapeInfo);		
-	int arrLengthInBitsOld = sizeOfT()*shape::length(_shapeInfo);		
-	int bitStepNew, bitStepOld, numCopies;
+	int arrLengthNew = shape::length(newShapeInfo);		
+	int arrLengthOld = shape::length(_shapeInfo);		
+	int stepNew, stepOld, bitStepOld, numCopies;
 	if(order == 'c') {
-		bitStepNew = sizeOfT()*newShapeInfo[rank];
-		bitStepOld = sizeOfT()*_shapeInfo[rank];
-		numCopies = reps[dim-1];
+		stepNew = newShapeInfo[rankNew];
+		stepOld = _shapeInfo[rankOld];
+		bitStepOld = sizeOfT()*stepOld;
+		numCopies = reps[dim-1]*stepOld;
 	}
 	else {
-		bitStepNew = sizeOfT()*newShapeInfo[1];
-		bitStepOld = sizeOfT()*_shapeInfo[1];
+		stepNew = newShapeInfo[1];
+		stepOld = _shapeInfo[1];
+		bitStepOld = sizeOfT()*stepOld;
 		if(diff <= 0)
-			numCopies = reps[0];
+			numCopies = reps[0]*stepOld;
 		else	
-			numCopies = 1;
+			numCopies = stepOld;
 	}	
 	// fill newBuff, loop through all dimensions of newBuff except elementary dimension
 	// looping through _buffer goes automatically by means of "position" index 
 	int position = 0;
-	for(int i=0;  i<arrLengthInBitsNew; i+=bitStepNew) {		
-		for(int j=0; j<numCopies; j+=bitStepOld)
+	for(int i=0;  i<arrLengthNew; i+=stepNew) {		
+		for(int j=0; j<numCopies; j+=stepOld)
 				memcpy(newBuff + i + j, _buffer + position, bitStepOld);
-		position += bitStepOld;
-		if(position == arrLengthInBitsOld)		// if loop through _buffer has come to end then start it again from beginning
+		position += stepOld;
+		if(position == arrLengthOld)		// if loop through _buffer has come to end then start it again from beginning
 			position = 0;
 	}
 	
