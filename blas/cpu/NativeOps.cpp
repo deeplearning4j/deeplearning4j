@@ -3105,7 +3105,7 @@ void NativeOps::execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd
     int nodeId = 1;
 
     nd4j::graph::VariableSpace<float> variableSpace;
-    nd4j::graph::Block<float> block(1, &variableSpace);
+    nd4j::graph::Block<float> block(1, &variableSpace, isInplace);
 
 
     // filling block now

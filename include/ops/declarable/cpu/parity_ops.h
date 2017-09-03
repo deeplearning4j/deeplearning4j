@@ -242,10 +242,14 @@ namespace nd4j {
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
 
             NDArray<T> *z = x;
-            if (block.getVariableSpace()->hasVariable(block.getNodeId())) {
+            if (!block.isInplace() && block.getVariableSpace()->hasVariable(block.getNodeId())) {
                 auto var = block.getVariableSpace()->getVariable(block.getNodeId());
-                if (var->getNDArray() != nullptr) {
+                if (var->getNDArray() != nullptr && var->getNDArray()->nonNull()) {
                     z = var->getNDArray();
+                } else {
+                    nd4j_printf("Can't get Z variable!\n","");
+
+                    return ND4J_STATUS_BAD_INPUT;
                 }
             }
 
@@ -262,6 +266,8 @@ namespace nd4j {
 			else { // x->isScalar() && y->isScalar()
 				z->putScalar(0, x->getScalar(0) + y->getScalar(0));
 			}
+
+            STORE_RESULT(*z);
 
 			return ND4J_STATUS_OK;
         }

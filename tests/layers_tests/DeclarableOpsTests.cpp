@@ -126,7 +126,7 @@ TEST_F(DeclarableOpsTests, AddMatrices1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::add<float> addOp;
@@ -149,7 +149,7 @@ TEST_F(DeclarableOpsTests, AddMatrixVector1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::add<float> addOp;
@@ -172,7 +172,7 @@ TEST_F(DeclarableOpsTests, AddVectorVector1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::add<float> addOp;
@@ -196,7 +196,7 @@ TEST_F(DeclarableOpsTests, AddMatrixScalar1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::add<float> addOp;
@@ -220,7 +220,7 @@ TEST_F(DeclarableOpsTests, AddScalarScalar1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::add<float> addOp;
@@ -244,7 +244,7 @@ TEST_F(DeclarableOpsTests, SubtractMatrices1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::subtract<float> subOp;
@@ -267,7 +267,7 @@ TEST_F(DeclarableOpsTests, SubtractMatrixVector1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::subtract<float> subOp;
@@ -290,7 +290,7 @@ TEST_F(DeclarableOpsTests, SubtractVectorVector1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::subtract<float> subOp;
@@ -314,7 +314,7 @@ TEST_F(DeclarableOpsTests, SubtractMatrixScalar1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::subtract<float> subOp;
@@ -338,7 +338,7 @@ TEST_F(DeclarableOpsTests, SubtractScalarScalar1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::subtract<float> subOp;
@@ -361,7 +361,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractMatrices1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::reverseSubtract<float> subOp;
@@ -384,7 +384,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractMatrixVector1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::reverseSubtract<float> subOp;
@@ -407,7 +407,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractVectorVector1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::reverseSubtract<float> subOp;
@@ -431,7 +431,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractMatrixScalar1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::reverseSubtract<float> subOp;
@@ -455,7 +455,7 @@ TEST_F(DeclarableOpsTests, ReverseSubtractScalarScalar1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::reverseSubtract<float> subOp;
@@ -478,7 +478,7 @@ TEST_F(DeclarableOpsTests, MultiplyMatrices1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::multiply<float> mul;
@@ -501,7 +501,7 @@ TEST_F(DeclarableOpsTests, MultiplyMatrixVector1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::multiply<float> mul;
@@ -524,7 +524,7 @@ TEST_F(DeclarableOpsTests, MultiplyVectorVector1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::multiply<float> mul;
@@ -548,7 +548,7 @@ TEST_F(DeclarableOpsTests, MultiplyMatrixScalar) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::multiply<float> mul;
@@ -572,7 +572,7 @@ TEST_F(DeclarableOpsTests, MultiplyScalarScalar1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::multiply<float> mul;
@@ -596,7 +596,7 @@ TEST_F(DeclarableOpsTests, DivideMatrices1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::divide<float> div;
@@ -619,7 +619,7 @@ TEST_F(DeclarableOpsTests, DivideMatrixVector1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::divide<float> div;
@@ -642,7 +642,7 @@ TEST_F(DeclarableOpsTests, DivideVectorVector1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::divide<float> div;
@@ -666,7 +666,7 @@ TEST_F(DeclarableOpsTests, DivideMatrixScalar1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::divide<float> div;
@@ -690,7 +690,7 @@ TEST_F(DeclarableOpsTests, DivideScalarScalar1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::divide<float> div;
@@ -714,7 +714,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideMatrices1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::reverseDivide<float> div;
@@ -737,7 +737,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideMatrixVector1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::reverseDivide<float> div;
@@ -760,7 +760,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideVectorVector1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::reverseDivide<float> div;
@@ -784,7 +784,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideMatrixScalar1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::reverseDivide<float> div;
@@ -808,7 +808,7 @@ TEST_F(DeclarableOpsTests, ReverseDivideScalarScalar1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::reverseDivide<float> div;
@@ -830,7 +830,7 @@ TEST_F(DeclarableOpsTests, Reshape1) {
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
-	Block<float>* block = new Block<float>(1, variableSpace);
+	Block<float>* block = new Block<float>(1, variableSpace, true);
     block->fillInputs({-1, -2});
 
 	nd4j::ops::reshape<float> reshape;
@@ -888,4 +888,41 @@ TEST_F(DeclarableOpsTests, TestLegacyExecution1) {
 	ASSERT_NEAR(2.0, y->meanNumber(), 1e-5);
 	ASSERT_NEAR(1.0, x->meanNumber(), 1e-5);
 	ASSERT_NEAR(3.0, z->meanNumber(), 1e-5);
+}
+
+
+TEST_F(DeclarableOpsTests, TestLegacyExecution2) {
+    NativeOps nativeOps;
+
+    auto x = new NDArray<float>(10, 10, 'c');
+    x->assign(1.0f);
+
+    auto y = new NDArray<float>(10, 10, 'c');
+    y->assign(2.0f);
+
+    auto z = new NDArray<float>(10, 10, 'c');
+
+    auto exp = new NDArray<float>(10, 10, 'c');
+    exp->assign(3.0);
+
+    std::string opName("add");
+
+    auto hash = nd4j::ops::HashHelper::getInstance()->getInstance()->getLongHash(opName);
+
+    auto inputBuffers = new Nd4jPointer[2];
+    auto inputShapes = new Nd4jPointer[2];
+
+    inputBuffers[0] = (Nd4jPointer) x->_buffer;
+    inputBuffers[1] = (Nd4jPointer) y->_buffer;
+
+    inputShapes[0] = (Nd4jPointer) x->_shapeInfo;
+    inputShapes[1] = (Nd4jPointer) y->_shapeInfo;
+
+    auto outputBuffers = new Nd4jPointer[1];
+    auto outputShapes = new Nd4jPointer[1];
+
+    nativeOps.execCustomOpFloat(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, true);
+
+    ASSERT_NEAR(2.0, y->meanNumber(), 1e-5);
+    ASSERT_NEAR(3.0, x->meanNumber(), 1e-5);
 }

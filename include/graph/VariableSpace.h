@@ -174,7 +174,7 @@ void nd4j::graph::VariableSpace<T>::putVariable(const int32_t id, Variable<T> *v
         return;
     }
 
-    nd4j_verbose("Adding Variable to Space: id: %i; Array is null: %i%\n", id, variable->getNDArray() == nullptr);
+    nd4j_verbose("Adding Variable to Space: id: %i; Array is null: %i;\n", id, variable->getNDArray() == nullptr);
 
     _varmap.lock();
 
