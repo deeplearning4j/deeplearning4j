@@ -546,6 +546,20 @@ namespace shape {
 
     INLINEDEF int shapeInfoLength(int rank);
 
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF int shapeInfoByteLength(int rank);
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF int shapeInfoByteLength(int* shapeInfo);
+
 /**
  * Returns the rank portion of
  * an information buffer
@@ -3786,6 +3800,24 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
     INLINEDEF int shapeInfoLength(int rank) {
         //FIXME magic numbers
         return rank * 2 + 4;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF int shapeInfoByteLength(int rank) {
+        //FIXME magic numbers
+        return (rank * 2 + 4) * sizeof(int);
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF int shapeInfoByteLength(int* shapeInfo) {
+        //FIXME magic numbers
+        return shapeInfoByteLength(shapeInfo[0]);
     }
 
 /**

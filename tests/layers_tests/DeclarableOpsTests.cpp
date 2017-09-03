@@ -883,7 +883,7 @@ TEST_F(DeclarableOpsTests, TestLegacyExecution1) {
     outputShapes[0] = z->_shapeInfo;
 
 
-    nativeOps.execCustomOpFloat(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0);
+    nativeOps.execCustomOpFloat(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, false);
 
 	ASSERT_NEAR(2.0, y->meanNumber(), 1e-5);
 	ASSERT_NEAR(1.0, x->meanNumber(), 1e-5);

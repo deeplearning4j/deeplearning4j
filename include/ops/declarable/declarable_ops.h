@@ -49,12 +49,16 @@ namespace nd4j {
             bool allocateResult(Block<T>& block, int* shape);
             void storeResult(Block<T> &block, int outputNumber, NDArray<T>& array);
         public:
-            DeclarableOp(int numInputs, int numOutputs, const char *opName) {
-                _descriptor = new OpDescriptor(numInputs, numOutputs, opName);
+            DeclarableOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace) {
+                _descriptor = new OpDescriptor(numInputs, numOutputs, opName, allowsInplace);
             }
 
-            DeclarableOp(int numInputs, int numOutputs, const char *opName, bool divergent) {
-                _descriptor = new OpDescriptor(numInputs, numOutputs, opName, divergent);
+            DeclarableOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, bool divergent) {
+                _descriptor = new OpDescriptor(numInputs, numOutputs, opName, allowsInplace, divergent);
+            }
+
+            DeclarableOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) {
+                _descriptor = new OpDescriptor(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs);
             }
 
             ~DeclarableOp() {
@@ -137,7 +141,13 @@ namespace nd4j {
 
                 if (!isInit) {
                     for (std::map<std::string, nd4j::ops::DeclarableOp<float>*>::iterator it=_declarablesF.begin(); it!=_declarablesF.end(); ++it) {
-                        _opsList += it->first + ":" + std::to_string(it->second->getOpDescriptor()->getNumberOfInputs()) + ":" + std::to_string(it->second->getOpDescriptor()->getNumberOfOutputs()) + ";";
+                        _opsList += it->first + ":"
+                                    + std::to_string(it->second->getOpDescriptor()->getNumberOfInputs()) + ":"
+                                    + std::to_string(it->second->getOpDescriptor()->getNumberOfOutputs()) + ":"
+                                    + std::to_string(it->second->getOpDescriptor()->allowsInplace())  + ":"
+                                    + std::to_string(it->second->getOpDescriptor()->getNumberOfTArgs())  + ":"
+                                    + std::to_string(it->second->getOpDescriptor()->getNumberOfIArgs())  + ":"
+                                    + ";" ;
                     }
 
                     isInit = true;

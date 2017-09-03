@@ -129,13 +129,13 @@ TEST_F(NDArrayTest, TestTad1) {
 
     row2->assign(1.0);
 
-    //array->printBuffer();
+    row2->printBuffer();
 
     ASSERT_NEAR(3.0f, array->sumNumber(), 1e-5);
 
-    delete row2;
-
     array->printBuffer();
+
+    delete row2;
 }
 
 TEST_F(NDArrayTest, TestSum1) {

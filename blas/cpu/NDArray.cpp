@@ -365,7 +365,11 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
             throw "TAD can't have dimensions higher then original array";
 
         std::vector<int> copy(dimensions);
-        std::sort (copy.begin(), copy.end());
+
+        // we need to sort dimensions (?)
+        if (dimensions.size() > 1)
+            std::sort (copy.begin(), copy.end());
+
         int *dims = copy.data();
 
         Nd4jIndex tadLength = shape::tadLength(this->_shapeInfo, dims, copy.size());
@@ -374,18 +378,20 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
         if (index >= numTads)
             throw "Can't get index higher than total number of TADs";
 
-        shape::TAD tad(this->_shapeInfo, dims, copy.size());
-        tad.createTadOnlyShapeInfo();
-        tad.createOffsets();
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(this->_shapeInfo, dims, copy.size()));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
 
-        T* buffer = this->_buffer + tad.tadOffsets[index];
-        int* shapeInfo = new int[copy.size() * 2 + 4];
-        std::memcpy(shapeInfo, tad.tadOnlyShapeInfo, sizeof(int) * (copy.size() * 2 + 4));
+
+        T* buffer = this->_buffer + tad->tadOffsets[index];
+        int* shapeInfo = new int[shape::shapeInfoLength(tad->tadRank)];
+        std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
 
         auto array = new NDArray<T>(buffer, shapeInfo);
         array->_isBuffAlloc = false;
         array->_isShapeAlloc = true;
         array->_isView = true;
+
 
         return array;
     }

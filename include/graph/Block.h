@@ -26,10 +26,16 @@ namespace nd4j {
             std::vector<T> _tArgs;
             std::vector<int> _iArgs;
 
+            bool _isInplace = false;
+
         public:
             Block(int nodeId, VariableSpace<T> *variableSpace) {
                 _nodeId = nodeId;
                 _variableSpace = variableSpace;
+            }
+
+            Block(int nodeId, VariableSpace<T> *variableSpace, bool isInplace) : Block(nodeId, variableSpace) {
+                _isInplace = isInplace;
             }
 
             ~Block() {
@@ -56,6 +62,9 @@ namespace nd4j {
                 return _variableSpace;
             }
 
+            bool isInplace() {
+                return _isInplace;
+            }
 
             std::vector<T>* getTArguments() {
                 return &_tArgs;

@@ -8,6 +8,7 @@
 #define LIBND4J_PARITY_OPS_H
 
 #include <memory>
+#include <shape.h>
 #include <ops/ops.h>
 #include <NDArray.h>
 #include <ops/declarable/declarable_ops.h>
@@ -16,7 +17,7 @@ namespace nd4j {
     namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(concat, -1, 1){
+        DECLARE_OP(concat, -1, 1, false){
             // do something here{
             Nd4jIndex _length;
             int _dimension = 0;
@@ -64,7 +65,7 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(biasAdd, 2, 1) {
+        DECLARE_OP(biasAdd, 2, 1, true) {
             REQUIRE_OK(this->validateNonEmptyInput(block));
             REQUIRE_OK(this->validateInput2D(block));
 
@@ -81,7 +82,7 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(matMul, 2, 1) {
+        DECLARE_OP(matMul, 2, 1, false) {
             REQUIRE_OK(this->validateNonEmptyInput(block));
 
             // FIXME: we might want to have gemv/dot fallback here
@@ -110,83 +111,83 @@ namespace nd4j {
         DECLARE_SYN(mMul, matMul);
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(conv2D, 2, 1) {
+        DECLARE_CONFIGURABLE_OP(conv2d, 2, 1, false, 0, 7) {
             // basically im2col + gemm
             return ND4J_STATUS_OK;
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(conv3D, 2, 1) {
+        DECLARE_CONFIGURABLE_OP(conv3d, 2, 1, false, 0, 7) {
             // cubic convo
             return ND4J_STATUS_OK;
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(maxPool, 2, 1) {
+        DECLARE_OP(maxPool, 2, 1, true) {
             // MaxPooling
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(MaxPool2D, maxPool);
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(avgPool, 2, 1) {
+        DECLARE_OP(avgPool, 2, 1, true) {
             // AvgPooling
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(AvgPool2D, avgPool);
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(lrn, 2, 1) {
+        DECLARE_OP(lrn, 2, 1, true) {
             // LocalResponseNormalization
             return ND4J_STATUS_OK;
         }
 
 
 ///////////////////////
-        DECLARE_OP(randomUniform, 1, 1) {
+        DECLARE_OP(randomUniform, 1, 1, true) {
             // uniform distribution
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_OP(shape, 2, 1) {
+        DECLARE_OP(shape, 2, 1, true) {
             // ?
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_OP(floor, 1, 1) {
+        DECLARE_OP(floor, 1, 1, true) {
             // ?
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_OP(realDiv, 2, 1) {
+        DECLARE_OP(realDiv, 2, 1, true) {
             // ?
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_OP(merge, -1, 1) {
+        DECLARE_OP(merge, -1, 1, true) {
             // basically hstack
             return ND4J_STATUS_OK;
         }
 
 
-        DECLARE_DIVERGENT_OP(Switch, 2, 2) {
+        DECLARE_DIVERGENT_OP(Switch, 2, 2, true) {
             // conditional op !!!
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(switch, Switch);
 
-        DECLARE_DIVERGENT_OP(noOp, -1, 2) {
+        DECLARE_DIVERGENT_OP(noOp, -1, -1, true) {
             // Fastest op ever.
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_OP(BroadcastGradientArgs, 2, 2) {
+        DECLARE_OP(BroadcastGradientArgs, 2, 2, true) {
 
             return ND4J_STATUS_OK;
         }
 
         // test op, non-divergent
-        DECLARE_OP(testop2i2o, 2, 2) {
+        DECLARE_OP(testop2i2o, 2, 2, true) {
             REQUIRE_OK(this->validateNonEmptyInput(block));
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -201,20 +202,20 @@ namespace nd4j {
         }
         DECLARE_SYN(TestOp2i2o, testop2i2o);
 
-        DECLARE_OP(assign, 2, 1) {
+        DECLARE_OP(assign, 2, 1, true) {
             // NDArray->assign(NDArray)
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(set, assign);
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(softmax, 2, 1) {
+        DECLARE_OP(softmax, 2, 1, false) {
             // YaY
             return ND4J_STATUS_OK;
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(relu, 1, 1) {
+        DECLARE_OP(relu, 1, 1, true) {
             REQUIRE_OK(this->validateNonEmptyInput(block));
 
             NDArray<T> *first = block.getVariables().at(0)->getNDArray();
@@ -224,7 +225,7 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(identity, 1, 1) {
+        DECLARE_OP(identity, 1, 1, true) {
             REQUIRE_OK(this->validateNonEmptyInput(block));
 
             NDArray<T> *first = block.getVariables().at(0)->getNDArray();
@@ -234,7 +235,7 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////		
-		DECLARE_OP(add, 2, 1) {
+		DECLARE_OP(add, 2, 1, true) {
             REQUIRE_OK(this->validateNonEmptyInput(block));            
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -267,7 +268,7 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-		DECLARE_OP(subtract, 2, 1) {
+		DECLARE_OP(subtract, 2, 1, true) {
             REQUIRE_OK(this->validateNonEmptyInput(block));            
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -294,7 +295,7 @@ namespace nd4j {
         DECLARE_SYN(sub, subtract);
 
 //////////////////////////////////////////////////////////////////////////		
-		DECLARE_OP(reverseSubtract, 2, 1) {
+		DECLARE_OP(reverseSubtract, 2, 1, true) {
             REQUIRE_OK(this->validateNonEmptyInput(block));            
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -320,7 +321,7 @@ namespace nd4j {
         DECLARE_SYN(RSub, reverseSubtract);
 
 //////////////////////////////////////////////////////////////////////////		
-		DECLARE_OP(multiply, 2, 1) {
+		DECLARE_OP(multiply, 2, 1, true) {
             REQUIRE_OK(this->validateNonEmptyInput(block));            
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -347,7 +348,7 @@ namespace nd4j {
         DECLARE_SYN(Mul, multiply);
 
 //////////////////////////////////////////////////////////////////////////		
-		DECLARE_OP(divide, 2, 1) {
+		DECLARE_OP(divide, 2, 1, true) {
             REQUIRE_OK(this->validateNonEmptyInput(block));            
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -374,7 +375,7 @@ namespace nd4j {
         DECLARE_SYN(Div, divide);
 
 //////////////////////////////////////////////////////////////////////////				
-		DECLARE_OP(reverseDivide, 2, 1) {
+		DECLARE_OP(reverseDivide, 2, 1, true) {
             REQUIRE_OK(this->validateNonEmptyInput(block));            
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -400,9 +401,9 @@ namespace nd4j {
         }
         DECLARE_SYN(RDiv, reverseDivide);
 
-//////////////////////////////////////////////////////////////////////////				
-		DECLARE_OP(reshape, 2, 1) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));            
+//////////////////////////////////////////////////////////////////////////
+		DECLARE_OP(reshape, 2, 1, true) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();	
