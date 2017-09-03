@@ -138,6 +138,62 @@ TEST_F(NDArrayTest, TestTad1) {
     delete row2;
 }
 
+TEST_F(NDArrayTest, TestTad2) {
+    auto array = new NDArray<float>(3, 3, 'c');
+
+    ASSERT_EQ(3, array->tensorsAlongDimension({1}));
+}
+
+
+TEST_F(NDArrayTest, TestTad3) {
+    auto array = new NDArray<float>(4, 3, 'c');
+
+    auto row2 = array->tensorAlongDimension(1, {1});
+
+    ASSERT_TRUE(row2->isView());
+    ASSERT_EQ(3, row2->lengthOf());
+
+    row2->putScalar(1, 1.0);
+
+    array->printBuffer();
+
+    row2->putIndexedScalar(2, 1.0);
+
+    array->printBuffer();
+
+    delete row2;
+}
+
+
+TEST_F(NDArrayTest, TestRepeat1) {
+    auto eBuffer = new float[8] {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
+    auto eShape = new int[8]{2, 4, 2, 2, 1, 0, 1, 99};
+    auto array = new NDArray<float>(2, 2, 'c');
+    auto exp = new NDArray<float>(eBuffer, eShape);
+    for (int e = 0; e < array->lengthOf(); e++)
+        array->putScalar(e, e + 1);
+
+    array->printBuffer();
+
+    auto rep = array->repeat(0, {2});
+
+    ASSERT_EQ(4, rep->sizeAt(0));
+    ASSERT_EQ(2, rep->sizeAt(1));
+
+    rep->printBuffer();
+
+    ASSERT_TRUE(exp->equalsTo(rep));
+}
+
+
+TEST_F(NDArrayTest, TestIndexedPut1) {
+    auto array = new NDArray<float>(3, 3, 'f');
+
+    array->putIndexedScalar(4, 1.0f);
+    ASSERT_EQ(1.0f, array->getIndexedScalar(4));
+    array->printBuffer();
+}
+
 TEST_F(NDArrayTest, TestSum1) {
     float *c = new float[4] {1, 2, 3, 4};
 

@@ -42,6 +42,10 @@ namespace nd4j {
         // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
         void replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting = true);
 
+        NDArray<T>* repeat(int dimension, std::initializer_list<int> repeats);
+
+        int sizeAt(int dim);
+
         // This method returns order of this NDArray
         char ordering() const {
             return shape::order(_shapeInfo);
@@ -157,6 +161,10 @@ namespace nd4j {
 
         NDArray<T>* tensorAlongDimension(int index, std::vector<int>& dimensions);
 
+        // this method returns number of tensors along specified dimension(s)
+        Nd4jIndex tensorsAlongDimension(std::initializer_list<int> dimensions);
+        Nd4jIndex tensorsAlongDimension(std::vector<int>& dimensions);
+
         // This method returns true if buffer && shapeInfo were defined
         bool nonNull() const {
             return this->_buffer != nullptr && this->_shapeInfo != nullptr;
@@ -168,11 +176,15 @@ namespace nd4j {
         // Return value from linear buffer
         T getScalar(const Nd4jIndex i) const;
 
+        T getIndexedScalar(const Nd4jIndex i);
+
         // Returns value from 2D matrix by coordinates/indexes 
         T getScalar(const int i, const int j) const;
 
         // returns value from 3D tensor by coordinates
         T getScalar(const int i, const int k, const int j) const;
+
+        void putIndexedScalar(const Nd4jIndex i, const T value);
 
         // This method sets value in linear buffer to position i
         void putScalar(const Nd4jIndex i, const T value);

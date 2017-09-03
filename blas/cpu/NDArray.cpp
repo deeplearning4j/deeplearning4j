@@ -2,6 +2,7 @@
 #define NDARRAY_CPP
 
 #include "../NDArray.h"
+#include <pointercast.h>
 #include <stdexcept>
 #include <memory>
 
@@ -342,10 +343,35 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
 
 
     template <typename T>
+    Nd4jIndex NDArray<T>::tensorsAlongDimension(std::initializer_list<int> dimensions) {
+        std::vector<int> vector(dimensions);
+        return tensorsAlongDimension(vector);
+    }
+
+    template <typename T>
+    Nd4jIndex NDArray<T>::tensorsAlongDimension(std::vector<int>& dimensions) {
+        if (dimensions.size() > this->rankOf())
+            throw "TAD can't have dimensions higher then original array";
+
+        std::vector<int> copy(dimensions);
+
+        // we need to sort dimensions (?)
+        if (dimensions.size() > 1)
+            std::sort (copy.begin(), copy.end());
+
+        Nd4jIndex tadLength = shape::tadLength(this->_shapeInfo, copy.data(), copy.size());
+        Nd4jIndex numTads = this->lengthOf() / tadLength;
+
+        return numTads;
+    }
+
+    template <typename T>
     NDArray<T>* NDArray<T>::tensorAlongDimension(int index, std::initializer_list<int> dimensions) {
         std::vector<int> vector(dimensions);
         return tensorAlongDimension(index, vector);
     }
+
+
 
     template <typename T>
     void NDArray<T>::printBuffer() {
@@ -370,15 +396,13 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
         if (dimensions.size() > 1)
             std::sort (copy.begin(), copy.end());
 
-        int *dims = copy.data();
-
-        Nd4jIndex tadLength = shape::tadLength(this->_shapeInfo, dims, copy.size());
+        Nd4jIndex tadLength = shape::tadLength(this->_shapeInfo, copy.data(), copy.size());
         Nd4jIndex numTads = this->lengthOf() / tadLength;
 
         if (index >= numTads)
             throw "Can't get index higher than total number of TADs";
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(this->_shapeInfo, dims, copy.size()));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(this->_shapeInfo, copy.data(), copy.size()));
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -499,6 +523,53 @@ template <typename T> void NDArray<T>::transposei() {
         return _buffer[i];
     }
 
+    template<typename T>
+    T NDArray<T>::getIndexedScalar(const Nd4jIndex i)  {
+        // throw something right here
+        if (i >= shape::length(_shapeInfo))
+            throw std::invalid_argument("Requested index above limit");
+/*
+        if (isRowVector()) {
+            return this->getScalar(0, i);
+        } else if (isColumnVector()) {
+            return this->getScalar(i, 0);
+        }
+*/
+        int idx[MAX_RANK];
+        if (this->ordering() == 'f') {
+            shape::ind2sub(this->rankOf(), this->shapeOf(), i, idx);
+        } else {
+            shape::ind2subC(this->rankOf(), this->shapeOf(), i, idx);
+        }
+
+        Nd4jIndex offset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), idx, this->rankOf());
+
+        return _buffer[offset];
+    }
+
+    template<typename T>
+    void NDArray<T>::putIndexedScalar(const Nd4jIndex i, const T value)  {
+        // throw something right here
+        if (i >= shape::length(_shapeInfo))
+            throw std::invalid_argument("Requested index above limit");
+/*
+        if (isRowVector()) {
+            return this->putScalar(0, i, value);
+        } else if (isColumnVector()) {
+            return this->putScalar(i, 0, value);
+        }
+*/
+        int idx[MAX_RANK];
+        if (this->ordering() == 'f') {
+            shape::ind2sub(this->rankOf(), this->shapeOf(), i, idx);
+        } else {
+            shape::ind2subC(this->rankOf(), this->shapeOf(), i, idx);
+        }
+
+        Nd4jIndex offset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), idx, this->rankOf());
+        nd4j_printf("Idx: %i; Offset: %i\n", i, offset);
+        _buffer[offset] = value;
+    }
 
 // Returns value from 2D matrix by coordinates/indexes 
     template<typename T>
@@ -789,6 +860,68 @@ template <typename T> void NDArray<T>::tile(const std::vector<int>& reps) {
 	updateStrides(order);
 	
 }
+
+    template<typename T>
+    int NDArray<T>::sizeAt(int dim) {
+        if (dim > this->rankOf())
+            throw "Bad size index requested";
+
+        return this->_shapeInfo[1+dim];
+    }
+
+    template<typename T>
+    NDArray<T>* NDArray<T>::repeat(int dimension, std::initializer_list<int> repeats) {
+
+        if (dimension < 0)
+            dimension += this->rankOf();
+
+        std::vector<int> reps;
+
+        if (reps.size() < this->rankOf()) {
+            if (dimension > 0) {
+                for (int e = 0; e < this->rankOf() - repeats.size(); e++)
+                    reps.push_back(1);
+
+                for (auto r: repeats)
+                    reps.push_back(r);
+            } else {
+                for (auto r: repeats)
+                    reps.push_back(r);
+
+                for (int e = 0; e < this->rankOf() - repeats.size(); e++)
+                    reps.push_back(1);
+            }
+        }
+
+        std::unique_ptr<int> newShape(new int[this->rankOf()]);
+        std::vector<int> rShape;
+
+        for (int i = 0; i < this->rankOf(); i++) {
+            newShape.get()[i] = this->sizeAt(i) * reps.at(i);
+            rShape.push_back(newShape.get()[i]);
+        }
+
+        auto ret = new NDArray<T>('c', rShape);
+
+        auto repeatDelta = shape::prodLong(newShape.get(), this->rankOf()) / this->lengthOf();
+        auto numTads = this->tensorsAlongDimension({dimension});
+        for (int i = 0; i < numTads; i++) {
+            auto thisTensor = this->tensorAlongDimension(i, {dimension});
+            auto retTensor = ret->tensorAlongDimension(i, {dimension});
+            int retIdx = 0;
+            for (int k = 0; k < thisTensor->lengthOf(); k++) {
+                T s = thisTensor->getIndexedScalar(k);
+                for (int j = 0; j < repeatDelta; j++) {
+                    retTensor->putIndexedScalar(retIdx++, s);
+                }
+            }
+
+            delete thisTensor;
+            delete retTensor;
+        }
+
+        return ret;
+    }
 
 // default destructor
     template<typename T>
