@@ -341,6 +341,61 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
     }
 
 
+    template <typename T>
+    NDArray<T>* NDArray<T>::tensorAlongDimension(int index, std::initializer_list<int> dimensions) {
+        std::vector<int> vector(dimensions);
+        return tensorAlongDimension(index, vector);
+    }
+
+    template <typename T>
+    void NDArray<T>::printBuffer() {
+        printf("[");
+        for (Nd4jIndex e = 0; e < lengthOf(); e++) {
+            printf("%f", this->getScalar(e));
+            if (e < lengthOf() - 1)
+                printf(", ");
+        }
+        printf("]\n");
+        fflush(stdout);
+    }
+
+    template <typename T>
+    NDArray<T>* NDArray<T>::tensorAlongDimension(int index, std::vector<int>& dimensions) {
+        if (dimensions.size() > this->rankOf())
+            throw "TAD can't have dimensions higher then original array";
+
+        std::vector<int> copy(dimensions);
+
+        // we need to sort dimensions (?)
+        if (dimensions.size() > 1)
+            std::sort (copy.begin(), copy.end());
+
+        int *dims = copy.data();
+
+        Nd4jIndex tadLength = shape::tadLength(this->_shapeInfo, dims, copy.size());
+        Nd4jIndex numTads = this->lengthOf() / tadLength;
+
+        if (index >= numTads)
+            throw "Can't get index higher than total number of TADs";
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(this->_shapeInfo, dims, copy.size()));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+
+
+        T* buffer = this->_buffer + tad->tadOffsets[index];
+        int* shapeInfo = new int[shape::shapeInfoLength(tad->tadRank)];
+        std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
+
+        auto array = new NDArray<T>(buffer, shapeInfo);
+        array->_isBuffAlloc = false;
+        array->_isShapeAlloc = true;
+        array->_isView = true;
+
+
+        return array;
+    }
+
 // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
 template <typename T> NDArray<T>* NDArray<T>::transpose() const {
     int *rearrange = new int[rankOf()];

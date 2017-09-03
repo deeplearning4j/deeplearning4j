@@ -3095,8 +3095,51 @@ const char* NativeOps::getAllCustomOps() {
     return nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
 }
 
-void NativeOps::execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer** inputBuffers, int** inputShapes, int numInputs, Nd4jPointer** outputBuffers, int** outputShapes, int numOutputs, float* tArgs, int numTArgs, int *iArgs, int numIArgs) {
+void NativeOps::execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, int** inputShapes, int numInputs, Nd4jPointer* outputBuffers, int** outputShapes, int numOutputs, float* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(hash);
 
+    if (op == nullptr)
+        nd4j_printf("Can't find requested operation: [%lld]\n", hash);
+
+    // we're using the same fake nodeId everywhere here
+    int nodeId = 1;
+
+    nd4j::graph::VariableSpace<float> variableSpace;
+    nd4j::graph::Block<float> block(1, &variableSpace);
+
+
+    // filling block now
+    for (int e = 0; e < numInputs; e++) {
+        auto buffer = (float *) inputBuffers[e];
+        auto shape = inputShapes[e];
+
+        auto var = new Variable<float>(new NDArray<float>(buffer, shape));
+        block.getVariables().push_back(var);
+    }
+
+    for (int e = 0; e < numOutputs; e++) {
+        auto buffer = (float *) outputBuffers[e];
+        auto shape = outputShapes[e];
+
+        auto var = new Variable<float>(new NDArray<float>(buffer, shape));
+        std::pair<int, int> pair(nodeId, e);
+        variableSpace.putVariable(pair, var);
+    }
+
+    for (int e = 0; e < numIArgs; e++) {
+        block.getIArguments()->push_back(iArgs[e]);
+    }
+
+    for (int e = 0; e < numTArgs; e++) {
+        block.getTArguments()->push_back(tArgs[e]);
+    }
+
+    // hypothetically at this point we have everything filled
+    op->execute(&block);
+
+
+    // TODO: we need to destroy vars properly
+    // but hopefully c++ will do that for us
 }
 
 #endif

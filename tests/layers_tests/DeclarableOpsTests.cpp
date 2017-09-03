@@ -9,6 +9,7 @@
 #include <ops/declarable/declarable_ops.h>
 #include <ops/declarable/cpu/parity_ops.h>
 #include <helpers/helper_hash.h>
+#include <NativeOps.h>
 
 using namespace nd4j::graph;
 
@@ -845,4 +846,46 @@ TEST_F(DeclarableOpsTests, TestRegistrator1) {
     auto res = nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
 
     nd4j_printf("Ops: %s\n", res)
+}
+
+
+TEST_F(DeclarableOpsTests, TestLegacyExecution1) {
+    NativeOps nativeOps;
+
+    auto x = new NDArray<float>(10, 10, 'c');
+    x->assign(1.0f);
+
+    auto y = new NDArray<float>(10, 10, 'c');
+    y->assign(2.0f);
+
+    auto z = new NDArray<float>(10, 10, 'c');
+
+    auto exp = new NDArray<float>(10, 10, 'c');
+    exp->assign(3.0);
+
+    std::string opName("add");
+
+    auto hash = nd4j::ops::HashHelper::getInstance()->getInstance()->getLongHash(opName);
+
+    auto inputBuffers = new Nd4jPointer[2];
+    auto inputShapes = new int*[2];
+
+    inputBuffers[0] = (Nd4jPointer) x->_buffer;
+    inputBuffers[1] = (Nd4jPointer) y->_buffer;
+
+    inputShapes[0] = x->_shapeInfo;
+    inputShapes[1] = y->_shapeInfo;
+
+    auto outputBuffers = new Nd4jPointer[1];
+    auto outputShapes = new int*[2];
+
+    outputBuffers[0] = (Nd4jPointer) z->_buffer;
+    outputShapes[0] = z->_shapeInfo;
+
+
+    nativeOps.execCustomOpFloat(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, false);
+
+	ASSERT_NEAR(2.0, y->meanNumber(), 1e-5);
+	ASSERT_NEAR(1.0, x->meanNumber(), 1e-5);
+	ASSERT_NEAR(3.0, z->meanNumber(), 1e-5);
 }
