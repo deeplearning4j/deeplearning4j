@@ -19,6 +19,11 @@ public class ScalarGreatherThanOrEqualTo extends AbstractScalarFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public ScalarGreatherThanOrEqualTo(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff,i_v,inPlace,extraArgs);
+    }
+
+
     /**
      * Get the value of this function
      *

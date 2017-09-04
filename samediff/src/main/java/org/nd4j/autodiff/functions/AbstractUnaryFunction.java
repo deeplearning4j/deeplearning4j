@@ -29,7 +29,25 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction {
                                  int[] shape,
                                  OpState.OpType opType,
                                  Object[] extraArgs) {
-        super(sameDiff,extraArgs);
+        this(sameDiff,
+                i_v,
+                shape,
+                opType,
+                false,
+                extraArgs);
+    }
+
+    public AbstractUnaryFunction(SameDiff sameDiff,DifferentialFunction i_v,boolean inPlace) {
+        this(sameDiff,i_v,i_v.getResultShape(), OpState.OpType.TRANSFORM,inPlace,null);
+    }
+
+    public AbstractUnaryFunction(SameDiff sameDiff,
+                                 DifferentialFunction i_v,
+                                 int[] shape,
+                                 OpState.OpType opType,
+                                 boolean inPlace,
+                                 Object[] extraArgs) {
+        super(sameDiff,inPlace,extraArgs);
         this.opType = opType;
         this.shape = shape;
 
@@ -93,7 +111,7 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction {
         Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");
         OpState owner =  OpState.builder()
                 .opType(opType).differentialFunction(this)
-                .opName(opName)
+                .opName(opName).inPlace(inPlace)
                 .extraArgs(extraArgs)
                 .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                 .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
@@ -106,6 +124,7 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction {
                 newVertex.vertexID(),
                 owner,
                 true);
+
 
 
         newVertex.setOpState(owner);

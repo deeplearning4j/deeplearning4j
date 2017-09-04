@@ -22,6 +22,12 @@ public class ScalarDiv extends AbstractScalarFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public ScalarDiv(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff,i_v,inPlace,extraArgs);
+    }
+
+
+
     /**
      * Get the value of this function
      *
@@ -29,9 +35,16 @@ public class ScalarDiv extends AbstractScalarFunction {
      */
     @Override
     public ArrayField doGetValue() {
-        return arg().getValue(true).add(scalarValue.doubleValue());
-    }
+        if(scalarValue == null) {
+            scalarValue = (Number) extraArgs[0];
+        }
 
+        if(isInPlace())
+            return arg().getValue(true).div(scalarValue.doubleValue());
+        else
+            return arg().getValue(true).divi(scalarValue.doubleValue());
+
+    }
     @Override
     public String functionName() {
         return new org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision().name();

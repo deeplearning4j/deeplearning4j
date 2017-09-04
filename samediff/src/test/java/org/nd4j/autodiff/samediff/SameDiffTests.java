@@ -133,7 +133,7 @@ public class SameDiffTests {
         SDVariable addResult = result.add(result);
 
         assertEquals("cosineSimilarity(x,y)", result.getVarName());
-        assertEquals(5, sameDiff.graph().numVertices());
+        assertEquals(6, sameDiff.graph().numVertices());
         assertArrayEquals(new int[]{1, 2}, result.getShape());
     }
 
@@ -147,9 +147,9 @@ public class SameDiffTests {
         SDVariable otherResult = result.add(result);
         assertEquals("mmul(x,y)", result.getVarName());
         //3 vertices and 1 op result
-        assertEquals(4, sameDiff.graph().numVertices()); // XXX: Why 5 instead of 3?
+        assertEquals(5, sameDiff.graph().numVertices()); // XXX: Why 5 instead of 3?
         //2 edges for matrix multiply and 1 op for result
-        assertEquals(3, sameDiff.graph().getEdges().size()); // XXX: Why 3 instead of 2?
+        assertEquals(4, sameDiff.graph().getEdges().size()); // XXX: Why 3 instead of 2?
         assertArrayEquals(new int[]{2, 2}, result.getShape());
     }
 
@@ -162,7 +162,7 @@ public class SameDiffTests {
         SDVariable y = sameDiff.var("y", arr);
         SDVariable result = sameDiff.mmul(x, y);
         SDVariable otherResult = result.add(result);
-        assertEquals(2, sameDiff.graph().getInputs().size());
+        assertEquals(3, sameDiff.graph().getInputs().size());
     }
 
     @Test
@@ -407,8 +407,7 @@ public class SameDiffTests {
             @Override
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable result = outer.invokeFunctionOn("firstadd", sameDiff);
-                SDVariable one = sameDiff.scalar("scalar", 1.0);
-                return result.add(one);
+                return result.add(1.0);
             }
         });
 
@@ -891,8 +890,7 @@ public class SameDiffTests {
         SameDiff sameDiff = SameDiff.create();
         INDArray ones = Nd4j.ones(4);
         SDVariable sdVariable = sameDiff.var("ones",ones);
-        SDVariable scalarOne = sameDiff.var("add1",Nd4j.scalar(1.0));
-        SDVariable result = sdVariable.addi(scalarOne);
+        SDVariable result = sdVariable.addi(1.0);
         SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
         List<Op> ops = sameDiff.exec().getRight();
         INDArray output = null;

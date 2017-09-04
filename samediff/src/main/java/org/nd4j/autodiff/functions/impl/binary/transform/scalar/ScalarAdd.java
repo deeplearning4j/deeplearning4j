@@ -21,6 +21,11 @@ public class ScalarAdd extends AbstractScalarFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public ScalarAdd(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff,i_v,inPlace,extraArgs);
+    }
+
+
     /**
      * Get the value of this function
      *
@@ -32,7 +37,11 @@ public class ScalarAdd extends AbstractScalarFunction {
             scalarValue = (Number) extraArgs[0];
         }
 
-        return arg().getValue(true).add(scalarValue.doubleValue());
+        if(isInPlace())
+            return arg().getValue(true).add(scalarValue.doubleValue());
+        else
+            return arg().getValue(true).addi(scalarValue.doubleValue());
+
     }
 
     @Override

@@ -37,6 +37,7 @@ public class OpState implements Serializable {
     //function handle mainly used for autodiff invocation
     private DifferentialFunction differentialFunction;
     private ArrayField arrayField;
+    private boolean inPlace;
 
     /**
      * Creates an op state from
@@ -96,7 +97,7 @@ public class OpState implements Serializable {
      * @return
      */
     public boolean isInPlace() {
-        return getInPlace(extraArgs);
+        return inPlace;
     }
 
     /**
@@ -121,19 +122,7 @@ public class OpState implements Serializable {
         this.extraArgs = extraArgs;
     }
 
-    protected boolean getInPlace(Object[] extraArgs) {
-        if(extraArgs == null) {
-            return false;
-        }
-        else {
-            for(int i = 0; i < extraArgs.length; i++) {
-                if(extraArgs[i] instanceof Boolean)
-                    return (Boolean) extraArgs[i];
-            }
-        }
 
-        return false;
-    }
 
     public  enum OpType {
         SCALAR_TRANSFORM,

@@ -15,6 +15,10 @@ public class Sigmoid extends AbstractUnaryFunction {
         validateFunctionReference(this);
     }
 
+    public Sigmoid(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
     @Override
     public ArrayField doGetValue() {
         return a().sigmoid(arg().getValue(true));

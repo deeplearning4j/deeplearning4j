@@ -14,6 +14,10 @@ public class Neg extends AbstractUnaryFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public Neg(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
     @Override
     public ArrayField doGetValue() {
         return a().neg(arg().getValue(true));

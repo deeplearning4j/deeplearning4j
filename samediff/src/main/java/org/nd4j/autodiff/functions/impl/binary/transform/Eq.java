@@ -2,14 +2,21 @@ package org.nd4j.autodiff.functions.impl.binary.transform;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.*;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.Collections;
 import java.util.List;
 
 public class Eq extends AbstractBinaryFunction {
+
+    public Eq(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2,boolean inPlace) {
+        super(sameDiff, i_v1, i_v2, inPlace, OpState.OpType.TRANSFORM);
+    }
+
+
     public Eq(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
-        super(sameDiff, i_v1, i_v2);
+        this(sameDiff,i_v1,i_v2,false);
     }
 
     @Override

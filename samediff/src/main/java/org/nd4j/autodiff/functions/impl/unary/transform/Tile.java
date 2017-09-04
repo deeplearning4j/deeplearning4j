@@ -16,6 +16,11 @@ public class Tile extends AbstractUnaryFunction {
         this.repeat = repeat;
     }
 
+    public Tile(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, int[] repeat) {
+        super(sameDiff, i_v, inPlace);
+        this.repeat = repeat;
+    }
+
     @Override
     public ArrayField doGetValue() {
         return a().tile(arg().getValue(true),repeat);

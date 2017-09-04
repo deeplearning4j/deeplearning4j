@@ -274,6 +274,9 @@ public class SameDiff {
 
     }
 
+    public SDGraph getGraph() {
+        return graph();
+    }
 
     /**
      * Invoke an op by name
@@ -427,6 +430,10 @@ public class SameDiff {
      * @return
      */
     public SDGraph graph() {
+        if(graph.getGraphApply() != null) {
+            return graph.getGraphApply();
+        }
+
         return graph;
     }
 
@@ -703,7 +710,7 @@ public class SameDiff {
      * Gradient with respect
      * to the given variable name.
      * Note that in order to run this function,
-     * execBackwards()  must be executed first.
+     * {@link #execBackwards()} must be executed first.
      * All gradient functions are obtained within that time.
      * @param varName the variable name to get the gradient for.
      * @return
@@ -1911,6 +1918,7 @@ public class SameDiff {
                 .differentialFunction(functionFactory
                         .sigmoidDerivative(getFunctionInput(iX), getFunctionInput(wrt)))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -1945,6 +1953,7 @@ public class SameDiff {
                 .arr(null).shape(iX.getShape())
                 .differentialFunction(functionFactory.softsign(getFunctionInput(iX)))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -1977,6 +1986,7 @@ public class SameDiff {
                 .arr(null).shape(iX.getShape())
                 .differentialFunction(functionFactory.softplus(getFunctionInput(iX)))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -1993,6 +2003,7 @@ public class SameDiff {
                 .arr(null).shape(iX.getShape())
                 .differentialFunction(functionFactory.elu(getFunctionInput(iX)))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -2009,6 +2020,7 @@ public class SameDiff {
                 .arr(null).shape(iX.getShape())
                 .differentialFunction(functionFactory.eluDerivative(getFunctionInput(iX)))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -2026,6 +2038,7 @@ public class SameDiff {
                 .arr(null).shape(iX.getShape())
                 .differentialFunction(functionFactory.leakyRelu(getFunctionInput(iX),cutoff))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -2046,6 +2059,7 @@ public class SameDiff {
                         getFunctionInput(wrt),
                         cutoff))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -2064,6 +2078,7 @@ public class SameDiff {
                 .arr(null)
                 .differentialFunction(functionFactory.mean(getFunctionInput(iX)))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -2084,6 +2099,7 @@ public class SameDiff {
 
         SDVariable ret = SDVariable.builder()
                 .arr(null).shape(arrayReduceShape)
+                .sameDiff(this)
                 .differentialFunction(functionFactory.std(
                         getFunctionInput(iX),
                         biasCorrected ,
@@ -2113,6 +2129,7 @@ public class SameDiff {
                         biasCorrected ,
                         dimensions))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -2133,6 +2150,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(functionFactory.sum(getFunctionInput(iX),dimensions))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -2153,6 +2171,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(functionFactory.prod(getFunctionInput(iX),dimensions))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -2173,6 +2192,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(functionFactory.max(getFunctionInput(iX),dimensions))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -2194,6 +2214,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(functionFactory.min(getFunctionInput(iX),dimensions))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -2217,6 +2238,7 @@ public class SameDiff {
                         .reshape(getFunctionInput(iX),shape))
                 .varName(name)
                 .shape(shape)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -2233,6 +2255,7 @@ public class SameDiff {
                 .arr(null)
                 .differentialFunction(functionFactory.transpose(getFunctionInput(iX)))
                 .varName(name)
+                .sameDiff(this)
                 .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
@@ -2249,6 +2272,7 @@ public class SameDiff {
     public SDVariable rollAxis(String name,SDVariable x, int axis) {
         SDVariable ret = SDVariable.builder()
                 .arr(null)
+                .sameDiff(this)
                 .differentialFunction(functionFactory.rollAxis(x.getArrayField(),axis))
                 .varName(name)
                 .build();
@@ -2266,6 +2290,7 @@ public class SameDiff {
     public SDVariable mmul(String name,SDVariable x, SDVariable y) {
         SDVariable ret = SDVariable.builder()
                 .arr(null)
+                .sameDiff(this)
                 .differentialFunction(functionFactory.mmul(x.getArrayField(), y.getArrayField()))
                 .varName(name)
                 .build();
@@ -2824,9 +2849,11 @@ public class SameDiff {
     private DifferentialFunction getFunctionInput(SDVariable iX) {
         DifferentialFunction ret =  iX.getDifferentialFunction() != null ?
                 iX.getDifferentialFunction() : iX.getArrayField();
-        Preconditions.checkState(ret.getSameDiff() == ret.getValue(true).getOps(),"Function input does not have same samediff instance as get value");
-        Preconditions.checkState(ret.getSameDiff() == functionFactory.getSameDiff(),"Function input does not have same samediff instance as get value");
-
+        Preconditions.checkState(iX.getSameDiff() != null,"Samediff instance must not be null.");
+        if(graph().getGraphApply() == null) {
+            Preconditions.checkState(ret.getSameDiff() == ret.getValue(true).getOps(), "Function input does not have same samediff instance as get value");
+            Preconditions.checkState(ret.getSameDiff() == functionFactory.getSameDiff(), "Function input does not have same samediff instance as get value");
+        }
         return ret;
     }
 
@@ -2932,11 +2959,13 @@ public class SameDiff {
                 public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                     //propagate graph to this samediff instance
                     //which wil also contain the backward
+
                     outer.invokeGraphOn(sameDiff);
                     List<OpExecAction> opOrder = sameDiff.graph().getOpOrder().getActions();
                     Collections.reverse(opOrder);
                     //start with scalar backprop
                     List<DifferentialFunction> currentDiff = Arrays.asList(sameDiff.functionFactory.one(new int[]{1,1}));
+
 
                     for(int i = 0; i < opOrder.size(); i++) {
                         OpExecAction action = opOrder.get(i);
@@ -2946,6 +2975,12 @@ public class SameDiff {
                                     sameDiff.setupFunction(opState.getDifferentialFunction()) : null;
                             if(func != null) {
                                 currentDiff = func.diff(currentDiff);
+                                for(DifferentialFunction differentialFunction : currentDiff) {
+                                    sameDiff.addVariable(SDVariable.builder()
+                                            .arr(null).differentialFunction(differentialFunction)
+                                            .vertexId(differentialFunction.resultVertexId()).shape(differentialFunction.getResultShape())
+                                            .sameDiff(sameDiff).varName(differentialFunction.functionName() + "-" + UUID.randomUUID().toString()).build());
+                                }
                             }
                             else if(action.getOpState().getArrayField() != null) {
 
@@ -3023,7 +3058,22 @@ public class SameDiff {
             }
 
             SDVariable currVariable = getVertexIdToVariable().get(opExecAction.getOutputId());
-            currVariable.setArr(op.z());
+            if(currVariable ==  null) {
+                SDVariable add = SDVariable.builder()
+                        .differentialFunction(opExecAction.getOpState().getDifferentialFunction())
+                        .sameDiff(this)
+                        .varName(opExecAction.getOpState().getOpName() + "-" + UUID.randomUUID().toString())
+                        .arr(op.z())
+                        .shape(op.z().shape())
+                        .vertexId(opExecAction.getOutputId())
+                        .build();
+                addVariable(add);
+                currVariable = add;
+
+            }
+            else
+
+                currVariable.setArr(op.z());
             opMap.put(currVariable,op);
         }
 

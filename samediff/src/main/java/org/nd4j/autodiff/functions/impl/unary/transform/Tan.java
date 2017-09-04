@@ -14,6 +14,9 @@ public class Tan  extends AbstractUnaryFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public Tan(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
 
     @Override
     public ArrayField doGetValue() {

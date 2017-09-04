@@ -17,6 +17,11 @@ public class LeakyRelu  extends AbstractUnaryFunction {
         this.cutoff = cutoff;
     }
 
+    public LeakyRelu(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, double cutoff) {
+        super(sameDiff, i_v, inPlace);
+        this.cutoff = cutoff;
+    }
+
     @Override
     public ArrayField doGetValue() {
         return a().leakyRelu(arg().getValue(true),cutoff);
