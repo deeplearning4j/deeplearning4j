@@ -37,7 +37,7 @@
         (4, simdOps::GreaterThan),\
         (5, simdOps::LessThan),\
         (6, simdOps::Multiply),\
-        (7, simdOps::ReverseDivide),\
+        (7, simdOps::Pow),\
         (8, simdOps::ReverseSubtract),\
         (9, simdOps::Subtract),\
         (10,simdOps::Epsilon),\
@@ -48,6 +48,7 @@
         (15,simdOps::NotEqualTo),\
         (16,simdOps::Copy),\
         (17,simdOps::Axpy),\
+        (18,simdOps::ReverseDivide),\
         (45,simdOps::CompareAndSet),\
         (46,simdOps::CompareAndReplace),\
         (56,simdOps::And),\
