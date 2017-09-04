@@ -25,7 +25,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- * Division operation
+ * Reverse Division operation
  *
  * @author Adam Gibson
  */
@@ -54,7 +54,7 @@ public class RDivOp extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 7;
+        return 18;
     }
 
     @Override
