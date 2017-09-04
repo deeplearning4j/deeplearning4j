@@ -127,16 +127,20 @@ namespace nd4j {
                             T* Y,
                             int incy ) {
 
-                 //T *aT = TransA != CblasTrans ? transpose(CblasColMajor, CblasRowMajor, M, K, A) : A;
+                 T *aT = TRANS == CblasTrans ? GEMM<T>::transpose(CblasColMajor, CblasRowMajor, M, N, A) : A;
 
 #pragma omp parallel for proc_bind(close)
                  for (int r = 0; r < M; r++) {
                      int aIdx = GEMM<T>::linearIndexC(M, N, r, 0);
-                     T *aX = A + aIdx;
+                     T *aX = aT + aIdx;
+
 
                      T dot = nd4j::math::nd4j_dot<T>(aX, X, lda) * alpha;
-                     Y[r] = dot;
+                     Y[r] =  beta == (T) 0.0f ? dot : dot + beta * Y[r];
                  }
+
+                 if (TRANS == CblasTrans)
+                     delete[] aT;
              }
          };
     }

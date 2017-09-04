@@ -423,3 +423,141 @@ TEST_F(NDArrayTest, TestTile1) {
 	ASSERT_TRUE(array1.isSameShape(&array2));
 	ASSERT_TRUE(array1.equalsTo(&array2));
 }
+
+TEST_F(NDArrayTest, TestMmulHelper1) {
+    auto xBuffer = new float[3]{1.f, 2.f, 3.f};
+    auto xShape = new int[8] {2, 1, 3, 1, 1, 0, 1, 99};
+    auto x = new NDArray<float>(xBuffer, xShape);
+
+    auto yBuffer = new float[3]{2.f, 4.f, 6.f};
+    auto yShape = new int[8] {2, 1, 3, 1, 1, 0, 1, 99};
+    auto y = new NDArray<float>(yBuffer, yShape);
+
+    auto z = NDArray<float>::mmulHelper(x, y);
+
+    ASSERT_EQ(1, z->lengthOf());
+    ASSERT_NEAR(28, z->getScalar(0), 1e-5);
+}
+
+TEST_F(NDArrayTest, TestMmulHelper2) {
+    auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
+    auto xShape = new int[8] {2, 5, 3, 3, 1, 0, 1, 99};
+    auto x = new NDArray<float>(xBuffer, xShape);
+
+    auto yBuffer = new float[3]{2.f, 4.f, 6.f};
+    auto yShape = new int[8] {2, 3, 1, 1, 1, 0, 1, 99};
+    auto y = new NDArray<float>(yBuffer, yShape);
+
+    auto z = new NDArray<float>(5, 1, 'f');
+
+    auto expBuffer = new float[5]{28.00,  64.00,  100.00,  136.00,  172.00};
+    auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+
+    //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->_buffer, y->rows(), y->_buffer, 1, 0.0, z->_buffer, 1);
+
+    NDArray<float>::mmulHelper(x, y, z);
+
+    z->printBuffer();
+
+    ASSERT_TRUE(z->equalsTo(exp));
+}
+
+
+TEST_F(NDArrayTest, TestMmulHelper3) {
+    auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
+    auto xShape = new int[8] {2, 5, 3, 1, 5, 0, 1, 102};
+    auto x = new NDArray<float>(xBuffer, xShape);
+
+    auto yBuffer = new float[3]{2.f, 4.f, 6.f};
+    auto yShape = new int[8] {2, 3, 1, 1, 1, 0, 1, 99};
+    auto y = new NDArray<float>(yBuffer, yShape);
+
+    auto z = new NDArray<float>(5, 1, 'f');
+
+    auto expBuffer = new float[5]{92.00,  104.00,  116.00,  128.00,  140.00};
+    auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+
+    //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->_buffer, y->rows(), y->_buffer, 1, 0.0, z->_buffer, 1);
+
+    NDArray<float>::mmulHelper(x, y, z);
+
+    z->printBuffer();
+
+    ASSERT_TRUE(z->equalsTo(exp));
+}
+
+
+TEST_F(NDArrayTest, TestMmulHelper4) {
+    auto xBuffer = new float[6]{1, 2, 3, 4, 5, 6};
+    auto xShape = new int[8] {2, 3, 2, 2, 1, 0, 1, 99};
+    auto x = new NDArray<float>(xBuffer, xShape);
+
+    auto yBuffer = new float[6]{7, 8, 9, 0, 1, 2};
+    auto yShape = new int[8] {2, 2, 3, 3, 1, 0, 1, 99};
+    auto y = new NDArray<float>(yBuffer, yShape);
+
+    auto z = new NDArray<float>(3, 3, 'f');
+
+    auto expBuffer = new float[9]{7.0, 21.0, 35.0, 10.0, 28.0, 46.0, 13.0, 35.0, 57.0};
+    auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+
+    NDArray<float>::mmulHelper(x, y, z);
+    ASSERT_TRUE(z->equalsTo(exp));
+}
+
+TEST_F(NDArrayTest, TestMmulHelper5) {
+    auto xBuffer = new float[6]{1, 2, 3, 4, 5, 6};
+    auto xShape = new int[8] {2, 3, 2, 1, 3, 0, 1, 102};
+    auto x = new NDArray<float>(xBuffer, xShape);
+
+    auto yBuffer = new float[6]{7, 8, 9, 0, 1, 2};
+    auto yShape = new int[8] {2, 2, 3, 3, 1, 0, 1, 99};
+    auto y = new NDArray<float>(yBuffer, yShape);
+
+    auto z = new NDArray<float>(3, 3, 'f');
+
+    auto expBuffer = new float[9]{7.0, 14.0, 21.0, 12.0, 21.0, 30.0, 17.0, 28.0, 39.0};
+    auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+
+    NDArray<float>::mmulHelper(x, y, z);
+    ASSERT_TRUE(z->equalsTo(exp));
+}
+
+TEST_F(NDArrayTest, TestMmulHelper6) {
+    auto xBuffer = new float[6]{1, 2, 3, 4, 5, 6};
+    auto xShape = new int[8] {2, 3, 2, 1, 3, 0, 1, 102};
+    auto x = new NDArray<float>(xBuffer, xShape);
+
+    auto yBuffer = new float[6]{7, 8, 9, 0, 1, 2};
+    auto yShape = new int[8] {2, 2, 3, 1, 2, 0, 1, 102};
+    auto y = new NDArray<float>(yBuffer, yShape);
+
+    auto z = new NDArray<float>(3, 3, 'f');
+
+    auto expBuffer = new float[9]{39.0, 54.0, 69.0, 9.0, 18.0, 27.0, 9.0, 12.0, 15.0};
+    auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+
+    NDArray<float>::mmulHelper(x, y, z);
+    ASSERT_TRUE(z->equalsTo(exp));
+}
+
+
+TEST_F(NDArrayTest, TestMmulHelper7) {
+    auto xBuffer = new float[15]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+    auto xShape = new int[8] {2, 5, 3, 1, 5, 0, 1, 102};
+    auto x = new NDArray<float>(xBuffer, xShape);
+
+    auto yBuffer = new float[5]{2, 4, 6, 8, 10};
+    auto yShape = new int[8] {2, 1, 5, 1, 1, 0, 1, 99};
+    auto y = new NDArray<float>(yBuffer, yShape);
+
+    auto z = new NDArray<float>(1, 3, 'f');
+
+    auto expBuffer = new float[9]{110.00,  260.00,  410.00};
+    auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+
+    NDArray<float>::mmulHelper(y, x, z);
+
+    z->printBuffer();
+    ASSERT_TRUE(z->equalsTo(exp));
+}

@@ -96,6 +96,8 @@ namespace nd4j {
             shape::printShapeInfoLinear(_shapeInfo);
         }
 
+        static NDArray<T>* mmulHelper(NDArray<T>* A, NDArray<T>* B, NDArray<T>* C = nullptr, T alpha = 1.0f, T beta = 0.0f);
+
         void printBuffer();
 
         // This method assigns values of given NDArray to this one, wrt order
@@ -272,6 +274,8 @@ namespace nd4j {
 
         return true;
     }	
+
+
 
 }
 #endif
