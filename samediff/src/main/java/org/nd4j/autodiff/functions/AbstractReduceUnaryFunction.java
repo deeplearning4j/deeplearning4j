@@ -46,7 +46,7 @@ public abstract class AbstractReduceUnaryFunction extends DifferentialFunction {
 
     @Override
     public String toString() {
-        return functionName() + "(" + m_x.getFormula(new ArrayList<>()) + ",axes:" + Arrays.toString(dimensions) + ")";
+        return functionName() + "(" + m_x + ",axes:" + Arrays.toString(dimensions) + ")";
     }
 
     @Override

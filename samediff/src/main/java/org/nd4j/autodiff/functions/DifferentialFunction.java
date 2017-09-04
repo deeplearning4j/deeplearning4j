@@ -423,7 +423,6 @@ public abstract class DifferentialFunction implements Differential {
         result = 31 * result + (opState != null ? opState.hashCode() : 0);
         result = 31 * result + vertexId;
         result = 31 * result + (gradient != null ? gradient.hashCode() : 0);
-        result = 31 * result + Arrays.hashCode(extraArgs);
         return result;
     }
 
