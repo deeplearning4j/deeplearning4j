@@ -872,7 +872,7 @@ template <typename T> void NDArray<T>::tile(const std::vector<int>& reps) {
     }
 
     template<typename T>
-    NDArray<T>* NDArray<T>::repeat(int dimension, std::initializer_list<int> repeats) {
+    NDArray<T>* NDArray<T>::repeat(int dimension, const std::vector<int>& repeats) {
 
         if (dimension < 0)
             dimension += this->rankOf();
