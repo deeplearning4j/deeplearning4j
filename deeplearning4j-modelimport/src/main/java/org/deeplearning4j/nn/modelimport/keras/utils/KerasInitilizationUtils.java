@@ -43,10 +43,6 @@ public class KerasInitilizationUtils {
      */
     public static WeightInit mapWeightInitialization(String kerasInit, KerasLayerConfiguration conf)
             throws UnsupportedKerasConfigurationException {
-        /* INIT_IDENTITY INIT_ORTHOGONAL INIT_LECUN_UNIFORM, INIT_NORMAL
-         * INIT_VARIANCE_SCALING, INIT_CONSTANT, INIT_ONES missing.
-         * Remaining dl4j distributions: DISTRIBUTION, SIZE, NORMALIZED,VI
-         */
         WeightInit init = WeightInit.XAVIER;
         if (kerasInit != null) {
             if (kerasInit.equals(conf.getINIT_GLOROT_NORMAL())) {
@@ -63,12 +59,18 @@ public class KerasInitilizationUtils {
                 init = WeightInit.RELU;
             } else if (kerasInit.equals(conf.getINIT_HE_UNIFORM())) {
                 init = WeightInit.RELU_UNIFORM;
+            } else if (kerasInit.equals(conf.getINIT_ONE()) ||
+                    kerasInit.equals(conf.getINIT_ONES()) ||
+                    kerasInit.equals(conf.getINIT_ONES_ALIAS())) {
+                init = WeightInit.ONES;
             } else if (kerasInit.equals(conf.getINIT_ZERO()) ||
-                    kerasInit.equals(conf.getINIT_ZEROS()) ||
-                    kerasInit.equals(conf.getINIT_ZEROS_ALIAS())) {
-                init = WeightInit.ZERO;
+                kerasInit.equals(conf.getINIT_ZEROS()) ||
+                kerasInit.equals(conf.getINIT_ZEROS_ALIAS())) {
+            init = WeightInit.ZERO;
+            } else if (kerasInit.equals(conf.getINIT_IDENTITY()) ||
+                    kerasInit.equals(conf.getINIT_IDENTITY_ALIAS())) {
+                init = WeightInit.IDENTITY;
             } else if (kerasInit.equals(conf.getINIT_VARIANCE_SCALING())) {
-                // TODO: This is incorrect, but we need it in tests for now
                 init = WeightInit.XAVIER_UNIFORM;
             } else {
                 throw new UnsupportedKerasConfigurationException("Unknown keras weight initializer " + kerasInit);
@@ -81,7 +83,7 @@ public class KerasInitilizationUtils {
      * Get weight initialization from Keras layer configuration.
      *
      * @param layerConfig           dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig
+     * @param enforceTrainingConfig whether to enforce loading configuration for further training
      * @return
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
