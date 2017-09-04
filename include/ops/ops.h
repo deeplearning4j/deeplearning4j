@@ -677,6 +677,18 @@ namespace simdOps {
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_pow<T>(d1, params[0]);
 		}
+
+		op_def static T op(T d1, T d2) {
+			return nd4j::math::nd4j_pow<T>(d1, d2);
+		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			return nd4j::math::nd4j_pow<T>(d1, d2);
+		}
+
+		op_def static T op(T d1) {
+			return d1;
+		}
 	};
 
 	
