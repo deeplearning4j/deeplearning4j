@@ -1021,7 +1021,7 @@ TEST_F(DeclarableOpsTests, Repeat1) {
 	Nd4jStatus status = repeat.execute(block);
 	ASSERT_EQ(ND4J_STATUS_OK, status);
 	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
-	 
+	  
     ASSERT_TRUE(exp.equalsTo(result)); 
 }
 
