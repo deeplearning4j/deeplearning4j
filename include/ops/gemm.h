@@ -17,7 +17,7 @@ namespace nd4j {
 
         template <typename T>
         class GEMM {
-        private:
+        protected:
 
             static inline int linearIndexC(int rows, int cols, int r, int c) {
                 return (r * cols + c);
@@ -112,6 +112,33 @@ namespace nd4j {
                     delete[] bT;
             }
         };
+
+         template <typename T>
+         class GEMV : public nd4j::blas::GEMM<T>{
+
+         public:
+             static void op(int TRANS, int M, int N,
+                            T alpha,
+                            T* A,
+                            int lda,
+                            T* X,
+                            int incx,
+                            T beta,
+                            T* Y,
+                            int incy ) {
+
+                 //T *aT = TransA != CblasTrans ? transpose(CblasColMajor, CblasRowMajor, M, K, A) : A;
+
+#pragma omp parallel for proc_bind(close)
+                 for (int r = 0; r < M; r++) {
+                     int aIdx = GEMM<T>::linearIndexC(M, N, r, 0);
+                     T *aX = A + aIdx;
+
+                     T dot = nd4j::math::nd4j_dot<T>(aX, X, lda) * alpha;
+                     Y[r] = dot;
+                 }
+             }
+         };
     }
 }
 

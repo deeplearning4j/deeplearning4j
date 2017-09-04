@@ -10,6 +10,7 @@
 #include <ops/declarable/cpu/parity_ops.h>
 #include <helpers/helper_hash.h>
 #include <NativeOps.h>
+#include <ops/gemm.h>
 
 using namespace nd4j::graph;
 
@@ -925,4 +926,26 @@ TEST_F(DeclarableOpsTests, TestLegacyExecution2) {
 
     ASSERT_NEAR(2.0, y->meanNumber(), 1e-5);
     ASSERT_NEAR(3.0, x->meanNumber(), 1e-5);
+}
+
+
+TEST_F(DeclarableOpsTests, TestGemv1) {
+	auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
+	auto xShape = new int[8] {2, 5, 3, 3, 1, 0, 1, 99};
+	auto x = new NDArray<float>(xBuffer, xShape);
+
+	auto yBuffer = new float[3]{2.f, 4.f, 6.f};
+	auto yShape = new int[8] {2, 3, 1, 1, 1, 0, 1, 99};
+	auto y = new NDArray<float>(yBuffer, yShape);
+
+	auto z = new NDArray<float>(5, 1, 'f');
+
+	auto expBuffer = new float[5]{28.00,  64.00,  100.00,  136.00,  172.00};
+	auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+
+	nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->_buffer, y->rows(), y->_buffer, 1, 0.0, z->_buffer, 1);
+
+	z->printBuffer();
+
+	ASSERT_TRUE(z->equalsTo(exp));
 }
