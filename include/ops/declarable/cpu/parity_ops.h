@@ -437,12 +437,11 @@ namespace nd4j {
 		//////////////////////////////////////////////////////////////////////////
 		// here iArgs is vector with shape dimensions at the beginning and last element in iArgs is order
 		DECLARE_CONFIGURABLE_OP(reshape, 1, 1, true, 0, -1) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-			std::vector<int> argumets = *(block.getIArguments());
-			int argsSize = argumets.size();
-			char order = argumets[argsSize-1];
-			std::vector<int> shapeNew(argumets.begin(), argumets.end() - 1);
-			
+			REQUIRE_OK(this->validateNonEmptyInput(block));			
+			std::vector<int>* argumets = block.getIArguments();
+			int argsSize = argumets->size();
+			char order = (*argumets)[argsSize-1];
+			std::vector<int> shapeNew(argumets->begin(), argumets->end() - 1);						
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
 			
 			if (x->reshape(order, shapeNew)) {
