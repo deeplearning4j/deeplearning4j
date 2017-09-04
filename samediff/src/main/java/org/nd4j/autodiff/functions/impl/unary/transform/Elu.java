@@ -9,9 +9,9 @@ import org.nd4j.linalg.api.ops.impl.transforms.ELU;
 import java.util.Collections;
 import java.util.List;
 
-public class Elu extends AbstractUnaryFunction<ArrayField> {
+public class Elu extends AbstractUnaryFunction {
 
-    public Elu(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public Elu(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -23,8 +23,8 @@ public class Elu extends AbstractUnaryFunction<ArrayField> {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().eluDerivative(arg());
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().eluDerivative(arg());
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

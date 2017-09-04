@@ -8,24 +8,24 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class ExpandDims extends AbstractUnaryFunction<ArrayField> {
+public class ExpandDims extends AbstractUnaryFunction {
 
     protected int axis;
 
-    public ExpandDims(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs, int axis) {
+    public ExpandDims(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs, int axis) {
         super(sameDiff, i_v, extraArgs);
         this.axis = axis;
     }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().expandDims(arg().getValue(true),axis);
+        return a().expandDims(arg().getValue(true),axis);
     }
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
-        DifferentialFunction<ArrayField> ret = arg().div(sameDiff.getFunctionFactory().abs(arg()));
+        DifferentialFunction ret = f().div(arg(),f().abs(arg()));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

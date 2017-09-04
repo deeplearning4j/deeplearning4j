@@ -29,7 +29,7 @@ import java.util.UUID;
 @Getter
 @Builder
 @EqualsAndHashCode
-public class ArrayField implements Field<ArrayField> {
+public class ArrayField implements Field {
     @Getter
     @Setter
     private SameDiff ops;
@@ -476,6 +476,26 @@ public class ArrayField implements Field<ArrayField> {
         return addTransformOp(new SELUDerivative().name());
     }
 
+    @Override
+    public ArrayField max(double v) {
+        return addScalarTransformOp(new ScalarMax().name(),v);
+    }
+
+    @Override
+    public ArrayField min(double v) {
+        return addScalarTransformOp(new ScalarMin().name(),v);
+    }
+
+    @Override
+    public ArrayField fmod(double v) {
+        return addScalarTransformOp(new ScalarFMod().name(),v);
+    }
+
+    @Override
+    public ArrayField set(double v) {
+        return addScalarTransformOp(new ScalarSet().name(),v);
+    }
+
 
     @Override
     public ArrayField sigmoid() {
@@ -829,7 +849,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public DifferentialFunction arg() {
+    public ArrayField arg() {
         throw new UnsupportedOperationException();
     }
 
@@ -1242,7 +1262,7 @@ public class ArrayField implements Field<ArrayField> {
      * @param dimensions
      * @return
      */
-    public ArrayField tensorMmul(DifferentialFunction<ArrayField> y,
+    public ArrayField tensorMmul(DifferentialFunction y,
                                  int[][] dimensions) {
         return addPairReduceOp("tensorMmul",y.getValue(true),
                 null,
@@ -1256,6 +1276,7 @@ public class ArrayField implements Field<ArrayField> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
 
         ArrayField that = (ArrayField) o;
 
@@ -1270,7 +1291,4 @@ public class ArrayField implements Field<ArrayField> {
         result = 31 * result + (vertex != null ? vertex.hashCode() : 0);
         return result;
     }
-
-
-
 }

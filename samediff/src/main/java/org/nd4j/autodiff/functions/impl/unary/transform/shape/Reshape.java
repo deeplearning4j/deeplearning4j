@@ -12,8 +12,8 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.Collections;
 import java.util.List;
 
-public class Reshape extends AbstractUnaryFunction<ArrayField> {
-    public Reshape(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v,int[] shape) {
+public class Reshape extends AbstractUnaryFunction {
+    public Reshape(SameDiff sameDiff, DifferentialFunction i_v,int[] shape) {
         super(sameDiff,i_v, Shape.resolveNegativeShapeIfNeccessary(shape,i_v.getResultShape()),
                 OpState.OpType.SHAPE,
                 new Object[]{Shape.resolveNegativeShapeIfNeccessary(shape,i_v.getResultShape())});
@@ -26,8 +26,8 @@ public class Reshape extends AbstractUnaryFunction<ArrayField> {
     }
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = this;
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = this;
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

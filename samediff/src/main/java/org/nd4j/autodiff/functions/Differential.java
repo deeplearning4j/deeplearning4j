@@ -1,20 +1,18 @@
 package org.nd4j.autodiff.functions;
 
-import org.nd4j.autodiff.Field;
-
 import java.util.List;
 
 
-public interface Differential<X extends Field<X>, D> {
+public interface Differential {
 
 
-    String getFormula(List<Variable<X>> variables);
+    String getFormula(List<Variable> variables);
 
     /**
      *
      * @param i_v
      * @return
      */
-    List<D> diff(List<DifferentialFunction<X>> i_v);
+    List<DifferentialFunction> diff(List<DifferentialFunction> i_v);
 
 }

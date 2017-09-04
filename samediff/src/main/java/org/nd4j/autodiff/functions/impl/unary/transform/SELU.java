@@ -8,9 +8,9 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class SELU extends AbstractUnaryFunction<ArrayField> {
+public class SELU extends AbstractUnaryFunction {
 
-    public SELU(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public SELU(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
@@ -22,8 +22,8 @@ public class SELU extends AbstractUnaryFunction<ArrayField> {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = arg().div(f().selu(arg()));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().div(arg(),f().selu(arg()));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

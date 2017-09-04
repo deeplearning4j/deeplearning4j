@@ -1,210 +1,209 @@
 package org.nd4j.autodiff.functions;
 
 import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.Field;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 
 /**
  * Created by agibsonccc on 4/9/17.
  */
-public interface FunctionFactory<X extends Field<X>> {
+public interface FunctionFactory {
 
 
 
-    DifferentialFunction<X> invoke(String name, Object[] args);
+    DifferentialFunction invoke(String name, Object[] args);
 
-    Constant<X> val(X iX);
+    Constant val(ArrayField iX);
 
 
-    Variable<X> var(String iName, X iX, PreEvaluator<X> preEvaluator);
+    Variable var(String iName, ArrayField iX, PreEvaluator preEvaluator);
 
-    Variable<X> var(String iName, X iX);
+    Variable var(String iName, ArrayField iX);
 
 
 
-    Zero<X> zero(int[] shape);
+    Zero zero(int[] shape);
 
-    One<X> one(int[] shape);
+    One one(int[] shape);
 
 
-    DifferentialFunction<X> tile(DifferentialFunction<X> iX, int[] repeat);
+    DifferentialFunction tile(DifferentialFunction iX, int[] repeat);
 
-    DifferentialFunction<X> valueArrayOf(DifferentialFunction<X> iX, int[] shape);
+    DifferentialFunction valueArrayOf(DifferentialFunction iX, int[] shape);
 
-    DifferentialFunction<X> sum(DifferentialFunction<X> i_x, int...dimensions);
+    DifferentialFunction sum(DifferentialFunction i_x, int...dimensions);
 
-    DifferentialFunction<X> prod(DifferentialFunction<X> i_x,int...dimensions);
+    DifferentialFunction prod(DifferentialFunction i_x,int...dimensions);
 
-    DifferentialFunction<X> mean(DifferentialFunction<X> i_x,int...dimensions);
+    DifferentialFunction mean(DifferentialFunction i_x,int...dimensions);
 
-    DifferentialFunction<X> std(DifferentialFunction<X> i_x, boolean biasCorrected, int... dimensions);
+    DifferentialFunction std(DifferentialFunction i_x, boolean biasCorrected, int... dimensions);
 
-    DifferentialFunction<X> variance(DifferentialFunction<X> i_x, boolean biasCorrected, int... dimensions);
+    DifferentialFunction variance(DifferentialFunction i_x, boolean biasCorrected, int... dimensions);
 
-    DifferentialFunction<X> max(DifferentialFunction<X> i_x,int...dimensions);
+    DifferentialFunction max(DifferentialFunction i_x,int...dimensions);
 
-    DifferentialFunction<X> min(DifferentialFunction<X> i_x,int...dimensions);
+    DifferentialFunction min(DifferentialFunction i_x,int...dimensions);
 
-    DifferentialFunction<X> norm1(DifferentialFunction<X> i_x,int...dimensions);
+    DifferentialFunction norm1(DifferentialFunction i_x,int...dimensions);
 
-    DifferentialFunction<X> norm2(DifferentialFunction<X> i_x,int...dimensions);
+    DifferentialFunction norm2(DifferentialFunction i_x,int...dimensions);
 
-    DifferentialFunction<X> normmax(DifferentialFunction<X> i_x,int...dimensions);
+    DifferentialFunction normmax(DifferentialFunction i_x,int...dimensions);
 
 
-    DifferentialFunction<X> expandDims(DifferentialFunction<X> iX, int axis);
+    DifferentialFunction expandDims(DifferentialFunction iX, int axis);
 
-    DifferentialFunction<X> abs(DifferentialFunction<X> iX);
+    DifferentialFunction abs(DifferentialFunction iX);
 
-    DifferentialFunction<X> neg(DifferentialFunction<X> iX);
+    DifferentialFunction neg(DifferentialFunction iX);
 
-    DifferentialFunction<X> cos(DifferentialFunction<X> iX);
+    DifferentialFunction cos(DifferentialFunction iX);
 
-    DifferentialFunction<X> sin(DifferentialFunction<X> iX);
+    DifferentialFunction sin(DifferentialFunction iX);
 
-    DifferentialFunction<X> tan(DifferentialFunction<X> iX);
+    DifferentialFunction tan(DifferentialFunction iX);
 
-    DifferentialFunction<X> permute(DifferentialFunction<X> iX, int... dimensions);
+    DifferentialFunction permute(DifferentialFunction iX, int... dimensions);
 
-    DifferentialFunction<X> transpose(DifferentialFunction<X> iX);
+    DifferentialFunction transpose(DifferentialFunction iX);
 
-    DifferentialFunction<X> acos(DifferentialFunction<X> iX);
+    DifferentialFunction acos(DifferentialFunction iX);
 
-    DifferentialFunction<X> asin(DifferentialFunction<X> iX);
+    DifferentialFunction asin(DifferentialFunction iX);
 
-    DifferentialFunction<X> atan(DifferentialFunction<X> iX);
+    DifferentialFunction atan(DifferentialFunction iX);
 
-    DifferentialFunction<X> cosh(DifferentialFunction<X> iX);
+    DifferentialFunction cosh(DifferentialFunction iX);
 
-    DifferentialFunction<X> sinh(DifferentialFunction<X> iX);
+    DifferentialFunction sinh(DifferentialFunction iX);
 
-    DifferentialFunction<X> tanh(DifferentialFunction<X> iX);
+    DifferentialFunction tanh(DifferentialFunction iX);
 
-    DifferentialFunction<ArrayField> tanhDerivative(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> wrt);
+    DifferentialFunction tanhDerivative(DifferentialFunction iX, DifferentialFunction wrt);
 
-    DifferentialFunction<X> acosh(DifferentialFunction<X> iX);
+    DifferentialFunction acosh(DifferentialFunction iX);
 
-    DifferentialFunction<X> asinh(DifferentialFunction<X> iX);
+    DifferentialFunction asinh(DifferentialFunction iX);
 
-    DifferentialFunction<X> atanh(DifferentialFunction<X> iX);
+    DifferentialFunction atanh(DifferentialFunction iX);
 
-    DifferentialFunction<X> exp(DifferentialFunction<X> iX);
+    DifferentialFunction exp(DifferentialFunction iX);
 
-    DifferentialFunction<X> log(DifferentialFunction<X> iX);
+    DifferentialFunction log(DifferentialFunction iX);
 
-    DifferentialFunction<X> or(DifferentialFunction<X> iX, DifferentialFunction<X> i_y);
+    DifferentialFunction or(DifferentialFunction iX, DifferentialFunction i_y);
 
-    DifferentialFunction<X> eq(DifferentialFunction<X> iX, DifferentialFunction<X> i_y);
+    DifferentialFunction eq(DifferentialFunction iX, DifferentialFunction i_y);
 
-    DifferentialFunction<X> neq(DifferentialFunction<X> iX, DifferentialFunction<X> i_y);
+    DifferentialFunction neq(DifferentialFunction iX, DifferentialFunction i_y);
 
-    DifferentialFunction<X> pow(DifferentialFunction<X> iX, Constant<X> i_y);
+    DifferentialFunction pow(DifferentialFunction iX, double i_y);
 
-    DifferentialFunction<X> sqrt(DifferentialFunction<X> iX);
+    DifferentialFunction sqrt(DifferentialFunction iX);
 
-    DifferentialFunction<X> square(DifferentialFunction<X> iX);
+    DifferentialFunction square(DifferentialFunction iX);
 
-    DifferentialFunction<X> floor(DifferentialFunction<X> iX);
+    DifferentialFunction floor(DifferentialFunction iX);
 
-    DifferentialFunction<X> relu(DifferentialFunction<X> iX, double cutoff);
+    DifferentialFunction relu(DifferentialFunction iX, double cutoff);
 
-    DifferentialFunction<X> softmax(DifferentialFunction<X> iX);
+    DifferentialFunction softmax(DifferentialFunction iX);
 
-    DifferentialFunction<X> hardTanh(DifferentialFunction<X> iX);
+    DifferentialFunction hardTanh(DifferentialFunction iX);
 
-    DifferentialFunction<X> hardTanhDerivative(DifferentialFunction<X> iX);
+    DifferentialFunction hardTanhDerivative(DifferentialFunction iX);
 
-    DifferentialFunction<X> sigmoid(DifferentialFunction<X> iX);
+    DifferentialFunction sigmoid(DifferentialFunction iX);
 
-    DifferentialFunction<X> sigmoidDerivative(DifferentialFunction<X> iX, DifferentialFunction<X> wrt);
+    DifferentialFunction sigmoidDerivative(DifferentialFunction iX, DifferentialFunction wrt);
 
-    DifferentialFunction<X> sign(DifferentialFunction<X> iX);
+    DifferentialFunction sign(DifferentialFunction iX);
 
-    DifferentialFunction<X> broadcast(DifferentialFunction<X> iX, int... shape);
+    DifferentialFunction broadcast(DifferentialFunction iX, int... shape);
 
-    DifferentialFunction<X> repeat(DifferentialFunction<X> iX, int axis);
+    DifferentialFunction repeat(DifferentialFunction iX, int axis);
 
-    DifferentialFunction<X> softsign(DifferentialFunction<X> iX);
+    DifferentialFunction softsign(DifferentialFunction iX);
 
-    DifferentialFunction<X> softsignDerivative(DifferentialFunction<X> iX);
+    DifferentialFunction softsignDerivative(DifferentialFunction iX);
 
-    DifferentialFunction<X> softplus(DifferentialFunction<X> iX);
+    DifferentialFunction softplus(DifferentialFunction iX);
 
-    DifferentialFunction<X> elu(DifferentialFunction<X> iX);
+    DifferentialFunction elu(DifferentialFunction iX);
 
-    DifferentialFunction<X> eluDerivative(DifferentialFunction<X> iX);
+    DifferentialFunction eluDerivative(DifferentialFunction iX);
 
-    DifferentialFunction<X> leakyRelu(DifferentialFunction<X> iX, double cutoff);
+    DifferentialFunction leakyRelu(DifferentialFunction iX, double cutoff);
 
-    DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> iX, DifferentialFunction<X> iY, double cutoff);
+    DifferentialFunction leakyReluDerivative(DifferentialFunction iX, DifferentialFunction iY, double cutoff);
 
-    DifferentialFunction<X> reshape(DifferentialFunction<X> arrayField, int[] shape);
+    DifferentialFunction reshape(DifferentialFunction arrayField, int[] shape);
 
 
-    DifferentialFunction<X> rollAxis(Variable<X> iX, int axis);
+    DifferentialFunction rollAxis(Variable iX, int axis);
 
-    DifferentialFunction<X> cosineSimilarity(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int...dimensions);
-    DifferentialFunction<X> euclideanDistance(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> manhattanDistance(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossBinaryXENT(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int...dimensions);
-    DifferentialFunction<X> lossCosineSimilarity(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossHinge(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossKLD(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossL1(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossL2(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossMAE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossMAPE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossMSE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossMCXENT(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossMSLE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossNegativeLogLikelihood(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossPoisson(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
-    DifferentialFunction<X> lossSquaredHinge(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction cosineSimilarity(DifferentialFunction iX, DifferentialFunction i_y, int...dimensions);
+    DifferentialFunction euclideanDistance(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction manhattanDistance(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossBinaryXENT(DifferentialFunction iX, DifferentialFunction i_y, int...dimensions);
+    DifferentialFunction lossCosineSimilarity(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossHinge(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossKLD(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossL1(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossL2(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossMAE(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossMAPE(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossMSE(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossMCXENT(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossMSLE(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossNegativeLogLikelihood(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossPoisson(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
+    DifferentialFunction lossSquaredHinge(DifferentialFunction iX, DifferentialFunction i_y,int...dimensions);
 
 
-    DifferentialFunction<ArrayField> mmul(DifferentialFunction<ArrayField> x,
-                                          DifferentialFunction<ArrayField> y,
+    DifferentialFunction mmul(DifferentialFunction x,
+                                          DifferentialFunction y,
                                           MMulTranspose mMulTranspose);
 
-    DifferentialFunction<X> mmul(DifferentialFunction<X> x, DifferentialFunction<X> y);
-    DifferentialFunction<X> tensorMmul(DifferentialFunction<X> x, DifferentialFunction<X> y, int[][] dimensions);
+    DifferentialFunction mmul(DifferentialFunction x, DifferentialFunction y);
+    DifferentialFunction tensorMmul(DifferentialFunction x, DifferentialFunction y, int[][] dimensions);
 
-    DifferentialFunction<X> softmaxDerivative(DifferentialFunction<X> functionInput, DifferentialFunction<X> wrt);
+    DifferentialFunction softmaxDerivative(DifferentialFunction functionInput, DifferentialFunction wrt);
 
-    DifferentialFunction<X> logSoftmax(DifferentialFunction<X> i_v);
+    DifferentialFunction logSoftmax(DifferentialFunction i_v);
 
-    DifferentialFunction<X> selu(DifferentialFunction<X> arg);
+    DifferentialFunction selu(DifferentialFunction arg);
 
-    DifferentialFunction<X> seluDerivative(DifferentialFunction<X> arg);
+    DifferentialFunction seluDerivative(DifferentialFunction arg);
 
-    DifferentialFunction<X> rsub(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
-    DifferentialFunction<X> rdiv(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
-    DifferentialFunction<X> rdivi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
-    DifferentialFunction<X> rsubi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
-    DifferentialFunction<X> add(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
-    DifferentialFunction<X> addi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
-    DifferentialFunction<X> sub(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
-    DifferentialFunction<X> subi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
-    DifferentialFunction<X> mul(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
-    DifferentialFunction<X> muli(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
-    DifferentialFunction<X> div(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
-    DifferentialFunction<X> divi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
-
-
+    DifferentialFunction rsub(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction rdiv(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction rdivi(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction rsubi(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction add(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction addi(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction sub(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction subi(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction mul(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction muli(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction div(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
+    DifferentialFunction divi(DifferentialFunction xDifferentialFunction, DifferentialFunction i_v);
 
 
 
-    DifferentialFunction<X> rsub(DifferentialFunction<X> xDifferentialFunction, double i_v);
-    DifferentialFunction<X> rdiv(DifferentialFunction<X> xDifferentialFunction, double i_v);
-    DifferentialFunction<X> rdivi(DifferentialFunction<X> xDifferentialFunction, double i_v);
-    DifferentialFunction<X> rsubi(DifferentialFunction<X> xDifferentialFunction, double i_v);
-    DifferentialFunction<X> add(DifferentialFunction<X> xDifferentialFunction, double i_v);
-    DifferentialFunction<X> addi(DifferentialFunction<X> xDifferentialFunction, double i_v);
-    DifferentialFunction<X> sub(DifferentialFunction<X> xDifferentialFunction, double i_v);
-    DifferentialFunction<X> subi(DifferentialFunction<X> xDifferentialFunction, double i_v);
-    DifferentialFunction<X> mul(DifferentialFunction<X> xDifferentialFunction, double i_v);
-    DifferentialFunction<X> muli(DifferentialFunction<X> xDifferentialFunction,double i_v);
-    DifferentialFunction<X> div(DifferentialFunction<X> xDifferentialFunction, double i_v);
-    DifferentialFunction<X> divi(DifferentialFunction<X> xDifferentialFunction,double i_v);
+
+
+    DifferentialFunction rsub(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction rdiv(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction rdivi(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction rsubi(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction add(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction addi(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction sub(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction subi(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction mul(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction muli(DifferentialFunction xDifferentialFunction,double i_v);
+    DifferentialFunction div(DifferentialFunction xDifferentialFunction, double i_v);
+    DifferentialFunction divi(DifferentialFunction xDifferentialFunction,double i_v);
 
 }

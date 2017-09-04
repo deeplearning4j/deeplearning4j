@@ -8,28 +8,27 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-public class CosineSimilarity extends AbstractBinaryReduceFunction<ArrayField>  {
+public class CosineSimilarity extends AbstractBinaryReduceFunction {
 
-    public CosineSimilarity(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2, int... dimensions) {
+    public CosineSimilarity(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2, int... dimensions) {
         super(sameDiff, i_v1, i_v2, dimensions);
     }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().cosineSimilarity(larg(), rarg(), dimensions);
+        return a().cosineSimilarity(larg(), rarg(), dimensions);
     }
 
-    private DifferentialFunction<ArrayField> formula() {
-        DifferentialFunction<ArrayField> numerator = larg().mul(rarg());
-        DifferentialFunction<ArrayField> denom = sameDiff.getFunctionFactory().sqrt(larg().pow(2).mul(rarg().pow(2)));
-
-        return numerator.div(denom);
+    private DifferentialFunction formula() {
+        DifferentialFunction numerator = f().mul(larg(),rarg());
+        DifferentialFunction denom = f().sqrt(f().mul(f().pow(larg(),2),f().pow(rarg(),2)));
+        return f().div(numerator,denom);
     }
 
 
 
     @Override
-    public String doGetFormula(List<Variable<ArrayField> > variables) {
+    public String doGetFormula(List<Variable > variables) {
         return larg().doGetFormula(variables) + " * " + rarg().doGetFormula(variables) + "/" +
                 "sqrt(pow(" + larg().doGetFormula(variables) + ", 2) * pow(" + rarg().doGetFormula(variables) + ", 2))";
     }
@@ -41,7 +40,7 @@ public class CosineSimilarity extends AbstractBinaryReduceFunction<ArrayField>  
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
         return formula().diff(i_v1);
     }
 }

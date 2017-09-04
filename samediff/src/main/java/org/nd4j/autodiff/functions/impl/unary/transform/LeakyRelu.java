@@ -9,10 +9,10 @@ import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 import java.util.Collections;
 import java.util.List;
 
-public class LeakyRelu  extends AbstractUnaryFunction<ArrayField> {
+public class LeakyRelu  extends AbstractUnaryFunction {
     private double cutoff;
 
-    public LeakyRelu(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v,double cutoff) {
+    public LeakyRelu(SameDiff sameDiff, DifferentialFunction i_v,double cutoff) {
         super(sameDiff, i_v, new Object[]{cutoff});
         this.cutoff = cutoff;
     }
@@ -24,8 +24,8 @@ public class LeakyRelu  extends AbstractUnaryFunction<ArrayField> {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().leakyReluDerivative(arg(),i_v.get(0) , cutoff);
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().leakyReluDerivative(arg(),i_v.get(0) , cutoff);
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

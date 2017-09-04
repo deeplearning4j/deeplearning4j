@@ -9,10 +9,9 @@ import java.util.List;
 
 /**
  *
- * @param <X>
  */
-public interface AbstractFactory<X extends Field<X>>
-        extends AbstractIdentityFactory<X> {
+public interface AbstractFactory
+        extends AbstractIdentityFactory {
 
 
     /**
@@ -23,107 +22,107 @@ public interface AbstractFactory<X extends Field<X>>
 
     List<String> methodNames();
 
-    X invoke(String name,Object[] args);
+    ArrayField invoke(String name,Object[] args);
 
 
     ArrayField selu(ArrayField value);
 
-    X eq(X i_x, X i_y);
+    ArrayField eq(ArrayField i_x, ArrayField i_y);
 
-    X neq(X i_x, X i_y);
+    ArrayField neq(ArrayField i_x, ArrayField i_y);
 
-    X or(X i_x, X i_y);
-
-
-    X add(X i_x,Number value);
-    X sub(X i_x,Number value);
-    X mul(X i_x,Number value);
-    X div(X i_x,Number value);
-
-    X broadcast(X i_x,int...shape);
-
-    X repeat(X i_x,int axis);
-
-    X tile(X i_x,int...repeat);
-
-    X sum(X i_x,int...dimensions);
-    X prod(X i_x,int...dimensions);
-    X mean(X i_x,int...dimensions);
-    X std(X i_x, boolean biasCorrected, int... dimensions);
-    X variance(X i_x, boolean biasCorrected, int... dimensions);
-    X max(X i_x,int...dimensions);
-    X min(X i_x,int...dimensions);
-    X norm1(X i_x,int...dimensions);
-    X norm2(X i_x,int...dimensions);
-    X normmax(X i_x,int...dimensions);
+    ArrayField or(ArrayField i_x, ArrayField i_y);
 
 
-    X neg(X i_x);
+    ArrayField add(ArrayField i_x,Number value);
+    ArrayField sub(ArrayField i_x,Number value);
+    ArrayField mul(ArrayField i_x,Number value);
+    ArrayField div(ArrayField i_x,Number value);
 
-    X transpose(X i_x);
+    ArrayField broadcast(ArrayField i_x,int...shape);
 
-    X reshape(X i_x, int[] shape);
+    ArrayField repeat(ArrayField i_x,int axis);
+
+    ArrayField tile(ArrayField i_x,int...repeat);
+
+    ArrayField sum(ArrayField i_x,int...dimensions);
+    ArrayField prod(ArrayField i_x,int...dimensions);
+    ArrayField mean(ArrayField i_x,int...dimensions);
+    ArrayField std(ArrayField i_x, boolean biasCorrected, int... dimensions);
+    ArrayField variance(ArrayField i_x, boolean biasCorrected, int... dimensions);
+    ArrayField max(ArrayField i_x,int...dimensions);
+    ArrayField min(ArrayField i_x,int...dimensions);
+    ArrayField norm1(ArrayField i_x,int...dimensions);
+    ArrayField norm2(ArrayField i_x,int...dimensions);
+    ArrayField normmax(ArrayField i_x,int...dimensions);
 
 
-    X valueArrayOf(X i_x,int[] shape);
+    ArrayField neg(ArrayField i_x);
 
-    X val(double i_v);
+    ArrayField transpose(ArrayField i_x);
 
-    X abs(X i_x);
+    ArrayField reshape(ArrayField i_x, int[] shape);
 
-    X min(X i_x, X i_y);
-    X max(X i_x, X i_y);
 
-    X cos(X i_x);
-    X acos(X i_x);
-    X cosh(X i_x);
-    X acosh(X i_x);
+    ArrayField valueArrayOf(ArrayField i_x,int[] shape);
 
-    X sin(X i_x);
-    X asin(X i_x);
-    X sinh(X i_x);
-    X asinh(X i_x);
+    ArrayField val(double i_v);
 
-    X tan(X i_x);
-    X atan(X i_x);
-    X atan2(X i_x, X i_y);
-    X tanh(X i_x);
-    X atanh(X i_x);
+    ArrayField abs(ArrayField i_x);
 
-    X exp(X i_x);
-    X log(X i_x);
+    ArrayField min(ArrayField i_x, ArrayField i_y);
+    ArrayField max(ArrayField i_x, ArrayField i_y);
 
-    X log10(X i_x);
+    ArrayField cos(ArrayField i_x);
+    ArrayField acos(ArrayField i_x);
+    ArrayField cosh(ArrayField i_x);
+    ArrayField acosh(ArrayField i_x);
 
-    X flat(X i_x);
-    X mc(X i_x, X i_y);
-    X rand(X i_x);
-    X random(X i_x);
-    X gauss(X i_x);
+    ArrayField sin(ArrayField i_x);
+    ArrayField asin(ArrayField i_x);
+    ArrayField sinh(ArrayField i_x);
+    ArrayField asinh(ArrayField i_x);
 
-    X sgn(X i_x);
+    ArrayField tan(ArrayField i_x);
+    ArrayField atan(ArrayField i_x);
+    ArrayField atan2(ArrayField i_x, ArrayField i_y);
+    ArrayField tanh(ArrayField i_x);
+    ArrayField atanh(ArrayField i_x);
 
-    X ifx(X i_x, X i_y, X i_z);
+    ArrayField exp(ArrayField i_x);
+    ArrayField log(ArrayField i_x);
 
-    X buf(X i_x);
-    X inv(X i_x);
-    X u(X i_x);
-    X uramp(X i_x);
+    ArrayField log10(ArrayField i_x);
 
-    X pow(X i_x, X i_y);
-    X pwr(X i_x, X i_y);
-    X pwrs(X i_x, X i_y);
-    X sqrt(X i_x);
-    X square(X i_x);
-    X hypot(X i_x, X i_y);
+    ArrayField flat(ArrayField i_x);
+    ArrayField mc(ArrayField i_x, ArrayField i_y);
+    ArrayField rand(ArrayField i_x);
+    ArrayField random(ArrayField i_x);
+    ArrayField gauss(ArrayField i_x);
 
-    X floor(X value);
-    X ceil(X value);
-    X round(X value);
+    ArrayField sgn(ArrayField i_x);
 
-    X relu(X value);
+    ArrayField ifx(ArrayField i_x, ArrayField i_y, ArrayField i_z);
 
-    X leakyRelu(X value,double alpha);
+    ArrayField buf(ArrayField i_x);
+    ArrayField inv(ArrayField i_x);
+    ArrayField u(ArrayField i_x);
+    ArrayField uramp(ArrayField i_x);
+
+    ArrayField pow(ArrayField i_x, ArrayField i_y);
+    ArrayField pwr(ArrayField i_x, ArrayField i_y);
+    ArrayField pwrs(ArrayField i_x, ArrayField i_y);
+    ArrayField sqrt(ArrayField i_x);
+    ArrayField square(ArrayField i_x);
+    ArrayField hypot(ArrayField i_x, ArrayField i_y);
+
+    ArrayField floor(ArrayField value);
+    ArrayField ceil(ArrayField value);
+    ArrayField round(ArrayField value);
+
+    ArrayField relu(ArrayField value);
+
+    ArrayField leakyRelu(ArrayField value,double alpha);
 
     /**
      * Leaky relu with an alpha of
@@ -131,9 +130,9 @@ public interface AbstractFactory<X extends Field<X>>
      * @param value the value to transform
      * @return
      */
-    X leakyRelu(X value);
+    ArrayField leakyRelu(ArrayField value);
 
-    X leakyReluDerivative(X value, X wrt, double alpha);
+    ArrayField leakyReluDerivative(ArrayField value, ArrayField wrt, double alpha);
 
     /**
      * Leaky relu with an alpha of
@@ -142,92 +141,92 @@ public interface AbstractFactory<X extends Field<X>>
      * @param wrt
      * @return
      */
-    X leakyReluDerivative(X value, X wrt);
+    ArrayField leakyReluDerivative(ArrayField value, ArrayField wrt);
 
 
-    X hardTanh(X value);
+    ArrayField hardTanh(ArrayField value);
 
-    X hardTanhDerivative(X value, X wrt);
+    ArrayField hardTanhDerivative(ArrayField value, ArrayField wrt);
 
-    X sigmoid(X value);
+    ArrayField sigmoid(ArrayField value);
 
-    X sigmoidDerivative(X value, X wrt);
+    ArrayField sigmoidDerivative(ArrayField value, ArrayField wrt);
 
 
-    X softmax(X value);
+    ArrayField softmax(ArrayField value);
 
-    X elu(X value);
+    ArrayField elu(ArrayField value);
 
-    X eluDerivative(X value, X wrt);
+    ArrayField eluDerivative(ArrayField value, ArrayField wrt);
 
-    X step(X value);
+    ArrayField step(ArrayField value);
 
-    X sign(X value);
+    ArrayField sign(ArrayField value);
 
-    X softsign(X value);
+    ArrayField softsign(ArrayField value);
 
-    X softsignDeriviative(X value, X wrt);
+    ArrayField softsignDeriviative(ArrayField value, ArrayField wrt);
 
-    X softplus(X value);
+    ArrayField softplus(ArrayField value);
 
-    X rollAxis(X value, int axis);
+    ArrayField rollAxis(ArrayField value, int axis);
 
-    X lossSquaredHinge(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossSquaredHinge(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X lossPoisson(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossPoisson(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X lossNegativeLogLikelihood(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossNegativeLogLikelihood(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X lossMSLE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossMSLE(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X lossMCXENT(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossMCXENT(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X lossMSE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossMSE(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X lossMAPE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossMAPE(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X lossMAE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossMAE(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X lossL2(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossL2(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X lossL1(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossL1(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X lossKLD(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossKLD(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X lossHinge(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossHinge(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X lossCosineSimilarity(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossCosineSimilarity(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X lossBinaryXENT(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField lossBinaryXENT(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X manhattanDistance(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField manhattanDistance(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X euclideanDistance(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField euclideanDistance(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X cosineSimilarity(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
+    ArrayField cosineSimilarity(DifferentialFunction iArrayField, DifferentialFunction i_y, int[] dimensions);
 
-    X expandDims(X input,int dim);
+    ArrayField expandDims(ArrayField input,int dim);
 
-    X mmul(DifferentialFunction<X> arrayField, DifferentialFunction<X> y);
+    ArrayField mmul(DifferentialFunction arrayField, DifferentialFunction y);
 
-    ArrayField mmul(DifferentialFunction<ArrayField> input, DifferentialFunction<ArrayField> y, MMulTranspose mMulTranspose);
+    ArrayField mmul(DifferentialFunction input, DifferentialFunction y, MMulTranspose mMulTranspose);
 
-    X tensorMmul(DifferentialFunction<X> arrayField, DifferentialFunction<X> y, int[][] dimensions);
+    ArrayField tensorMmul(DifferentialFunction arrayField, DifferentialFunction y, int[][] dimensions);
 
     /*
 
      */
-    X permute(X value, int[] dimensions);
+    ArrayField permute(ArrayField value, int[] dimensions);
 
-    X set(X value, X value1);
+    ArrayField set(ArrayField value, ArrayField value1);
 
-    X softmaxDerivative(X value, X wrt);
+    ArrayField softmaxDerivative(ArrayField value, ArrayField wrt);
 
-    X seluDerivative(X value, X wrt);
+    ArrayField seluDerivative(ArrayField value, ArrayField wrt);
 
-    X tanhDerivative(X value, X wrt);
+    ArrayField tanhDerivative(ArrayField value, ArrayField wrt);
 
 
 
-    X logSoftmax(X value);
+    ArrayField logSoftmax(ArrayField value);
 }
