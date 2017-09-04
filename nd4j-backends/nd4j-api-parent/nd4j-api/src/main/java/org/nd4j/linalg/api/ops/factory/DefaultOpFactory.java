@@ -175,6 +175,17 @@ public class DefaultOpFactory implements OpFactory {
         Accumulation ret = null;
 
         switch (name) {
+            case "mmul":
+                //of note here is that it's always the last arg
+                /*
+                 * The case to watch out for here is
+                 * tensor matrix multiply which has an args format of:
+                 * dimensions, mmul transpose
+                 */
+
+                MMulTranspose mMulTranspose = extraArgs != null  && extraArgs.length >= 1 ? (MMulTranspose) extraArgs[extraArgs.length - 1] : MMulTranspose.allFalse();
+                ret = new Mmul(x,y,z,mMulTranspose);
+                break;
             case "std":
                 ret = new StandardDeviation(x, y,z, x.length(),(boolean) extraArgs[0]);
                 break;
@@ -352,6 +363,9 @@ public class DefaultOpFactory implements OpFactory {
         TransformOp op = null;
 
         switch (name) {
+            case "softmaxderivative":
+                op = new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative(x, z);
+                break;
             case "set":
                 op = new org.nd4j.linalg.api.ops.impl.transforms.Set(x,y,z,z.length());
                 break;

@@ -48,8 +48,7 @@ public class SDVariable  implements Serializable {
                        INDArray arr,
                        SameDiff sameDiff,
                        Variable<ArrayField> arrayField,
-                       int[] shape, int id) {
-                       int vertexId) {
+                       int[] shape, int id, int vertexId) {
         this.shape = shape;
         this.differentialFunction = differentialFunction;
         this.varName = varName;
