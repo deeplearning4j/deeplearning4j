@@ -1276,6 +1276,7 @@ public class ArrayField implements Field {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
 
         ArrayField that = (ArrayField) o;
 
@@ -1290,7 +1291,4 @@ public class ArrayField implements Field {
         result = 31 * result + (vertex != null ? vertex.hashCode() : 0);
         return result;
     }
-
-
-
 }

@@ -351,15 +351,16 @@ public class SameDiffTests {
                 SDVariable x = sameDiff.var("x",inputs.get("x"));
                 SDVariable w = sameDiff.var("w",inputs.get("w"));
                 SDVariable y = sameDiff.var("y",inputs.get("y"));
-                SDVariable activation = sameDiff.sigmoid(sameDiff.mmul(x,w));
-                SDVariable oneMinusY = y.rsub(1.0);
-                SDVariable oneMinusPredictions = activation.rsub(1.0);
-                SDVariable outputTimesY = y.mul(activation);
-                SDVariable yHat = oneMinusY.mul(oneMinusPredictions);
-                SDVariable probs = outputTimesY.add(yHat);
-                SDVariable logProbs = sameDiff.log(probs);
-                SDVariable ret = sameDiff.sum(logProbs,Integer.MAX_VALUE);
-                return ret;
+                SDVariable activation = sameDiff.sigmoid("activation",sameDiff.mmul(x,w));
+                SDVariable oneMinusY = y.rsub("oneminusy",1.0);
+                SDVariable oneMinusPredictions = activation.rsub("oneminusactivations",1.0);
+                SDVariable outputTimesY = y.mul("output * y",activation);
+                SDVariable yHat = oneMinusY.mul("yhat",oneMinusPredictions);
+                SDVariable probs = outputTimesY.add("probs",yHat);
+                SDVariable logProbs = sameDiff.log("logprob",probs);
+                SDVariable ret = sameDiff.sum("totalsum",logProbs,Integer.MAX_VALUE);
+                SDVariable ret2 = sameDiff.neg("negtotalsum",ret);
+                return ret2;
             }
         },vars);
 
@@ -367,10 +368,13 @@ public class SameDiffTests {
 
         Pair<Map<SDVariable, Op>, List<Op>> opsForward = outside.getFunction("activate").exec();
         System.out.println(opsForward);
+        SDVariable loss = outside.getFunction("activate").getVariable("negtotalsum");
+        assertEquals(loss.getArr().getDouble(0),2.77,1e-2);
+        Pair<Map<SDVariable, Op>, List<Op>> opsBackward = outside.getFunction("activate").execBackwards();
 
 
-        SDVariable gradWrtX = outside.getFunction("loss").grad("x");
-        SDVariable gradWrtW = outside.getFunction("loss").grad("w");
+        SDVariable gradWrtX = outside.getFunction("activate").grad("x");
+        SDVariable gradWrtW = outside.getFunction("activate").grad("w");
         assumeNotNull(gradWrtX);
         assumeNotNull(gradWrtW);
 

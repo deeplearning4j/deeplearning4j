@@ -3023,6 +3023,7 @@ public class SameDiff {
             }
 
             SDVariable currVariable = getVertexIdToVariable().get(opExecAction.getOutputId());
+            currVariable.setArr(op.z());
             opMap.put(currVariable,op);
         }
 
