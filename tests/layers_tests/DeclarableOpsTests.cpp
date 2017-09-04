@@ -996,3 +996,32 @@ TEST_F(DeclarableOpsTests, Reshape2) {
 	ASSERT_TRUE(result->isSameShape(&y));	
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Repeat1) {
+	
+	float eBuffer[8] = {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
+    int eShape[8] = {2, 4, 2, 2, 1, 0, 1, 99};
+    NDArray<float>  x(2, 2, 'c');
+    NDArray<float> exp(eBuffer, eShape);
+    for (int e = 0; e < x.lengthOf(); e++)
+        x.putScalar(e, e + 1);
+    
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+	variableSpace->putVariable(1, new Variable<float>());
+
+	Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1});	
+	std::vector<int>* arguments = block->getIArguments();	
+	*arguments = {2};			// set repeats
+	arguments->push_back(0);	// set dimension
+
+	nd4j::ops::repeat<float> repeat;
+
+	Nd4jStatus status = repeat.execute(block);
+	ASSERT_EQ(ND4J_STATUS_OK, status);
+	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+	
+    ASSERT_TRUE(exp.equalsTo(result));
+}
+
