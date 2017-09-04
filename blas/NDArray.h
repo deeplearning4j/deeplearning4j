@@ -41,7 +41,7 @@ namespace nd4j {
 
         // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
         void replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting = true);
-
+ 
         NDArray<T>* repeat(int dimension, const std::vector<int> repeats);
 
         int sizeAt(int dim);

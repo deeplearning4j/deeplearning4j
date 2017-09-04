@@ -886,7 +886,7 @@ template <typename T> void NDArray<T>::tile(const std::vector<int>& reps) {
 
                 for (auto r: repeats)
                     reps.push_back(r);
-            } else {
+            } else { 
                 for (auto r: repeats)
                     reps.push_back(r);
 
