@@ -488,11 +488,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public void applyLearningRateScoreDecay() {
-
-    }
-
-    @Override
     public void fit(INDArray data) {
         this.setInput(data);
         fit();

@@ -597,8 +597,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected Distribution dist = null;
         protected double learningRate = 1e-1;
         protected double biasLearningRate = Double.NaN;
-//        protected Map<Integer, Double> learningRateSchedule = null;
-//        protected double lrScoreBasedDecay;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
         protected double l1Bias = Double.NaN;
@@ -670,12 +668,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 stepFunction = newConf.stepFunction;
                 useDropConnect = newConf.useDropConnect;
                 miniBatch = newConf.miniBatch;
-//                learningRatePolicy = newConf.learningRatePolicy;
-//                lrPolicyDecayRate = newConf.lrPolicyDecayRate;
-//                lrPolicySteps = newConf.lrPolicySteps;
-//                lrPolicyPower = newConf.lrPolicyPower;
-                learningRateSchedule = newConf.learningRateSchedule;
-                biasLearningRateSchedule = newConf.biasLearningRateSchedule;
                 pretrain = newConf.pretrain;
             }
         }
@@ -1387,8 +1379,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                         bLayer.setBiasLearningRate(bLayer.getLearningRate());
                     }
                 }
-                if (bLayer.getLearningRateSchedule() == null)
-                    bLayer.setLearningRateSchedule(learningRateSchedule);
                 if (bLayer.getLrSchedule() == null)
                     bLayer.setLrSchedule(learningRateSchedule);
                 if(bLayer.getBiasLRSchedule() == null)

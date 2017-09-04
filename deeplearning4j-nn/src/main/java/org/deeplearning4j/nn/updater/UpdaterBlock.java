@@ -104,17 +104,17 @@ public class UpdaterBlock {
      *
      * @param iteration The current iteration (i.e., total number of parameter updates so far)
      */
-    public void update(int iteration) {
-        update(iteration, false, gradientView, null);
+    public void update(int iteration, int epoch) {
+        update(iteration, epoch, false, gradientView, null);
     }
 
-    public void updateExternalGradient(int iteration, INDArray fullNetworkGradientView,
+    public void updateExternalGradient(int iteration, int epoch, INDArray fullNetworkGradientView,
                     INDArray fullNetworkParamsArray) {
         //Extract the relevant subset from the external network
-        update(iteration, true, fullNetworkGradientView, fullNetworkParamsArray);
+        update(iteration, epoch, true, fullNetworkGradientView, fullNetworkParamsArray);
     }
 
-    private void update(int iteration, boolean externalGradient, INDArray fullNetworkGradientView,
+    private void update(int iteration, int epoch, boolean externalGradient, INDArray fullNetworkGradientView,
                     INDArray fullNetworkParamsArray) {
         //Initialize the updater, if necessary
         if (gradientUpdater == null) {
@@ -139,23 +139,9 @@ public class UpdaterBlock {
             //No params for this layer
             return;
         }
-        BaseLayer baseLayer = (BaseLayer) l0.conf().getLayer();
-        String firstParam = layersAndVariablesInBlock.get(0).getParamName();
-        boolean isBias = l0.conf().getLayer().initializer().isBiasParam(firstParam);
-        ISchedule lrSchedule;
-        if(isBias){
-            //TODO should this
-            lrSchedule = l0.conf().getLearningRateSchedule();
-        } else {
-
-        }
-
-        if (lrPolicy != LearningRatePolicy.None || baseLayer.getIUpdater() instanceof Nesterovs) {
-            applyLrDecayPolicy(lrPolicy, iteration);
-        }
 
         //Apply the updater itself
-        gradientUpdater.applyUpdater(blockGradViewArray, iteration);
+        gradientUpdater.applyUpdater(blockGradViewArray, iteration, epoch);
 
         //Post apply: l1 and l2 by params
         for (ParamState p : layersAndVariablesInBlock) {
@@ -199,89 +185,5 @@ public class UpdaterBlock {
         if (conf.getL1ByParam(paramName) > 0) {
             gradientView.addi(Transforms.sign(paramsView, true).muli(conf.getL1ByParam(paramName)));
         }
-    }
-
-    /**
-     * Apply learning rate decay, based on the configuration
-     *
-     * @param decay     Learning rate schedule enumeration
-     * @param iteration Current iteration
-     */
-    public void applyLrDecayPolicy(LearningRatePolicy decay, int iteration) {
-        Layer layer = layersAndVariablesInBlock.get(0).getLayer();
-        String variable = layersAndVariablesInBlock.get(0).getParamName();
-
-        NeuralNetConfiguration conf = layer.conf();
-        double decayRate = layer.conf().getLrPolicyDecayRate();
-        double lr = conf.getLearningRateByParam(variable);
-
-        if (!(conf.getLayer() instanceof BaseLayer)) {
-            //No params
-            return;
-        }
-
-        BaseLayer baseLayer = (BaseLayer) conf.getLayer();
-
-        double newLr;
-        switch (decay) {
-            case Exponential:
-                newLr = lr * Math.pow(decayRate, iteration);
-                break;
-            case Inverse:
-                newLr = lr / Math.pow((1 + decayRate * iteration), conf.getLrPolicyPower());
-                break;
-            case Step:
-                newLr = lr * Math.pow(decayRate, Math.floor(iteration / conf.getLrPolicySteps()));
-                break;
-            case TorchStep:
-                if (iteration > 1 && conf.getLrPolicySteps() % iteration == 0) {
-                    newLr = lr * decayRate;
-                } else {
-                    newLr = lr;
-                }
-                break;
-            case Poly:
-                newLr = lr * Math.pow((1 - ((double) iteration) / conf.getNumIterations()), conf.getLrPolicyPower());
-                break;
-            case Sigmoid:
-                newLr = lr / (1 + Math.exp(-decayRate * (iteration - conf.getLrPolicySteps())));
-                break;
-            case Schedule:
-                if (baseLayer.getLearningRateSchedule().containsKey(iteration)) {
-                    newLr = baseLayer.getLearningRateSchedule().get(iteration);
-                } else {
-                    newLr = lr;
-                }
-                break;
-            case None:
-            case Score:
-                newLr = lr;
-                break;
-            default:
-                throw new RuntimeException("Unknown Learning rate decay value: " + decay);
-        }
-
-        //Handle momentum schedules. Given the new updater design, this change is purely cosmetic
-        double newMomentum = 0.0;
-        if (baseLayer.getIUpdater() instanceof Nesterovs) {
-            if (baseLayer.getMomentumSchedule() != null && baseLayer.getMomentumSchedule().containsKey(iteration)) {
-                newMomentum = baseLayer.getMomentumSchedule().get(iteration);
-            } else {
-                newMomentum = baseLayer.getMomentum();
-            }
-        }
-
-        //Need to set the LR for *all* variables in the Updater block. All variables (by definition of being in the
-        // same block) share the same LR schedule
-        for (ParamState vs : layersAndVariablesInBlock) {
-            vs.getLayer().conf().setLearningRateByParam(vs.getParamName(), newLr);
-            if (((BaseLayer) layer.conf().getLayer()).getIUpdater() instanceof Nesterovs) {
-                ((BaseLayer) vs.getLayer().conf().getLayer()).setMomentum(newMomentum);
-            }
-        }
-
-        //Apply the new LR according to the schedule.
-        //Note: momentum schedules are applied internally in the Nesterov config object applySchedules method
-        gradientUpdater.getConfig().applySchedules(iteration, newLr);
     }
 }

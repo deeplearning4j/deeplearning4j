@@ -89,7 +89,7 @@ public class TestUpdaters {
 
         int count = 0;
         for (int i = 0; i < 2; i++) {
-            updater.update(layer, gradient, i, 1);
+            updater.update(layer, gradient, i, 0, 1);
 
             // calculations for one iteration / update
 
@@ -154,7 +154,7 @@ public class TestUpdaters {
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
-        updater.update(layer, gradient, -1, 1);
+        updater.update(layer, gradient, -1, 0, 1);
 
         int count = 0;
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
@@ -191,7 +191,7 @@ public class TestUpdaters {
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
-        updater.update(layer, gradient, iteration, 1);
+        updater.update(layer, gradient, iteration, 0, 1);
 
         double beta1t = FastMath.pow(beta1, iteration + 1);
         double beta2t = FastMath.pow(beta2, iteration + 1);
@@ -258,7 +258,7 @@ public class TestUpdaters {
         /*
         * Making update for layer
         * */
-        updater.update(layer, gradient, iteration, 1);
+        updater.update(layer, gradient, iteration, 0,1);
 
         double beta1t = FastMath.pow(beta1, iteration + 1);
 
@@ -344,7 +344,7 @@ public class TestUpdaters {
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
-        updater.update(layer, gradient, iteration, 1);
+        updater.update(layer, gradient, iteration, 0, 1);
 
         double beta1t = FastMath.pow(beta1, iteration + 1);
         double beta2t = FastMath.pow(beta2, iteration + 1);
@@ -408,7 +408,7 @@ public class TestUpdaters {
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
-        updater.update(layer, gradient, -1, 1);
+        updater.update(layer, gradient, -1, 0, 1);
 
         int count = 0;
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
@@ -457,7 +457,7 @@ public class TestUpdaters {
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
-        updater.update(layer, gradient, -1, 1);
+        updater.update(layer, gradient, -1, 0, 1);
 
         double epsilon = 1e-8;
 
@@ -501,7 +501,7 @@ public class TestUpdaters {
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
-        updater.update(layer, gradient, -1, 1);
+        updater.update(layer, gradient, -1, 0, 1);
 
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
             val = entry.getValue();
@@ -540,7 +540,7 @@ public class TestUpdaters {
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, bg);
 
-        updater.update(layer, gradient, -1, 1);
+        updater.update(layer, gradient, -1, 0, 1);
 
         INDArray weightGradActual = gradient.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
         INDArray biasGradActual = gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
@@ -636,13 +636,13 @@ public class TestUpdaters {
                 layerGradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wGrad.dup());
                 layerGradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, bGrad.dup());
 
-                uArr[j].getConfig().applySchedules(0, net.getLayer(j).conf().getLearningRateByParam("W"));
+//                uArr[j].getConfig().applySchedules(0, net.getLayer(j).conf().getLearningRateByParam("W"));
                 for (String s : layerGradient.gradientForVariable().keySet()) {
                     expectedGradient.put(j + "_" + s, layerGradient.getGradientFor(s));
                 }
             }
 
-            updater.update(net, gradient, i, 1);
+            updater.update(net, gradient, i, 0, 1);
             assertEquals(gradient.gradientForVariable(), expectedGradient);
         }
     }
@@ -808,7 +808,7 @@ public class TestUpdaters {
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
         gradientCopyPreUpdate.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbg);
 
-        updater.update(layer, gradient, -1, 1);
+        updater.update(layer, gradient, -1, 0, 1);
 
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
             val = entry.getValue();
@@ -845,7 +845,7 @@ public class TestUpdaters {
         layer.setBackpropGradientsViewArray(gradients);
         updater = UpdaterCreator.getUpdater(layer);
 
-        updater.update(layer, gradient, -1, 1);
+        updater.update(layer, gradient, -1, 0, 1);
 
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
             //            System.out.println(entry.getKey());

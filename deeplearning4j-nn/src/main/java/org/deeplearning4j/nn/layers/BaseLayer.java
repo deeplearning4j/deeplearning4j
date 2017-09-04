@@ -497,14 +497,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         score += accum;
     }
 
-    @Override
-    public void applyLearningRateScoreDecay() {
-//        for (Map.Entry<String, Double> lrPair : conf.getLearningRateByParam().entrySet())
-//            conf.setLearningRateByParam(lrPair.getKey(),
-//                            lrPair.getValue() * (conf.getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * Does this layer have no bias term? Many layers (dense, convolutional, output, embedding) have biases by
      * default, but no-bias versions are possible via configuration

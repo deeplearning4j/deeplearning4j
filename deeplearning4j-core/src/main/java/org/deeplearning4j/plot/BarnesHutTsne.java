@@ -672,11 +672,6 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
-    public void applyLearningRateScoreDecay() {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
     public void fit(INDArray data) {
         this.x = data;
         fit();

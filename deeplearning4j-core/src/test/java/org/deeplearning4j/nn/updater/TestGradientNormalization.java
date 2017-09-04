@@ -43,7 +43,7 @@ public class TestGradientNormalization {
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGrad);
 
         Updater updater = UpdaterCreator.getUpdater(layer);
-        updater.update(layer, gradient, 0, 1);
+        updater.update(layer, gradient, 0, 0, 1);
 
         assertNotEquals(weightGradCopy, weightGrad);
         assertNotEquals(biasGradCopy, biasGrad);
@@ -87,7 +87,7 @@ public class TestGradientNormalization {
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGrad);
 
-        updater.update(layer, gradient, 0, 1);
+        updater.update(layer, gradient, 0, 0, 1);
 
         INDArray normWeightsExpected = weightGradCopy.div(weightGradCopy.norm2Number());
         INDArray normBiasExpected = biasGradCopy.div(biasGradCopy.norm2Number());
@@ -122,7 +122,7 @@ public class TestGradientNormalization {
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGrad);
 
         Updater updater = UpdaterCreator.getUpdater(layer);
-        updater.update(layer, gradient, 0, 1);
+        updater.update(layer, gradient, 0, 0, 1);
 
         assertNotEquals(weightGradCopy, weightGrad);
         assertNotEquals(biasGradCopy, biasGrad);
@@ -185,7 +185,7 @@ public class TestGradientNormalization {
                 assertTrue(layerGradL2 > threshold);
 
             Updater updater = UpdaterCreator.getUpdater(layer);
-            updater.update(layer, gradient, 0, 1);
+            updater.update(layer, gradient, 0, 0, 1);
 
             if (t == 0) {
                 //norm2 < threshold -> no change
@@ -236,7 +236,7 @@ public class TestGradientNormalization {
         assertTrue(weightL2 < threshold);
         assertTrue(biasL2 > threshold);
 
-        updater.update(layer, gradient, 0, 1);
+        updater.update(layer, gradient, 0, 0, 1);
 
         assertEquals(weightGradCopy, weightGrad); //weight norm2 < threshold -> no change
         assertNotEquals(biasGradCopy, biasGrad); //bias norm2 > threshold -> rescale

@@ -349,11 +349,6 @@ public class TestOptimizers {
         }
 
         @Override
-        public void applyLearningRateScoreDecay() {
-
-        }
-
-        @Override
         public void setCacheMode(CacheMode mode) {
             throw new UnsupportedOperationException();
         }
@@ -534,11 +529,6 @@ public class TestOptimizers {
         @Override
         public void setBackpropGradientsViewArray(INDArray gradients) {
             throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void applyLearningRateScoreDecay() {
-
         }
 
 
@@ -731,11 +721,6 @@ public class TestOptimizers {
         @Override
         public void setBackpropGradientsViewArray(INDArray gradients) {
             throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void applyLearningRateScoreDecay() {
-
         }
 
 

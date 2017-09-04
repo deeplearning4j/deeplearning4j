@@ -2370,18 +2370,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         setParams(params);
     }
 
-    @Override
-    public void applyLearningRateScoreDecay() {
-        for (Layer layer : layers) {
-            if (!layer.conf().getLearningRateByParam().isEmpty()) {
-                for (Map.Entry<String, Double> lrPair : layer.conf().getLearningRateByParam().entrySet()) {
-                    layer.conf().setLearningRateByParam(lrPair.getKey(),
-                                    lrPair.getValue() * (layer.conf().getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
-                }
-            }
-        }
-    }
-
     public NeuralNetConfiguration getDefaultConfiguration() {
         return defaultConfiguration;
     }

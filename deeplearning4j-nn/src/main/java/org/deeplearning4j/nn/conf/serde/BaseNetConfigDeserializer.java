@@ -4,6 +4,9 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.linalg.learning.config.*;
+import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.linalg.schedule.MapSchedule;
+import org.nd4j.linalg.schedule.ScheduleType;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
@@ -73,7 +76,12 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
                 case NESTEROVS:
                     Map<Integer, Double> momentumSchedule = bl.getMomentumSchedule();
                     double momentum = bl.getMomentum();
-                    bl.setIUpdater(new Nesterovs(lr, momentum, momentumSchedule));
+                    if(momentumSchedule != null){
+                        ISchedule ms = new MapSchedule(ScheduleType.ITERATION, momentumSchedule);
+                        bl.setIUpdater(new Nesterovs(lr, ms));
+                    } else {
+                        bl.setIUpdater(new Nesterovs(lr, momentum));
+                    }
                     break;
                 case ADAGRAD:
                     bl.setIUpdater(new AdaGrad(lr, eps));

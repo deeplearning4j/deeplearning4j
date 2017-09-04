@@ -119,7 +119,7 @@ public class TestDecayPolicies {
         gradientActual.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
         for (int i = 0; i < iterations; i++) {
-            updater.update(layer, gradientActual, i, 1);
+            updater.update(layer, gradientActual, i, 0, 1);
             double expectedLr = calcExponentialDecay(lr, decayRate, i);
             assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
             assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
@@ -153,7 +153,7 @@ public class TestDecayPolicies {
         gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
         for (int i = 0; i < iterations; i++) {
-            updater.update(layer, gradientActual, i, 1);
+            updater.update(layer, gradientActual, i, 0, 1);
             double expectedLr = calcInverseDecay(lr, decayRate, i, power);
             assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
             assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
@@ -186,7 +186,7 @@ public class TestDecayPolicies {
         gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
         for (int i = 0; i < iterations; i++) {
-            updater.update(layer, gradientActual, i, 1);
+            updater.update(layer, gradientActual, i, 0, 1);
             double expectedLr = calcStepDecay(lr, decayRate, i, steps);
             assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
             assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
@@ -221,7 +221,7 @@ public class TestDecayPolicies {
 
         double expectedLr = lr;
         for (int i = 0; i < iterations; i++) {
-            updater.update(layer, gradientActual, i, 1);
+            updater.update(layer, gradientActual, i, 0, 1);
             if (i > 1 && steps % i == 0)
                 expectedLr = calcTorchStepDecay(expectedLr, decayRate);
             assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
@@ -253,7 +253,7 @@ public class TestDecayPolicies {
         gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
         for (int i = 0; i < iterations; i++) {
-            updater.update(layer, gradientActual, i, 1);
+            updater.update(layer, gradientActual, i, 0, 1);
             double expectedLr = calcPolyDecay(lr, i, power, iterations);
             assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
             assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
@@ -287,7 +287,7 @@ public class TestDecayPolicies {
         gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
         for (int i = 0; i < iterations; i++) {
-            updater.update(layer, gradientActual, i, 1);
+            updater.update(layer, gradientActual, i, 0, 1);
             double expectedLr = calcSigmoidDecay(layer.conf().getLearningRateByParam("W"), decayRate, i, steps);
             assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
             assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
@@ -330,7 +330,7 @@ public class TestDecayPolicies {
             gradientExpected.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
             for (int i = 0; i < 2; i++) {
-                updater.update(layer, gradientActual, i, 1);
+                updater.update(layer, gradientActual, i, 0, 1);
 
                 if (updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.SGD))
                     lr = testSGDComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
@@ -399,7 +399,7 @@ public class TestDecayPolicies {
                     paramsSoFar += nParams;
                 }
 
-                updater.update(net, gradientActual, i, 1);
+                updater.update(net, gradientActual, i, 0, 1);
                 if (updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.SGD))
                     lr = testSGDComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
                 else if (updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.ADAGRAD))
@@ -415,37 +415,6 @@ public class TestDecayPolicies {
                     assertEquals(lr, net.getLayer(1).conf().getLearningRateByParam("W"), learningRateAfter.get(1));
             }
         }
-    }
-
-    @Test
-    public void testLearningRateScoreDecay() {
-        double lr = 0.01;
-        double lrScoreDecay = 0.10;
-        int[] nIns = {4, 2};
-        int[] nOuts = {2, 3};
-        int oldScore = 1;
-        int newScore = 1;
-        int iteration = 3;
-        INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr)
-                        .learningRateDecayPolicy(LearningRatePolicy.Score).lrPolicyDecayRate(lrScoreDecay).list()
-                        .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
-                        .layer(1, new OutputLayer.Builder().nIn(nIns[1]).nOut(nOuts[1])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
-                        .backprop(true).pretrain(false).build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-        ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(),
-                        new NegativeDefaultStepFunction(), null, net);
-        opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
-        assertEquals(lrScoreDecay, net.getLayer(0).conf().getLrPolicyDecayRate(), 1e-4);
-        assertEquals(lr * (lrScoreDecay + Nd4j.EPS_THRESHOLD), net.getLayer(0).conf().getLearningRateByParam("W"),
-                        1e-4);
-
     }
 
     @Test
@@ -509,7 +478,7 @@ public class TestDecayPolicies {
         gradientExpected.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
 
         for (int i = 0; i < 2; i++) {
-            updater.update(layer, gradientSingle, i, 1);
+            updater.update(layer, gradientSingle, i, 0, 1);
             mu = testNesterovsComputation(gradientSingle, gradientExpected, lr, mu, momentumAfter, i);
             assertEquals(mu, ((BaseLayer) layer.conf().getLayer()).getMomentum(), 1e-4);
         }
@@ -580,7 +549,7 @@ public class TestDecayPolicies {
 
 
         for (int i = 0; i < 2; i++) {
-            updater.update(net, gradientMLN, i, 1);
+            updater.update(net, gradientMLN, i, 0, 1);
             mu = testNesterovsComputation(gradientMLN, gradientExpected, lr, mu, momentumAfter, i);
             assertEquals(mu, ((BaseLayer) net.getLayer(1).conf().getLayer()).getMomentum(), 1e-4);
         }

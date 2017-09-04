@@ -145,14 +145,6 @@ public interface Model {
     void setBackpropGradientsViewArray(INDArray gradients);
 
     /**
-     * Update learningRate using for this model.
-     * Use the learningRateScoreBasedDecay to adapt the score
-     * if the Eps termination condition is met
-     */
-    void applyLearningRateScoreDecay();
-
-
-    /**
      * Fit the model to the given data
      * @param data the data to fit the model to
      */

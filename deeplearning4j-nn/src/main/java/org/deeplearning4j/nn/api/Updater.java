@@ -33,5 +33,5 @@ public interface Updater extends Serializable {
      * @param gradient
      * @param iteration
      */
-    void update(Layer layer, Gradient gradient, int iteration, int miniBatchSize);
+    void update(Layer layer, Gradient gradient, int iteration, int epoch, int miniBatchSize);
 }

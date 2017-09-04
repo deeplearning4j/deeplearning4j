@@ -83,10 +83,10 @@ public class LayerValidation {
             //Note that for LRs, if user specifies .learningRate(x).updater(Updater.SGD) (for example), we need to set the
             // LR in the Sgd object. We can do this using the schedules method, which also works for custom updaters
             //Local layer LR set
-            u.applySchedules(0, layer.getLearningRate());
+            setLegacyLr(u, layer.getLearningRate() );
         } else if (!Double.isNaN(learningRate)) {
             //Global LR set
-            u.applySchedules(0, learningRate);
+            setLegacyLr(u, learningRate);
         }
 
 
@@ -288,6 +288,25 @@ public class LayerValidation {
             }
         }
     }
+
+    private static void setLegacyLr(IUpdater u, double lr){
+        if(u instanceof AdaGrad){
+            ((AdaGrad) u).setLearningRate(lr);
+        } else if(u instanceof Adam){
+            ((Adam) u).setLearningRate(lr);
+        } else if(u instanceof AdaMax){
+            ((AdaMax) u).setLearningRate(lr);
+        } else if(u instanceof Nadam){
+            ((Nadam) u).setLearningRate(lr);
+        } else if(u instanceof Nesterovs){
+            ((Nesterovs) u).setLearningRate(lr);
+        } else if(u instanceof RmsProp){
+            ((RmsProp) u).setLearningRate(lr);
+        } else if(u instanceof Sgd){
+            ((Sgd) u).setLearningRate(lr);
+        }
+    }
+
 
     public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, IDropout iDropOut,
                                          Double l2, Double l2Bias, Double l1, Double l1Bias,

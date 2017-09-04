@@ -224,12 +224,12 @@ public class FineTuneConfiguration {
             nnc.setUseDropConnect(useDropConnect);
         if (minimize != null)
             nnc.setMinimize(minimize);
-        if (learningRatePolicy != null)
-            nnc.setLearningRatePolicy(learningRatePolicy);
-        if (lrPolicySteps != null)
-            nnc.setLrPolicySteps(lrPolicySteps);
-        if (lrPolicyPower != null)
-            nnc.setLrPolicyPower(lrPolicyPower);
+//        if (learningRatePolicy != null)
+//            nnc.setLearningRatePolicy(learningRatePolicy);
+//        if (lrPolicySteps != null)
+//            nnc.setLrPolicySteps(lrPolicySteps);
+//        if (lrPolicyPower != null)
+//            nnc.setLrPolicyPower(lrPolicyPower);
 
         if (convolutionMode != null && l instanceof ConvolutionLayer) {
             ((ConvolutionLayer) l).setConvolutionMode(convolutionMode);
@@ -345,8 +345,8 @@ public class FineTuneConfiguration {
         }
         if (biasLearningRate != null)
             confBuilder.setBiasLearningRate(biasLearningRate);
-        if (learningRateSchedule != null)
-            confBuilder.setLearningRateSchedule(learningRateSchedule);
+//        if (learningRateSchedule != null)
+//            confBuilder.setLearningRateSchedule(learningRateSchedule);
         //      if(lrScoreBasedDecay != null)
         if (l1 != null)
             confBuilder.setL1(l1);

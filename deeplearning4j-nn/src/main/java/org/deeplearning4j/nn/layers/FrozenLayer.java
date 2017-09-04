@@ -282,11 +282,6 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void applyLearningRateScoreDecay() {
-        insideLayer.applyLearningRateScoreDecay();
-    }
-
-    @Override
     public void fit(INDArray data) {
         if (!logFit) {
             OneTimeLogger.info(log, "Frozen layers cannot be fit.Warning will be issued only once per instance");

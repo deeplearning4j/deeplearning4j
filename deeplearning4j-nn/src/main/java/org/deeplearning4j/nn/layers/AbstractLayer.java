@@ -439,11 +439,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void applyLearningRateScoreDecay() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
     public void setMaskArray(INDArray maskArray) {
         this.maskArray = maskArray;
     }

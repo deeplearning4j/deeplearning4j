@@ -310,21 +310,6 @@ public class LayerConfigTest {
         assertEquals(2.5, ((BaseLayer) conf.getConf(1).getLayer()).getGradientNormalizationThreshold(), 0.0);
     }
 
-    @Test
-    public void testLearningRatePolicyNone() {
-        double lr = 2;
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr)
-                        .learningRateDecayPolicy(LearningRatePolicy.None).list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-        assertEquals(LearningRatePolicy.None, conf.getConf(0).getLearningRatePolicy());
-        assertEquals(LearningRatePolicy.None, conf.getConf(1).getLearningRatePolicy());
-
-    }
-
 
     @Test
     public void testLearningRatePolicyExponential() {
