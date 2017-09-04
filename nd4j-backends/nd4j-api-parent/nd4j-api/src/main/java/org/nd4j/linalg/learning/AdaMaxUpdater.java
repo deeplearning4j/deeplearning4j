@@ -60,7 +60,7 @@ public class AdaMaxUpdater implements GradientUpdater<AdaMax> {
      * @return the gradient
      */
     @Override
-    public void applyUpdater(INDArray gradient, int iteration) {
+    public void applyUpdater(INDArray gradient, int iteration, int epoch) {
         if (m == null || u == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
 
@@ -74,7 +74,8 @@ public class AdaMaxUpdater implements GradientUpdater<AdaMax> {
 
         double beta1t = FastMath.pow(config.getBeta1(), iteration + 1);
 
-        double alphat = config.getLearningRate() / (1.0 - beta1t);
+        double learningRate = config.currentLearningRate(iteration, epoch);
+        double alphat = learningRate / (1.0 - beta1t);
         if (Double.isNaN(alphat) || Double.isInfinite(alphat) || alphat == 0.0) {
             alphat = config.getEpsilon();
         }

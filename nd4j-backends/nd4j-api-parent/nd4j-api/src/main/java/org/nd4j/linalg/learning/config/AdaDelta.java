@@ -40,11 +40,6 @@ public class AdaDelta implements IUpdater {
     }
 
     @Override
-    public void applySchedules(int iteration, double newLearningRate) {
-        //No op - AdaDelta doesn't use LR
-    }
-
-    @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         AdaDeltaUpdater u = new AdaDeltaUpdater(this);
         int[] gradientShape = viewArray.shape();

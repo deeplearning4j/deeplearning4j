@@ -61,11 +61,6 @@ public class AdaGrad implements IUpdater {
     }
 
     @Override
-    public void applySchedules(int iteration, double newLearningRate) {
-        this.learningRate = newLearningRate;
-    }
-
-    @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         AdaGradUpdater u = new AdaGradUpdater(this);
         u.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
@@ -75,5 +70,13 @@ public class AdaGrad implements IUpdater {
     @Override
     public AdaGrad clone() {
         return new AdaGrad(learningRate, epsilon);
+    }
+
+
+    public double currentLearningRate(int iteration, int epoch){
+        if(learningRateSchedule != null){
+            return learningRateSchedule.valueAt(iteration, epoch);
+        }
+        return learningRate;
     }
 }

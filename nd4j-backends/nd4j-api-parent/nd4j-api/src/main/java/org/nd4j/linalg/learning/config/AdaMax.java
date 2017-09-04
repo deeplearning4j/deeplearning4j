@@ -64,11 +64,6 @@ public class AdaMax implements IUpdater {
     }
 
     @Override
-    public void applySchedules(int iteration, double newLearningRate) {
-        this.learningRate = newLearningRate;
-    }
-
-    @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         AdaMaxUpdater a = new AdaMaxUpdater(this);
         int[] gradientShape = viewArray.shape();
@@ -81,5 +76,12 @@ public class AdaMax implements IUpdater {
     @Override
     public IUpdater clone() {
         return new AdaMax(learningRate, learningRateSchedule, beta1, beta2, epsilon);
+    }
+
+    public double currentLearningRate(int iteration, int epoch){
+        if(learningRateSchedule != null){
+            return learningRateSchedule.valueAt(iteration, epoch);
+        }
+        return learningRate;
     }
 }

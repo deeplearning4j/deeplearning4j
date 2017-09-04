@@ -62,11 +62,11 @@ public class RmsPropUpdater implements GradientUpdater<RmsProp> {
     }
 
     @Override
-    public void applyUpdater(INDArray gradient, int iteration) {
+    public void applyUpdater(INDArray gradient, int iteration, int epoch) {
         if (lastGradient == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
 
-        double learningRate = config.getLearningRate();
+        double learningRate = config.currentLearningRate(iteration, epoch);
         double rmsDecay = config.getRmsDecay();
         double epsilon = config.getEpsilon();
 

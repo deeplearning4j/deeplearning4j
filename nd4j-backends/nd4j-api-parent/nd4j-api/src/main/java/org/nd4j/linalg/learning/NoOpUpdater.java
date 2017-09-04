@@ -43,7 +43,7 @@ public class NoOpUpdater implements GradientUpdater<NoOp> {
     }
 
     @Override
-    public void applyUpdater(INDArray gradient, int iteration) {
+    public void applyUpdater(INDArray gradient, int iteration, int epoch) {
         //No op
     }
 }

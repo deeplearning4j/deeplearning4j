@@ -47,11 +47,6 @@ public class Sgd implements IUpdater {
     }
 
     @Override
-    public void applySchedules(int iteration, double newLearningRate) {
-        this.learningRate = newLearningRate;
-    }
-
-    @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         if (viewArray != null) {
             throw new IllegalStateException("View arrays are not supported/required for SGD updater");
@@ -62,5 +57,12 @@ public class Sgd implements IUpdater {
     @Override
     public Sgd clone() {
         return new Sgd(learningRate, learningRateSchedule);
+    }
+
+    public double currentLearningRate(int iteration, int epoch){
+        if(learningRateSchedule != null){
+            return learningRateSchedule.valueAt(iteration, epoch);
+        }
+        return learningRate;
     }
 }

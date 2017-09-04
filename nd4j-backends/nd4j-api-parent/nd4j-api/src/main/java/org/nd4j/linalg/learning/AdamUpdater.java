@@ -72,13 +72,13 @@ public class AdamUpdater implements GradientUpdater<Adam> {
      * @return the gradient
      */
     @Override
-    public void applyUpdater(INDArray gradient, int iteration) {
+    public void applyUpdater(INDArray gradient, int iteration, int epoch) {
         if (m == null || v == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
 
         double beta1 = config.getBeta1();
         double beta2 = config.getBeta2();
-        double learningRate = config.getLearningRate();
+        double learningRate = config.currentLearningRate(iteration, epoch);
         double epsilon = config.getEpsilon();
 
         INDArray oneMinusBeta1Grad = gradient.mul(1.0 - beta1);

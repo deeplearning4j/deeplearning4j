@@ -48,5 +48,5 @@ public interface GradientUpdater<T extends IUpdater> {
      * @param iteration
      * @return the modified gradient
      */
-    void applyUpdater(INDArray gradient, int iteration);
+    void applyUpdater(INDArray gradient, int iteration, int epoch);
 }

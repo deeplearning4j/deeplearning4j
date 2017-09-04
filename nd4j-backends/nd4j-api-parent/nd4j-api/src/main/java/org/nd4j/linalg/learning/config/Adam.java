@@ -66,11 +66,6 @@ public class Adam implements IUpdater {
     }
 
     @Override
-    public void applySchedules(int iteration, double newLearningRate) {
-        this.learningRate = newLearningRate;
-    }
-
-    @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         AdamUpdater u = new AdamUpdater(this);
         int[] gradientShape = viewArray.shape();
@@ -83,5 +78,12 @@ public class Adam implements IUpdater {
     @Override
     public Adam clone() {
         return new Adam(learningRate, learningRateSchedule, beta1, beta2, epsilon);
+    }
+
+    public double currentLearningRate(int iteration, int epoch){
+        if(learningRateSchedule != null){
+            return learningRateSchedule.valueAt(iteration, epoch);
+        }
+        return learningRate;
     }
 }

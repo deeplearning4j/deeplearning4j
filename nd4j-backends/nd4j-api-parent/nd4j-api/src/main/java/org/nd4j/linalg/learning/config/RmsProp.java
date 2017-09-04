@@ -57,11 +57,6 @@ public class RmsProp implements IUpdater {
     }
 
     @Override
-    public void applySchedules(int iteration, double newLearningRate) {
-        this.learningRate = newLearningRate;
-    }
-
-    @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         RmsPropUpdater u = new RmsPropUpdater(this);
         u.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
@@ -71,5 +66,12 @@ public class RmsProp implements IUpdater {
     @Override
     public RmsProp clone() {
         return new RmsProp(learningRate, learningRateSchedule, rmsDecay, epsilon);
+    }
+
+    public double currentLearningRate(int iteration, int epoch){
+        if(learningRateSchedule != null){
+            return learningRateSchedule.valueAt(iteration, epoch);
+        }
+        return learningRate;
     }
 }

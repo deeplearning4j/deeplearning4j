@@ -73,14 +73,6 @@ public class Nesterovs implements IUpdater {
     }
 
     @Override
-    public void applySchedules(int iteration, double newLearningRate) {
-        this.learningRate = newLearningRate;
-        if (momentumSchedule != null && momentumSchedule.containsKey(iteration)) {
-            momentum = momentumSchedule.get(iteration);
-        }
-    }
-
-    @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         NesterovsUpdater u = new NesterovsUpdater(this);
         u.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
@@ -90,5 +82,19 @@ public class Nesterovs implements IUpdater {
     @Override
     public Nesterovs clone() {
         return new Nesterovs(learningRate, learningRateSchedule, momentum, momentumISchedule);
+    }
+
+    public double currentLearningRate(int iteration, int epoch){
+        if(learningRateSchedule != null){
+            return learningRateSchedule.valueAt(iteration, epoch);
+        }
+        return learningRate;
+    }
+
+    public double currentMomentum(int iteration, int epoch){
+        if(momentumISchedule != null){
+            return momentumISchedule.valueAt(iteration, epoch);
+        }
+        return momentum;
     }
 }
