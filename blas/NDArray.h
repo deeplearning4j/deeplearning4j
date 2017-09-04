@@ -35,7 +35,7 @@ namespace nd4j {
         // this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
         NDArray(const NDArray<T> *other);
 		
-		// 
+		// copy constructor
         NDArray(const NDArray<T>& other);
 
         // this constructor creates new array using shape information contained in initializer_list/vector argument
