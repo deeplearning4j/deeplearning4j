@@ -14,6 +14,10 @@ public class SoftSign extends AbstractUnaryFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public SoftSign(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
     @Override
     public ArrayField doGetValue() {
         return a().softsign(arg().getValue(true));

@@ -15,6 +15,10 @@ public class Square extends AbstractUnaryFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public Square(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
     @Override
     public ArrayField doGetValue() {
         return a().square(arg().getValue(true));

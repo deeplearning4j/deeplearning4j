@@ -21,6 +21,12 @@ public class ScalarMul extends AbstractScalarFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public ScalarMul(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff,i_v,inPlace,extraArgs);
+    }
+
+
+
     /**
      * Get the value of this function
      *
@@ -32,7 +38,11 @@ public class ScalarMul extends AbstractScalarFunction {
             scalarValue = (Number) extraArgs[0];
         }
 
-        return arg().getValue(true).mul(scalarValue.doubleValue());
+        if(isInPlace())
+            return arg().getValue(true).mul(scalarValue.doubleValue());
+        else
+            return arg().getValue(true).muli(scalarValue.doubleValue());
+
     }
 
     @Override

@@ -15,6 +15,9 @@ public class Elu extends AbstractUnaryFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public Elu(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
 
     @Override
     public ArrayField doGetValue() {

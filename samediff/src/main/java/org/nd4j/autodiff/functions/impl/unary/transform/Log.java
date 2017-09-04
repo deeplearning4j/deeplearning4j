@@ -14,6 +14,10 @@ public class Log extends AbstractUnaryFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public Log(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
     @Override
     public ArrayField doGetValue() {
         return a().log(arg().getValue(true));

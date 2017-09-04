@@ -14,9 +14,13 @@ public class ATanh extends AbstractUnaryFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public ATanh(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().atanh(arg().getValue(true));
+        return a().atanh(arg().getValue(true));
     }
 
 

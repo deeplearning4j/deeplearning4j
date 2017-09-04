@@ -35,10 +35,23 @@ public abstract class DifferentialFunction implements Differential {
     @Getter
     @Setter
     protected DifferentialFunction gradient;
+    @Getter
+    @Setter
+    protected boolean inPlace;
 
     protected Object[] extraArgs;
 
 
+    /**
+     *
+     * @param sameDiff
+     * @param extraArgs
+     */
+    public DifferentialFunction(SameDiff sameDiff,boolean inPlace, Object[] extraArgs) {
+        this.sameDiff = sameDiff;
+        this.inPlace = inPlace;
+        this.extraArgs = extraArgs;
+    }
 
 
     /**
@@ -238,14 +251,14 @@ public abstract class DifferentialFunction implements Differential {
         //ensure there's 2 vertices for when the 2 inputs are the same
         if(i_v1.equals(i_v2)) {
             NDArrayVertex dupVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(),
-                    NDArrayInformation.builder()
+                    NDArrayInformation.builder().arrId(v1.getInput().getArrId())
                             .shape(v1.getInput().getShape())
                             .id(v1.getInput().getId()).build());
             //update vertex id
             v2VertexId = dupVertex.vertexID();
             sameDiff.getGraph().addVertex(dupVertex);
             opState = OpState.builder()
-                    .opType(opType)
+                    .opType(opType).inPlace(inPlace)
                     .differentialFunction(this)
                     .opName(opName)
                     .id(opName + "(" + dupVertex.getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
@@ -260,7 +273,7 @@ public abstract class DifferentialFunction implements Differential {
         else {
             opState =  OpState.builder()
                     .opType(opType)
-                    .opName(opName)
+                    .opName(opName).inPlace(inPlace)
                     .differentialFunction(this)
                     .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                     .vertexIds(new String[]{String.valueOf(v2VertexId),String.valueOf(newVertex.vertexID())})
@@ -271,7 +284,7 @@ public abstract class DifferentialFunction implements Differential {
         }
 
         opState2 = OpState.builder()
-                .opType(opType)
+                .opType(opType).inPlace(inPlace)
                 .opName(opName).result(arrInfo)
                 .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                 .vertexIds(new String[]{String.valueOf(v1VertexId),String.valueOf(newVertex.vertexID())})
@@ -280,6 +293,8 @@ public abstract class DifferentialFunction implements Differential {
                 .differentialFunction(this)
                 .result(arrInfo)
                 .build();
+
+
         //add the first vertex no matter what as normal
         sameDiff.getGraph().addEdge(
                 v1VertexId,
@@ -323,19 +338,7 @@ public abstract class DifferentialFunction implements Differential {
 
     }
 
-    protected boolean getInPlace(Object[] extraArgs) {
-        if(extraArgs == null) {
-            return false;
-        }
-        else {
-            for(int i = 0; i < extraArgs.length; i++) {
-                if(extraArgs[i] instanceof Boolean)
-                    return (Boolean) extraArgs[i];
-            }
-        }
 
-        return false;
-    }
 
 
     /**

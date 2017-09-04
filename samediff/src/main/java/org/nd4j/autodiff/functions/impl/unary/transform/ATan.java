@@ -14,6 +14,10 @@ public class ATan extends AbstractUnaryFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public ATan(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
+
     @Override
     public ArrayField doGetValue() {
         return a().atan(arg().getValue(true));

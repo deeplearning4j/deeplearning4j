@@ -23,11 +23,13 @@ public abstract class AbstractScalarFunction extends AbstractUnaryFunction {
         this.scalarValue = (Number) extraArgs[0];
     }
 
-
+    public AbstractScalarFunction(SameDiff sameDiff, DifferentialFunction i_v,boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v,i_v.getResultShape(), OpState.OpType.SCALAR_TRANSFORM,inPlace,extraArgs);
+        this.scalarValue = (Number) extraArgs[0];
+    }
 
     public AbstractScalarFunction(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
-        super(sameDiff, i_v,i_v.getResultShape(), OpState.OpType.SCALAR_TRANSFORM,extraArgs);
-        this.scalarValue = (Number) extraArgs[0];
+      this(sameDiff,i_v,false,extraArgs);
     }
 
 
@@ -59,7 +61,7 @@ public abstract class AbstractScalarFunction extends AbstractUnaryFunction {
 
         OpState owner =  OpState.builder()
                 .opType(OpState.OpType.SCALAR_TRANSFORM)
-                .differentialFunction(this)
+                .differentialFunction(this).inPlace(inPlace)
                 .opName(opName).extraArgs(extraArgs).scalarValue((Number) extraArgs[0])
                 .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                 .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})

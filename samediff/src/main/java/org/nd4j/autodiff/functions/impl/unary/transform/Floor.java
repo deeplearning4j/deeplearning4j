@@ -13,6 +13,9 @@ public class Floor extends AbstractUnaryFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public Floor(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
 
     @Override
     public ArrayField doGetValue() {

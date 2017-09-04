@@ -22,6 +22,13 @@ public class ScalarRDiv extends AbstractScalarFunction {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public ScalarRDiv(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff,i_v,inPlace,extraArgs);
+    }
+
+
+
+
     /**
      * Get the value of this function
      *
@@ -33,9 +40,12 @@ public class ScalarRDiv extends AbstractScalarFunction {
             scalarValue = (Number) extraArgs[0];
         }
 
-        return arg().getValue(true).rdiv(scalarValue.doubleValue());
-    }
+        if(isInPlace())
+            return arg().getValue(true).rdiv(scalarValue.doubleValue());
+        else
+            return arg().getValue(true).rdivi(scalarValue.doubleValue());
 
+    }
     @Override
     public String functionName() {
         return new org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseDivision().name();
