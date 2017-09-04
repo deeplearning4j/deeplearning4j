@@ -460,7 +460,21 @@ namespace nd4j {
 			return ND4J_STATUS_BAD_INPUT;
         }
 
-		
+		//////////////////////////////////////////////////////////////////////////
+		// here iArgs is int vector of repeats at the beginning and last element in iArgs is dimension
+		DECLARE_CONFIGURABLE_OP(repeat, 1, 1, true, 0, -1) {
+			REQUIRE_OK(this->validateNonEmptyInput(block));			
+			std::vector<int>* argumets = block.getIArguments();
+			int argsSize = argumets->size();
+			int dimension = (*argumets)[argsSize-1];
+			std::vector<int> repeats(argumets->begin(), argumets->end() - 1);						
+
+			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
+			NDArray<T>* ret = x->repeat(dimension, repeats);
+			STORE_RESULT(*ret);
+
+			return ND4J_STATUS_OK;				
+        }
     }
 }
 
