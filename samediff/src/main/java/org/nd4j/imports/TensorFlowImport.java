@@ -72,6 +72,9 @@ public class TensorFlowImport {
 
         SameDiff diff = SameDiff.builder()
                 .graph(graph)
+                .vertexToArray(new HashMap<>())
+                .variableMap(new HashMap<>())
+                .vertexIdxToInfo(new HashMap<>())
                 .build();
 
         graph.setSameDiff(diff);
@@ -101,6 +104,7 @@ public class TensorFlowImport {
 
                 NDArrayInformation varInformation = NDArrayInformation.builder()
                         .id(tfNode.getName())
+                        .arrId(tfNode.getName())
                         .build();
 
                 Vertex<NDArrayInformation> vertex = new Vertex<>(++nodesCnt, varInformation);
@@ -150,7 +154,6 @@ public class TensorFlowImport {
                 }
 
                 diff.addVariable(variable);
-
                 graph.addVertex(vertex);
             } else {
                 // operation node

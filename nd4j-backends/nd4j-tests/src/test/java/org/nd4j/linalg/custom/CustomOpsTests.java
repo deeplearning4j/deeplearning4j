@@ -11,7 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import static org.junit.Assert.*;
 
 /**
- * This class holds carios CustomOps tests
+ * This class holds various CustomOps tests
  *
  * @author raver119@gmail.com
  */

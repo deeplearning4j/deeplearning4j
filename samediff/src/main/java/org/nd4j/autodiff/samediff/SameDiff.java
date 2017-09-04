@@ -4,7 +4,9 @@ import com.google.common.base.Preconditions;
 import com.rits.cloning.Cloner;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.val;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.*;
@@ -51,6 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @AllArgsConstructor
 @Data
 @Builder
+@Slf4j
 public class SameDiff {
     private SDGraph graph = new SDGraph();
     private ArrayFactory arrayFactory = new ArrayFactory(this);
@@ -460,6 +463,7 @@ public class SameDiff {
              * and point to an actual array.
              */
             if(!vertexToArray.containsKey(info.getArrId())) {
+                log.info("Creating array: {}", info.getArrId());
                 vertexToArray.put(info.getArrId(), Nd4j.zeros(info.getShape()));
 
             }

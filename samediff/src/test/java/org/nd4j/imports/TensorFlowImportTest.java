@@ -42,23 +42,10 @@ public class TensorFlowImportTest {
     }
 
     @Test
-    public void testTile1() {
-        INDArray array = Nd4j.create(new double[] {1,2,3,4,5,6}, new int[]{1, 2,3});
-        INDArray tile = Nd4j.tile(array, 5, 6, 3);
-
-        log.info("New shape: {}", Arrays.toString(tile.shapeInfoDataBuffer().asInt()));
-        log.info("Data: {}", tile);
-    }
-
-    @Test
     public void testCustomOps1() {
         val map = Nd4j.getExecutioner().getCustomOperations();
 
         assertTrue(map.size() > 0);
-
-        for (val key: map.keySet()) {
-            log.info("OpName: {}; NumInputs: {}; NumOutputs: {}", key, map.get(key).getFirst(), map.get(key).getSecond());
-        }
     }
 
     @Test
@@ -107,4 +94,27 @@ public class TensorFlowImportTest {
 
         assertNotNull(graph);
     }
+
+
+    @Test
+    public void importGraph4() throws Exception {
+        SameDiff graph = TensorFlowImport.importGraph(new ClassPathResource("tf_graphs/max_multiply.pb.txt").getFile());
+
+        assertNotNull(graph);
+
+        val p0 = Nd4j.create(10, 10).assign(2.0);
+        val p1 = Nd4j.create(10, 10).assign(3.0);
+
+
+        graph.getVariableMap().get("Placeholder").setArr(p0);
+        graph.getVariableMap().get("Placeholder_1").setArr(p1);
+
+        graph.getVertexToArray().put("Placeholder", p0);
+        graph.getVertexToArray().put("Placeholder_1", p1);
+
+        val res = graph.execAndEndResult();
+
+        assertEquals(6.0, res.meanNumber().doubleValue(), 1e-5);
+    }
+
 }
