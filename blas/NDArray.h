@@ -94,14 +94,23 @@ namespace nd4j {
         }
 
         // print information about array shape
-        void printShapeInfo() const {
+        void printShapeInfo(const char * msg = nullptr) const {
             //shape::printShapeInfo(_shapeInfo);
-            shape::printShapeInfoLinear(_shapeInfo);
+            if (msg == nullptr)
+                shape::printShapeInfoLinear(_shapeInfo);
+            else {
+                int rank = shape::rank(_shapeInfo);
+                printf("%s: [", msg);
+                for (int i = 0; i < rank * 2 + 4; i++) {
+                    printf("%i, ", _shapeInfo[i]);
+                }
+                printf("]\n");
+            }
         }
 
         static NDArray<T>* mmulHelper(NDArray<T>* A, NDArray<T>* B, NDArray<T>* C = nullptr, T alpha = 1.0f, T beta = 0.0f);
 
-        void printBuffer();
+        void printBuffer(const char* msg = nullptr);
 
         // This method assigns values of given NDArray to this one, wrt order
         void assign(NDArray<T> *other);

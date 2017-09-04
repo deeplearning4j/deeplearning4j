@@ -5,6 +5,7 @@
 #include <pointercast.h>
 #include <stdexcept>
 #include <memory>
+#include <helpers/logger.h>
 
 
 namespace nd4j {
@@ -375,8 +376,11 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
 
 
     template <typename T>
-    void NDArray<T>::printBuffer() {
-        printf("[");
+    void NDArray<T>::printBuffer(const char* msg) {
+        if (msg != nullptr)
+            printf("%s [", msg);
+        else
+            printf("[");
         for (Nd4jIndex e = 0; e < lengthOf(); e++) {
             printf("%f", this->getScalar(e));
             if (e < lengthOf() - 1)
@@ -568,7 +572,6 @@ template <typename T> void NDArray<T>::transposei() {
         }
 
         Nd4jIndex offset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), idx, this->rankOf());
-        nd4j_printf("Idx: %i; Offset: %i\n", i, offset);
         _buffer[offset] = value;
     }
 
@@ -707,7 +710,9 @@ template <typename T> void NDArray<T>::updateStrides(const char order) {
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length 
 template <typename T> bool NDArray<T>::reshape(const char order, const std::initializer_list<int>& shape) {
-
+        std::vector<int> vShape(shape);
+        return reshape(order, vShape);
+/*
     int rank = shape.size();
     int arrLength = 1;
     for(const auto& item : shape)
@@ -737,22 +742,67 @@ template <typename T> bool NDArray<T>::reshape(const char order, const std::init
 	updateStrides(order);
 
     return true;
+        */
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length 
-template <typename T> bool NDArray<T>::reshape(const char order, const std::vector<int>& shape) {
+template <typename T> bool NDArray<T>::reshape(const char order, const std::vector<int>& cshape) {
 
+    std::vector<int> shape(cshape);
     int rank = shape.size();
+
+    // looking for negative in shape
+
+    int numberNegativesOnes = 0;
+
+    int* shape_ = shape.data();
+    for (int i = 0; i < shape.size(); i++) {
+        if (shape[i] < 0) {
+            if (numberNegativesOnes >= 1)
+                throw "Only one dimension can be negative ones";
+
+            numberNegativesOnes++;
+
+            int shapeLength = 1;
+            for (int j = 0; j < shape.size(); j++)
+                if (shape_[j] >= 1)
+                    shapeLength *= shape_[j];
+
+            int realShape = nd4j::math::nd4j_abs<int>(lengthOf() / shapeLength);
+            int* thisNewShape = new int[shape.size()];
+
+            for (int j = 0; j < shape.size(); j++) {
+                if (i != j) {
+                    thisNewShape[j] = shape_[j];
+                } else
+                    thisNewShape[j] = realShape;
+            }
+
+            shape_ = thisNewShape;
+            break;
+        }
+    }
+
+    for (int e = 0; e < shape.size(); e++) {
+        shape[e] = shape_[e];
+    }
+
+    if (numberNegativesOnes > 0)
+        delete[] shape_;
+
     int arrLength = 1;
     for(const auto& item : shape)
         arrLength *= item;
 
-    if(_buffer==nullptr || arrLength != lengthOf())
-        return false;
+    if(_buffer==nullptr || arrLength != this->lengthOf()) {
+        this->printShapeInfo("Mismatched shape");
+        nd4j_verbose("ArrLength: %i\n", arrLength);
+        throw "Bad shape!";
+    }
 
-    int shapeLength = rank*2 + 4;
+    int shapeLength = shape::shapeInfoLength(rank);
     // remember old values
 
     int elemWiseStride = _shapeInfo[rankOf()*2 + 2];
@@ -896,7 +946,10 @@ template<typename T> NDArray<T>* NDArray<T>::repeat(int dimension, const std::ve
             for (int e = 0; e < this->rankOf() - repeats.size(); e++)
                 reps.push_back(1);
         }
-    }
+    }/* else {
+        for (auto r: repeats)
+            reps.push_back(r);
+    }*/
 
     std::unique_ptr<int> newShape(new int[this->rankOf()]);
     std::vector<int> rShape;
@@ -932,31 +985,87 @@ template<typename T> NDArray<T>* NDArray<T>::repeat(int dimension, const std::ve
 // tile an array by repeating it the number of times given by reps.
 template<typename T> NDArray<T>* NDArray<T>::tile(const std::vector<int>& reps) {
 	// check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities (then simply reshape or do nothing)
-	if(std::find(reps.begin(), reps.end(), 0) != reps.end())
-		throw "Tile method: one of the elements in reps array is zero !";
-	// evaluate new shape
-	int dim = reps.size();
-	int rank = rankOf();
-	int diff = rank - dim;
-	std::vector<int> shapeNew;
-	if(diff < 0) {
-		shapeNew = reps;
-		for(int i=0; i<rank; ++i)
-			shapeNew[dim-1-i] *= _shapeInfo[rank-i];
-	}
-	else {
-		shapeNew = std::vector<int>(_shapeInfo + 1, _shapeInfo + 1 + rank);
-		for(int i=1; i<=dim; ++i)
-			shapeNew[rank-i] *= reps[dim-i];
-	}
+	    if(std::find(reps.begin(), reps.end(), 0) != reps.end())
+		    throw "Tile method: one of the elements in reps array is zero !";
 
-	// create empty array with new shape
-	NDArray<T>* ret = new NDArray<T>('c',shapeNew);
-	// for(int i = 0; i <= rank; ++i)
+        bool wasReshaped = false;
+        std::vector<int> origShape(this->_shapeInfo+1, this->_shapeInfo + 1 + this->rankOf());
+        char origOrder = this->ordering();
+
+        if (reps.size() > this->rankOf()) {
+            wasReshaped = true;
+            std::vector<int> newS;
+            for (int e = 0; e < (reps.size() - this->rankOf()); e++)
+                newS.push_back(1);
+
+            for (auto v: origShape)
+                newS.push_back(v);
+
+            this->reshape('c', newS);
+        }
+
+        // evaluate new shape
+	    int dim = reps.size();
+	    int rank = this->rankOf();
+	    int diff = rank - dim;
+	    std::vector<int> shapeNew;
+	    if(diff < 0) {
+		    shapeNew = reps;
+		    for(int i=0; i<rank; ++i)
+			    shapeNew[dim-1-i] *= this->_shapeInfo[rank-i];
+	    } else {
+		    shapeNew = std::vector<int>(this->_shapeInfo + 1, this->_shapeInfo + 1 + rank);
+		    for(int i=1; i<=dim; ++i)
+			    shapeNew[rank-i] *= reps[dim-i];
+	    }
+
+	    // create empty array with new shape
+
 		// ret = this->repeat()
 
+        int d = reps.size();
+        int *shape = new int[this->rankOf()];
+        std::memcpy(shape, this->shapeOf(), this->rankOf() * sizeof(int));
 
-    return ret;
+        int l = (int) this->lengthOf();
+        int n = nd4j::math::nd4j_max<int>(l, 1);
+        std::vector<int> repeats;
+        if (d < this->rankOf()) {
+            for (int e = 0; e < this->rankOf() - reps.size(); e++)
+                repeats.push_back(1);
+        }
+        for (auto r: reps)
+            repeats.push_back(r);
+
+        int* repeat = repeats.data();
+        NDArray<T>* result = this;
+        for (int i = 0; i < rank; i++) {
+            if (repeat[i] != 1) {
+                result->reshape('c', {-1, n});
+                NDArray<T> *tmp = result->repeat(0, {repeat[i]});
+
+                if (result->_shapeInfo != this->_shapeInfo)
+                    delete result;
+
+                result = tmp;
+            }
+
+            //int in = shape[i];
+            //n /= nd4j::math::nd4j_max<int>(in, 1);
+            int in = shape[i];
+            int nOut = in * repeat[i];
+            shape[i] = nOut;
+            n /= nd4j::math::nd4j_max<int>(in, 1);
+        }
+        delete[] shape;
+
+        result->reshape('c', shapeNew);
+
+        if (wasReshaped)
+            this->reshape(origOrder, origShape);
+
+
+    return result;
 }
 
     template<typename T>

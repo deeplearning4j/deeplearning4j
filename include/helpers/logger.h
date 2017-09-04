@@ -37,7 +37,20 @@ namespace nd4j {
 
             fflush(stdout);
         }
+
+#ifdef __CUDACC__
+        __host__
+#endif
+        static void printv(const char *format, std::vector<int>& vec) {
+            printf("%s: [", format);
+            for(auto v: vec) {
+                printf("%i, ", v);
+            }
+            printf("]\n");
+            fflush(stdout);
+        }
     };
+
 }
 
 

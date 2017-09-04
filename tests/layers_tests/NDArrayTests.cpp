@@ -414,14 +414,21 @@ TEST_F(NDArrayTest, TestChecks5) {
 }
 
 TEST_F(NDArrayTest, TestTile1) {
-   
+
 	NDArray<float> array1(arr1,shape1);
 	NDArray<float> array2(arr2,shape2);
+    auto expA = array1.dup('c');
 
-    array1.tile(tileShape1);
-	// array1.printBuffer();
-	ASSERT_TRUE(array1.isSameShape(&array2));
-	ASSERT_TRUE(array1.equalsTo(&array2));
+    auto tiled = array1.tile(tileShape1);
+
+    tiled->printShapeInfo();
+    tiled->printBuffer();
+
+	ASSERT_TRUE(tiled->isSameShape(&array2));
+	ASSERT_TRUE(tiled->equalsTo(&array2));
+
+    ASSERT_TRUE(expA->isSameShape(&array1));
+    ASSERT_TRUE(expA->equalsTo(&array1));
 }
 
 TEST_F(NDArrayTest, TestMmulHelper1) {
