@@ -56,7 +56,7 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
             BaseLayer bl = (BaseLayer) l;
 
             Updater u = bl.getUpdater();
-            double lr = bl.getLearningRate();
+            double lr = Double.NaN; //TODO bl.getLearningRate();
             double eps = bl.getEpsilon();
             double rho = bl.getRho();
 

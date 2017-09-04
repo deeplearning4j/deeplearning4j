@@ -68,12 +68,10 @@ public class FrozenLayer extends Layer {
                 conf.variables(false).add(s);
                 conf.getL1ByParam().put(s, 0.0);
                 conf.getL2ByParam().put(s, 0.0);
-                conf.getLearningRateByParam().put(s, 0.0);
 
                 nncUnderlying.variables(false).add(s);
                 nncUnderlying.getL1ByParam().put(s, 0.0);
                 nncUnderlying.getL2ByParam().put(s, 0.0);
-                nncUnderlying.getLearningRateByParam().put(s, 0.0);
             }
         }
 
@@ -111,18 +109,8 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        return 0;
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         return false;
-    }
-
-    @Override
-    public Updater getUpdaterByParam(String paramName) {
-        return null;
     }
 
     @Override

@@ -69,24 +69,6 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
         }
     }
 
-    @Override
-    public double getLearningRateByParam(String paramName) {
-        switch (paramName) {
-            case LSTMParamInitializer.INPUT_WEIGHT_KEY:
-            case LSTMParamInitializer.RECURRENT_WEIGHT_KEY:
-                return learningRate;
-            case LSTMParamInitializer.BIAS_KEY:
-                if (!Double.isNaN(biasLearningRate)) {
-                    //Bias learning rate has been explicitly set
-                    return biasLearningRate;
-                } else {
-                    return learningRate;
-                }
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
     @AllArgsConstructor
     @NoArgsConstructor
     public static abstract class Builder<T extends Builder<T>> extends BaseRecurrentLayer.Builder<T> {

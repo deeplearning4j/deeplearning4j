@@ -38,7 +38,9 @@ public class FineTuneConfiguration {
     protected WeightInit weightInit;
     protected Double biasInit;
     protected Distribution dist;
+    @Deprecated
     protected Double learningRate;
+    @Deprecated
     protected Double biasLearningRate;
     protected Map<Integer, Double> learningRateSchedule;
     protected Double lrScoreBasedDecay;
@@ -165,15 +167,6 @@ public class FineTuneConfiguration {
                 bl.setBiasInit(biasInit);
             if (dist != null)
                 bl.setDist(dist);
-            if (learningRate != null) {
-                //usually the same learning rate is applied to both bias and weights
-                //so always overwrite the learning rate to both?
-                bl.setLearningRate(learningRate);
-                bl.setBiasLearningRate(learningRate);
-
-            }
-            if (biasLearningRate != null)
-                bl.setBiasLearningRate(biasLearningRate);
             if (learningRateSchedule != null)
                 bl.setLearningRateSchedule(learningRateSchedule);
             //        if(lrScoreBasedDecay != null)

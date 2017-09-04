@@ -46,10 +46,10 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     protected WeightInit weightInit;
     protected double biasInit;
     protected Distribution dist;
-    protected double learningRate;
-    protected double biasLearningRate;
-    protected ISchedule lrSchedule;
-    protected ISchedule biasLRSchedule;
+//    protected double learningRate;
+//    protected double biasLearningRate;
+//    protected ISchedule lrSchedule;
+//    protected ISchedule biasLRSchedule;
 
     //learning rate after n iterations
     @Deprecated
@@ -89,11 +89,9 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.weightInit = builder.weightInit;
         this.biasInit = builder.biasInit;
         this.dist = builder.dist;
-        this.learningRate = builder.learningRate;
-        this.biasLearningRate = builder.biasLearningRate;
+//        this.learningRate = builder.learningRate;
+//        this.biasLearningRate = builder.biasLearningRate;
         this.learningRateSchedule = builder.learningRateSchedule;
-        this.lrSchedule = builder.lrSchedule;
-        this.biasLRSchedule = builder.biasLRSchedule;
         this.momentum = builder.momentum;
         this.momentumSchedule = builder.momentumAfter;
         this.l1 = builder.l1;
@@ -124,8 +122,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.setWeightInit(null);
         this.setBiasInit(Double.NaN);
         this.setDist(null);
-        this.setLearningRate(Double.NaN);
-        this.setBiasLearningRate(Double.NaN);
         this.setLearningRateSchedule(null);
         this.setMomentumSchedule(null);
         this.setL1(Double.NaN);
@@ -156,20 +152,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
      * is not necessarily the case
      *
      * @param paramName    Parameter name
-     * @return             Updater for the parameter
-     * @deprecated Use {@link #getIUpdaterByParam(String)}
-     */
-    @Deprecated
-    @Override
-    public Updater getUpdaterByParam(String paramName) {
-        return updater;
-    }
-
-    /**
-     * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this
-     * is not necessarily the case
-     *
-     * @param paramName    Parameter name
      * @return             IUpdater for the parameter
      */
     @Override
@@ -183,12 +165,12 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         protected WeightInit weightInit = null;
         protected double biasInit = Double.NaN;
         protected Distribution dist = null;
+        @Deprecated
         protected double learningRate = Double.NaN;
+        @Deprecated
         protected double biasLearningRate = Double.NaN;
         @Deprecated
         protected Map<Integer, Double> learningRateSchedule = null;
-        protected ISchedule lrSchedule;
-        protected ISchedule biasLRSchedule;
         @Deprecated
         protected double momentum = Double.NaN;
         @Deprecated
@@ -279,6 +261,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         /**
          * Learning rate. Defaults to 1e-1
          */
+        @Deprecated
         public T learningRate(double learningRate) {
             this.learningRate = learningRate;
             return (T) this;
@@ -287,6 +270,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         /**
          * Bias learning rate. Set this to apply a different learning rate to the bias
          */
+        @Deprecated
         public T biasLearningRate(double biasLearningRate) {
             this.biasLearningRate = biasLearningRate;
             return (T) this;
@@ -298,16 +282,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         @Deprecated
         public T learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
             this.learningRateSchedule = learningRateSchedule;
-            return (T) this;
-        }
-
-        public T learningRateSchedule(ISchedule learningRateSchedule){
-            this.lrSchedule = learningRateSchedule;
-            return (T) this;
-        }
-
-        public T biasLearningRateSchedule(ISchedule biasLearningRateSchedule){
-            this.biasLRSchedule = biasLearningRateSchedule;
             return (T) this;
         }
 
@@ -371,6 +345,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @see Updater
          */
+        @Deprecated
         public T updater(Updater updater) {
             return updater(updater.getIUpdaterWithDefaultConfig());
         }

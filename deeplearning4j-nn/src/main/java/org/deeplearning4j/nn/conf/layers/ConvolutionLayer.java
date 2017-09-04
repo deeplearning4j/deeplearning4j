@@ -203,23 +203,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        switch (paramName) {
-            case ConvolutionParamInitializer.WEIGHT_KEY:
-                return learningRate;
-            case ConvolutionParamInitializer.BIAS_KEY:
-                if (!Double.isNaN(biasLearningRate)) {
-                    //Bias learning rate has been explicitly set
-                    return biasLearningRate;
-                } else {
-                    return learningRate;
-                }
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         int paramSize = initializer().numParams(this);
         int updaterStateSize = (int) getIUpdater().stateSize(paramSize);

@@ -79,12 +79,13 @@ public class LayerValidation {
         // iupdater=Adam() type situations. Though the updater field isn't used, we don't want to confuse users
 
         IUpdater u = layer.getIUpdater();
-        if (!Double.isNaN(layer.getLearningRate())) {
-            //Note that for LRs, if user specifies .learningRate(x).updater(Updater.SGD) (for example), we need to set the
-            // LR in the Sgd object. We can do this using the schedules method, which also works for custom updaters
-            //Local layer LR set
-            setLegacyLr(u, layer.getLearningRate() );
-        } else if (!Double.isNaN(learningRate)) {
+//        if (!Double.isNaN(layer.getLearningRate())) {
+//            //Note that for LRs, if user specifies .learningRate(x).updater(Updater.SGD) (for example), we need to set the
+//            // LR in the Sgd object. We can do this using the schedules method, which also works for custom updaters
+//            //Local layer LR set
+//            setLegacyLr(u, layer.getLearningRate() );
+//        } else
+            if (!Double.isNaN(learningRate)) {
             //Global LR set
             setLegacyLr(u, learningRate);
         }

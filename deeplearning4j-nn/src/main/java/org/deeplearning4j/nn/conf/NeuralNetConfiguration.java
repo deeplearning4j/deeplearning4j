@@ -105,8 +105,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected boolean useDropConnect = false;
     //minimize or maximize objective
     protected boolean minimize = true;
-    // Graves LSTM & RNN
-    protected Map<String, Double> learningRateByParam = new HashMap<>();
+//    protected Map<String, Double> learningRateByParam = new HashMap<>();
     protected Map<String, Double> l1ByParam = new HashMap<>();
     protected Map<String, Double> l2ByParam = new HashMap<>();
 //    protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
@@ -146,8 +145,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 clone.stepFunction = clone.stepFunction.clone();
             if (clone.variables != null)
                 clone.variables = new ArrayList<>(clone.variables);
-            if (clone.learningRateByParam != null)
-                clone.learningRateByParam = new HashMap<>(clone.learningRateByParam);
             if (clone.l1ByParam != null)
                 clone.l1ByParam = new HashMap<>(clone.l1ByParam);
             if (clone.l2ByParam != null)
@@ -179,7 +176,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         variables.clear();
         l1ByParam.clear();
         l2ByParam.clear();
-        learningRateByParam.clear();
     }
 
     public void resetVariables() {
@@ -189,24 +185,14 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     }
 
     public void setLayerParamLR(String variable) {
-        double lr = layer.getLearningRateByParam(variable);
         double l1 = layer.getL1ByParam(variable);
         if (Double.isNaN(l1))
             l1 = 0.0; //Not set
         double l2 = layer.getL2ByParam(variable);
         if (Double.isNaN(l2))
             l2 = 0.0; //Not set
-        learningRateByParam.put(variable, lr);
         l1ByParam.put(variable, l1);
         l2ByParam.put(variable, l2);
-    }
-
-    public double getLearningRateByParam(String variable) {
-        return learningRateByParam.get(variable);
-    }
-
-    public void setLearningRateByParam(String variable, double rate) {
-        learningRateByParam.put(variable, rate);
     }
 
     public double getL1ByParam(String variable) {
@@ -1366,23 +1352,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
             if (layer instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) layer;
-                if (Double.isNaN(bLayer.getLearningRate()))
-                    bLayer.setLearningRate(learningRate);
-                if (Double.isNaN(bLayer.getBiasLearningRate())) {
-                    //Two possibilities when bias LR isn't set for layer:
-                    // (a) If global bias LR *is* set -> set it to that
-                    // (b) Otherwise, set to layer LR (and, by extension, the global LR)
-                    if (!Double.isNaN(biasLearningRate)) {
-                        //Global bias LR is set
-                        bLayer.setBiasLearningRate(biasLearningRate);
-                    } else {
-                        bLayer.setBiasLearningRate(bLayer.getLearningRate());
-                    }
-                }
-                if (bLayer.getLrSchedule() == null)
-                    bLayer.setLrSchedule(learningRateSchedule);
-                if(bLayer.getBiasLRSchedule() == null)
-                    bLayer.setBiasLRSchedule(biasLearningRateSchedule);
                 if (Double.isNaN(bLayer.getL1()))
                     bLayer.setL1(l1);
                 if (Double.isNaN(bLayer.getL2()))

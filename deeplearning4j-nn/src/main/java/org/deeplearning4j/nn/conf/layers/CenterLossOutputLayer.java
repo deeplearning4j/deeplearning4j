@@ -91,18 +91,6 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    @Deprecated
-    public Updater getUpdaterByParam(String paramName) {
-        // center loss utilizes alpha directly for this so any updater can be used for other layers
-        switch (paramName) {
-            case CenterLossParamInitializer.CENTER_KEY:
-                return Updater.NONE;
-            default:
-                return updater;
-        }
-    }
-
-    @Override
     public IUpdater getIUpdaterByParam(String paramName) {
         // center loss utilizes alpha directly for this so any updater can be used for other layers
         switch (paramName) {
@@ -110,25 +98,6 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
                 return new NoOp();
             default:
                 return iUpdater;
-        }
-    }
-
-    @Override
-    public double getLearningRateByParam(String paramName) {
-        switch (paramName) {
-            case CenterLossParamInitializer.WEIGHT_KEY:
-                return learningRate;
-            case CenterLossParamInitializer.BIAS_KEY:
-                if (!Double.isNaN(biasLearningRate)) {
-                    //Bias learning rate has been explicitly set
-                    return biasLearningRate;
-                } else {
-                    return learningRate;
-                }
-            case CenterLossParamInitializer.CENTER_KEY:
-                return 0;
-            default:
-                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
         }
     }
 

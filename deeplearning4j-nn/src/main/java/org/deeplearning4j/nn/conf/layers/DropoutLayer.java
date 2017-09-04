@@ -82,12 +82,6 @@ public class DropoutLayer extends FeedForwardLayer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("Dropout layer does not contain parameters");
     }

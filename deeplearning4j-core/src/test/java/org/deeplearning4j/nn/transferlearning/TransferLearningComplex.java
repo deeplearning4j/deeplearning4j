@@ -18,6 +18,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.*;
@@ -80,7 +81,7 @@ public class TransferLearningComplex {
             //Also check config:
             BaseLayer bl = ((BaseLayer) l.conf().getLayer());
             assertEquals(Updater.ADAM, bl.getUpdater());
-            assertEquals(2e-2, bl.getLearningRate(), 1e-5);
+            assertEquals(2e-2, ((Adam)bl.getIUpdater()).getLearningRate(), 1e-5);
             assertEquals(Activation.LEAKYRELU.getActivationFunction(), bl.getActivationFn());
         }
         assertTrue(cFound);

@@ -163,7 +163,7 @@ public class TestUpdaters {
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
             count++;
         }
-        assertEquals(lr, layer.layerConf().getLearningRate(), 1e-4);
+        assertEquals(lr, ((AdaGrad)layer.layerConf().getIUpdater()).getLearningRate(), 1e-4);
         assertEquals(2, count);
     }
 
@@ -508,7 +508,7 @@ public class TestUpdaters {
             gradExpected = val.mul(lr);
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
-        assertEquals(lr, layer.layerConf().getLearningRate(), 1e-4);
+        assertEquals(lr, ((Sgd)layer.layerConf().getIUpdater()).getLearningRate(), 1e-4);
     }
 
 
@@ -815,7 +815,7 @@ public class TestUpdaters {
             gradExpected = val.mul(lr);
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
-        assertEquals(lr, layer.layerConf().getLearningRate(), 1e-4);
+        assertEquals(lr, ((Sgd)layer.layerConf().getIUpdater()).getLearningRate(), 1e-4);
 
 
         //Test with pretrain == false
@@ -859,7 +859,7 @@ public class TestUpdaters {
             //            System.out.println(gradExpected + "\t" + gradient.getGradientFor(entry.getKey()));
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
-        assertEquals(lr, layer.layerConf().getLearningRate(), 1e-4);
+        assertEquals(lr, ((Sgd)layer.layerConf().getIUpdater()).getLearningRate(), 1e-4);
     }
 
     @Test

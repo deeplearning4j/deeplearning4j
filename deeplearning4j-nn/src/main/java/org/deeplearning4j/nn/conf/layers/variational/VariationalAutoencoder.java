@@ -81,20 +81,6 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        if (paramName.endsWith("b")) {
-            if (!Double.isNaN(biasLearningRate)) {
-                //Bias learning rate has been explicitly set
-                return biasLearningRate;
-            } else {
-                return learningRate;
-            }
-        } else {
-            return learningRate;
-        }
-    }
-
-    @Override
     public double getL1ByParam(String paramName) {
         if (paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX))
             return l1Bias;

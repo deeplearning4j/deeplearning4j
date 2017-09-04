@@ -295,12 +295,10 @@ public class TransferLearning {
                             origNNC.variables(false).add(s);
                             origNNC.getL1ByParam().put(s, 0.0);
                             origNNC.getL2ByParam().put(s, 0.0);
-                            origNNC.getLearningRateByParam().put(s, 0.0);
 
                             layerNNC.variables(false).add(s);
                             layerNNC.getL1ByParam().put(s, 0.0);
                             layerNNC.getL2ByParam().put(s, 0.0);
-                            layerNNC.getLearningRateByParam().put(s, 0.0);
                         }
                     }
 
@@ -817,7 +815,6 @@ public class TransferLearning {
                                 newNNC.variables(false).add(s);
                                 newNNC.getL1ByParam().put(s, 0.0);
                                 newNNC.getL2ByParam().put(s, 0.0);
-                                newNNC.getLearningRateByParam().put(s, 0.0);
                             }
 
                             //We also need to place the layer in the CompGraph Layer[] (replacing the old one)

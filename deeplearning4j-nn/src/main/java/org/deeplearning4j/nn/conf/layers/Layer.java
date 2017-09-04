@@ -198,16 +198,6 @@ public abstract class Layer implements Serializable, Cloneable {
     public abstract double getL2ByParam(String paramName);
 
     /**
-     * Get the (initial) learning rate coefficient for the given parameter.
-     * Different parameters may be configured to have different learning rates, though commonly all parameters will
-     * have the same learning rate
-     *
-     * @param paramName    Parameter name
-     * @return Initial learning rate value for that parameter
-     */
-    public abstract double getLearningRateByParam(String paramName);
-
-    /**
      * Is the specified parameter a layerwise pretraining only parameter?<br>
      * For example, visible bias params in an autoencoder (or, decoder params in a variational autoencoder) aren't
      * used during supervised backprop.<br>
@@ -217,20 +207,6 @@ public abstract class Layer implements Serializable, Cloneable {
      * @return True if the parameter is for layerwise pretraining only, false otherwise
      */
     public abstract boolean isPretrainParam(String paramName);
-
-    /**
-     * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this
-     * is not necessarily the case
-     *
-     * @param paramName    Parameter name
-     * @return             Updater for the parameter
-     * @deprecated Use {@link #getIUpdaterByParam(String)}
-     */
-    @Deprecated
-    public Updater getUpdaterByParam(String paramName) {
-        throw new UnsupportedOperationException(
-                        "Not supported: all layers with parameters should override this method");
-    }
 
     /**
      * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this

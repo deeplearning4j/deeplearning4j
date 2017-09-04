@@ -139,34 +139,6 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        switch (paramName) {
-            case BatchNormalizationParamInitializer.BETA:
-            case BatchNormalizationParamInitializer.GAMMA:
-                return learningRate;
-            case BatchNormalizationParamInitializer.GLOBAL_MEAN:
-            case BatchNormalizationParamInitializer.GLOBAL_VAR:
-                return 0.0;
-            default:
-                throw new IllegalArgumentException("Unknown parameter: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
-    public Updater getUpdaterByParam(String paramName) {
-        switch (paramName) {
-            case BatchNormalizationParamInitializer.BETA:
-            case BatchNormalizationParamInitializer.GAMMA:
-                return updater;
-            case BatchNormalizationParamInitializer.GLOBAL_MEAN:
-            case BatchNormalizationParamInitializer.GLOBAL_VAR:
-                return Updater.NONE;
-            default:
-                throw new IllegalArgumentException("Unknown parameter: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
     public IUpdater getIUpdaterByParam(String paramName) {
         switch (paramName) {
             case BatchNormalizationParamInitializer.BETA:

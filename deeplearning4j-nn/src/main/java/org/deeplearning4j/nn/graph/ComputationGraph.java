@@ -3178,7 +3178,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             String in = "-";
             String out = "-";
             String paramShape = "-";
-
             if (currentVertex.isInputVertex()) {
                 if (inputTypes != null) vertexOutputs.put(currentVertexName, inputTypes[configuration.getNetworkInputs().indexOf(currentVertexName)]); //for input vertices the outputs are just the input types (only layer vertices have preprocessing?)
             } else {
@@ -3194,7 +3193,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         paramShape = "";
                         in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
                         out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
-                        Set<String> paraNames = currentLayer.conf().getLearningRateByParam().keySet();
+                        Set<String> paraNames = null;   //TODO currentLayer.conf().getLearningRateByParam().keySet();
                         for (String aP : paraNames) {
                             String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
                             paramShape += aP + ":" + paramS + ", ";

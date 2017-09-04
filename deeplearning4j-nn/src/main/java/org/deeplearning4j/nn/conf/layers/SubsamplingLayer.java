@@ -152,12 +152,6 @@ public class SubsamplingLayer extends Layer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("SubsamplingLayer does not contain parameters");
     }
