@@ -492,7 +492,8 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     public void applyConstraints(int iteration, int epoch){
         if(layerConf().getConstraints() != null){
             for(LayerConstraint lc : layerConf().getConstraints()){
-                lc.applyConstraint(this, iteration, epoch);
+                lc.applyConstraint(this, iteration, epoch, layerConf().isHasBiasConstraints(),
+                        layerConf().isHasWeightConstraints(), layerConf().getConstraintParamNames());
             }
         }
     }

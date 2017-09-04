@@ -23,29 +23,15 @@ public class MaxNormConstraint extends BaseConstraint {
         //No arg for json ser/de
     }
 
-    /**
-     * Apply to weights but not biases by default
-     *
-     * @param maxNorm        Maximum L2 value
-     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
-     *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
-     *                       parameters which have order [depthOut, depthIn, kH, kW]
-     */
-    public MaxNormConstraint(double maxNorm, int... dimensions) {
-        this(maxNorm, true, false, dimensions);
-    }
 
     /**
-     *
      * @param maxNorm        Maximum L2 value
-     * @param applyToWeights If constraint should be applied to weights
-     * @param applyToBiases  If constraint should be applied to biases
      * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
-    public MaxNormConstraint(double maxNorm, boolean applyToWeights, boolean applyToBiases, int... dimensions){
-        super(applyToWeights, applyToBiases, DEFAULT_EPSILON, dimensions);
+    public MaxNormConstraint(double maxNorm, int... dimensions){
+        super(DEFAULT_EPSILON, dimensions);
         this.maxNorm = maxNorm;
     }
 
@@ -63,6 +49,6 @@ public class MaxNormConstraint extends BaseConstraint {
 
     @Override
     public MaxNormConstraint clone() {
-        return new MaxNormConstraint(maxNorm, applyToWeights, applyToBiases, dimensions);
+        return new MaxNormConstraint(maxNorm, dimensions);
     }
 }

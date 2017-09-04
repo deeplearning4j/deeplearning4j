@@ -636,6 +636,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double lrPolicyPower = Double.NaN;
         protected boolean pretrain = false;
         protected List<LayerConstraint> constraints = null;
+        // By default, if constraints are provided at all, we only constrain weights/kernels, but not biases
+        protected Boolean hasBiasConstraints = null;
+        protected Boolean hasWeightConstraints = null;
 
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
@@ -1245,7 +1248,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param constraints Constraints to apply to all layers
          */
         public Builder constraints(LayerConstraint... constraints){
-            return constraints(Arrays.asList(constraints));
+            return constraints(Arrays.asList(constraints),
+                    false, true);
         }
 
         /**
@@ -1255,8 +1259,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          *
          * @param constraints Constraints to apply to all layers
          */
-        public Builder constraints(List<LayerConstraint> constraints){
+        public Builder constraints(List<LayerConstraint> constraints, boolean hasBiasConstraints,
+                                   boolean hasWeightConstraints){
             this.constraints = constraints;
+            this.hasBiasConstraints = hasBiasConstraints;
+            this.hasWeightConstraints = hasWeightConstraints;
             return this;
         }
 
@@ -1368,7 +1375,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 }
             }
             LayerValidation.generalValidation(layerName, layer, useDropConnect, dropOut, l2, l2Bias,
-                            l1, l1Bias, dist, constraints);
+                            l1, l1Bias, dist, constraints, hasBiasConstraints, hasWeightConstraints);
         }
 
         private void copyConfigToLayer(String layerName, Layer layer) {

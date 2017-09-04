@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
+import java.util.Set;
 
 
 @AllArgsConstructor
@@ -18,8 +19,6 @@ import java.util.Map;
 public abstract class BaseConstraint implements LayerConstraint {
     public static final double DEFAULT_EPSILON = 1e-6;
 
-    protected boolean applyToWeights;
-    protected boolean applyToBiases;
     protected double epsilon = 1e-6;
     protected int[] dimensions;
 
@@ -27,13 +26,14 @@ public abstract class BaseConstraint implements LayerConstraint {
         //No arg for json ser/de
     }
 
-    protected BaseConstraint(boolean applyToWeights, boolean applyToBiases, int... dimensions){
-        this(applyToWeights, applyToBiases, DEFAULT_EPSILON, dimensions);
+    protected BaseConstraint(int... dimensions){
+        this(DEFAULT_EPSILON, dimensions);
     }
 
 
     @Override
-    public void applyConstraint(Layer layer, int iteration, int epoch) {
+    public void applyConstraint(Layer layer, int iteration, int epoch, boolean hasBiasConstraint,
+                                boolean hasWeightConstraint, Set<String> paramNames) {
         Map<String,INDArray> paramTable = layer.paramTable();
         if(paramTable == null || paramTable.isEmpty() ){
             return;
@@ -41,7 +41,8 @@ public abstract class BaseConstraint implements LayerConstraint {
 
         ParamInitializer i = layer.conf().getLayer().initializer();
         for(Map.Entry<String,INDArray> e : paramTable.entrySet()){
-            if(applyToWeights && i.isWeightParam(e.getKey()) || applyToBiases && i.isBiasParam(e.getKey())){
+            if(hasWeightConstraint && i.isWeightParam(e.getKey())
+                    || hasBiasConstraint && i.isBiasParam(e.getKey())){
                 apply(e.getValue());
             }
         }

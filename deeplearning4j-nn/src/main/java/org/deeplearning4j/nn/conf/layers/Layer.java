@@ -42,6 +42,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A neural network layer.
@@ -78,12 +79,18 @@ public abstract class Layer implements Serializable, Cloneable {
     protected String layerName;
     protected double dropOut;
     protected List<LayerConstraint> constraints;
+    protected boolean hasBiasConstraints;
+    protected boolean hasWeightConstraints;
+    protected Set<String> constraintParamNames;
 
 
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
         this.dropOut = builder.dropOut;
         this.constraints = builder.constraints;
+        this.hasBiasConstraints =  builder.hasBiasConstraints;
+        this.hasWeightConstraints = builder.hasWeightConstraints;
+        this.constraintParamNames = builder.constraintParamNames;
     }
 
     /**
@@ -223,6 +230,9 @@ public abstract class Layer implements Serializable, Cloneable {
         protected String layerName = null;
         protected double dropOut = Double.NaN;
         protected List<LayerConstraint> constraints = null;
+        protected boolean hasBiasConstraints = false;
+        protected boolean hasWeightConstraints = false;
+        protected Set<String> constraintParamNames = null;
 
         /**
          * Layer name assigns layer string name.
@@ -268,7 +278,20 @@ public abstract class Layer implements Serializable, Cloneable {
          * @param constraints Constraints to apply to all layers
          */
         public T constraints(LayerConstraint... constraints) {
-            return constraints(Arrays.asList(constraints));
+            return constraints(Arrays.asList(constraints), true,
+                    true, null);
+        }
+
+        /**
+         * Set constraints to be applied to bias parameters of this layer. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to all layers
+         */
+        public T biasConstraints(LayerConstraint... constraints) {
+            return constraints(Arrays.asList(constraints), true,
+                    false, null);
         }
 
         /**
@@ -278,8 +301,29 @@ public abstract class Layer implements Serializable, Cloneable {
          *
          * @param constraints Constraints to apply to all layers
          */
-        public T constraints(List<LayerConstraint> constraints) {
+        public T weightConstraints(LayerConstraint... constraints) {
+            return constraints(Arrays.asList(constraints), false,
+                    true, null);
+        }
+
+        /**
+         * Set constraints to be applied to this layer. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to this layer
+         * @param hasBiasConstraints if contraints will be applied to bias parameters
+         * @param hasWeightConstraints if constraints will be applied to weight parameters
+         * @param constraintParamNames Set of parameter names that constraints will be applied to. Overrides the two
+         *                             boolean flags before.
+         * @return Constraints
+         */
+        public T constraints(List<LayerConstraint> constraints, boolean hasBiasConstraints,
+                             boolean hasWeightConstraints, Set<String> constraintParamNames) {
             this.constraints = constraints;
+            this.hasBiasConstraints = hasBiasConstraints;
+            this.hasWeightConstraints = hasWeightConstraints;
+            this.constraintParamNames = constraintParamNames;
             return (T) this;
         }
 

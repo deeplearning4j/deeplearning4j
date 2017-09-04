@@ -25,21 +25,8 @@ public class UnitNormConstraint extends BaseConstraint{
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
-    public UnitNormConstraint(int... dimensions){
-        this(true, false, dimensions);
-    }
-
-    /**
-     * Apply to weights but not biases by default
-     *
-     * @param applyToWeights If constraint should be applied to weights
-     * @param applyToBiases  If constraint should be applied to biases (usually false)
-     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
-     *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
-     *                       parameters which have order [depthOut, depthIn, kH, kW]
-     */
-    public UnitNormConstraint(boolean applyToWeights, boolean applyToBiases, int... dimensions){
-        super(applyToWeights, applyToBiases, dimensions);
+    public UnitNormConstraint( int... dimensions){
+        super(dimensions);
     }
 
     @Override
@@ -50,6 +37,6 @@ public class UnitNormConstraint extends BaseConstraint{
 
     @Override
     public UnitNormConstraint clone() {
-        return new UnitNormConstraint(applyToWeights, applyToBiases, dimensions);
+        return new UnitNormConstraint(dimensions);
     }
 }

@@ -79,6 +79,8 @@ public class FineTuneConfiguration {
     protected Double lrPolicyPower;
     protected ConvolutionMode convolutionMode;
     protected List<LayerConstraint> constraints;
+    protected Boolean hasBiasConstraints;
+    protected Boolean hasWeightConstraints;
 
     protected Boolean pretrain;
     protected Boolean backprop;
@@ -287,7 +289,8 @@ public class FineTuneConfiguration {
                             adamMeanDecay, adamVarDecay, rho, rmsDecay, epsilon);
 
             boolean useDropCon = (useDropConnect == null ? nnc.isUseDropConnect() : useDropConnect);
-            LayerValidation.generalValidation(l.getLayerName(), l, useDropCon, dropOut, l2, l2Bias, l1, l1Bias, dist, constraints);
+            LayerValidation.generalValidation(l.getLayerName(), l, useDropCon, dropOut, l2, l2Bias, l1, l1Bias,
+                    dist, constraints, hasBiasConstraints, hasWeightConstraints);
         }
 
         //Also: update the LR, L1 and L2 maps, based on current config (which might be different to original config)

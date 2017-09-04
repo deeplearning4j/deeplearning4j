@@ -587,7 +587,8 @@ public class VariationalAutoencoder implements Layer {
     public void applyConstraints(int iteration, int epoch) {
         if(layerConf().getConstraints() != null){
             for(LayerConstraint lc : layerConf().getConstraints()){
-                lc.applyConstraint(this, iteration, epoch);
+                lc.applyConstraint(this, iteration, epoch, layerConf().isHasBiasConstraints(),
+                        layerConf().isHasWeightConstraints(), layerConf().getConstraintParamNames());
             }
         }
     }
