@@ -1,6 +1,5 @@
 package org.nd4j.autodiff.functions.impl.binary.transform.scalar;
 
-import com.sun.deploy.ui.DeployEmbeddedFrameIf;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractScalarFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;

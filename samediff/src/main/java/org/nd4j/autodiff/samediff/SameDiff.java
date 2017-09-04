@@ -2988,7 +2988,7 @@ public class SameDiff {
         allocate();
         List<Op> ops = new ArrayList<>();
         List<OpExecAction> opExecActions = graph().getOpOrder().getActions();
-        Map<SDVariable,Op> opMap = new TreeMap<>();
+        Map<SDVariable,Op> opMap = new HashMap<>();
         for(int i = 0; i < opExecActions.size(); i++) {
             OpExecAction opExecAction = opExecActions.get(i);
             Op op = createOp(
@@ -3022,7 +3022,8 @@ public class SameDiff {
                 }
             }
 
-            opMap.put(getVertexIdToVariable().get(opExecAction.getOutputId()),op);
+            SDVariable currVariable = getVertexIdToVariable().get(opExecAction.getOutputId());
+            opMap.put(currVariable,op);
         }
 
 
