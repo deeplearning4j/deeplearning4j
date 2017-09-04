@@ -24,14 +24,15 @@ namespace nd4j {
             int _nodeId;
 
             std::vector<T> _tArgs;
-            std::vector<int> _iArgs;
-
-            bool _isInplace = false;
+            std::vector<int> _iArgs;            
+			
+			bool _isInplace;
 
         public:
             Block(int nodeId, VariableSpace<T> *variableSpace) {
                 _nodeId = nodeId;
                 _variableSpace = variableSpace;
+				_isInplace = false;
             }
 
             Block(int nodeId, VariableSpace<T> *variableSpace, bool isInplace) : Block(nodeId, variableSpace) {

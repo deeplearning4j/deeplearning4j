@@ -442,13 +442,21 @@ namespace nd4j {
 			int argsSize = argumets->size();
 			char order = (*argumets)[argsSize-1];
 			std::vector<int> shapeNew(argumets->begin(), argumets->end() - 1);						
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
-			
-			if (x->reshape(order, shapeNew)) {
-				STORE_RESULT(*x);
-				return ND4J_STATUS_OK;				
+
+			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
+			if(block.isInplace()) {
+				if (x->reshape(order, shapeNew)) {
+					STORE_RESULT(*x);
+					return ND4J_STATUS_OK;				
+				}
 			}
-			
+			else {
+				NDArray<T> ret(*x);		
+				if (ret.reshape(order, shapeNew)) {
+					STORE_RESULT(ret);
+					return ND4J_STATUS_OK;				
+				}
+			}			
 			return ND4J_STATUS_BAD_INPUT;
         }
 

@@ -967,3 +967,28 @@ TEST_F(DeclarableOpsTests, Reshape1) {
     ASSERT_TRUE(x.isSameShape(&y));	
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Reshape2) {
+	const std::vector<int> xShape = {5,4,3};
+	const std::vector<int> yShape = {3,5,4};	
+	
+	NDArray<float> x('c', xShape);	
+	NDArray<float> y('f', yShape);	
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    
+	Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1});	
+	std::vector<int>* arguments = block->getIArguments();	
+	*arguments = yShape;
+	arguments->push_back(y.ordering());
+	
+	nd4j::ops::reshape<float> reshape;
+	
+	reshape.execute(block);
+	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+    
+	ASSERT_TRUE(result->isSameShape(&y));	
+}
+
