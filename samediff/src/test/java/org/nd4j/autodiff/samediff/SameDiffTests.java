@@ -133,7 +133,7 @@ public class SameDiffTests {
         SDVariable addResult = result.add(result);
 
         assertEquals("cosineSimilarity(x,y)", result.getVarName());
-        assertEquals(5, sameDiff.graph().numVertices());
+        assertEquals(6, sameDiff.graph().numVertices());
         assertArrayEquals(new int[]{1, 2}, result.getShape());
     }
 
@@ -407,8 +407,7 @@ public class SameDiffTests {
             @Override
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable result = outer.invokeFunctionOn("firstadd", sameDiff);
-                SDVariable one = sameDiff.scalar("scalar", 1.0);
-                return result.add(one);
+                return result.add(1.0);
             }
         });
 

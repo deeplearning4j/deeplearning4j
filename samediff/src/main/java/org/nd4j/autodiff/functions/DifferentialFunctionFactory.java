@@ -980,7 +980,7 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
     @Override
     public DifferentialFunction div(DifferentialFunction differentialFunction, DifferentialFunction i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
-        return sameDiff().setupFunction(new Div(sameDiff(),sameDiff().setupFunction(differentialFunction),sameDiff().setupFunction(i_v)));
+        return sameDiff().setupFunction(new Div(sameDiff(),differentialFunction,i_v));
     }
 
     @Override
