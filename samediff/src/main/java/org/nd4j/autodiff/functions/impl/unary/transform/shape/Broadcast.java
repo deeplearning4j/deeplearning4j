@@ -6,6 +6,8 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.List;
+
 public class Broadcast extends AbstractUnaryFunction<ArrayField> {
 
     public Broadcast(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape) {
@@ -24,7 +26,7 @@ public class Broadcast extends AbstractUnaryFunction<ArrayField> {
     }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         throw new UnsupportedOperationException();
     }
 

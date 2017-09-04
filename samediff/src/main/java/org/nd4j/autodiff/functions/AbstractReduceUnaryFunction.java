@@ -74,7 +74,7 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
                     .arrId(UUID.randomUUID().toString())
                     .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
                     .shape(resultShape).build();
-            NDArrayVertex newVertex = new NDArrayVertex(sameDiff.getGraph().nextVertexId(), information);
+            NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information);
             this.vertexId = newVertex.vertexID();
             sameDiff.getGraph().addVertex(newVertex);
             OpState opState =   OpState.builder()
@@ -83,6 +83,7 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
                     .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                     .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                     .n(ArrayUtil.prod(Shape.getReducedShape(v1.getInput().getShape(),dimensions)))
+                    .differentialFunction((DifferentialFunction<ArrayField>) this)
                     .build();
             newVertex.setOpState(opState);
             sameDiff.getGraph().addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),opState

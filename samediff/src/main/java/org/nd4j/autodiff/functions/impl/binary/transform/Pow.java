@@ -4,6 +4,7 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.*;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Collections;
 import java.util.List;
 
 public class Pow extends AbstractBinaryFunction<ArrayField> {
@@ -16,29 +17,19 @@ public class Pow extends AbstractBinaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().pow(larg().getValue(true), rarg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.pow(larg().getReal(), rarg().getReal());
-    }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         Constant<ArrayField> ym1 = sameDiff.getFunctionFactory()
                 .val(rarg().getValue(true).sub(sameDiff.getArrayFactory().one(getResultShape())));
-        return rarg().mul(sameDiff.getFunctionFactory().pow(larg(), ym1))
-                .mul(larg().diff(i_v));
+        DifferentialFunction<ArrayField> ret = rarg().mul(sameDiff.getFunctionFactory().pow(larg(), ym1))
+                .mul(larg());
+        larg().setGradient(ret);
+        rarg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
-    @Override
-    public String toString() {
-        return "pow(" + larg().toString() + ", " + rarg().toString() + ")";
-    }
 
-    @Override
-    public String doGetFormula(List<Variable<ArrayField> > variables) {
-        return "pow(" + larg().doGetFormula(variables) + ","
-                + rarg().doGetFormula(variables) + ")";
-    }
 
     @Override
     public String functionName() {

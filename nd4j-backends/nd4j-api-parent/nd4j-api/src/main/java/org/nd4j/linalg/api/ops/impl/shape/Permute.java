@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.ops.ShapeOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
- * Transpose function
+ * Permute function
  *
  * @author Adam Gibson
  */
@@ -36,7 +36,7 @@ public class Permute extends ShapeOp {
 
     public Permute() {}
 
-    public Permute(INDArray x, INDArray z) {
+    public Permute(INDArray x, INDArray z,Object[] extraArgs) {
         super(x, z);
     }
 
@@ -52,6 +52,27 @@ public class Permute extends ShapeOp {
         super(x);
     }
 
+    @Override
+    public void exec(int... dimensions) {
+        exec();
+    }
+
+    @Override
+    public boolean isExecSpecial() {
+        return true;
+    }
+
+    @Override
+    public void exec() {
+        int[] permuteDims = (int[]) extraArgs[0];
+        if(x != z) {
+            z.assign(x.permute(permuteDims));
+        }
+        else {
+            x.permutei(permuteDims);
+        }
+
+    }
 
     @Override
     public int opNum() {

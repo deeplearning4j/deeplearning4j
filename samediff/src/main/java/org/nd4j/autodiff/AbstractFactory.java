@@ -3,6 +3,7 @@ package org.nd4j.autodiff;
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 
 import java.util.List;
 
@@ -24,6 +25,8 @@ public interface AbstractFactory<X extends Field<X>>
 
     X invoke(String name,Object[] args);
 
+
+    ArrayField selu(ArrayField value);
 
     X eq(X i_x, X i_y);
 
@@ -130,31 +133,32 @@ public interface AbstractFactory<X extends Field<X>>
      */
     X leakyRelu(X value);
 
-    X leakyReluDerivative(X value,double alpha);
+    X leakyReluDerivative(X value, X wrt, double alpha);
 
     /**
      * Leaky relu with an alpha of
      * 0.01
      * @param value the value to transform
+     * @param wrt
      * @return
      */
-    X leakyReluDerivative(X value);
+    X leakyReluDerivative(X value, X wrt);
 
 
     X hardTanh(X value);
 
-    X hardTanhDerivative(X value);
+    X hardTanhDerivative(X value, X wrt);
 
     X sigmoid(X value);
 
-    X sigmoidDerivative(X value);
+    X sigmoidDerivative(X value, X wrt);
 
 
     X softmax(X value);
 
     X elu(X value);
 
-    X eluDerivative(X value);
+    X eluDerivative(X value, X wrt);
 
     X step(X value);
 
@@ -162,7 +166,7 @@ public interface AbstractFactory<X extends Field<X>>
 
     X softsign(X value);
 
-    X softsignDeriviative(X value);
+    X softsignDeriviative(X value, X wrt);
 
     X softplus(X value);
 
@@ -206,6 +210,8 @@ public interface AbstractFactory<X extends Field<X>>
 
     X mmul(DifferentialFunction<X> arrayField, DifferentialFunction<X> y);
 
+    ArrayField mmul(DifferentialFunction<ArrayField> input, DifferentialFunction<ArrayField> y, MMulTranspose mMulTranspose);
+
     X tensorMmul(DifferentialFunction<X> arrayField, DifferentialFunction<X> y, int[][] dimensions);
 
     /*
@@ -213,5 +219,15 @@ public interface AbstractFactory<X extends Field<X>>
      */
     X permute(X value, int[] dimensions);
 
-    ArrayField set(ArrayField value, ArrayField value1);
+    X set(X value, X value1);
+
+    X softmaxDerivative(X value, X wrt);
+
+    X seluDerivative(X value, X wrt);
+
+    X tanhDerivative(X value, X wrt);
+
+
+
+    X logSoftmax(X value);
 }

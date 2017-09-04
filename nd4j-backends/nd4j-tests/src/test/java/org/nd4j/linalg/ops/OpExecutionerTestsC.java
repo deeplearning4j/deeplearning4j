@@ -76,6 +76,28 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testSoftmaxReference() {
+        INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray dup = input.dup();
+        Nd4j.getExecutioner().exec(new SoftMax(dup));
+        INDArray result = Nd4j.zeros(2,2);
+        Nd4j.getExecutioner().exec(new SoftMax(input,result));
+        assertEquals(dup,result);
+
+
+        dup = input.dup();
+        Nd4j.getExecutioner().exec(new LogSoftMax(dup));
+
+        result = Nd4j.zeros(2,2);
+        Nd4j.getExecutioner().exec(new LogSoftMax(input,result));
+
+        assertEquals(dup,result);
+
+
+
+    }
+
+    @Test
     public void testScalarReverseSub() {
         INDArray input = Nd4j.valueArrayOf(4,2.0);
         INDArray result= Nd4j.zeros(4);

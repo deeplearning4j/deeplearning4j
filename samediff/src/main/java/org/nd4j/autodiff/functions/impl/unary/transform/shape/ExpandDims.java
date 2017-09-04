@@ -1,9 +1,12 @@
-package org.nd4j.autodiff.functions.impl.unary.transform;
+package org.nd4j.autodiff.functions.impl.unary.transform.shape;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+
+import java.util.Collections;
+import java.util.List;
 
 public class ExpandDims extends AbstractUnaryFunction<ArrayField> {
 
@@ -20,14 +23,11 @@ public class ExpandDims extends AbstractUnaryFunction<ArrayField> {
     }
 
     @Override
-    public double getReal() {
-        return Math.abs(arg().getReal());
-    }
-
-    @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
-        return arg().div(sameDiff.getFunctionFactory().abs(arg()));
+        DifferentialFunction<ArrayField> ret = arg().div(sameDiff.getFunctionFactory().abs(arg()));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

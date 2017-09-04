@@ -44,11 +44,12 @@ public class SoftMax extends BaseTransformOp {
     public SoftMax() {}
 
     public SoftMax(INDArray x, INDArray z) {
-        super(x, z);
+        this(x,null,z);
+
     }
 
     public SoftMax(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+       this(x,null,z,n);
     }
 
     public SoftMax(INDArray x, INDArray y, INDArray z, long n) {
@@ -56,7 +57,7 @@ public class SoftMax extends BaseTransformOp {
     }
 
     public SoftMax(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+        this(x,y,z,x.lengthLong());
     }
 
     public SoftMax(INDArray x) {
@@ -161,7 +162,7 @@ public class SoftMax extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
             return new SoftMax(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+                    z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new SoftMax(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -172,7 +173,7 @@ public class SoftMax extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
             return new SoftMax(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+                    z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new SoftMax(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

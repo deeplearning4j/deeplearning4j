@@ -20,9 +20,11 @@
 package org.nd4j.linalg.api.ops.factory;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -38,6 +40,7 @@ import org.nd4j.linalg.api.ops.impl.shape.Reshape;
 import org.nd4j.linalg.api.ops.impl.shape.Transpose;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -91,6 +94,20 @@ public class DefaultOpFactory implements OpFactory {
         }
     }
 
+
+    @Override
+    public GradientOp createGradientOp(String name, INDArray x, INDArray y, INDArray z) {
+        switch(name) {
+            case "softmaxderivative":
+                return new SoftMaxDerivative(x,y,z);
+            case "sigmoidderivative":
+                return new org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative(x,y,z);
+            case "tanhderivative":
+                return new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(x,y,z);
+            default: throw new IllegalStateException("Illegal name " + name);
+        }
+    }
+
     /**
      *
      * @param name
@@ -99,17 +116,21 @@ public class DefaultOpFactory implements OpFactory {
      * @return
      */
     @Override
-    public Op createShape(String name, INDArray x, INDArray z) {
-        if (!opClazzes.containsKey(name))
-            throw new ND4JIllegalStateException("Unknown Op requested: " + name);
+    public Op createShape(String name, INDArray x, INDArray z, Object[] extraArgs) {
+            if (!opClazzes.containsKey(name))
+                throw new ND4JIllegalStateException("Unknown Op requested: " + name);
 
-        switch(name) {
+            switch(name) {
             case "transpose":
                 return new Transpose(x,z);
             case "reshape":
-                return new Reshape(x,z);
+                Reshape ret2 = new Reshape(x,z);
+                ret2.setExtraArgs(extraArgs);
+                return ret2;
             case "permute":
-                return new Permute(x,z);
+                Permute ret = new Permute(x,z,x.lengthLong());
+                ret.setExtraArgs(extraArgs);
+                return ret;
             case "broadcast":
                 return new Broadcast(x,z);
         }
@@ -205,11 +226,21 @@ public class DefaultOpFactory implements OpFactory {
             case "cosinesimilarity":
                 ret = new CosineSimilarity(x, y,z, x.length());
                 break;
+            case "cosinedistance":
+                ret = new CosineDistance(x,y,z,x.lengthLong());
+                break;
             case "manhattan":
                 ret = new ManhattanDistance(x, y,z, x.length());
                 break;
             case "mmul":
-                ret = new Mmul(x, y,z, x.length());
+                //of note here is that it's always the last arg
+
+                 * The case to watch out for here is
+                 * tensor matrix multiply which has an args format of:
+                 * dimensions, mmul transpose
+
+                MMulTranspose mMulTranspose = extraArgs != null  && extraArgs.length >= 1 ? (MMulTranspose) extraArgs[extraArgs.length - 1] : MMulTranspose.allFalse();
+                ret = new Mmul(x,y,z,mMulTranspose);
                 break;
             case "tensorMmul":
                 ret = new TensorMmul(x, y,z,(int[][]) extraArgs[0]);
@@ -439,6 +470,9 @@ public class DefaultOpFactory implements OpFactory {
                 break;
             case "timesoneminus":
                 op = new TimesOneMinus(x, z);
+                break;
+            case "softmaxderivative":
+                op = new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative(x, z);
                 break;
             case "softmax":
                 op = new SoftMax(x, z);

@@ -29,15 +29,18 @@ import org.nd4j.linalg.api.ops.*;
  */
 public interface OpFactory {
 
+    GradientOp createGradientOp(String name, INDArray x, INDArray y, INDArray z);
+
     /**
      *
      *
      * @param name
      * @param x
      * @param z
+     * @param extraArgs
      * @return
      */
-    Op createShape(String name, INDArray x, INDArray z);
+    Op createShape(String name, INDArray x, INDArray z, Object[] extraArgs);
 
     /**
      * Create a loss function with the given inputs and outputs

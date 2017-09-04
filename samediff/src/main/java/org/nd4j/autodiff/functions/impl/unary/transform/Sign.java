@@ -5,6 +5,9 @@ import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Collections;
+import java.util.List;
+
 public class Sign extends AbstractUnaryFunction<ArrayField> {
     public Sign(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
@@ -12,17 +15,16 @@ public class Sign extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().sign(arg().getValue(true));
+        return a().sign(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().zero(getResultShape());
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        DifferentialFunction<ArrayField> ret = f().zero(getResultShape());
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

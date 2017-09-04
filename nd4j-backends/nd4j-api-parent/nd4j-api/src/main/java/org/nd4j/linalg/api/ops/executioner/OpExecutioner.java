@@ -120,6 +120,10 @@ public interface OpExecutioner {
      * @param op*/
     INDArray execAndReturn(BroadcastOp op);
 
+    /** Execute and return the result from a vector op
+     * @param op*/
+    INDArray execAndReturn(ShapeOp op);
+
 
     /**Execute the operation along 1 or more dimensions
      *
@@ -162,7 +166,9 @@ public interface OpExecutioner {
 
 
 
-    /**Execute and return  a result
+    /**
+     *
+     * Execute and return  a result
      * ndarray from the given op
      * @param op the operation to execute
      * @return the result from the operation
@@ -171,7 +177,7 @@ public interface OpExecutioner {
 
 
     /**Get the execution mode for this
-     * execuioner
+     * executioner
      * @return the execution mode for this executioner
      */
     ExecutionMode executionMode();
@@ -194,8 +200,17 @@ public interface OpExecutioner {
      */
     void exec(GridOp op);
 
-
+    /**
+     *
+     * @param op
+     */
     void exec(Aggregate op);
+
+    /**
+     *
+     * @param op
+     */
+    void exec(ShapeOp op);
 
     /**
      * This method executes previously built batch
@@ -205,7 +220,8 @@ public interface OpExecutioner {
     <T extends Aggregate> void exec(Batch<T> batch);
 
     /**
-     * This method takes abritrary sized list of aggregates, and packs them into batches
+     * This method takes arbitrary sized list of aggregates,
+     * and packs them into batches
      *
      * @param batch
      */
@@ -308,8 +324,20 @@ public interface OpExecutioner {
      */
     long bitmapEncode(INDArray indArray, INDArray target, double threshold);
 
+    /**
+     *
+     * @param indArray
+     * @param threshold
+     * @return
+     */
     INDArray bitmapEncode(INDArray indArray, double threshold);
 
+    /**
+     *
+     * @param encoded
+     * @param target
+     * @return
+     */
     INDArray bitmapDecode(INDArray encoded, INDArray target);
 
     /**

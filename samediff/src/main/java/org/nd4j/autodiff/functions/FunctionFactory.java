@@ -2,6 +2,7 @@ package org.nd4j.autodiff.functions;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 
 /**
  * Created by agibsonccc on 4/9/17.
@@ -79,6 +80,8 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> tanh(DifferentialFunction<X> iX);
 
+    DifferentialFunction<ArrayField> tanhDerivative(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> wrt);
+
     DifferentialFunction<X> acosh(DifferentialFunction<X> iX);
 
     DifferentialFunction<X> asinh(DifferentialFunction<X> iX);
@@ -113,7 +116,7 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> sigmoid(DifferentialFunction<X> iX);
 
-    DifferentialFunction<X> sigmoidDerivative(DifferentialFunction<X> iX);
+    DifferentialFunction<X> sigmoidDerivative(DifferentialFunction<X> iX, DifferentialFunction<X> wrt);
 
     DifferentialFunction<X> sign(DifferentialFunction<X> iX);
 
@@ -133,7 +136,7 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> leakyRelu(DifferentialFunction<X> iX, double cutoff);
 
-    DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> iX, double cutoff);
+    DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> iX, DifferentialFunction<X> iY, double cutoff);
 
     DifferentialFunction<X> reshape(DifferentialFunction<X> arrayField, int[] shape);
 
@@ -159,6 +162,49 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> lossSquaredHinge(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
 
 
-    DifferentialFunction<X> mmul(int argNum, DifferentialFunction<X> x, DifferentialFunction<X> y);
-    DifferentialFunction<X> tensorMmul(DifferentialFunction<X> x, DifferentialFunction<X> y, int[][] dimensions, int argNum);
+    DifferentialFunction<ArrayField> mmul(DifferentialFunction<ArrayField> x,
+                                          DifferentialFunction<ArrayField> y,
+                                          MMulTranspose mMulTranspose);
+
+    DifferentialFunction<X> mmul(DifferentialFunction<X> x, DifferentialFunction<X> y);
+    DifferentialFunction<X> tensorMmul(DifferentialFunction<X> x, DifferentialFunction<X> y, int[][] dimensions);
+
+    DifferentialFunction<X> softmaxDerivative(DifferentialFunction<X> functionInput, DifferentialFunction<X> wrt);
+
+    DifferentialFunction<X> logSoftmax(DifferentialFunction<X> i_v);
+
+    DifferentialFunction<X> selu(DifferentialFunction<X> arg);
+
+    DifferentialFunction<X> seluDerivative(DifferentialFunction<X> arg);
+
+    DifferentialFunction<X> rsub(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> rdiv(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> rdivi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> rsubi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> add(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> addi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> sub(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> subi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> mul(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> muli(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> div(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+    DifferentialFunction<X> divi(DifferentialFunction<X> xDifferentialFunction, DifferentialFunction<X> i_v);
+
+
+
+
+
+    DifferentialFunction<X> rsub(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> rdiv(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> rdivi(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> rsubi(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> add(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> addi(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> sub(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> subi(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> mul(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> muli(DifferentialFunction<X> xDifferentialFunction,double i_v);
+    DifferentialFunction<X> div(DifferentialFunction<X> xDifferentialFunction, double i_v);
+    DifferentialFunction<X> divi(DifferentialFunction<X> xDifferentialFunction,double i_v);
+
 }

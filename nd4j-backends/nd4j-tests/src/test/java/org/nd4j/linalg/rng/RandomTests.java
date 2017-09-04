@@ -1,6 +1,8 @@
 package org.nd4j.linalg.rng;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.random.JDKRandomGenerator;
+import org.apache.commons.math3.util.FastMath;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -236,6 +238,26 @@ public class RandomTests extends BaseNd4jTest {
         Nd4j.getExecutioner().exec(op1, random1);
 
         DropOut op2 = new DropOut(z2, z2, 0.10);
+        Nd4j.getExecutioner().exec(op2, random2);
+
+        assertNotEquals(zDup, z1);
+
+        assertEquals(z1, z2);
+    }
+
+    @Test
+    public void testAlphaDropout1() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+
+        INDArray z1 = Nd4j.ones(300);
+        INDArray z2 = Nd4j.ones(300);
+        INDArray zDup = z1.dup();
+
+        AlphaDropOut op1 = new AlphaDropOut(z1, z1, 0.10, 0.3, 0.5, 0.7);
+        Nd4j.getExecutioner().exec(op1, random1);
+
+        AlphaDropOut op2 = new AlphaDropOut(z2, z2, 0.10, 0.3, 0.5, 0.7);
         Nd4j.getExecutioner().exec(op2, random2);
 
         assertNotEquals(zDup, z1);
@@ -1246,6 +1268,61 @@ public class RandomTests extends BaseNd4jTest {
         INDArray res = x.muli(y);
 
         assertEquals(expCUDA, res);
+    }
+
+    @Test
+    public void testTruncatedNormal1() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+
+        INDArray z01 = Nd4j.create(10000000).assign(-119119d);
+        INDArray z02 = Nd4j.createUninitialized(z01.length());
+
+        TruncatedNormalDistribution distribution01 = new TruncatedNormalDistribution(z01, 0.0, 1.0);
+
+        long time1 = System.currentTimeMillis();
+        Nd4j.getExecutioner().exec(distribution01, random1);
+        long time2 = System.currentTimeMillis();
+
+        Nd4j.getExecutioner().exec(new GaussianDistribution( z02, 0.0, 1.0));
+        long time3 = System.currentTimeMillis();
+
+        log.info("Truncated: {} ms; Gaussian: {} ms", time2 - time1, time3 - time2);
+
+        for (int e = 0; e < z01.length(); e++) {
+            assertTrue("Value: " + z01.getDouble(e) + " at " + e,FastMath.abs(z01.getDouble(e)) <= 2.0);
+            assertNotEquals(-119119d, z01.getDouble(e), 1e-3);
+        }
+
+        assertEquals(0.0, z01.meanNumber().doubleValue(), 1e-3);
+    }
+
+    @Test
+    public void testLogNormal1() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+
+        INDArray z01 = Nd4j.create(1000000);
+
+        JDKRandomGenerator rng = new JDKRandomGenerator();
+        rng.setSeed(119);
+
+        org.apache.commons.math3.distribution.LogNormalDistribution dst = new org.apache.commons.math3.distribution.LogNormalDistribution(rng, 0.0, 1.0);
+        double[] array = dst.sample(1000000);
+
+
+        double mean = 0.0;
+        for (double e: array) {
+            mean += e;
+        }
+        mean /= array.length;
+
+        LogNormalDistribution distribution01 = new LogNormalDistribution(z01, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(distribution01, random1);
+
+        log.info("Java mean: {}; Native mean: {}", mean, z01.meanNumber().doubleValue());
+        assertEquals(mean, z01.meanNumber().doubleValue(), 1e-1);
+
+
+
     }
 
     @Test

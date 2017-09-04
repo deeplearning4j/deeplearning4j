@@ -35,6 +35,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
 
         if (i_v != null) {
             m_x = i_v;
+            validateFunctionReference(i_v);
             validateDifferentialFunctionsameDiff(i_v);
             addEdges(sameDiff,m_x,functionName(),shape);
         } else {
@@ -77,6 +78,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                             DifferentialFunction<X> i_v1,
                             String opName,
                             int...shape) {
+        validateFunctionReference(i_v1);
         if(i_v1.getValue(true) instanceof ArrayField) {
             ArrayField v1 = (ArrayField) i_v1.getValue(true);
             validateDifferentialFunctionsameDiff(v1);
@@ -86,12 +88,12 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                             v1.getInput().getId() + ")")
                     .shape(shape).build();
             //result
-            NDArrayVertex newVertex = new NDArrayVertex(sameDiff.getGraph().nextVertexId(), information);
+            NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information);
             this.vertexId = newVertex.vertexID();
             Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");
             sameDiff.getGraph().addVertex(newVertex);
             OpState owner =  OpState.builder()
-                    .opType(opType)
+                    .opType(opType).differentialFunction((DifferentialFunction<ArrayField>) this)
                     .opName(opName).extraArgs(extraArgs)
                     .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                     .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
@@ -110,27 +112,6 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
     }
 
 
-    /**
-     * Add nodes to the graph
-     * @param sameDiff
-     * @param i_v1
-     * @param opName
-     */
-    protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction<X> i_v1,
-                            String opName) {
-        if(i_v1.getValue(true) instanceof ArrayField) {
-            this.opType = OpState.OpType.TRANSFORM;
-            ArrayField arrayField = (ArrayField) i_v1.getValue(true);
-
-            addEdges(sameDiff,
-                    i_v1,
-                    opName,
-                    arrayField.getInput().getShape());
-
-        }
-    }
-
     @Override
     public DifferentialFunction<X>[] args() {
         return new DifferentialFunction[] {arg()};
@@ -147,5 +128,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
         Cloner cloner = new Cloner();
         return cloner.deepClone(this);
     }
+
+
 }
 

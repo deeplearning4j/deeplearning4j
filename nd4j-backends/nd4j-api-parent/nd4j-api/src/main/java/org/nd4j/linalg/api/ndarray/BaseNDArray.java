@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.ndarray;
 import com.google.common.primitives.Ints;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -2797,6 +2798,43 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return dup().addiRowVector(rowVector);
     }
 
+
+    /**
+     * Perform a copy matrix multiplication
+     *
+     * @param other the other matrix to perform matrix multiply with
+     * @return the result of the matrix multiplication
+     */
+    @Override
+    public INDArray mmul(INDArray other, INDArray result,MMulTranspose mMulTranspose) {
+        MMulTranspose mMulTranspose1 = MMulTranspose.builder()
+                .a(this)
+                .b(other)
+                .transposeA(mMulTranspose.isTransposeA())
+                .transposeB(mMulTranspose.isTransposeB())
+                .transposeResult(mMulTranspose.isTransposeResult())
+                .build();
+        return mMulTranspose1.getA().mmul(mMulTranspose1.getB(),result);
+    }
+
+    /**
+     * Perform a copy matrix multiplication
+     *
+     * @param other the other matrix to perform matrix multiply with
+     * @return the result of the matrix multiplication
+     */
+    @Override
+    public INDArray mmul(INDArray other, MMulTranspose mMulTranspose) {
+        MMulTranspose mMulTranspose1 = MMulTranspose.builder()
+                .a(this)
+                .b(other)
+                .transposeA(mMulTranspose.isTransposeA())
+                .transposeB(mMulTranspose.isTransposeB())
+                .transposeResult(mMulTranspose.isTransposeResult())
+                .build();
+        return mMulTranspose1.getA().mmul(mMulTranspose1.getB());
+    }
+
     /**
      * Perform a copy matrix multiplication
      *
@@ -2923,6 +2961,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return dup().addi(other, result);
     }
 
+
+    /**
+     * Perform an copy matrix multiplication
+     *
+     * @param other the other matrix to perform matrix multiply with
+     * @param transpose the transpose status of each ndarray
+     * @return the result of the matrix multiplication
+     */
+    @Override
+    public INDArray mmuli(INDArray other, MMulTranspose transpose) {
+        return dup().mmuli(other, this,transpose);
+    }
+
     /**
      * Perform an copy matrix multiplication
      *
@@ -2932,6 +2983,26 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray mmuli(INDArray other) {
         return dup().mmuli(other, this);
+    }
+
+
+    /**
+     * Perform an in place matrix multiplication
+     *
+     * @param other  the other matrix to perform matrix multiply with
+     * @param result the result ndarray
+     * @return the result of the matrix multiplication
+     */
+    @Override
+    public INDArray mmuli(INDArray other, INDArray result, MMulTranspose transpose) {
+        MMulTranspose mMulTranspose = MMulTranspose.builder()
+                .a(this)
+                .b(other)
+                .transposeA(transpose.isTransposeA())
+                .transposeB(transpose.isTransposeB())
+                .transposeResult(transpose.isTransposeResult())
+                .build();
+        return mMulTranspose.getA().mmuli(mMulTranspose.getB(),result);
     }
 
     /**
@@ -2965,13 +3036,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             if (other.columns() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(BlasBufferUtil.getCharForTranspose(result),
-                        BlasBufferUtil.getCharForTranspose(this), 1.0, this, other, 0.0, temp);
+                        BlasBufferUtil.getCharForTranspose(this),
+                        1.0,
+                        this,
+                        other,
+                        0.0,
+                        temp);
             }
 
             else {
-                Nd4j.getBlasWrapper().level3().gemm(BlasBufferUtil.getCharForTranspose(result),
-                        BlasBufferUtil.getCharForTranspose(this), BlasBufferUtil.getCharForTranspose(temp), 1.0,
-                        this, other, 0.0, temp);
+                Nd4j.getBlasWrapper().level3().gemm(
+                        BlasBufferUtil.getCharForTranspose(result),
+                        BlasBufferUtil.getCharForTranspose(this),
+                        BlasBufferUtil.getCharForTranspose(temp),
+                        1.0,
+                        this,
+                        other,
+                        0.0,
+                        temp);
             }
 
             result.assign(temp);

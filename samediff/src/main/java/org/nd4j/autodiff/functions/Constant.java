@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
@@ -29,8 +30,9 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
 
         if(i_v instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) i_v;
-            Preconditions.checkArgument(arrayField.getOps() == sameDiff,"Constant instantiated with wrong samediff from arrayfield.");
+            validateDifferentialFunctionsameDiff(arrayField);
             this.vertexId = arrayField.getVertex().vertexID();
+            validateFunctionReference(this);
             if(sameDiff.getGraph().getVertex(this.vertexId) == null)
                 sameDiff.getGraph().addVertex(arrayField.getVertex());
 
@@ -81,9 +83,11 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
     @Override
-    public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
+    public List<DifferentialFunction<X>> diff(List<DifferentialFunction<X>> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
-        return new Zero<>(sameDiff,shape);
+        Zero<ArrayField> ret = new Zero<>(sameDiff,shape);
+        DifferentialFunction<X> add = (DifferentialFunction<X>) ret;
+        return Arrays.asList(add);
     }
 
     @Override
@@ -105,21 +109,23 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public Constant<X> inverse() {
-        Constant<X> ret = new Constant<>(sameDiff, m_x.inverse(),shape);
-        return ret;
+        Constant<ArrayField> ret = sameDiff.setupFunction(new Constant<>(sameDiff, (ArrayField) m_x.inverse(), shape));
+        Constant<X> differentialFunction = (Constant<X>) ret;
+        return differentialFunction;
     }
 
     @Override
     public Constant<X> negate() {
-        Constant<X> ret =  new Constant<>(sameDiff, m_x.negate(),shape);
-        validateDifferentialFunctionsameDiff(ret);
-        return ret;
+        Constant<ArrayField> ret = sameDiff.setupFunction(new Constant<>(sameDiff, (ArrayField) m_x.negate(), shape));
+        Constant<X> differentialFunction = (Constant<X>) ret;
+        return differentialFunction;
     }
 
     @Override
     public DifferentialFunction<X> dup() {
-        return new Constant<>(sameDiff,m_x,shape);
-    }
+        Constant<ArrayField> ret = sameDiff.setupFunction(new Constant<>(sameDiff, (ArrayField) m_x, shape));
+        Constant<X> differentialFunction = (Constant<X>) ret;
+        return differentialFunction;    }
 
     // This class must be immutable.
     // set and assign must not be implemented.

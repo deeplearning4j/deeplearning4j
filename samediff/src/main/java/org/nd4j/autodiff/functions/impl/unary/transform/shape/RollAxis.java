@@ -6,6 +6,9 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Collections;
+import java.util.List;
+
 public class RollAxis extends AbstractUnaryFunction<ArrayField> {
 
    private int axis;
@@ -23,14 +26,13 @@ public class RollAxis extends AbstractUnaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().rollAxis(arg().getValue(true),axis);
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return this;
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        DifferentialFunction<ArrayField> ret = this;
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

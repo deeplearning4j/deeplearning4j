@@ -6,6 +6,9 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 
+import java.util.Collections;
+import java.util.List;
+
 public class LeakyRelu  extends AbstractUnaryFunction<ArrayField> {
     private double cutoff;
 
@@ -16,17 +19,15 @@ public class LeakyRelu  extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().leakyRelu(arg().getValue(true),cutoff);
+        return a().leakyRelu(arg().getValue(true),cutoff);
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().leakyReluDerivative(arg(),cutoff).mul(arg().diff(i_v));
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        DifferentialFunction<ArrayField> ret = f().leakyReluDerivative(arg(),i_v.get(0) , cutoff);
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

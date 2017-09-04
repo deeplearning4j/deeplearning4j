@@ -100,7 +100,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (op instanceof ScalarOp) {
             ScalarOp s = (ScalarOp) op;
             exec(s);
-        } else if (op instanceof TransformOp) {
+        }
+        else if(op instanceof GradientOp) {
+            op.exec();
+        }
+        else if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             exec(t);
         } else if (op instanceof Accumulation) {
@@ -112,6 +116,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } else if (op instanceof BroadcastOp) {
             BroadcastOp broadcastOp = (BroadcastOp) op;
             exec(broadcastOp, broadcastOp.getDimension());
+        }
+        else if(op instanceof ShapeOp) {
+            ShapeOp shapeOp = (ShapeOp) op;
+            exec(shapeOp);
         }
 
         return op;

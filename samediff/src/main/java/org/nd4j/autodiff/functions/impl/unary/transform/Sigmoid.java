@@ -5,24 +5,28 @@ import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Collections;
+import java.util.List;
+
 public class Sigmoid extends AbstractUnaryFunction<ArrayField> {
     public Sigmoid(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+        validateFunctionReference(i_v);
+        validateFunctionReference(this);
     }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().sigmoid(arg().getValue(true));
+        return a().sigmoid(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().sigmoidDerivative(arg()).mul(arg().diff(i_v));
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+        DifferentialFunction<ArrayField> ret = f().sigmoidDerivative(arg(), i_v.get(0));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

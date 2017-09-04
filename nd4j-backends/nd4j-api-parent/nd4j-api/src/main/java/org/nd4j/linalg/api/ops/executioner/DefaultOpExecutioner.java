@@ -250,6 +250,17 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return exec(op).z();
     }
 
+    /**
+     * Execute and return the result from a vector op
+     *
+     * @param op
+     */
+    @Override
+    public INDArray execAndReturn(ShapeOp op) {
+        exec(op);
+        return op.z();
+    }
+
     @Override
     public Op exec(Op op, int... dimension) {
         //do op along all dimensions
@@ -382,6 +393,18 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public void exec(Aggregate op) {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param op
+     */
+    @Override
+    public void exec(ShapeOp op) {
+        if(!op.isExecSpecial()) {
+            throw new IllegalArgumentException("Only special execution supported right now.");
+        }
+
+        op.exec();
     }
 
     @Override

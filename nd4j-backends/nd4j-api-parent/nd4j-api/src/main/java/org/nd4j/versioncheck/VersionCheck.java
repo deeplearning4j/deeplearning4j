@@ -3,6 +3,10 @@ package org.nd4j.versioncheck;
 import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
+import org.reflections.util.FilterBuilder;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -75,14 +79,14 @@ public class VersionCheck {
             return;
         }
 
-        if(classExists(ND4J_JBLAS_CLASS)){
+        if(classExists(ND4J_JBLAS_CLASS)) {
             //nd4j-jblas is ancient and incompatible
             log.error("Found incompatible/obsolete backend and version (nd4j-jblas) on classpath. ND4J is unlikely to"
                     + " function correctly with nd4j-jblas on the classpath. JVM will now exit.");
             System.exit(1);
         }
 
-        if(classExists(CANOVA_CLASS)){
+        if(classExists(CANOVA_CLASS)) {
             //Canova is ancient and likely to pull in incompatible dependencies
             log.error("Found incompatible/obsolete library Canova on classpath. ND4J is unlikely to"
                     + " function correctly with this library on the classpath. JVM will now exit.");
@@ -198,8 +202,8 @@ public class VersionCheck {
      * @return A list of the property files containing the build/version info
      */
     public static List<String> listGitPropertiesFiles() {
-        Reflections reflections = new Reflections(new ResourcesScanner());
-
+        Reflections reflections = new Reflections(new ConfigurationBuilder().filterInputsBy(
+                new FilterBuilder().exclude(".*").include("/ai/skymind/*")).setScanners(new ResourcesScanner()));
         Set<String> resources = reflections.getResources(Pattern.compile(".*-git.properties"));
 
         List<String> out = new ArrayList<>(resources);

@@ -22,7 +22,7 @@ public class Pooling2D extends BaseTransformOp {
         MAX, AVG, PNORM,
     }
 
-    private int kh, kw, sy, sx, ph, pw;
+    private int kh, kw, sy, sx, ph, pw, dh, dw;
     private Pooling2DType type;
     boolean isSameMode;
     double extra;
@@ -34,7 +34,8 @@ public class Pooling2D extends BaseTransformOp {
         this(x, kh, kw, sy, sx, ph, pw, isSameMode, type, getNewOutputArray(x, kh, kw, sy, sx, ph, pw, false));
     }
 */
-    public Pooling2D(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode, Pooling2DType type, double extra,  int virtualHeight, int virtualWidth, INDArray z) {
+    public Pooling2D(INDArray x, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode,
+                     Pooling2DType type, double extra,  int virtualHeight, int virtualWidth, INDArray z) {
         super(x);
         this.kh = kh;
         this.kw = kw;
@@ -42,6 +43,8 @@ public class Pooling2D extends BaseTransformOp {
         this.sx = sx;
         this.ph = ph;
         this.pw = pw;
+        this.dh = dh;
+        this.dw = dw;
         this.isSameMode = isSameMode;
         this.type = type;
         this.z = z;
@@ -67,26 +70,7 @@ public class Pooling2D extends BaseTransformOp {
 
     @Override
     public Object[] extraArgs() {
-        return new Object[] {kw, kh, sx, sy, pw, ph, isSameMode ? 1.0 : 0.0, type.ordinal(), extra};
-    }
-
-    private static INDArray getNewOutputArray(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,
-                                              int padHeight, int padWidth, boolean coverAll) {
-
-        // FIXME!!!
-
-        //number of images
-        int n = img.size(0);
-        //number of channels (depth)
-        int c = img.size(1);
-        //image height
-        int h = img.size(2);
-        //image width
-        int w = img.size(3);
-        int outHeight = Convolution.outSize(h, kernelHeight, strideY, padHeight, coverAll);
-        int outWidth = Convolution.outSize(w, kernelWidth, strideX, padWidth, coverAll);
-
-        return Nd4j.createUninitialized(new int[] {n, c, kernelHeight, kernelWidth, outHeight, outWidth}, 'c');
+        return new Object[] {kw, kh, sx, sy, pw, ph, dw, dh, isSameMode ? 1.0 : 0.0, type.ordinal(), extra};
     }
 
     private static DataBuffer getNewOutputShape(INDArray img, int kernelHeight, int kernelWidth, int strideY, int strideX,

@@ -5,6 +5,8 @@ import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.List;
+
 public class Floor extends AbstractUnaryFunction<ArrayField> {
 
     public Floor(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
@@ -14,16 +16,13 @@ public class Floor extends AbstractUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().floor(arg().getValue(true));
+        return a().floor(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
         throw new RuntimeException("not allowed");
     }
 

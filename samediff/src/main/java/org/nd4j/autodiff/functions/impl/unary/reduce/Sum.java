@@ -5,6 +5,9 @@ import org.nd4j.autodiff.functions.AbstractReduceUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Collections;
+import java.util.List;
+
 public class Sum extends AbstractReduceUnaryFunction<ArrayField> {
     public Sum(SameDiff sameDiff,
                DifferentialFunction<ArrayField> i_v,
@@ -26,8 +29,13 @@ public class Sum extends AbstractReduceUnaryFunction<ArrayField> {
 
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
-        return sameDiff.getFunctionFactory().doRepeat(this,arg(),dimensions).mul(arg().diff(i_v1));
+        validateFunctionReference(i_v1);
+        DifferentialFunction<ArrayField> repeat =  sameDiff.getFunctionFactory().doRepeat(
+                i_v1.get(0),
+                arg(),dimensions);
+        arg().setGradient(repeat);
+        return Collections.singletonList(repeat);
     }
 }

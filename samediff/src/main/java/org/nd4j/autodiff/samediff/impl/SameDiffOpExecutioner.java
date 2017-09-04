@@ -174,6 +174,16 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     }
 
     /**
+     * Execute and return the result from a vector op
+     *
+     * @param op
+     */
+    @Override
+    public INDArray execAndReturn(ShapeOp op) {
+        return backendExecutioner.execAndReturn(op);
+    }
+
+    /**
      * Execute the operation along 1 or more dimensions
      *
      * @param op        the operation to execute
@@ -291,6 +301,14 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     }
 
     /**
+     * @param op
+     */
+    @Override
+    public void exec(ShapeOp op) {
+        backendExecutioner.exec(op);
+    }
+
+    /**
      * This method executes previously built batch
      *
      * @param batch
@@ -301,7 +319,7 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     }
 
     /**
-     * This method takes abritrary sized list of aggregates, and packs them into batches
+     * This method takes arbitrary sized list of aggregates, and packs them into batches
      *
      * @param batch
      */
