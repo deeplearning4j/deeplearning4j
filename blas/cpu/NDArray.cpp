@@ -154,19 +154,20 @@ template <typename T> NDArray<T>::NDArray(const char order, const std::initializ
     delete[] shapeOf;
 }
 
-    template <typename T>
-    void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting ) {
-        this->_buffer = buffer;
-        this->_shapeInfo = shapeInfo;
 
-        if (releaseExisting) {
-            if (_isShapeAlloc)
-                delete[] _shapeInfo;
+template <typename T>
+void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting ) {
+    this->_buffer = buffer;
+    this->_shapeInfo = shapeInfo;
 
-            if (_isBuffAlloc)
-                delete[] _buffer;
-        }
+    if (releaseExisting) {
+        if (_isShapeAlloc)
+            delete[] _shapeInfo;
+
+        if (_isBuffAlloc)
+            delete[] _buffer;
     }
+}
 
 
 
@@ -776,7 +777,7 @@ template <typename T> bool NDArray<T>::reshape(const char order, const std::vect
 
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
-template <typename T> void NDArray<T>::tile(const std::vector<int>& reps) {
+template <typename T> void NDArray<T>::tileInPlace(const std::vector<int>& reps) {
 	// check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities (then simply reshape or do nothing)
 	int dim = reps.size();	
 	int product = 1;
@@ -871,59 +872,92 @@ template <typename T> void NDArray<T>::tile(const std::vector<int>& reps) {
         return this->_shapeInfo[1+dim];
     }
 
-    template<typename T>
-    NDArray<T>* NDArray<T>::repeat(int dimension, const std::vector<int>& repeats) {
 
-        if (dimension < 0)
-            dimension += this->rankOf();
+//////////////////////////////////////////////////////////////////////////
+// change an array by repeating it the number of times given by reps
+template<typename T> NDArray<T>* NDArray<T>::repeat(int dimension, const std::vector<int>& repeats) {
 
-        std::vector<int> reps;
+    if (dimension < 0)
+        dimension += this->rankOf();
 
-        if (reps.size() < this->rankOf()) {
-            if (dimension > 0) {
-                for (int e = 0; e < this->rankOf() - repeats.size(); e++)
-                    reps.push_back(1);
+    std::vector<int> reps;
 
-                for (auto r: repeats)
-                    reps.push_back(r);
-            } else { 
-                for (auto r: repeats)
-                    reps.push_back(r);
+    if (reps.size() < this->rankOf()) {
+        if (dimension > 0) {
+            for (int e = 0; e < this->rankOf() - repeats.size(); e++)
+                reps.push_back(1);
 
-                for (int e = 0; e < this->rankOf() - repeats.size(); e++)
-                    reps.push_back(1);
-            }
+            for (auto r: repeats)
+                reps.push_back(r);
+        } else {
+            for (auto r: repeats)
+                reps.push_back(r);
+
+            for (int e = 0; e < this->rankOf() - repeats.size(); e++)
+                reps.push_back(1);
         }
-
-        std::unique_ptr<int> newShape(new int[this->rankOf()]);
-        std::vector<int> rShape;
-
-        for (int i = 0; i < this->rankOf(); i++) {
-            newShape.get()[i] = this->sizeAt(i) * reps.at(i);
-            rShape.push_back(newShape.get()[i]);
-        }
-
-        auto ret = new NDArray<T>('c', rShape);
-
-        auto repeatDelta = shape::prodLong(newShape.get(), this->rankOf()) / this->lengthOf();
-        auto numTads = this->tensorsAlongDimension({dimension});
-        for (int i = 0; i < numTads; i++) {
-            auto thisTensor = this->tensorAlongDimension(i, {dimension});
-            auto retTensor = ret->tensorAlongDimension(i, {dimension});
-            int retIdx = 0;
-            for (int k = 0; k < thisTensor->lengthOf(); k++) {
-                T s = thisTensor->getIndexedScalar(k);
-                for (int j = 0; j < repeatDelta; j++) {
-                    retTensor->putIndexedScalar(retIdx++, s);
-                }
-            }
-
-            delete thisTensor;
-            delete retTensor;
-        }
-
-        return ret;
     }
+
+    std::unique_ptr<int> newShape(new int[this->rankOf()]);
+    std::vector<int> rShape;
+
+    for (int i = 0; i < this->rankOf(); i++) {
+        newShape.get()[i] = this->sizeAt(i) * reps.at(i);
+        rShape.push_back(newShape.get()[i]);
+    }
+
+    auto ret = new NDArray<T>('c', rShape);
+
+    auto repeatDelta = shape::prodLong(newShape.get(), this->rankOf()) / this->lengthOf();
+    auto numTads = this->tensorsAlongDimension({dimension});
+    for (int i = 0; i < numTads; i++) {
+        auto thisTensor = this->tensorAlongDimension(i, {dimension});
+        auto retTensor = ret->tensorAlongDimension(i, {dimension});
+        int retIdx = 0;
+        for (int k = 0; k < thisTensor->lengthOf(); k++) {
+            T s = thisTensor->getIndexedScalar(k);
+            for (int j = 0; j < repeatDelta; j++) {
+                retTensor->putIndexedScalar(retIdx++, s);
+            }
+        }
+
+        delete thisTensor;
+        delete retTensor;
+    }
+
+    return ret;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// tile an array by repeating it the number of times given by reps.
+template<typename T> NDArray<T>* NDArray<T>::tile(const std::vector<int>& reps) {
+	// check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities (then simply reshape or do nothing)
+	if(std::find(reps.begin(), reps.end(), 0) != reps.end())
+		throw "Tile method: one of the elements in reps array is zero !";
+	// evaluate new shape
+	int dim = reps.size();
+	int rank = rankOf();
+	int diff = rank - dim;
+	std::vector<int> shapeNew;
+	if(diff < 0) {
+		shapeNew = reps;
+		for(int i=0; i<rank; ++i)
+			shapeNew[dim-1-i] *= _shapeInfo[rank-i];
+	}
+	else {
+		shapeNew = std::vector<int>(_shapeInfo + 1, _shapeInfo + 1 + rank);
+		for(int i=1; i<=dim; ++i)
+			shapeNew[rank-i] *= reps[dim-i];
+	}
+
+	// create empty array with new shape
+	NDArray<T>* ret = new NDArray<T>('c',shapeNew);
+	// for(int i = 0; i <= rank; ++i)
+		// ret = this->repeat()
+
+
+    return ret;
+}
 
     template<typename T>
     NDArray<T>* NDArray<T>::mmulHelper(NDArray<T>* A, NDArray<T>* B, NDArray<T>* C , T alpha, T beta) {

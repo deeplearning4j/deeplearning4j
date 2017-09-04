@@ -20,7 +20,9 @@ namespace nd4j {
         bool  _isShapeAlloc;                    // indicates whether user allocates memory for _shapeInfo by himself, in opposite case the memory must be allocated from outside       
 		bool _isBuffAlloc; 						// indicates whether user allocates memory for _buffer by himself, in opposite case the memory must be allocated from outside       
 
- 
+		// forbid assignment operator
+		NDArray<T>& operator=(const NDArray<T>& other) = delete;
+		
         // default constructor, do not allocate memory, memory for array is passed from outside 
         NDArray(T *buffer = nullptr, int *shapeInfo = nullptr);
 
@@ -35,14 +37,14 @@ namespace nd4j {
 
         NDArray(const NDArray<T>& other);
 
-        // this constructor creates new array using shape information contained in initializer_list argument
-        NDArray(const char order, const std::initializer_list<int> &shape);
+        // this constructor creates new array using shape information contained in initializer_list/vector argument
+        NDArray(const char order, const std::initializer_list<int> &shape);	
         NDArray(const char order, const std::vector<int> &shape);
 
         // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
         void replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting = true);
  
-        NDArray<T>* repeat(int dimension, const std::vector<int>& repeats);
+        NDArray<T>* repeat(int dimension, const std::vector<int>& reps);
 
         int sizeAt(int dim);
 
@@ -243,9 +245,12 @@ namespace nd4j {
 		void updateStrides(const char order);
 
 		// change an array by repeating it the number of times given by reps.
-		void tile(const std::vector<int>& reps);
+		void tileInPlace(const std::vector<int>& reps);
 
-        // default destructor
+		// tile an array by repeating it the number of times given by reps.
+		NDArray<T>*  tile(const std::vector<int>& reps);
+        
+		// default destructor
         ~NDArray();
 
     };
