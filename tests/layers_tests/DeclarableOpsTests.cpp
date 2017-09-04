@@ -977,6 +977,7 @@ TEST_F(DeclarableOpsTests, Reshape2) {
 
 	VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, &x);
+	variableSpace->putVariable(1, new Variable<float>());
     
 	Block<float>* block = new Block<float>(1, variableSpace, false);
     block->fillInputs({-1});	
@@ -986,9 +987,12 @@ TEST_F(DeclarableOpsTests, Reshape2) {
 	
 	nd4j::ops::reshape<float> reshape;
 	
-	reshape.execute(block);
+	Nd4jStatus status = reshape.execute(block);
+	ASSERT_EQ(ND4J_STATUS_OK, status);
 	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
-    
+
+	result->printShapeInfo();
+	y.printShapeInfo();
 	ASSERT_TRUE(result->isSameShape(&y));	
 }
 

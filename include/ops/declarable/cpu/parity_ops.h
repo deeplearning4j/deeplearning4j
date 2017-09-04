@@ -451,9 +451,9 @@ namespace nd4j {
 				}
 			}
 			else {
-				NDArray<T> ret(*x);		
-				if (ret.reshape(order, shapeNew)) {
-					STORE_RESULT(ret);
+				auto ret = new NDArray<T>(*x);
+				if (ret->reshape(order, shapeNew)) {
+					STORE_RESULT(*ret);
 					return ND4J_STATUS_OK;				
 				}
 			}			
