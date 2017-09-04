@@ -79,8 +79,8 @@ public abstract class Layer implements Serializable, Cloneable {
     protected String layerName;
     protected double dropOut;
     protected List<LayerConstraint> constraints;
-    protected boolean hasBiasConstraints;
-    protected boolean hasWeightConstraints;
+    protected Boolean hasBiasConstraints;
+    protected Boolean hasWeightConstraints;
     protected Set<String> constraintParamNames;
 
 

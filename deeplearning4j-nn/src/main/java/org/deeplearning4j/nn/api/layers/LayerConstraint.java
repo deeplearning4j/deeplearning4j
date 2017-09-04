@@ -20,8 +20,8 @@ public interface LayerConstraint extends Cloneable, Serializable {
      * @param weightConstraint if contraint is applied to weight parameters
      * @param paramNames Parameter names to which to apply the constraints
      */
-    void applyConstraint(Layer layer, int iteration, int epoch, boolean biasConstraint,
-                         boolean weightConstraint, Set<String> paramNames);
+    void applyConstraint(Layer layer, int iteration, int epoch, Boolean biasConstraint,
+                         Boolean weightConstraint, Set<String> paramNames);
 
     LayerConstraint clone();
 

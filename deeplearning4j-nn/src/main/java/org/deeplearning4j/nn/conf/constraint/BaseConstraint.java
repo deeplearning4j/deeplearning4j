@@ -32,8 +32,8 @@ public abstract class BaseConstraint implements LayerConstraint {
 
 
     @Override
-    public void applyConstraint(Layer layer, int iteration, int epoch, boolean hasBiasConstraint,
-                                boolean hasWeightConstraint, Set<String> paramNames) {
+    public void applyConstraint(Layer layer, int iteration, int epoch, Boolean hasBiasConstraint,
+                                Boolean hasWeightConstraint, Set<String> paramNames) {
         Map<String,INDArray> paramTable = layer.paramTable();
         if(paramTable == null || paramTable.isEmpty() ){
             return;
@@ -41,8 +41,11 @@ public abstract class BaseConstraint implements LayerConstraint {
 
         ParamInitializer i = layer.conf().getLayer().initializer();
         for(Map.Entry<String,INDArray> e : paramTable.entrySet()){
-            if(hasWeightConstraint && i.isWeightParam(e.getKey())
+            if (hasWeightConstraint && i.isWeightParam(e.getKey())
                     || hasBiasConstraint && i.isBiasParam(e.getKey())){
+                apply(e.getValue());
+            }
+            if (paramNames != null && paramNames.contains(e.getKey())) {
                 apply(e.getValue());
             }
         }

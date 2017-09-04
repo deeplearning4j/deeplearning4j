@@ -24,8 +24,8 @@ public class NonNegativeConstraint implements LayerConstraint {
     public NonNegativeConstraint(){ }
 
     @Override
-    public void applyConstraint(Layer layer, int iteration, int epoch, boolean hasBiasConstraint,
-                                boolean hasWeightConstraint, Set<String> paramNames) {
+    public void applyConstraint(Layer layer, int iteration, int epoch, Boolean hasBiasConstraint,
+                                Boolean hasWeightConstraint, Set<String> paramNames) {
         Map<String,INDArray> paramTable = layer.paramTable();
         if(paramTable == null || paramTable.isEmpty() ){
             return;
