@@ -54,7 +54,7 @@ public class TensorFlowImportTest {
 
         assertNotNull(graph);
 
-        assertEquals(2, graph.getSameDiffVariables().size());
+        assertEquals(2, graph.getVariableMap().size());
         assertEquals(2, graph.getGraph().getInputs().size());
         assertEquals(1, graph.getGraph().getOpOrder().getActions().size());
 
@@ -112,7 +112,13 @@ public class TensorFlowImportTest {
         graph.getVertexToArray().put("Placeholder", p0);
         graph.getVertexToArray().put("Placeholder_1", p1);
 
+
+//        graph.var("Placeholder", p0);
+//        graph.var("Placeholder_1", p1);
+
         val res = graph.execAndEndResult();
+
+
 
         assertEquals(6.0, res.meanNumber().doubleValue(), 1e-5);
     }
