@@ -41,6 +41,10 @@ public class RmsProp implements IUpdater {
         this(Double.NaN, learningRateSchedule, DEFAULT_RMSPROP_RMSDECAY, DEFAULT_RMSPROP_EPSILON);
     }
 
+    public RmsProp(double learningRate, double rmsDecay, double epsilon){
+        this(learningRate, null, rmsDecay, epsilon);
+    }
+
     private RmsProp(@JsonProperty("learningRate") double learningRate,
                    @JsonProperty("learningRateSchedule") ISchedule learningRateSchedule,
                    @JsonProperty("rmsDecay") double rmsDecay,
@@ -73,5 +77,10 @@ public class RmsProp implements IUpdater {
             return learningRateSchedule.valueAt(iteration, epoch);
         }
         return learningRate;
+    }
+
+    //Partial builder implementation to give public no-arg constructor
+    public static class Builder {
+        public Builder(){ }
     }
 }

@@ -57,6 +57,10 @@ public class Nesterovs implements IUpdater {
         this(Double.NaN, learningRateSchedule, Double.NaN, momentumSchedule);
     }
 
+    public Nesterovs(double learningRate, ISchedule momentumSchedule){
+        this(learningRate, null, Double.NaN, momentumSchedule);
+    }
+
     private Nesterovs(@JsonProperty("learningRate") double learningRate,
                       @JsonProperty("learningRateSchedule") ISchedule learningRateSchedule,
                       @JsonProperty("momentum") double momentum,
@@ -96,5 +100,10 @@ public class Nesterovs implements IUpdater {
             return momentumISchedule.valueAt(iteration, epoch);
         }
         return momentum;
+    }
+
+    //Partial builder implementation to give public no-arg constructor
+    public static class Builder {
+        public Builder(){ }
     }
 }

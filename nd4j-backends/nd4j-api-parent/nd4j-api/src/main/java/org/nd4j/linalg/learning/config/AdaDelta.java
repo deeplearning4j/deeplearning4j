@@ -53,4 +53,9 @@ public class AdaDelta implements IUpdater {
     public AdaDelta clone() {
         return new AdaDelta(rho, epsilon);
     }
+
+    //Partial builder implementation to give public no-arg constructor
+    public static class Builder {
+        public Builder(){ }
+    }
 }

@@ -79,4 +79,9 @@ public class AdaGrad implements IUpdater {
         }
         return learningRate;
     }
+
+    //Partial builder implementation to give public no-arg constructor
+    public static class Builder {
+        public Builder(){ }
+    }
 }
