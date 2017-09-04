@@ -21,6 +21,7 @@ package org.nd4j.linalg;
 
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
@@ -5328,6 +5329,27 @@ public class Nd4jTestsC extends BaseNd4jTest {
         double res = Nd4j.getExecutioner().exec(new LogSumExp(row)).z().getDouble(0);
 
         assertEquals(3.407605, res, 1e-5);
+    }
+
+    @Test
+    public void testPow1() throws Exception {
+        val argX = Nd4j.create(3).assign(2.0);
+        val argY = Nd4j.create(new double[]{1.0, 2.0, 3.0});
+        val exp = Nd4j.create(new double[] {2.0, 4.0, 8.0});
+        val res = Transforms.pow(argX, argY);
+
+        assertEquals(exp, res);
+    }
+
+
+    @Test
+    public void testRDiv1() throws Exception {
+        val argX = Nd4j.create(3).assign(2.0);
+        val argY = Nd4j.create(new double[]{1.0, 2.0, 3.0});
+        val exp = Nd4j.create(new double[] {0.5, 1.0, 1.5});
+        val res = argX.rdiv(argY);
+
+        assertEquals(exp, res);
     }
 
 
