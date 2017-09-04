@@ -6,6 +6,8 @@ import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.RmsPropUpdater;
+import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * RMS Prop updates:
@@ -16,23 +18,37 @@ import org.nd4j.linalg.learning.RmsPropUpdater;
  * @author Adam Gibson
  */
 @Data
-@AllArgsConstructor
 @Builder(builderClassName = "Builder")
 public class RmsProp implements IUpdater {
     public static final double DEFAULT_RMSPROP_LEARNING_RATE = 1e-1;
     public static final double DEFAULT_RMSPROP_EPSILON = 1e-8;
     public static final double DEFAULT_RMSPROP_RMSDECAY = 0.95;
 
-    private double learningRate = 1e-1;
-    private double rmsDecay = DEFAULT_RMSPROP_RMSDECAY;
-    private double epsilon = DEFAULT_RMSPROP_EPSILON;
+    @lombok.Builder.Default private double learningRate = DEFAULT_RMSPROP_LEARNING_RATE;
+    private ISchedule learningRateSchedule;
+    @lombok.Builder.Default private double rmsDecay = DEFAULT_RMSPROP_RMSDECAY;
+    @lombok.Builder.Default private double epsilon = DEFAULT_RMSPROP_EPSILON;
 
-    public RmsProp() {
-        this(DEFAULT_RMSPROP_LEARNING_RATE, DEFAULT_RMSPROP_RMSDECAY, DEFAULT_RMSPROP_EPSILON);
+    public RmsProp(){
+        this(DEFAULT_RMSPROP_LEARNING_RATE, null, DEFAULT_RMSPROP_RMSDECAY, DEFAULT_RMSPROP_EPSILON);
     }
 
-    public RmsProp(double rmsDecay) {
-        this(DEFAULT_RMSPROP_LEARNING_RATE, rmsDecay, DEFAULT_RMSPROP_EPSILON);
+    public RmsProp(double learningRate){
+        this(learningRate, null, DEFAULT_RMSPROP_RMSDECAY, DEFAULT_RMSPROP_EPSILON);
+    }
+
+    public RmsProp(ISchedule learningRateSchedule){
+        this(Double.NaN, learningRateSchedule, DEFAULT_RMSPROP_RMSDECAY, DEFAULT_RMSPROP_EPSILON);
+    }
+
+    private RmsProp(@JsonProperty("learningRate") double learningRate,
+                   @JsonProperty("learningRateSchedule") ISchedule learningRateSchedule,
+                   @JsonProperty("rmsDecay") double rmsDecay,
+                   @JsonProperty("epsilon") double epsilon){
+        this.learningRate = learningRate;
+        this.learningRateSchedule = learningRateSchedule;
+        this.rmsDecay = rmsDecay;
+        this.epsilon = epsilon;
     }
 
     @Override
@@ -54,16 +70,6 @@ public class RmsProp implements IUpdater {
 
     @Override
     public RmsProp clone() {
-        return new RmsProp(learningRate, rmsDecay, epsilon);
-    }
-
-    //Partial builder class implementation for default values & public no-arg constructor
-    //https://reinhard.codes/2016/07/13/using-lomboks-builder-annotation-with-default-values/
-    public static class Builder {
-        private double learningRate = DEFAULT_RMSPROP_LEARNING_RATE;
-        private double rmsDecay = DEFAULT_RMSPROP_RMSDECAY;
-        private double epsilon = DEFAULT_RMSPROP_EPSILON;
-
-        public Builder() {}
+        return new RmsProp(learningRate, learningRateSchedule, rmsDecay, epsilon);
     }
 }

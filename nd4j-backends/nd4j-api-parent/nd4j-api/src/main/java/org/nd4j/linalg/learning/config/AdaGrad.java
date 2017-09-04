@@ -1,11 +1,12 @@
 package org.nd4j.linalg.learning.config;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaGradUpdater;
 import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Vectorized Learning Rate used per Connection Weight
@@ -15,7 +16,6 @@ import org.nd4j.linalg.learning.GradientUpdater;
  *
  * @author Adam Gibson
  */
-@AllArgsConstructor
 @Data
 @Builder(builderClassName = "Builder")
 public class AdaGrad implements IUpdater {
@@ -23,11 +23,36 @@ public class AdaGrad implements IUpdater {
     public static final double DEFAULT_ADAGRAD_LEARNING_RATE = 1e-1;
     public static final double DEFAULT_ADAGRAD_EPSILON = 1e-6;
 
-    private double learningRate;
-    private double epsilon;
+    @lombok.Builder.Default private double learningRate = DEFAULT_ADAGRAD_LEARNING_RATE;
+    private ISchedule learningRateSchedule;
+    @lombok.Builder.Default private double epsilon = DEFAULT_ADAGRAD_EPSILON;
 
-    public AdaGrad() {
-        this(DEFAULT_ADAGRAD_LEARNING_RATE, DEFAULT_ADAGRAD_EPSILON);
+    public AdaGrad(){
+        this(DEFAULT_ADAGRAD_LEARNING_RATE, null, DEFAULT_ADAGRAD_EPSILON);
+    }
+
+    public AdaGrad(double learningRate){
+        this(learningRate, null, DEFAULT_ADAGRAD_EPSILON);
+    }
+
+    public AdaGrad(double learningRate, double epsilon){
+        this(learningRate, null, epsilon);
+    }
+
+    public AdaGrad(ISchedule learningRateSchedule){
+        this(Double.NaN, learningRateSchedule, DEFAULT_ADAGRAD_EPSILON);
+    }
+
+    public AdaGrad(ISchedule learningRateSchedule, double epsilon){
+        this(Double.NaN, learningRateSchedule, epsilon);
+    }
+
+    private AdaGrad(@JsonProperty("learningRate") double learningRate,
+                    @JsonProperty("learningRateSchedule") ISchedule learningRateSchedule,
+                    @JsonProperty("epsilon") double epsilon){
+        this.learningRate = learningRate;
+        this.learningRateSchedule = learningRateSchedule;
+        this.epsilon = epsilon;
     }
 
     @Override
@@ -50,14 +75,5 @@ public class AdaGrad implements IUpdater {
     @Override
     public AdaGrad clone() {
         return new AdaGrad(learningRate, epsilon);
-    }
-
-    //Partial builder class implementation for default values & public no-arg constructor
-    //https://reinhard.codes/2016/07/13/using-lomboks-builder-annotation-with-default-values/
-    public static class Builder {
-        private double learningRate = DEFAULT_ADAGRAD_LEARNING_RATE;
-        private double epsilon = DEFAULT_ADAGRAD_EPSILON;
-
-        public Builder() {}
     }
 }

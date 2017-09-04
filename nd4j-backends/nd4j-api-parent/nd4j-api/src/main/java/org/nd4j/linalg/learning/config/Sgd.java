@@ -7,22 +7,38 @@ import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.SgdUpdater;
+import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * SGD updater applies a learning rate only
  * @author Adam Gibson
  */
-@AllArgsConstructor
 @Data
 @EqualsAndHashCode
 @Builder(builderClassName = "Builder")
 public class Sgd implements IUpdater {
     public static final double DEFAULT_SGD_LR = 1e-3;
 
-    private double learningRate;
+    @lombok.Builder.Default private double learningRate = DEFAULT_SGD_LR;
+    private ISchedule learningRateSchedule;
 
-    public Sgd() {
-        this(DEFAULT_SGD_LR);
+    public Sgd(){
+        this(DEFAULT_SGD_LR, null);
+    }
+
+    public Sgd(double learningRate){
+        this(learningRate, null);
+    }
+
+    public Sgd(ISchedule learningRateSchedule){
+        this(Double.NaN, learningRateSchedule);
+    }
+
+    private Sgd(@JsonProperty("learningRate") double learningRate,
+                @JsonProperty("learningRateSchedule") ISchedule learningRateSchedule){
+        this.learningRate = learningRate;
+        this.learningRateSchedule = learningRateSchedule;
     }
 
     @Override
@@ -45,12 +61,6 @@ public class Sgd implements IUpdater {
 
     @Override
     public Sgd clone() {
-        return new Sgd(learningRate);
-    }
-
-    public static class Builder {
-        private double learningRate = DEFAULT_SGD_LR;
-
-        public Builder() {}
+        return new Sgd(learningRate, learningRateSchedule);
     }
 }
