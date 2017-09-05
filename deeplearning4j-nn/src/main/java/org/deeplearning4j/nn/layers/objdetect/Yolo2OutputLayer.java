@@ -340,7 +340,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int b = layerConf().getBoundingBoxes().size(0);
         int c = input.size(1)-5*b;
 
-        INDArray input5 = input.get(all(), interval(0,5*b), all(), all()).dup('c').reshape(mb, b, 5, h, w);
+        INDArray output = Nd4j.create(input.shape(), 'c');
+        INDArray output4 = output.get(all(), interval(0,5*b), all(), all());
+        INDArray input4 = input.get(all(), interval(0,5*b), all(), all()).dup('c');
+        INDArray input5 = input4.reshape(mb, b, 5, h, w);
 
         //X/Y center in grid: sigmoid
         INDArray predictedXYCenterGrid = input5.get(all(), all(), interval(0,2), all(), all());
@@ -356,17 +359,20 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray predictedConf = input5.get(all(), all(), point(4), all(), all());   //Shape: [mb, B, H, W]
         Transforms.sigmoid(predictedConf, false);
 
+        output4.assign(input4);
 
         //Softmax
         //TODO OPTIMIZE?
         INDArray inputClasses = input.get(all(), interval(5*b, 5*b+c), all(), all());   //Shape: [minibatch, C, H, W]
         INDArray classPredictionsPreSoftmax2d = inputClasses.permute(0,2,3,1).dup('c')  //Shape before reshape: [mb, h, w, c]
                 .reshape(mb*h*w, c);
-        Transforms.softmax(classPredictionsPreSoftmax2d);
+        Transforms.softmax(classPredictionsPreSoftmax2d, false);
         INDArray postSoftmax4d = classPredictionsPreSoftmax2d.reshape('c', mb, h, w, c ).permute(0, 3, 1, 2);
-        inputClasses.assign(postSoftmax4d);
 
-        return input;
+        INDArray outputClasses = output.get(all(), interval(5*b, 5*b+c), all(), all());   //Shape: [minibatch, C, H, W]
+        outputClasses.assign(postSoftmax4d);
+
+        return output;
     }
 
     @Override
