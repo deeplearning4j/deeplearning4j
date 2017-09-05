@@ -47,7 +47,7 @@ public class LossMCXENT implements ILossFunction {
     }
 
     /**
-     * Multi-Class Cross Entropy loss function where each the output is (optionally) weighted/scaled by a fixed scalar value.
+     * Multi-Class Cross Entropy loss function where each the output is (optionally) weighted/scaled by a flags scalar value.
      * Note that the weights array must be a row vector, of length equal to the labels/output dimension 1 size.
      * A weight vector of 1s should give identical results to no weight vector.
      *
@@ -78,10 +78,10 @@ public class LossMCXENT implements ILossFunction {
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         if (labels.size(1) != preOutput.size(1)) {
-            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
-                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
-                            + ") ");
-            
+            throw new IllegalArgumentException(
+                            "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
+                                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
+
         }
 
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
@@ -129,10 +129,10 @@ public class LossMCXENT implements ILossFunction {
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         if (labels.size(1) != preOutput.size(1)) {
-            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
-                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
-                            + ") ");
-            
+            throw new IllegalArgumentException(
+                            "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
+                                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
+
         }
         INDArray grad;
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
@@ -140,7 +140,7 @@ public class LossMCXENT implements ILossFunction {
 
         if (activationFn instanceof ActivationSoftmax) {
 
-            if(mask != null && LossUtil.isPerOutputMasking(output, mask)){
+            if (mask != null && LossUtil.isPerOutputMasking(output, mask)) {
                 throw new UnsupportedOperationException("Per output masking for MCXENT + softmax: not supported");
             }
 
@@ -187,6 +187,7 @@ public class LossMCXENT implements ILossFunction {
         return new Pair<>(computeScore(labels, preOutput, activationFn, mask, average),
                         computeGradient(labels, preOutput, activationFn, mask));
     }
+
     /**
      * The name of this function
      *

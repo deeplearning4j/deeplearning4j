@@ -46,7 +46,7 @@ public class AggregateAxpy extends BaseAggregate {
      */
     @Override
     public int getThreadsPerInstance() {
-        return Math.min(768,vectorLength);
+        return Math.min(768, vectorLength);
     }
 
     @Override

@@ -101,7 +101,7 @@ public class DerivativeTests extends BaseNd4jTest {
         }
 
         INDArray zPrime = Nd4j.getExecutioner()
-                        .execAndReturn(Nd4j.getOpFactory().createTransform("relu",z).derivative());
+                        .execAndReturn(Nd4j.getOpFactory().createTransform("relu", z).derivative());
 
         for (int i = 0; i < 100; i++) {
             assertTrue(expOut[i] == zPrime.getDouble(i));

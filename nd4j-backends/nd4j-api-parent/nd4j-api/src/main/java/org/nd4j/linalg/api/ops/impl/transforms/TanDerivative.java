@@ -104,14 +104,15 @@ public class TanDerivative extends BaseTransformOp {
         throw new UnsupportedOperationException();
     }
 
-     @Override
+    @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
             return new TanDerivative(xAlongDimension, y.vectorAlongDimension(index, dimension),
                             z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new TanDerivative(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new TanDerivative(xAlongDimension, z.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 
@@ -122,7 +123,8 @@ public class TanDerivative extends BaseTransformOp {
             return new TanDerivative(xAlongDimension, y.tensorAlongDimension(index, dimension),
                             z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new TanDerivative(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new TanDerivative(xAlongDimension, z.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
 
     }
 }

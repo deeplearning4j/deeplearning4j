@@ -270,8 +270,8 @@ public abstract class BaseTransport implements Transport {
      */
     @Override
     public void sendMessageToAllShards(VoidMessage message) {
-//        if (nodeRole != NodeRole.SHARD)
-//            throw new RuntimeException("This method shouldn't be called only from Shard context");
+        //        if (nodeRole != NodeRole.SHARD)
+        //            throw new RuntimeException("This method shouldn't be called only from Shard context");
 
         //log.info("Sending message to All shards");
 
@@ -352,7 +352,8 @@ public abstract class BaseTransport implements Transport {
                     });
 
                     if (threadB != null) {
-                        Nd4j.getAffinityManager().attachThreadToDevice(threadB, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                        Nd4j.getAffinityManager().attachThreadToDevice(threadB,
+                                        Nd4j.getAffinityManager().getDeviceForCurrentThread());
                         threadB.setDaemon(true);
                         threadB.setName("VoidParamServer subscription threadB [" + nodeRole + "]");
                         threadB.start();
@@ -367,7 +368,8 @@ public abstract class BaseTransport implements Transport {
                 }
 
                 // all roles have threadA anyway
-                Nd4j.getAffinityManager().attachThreadToDevice(threadA, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                Nd4j.getAffinityManager().attachThreadToDevice(threadA,
+                                Nd4j.getAffinityManager().getDeviceForCurrentThread());
                 threadA.setDaemon(true);
                 threadA.setName("VoidParamServer subscription threadA [" + nodeRole + "]");
                 threadA.start();

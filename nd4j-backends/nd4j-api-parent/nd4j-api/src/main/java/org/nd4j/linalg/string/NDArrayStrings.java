@@ -24,35 +24,36 @@ public class NDArrayStrings {
     public NDArrayStrings() {
         this(true);
     }
+
     public NDArrayStrings(String sep) {
-        this(sep,true);
+        this(sep, true);
     }
 
-    public NDArrayStrings(String sep,boolean commas) {
-        this(", ", 2, "#,###,##0",commas);
+    public NDArrayStrings(String sep, boolean commas) {
+        this(", ", 2, "#,###,##0", commas);
     }
 
     public NDArrayStrings(int precision) {
-        this(precision,true);
+        this(precision, true);
     }
 
-    public NDArrayStrings(int precision,boolean commas) {
-        this(", ", precision, "#,###,##0",commas);
+    public NDArrayStrings(int precision, boolean commas) {
+        this(", ", precision, "#,###,##0", commas);
     }
 
     public NDArrayStrings(String sep, int precision) {
-        this(sep,precision,true);
+        this(sep, precision, true);
     }
 
-    public NDArrayStrings(String sep, int precision,boolean commas) {
-        this(sep, precision, "#,###,##0",commas);
+    public NDArrayStrings(String sep, int precision, boolean commas) {
+        this(sep, precision, "#,###,##0", commas);
     }
 
     public NDArrayStrings(String sep, int precision, String decFormat) {
-        this(sep,precision,decFormat,true);
+        this(sep, precision, decFormat, true);
     }
 
-    public NDArrayStrings(String sep, int precision, String decFormat,boolean commas) {
+    public NDArrayStrings(String sep, int precision, String decFormat, boolean commas) {
         this.decFormatNum = decFormat;
         this.sep = sep;
         if (precision != 0) {
@@ -66,7 +67,7 @@ public class NDArrayStrings {
         this.decimalFormat = new DecimalFormat(decFormatNum + decFormatRest);
         DecimalFormatSymbols sepNgroup = DecimalFormatSymbols.getInstance();
         sepNgroup.setDecimalSeparator('.');
-        if(!commas) {
+        if (!commas) {
             NumberFormat format = NumberFormat.getIntegerInstance();
             format.setGroupingUsed(false);
         }
@@ -76,7 +77,7 @@ public class NDArrayStrings {
     }
 
     public NDArrayStrings(boolean commas) {
-        this(", ", 2, "#,###,##0",commas);
+        this(", ", 2, "#,###,##0", commas);
     }
 
 

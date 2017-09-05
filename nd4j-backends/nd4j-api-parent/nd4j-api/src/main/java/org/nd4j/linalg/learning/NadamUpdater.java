@@ -41,7 +41,7 @@ public class NadamUpdater implements GradientUpdater<Nadam> {
 
     private char gradientReshapeOrder;
 
-    public NadamUpdater(Nadam config){
+    public NadamUpdater(Nadam config) {
         this.config = config;
     }
 
@@ -92,7 +92,7 @@ public class NadamUpdater implements GradientUpdater<Nadam> {
         INDArray biasCorrectedEstimateOfMomentum = m.mul(beta1).divi(1.0 - beta1t);
         INDArray secondTerm = oneMinusBeta1Grad.divi(1 - beta1t);
 
-        INDArray alphat =  biasCorrectedEstimateOfMomentum.add(secondTerm).muli(learningRate);
+        INDArray alphat = biasCorrectedEstimateOfMomentum.add(secondTerm).muli(learningRate);
 
         INDArray sqrtV = Transforms.sqrt(v.dup(gradientReshapeOrder), false).addi(epsilon);
 

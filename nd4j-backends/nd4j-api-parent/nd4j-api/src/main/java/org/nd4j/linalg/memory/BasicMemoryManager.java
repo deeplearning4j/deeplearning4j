@@ -104,7 +104,8 @@ public abstract class BasicMemoryManager implements MemoryManager {
 
         // not sure if we want to conform autoGcWindow here...
         if (frequency.get() > 0)
-            if (freqCounter.incrementAndGet() % frequency.get() == 0 && currentTime > getLastGcTime() + getAutoGcWindow()) {
+            if (freqCounter.incrementAndGet() % frequency.get() == 0
+                            && currentTime > getLastGcTime() + getAutoGcWindow()) {
                 System.gc();
                 lastGcTime.set(System.currentTimeMillis());
             }
@@ -164,7 +165,8 @@ public abstract class BasicMemoryManager implements MemoryManager {
             }
             cnt /= intervals.size();
             return cnt;
-        } else return 0;
+        } else
+            return 0;
 
     }
 

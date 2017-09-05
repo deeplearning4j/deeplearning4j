@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.shape;
 
 
+import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,6 +32,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import javax.xml.crypto.Data;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -88,6 +90,7 @@ public class Shape {
         return shape;
 
     }
+
     /**
      * Returns true if the dimension is null
      * or the dimension length is 1 and the first entry
@@ -99,8 +102,9 @@ public class Shape {
      * the dimension is null or the dimension length is 1 and the first entry is
      * {@link Integer#MAX_VALUE}
      */
-    public static boolean isWholeArray(int[] shape,int...dimension) {
-        return   dimension == null || (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) || dimension.length == shape.length;
+    public static boolean isWholeArray(int[] shape, int... dimension) {
+        return dimension == null || (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)
+                        || dimension.length == shape.length;
     }
 
     /**
@@ -110,23 +114,22 @@ public class Shape {
      * @param dimensions the dimensions the reduce op is being performed on
      * @return the shape of the result array as the result of the reduce
      */
-    public static int[] getReducedShape(int[] wholeShape,int[] dimensions) {
-        if(isWholeArray(wholeShape,dimensions))
-            return new int[]{1,1};
-        else if(dimensions.length == 1 && wholeShape.length == 2) {
+    public static int[] getReducedShape(int[] wholeShape, int[] dimensions) {
+        if (isWholeArray(wholeShape, dimensions))
+            return new int[] {1, 1};
+        else if (dimensions.length == 1 && wholeShape.length == 2) {
             int[] ret = new int[2];
-            if(dimensions[0] == 0) {
+            if (dimensions[0] == 0) {
                 ret[0] = wholeShape[0];
                 ret[1] = 1;
-            }
-            else if(dimensions[0]  == 1) {
+            } else if (dimensions[0] == 1) {
                 ret[0] = 1;
                 ret[1] = wholeShape[1];
             }
             return ret;
         }
 
-        return ArrayUtil.removeIndex(wholeShape,dimensions);
+        return ArrayUtil.removeIndex(wholeShape, dimensions);
     }
 
 
@@ -137,12 +140,12 @@ public class Shape {
      * @param right the second matrix shape to multiply
      * @return the shape of the output array (the left's rows and right's columns)
      */
-    public static int[] getMatrixMultiplyShape(int[] left,int[] right) {
-        if(left.length != 2 && right.length != 2) {
+    public static int[] getMatrixMultiplyShape(int[] left, int[] right) {
+        if (left.length != 2 && right.length != 2) {
             throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2");
         }
 
-        if(left[1] != right[0])
+        if (left[1] != right[0])
             throw new IllegalArgumentException("Columns of left not equal to rows of right");
 
         int[] shape = {left[0], right[1]};
@@ -444,7 +447,7 @@ public class Shape {
             int size_dimi = size(shapeInformation, i);
             if (indices[i] > size_dimi)
                 throw new IllegalArgumentException(
-                        String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
+                                String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
             if (size_dimi != 1) {
                 offset += indices[i] * stride(shapeInformation, i);
             }
@@ -493,7 +496,7 @@ public class Shape {
         int size_1 = sizeUnsafe(shapeInformation, 1);
         if (row >= size_0 || col >= size_1)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + row + "," + col + "] from a "
-                    + Arrays.toString(shape(shapeInformation)) + " NDArray");
+                            + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += row * strideUnsafe(shapeInformation, 0, 2);
@@ -606,7 +609,7 @@ public class Shape {
         int size_2 = sizeUnsafe(shapeInformation, 2);
         if (dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + dim0 + "," + dim1 + "," + dim2
-                    + "] from a " + Arrays.toString(shapeInformation) + " NDArray");
+                            + "] from a " + Arrays.toString(shapeInformation) + " NDArray");
 
         if (size_0 != 1)
             offset += dim0 * strideUnsafe(shapeInformation, 0, 3);
@@ -701,7 +704,7 @@ public class Shape {
         int size_3 = sizeUnsafe(shapeInformation, 3);
         if (dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2 || dim3 >= size_3)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + dim0 + "," + dim1 + "," + dim2 + ","
-                    + dim3 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
+                            + dim3 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += dim0 * strideUnsafe(shapeInformation, 0, 4);
@@ -1793,7 +1796,7 @@ public class Shape {
         int rank = rank(buffer);
         int[] ret = new int[rank];
         for (int i = 0; i < rank; i++)
-            ret[i] = buffer[1+ rank + i];
+            ret[i] = buffer[1 + rank + i];
 
         return ret;
     }
@@ -1821,6 +1824,43 @@ public class Shape {
         return ret.slice();
     }
 
+    public static int[] flags(DataBuffer buffer) {
+        int length = buffer.getInt(0);
+        int[] ret = new int[length];
+        for (int i = 0; i < ret.length; i++)
+            ret[i] = buffer.getInt(1 + i);
+        return ret;
+    }
+
+    public static int[] sparseOffsets(DataBuffer buffer) {
+        int flagsLength = buffer.getInt(0);
+        int offLength = buffer.getInt(flagsLength + 1);
+        int[] ret = new int[offLength];
+        for (int i = 0; i < offLength; i++) {
+            ret[i] = buffer.getInt(i + flagsLength + 2);
+        }
+        return ret;
+    }
+
+    public static int[] hiddenDimension(DataBuffer buffer) {
+        int flagsLength = buffer.getInt(0);
+        int offLength = buffer.getInt(flagsLength + 1);
+        int hiddenDimLength = buffer.getInt(flagsLength + offLength + 2);
+
+        int[] ret = new int[hiddenDimLength];
+        for (int i = 0; i < hiddenDimLength; i++) {
+            ret[i] = buffer.getInt(i + flagsLength + offLength + 3);
+        }
+        return ret;
+    }
+
+    public static int underlyingRank(DataBuffer buffer) {
+        int flagsLength = buffer.getInt(0);
+        int offLength = buffer.getInt(flagsLength + 1);
+        int hiddenDimLength = buffer.getInt(flagsLength + offLength + 2);
+
+        return buffer.getInt(flagsLength + offLength + hiddenDimLength + 3);
+    }
 
     /**
      * Prints the shape
@@ -2067,6 +2107,33 @@ public class Shape {
         return ret;
     }
 
+    public static DataBuffer createSparseInformation(int[] flags, long[] sparseOffsets, int[] hiddenDimensions,
+                    int underlyingRank) {
+        int flagLength = flags.length;
+        int offsetsLength = sparseOffsets.length;
+        int hiddenDimLength = hiddenDimensions.length;
+        int totalLength = flagLength + offsetsLength + hiddenDimLength + 4;
+
+
+        ArrayList<Integer> accu = new ArrayList<>(totalLength);
+        accu.add(flagLength);
+        for (int flag : flags) {
+            accu.add(flag);
+        }
+        accu.add(offsetsLength);
+        for (long off : sparseOffsets) {
+            accu.add((int) off);
+        }
+
+        accu.add(hiddenDimLength);
+
+        for (int dim : hiddenDimensions) {
+            accu.add(dim);
+        }
+        accu.add(underlyingRank);
+
+        return Nd4j.createBuffer(Ints.toArray(accu));
+    }
 
     /**
      * Convert an array to a byte buffer

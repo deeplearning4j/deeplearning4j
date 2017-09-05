@@ -1265,6 +1265,46 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         return result;
     }
 
+    @Override
+    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCOO(double[] values, int[][] indices, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCOO(float[] values, int[][] indices, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public INDArray sort(INDArray x, boolean descending) {
@@ -1312,5 +1352,10 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         }
 
         return x;
+    }
+
+    @Override
+    public INDArray sortCooIndices(INDArray x) {
+        throw new UnsupportedOperationException("Not an COO ndarray");
     }
 }

@@ -24,11 +24,16 @@ public class DataTypeUtil {
      */
     public static int lengthForDtype(DataBuffer.Type type) {
         switch (type) {
-            case DOUBLE: return 8;
-            case FLOAT: return 4;
-            case INT: return 4;
-            case HALF: return 2;
-            case LONG: return 8;
+            case DOUBLE:
+                return 8;
+            case FLOAT:
+                return 4;
+            case INT:
+                return 4;
+            case HALF:
+                return 2;
+            case LONG:
+                return 8;
             case COMPRESSED:
             default:
                 throw new IllegalArgumentException("Illegal type for length");

@@ -61,10 +61,10 @@ public class TensorMmul extends BaseAccumulation {
 
     @Override
     public void exec() {
-        if(this.z != null)
-            this.z.assign(Nd4j.tensorMmul(x,y,z,axes));
+        if (this.z != null)
+            this.z.assign(Nd4j.tensorMmul(x, y, z, axes));
         else
-            this.z = Nd4j.tensorMmul(x,y,axes);
+            this.z = Nd4j.tensorMmul(x, y, axes);
     }
 
     @Override
