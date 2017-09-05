@@ -15,6 +15,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.ByteArrayInputStream;
@@ -23,6 +24,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 public class TestYolo2OutputLayer {
@@ -113,5 +115,65 @@ public class TestYolo2OutputLayer {
         double score2 = y2impl.computeScore(0, 0, true);
 
         assertEquals(score, score2, 1e-8);
+    }
+
+
+    @Test
+    public void testYoloActivateSanityCheck(){
+
+        int mb = 3;
+        int b = 4;
+        int c = 3;
+        int depth = 5 * b + c;
+        int w = 6;
+        int h = 6;
+
+        INDArray bbPrior = Nd4j.rand(b, 2).muliRowVector(Nd4j.create(new double[]{w, h}));
+
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new ConvolutionLayer.Builder().nIn(1).nOut(1).kernelSize(1,1).build())
+                .layer(new Yolo2OutputLayer.Builder()
+                        .boundingBoxPriors(bbPrior)
+                        .build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer y2impl = (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer) net.getLayer(1);
+
+        INDArray input = Nd4j.rand(new int[]{mb, depth, h, w});
+
+        INDArray out = y2impl.activate(input);
+
+        assertEquals(4, out.rank());
+
+
+        //Check values for x/y, confidence: all should be 0 to 1
+        INDArray out4 = out.get(all(), interval(0,5*b), all(), all()).dup('c');
+        INDArray out5 = out4.reshape(mb, b, 5, h, w);
+
+        INDArray predictedXYCenterGrid = out5.get(all(), all(), interval(0,2), all(), all());
+        INDArray predictedWH = out5.get(all(), all(), interval(2,4), all(), all());   //Shape: [mb, B, 2, H, W]
+        INDArray predictedConf = out5.get(all(), all(), point(4), all(), all());   //Shape: [mb, B, H, W]
+
+
+        assertTrue(predictedXYCenterGrid.minNumber().doubleValue() >= 0.0);
+        assertTrue(predictedXYCenterGrid.maxNumber().doubleValue() <= 1.0);
+        assertTrue(predictedWH.minNumber().doubleValue() >= 0.0);
+        assertTrue(predictedConf.minNumber().doubleValue() >= 0.0);
+        assertTrue(predictedConf.maxNumber().doubleValue() <= 1.0);
+
+
+        //Check classes:
+        INDArray probs = out.get(all(), interval(5*b, 5*b+c), all(), all());   //Shape: [minibatch, C, H, W]
+        assertTrue(probs.minNumber().doubleValue() >= 0.0);
+        assertTrue(probs.maxNumber().doubleValue() <= 1.0);
+
+        INDArray probsSum = probs.sum(1);
+        assertEquals(1.0, probsSum.minNumber().doubleValue(), 1e-6);
+        assertEquals(1.0, probsSum.maxNumber().doubleValue(), 1e-6);
     }
 }
