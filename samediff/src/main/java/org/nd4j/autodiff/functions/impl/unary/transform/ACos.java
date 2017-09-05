@@ -5,26 +5,31 @@ import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-public class ACos extends AbstractUnaryFunction<ArrayField> {
+import java.util.Collections;
+import java.util.List;
 
-    public ACos(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+public class ACos extends AbstractUnaryFunction {
+
+    public ACos(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public ACos(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().acos(arg().getValue(true));
+        return a().acos(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.acos(arg().getReal());
-    }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().one(getResultShape()).div(sameDiff.getFunctionFactory().sqrt(sameDiff.getFunctionFactory()
-                .one(getResultShape()).sub(arg().pow(2)))).negate();
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().div(f().one(getResultShape()),
+                f().sqrt(f().sub(f().one(getResultShape()),f().pow(arg(),2))));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

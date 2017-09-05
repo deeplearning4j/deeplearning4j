@@ -19,9 +19,11 @@
 
 package org.nd4j.linalg.api.ops.factory;
 
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -37,6 +39,7 @@ import org.nd4j.linalg.api.ops.impl.shape.Reshape;
 import org.nd4j.linalg.api.ops.impl.shape.Transpose;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -64,11 +67,11 @@ public class DefaultOpFactory implements OpFactory {
         opClazzes = new HashMap<>();
 
         Reflections f = new Reflections(new ConfigurationBuilder().filterInputsBy(
-                        new FilterBuilder().include(FilterBuilder.prefix("org.nd4j")).exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                                        .exclude("^(?!org\\.nd4j\\.linalg\\.api\\.ops).*") //Exclude any not in the ops directory
+                new FilterBuilder().include(FilterBuilder.prefix("org.nd4j")).exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                        .exclude("^(?!org\\.nd4j\\.linalg\\.api\\.ops).*") //Exclude any not in the ops directory
         )
 
-                        .setUrls(ClasspathHelper.forPackage("org.nd4j")).setScanners(new SubTypesScanner()));
+                .setUrls(ClasspathHelper.forPackage("org.nd4j")).setScanners(new SubTypesScanner()));
 
         Set<Class<? extends Op>> clazzes = f.getSubTypesOf(Op.class);
 
@@ -84,22 +87,41 @@ public class DefaultOpFactory implements OpFactory {
         }
     }
 
+
+    @Override
+    public GradientOp createGradientOp(String name, INDArray x, INDArray y, INDArray z) {
+        switch(name) {
+            case "softmaxderivative":
+                return new SoftMaxDerivative(x,y,z);
+            case "sigmoidderivative":
+                return new org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative(x,y,z);
+            case "tanhderivative":
+                return new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(x,y,z);
+            default: throw new IllegalStateException("Illegal name " + name);
+        }
+    }
+
     /**
      *
      * @param name
      * @param x
      * @param z
+     * @param extraArgs
      * @return
      */
     @Override
-    public Op createShape(String name, INDArray x, INDArray z) {
-        switch (name) {
+    public Op createShape(String name, INDArray x, INDArray z, Object[] extraArgs) {
+        switch(name) {
             case "transpose":
-                return new Transpose(x, z);
+                return new Transpose(x,z);
             case "reshape":
-                return new Reshape(x, z);
+                Reshape ret2 = new Reshape(x,z);
+                ret2.setExtraArgs(extraArgs);
+                return ret2;
             case "permute":
-                return new Permute(x,z);
+                Permute ret = new Permute(x,z,x.lengthLong());
+                ret.setExtraArgs(extraArgs);
+                return ret;
             case "broadcast":
                 return new Broadcast(x,z);
         }
@@ -112,7 +134,7 @@ public class DefaultOpFactory implements OpFactory {
         Class<? extends Op> clazz = opClazzes.get(name);
         try {
             Constructor<Op> constructor =
-                            (Constructor<Op>) clazz.getDeclaredConstructor(INDArray.class, INDArray.class);
+                    (Constructor<Op>) clazz.getDeclaredConstructor(INDArray.class, INDArray.class);
             Op create = constructor.newInstance(x, y);
             return (LossFunction) create;
         } catch (Exception e) {
@@ -123,65 +145,79 @@ public class DefaultOpFactory implements OpFactory {
 
     @Override
     public Accumulation createAccum(String name, INDArray x) {
-        return createAccum(name, x, null, x, null);
+        return createAccum(name,x,null,x,null);
     }
 
     @Override
     public Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z) {
-        return createAccum(name, x, y, z, null);
+        return createAccum(name,x,y,z,null);
     }
 
 
     @Override
-    public Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs) {
+    public Accumulation createAccum(String name,
+                                    INDArray x,
+                                    INDArray y,
+                                    INDArray z,
+                                    Object[] extraArgs) {
         Accumulation ret = null;
         switch (name) {
 
             case "sum":
-                ret = new Sum(x, y, z, x.length());
+                ret = new Sum(x, y, z,x.length());
                 break;
             case "max":
-                ret = new Max(x, y, z, x.length());
+                ret = new Max(x, y, z,x.length());
                 break;
             case "min":
-                ret = new Min(x, y, z, x.length());
+                ret = new Min(x, y, z,x.length());
                 break;
             case "norm1":
-                ret = new Norm1(x, y, z, x.length());
+                ret = new Norm1(x, y,z, x.length());
                 break;
             case "norm2":
-                ret = new Norm2(x, y, z, x.length());
+                ret = new Norm2(x, y,z, x.length());
                 break;
             case "prod":
-                ret = new Prod(x, y, z, x.length());
+                ret = new Prod(x, y,z, x.length());
                 break;
             case "std":
-                ret = new StandardDeviation(x, y, z, x.length(), (boolean) extraArgs[0]);
+                ret = new StandardDeviation(x, y,z, x.length(),(boolean) extraArgs[0]);
                 break;
             case "var":
-                ret = new Variance(x, y, z, x.length(), (boolean) extraArgs[0]);
+                ret = new Variance(x, y,z, x.length(),(boolean) extraArgs[0]);
                 break;
             case "euclidean":
-                ret = new EuclideanDistance(x, y, z, x.length());
+                ret = new EuclideanDistance(x, y,z, x.length());
                 break;
             case "cosine":
             case "cosinesimilarity":
-                ret = new CosineSimilarity(x, y, z, x.length());
+                ret = new CosineSimilarity(x, y,z, x.length());
+                break;
+            case "cosinedistance":
+                ret = new CosineDistance(x,y,z,x.lengthLong());
                 break;
             case "manhattan":
-                ret = new ManhattanDistance(x, y, z, x.length());
+                ret = new ManhattanDistance(x, y,z, x.length());
                 break;
             case "mmul":
-                ret = new Mmul(x, y, z, x.length());
+                //of note here is that it's always the last arg
+                /**
+                 * The case to watch out for here is
+                 * tensor matrix multiply which has an args format of:
+                 * dimensions, mmul transpose
+                 */
+                MMulTranspose mMulTranspose = extraArgs != null  && extraArgs.length >= 1 ? (MMulTranspose) extraArgs[extraArgs.length - 1] : MMulTranspose.allFalse();
+                ret = new Mmul(x,y,z,mMulTranspose);
                 break;
             case "tensorMmul":
-                ret = new TensorMmul(x, y, z, (int[][]) extraArgs[0]);
+                ret = new TensorMmul(x, y,z,(int[][]) extraArgs[0]);
                 break;
 
 
         }
 
-        if (ret == null)
+        if(ret == null)
             throw new IllegalArgumentException("Illegal operation name " + name);
 
         ret.setExtraArgs(extraArgs);
@@ -191,7 +227,7 @@ public class DefaultOpFactory implements OpFactory {
 
     @Override
     public Accumulation createAccum(String name, INDArray x, INDArray y) {
-        return createAccum(name, x, y, x, null);
+        return createAccum(name,x,y,x,null);
     }
 
     /**
@@ -207,13 +243,13 @@ public class DefaultOpFactory implements OpFactory {
         IndexAccumulation ret = null;
         switch (opName) {
             case "iamax":
-                ret = new IAMax(x, y);
+                ret = new IAMax(x,y);
                 break;
             case "imax":
-                ret = new IMax(x, y);
+                ret = new IMax(x,y);
                 break;
             case "imin":
-                ret = new IMin(x, y);
+                ret = new IMin(x,y);
                 break;
         }
 
@@ -223,34 +259,34 @@ public class DefaultOpFactory implements OpFactory {
 
     @Override
     public IndexAccumulation createIndexAccum(String name, INDArray x) {
-        return createIndexAccum(name, x, null, x, null);
+        return createIndexAccum(name,x,null , x, null);
     }
 
     @Override
     public IndexAccumulation createIndexAccum(String name, INDArray x, INDArray y) {
-        return createIndexAccum(name, x, y, x, null);
+        return createIndexAccum(name,x,y,x,null);
     }
 
     @Override
     public TransformOp createTransform(String name, INDArray x, INDArray y) {
-        return createTransform(name, x, y, x, null);
+        return createTransform(name,x,y,x,null);
 
     }
 
     @Override
     public TransformOp createTransform(String name, INDArray x) {
-        return createTransform(name, x, null, x, null);
+        return createTransform(name,x,null,x,null);
     }
 
     @Override
     public TransformOp createTransform(String name, INDArray x, Object[] extraArgs) {
-        return createTransform(name, x, null, x, extraArgs);
+        return createTransform(name,x,null,x,extraArgs);
     }
 
 
     @Override
     public TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z) {
-        return createTransform(name, x, y, z, null);
+        return createTransform(name,x,y,z,null);
     }
 
     /**
@@ -262,19 +298,21 @@ public class DefaultOpFactory implements OpFactory {
      * @return
      */
     @Override
-    public TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs) {
+    public TransformOp createTransform(String name,
+                                       INDArray x,
+                                       INDArray y,
+                                       INDArray z,
+                                       Object[] extraArgs) {
         TransformOp op = null;
         switch (name) {
             case "set":
                 op = new org.nd4j.linalg.api.ops.impl.transforms.Set(x,y,z,z.length());
                 break;
             case "relu":
-                op = new RectifedLinear(x, z, x.length(),
-                                extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);
+                op = new RectifedLinear(x, z, x.length(),extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);
                 break;
             case "step":
-                op = new Step(x, y, z, x.length(),
-                                extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);
+                op = new Step(x,y,z,x.length(),extraArgs == null || extraArgs[0] == null  ? 0.0 : (double) extraArgs[0]);
                 break;
             case "abs":
                 op = new Abs(x, z);
@@ -360,6 +398,9 @@ public class DefaultOpFactory implements OpFactory {
             case "timesoneminus":
                 op = new TimesOneMinus(x, z);
                 break;
+            case "softmaxderivative":
+                op = new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative(x, z);
+                break;
             case "softmax":
                 op = new SoftMax(x, z);
                 break;
@@ -370,40 +411,40 @@ public class DefaultOpFactory implements OpFactory {
                 op = new Cube(x, z);
                 break;
             case "sigmoidderivative":
-                op = new SigmoidDerivative(x, z);
+                op = new SigmoidDerivative(x,z);
                 break;
             case "hard_sigmoidderivative":
-                op = new HardSigmoidDerivative(x, z);
+                op = new HardSigmoidDerivative(x,z);
                 break;
             case "hardtanhderivative":
-                op = new HardTanhDerivative(x, z);
+                op = new HardTanhDerivative(x,z);
                 break;
             case "tanhderivative":
-                op = new TanhDerivative(x, z);
+                op = new TanhDerivative(x,z);
                 break;
             case "leakyreluderivative":
-                op = new LeakyReLUDerivative(x, z);
+                op = new LeakyReLUDerivative(x,z);
                 break;
             case "mul":
-                op = new MulOp(x, y, z);
+                op = new MulOp(x,y,z);
                 break;
             case "add":
-                op = new AddOp(x, y, z);
+                op = new AddOp(x,y,z);
                 break;
             case "sub":
-                op = new SubOp(x, y, z);
+                op = new SubOp(x,y,z);
                 break;
             case "div":
-                op = new DivOp(x, y, z);
+                op = new DivOp(x,y,z);
                 break;
             case "rdiv":
-                op = new RDivOp(x, y, z);
+                op = new RDivOp(x,y,z);
                 break;
             case "rsub":
-                op = new RSubOp(x, y, z);
+                op = new RSubOp(x,y,z);
                 break;
             case "neg":
-                op = new Negative(x, z);
+                op = new Negative(x,z);
                 break;
             default:
                 throw new ND4JIllegalStateException("No op found " + name);
@@ -424,7 +465,7 @@ public class DefaultOpFactory implements OpFactory {
      */
     @Override
     public ScalarOp createScalarTransform(String name, INDArray x, INDArray y, double scalar) {
-        return createScalarTransform(name, x, y, x, null, scalar);
+        return createScalarTransform(name,x,y,x,null,scalar);
     }
 
     /**
@@ -435,7 +476,7 @@ public class DefaultOpFactory implements OpFactory {
      */
     @Override
     public ScalarOp createScalarTransform(String name, INDArray x, double scalar) {
-        return createScalarTransform(name, x, null, x, null, scalar);
+        return createScalarTransform(name,x,null,x,null,scalar);
     }
 
     /**
@@ -446,8 +487,11 @@ public class DefaultOpFactory implements OpFactory {
      * @return
      */
     @Override
-    public ScalarOp createScalarTransform(String name, INDArray x, Object[] extraArgs, double scalar) {
-        return createScalarTransform(name, x, null, x, null, scalar);
+    public ScalarOp createScalarTransform(String name,
+                                          INDArray x,
+                                          Object[] extraArgs,
+                                          double scalar) {
+        return createScalarTransform(name,x,null,x,null,scalar);
     }
 
     /**
@@ -459,8 +503,12 @@ public class DefaultOpFactory implements OpFactory {
      * @return
      */
     @Override
-    public ScalarOp createScalarTransform(String name, INDArray x, INDArray y, INDArray z, double scalar) {
-        return createScalarTransform(name, x, y, z, null, scalar);
+    public ScalarOp createScalarTransform(String name,
+                                          INDArray x,
+                                          INDArray y,
+                                          INDArray z,
+                                          double scalar) {
+        return createScalarTransform(name,x,y,z,null,scalar);
     }
 
     /**
@@ -473,57 +521,61 @@ public class DefaultOpFactory implements OpFactory {
      * @return
      */
     @Override
-    public ScalarOp createScalarTransform(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs,
-                    double scalar) {
+    public ScalarOp createScalarTransform(String name,
+                                          INDArray x,
+                                          INDArray y,
+                                          INDArray z,
+                                          Object[] extraArgs,
+                                          double scalar) {
         ScalarOp ret = null;
-        switch (name) {
+        switch(name) {
             case "add_scalar":
-                ret = new ScalarAdd(x, y, z, x.length(), scalar);
+                ret = new ScalarAdd(x,y,z,x.length(),scalar);
                 break;
             case "sub_scalar":
-                ret = new ScalarSubtraction(x, y, z, x.length(), scalar);
+                ret = new ScalarSubtraction(x,y,z,x.length(),scalar);
                 break;
             case "mul_scalar":
-                ret = new ScalarMultiplication(x, y, z, x.length(), scalar);
+                ret = new ScalarMultiplication(x,y,z,x.length(),scalar);
                 break;
             case "div_scalar":
-                ret = new ScalarDivision(x, y, z, x.length(), scalar);
+                ret = new ScalarDivision(x,y,z,x.length(),scalar);
                 break;
             case "equals_scalar":
-                ret = new ScalarEquals(x, y, z, x.length(), scalar);
+                ret = new ScalarEquals(x,y,z,x.length(),scalar);
                 break;
             case "notequals_scalar":
-                ret = new ScalarNotEquals(x, y, z, x.length(), scalar);
+                ret = new ScalarNotEquals(x,y,z,x.length(),scalar);
                 break;
             case "fmod_scalar":
-                ret = new ScalarFMod(x, y, z, x.length(), scalar);
+                ret = new ScalarFMod(x,y,z,x.length(),scalar);
                 break;
             case "max_scalar":
-                ret = new ScalarMax(x, y, z, x.length(), scalar);
+                ret = new ScalarMax(x,y,z,x.length(),scalar);
                 break;
             case "min_scalar":
-                ret = new ScalarMin(x, y, z, x.length(), scalar);
+                ret = new ScalarMin(x,y,z,x.length(),scalar);
                 break;
             case "greaterthan_scalar":
-                ret = new ScalarGreaterThan(x, y, z, x.length(), scalar);
+                ret = new ScalarGreaterThan(x,y,z,x.length(),scalar);
                 break;
             case "greaterthanorequal_scalar":
-                ret = new ScalarGreaterThanOrEqual(x, y, z, x.length(), scalar);
+                ret = new ScalarGreaterThanOrEqual(x,y,z,x.length(),scalar);
                 break;
             case "lessthan_scalar":
-                ret = new ScalarLessThan(x, y, z, x.length(), scalar);
+                ret = new ScalarLessThan(x,y,z,x.length(),scalar);
                 break;
             case "lessthanorequal_scalar":
-                ret = new ScalarLessThanOrEqual(x, y, z, x.length(), scalar);
+                ret = new ScalarLessThanOrEqual(x,y,z,x.length(),scalar);
                 break;
             case "remainder_scalar":
-                ret = new ScalarRemainder(x, y, z, x.length(), scalar);
+                ret = new ScalarRemainder(x,y,z,x.length(),scalar);
                 break;
-            case "rdiv_scalar":
-                ret = new ScalarReverseDivision(x, y, z, x.length(), scalar);
+            case   "rdiv_scalar":
+                ret = new ScalarReverseDivision(x,y,z,x.length(),scalar);
                 break;
-            case "rsub_scalar":
-                ret = new ScalarReverseSubtraction(x, y, z, x.length(), scalar);
+            case   "rsub_scalar":
+                ret = new ScalarReverseSubtraction(x,y,z,x.length(),scalar);
                 break;
         }
 
@@ -533,12 +585,11 @@ public class DefaultOpFactory implements OpFactory {
 
     @Override
     public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, int... dimension) {
-        return createBroadcastOp(name, x, y, z, null, dimension);
+        return createBroadcastOp(name,x,y,z,null,dimension);
     }
 
     @Override
-    public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs,
-                    int... dimension) {
+    public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs, int... dimension) {
         BroadcastOp broadcastOp = null;
         switch (name) {
             case "broadcastadd":
@@ -570,6 +621,6 @@ public class DefaultOpFactory implements OpFactory {
 
     @Override
     public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, int... dimension) {
-        return createBroadcastOp(name, x, y, x, null, dimension);
+        return createBroadcastOp(name,x,y,x,null,dimension);
     }
 }

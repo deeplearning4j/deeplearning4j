@@ -5,10 +5,17 @@ import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-public class Abs extends AbstractUnaryFunction<ArrayField> {
+import java.util.Collections;
+import java.util.List;
 
-    public Abs(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+public class Abs extends AbstractUnaryFunction {
+
+    public Abs(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public Abs(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     @Override
@@ -16,14 +23,13 @@ public class Abs extends AbstractUnaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().abs(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.abs(arg().getReal());
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return arg().div(sameDiff.getFunctionFactory().abs(arg()));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().div(arg(),f().abs(arg()));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

@@ -29,6 +29,7 @@ public class TestNd4jKryoSerialization {
     public void before() {
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("local[*]");
+        sparkConf.set("spark.driver.host", "localhost");
         sparkConf.setAppName("Iris");
 
         sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");

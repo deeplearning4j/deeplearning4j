@@ -53,7 +53,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
     @Test
     public void testConvOutWidthAndHeight() {
-        int outSize = Convolution.outSize(2, 1, 1, 2, false);
+        int outSize = Convolution.outSize(2, 1, 1, 2, 1, false);
         assertEquals(6, outSize);
     }
 
@@ -196,10 +196,9 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         int[] sizeH = {1, 2, 3};
         int[] padH = {0};
         int[] padW = {0};
-        Pooling2D.Pooling2DType[] types = new Pooling2D.Pooling2DType[] {Pooling2D.Pooling2DType.AVG,
-                        Pooling2D.Pooling2DType.MAX, Pooling2D.Pooling2DType.PNORM};
+        Pooling2D.Pooling2DType[] types = new Pooling2D.Pooling2DType[]{Pooling2D.Pooling2DType.AVG, Pooling2D.Pooling2DType.MAX, Pooling2D.Pooling2DType.PNORM};
 
-        for (Pooling2D.Pooling2DType type : types) {
+        for (Pooling2D.Pooling2DType type: types) {
             for (int m : miniBatches) {
                 for (int d : depths) {
                     for (int h : inHeights) {
@@ -210,24 +209,19 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                         for (int kw : sizeW) {
                                             for (int ph : padH) {
                                                 for (int pw : padW) {
-                                                    INDArray in = Nd4j.rand(new int[] {m, d, h, w});
+                                                    INDArray in = Nd4j.rand(new int[]{m, d, h, w});
 
-                                                    int[] outSize = getOutputSize(in, new int[] {kh, kw},
-                                                                    new int[] {sh, sw}, null, true);
+                                                    int[] outSize = getOutputSize(in, new int[]{kh, kw}, new int[]{sh, sw}, null, true);
 
 
-                                                    INDArray col = Nd4j.createUninitialized(
-                                                                    new int[] {m, d, outSize[0], outSize[1], kh, kw},
-                                                                    'c');
+                                                    INDArray col = Nd4j.createUninitialized(new int[]{m, d, outSize[0], outSize[1], kh, kw}, 'c');
                                                     INDArray col2 = col.permute(0, 1, 4, 5, 2, 3);
 
                                                     Convolution.im2col(in, kh, kw, sh, sw, ph, pw, true, col2);
 
-                                                    INDArray col2d = col.reshape('c', m * d * outSize[0] * outSize[1],
-                                                                    kh * kw);
+                                                    INDArray col2d = col.reshape('c', m * d * outSize[0] * outSize[1], kh * kw);
 
-                                                    INDArray output = Nd4j.createUninitialized(
-                                                                    m * d * outSize[0] * outSize[1]);
+                                                    INDArray output = Nd4j.createUninitialized(m * d * outSize[0] * outSize[1]);
 
                                                     INDArray reduced = null;
                                                     switch (type) {
@@ -239,24 +233,20 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                                             reduced = col2d.sum(1);
                                                             Transforms.pow(reduced, (1.0 / pnorm), false);
 
-                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw, true,
-                                                                            Pooling2D.Pooling2DType.PNORM,
-                                                                            (double) pnorm, outSize[0], outSize[1],
-                                                                            output);
+                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw, 1, 1,
+                                                                    true, Pooling2D.Pooling2DType.PNORM, (double) pnorm, outSize[0], outSize[1], output);
 
                                                             break;
                                                         case MAX:
-                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw, true,
-                                                                            Pooling2D.Pooling2DType.MAX, 0.0,
-                                                                            outSize[0], outSize[1], output);
+                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw,1, 1,
+                                                                    true, Pooling2D.Pooling2DType.MAX, 0.0, outSize[0], outSize[1], output);
 
                                                             reduced = col2d.max(1);
                                                             break;
                                                         case AVG:
 
-                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw, true,
-                                                                            Pooling2D.Pooling2DType.AVG, 0.0,
-                                                                            outSize[0], outSize[1], output);
+                                                            Convolution.pooling2D(in, kh, kw, sh, sw, ph, pw, 1, 1,
+                                                                    true, Pooling2D.Pooling2DType.AVG, 0.0, outSize[0], outSize[1], output);
 
                                                             reduced = col2d.mean(1);
                                                             break;
@@ -337,8 +327,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         assertEquals(assertcol2im, col2im);
     }
 
-    protected static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
-                    boolean convolutionModeSame) {
+    protected static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding, boolean convolutionModeSame) {
         int inH = inputData.size(2);
         int inW = inputData.size(3);
 

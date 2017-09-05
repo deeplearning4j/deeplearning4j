@@ -5,25 +5,31 @@ import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-public class SoftSign extends AbstractUnaryFunction<ArrayField> {
+import java.util.Collections;
+import java.util.List;
 
-    public SoftSign(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+public class SoftSign extends AbstractUnaryFunction {
+
+    public SoftSign(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public SoftSign(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().softsign(arg().getValue(true));
+        return a().softsign(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return softsignDerivative().mul(arg().diff(i_v));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().softsignDerivative(i_v.get(0));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

@@ -6,26 +6,31 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.Pow;
 
-public class Square extends AbstractUnaryFunction<ArrayField> {
+import java.util.Collections;
+import java.util.List;
 
-    public Square(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+public class Square extends AbstractUnaryFunction {
+
+    public Square(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public Square(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().square(arg().getValue(true));
+        return a().square(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.pow(arg().getReal(), 2);
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return arg().mul(sameDiff.getFunctionFactory().val(sameDiff.getArrayFactory().one(getResultShape()).mul(2L)))
-                .mul(arg().diff(i_v));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().mul(arg(),f().val(a().one(getResultShape()).mul(2L)));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

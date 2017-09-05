@@ -5,27 +5,33 @@ import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-public class ACosh extends AbstractUnaryFunction<ArrayField> {
+import java.util.Collections;
+import java.util.List;
 
-    public ACosh(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+public class ACosh extends AbstractUnaryFunction {
+
+    public ACosh(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public ACosh(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().acosh(arg().getValue(true));
+        return a().acosh(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        throw new IllegalStateException("");
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().one(getResultShape()).div(
-                sameDiff.getFunctionFactory().sqrt(arg().sub(sameDiff.getFunctionFactory().one(getResultShape())))
-                        .mul(sameDiff.getFunctionFactory().sqrt(arg().add(sameDiff.getFunctionFactory().one(getResultShape())))));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().div(f().one(getResultShape()),
+                f().mul(f().sqrt(f().sub(arg(),f().one(getResultShape()))),f()
+                        .sqrt(f().add(arg(),f().one(getResultShape())))));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

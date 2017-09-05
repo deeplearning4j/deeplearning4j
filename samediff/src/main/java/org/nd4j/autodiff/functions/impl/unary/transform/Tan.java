@@ -3,29 +3,31 @@ package org.nd4j.autodiff.functions.impl.unary.transform;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.functions.PolynomialTerm;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-public class Tan  extends AbstractUnaryFunction<ArrayField> {
+import java.util.Collections;
+import java.util.List;
 
-    public Tan(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+public class Tan  extends AbstractUnaryFunction {
+
+    public Tan(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public Tan(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().tan(arg().getValue(true));
+        return a().tan(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return Math.tan(arg().getReal());
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return (new PolynomialTerm<>(sameDiff,1, sameDiff.getFunctionFactory().cos(arg()), -2)).mul(arg().diff(i_v));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        throw new UnsupportedOperationException();
     }
 
 

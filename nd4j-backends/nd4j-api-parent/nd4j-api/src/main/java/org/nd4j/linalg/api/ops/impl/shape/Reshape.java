@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.ops.ShapeOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
- * Transpose function
+ * Reshape function
  *
  * @author Adam Gibson
  */
@@ -50,6 +50,28 @@ public class Reshape extends ShapeOp {
 
     public Reshape(INDArray x) {
         super(x);
+    }
+
+    @Override
+    public void exec(int... dimensions) {
+        exec();
+    }
+
+    @Override
+    public boolean isExecSpecial() {
+        return true;
+    }
+
+    @Override
+    public void exec() {
+        int[] shape = (int[]) extraArgs[0];
+        if(x != z) {
+            z.assign(x.reshape(shape));
+        }
+        else {
+            this.z = x.reshape(shape);
+        }
+
     }
 
 

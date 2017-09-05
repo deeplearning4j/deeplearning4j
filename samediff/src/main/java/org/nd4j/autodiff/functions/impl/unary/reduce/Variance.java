@@ -5,15 +5,18 @@ import org.nd4j.autodiff.functions.AbstractReduceUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-public class Variance extends AbstractReduceUnaryFunction<ArrayField> {
+import java.util.Collections;
+import java.util.List;
+
+public class Variance extends AbstractReduceUnaryFunction {
 
     protected  boolean biasCorrected;
 
-    public Variance(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] dimensions) {
+    public Variance(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public Variance(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] dimensions,boolean biasCorrected) {
+    public Variance(SameDiff sameDiff, DifferentialFunction i_v, int[] dimensions,boolean biasCorrected) {
         super(sameDiff, i_v, dimensions);
         this.biasCorrected = biasCorrected;
     }
@@ -21,7 +24,7 @@ public class Variance extends AbstractReduceUnaryFunction<ArrayField> {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().variance(arg().doGetValue(),
+        return a().variance(arg().doGetValue(),
                 biasCorrected, dimensions);
     }
 
@@ -33,11 +36,16 @@ public class Variance extends AbstractReduceUnaryFunction<ArrayField> {
 
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
-        int inputs = sameDiff.getFunctionFactory().getInputLength(i_v1);
-        DifferentialFunction<ArrayField> g =  sameDiff.getFunctionFactory().doRepeat(this,i_v1,dimensions);
-        return sameDiff.getFunctionFactory().one(getResultShape()).mul(2).mul(g).mul(arg().sub(sameDiff.getFunctionFactory().mean(arg(),dimensions))).div(
-                sameDiff.getFunctionFactory().one(getResultShape()).mul(inputs));
+        int inputs = f().getInputLength(i_v1.get(0));
+        DifferentialFunction g =  f().doRepeat(this,i_v1.get(0),dimensions);
+        DifferentialFunction ret = f().mul(g,f().mul(f().mul(f().one(getResultShape()),2),g));
+        ret = f().mul(ret,arg());
+        ret = f().sub(ret,f().mean(arg(),dimensions));
+        ret = f().div(ret,f().one(getResultShape()));
+        ret = f().mul(ret,inputs);
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 }

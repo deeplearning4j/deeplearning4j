@@ -3,12 +3,11 @@ package org.nd4j.autodiff;
 import com.google.common.base.Preconditions;
 import lombok.*;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
@@ -30,7 +29,7 @@ import java.util.UUID;
 @Getter
 @Builder
 @EqualsAndHashCode
-public class ArrayField implements Field<ArrayField> {
+public class ArrayField implements Field {
     @Getter
     @Setter
     private SameDiff ops;
@@ -349,8 +348,8 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField asinh() {
-        //  return new ArrayField(OpState.fromOp(new INDArray(Math.log(Math.sqrt(Math.pow(x, 2) + 1) + x)),ops);
-        throw new UnsupportedOperationException();
+        return addTransformOp(new ASinh().name());
+
 
     }
 
@@ -368,6 +367,12 @@ public class ArrayField implements Field<ArrayField> {
     public ArrayField tanh() {
         return addTransformOp(new Tanh().name());
     }
+
+    @Override
+    public ArrayField tanhDerivative(ArrayField wrt) {
+        return addTransformOp(new TanhDerivative().name());
+    }
+
 
     @Override
     public ArrayField atanh() {
@@ -425,7 +430,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField hardTanhDerivative() {
+    public ArrayField hardTanhDerivative(ArrayField wrt) {
         return addTransformOp(new HardTanhDerivative().name());
     }
 
@@ -440,7 +445,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField eluDerivative() {
+    public ArrayField eluDerivative(ArrayField wrt) {
         return addTransformOp(new ELUDerivative().name());
     }
 
@@ -456,8 +461,39 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField leakyReluDerivative(double cutoff)  {
+    public ArrayField leakyReluDerivative(ArrayField wrt, double cutoff)  {
         return addTransformOp(new LeakyReLUDerivative().name(),new Object[]{cutoff});
+    }
+
+    @Override
+    public ArrayField selu() {
+        return addTransformOp(new SELU().name());
+    }
+
+
+    @Override
+    public ArrayField seluDerivative(ArrayField wrt) {
+        return addTransformOp(new SELUDerivative().name());
+    }
+
+    @Override
+    public ArrayField max(double v) {
+        return addScalarTransformOp(new ScalarMax().name(),v);
+    }
+
+    @Override
+    public ArrayField min(double v) {
+        return addScalarTransformOp(new ScalarMin().name(),v);
+    }
+
+    @Override
+    public ArrayField fmod(double v) {
+        return addScalarTransformOp(new ScalarFMod().name(),v);
+    }
+
+    @Override
+    public ArrayField set(double v) {
+        return addScalarTransformOp(new ScalarSet().name(),v);
     }
 
 
@@ -467,7 +503,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField sigmoidDerivative() {
+    public ArrayField sigmoidDerivative(ArrayField wrt) {
         return addTransformOp(new SigmoidDerivative().name());
     }
 
@@ -482,13 +518,24 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField softsignDerivative() {
-        return addTransformOp(new LeakyReLUDerivative().name());
+    public ArrayField softsignDerivative(ArrayField wrt) {
+        return addTransformOp(new SoftSignDerivative().name());
     }
 
     @Override
     public ArrayField softmax() {
         return addTransformOp(new SoftMax().name());
+    }
+
+    @Override
+    public ArrayField logSoftmax() {
+        return addTransformOp(new LogSoftMax().name());
+
+    }
+
+    @Override
+    public ArrayField softmaxDerivative(ArrayField wrt) {
+        return addGradientOp(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative().name(),wrt,null);
     }
 
     @Override
@@ -802,9 +849,10 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public DifferentialFunction arg() {
+    public ArrayField arg() {
         throw new UnsupportedOperationException();
     }
+
 
 
     private ArrayField addTransformOp(String name) {
@@ -823,6 +871,7 @@ public class ArrayField implements Field<ArrayField> {
                 .shape(getInput().getShape()).build();
         //result
         NDArrayVertex newVertex = new NDArrayVertex(
+                this.ops,
                 this.ops.getGraph().nextVertexId(),
                 ndArrayInformation);
 
@@ -833,6 +882,7 @@ public class ArrayField implements Field<ArrayField> {
                 .n(ArrayUtil.prod(getInput().getShape()))
                 .opName(name).extraArgs(extraArgs)
                 .scalarValue(getInput().scalar())
+                .arrayField(this)
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .opType(OpState.OpType.SCALAR_TRANSFORM).result(newVertex.getValue())
                 .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
@@ -873,6 +923,7 @@ public class ArrayField implements Field<ArrayField> {
                 .shape(nonScalarShape).build();
         //result
         NDArrayVertex newVertex = new NDArrayVertex(
+                this.ops,
                 this.ops.getGraph().nextVertexId(),
                 result);
 
@@ -882,7 +933,7 @@ public class ArrayField implements Field<ArrayField> {
         OpState owner =  OpState.builder()
                 .n(ArrayUtil.prod(input.getShape()))
                 .opName(name).extraArgs(new Object[]{scalarValue,inPlace})
-                .scalarValue(scalarValue)
+                .scalarValue(scalarValue).arrayField(this)
                 .id(vertex.getValue().getId() + "-> " +
                         name + " " + newVertex.getValue().getId())
                 .opType(OpState.OpType.SCALAR_TRANSFORM)
@@ -926,7 +977,7 @@ public class ArrayField implements Field<ArrayField> {
                 .arrId(UUID.randomUUID().toString())
                 .shape(resultShape).build();
 
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getGraph().nextVertexId(), information);
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops,this.ops.getGraph().nextVertexId(), information);
 
         //add the result vertex to the graph
         this.ops.getGraph().addVertex(newVertex);
@@ -934,7 +985,8 @@ public class ArrayField implements Field<ArrayField> {
         //map x -> z
         OpState xToz = OpState.builder()
                 .n(ArrayUtil.prod(resultShape)).axes(dimensions)
-                .opName(name).extraArgs(extraArgs)
+                .opName(name).extraArgs(extraArgs).arrayField( this)
+
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.ACCUMULATION).build();
@@ -944,7 +996,7 @@ public class ArrayField implements Field<ArrayField> {
         //map y -> z
         OpState yToZ = OpState.builder()
                 .n(ArrayUtil.prod(resultShape))
-                .opName(name).extraArgs(extraArgs)
+                .opName(name).extraArgs(extraArgs).arrayField( this)
                 .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.ACCUMULATION).build();
@@ -959,12 +1011,15 @@ public class ArrayField implements Field<ArrayField> {
 
         return new ArrayField(newVertex,ops);
     }
+    /**
+     *
+     * @param name
+     * @param i_v
+     * @param extraArgs
+     * @return
+     */
 
-
-
-
-
-    private ArrayField addPairTransformOp(String name,ArrayField i_v,Object[] extraArgs) {
+    private ArrayField addPairTransformOp(String name, ArrayField i_v, OpState.OpType opType,Object[] extraArgs) {
         if(ArrayUtil.prod(getInput().getShape()) == 1 || ArrayUtil.prod(i_v.getInput().getShape()) == 1) {
             return addFirstScalarTransformOp(name + "_scalar",
                     i_v,extraArgs);
@@ -975,7 +1030,7 @@ public class ArrayField implements Field<ArrayField> {
         NDArrayInformation resultInfo =  NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
                 .shape(input.getShape()).build();
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getGraph().nextVertexId(), resultInfo);
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops,this.ops.getGraph().nextVertexId(), resultInfo);
 
         Preconditions.checkArgument(Arrays.equals(input.getShape(),i_v.getInput().getShape()),"X and y not equal shapes.");
 
@@ -988,9 +1043,9 @@ public class ArrayField implements Field<ArrayField> {
                 .opName(name).extraArgs(extraArgs)
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
-                .opType(OpState.OpType.TRANSFORM).build();
+                .opType(opType).build();
         xToZ.setResult(resultInfo);
-        if(vertex.vertexID() == newVertex.vertexID())
+        if(!ops.graph().isFrozen() && vertex.vertexID() == newVertex.vertexID())
             throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
                     " when next vertex id was " + this.ops.getGraph().getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
 
@@ -1002,9 +1057,9 @@ public class ArrayField implements Field<ArrayField> {
                 .opName(name).extraArgs(extraArgs)
                 .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                .opType(OpState.OpType.TRANSFORM).build();
+                .opType(opType).build();
         yToZ.setResult(resultInfo);
-        if(i_v.getVertex().vertexID() == newVertex.vertexID())
+        if(!ops.graph().isFrozen() && i_v.getVertex().vertexID() == newVertex.vertexID())
             throw new IllegalStateException("Attempted to add edge with vertex id of " + newVertex.vertexID() +
                     " when next vertex id was " + this.ops.getGraph().getNextVertexId() + " . This usually means that the vertex id generation was behind the nodes being added.");
         this.ops.getGraph().addEdge(i_v.getVertex().vertexID(),
@@ -1016,6 +1071,30 @@ public class ArrayField implements Field<ArrayField> {
         }
 
         return new ArrayField(newVertex,ops);
+    }
+
+
+    /**
+     *
+     * @param name
+     * @param wrt
+     * @param extraArgs
+     * @return
+     */
+
+    private ArrayField addGradientOp(String name,ArrayField wrt,Object[] extraArgs) {
+        return addPairTransformOp(name,wrt, OpState.OpType.GRADIENT,extraArgs);
+    }
+    /**
+     *
+     * @param name
+     * @param i_v
+     * @param extraArgs
+     * @return
+     */
+
+    private ArrayField addPairTransformOp(String name,ArrayField i_v,Object[] extraArgs) {
+      return addPairTransformOp(name,i_v, OpState.OpType.TRANSFORM,extraArgs);
     }
 
     private ArrayField  addPairTransformOp(String name,ArrayField i_v) {
@@ -1037,7 +1116,7 @@ public class ArrayField implements Field<ArrayField> {
 
     private NDArrayVertex getVertex(String name,int[] shape) {
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getGraph().nextVertexId() ,
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops,this.ops.getGraph().nextVertexId() ,
                 NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                         .scalarValue(getInput().getScalarValue())
                         .id(name + "(" + input.getId() + ")")
@@ -1147,24 +1226,68 @@ public class ArrayField implements Field<ArrayField> {
                 '}';
     }
 
-
-    public ArrayField mmul(ArrayField value) {
+    /**
+     * Matrix multiply with a
+     * transpose specifier.
+     * @param value
+     * @param mMulTranspose
+     * @return
+     */
+    public ArrayField mmul(ArrayField value,MMulTranspose mMulTranspose) {
+        int[] inputShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(getInput().getShape()) : getInput().getShape();
+        int[] otherShape =  mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(value.getInput().getShape()) : value.getInput().getShape();
         return addPairReduceOp("mmul",value,
                 null,
-                Shape.getMatrixMultiplyShape(getInput().getShape(),
-                        value.getInput().getShape()),null);
+                Shape.getMatrixMultiplyShape(inputShape,
+                        otherShape),new Object[]{mMulTranspose});
     }
 
-    public ArrayField tensorMmul(DifferentialFunction<ArrayField> y,
+
+    /**
+     * Normal matrix multiply
+     * @param value
+     * @return
+     */
+    public ArrayField mmul(ArrayField value) {
+        return addPairReduceOp("mmul",
+                value,
+                null,
+                Shape.getMatrixMultiplyShape(getInput().getShape(),
+                        value.getInput().getShape()),new Object[]{MMulTranspose.allFalse()});
+    }
+
+    /**
+     * Transpsoe matrix multiply
+     * @param y
+     * @param dimensions
+     * @return
+     */
+    public ArrayField tensorMmul(DifferentialFunction y,
                                  int[][] dimensions) {
         return addPairReduceOp("tensorMmul",y.getValue(true),
                 null,
                 ArrayUtil.getTensorMmulShape(getInput().getShape(),
                         y.getValue(true).getInput().getShape(),
-                        dimensions),new Object[]{dimensions});
+                        dimensions),new Object[]{dimensions,MMulTranspose.allFalse()});
 
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
+        ArrayField that = (ArrayField) o;
 
+        if (input != null ? !input.equals(that.input) : that.input != null) return false;
+        return vertex != null ? vertex.equals(that.vertex) : that.vertex == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (input != null ? input.hashCode() : 0);
+        result = 31 * result + (vertex != null ? vertex.hashCode() : 0);
+        return result;
+    }
 }

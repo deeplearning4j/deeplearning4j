@@ -744,7 +744,7 @@ public class Nd4j {
      * @param axes the axes for each array to do matrix multiply along
      * @return
      */
-    public static INDArray tensorMmul(INDArray a, INDArray b, INDArray result, int[][] axes) {
+    public static INDArray tensorMmul(INDArray a, INDArray b,INDArray result, int[][] axes) {
         int validationLength = Math.min(axes[0].length, axes[1].length);
         for (int i = 0; i < validationLength; i++) {
             if (a.size(axes[0][i]) != b.size(axes[1][i]))
@@ -811,7 +811,7 @@ public class Nd4j {
 
         INDArray at = a.permute(newAxesA).reshape(newShapeA);
         INDArray bt = b.permute(newAxesB).reshape(newShapeB);
-        INDArray ret = at.mmul(bt, result);
+        INDArray ret = at.mmul(bt,result);
 
         int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
         return ret.reshape(aPlusB);
@@ -913,7 +913,10 @@ public class Nd4j {
      * @param transposeB if true: transpose matrix b before mmul
      * @return result
      */
-    public static INDArray gemm(INDArray a, INDArray b, boolean transposeA, boolean transposeB) {
+    public static INDArray gemm(INDArray a,
+                                INDArray b,
+                                boolean transposeA,
+                                boolean transposeB) {
         int cRows = (transposeA ? a.columns() : a.rows());
         int cCols = (transposeB ? b.rows() : b.columns());
         INDArray c = Nd4j.createUninitialized(new int[] {cRows, cCols}, 'f');
@@ -933,8 +936,13 @@ public class Nd4j {
      * @param transposeB if true: transpose matrix b before mmul
      * @return result, i.e., matrix c is returned for convenience
      */
-    public static INDArray gemm(INDArray a, INDArray b, INDArray c, boolean transposeA, boolean transposeB,
-                    double alpha, double beta) {
+    public static INDArray gemm(INDArray a,
+                                INDArray b,
+                                INDArray c,
+                                boolean transposeA,
+                                boolean transposeB,
+                                double alpha,
+                                double beta) {
         getBlasWrapper().level3().gemm(a, b, c, transposeA, transposeB, alpha, beta);
         return c;
     }
@@ -1190,7 +1198,7 @@ public class Nd4j {
     public static DataBuffer createBuffer(int[] shape, DataBuffer.Type type, long offset) {
         int length = ArrayUtil.prod(shape);
         return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length], offset)
-                        : createBuffer(new float[length], offset);
+                : createBuffer(new float[length], offset);
     }
 
     /**
@@ -1316,20 +1324,11 @@ public class Nd4j {
     public static DataBuffer createBuffer(float[] data, long offset) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null
-                            ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data)
-                            : DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data,
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null
-                            ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data)
-                            : DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data,
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null
-                            ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data))
-                            : DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data),
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data)) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1343,20 +1342,11 @@ public class Nd4j {
     public static DataBuffer createBuffer(double[] data, long offset) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null
-                            ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data)
-                            : DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data,
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null
-                            ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data)
-                            : DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, ArrayUtil.toFloats(data),
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null
-                            ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, ArrayUtil.toFloats(data))
-                            : DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, ArrayUtil.toFloats(data),
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, ArrayUtil.toFloats(data)) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1388,8 +1378,7 @@ public class Nd4j {
         else if (type == DataBuffer.Type.HALF)
             return createBufferDetached(new float[length]);
 
-        return type == DataBuffer.Type.DOUBLE ? createBufferDetached(new double[length])
-                        : createBufferDetached(new float[length]);
+        return type == DataBuffer.Type.DOUBLE ? createBufferDetached(new double[length]) : createBufferDetached(new float[length]);
     }
 
     /**
@@ -1445,8 +1434,7 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(int[] data) {
         DataBuffer ret;
-        ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createInt(data)
-                        : DATA_BUFFER_FACTORY_INSTANCE.createInt(data, Nd4j.getMemoryManager().getCurrentWorkspace());
+        ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createInt(data) : DATA_BUFFER_FACTORY_INSTANCE.createInt(data, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1497,22 +1485,13 @@ public class Nd4j {
     public static DataBuffer createBuffer(long length, boolean initialize) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null
-                            ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize)
-                            : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize,
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.INT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(length, initialize);
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null
-                            ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize)
-                            : DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize,
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
         else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null
-                            ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize)
-                            : DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize,
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
 
         logCreationIfNecessary(ret);
         return ret;
@@ -1527,18 +1506,11 @@ public class Nd4j {
     public static DataBuffer createBuffer(float[] data) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(data)
-                            : DATA_BUFFER_FACTORY_INSTANCE.createFloat(data,
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(data) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data)
-                            : DATA_BUFFER_FACTORY_INSTANCE.createHalf(data,
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data): DATA_BUFFER_FACTORY_INSTANCE.createHalf(data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null
-                            ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data))
-                            : DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data),
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data)) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data), Nd4j.getMemoryManager().getCurrentWorkspace()) ;
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1576,19 +1548,11 @@ public class Nd4j {
     public static DataBuffer createBuffer(double[] data) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null
-                            ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(data)
-                            : DATA_BUFFER_FACTORY_INSTANCE.createDouble(data,
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(data) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data)
-                            : DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data),
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null
-                            ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data))
-                            : DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data),
-                                            Nd4j.getMemoryManager().getCurrentWorkspace());
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data)) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1711,7 +1675,7 @@ public class Nd4j {
                         int idx2 = (int) o2.doubleValue();
 
                         return Double.compare(data[idx1].absoluteValue().doubleValue(),
-                                        data[idx2].absoluteValue().doubleValue());
+                                data[idx2].absoluteValue().doubleValue());
                     }
                 });
 
@@ -1723,7 +1687,7 @@ public class Nd4j {
                         int idx2 = (int) o2.doubleValue();
 
                         return -Double.compare(data[idx1].absoluteValue().doubleValue(),
-                                        data[idx2].absoluteValue().doubleValue());
+                                data[idx2].absoluteValue().doubleValue());
                     }
                 });
 
@@ -1822,7 +1786,7 @@ public class Nd4j {
                     @Override
                     public int compare(IComplexNumber o1, IComplexNumber o2) {
                         return Double.compare(o1.asDouble().absoluteValue().doubleValue(),
-                                        o2.asDouble().absoluteValue().doubleValue());
+                                o2.asDouble().absoluteValue().doubleValue());
                     }
                 });
 
@@ -1831,7 +1795,7 @@ public class Nd4j {
                     @Override
                     public int compare(IComplexNumber o1, IComplexNumber o2) {
                         return -Double.compare(o1.asDouble().absoluteValue().doubleValue(),
-                                        o2.asDouble().absoluteValue().doubleValue());
+                                o2.asDouble().absoluteValue().doubleValue());
                     }
                 });
 
@@ -1865,9 +1829,9 @@ public class Nd4j {
             for (int j = 0; j < vec.length(); j++) {
                 data[j] = vec.getDouble(j);
             }
-        
+
             Arrays.sort(data);
-        
+
             if (ascending)
                 for (int j = 0; j < vec.length(); j++)
                     vec.putScalar(j, data[j]);
@@ -1877,9 +1841,9 @@ public class Nd4j {
                     vec.putScalar(j, data[count--]);
                 }
             }
-        
+
         }
-        
+
         return ndarray;*/
     }
 
@@ -2112,7 +2076,7 @@ public class Nd4j {
      * Create a long row vector of all of the given ndarrays/
      * @param order order in which to flatten ndarrays
      * @param matrices the matrices to create the flattened ndarray for
-    
+
      * @return the flattened representation of
      * these ndarrays
      */
@@ -2433,12 +2397,12 @@ public class Nd4j {
     public static INDArray readTxtString(InputStream ndarray, String sep) {
         /*
          We could dump an ndarray to a file with the tostring (since that is valid json) and use put/get to parse it as json
-        
+
          But here we leverage our information of the tostring method to be more efficient
          With our current toString format we use tads along dimension (rank-1,rank-2) to write to the array in two dimensional chunks at a time.
          This is more efficient than setting each value at a time with putScalar.
          This also means we can read the file one line at a time instead of loading the whole thing into memory
-        
+
          Future work involves enhancing the write json method to provide more features to make the load more efficient
         */
         int lineNum = 0;
@@ -2493,7 +2457,7 @@ public class Nd4j {
                 //parse data
                 if (lineNum > 5) {
                     String[] entries = line.replace("\\],", "").replaceAll("\\[", "").replaceAll("\\],", "")
-                                    .replaceAll("\\]", "").split(sep);
+                            .replaceAll("\\]", "").split(sep);
                     for (int i = 0; i < theShape[rank - 1]; i++) {
                         try {
                             BigDecimal number = (BigDecimal) format.parse(entries[i]);
@@ -2582,7 +2546,7 @@ public class Nd4j {
         int rank = Shape.rank(shapeInfo);
         long offset = Shape.offset(shapeInfo);
         INDArray result = Nd4j.create(data, toIntArray(rank, Shape.shapeOf(shapeInfo)),
-                        toIntArray(rank, Shape.stride(shapeInfo)), offset, Shape.order(shapeInfo));
+                toIntArray(rank, Shape.stride(shapeInfo)), offset, Shape.order(shapeInfo));
         if (data instanceof CompressedDataBuffer)
             result.markAsCompressed(true);
 
@@ -2599,8 +2563,7 @@ public class Nd4j {
         int rank = Shape.rank(shapeInfo.getFirst());
         long offset = Shape.offset(shapeInfo.getFirst());
         INDArray result = Nd4j.create(data, toIntArray(rank, Shape.shapeOf(shapeInfo.getFirst())),
-                        toIntArray(rank, Shape.stride(shapeInfo.getFirst())), offset,
-                        Shape.order(shapeInfo.getFirst()));
+                toIntArray(rank, Shape.stride(shapeInfo.getFirst())), offset, Shape.order(shapeInfo.getFirst()));
         if (data instanceof CompressedDataBuffer)
             result.markAsCompressed(true);
 
@@ -2927,7 +2890,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray choice(@NonNull INDArray source, @NonNull INDArray probs, @NonNull INDArray target,
-                    @NonNull org.nd4j.linalg.api.rng.Random rng) {
+                                  @NonNull org.nd4j.linalg.api.rng.Random rng) {
         if (source.length() != probs.length())
             throw new ND4JIllegalStateException("Nd4j.choice() requires lengths of Source and Probs to be equal");
 
@@ -2955,7 +2918,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray choice(INDArray source, INDArray probs, int numSamples,
-                    @NonNull org.nd4j.linalg.api.rng.Random rng) {
+                                  @NonNull org.nd4j.linalg.api.rng.Random rng) {
         if (numSamples < 1)
             throw new ND4JIllegalStateException("Nd4j.choice() numSamples must be positive value");
 
@@ -3220,7 +3183,7 @@ public class Nd4j {
      */
     public static INDArray randn(int[] shape) {
         INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order())),
-                        Nd4j.getRandom());
+                Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3233,7 +3196,7 @@ public class Nd4j {
      */
     public static INDArray randn(char order, int[] shape) {
         INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order)),
-                        Nd4j.getRandom());
+                Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3247,7 +3210,7 @@ public class Nd4j {
     public static INDArray randn(int[] shape, long seed) {
         Nd4j.getRandom().setSeed(seed);
         Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order())),
-                        Nd4j.getRandom());
+                Nd4j.getRandom());
         return randn(shape, Nd4j.getRandom());
     }
 
@@ -3261,8 +3224,8 @@ public class Nd4j {
      */
     public static INDArray randn(int rows, int columns) {
         INDArray ret = Nd4j.getExecutioner().exec(
-                        new GaussianDistribution(Nd4j.createUninitialized(new int[] {rows, columns}, order())),
-                        Nd4j.getRandom());
+                new GaussianDistribution(Nd4j.createUninitialized(new int[] {rows, columns}, order())),
+                Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3276,8 +3239,8 @@ public class Nd4j {
      */
     public static INDArray randn(char order, int rows, int columns) {
         INDArray ret = Nd4j.getExecutioner().exec(
-                        new GaussianDistribution(Nd4j.createUninitialized(new int[] {rows, columns}, order)),
-                        Nd4j.getRandom());
+                new GaussianDistribution(Nd4j.createUninitialized(new int[] {rows, columns}, order)),
+                Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3292,8 +3255,8 @@ public class Nd4j {
     public static INDArray randn(int rows, int columns, long seed) {
         Nd4j.getRandom().setSeed(seed);
         INDArray ret = Nd4j.getExecutioner().exec(
-                        new GaussianDistribution(Nd4j.createUninitialized(new int[] {rows, columns}, order())),
-                        Nd4j.getRandom());
+                new GaussianDistribution(Nd4j.createUninitialized(new int[] {rows, columns}, order())),
+                Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3308,7 +3271,7 @@ public class Nd4j {
      */
     public static INDArray randn(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
         INDArray ret = Nd4j.getExecutioner().exec(
-                        new GaussianDistribution(Nd4j.createUninitialized(new int[] {rows, columns}, order())), r);
+                new GaussianDistribution(Nd4j.createUninitialized(new int[] {rows, columns}, order())), r);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3322,7 +3285,7 @@ public class Nd4j {
      */
     public static INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r) {
         INDArray ret = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(shape, order())),
-                        r);
+                r);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3545,7 +3508,7 @@ public class Nd4j {
      */
     public static IComplexNDArray createComplex(double[] data, char order) {
         IComplexNDArray ret = INSTANCE.createComplex(data, Nd4j.getComplexStrides(new int[] {1, data.length}, order), 0,
-                        order);
+                order);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3561,7 +3524,7 @@ public class Nd4j {
             throw new ND4JIllegalStateException("Number of columns should be positive for new INDArray");
 
         INDArray ret = INSTANCE.create(new int[] {1, columns}, Nd4j.getStrides(new int[] {1, columns}, order), 0,
-                        order);
+                order);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3579,7 +3542,7 @@ public class Nd4j {
     public static IComplexNDArray createComplex(int columns, char order) {
         int[] shape = new int[] {1, columns};
         IComplexNDArray ret =
-                        INSTANCE.createComplex(new int[] {1, columns}, Nd4j.getComplexStrides(shape, order), 0, order);
+                INSTANCE.createComplex(new int[] {1, columns}, Nd4j.getComplexStrides(shape, order), 0, order);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3677,7 +3640,7 @@ public class Nd4j {
                 shape = new int[] {1, data.length};
             } else
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                                + " doesn't match data length: " + data.length);
+                        + " doesn't match data length: " + data.length);
         }
 
         checkShapeValues(data.length, shape);
@@ -3705,7 +3668,7 @@ public class Nd4j {
                 shape = new int[] {1, data.length};
             } else
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                                + " doesn't match data length: " + data.length);
+                        + " doesn't match data length: " + data.length);
         }
 
         checkShapeValues(shape);
@@ -3797,7 +3760,7 @@ public class Nd4j {
                 shape = new int[] {1, data.length};
             } else
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                                + " doesn't match data length: " + data.length);
+                        + " doesn't match data length: " + data.length);
         }
 
         checkShapeValues(data.length, shape);
@@ -3918,7 +3881,7 @@ public class Nd4j {
                 shape = new int[] {1, data.length};
             } else
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                                + " doesn't match data length: " + data.length);
+                        + " doesn't match data length: " + data.length);
         }
 
         checkShapeValues(data.length, shape);
@@ -3946,7 +3909,7 @@ public class Nd4j {
                 shape = new int[] {1, data.length};
             } else
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                                + " doesn't match data length: " + data.length);
+                        + " doesn't match data length: " + data.length);
         }
 
         checkShapeValues(data.length, shape);
@@ -3975,7 +3938,7 @@ public class Nd4j {
                 shape = new int[] {1, data.length};
             } else
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                                + " doesn't match data length: " + data.length);
+                        + " doesn't match data length: " + data.length);
         }
 
         checkShapeValues(data.length, shape);
@@ -4204,7 +4167,7 @@ public class Nd4j {
                 shape = new int[] {1, data.length};
             } else
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                                + " doesn't match data length: " + data.length);
+                        + " doesn't match data length: " + data.length);
         }
 
         checkShapeValues(data.length, shape);
@@ -4233,7 +4196,7 @@ public class Nd4j {
                 shape = new int[] {1, data.length};
             } else
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                                + " doesn't match data length: " + data.length);
+                        + " doesn't match data length: " + data.length);
         }
 
         checkShapeValues(data.length, shape);
@@ -4353,7 +4316,7 @@ public class Nd4j {
      * @return
      */
     public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] newStrides, long offset,
-                    char ordering) {
+                                                char ordering) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4464,7 +4427,7 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(float[] data, int rows, int columns, int[] stride, long offset,
-                    char ordering) {
+                                                char ordering) {
         int[] shape = new int[] {rows, columns};
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
@@ -4560,7 +4523,7 @@ public class Nd4j {
                 shape = new int[] {1, data.length};
             } else
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                                + " doesn't match data length: " + data.length);
+                        + " doesn't match data length: " + data.length);
         }
 
         checkShapeValues(data.length, shape);
@@ -4588,7 +4551,7 @@ public class Nd4j {
                 shape = new int[] {1, data.length};
             } else
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                                + " doesn't match data length: " + data.length);
+                        + " doesn't match data length: " + data.length);
         }
 
         checkShapeValues(data.length, shape);
@@ -4616,7 +4579,7 @@ public class Nd4j {
                 shape = new int[] {1, data.length};
             } else
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                                + " doesn't match data length: " + data.length);
+                        + " doesn't match data length: " + data.length);
         }
 
         checkShapeValues(data.length, shape);
@@ -4718,7 +4681,7 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(double[] data, int rows, int columns, int[] stride, long offset,
-                    char ordering) {
+                                                char ordering) {
         int[] shape = new int[] {rows, columns};
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
@@ -4796,7 +4759,7 @@ public class Nd4j {
                 shape = new int[] {1, data.length};
             } else
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                                + " doesn't match data length: " + data.length);
+                        + " doesn't match data length: " + data.length);
         }
 
         checkShapeValues(data.length, shape);
@@ -5089,7 +5052,7 @@ public class Nd4j {
         for (int e = 0; e < shape.length; e++) {
             if (shape[e] < 1)
                 throw new ND4JIllegalStateException("Invalid shape: Requested INDArray shape " + Arrays.toString(shape)
-                                + " contains dimension size values < 1 (all dimensions must be 1 or more)");
+                        + " contains dimension size values < 1 (all dimensions must be 1 or more)");
         }
     }
 
@@ -5098,7 +5061,7 @@ public class Nd4j {
 
         if (ArrayUtil.prodLong(shape) > length)
             throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                            + " doesn't match data length: " + length);
+                    + " doesn't match data length: " + length);
     }
 
 
@@ -5228,7 +5191,7 @@ public class Nd4j {
         checkShapeValues(shape);
 
         IComplexNDArray ret =
-                        INSTANCE.createComplex(data, shape, Nd4j.getComplexStrides(shape, ordering), offset, ordering);
+                INSTANCE.createComplex(data, shape, Nd4j.getComplexStrides(shape, ordering), offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5262,7 +5225,7 @@ public class Nd4j {
                 shape = new int[] {1, data.length};
             } else
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                                + " doesn't match data length: " + data.length);
+                        + " doesn't match data length: " + data.length);
         }
 
         checkShapeValues(data.length, shape);
@@ -5788,7 +5751,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray accumulate(Collection<INDArray> arrays) {
-        if (arrays == null || arrays.size() == 0)
+        if (arrays == null|| arrays.size() == 0)
             throw new ND4JIllegalStateException("Input for accumulation is null or empty");
 
         return accumulate(arrays.toArray(new INDArray[0]));
@@ -5801,7 +5764,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray accumulate(INDArray... arrays) {
-        if (arrays == null || arrays.length == 0)
+        if (arrays == null|| arrays.length == 0)
             throw new ND4JIllegalStateException("Input for accumulation is null or empty");
 
         return accumulate(Nd4j.create(arrays[0].shape(), arrays[0].ordering()), arrays);
@@ -5827,7 +5790,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray accumulate(INDArray target, INDArray[] arrays) {
-        if (arrays == null || arrays.length == 0)
+        if (arrays == null|| arrays.length == 0)
             return target;
 
         return factory().accumulate(target, arrays);
@@ -5869,7 +5832,7 @@ public class Nd4j {
         for (int idx : indexes) {
             if (idx < 0 || idx >= source.shape()[source.rank() - sourceDimension - 1]) {
                 throw new IllegalStateException(
-                                "Index can't be < 0 and >= " + source.shape()[source.rank() - sourceDimension - 1]);
+                        "Index can't be < 0 and >= " + source.shape()[source.rank() - sourceDimension - 1]);
             }
         }
 
@@ -6278,7 +6241,7 @@ public class Nd4j {
 
         try {
             if (System.getProperties().getProperty("backends") != null
-                            && !System.getProperties().getProperty("backends").contains(backend.getClass().getName())) {
+                    && !System.getProperties().getProperty("backends").contains(backend.getClass().getName())) {
                 return;
             }
 
@@ -6293,13 +6256,13 @@ public class Nd4j {
 
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT
-                            : otherDtype.equals("half") ? DataBuffer.Type.HALF : DataBuffer.Type.DOUBLE;
+                    : otherDtype.equals("half") ? DataBuffer.Type.HALF : DataBuffer.Type.DOUBLE;
 
             if (dtype == DataBuffer.Type.HALF && backend.getClass().getName().equals("CpuBackend")) {
                 showAttractiveMessage(getMessageForNativeHalfPrecision());
             }
 
-            if (Nd4j.dataType() != dtype) {
+            if (Nd4j.dataType() != dtype){
                 DataTypeUtil.setDTypeForContext(dtype);
             }
 
@@ -6406,8 +6369,8 @@ public class Nd4j {
 
     private static boolean isSupportedPlatform() {
         return (System.getProperty("java.vm.name").equalsIgnoreCase("Dalvik")
-                        || System.getProperty("os.arch").toLowerCase().startsWith("arm")
-                        || System.getProperty("sun.arch.data.model").equals("64"));
+                || System.getProperty("os.arch").toLowerCase().startsWith("arm")
+                || System.getProperty("sun.arch.data.model").equals("64"));
     }
 
     private static void showAttractiveMessage(String... strings) {
@@ -6427,7 +6390,7 @@ public class Nd4j {
 
     private static String[] getMessageForUnsupportedPlatform() {
         return new String[] {"Unfortunately you can't use DL4j/ND4j on 32-bit x86 JVM",
-                        "Please, consider running this on 64-bit JVM instead"};
+                "Please, consider running this on 64-bit JVM instead"};
     }
 
     private static String[] getMessageForFallback() {
@@ -6436,7 +6399,7 @@ public class Nd4j {
 
     private String[] getMessageForNativeHalfPrecision() {
         return new String[] {"Half-precision data type isn't support for nd4j-native",
-                        "Please, consider using FLOAT or DOUBLE data type instead"};
+                "Please, consider using FLOAT or DOUBLE data type instead"};
     }
 
     private void updateNd4jContext() throws IOException {
@@ -6596,7 +6559,7 @@ public class Nd4j {
             shouldReshape = false;
 
         List<INDArray> reshaped = new ArrayList<>();
-        for (INDArray array : arrays) {
+        for(INDArray array: arrays) {
             if (!shouldReshape)
                 reshaped.add(array);
             else
@@ -6646,7 +6609,7 @@ public class Nd4j {
      */
 
     public static INDArray createFromNpyPointer(Pointer pointer) {
-        return INSTANCE.createFromNpyPointer(pointer);
+       return INSTANCE.createFromNpyPointer(pointer);
     }
 
     /**

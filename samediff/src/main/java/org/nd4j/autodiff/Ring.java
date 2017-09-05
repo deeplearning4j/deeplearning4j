@@ -1,18 +1,18 @@
 package org.nd4j.autodiff;
 
 
-public interface Ring<X> extends CommutativeGroup<X> {
+public interface Ring extends CommutativeGroup {
 
-    X muli(X i_v);
+    ArrayField muli(ArrayField i_v);
 
-    X muli(double v);
+    ArrayField muli(double v);
 
-    X powi(int i_n);
+    ArrayField powi(int i_n);
 
-    X mul(X i_v);
+    ArrayField mul(ArrayField i_v);
 
-    X mul(double v);
+    ArrayField mul(double v);
 
-    X pow(int i_n);
+    ArrayField pow(int i_n);
 
 }

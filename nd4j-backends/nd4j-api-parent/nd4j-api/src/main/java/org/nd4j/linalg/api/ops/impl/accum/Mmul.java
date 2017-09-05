@@ -19,30 +19,49 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- * Dot product
+ * Matrix multiplication/dot product
+ *
  * @author Adam Gibson
  */
 public class Mmul extends BaseAccumulation {
 
+    private MMulTranspose mMulTranspose;
+
     public Mmul() {}
 
-    public Mmul(INDArray x, INDArray y, INDArray z, long n) {
+
+    public Mmul(INDArray x,
+                INDArray y,
+                INDArray z,
+                MMulTranspose mMulTranspose) {
+        this(x,y,z,x.lengthLong(),mMulTranspose);
+    }
+
+    public Mmul(INDArray x,
+                INDArray y,
+                INDArray z,
+                long n,
+                MMulTranspose mMulTranspose) {
         super(x, y, z, n);
+        this.mMulTranspose = mMulTranspose;
     }
 
-    public Mmul(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+    public Mmul(INDArray x, INDArray y, INDArray z, long n) {
+        this(x,y,z,n,MMulTranspose.allFalse());
     }
 
-    public Mmul(INDArray x) {
-        super(x);
+    public Mmul(INDArray x, INDArray y, INDArray z) {
+        this(x,y,z,x.lengthLong());
     }
+
+
 
     public Mmul(INDArray x, INDArray y) {
         super(x, y);
@@ -194,9 +213,9 @@ public class Mmul extends BaseAccumulation {
 
     @Override
     public void exec() {
-        if (this.z != null)
-            x.mmul(y, z);
+        if(this.z != null)
+            x.mmul(y,z,mMulTranspose);
         else
-            this.z = x.mmul(y);
+            this.z = x.mmul(y,mMulTranspose);
     }
 }

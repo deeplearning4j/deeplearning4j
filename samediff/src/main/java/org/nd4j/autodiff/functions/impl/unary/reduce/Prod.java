@@ -5,9 +5,12 @@ import org.nd4j.autodiff.functions.AbstractReduceUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-public class Prod extends AbstractReduceUnaryFunction<ArrayField> {
+import java.util.Collections;
+import java.util.List;
+
+public class Prod extends AbstractReduceUnaryFunction {
     public Prod(SameDiff sameDiff,
-               DifferentialFunction<ArrayField> i_v,
+               DifferentialFunction i_v,
                int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
@@ -26,10 +29,14 @@ public class Prod extends AbstractReduceUnaryFunction<ArrayField> {
 
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v1) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
-        return sameDiff.getFunctionFactory().doRepeat(this,i_v1,dimensions).div(sameDiff.getFunctionFactory()
-                .one(getResultShape()).mul(sameDiff.getFunctionFactory()
-                .getInputLength(i_v1)));
+        DifferentialFunction ret = f().div(f().doRepeat(
+                this,
+                i_v1.get(0)
+                ,dimensions),f().mul(f().one(getResultShape()),f()
+                                .getInputLength(i_v1.get(0))));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 }

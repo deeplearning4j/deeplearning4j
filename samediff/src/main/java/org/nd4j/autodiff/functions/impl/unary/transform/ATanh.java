@@ -5,26 +5,32 @@ import org.nd4j.autodiff.functions.AbstractUnaryFunction;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-public class ATanh extends AbstractUnaryFunction<ArrayField> {
+import java.util.Collections;
+import java.util.List;
 
-    public ATanh(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+public class ATanh extends AbstractUnaryFunction {
+
+    public ATanh(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public ATanh(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().atanh(arg().getValue(true));
+        return a().atanh(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        throw new IllegalStateException();
-    }
+
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
-        return sameDiff.getFunctionFactory().one(getResultShape()).div(sameDiff.getFunctionFactory()
-                .one(getResultShape()).sub(arg().pow(2)));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().div(f().one(getResultShape()),f().sub(f()
+                .one(getResultShape()),f().pow(arg(),2)));
+        arg().setGradient(ret);
+        return Collections.singletonList(ret);
     }
 
 

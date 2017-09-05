@@ -6,9 +6,11 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-public class Broadcast extends AbstractUnaryFunction<ArrayField> {
+import java.util.List;
 
-    public Broadcast(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int[] shape) {
+public class Broadcast extends AbstractUnaryFunction {
+
+    public Broadcast(SameDiff sameDiff, DifferentialFunction i_v, int[] shape) {
         super(sameDiff, i_v, shape,OpState.OpType.SHAPE,new Object[]{shape});
         this.shape = shape;
     }
@@ -18,13 +20,9 @@ public class Broadcast extends AbstractUnaryFunction<ArrayField> {
         return sameDiff.getArrayFactory().broadcast(arg().getValue(true),shape);
     }
 
-    @Override
-    public double getReal() {
-        return Math.floor(arg().getReal());
-    }
 
     @Override
-    public DifferentialFunction<ArrayField> diff(DifferentialFunction<ArrayField> i_v) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         throw new UnsupportedOperationException();
     }
 

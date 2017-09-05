@@ -21,10 +21,12 @@ package org.nd4j.linalg;
 
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.ops.impl.accum.LogSumExp;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -109,6 +111,15 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.setDataType(initialType);
     }
 
+
+    @Test
+    public void testSoftmaxDerivativeGradient() {
+        INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray inputDup = input.dup();
+        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative(input,Nd4j.ones(2,2),input));
+        Nd4j.getExecutioner().exec(new SoftMaxDerivative(inputDup));
+        assertEquals(input,inputDup);
+    }
 
     @Test
     public void testNd4jEnvironment() {
@@ -223,6 +234,32 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray testMem = Nd4j.create(10, 10);
     }
 
+
+    @Test
+    public void testMmulWithTranspose() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray arr2 = Nd4j.linspace(1,4,4).reshape(2,2).transpose();
+        INDArray arrTransposeAssertion = arr.transpose().mmul(arr2);
+        MMulTranspose mMulTranspose = MMulTranspose.builder()
+                .transposeA(true)
+                .a(arr)
+                .b(arr2)
+                .build();
+
+        INDArray testResult = arr.mmul(arr2,mMulTranspose);
+        assertEquals(arrTransposeAssertion,testResult);
+
+
+        INDArray bTransposeAssertion = arr.mmul(arr2.transpose());
+        mMulTranspose = MMulTranspose.builder()
+                .transposeB(true)
+                .a(arr)
+                .b(arr2)
+                .build();
+
+        INDArray bTest = arr.mmul(arr2,mMulTranspose);
+        assertEquals(bTransposeAssertion,bTest);
+    }
 
 
     @Test
@@ -5214,6 +5251,117 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp_0, arr);
         assertEquals(exp_1, res);
     }
+
+    @Test
+    public void testBroadcastMin() throws Exception {
+        INDArray matrix = Nd4j.create(5, 5);
+        for (int r = 0; r < matrix.rows(); r++) {
+            matrix.getRow(r).assign(Nd4j.create(new double[]{2, 3, 3, 4, 5}));
+        }
+
+        INDArray row = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new BroadcastMin(matrix, row, matrix, 1));
+
+        for (int r = 0; r < matrix.rows(); r++) {
+            assertEquals(Nd4j.create(new double[] {1, 2, 3, 4, 5}), matrix.getRow(r));
+        }
+    }
+
+    @Test
+    public void testBroadcastMax() throws Exception {
+        INDArray matrix = Nd4j.create(5, 5);
+        for (int r = 0; r < matrix.rows(); r++) {
+            matrix.getRow(r).assign(Nd4j.create(new double[]{1, 2, 3, 2, 1}));
+        }
+
+        INDArray row = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new BroadcastMax(matrix, row, matrix, 1));
+
+        for (int r = 0; r < matrix.rows(); r++) {
+            assertEquals(Nd4j.create(new double[] {1, 2, 3, 4, 5}), matrix.getRow(r));
+        }
+    }
+
+
+    @Test
+    public void testBroadcastAMax() throws Exception {
+        INDArray matrix = Nd4j.create(5, 5);
+        for (int r = 0; r < matrix.rows(); r++) {
+            matrix.getRow(r).assign(Nd4j.create(new double[]{1, 2, 3, 2, 1}));
+        }
+
+        INDArray row = Nd4j.create(new double[]{1, 2, 3, -4, -5});
+
+        Nd4j.getExecutioner().exec(new BroadcastAMax(matrix, row, matrix, 1));
+
+        for (int r = 0; r < matrix.rows(); r++) {
+            assertEquals(Nd4j.create(new double[] {1, 2, 3, -4, -5}), matrix.getRow(r));
+        }
+    }
+
+
+    @Test
+    public void testBroadcastAMin() throws Exception {
+        INDArray matrix = Nd4j.create(5, 5);
+        for (int r = 0; r < matrix.rows(); r++) {
+            matrix.getRow(r).assign(Nd4j.create(new double[]{2, 3, 3, 4, 1}));
+        }
+
+        INDArray row = Nd4j.create(new double[]{1, 2, 3, 4, -5});
+
+        Nd4j.getExecutioner().exec(new BroadcastAMin(matrix, row, matrix, 1));
+
+        for (int r = 0; r < matrix.rows(); r++) {
+            assertEquals(Nd4j.create(new double[] {1, 2, 3, 4, 1}), matrix.getRow(r));
+        }
+    }
+
+    @Test
+    public void testLogExpSum1() throws Exception {
+        INDArray matrix = Nd4j.create(3, 3);
+        for (int r = 0; r < matrix.rows(); r++) {
+            matrix.getRow(r).assign(Nd4j.create(new double[]{1, 2, 3}));
+        }
+
+        INDArray res = Nd4j.getExecutioner().exec(new LogSumExp(matrix), 1);
+
+        for (int e = 0; e < res.length(); e++) {
+            assertEquals(3.407605, res.getDouble(e), 1e-5);
+        }
+    }
+
+    @Test
+    public void testLogExpSum2() throws Exception {
+        INDArray row = Nd4j.create(new double[]{1, 2, 3});
+
+        double res = Nd4j.getExecutioner().exec(new LogSumExp(row)).z().getDouble(0);
+
+        assertEquals(3.407605, res, 1e-5);
+    }
+
+    @Test
+    public void testPow1() throws Exception {
+        val argX = Nd4j.create(3).assign(2.0);
+        val argY = Nd4j.create(new double[]{1.0, 2.0, 3.0});
+        val exp = Nd4j.create(new double[] {2.0, 4.0, 8.0});
+        val res = Transforms.pow(argX, argY);
+
+        assertEquals(exp, res);
+    }
+
+
+    @Test
+    public void testRDiv1() throws Exception {
+        val argX = Nd4j.create(3).assign(2.0);
+        val argY = Nd4j.create(new double[]{1.0, 2.0, 3.0});
+        val exp = Nd4j.create(new double[] {0.5, 1.0, 1.5});
+        val res = argX.rdiv(argY);
+
+        assertEquals(exp, res);
+    }
+
 
     @Override
     public char ordering() {

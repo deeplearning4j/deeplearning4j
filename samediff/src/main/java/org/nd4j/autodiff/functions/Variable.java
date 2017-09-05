@@ -1,40 +1,38 @@
 package org.nd4j.autodiff.functions;
 
+import lombok.Data;
+import lombok.Getter;
+import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.Field;
+import org.nd4j.autodiff.samediff.SameDiff;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.google.common.base.Preconditions;
-import lombok.Data;
-import lombok.Getter;
-import org.nd4j.autodiff.AbstractIdentityFactory;
-import org.nd4j.autodiff.ArrayFactory;
-import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SDGraph;
-import org.nd4j.autodiff.samediff.SameDiff;
-
 @Data
-public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
+public class Variable extends DifferentialFunction {
     @Getter
-    private X m_x;
+    private ArrayField m_x;
     private String m_name;
-    private PreEvaluator<X> preEvaluator;
+    private PreEvaluator preEvaluator;
 
     protected Variable(SameDiff sameDiff,
                        String i_name,
-                       X i_v) {
+                       ArrayField i_v) {
         this(sameDiff,i_name, i_v, null);
+        validateFunctionReference(this);
     }
 
     protected Variable(SameDiff sameDiff,
                        String i_name,
-                       X i_v,PreEvaluator<X> preEvaluator) {
+                       ArrayField i_v,PreEvaluator preEvaluator) {
         super(sameDiff,null);
         this.preEvaluator = preEvaluator;
         setName(i_name);
         if (i_v != null) {
             m_x = i_v;
+            validateFunctionReference(this);
         } else {
             throw new IllegalArgumentException("Input not null value.");
         }
@@ -57,7 +55,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
      * @return the value of this function
      */
     @Override
-    public  X getValue(boolean freeze) {
+    public  ArrayField getValue(boolean freeze) {
         if(freeze) {
             return m_x;
         }
@@ -77,7 +75,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
         return m_name;
     }
 
-    public void set(X i_v) {
+    public void set(ArrayField i_v) {
         if (i_v != null) {
             m_x = i_v;
         } else {
@@ -91,39 +89,37 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
     @Override
-    public X doGetValue() {
+    public ArrayField doGetValue() {
         if (preEvaluator != null) {
             preEvaluator.update(this);
         }
         return m_x;
     }
 
-    @Override
-    public double getReal() {
-        if (preEvaluator != null) {
-            preEvaluator.update(this);
-        }
-        return m_x.getReal();
-    }
+
 
     @Override
-    public DifferentialFunction<X>[] args() {
+    public DifferentialFunction[] args() {
         return new DifferentialFunction[] {this};
     }
 
     @Override
-    public DifferentialFunction<X> arg() {
+    public DifferentialFunction arg() {
         return this;
     }
 
     @Override
-    public DifferentialFunction<X> diff(DifferentialFunction<X> i_v) {
-        if(m_x instanceof ArrayField) {
-            //default value is 1.0 (constant)
-            return i_v.mul(0.0).add(1.0);
-        }
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        //default value is 1.0 (constant)
+        List<DifferentialFunction> ret = new ArrayList<>();
+       if(i_v == this)
+           ret.add(sameDiff.setupFunction(f().one(i_v.get(0)
+                   .getResultShape())));
+           else
+               ret.add(sameDiff.setupFunction(f().zero(i_v.get(0).getResultShape())));
+        return ret;
 
-        throw new IllegalStateException("Illegal type for variable. Should be ArrayField");
+
     }
 
 
@@ -139,7 +135,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
 
     @Override
-    public String doGetFormula(List<Variable<X>> variables) {
+    public String doGetFormula(List<Variable> variables) {
         variables.add(this);
         return getName();
     }
@@ -149,15 +145,11 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
         return m_name;
     }
 
-    @Override
-    public DifferentialFunction<X> div(DifferentialFunction<X> i_v) {
-        return (i_v == this) ? new One<>(sameDiff,i_v.getResultShape()) : super.div(i_v);
-    }
 
     @Override
-    public DifferentialFunction<X> dup() {
-        return new Variable<>(sameDiff, getName(),
-                m_x);
+    public DifferentialFunction dup() {
+        return sameDiff.setupFunction(new Variable(sameDiff, getName(),
+                m_x));
     }
 
     @Override

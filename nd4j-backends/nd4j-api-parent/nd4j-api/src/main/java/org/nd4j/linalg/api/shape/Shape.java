@@ -53,12 +53,13 @@ public class Shape {
 
     /**
      *
-     * @param newShape
+     * @param newShape the new shape possibly
+     *                 containing a negative number
+     * @param shape the shape to calculate from
      * @return
      */
-    public static int[] resolveNegativeShapeIfNeccessary(int[] newShape) {
+    public static int[] resolveNegativeShapeIfNeccessary(int[] newShape,int[] shape) {
         int numberNegativesOnes = 0;
-        int[] shape = ArrayUtil.copy(newShape);
         for (int i = 0; i < shape.length; i++) {
             if (shape[i] < 0) {
                 if (numberNegativesOnes >= 1)
