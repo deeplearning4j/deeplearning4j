@@ -468,12 +468,9 @@ template <typename T> void NDArray<T>::transposei() {
     if (!_isBuffAlloc) {
         // if we're going for transpose - we'll have to detach this array from original one
         _isBuffAlloc = true;
-
         T *newBuffer = new T[lengthOf()];
         memcpy(newBuffer, _buffer, sizeOfT() * lengthOf());
         _buffer = newBuffer;
-                
-       
     }
     else if(!_isShapeAlloc) {
         _isShapeAlloc = true;
