@@ -409,7 +409,7 @@ namespace nd4j {
             for (Nd4jIndex e = 0; e < x->lengthOf(); e++) {
                 T max = -MAX_FLOAT;
                 for (int i = 0; i < numArgs; i++){
-                    NDArray<T> *o = block.getVariables().at(0)->getNDArray();
+                    NDArray<T> *o = block.getVariables().at(i)->getNDArray();
                     T v = o->getIndexedScalar(e);
                     if (v > max)
                         max = v;
@@ -435,7 +435,7 @@ namespace nd4j {
             for (Nd4jIndex e = 0; e < x->lengthOf(); e++) {
                 T sum = (T) 0.0f;
                 for (int i = 0; i < numArgs; i++){
-                    NDArray<T> *o = block.getVariables().at(0)->getNDArray();
+                    NDArray<T> *o = block.getVariables().at(i)->getNDArray();
                     T v = o->getIndexedScalar(e);
                     sum += v;
                 }
@@ -461,7 +461,7 @@ namespace nd4j {
             for (Nd4jIndex e = 0; e < x->lengthOf(); e++) {
                 T sum = (T) 0.0f;
                 for (int i = 0; i < numArgs; i++){
-                    NDArray<T> *o = block.getVariables().at(0)->getNDArray();
+                    NDArray<T> *o = block.getVariables().at(i)->getNDArray();
                     T v = o->getIndexedScalar(e);
                     sum += v;
                 }
