@@ -734,6 +734,7 @@ namespace nd4j {
 		// here iArgs is int vector of repeats at the beginning and last element in iArgs is dimension
 		DECLARE_CONFIGURABLE_OP(repeat, 1, 1, true, 0, -1) {
 			REQUIRE_OK(this->validateNonEmptyInput(block));			
+			
 			std::vector<int>* argumets = block.getIArguments();
 			int argsSize = argumets->size();
 			int dimension = (*argumets)[argsSize-1];
@@ -757,8 +758,26 @@ namespace nd4j {
 				STORE_RESULT(*x);
 			}
 			else {
-				NDArray<T>* ret = new NDArray<T>(*x);
-				ret = x->transpose();
+				NDArray<T>* ret = x->transpose();
+				STORE_RESULT(*ret);
+			}
+			return ND4J_STATUS_OK;
+        }
+
+		//////////////////////////////////////////////////////////////////////////
+		// here iArgs is int vector of ordered set of dimensions to be permuted
+		DECLARE_CONFIGURABLE_OP(permute, 1, 1, true, 0, -1) {
+			REQUIRE_OK(this->validateNonEmptyInput(block));						
+			
+			std::vector<int>* argumets = block.getIArguments();								
+			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
+			
+			if(block.isInplace()) {
+				x->permutei(*argumets);
+				STORE_RESULT(*x);
+			}
+			else {
+				NDArray<T>* ret = x->permute(*argumets);
 				STORE_RESULT(*ret);
 			}
 			return ND4J_STATUS_OK;

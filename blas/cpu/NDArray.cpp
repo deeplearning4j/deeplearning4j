@@ -20,29 +20,29 @@ template <typename T> NDArray<T>::NDArray(T *buffer, int *shapeInfo ) {
     _isShapeAlloc = false;
 }
 
-    template <typename T> NDArray<T>::NDArray(const Nd4jIndex length, const char order) {
-        if (length < 1)
-            throw "Can't allocate non-positive number of elements";
+template <typename T> NDArray<T>::NDArray(const Nd4jIndex length, const char order) {
+    if (length < 1)
+        throw "Can't allocate non-positive number of elements";
 
-        _buffer = new T[length];
-        memset(_buffer, 0, length * sizeOfT());              // set all elements in new array to be zeros
+    _buffer = new T[length];
+    memset(_buffer, 0, length * sizeOfT());              // set all elements in new array to be zeros
 
-        int *shape = new int[2] {1, length};
+    int *shape = new int[2] {1, length};
 
-        if (order == 'f') {
-            _shapeInfo = shape::shapeBufferFortran(2, shape);
-            _shapeInfo[7] = 102;
-        } else {
-            _shapeInfo = shape::shapeBuffer(2, shape);
-            _shapeInfo[7] = 99;
-        }
-
-        _shapeInfo[6] = 1;
-        _isBuffAlloc = true;
-        _isShapeAlloc = true;
-
-        delete[] shape;
+    if (order == 'f') {
+        _shapeInfo = shape::shapeBufferFortran(2, shape);
+        _shapeInfo[7] = 102;
+    } else {
+        _shapeInfo = shape::shapeBuffer(2, shape);
+        _shapeInfo[7] = 99;
     }
+
+    _shapeInfo[6] = 1;
+    _isBuffAlloc = true;
+    _isShapeAlloc = true;
+
+    delete[] shape;
+}
 
 ////////////////////////////////////////////////////////////////////////
 // this constructor creates 2D NDArray, memory for array is allocated in this constructor 
@@ -1000,7 +1000,7 @@ bool NDArray<T>::permutei(const int* dimensions, const int rank) {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-bool NDArray<T>::permutei(const std::initializer_list<int> dimensions) {
+bool NDArray<T>::permutei(const std::initializer_list<int>& dimensions) {
     std::vector<int> vec(dimensions);
     return permutei(vec);
 }
@@ -1017,7 +1017,7 @@ template <typename T>
 NDArray<T>* NDArray<T>::permute(const int* dimensions, const int rank) {
 
     if(_buffer==nullptr || rank != rankOf())
-        return false;
+        throw "Wrong arguments in permute method: either array is nullptr or rank is not suitable!";
 	int buffLength = lengthOf();
 	int shapeInfoLength = rankOf()*2 + 4;
 	// allocate memory for new array - buffer and shapeInfo
@@ -1045,7 +1045,7 @@ NDArray<T>* NDArray<T>::permute(const std::vector<int>& dimensions) {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray<T>* NDArray<T>::permute(const std::initializer_list<int> dimensions) {
+NDArray<T>* NDArray<T>::permute(const std::initializer_list<int>& dimensions) {
     std::vector<int> vec(dimensions);
     return permute(vec);
 }

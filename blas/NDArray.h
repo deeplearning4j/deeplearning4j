@@ -78,11 +78,11 @@ namespace nd4j {
             return shape::length(_shapeInfo);
         }
 
-        bool permutei(const std::initializer_list<int> dimensions);
+        bool permutei(const std::initializer_list<int>& dimensions);
         bool permutei(const std::vector<int>& dimensions);
         bool permutei(const int* dimensions, const int rank);
 
-		NDArray<T>* permute(const std::initializer_list<int> dimensions);
+		NDArray<T>* permute(const std::initializer_list<int>& dimensions);
         NDArray<T>* permute(const std::vector<int>& dimensions);
         NDArray<T>* permute(const int* dimensions, const int rank);
 
