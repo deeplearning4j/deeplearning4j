@@ -28,7 +28,7 @@ public class Neg extends AbstractUnaryFunction {
     public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
         validateDifferentialFunctionsameDiff(arg());
-        DifferentialFunction ret = f().neg(arg());
+        DifferentialFunction ret = f().neg(i_v.get(0));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

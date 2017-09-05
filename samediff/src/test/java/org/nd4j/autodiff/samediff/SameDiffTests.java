@@ -842,48 +842,6 @@ public class SameDiffTests {
 
     }
 
-    @Test
-    public void testLogisticTestOutput() {
-        SameDiff sameDiffOuter = SameDiff.create();
-        Map<String,INDArray> inputs = variablesForInput();
-
-        sameDiffOuter.defineFunction("logisticPredictions", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                SDVariable input = sameDiff.var("x",inputs.get("x"));
-                SDVariable w = sameDiff.var("w",inputs.get("w"));
-                SDVariable y = sameDiff.var("y",inputs.get("y"));
-                SDVariable preOutput = sameDiff.mmul(input,w);
-                SDVariable sigmoid = sameDiff.sigmoid(preOutput);
-                return sigmoid;
-            }
-        },inputs);
-
-        sameDiffOuter.defineFunction("loss", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                SDVariable outputs = sameDiffOuter.invokeFunctionOn("logisticPredictions",sameDiff);
-                SDVariable y = sameDiff.getVariableMap().get("y");
-                SDVariable oneMinusOutput = outputs.rsub(1.0);
-                SDVariable oneMinusPredictions = y.rsub(1.0);
-                SDVariable outputTimesY = outputs.mul(y);
-                SDVariable oneMinusMul = oneMinusOutput.mul(oneMinusPredictions);
-                SDVariable probs = outputTimesY.add(oneMinusMul);
-                SDVariable logProbs = sameDiff.log(probs);
-                SDVariable sum = sameDiff.sum(logProbs,Integer.MAX_VALUE);
-                SDVariable negSum = sameDiff.neg(sum);
-                return negSum;
-            }
-        },inputs);
-
-
-
-
-    }
-
-
-
-
 
     @Test
     public void testSums() {

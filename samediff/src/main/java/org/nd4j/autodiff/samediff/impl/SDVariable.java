@@ -211,7 +211,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable rsub(double sameDiffVariable) {
-        return rsub("rsub(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return rsub(sameDiff.generateVariableName("rsub",false,this),sameDiffVariable);
     }
 
     /**
@@ -220,7 +220,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable rdiv(double sameDiffVariable) {
-        return rdiv("rdiv(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return rdiv(sameDiff.generateVariableName("rdiv",false,this),sameDiffVariable);
 
     }
 
@@ -230,7 +230,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable add(double sameDiffVariable) {
-        return add("add(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return add(sameDiff.generateVariableName("add",false,this),sameDiffVariable);
 
     }
 
@@ -240,7 +240,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable sub(double sameDiffVariable) {
-        return sub("sub(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return sub(sameDiff.generateVariableName("sub",false,this),sameDiffVariable);
 
     }
 
@@ -250,7 +250,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable div(double sameDiffVariable) {
-        return div("div(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return div(sameDiff.generateVariableName("div",false,this),sameDiffVariable);
 
     }
 
@@ -260,7 +260,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable mul(double sameDiffVariable) {
-        return mul("mul(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return mul(sameDiff.generateVariableName("mul",false,this),sameDiffVariable);
 
     }
 
@@ -271,7 +271,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable rsubi(double sameDiffVariable) {
-        return rsubi("rsubi(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return rsubi(sameDiff.generateVariableName("rsubi",false,this),sameDiffVariable);
 
     }
 
@@ -281,7 +281,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable rdivi(double sameDiffVariable) {
-        return rdivi("rdivi(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return rdivi(sameDiff.generateVariableName("rdivi",false,this),sameDiffVariable);
 
     }
 
@@ -291,7 +291,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable addi(double sameDiffVariable) {
-        return addi("addi(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return addi(sameDiff.generateVariableName("addi",false,this),sameDiffVariable);
 
     }
 
@@ -301,7 +301,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable subi(double sameDiffVariable) {
-        return subi("subi(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return subi(sameDiff.generateVariableName("subi",false,this),sameDiffVariable);
 
     }
 
@@ -311,7 +311,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable divi(double sameDiffVariable) {
-        return divi("divi(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return divi(sameDiff.generateVariableName("divi",false,this),sameDiffVariable);
 
     }
 
@@ -321,7 +321,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable muli(double sameDiffVariable) {
-        return muli("muli(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return muli(sameDiff.generateVariableName("muli",false,this),sameDiffVariable);
 
     }
 
@@ -336,7 +336,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable rsub(SDVariable sameDiffVariable) {
-        return rsub("rsub(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return rsub(sameDiff.generateVariableName("rsub",false,this,sameDiffVariable),sameDiffVariable);
 
     }
 
@@ -346,7 +346,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable rdiv(SDVariable sameDiffVariable) {
-        return rdiv("rdiv(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return rdiv(sameDiff.generateVariableName("rdiv",false,this,sameDiffVariable),sameDiffVariable);
 
     }
 
@@ -356,7 +356,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable add(SDVariable sameDiffVariable) {
-        return add("ad(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return add(sameDiff.generateVariableName("add",false,this,sameDiffVariable),sameDiffVariable);
 
     }
 
@@ -366,7 +366,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable sub(SDVariable sameDiffVariable) {
-        return sub("sub(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return sub(sameDiff.generateVariableName("sub",false,this,sameDiffVariable),sameDiffVariable);
 
     }
 
@@ -376,7 +376,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable div(SDVariable sameDiffVariable) {
-        return div("div(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return div(sameDiff.generateVariableName("div",false,this,sameDiffVariable),sameDiffVariable);
 
     }
 
@@ -386,7 +386,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable mul(SDVariable sameDiffVariable) {
-        return mul("mul(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return mul(sameDiff.generateVariableName("mul",false,this,sameDiffVariable),sameDiffVariable);
 
     }
 
@@ -397,7 +397,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable rsubi(SDVariable sameDiffVariable) {
-        return rsubi("rsubi(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return rsubi(sameDiff.generateVariableName("rsubi",false,this,sameDiffVariable),sameDiffVariable);
 
     }
 
@@ -407,7 +407,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable rdivi(SDVariable sameDiffVariable) {
-        return rdivi("rdivi(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return rdivi(sameDiff.generateVariableName("rdivi",false,this,sameDiffVariable),sameDiffVariable);
 
     }
 
@@ -417,7 +417,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable addi(SDVariable sameDiffVariable) {
-        return addi("addi(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return addi(sameDiff.generateVariableName("addi",false,this,sameDiffVariable),sameDiffVariable);
 
     }
 
@@ -427,7 +427,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable subi(SDVariable sameDiffVariable) {
-        return subi("subi(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return subi(sameDiff.generateVariableName("subi",false,this,sameDiffVariable),sameDiffVariable);
 
     }
 
@@ -437,7 +437,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable divi(SDVariable sameDiffVariable) {
-        return divi("divi(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return divi(sameDiff.generateVariableName("divi",false,this,sameDiffVariable),sameDiffVariable);
 
     }
 
@@ -447,7 +447,7 @@ public class SDVariable  implements Serializable {
      * @return
      */
     public SDVariable muli(SDVariable sameDiffVariable) {
-        return muli("muli(" + varName + sameDiffVariable + ")",sameDiffVariable);
+        return muli(sameDiff.generateVariableName("muli",false,this,sameDiffVariable),sameDiffVariable);
 
     }
 
@@ -958,7 +958,6 @@ public class SDVariable  implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
 
         SDVariable variable = (SDVariable) o;
 
