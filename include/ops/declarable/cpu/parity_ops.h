@@ -95,20 +95,30 @@ namespace nd4j {
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
-            NDArray<T> *z = this->getZ(block);
+            NDArray<T> *z = nullptr;
 
-            if (x->isMatrix() && y->isMatrix()) {
-                // gemm
-            } else if (x->isMatrix() && y->isVector()) {
+            if (x->isMatrix() && y->isVector()) {
                 // gemv
+                z = NDArray<T>::mmulHelper(x, y);
             } else if (x->isVector() && y->isMatrix()) {
-                // gemv
-            } else if (x->isVector() && y->isVector()) {
+                // gemm
+                z = NDArray<T>::mmulHelper(x, y);
+            }  else if (x->isVector() && y->isVector()) {
                 // dot
+                z = NDArray<T>::mmulHelper(x, y);
+            } else if (x->isMatrix() && y->isMatrix()) {
+                // gemm
+                z = NDArray<T>::mmulHelper(x, y);
             } else if (x->isVector() && y->isScalar()) {
                 // elementwise mul
+                z = this->getZ(block);
+
+                x->template applyScalar<simdOps::Multiply<T>>(y->getScalar(0), z, nullptr);
              } else if (x->isScalar() && y->isVector()) {
                 // elementwise mul, reverse op
+                z = this->getZ(block, 1);
+
+                y->template applyScalar<simdOps::Multiply<T>>(x->getScalar(0), z, nullptr);
             }
 
             STORE_RESULT(*z);
@@ -116,6 +126,10 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(mMul, matMul);
+        DECLARE_SYN(mmul, matMul);
+        DECLARE_SYN(gemm, matMul);
+        DECLARE_SYN(gemv, matMul);
+        DECLARE_SYN(dot, matMul);
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_CONFIGURABLE_OP(conv2d, 2, 1, false, 0, 7) {
