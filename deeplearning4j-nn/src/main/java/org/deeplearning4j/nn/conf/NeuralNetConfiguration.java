@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.constraint.BaseConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -635,10 +636,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double lrPolicySteps = Double.NaN;
         protected double lrPolicyPower = Double.NaN;
         protected boolean pretrain = false;
-        protected List<LayerConstraint> constraints = null;
-        // By default, if constraints are provided at all, we only constrain weights/kernels, but not biases
-        protected Boolean hasBiasConstraints = null;
-        protected Boolean hasWeightConstraints = null;
+        protected List<LayerConstraint> constraints = new ArrayList<>();
 
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
@@ -1248,9 +1246,14 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param constraints Constraints to apply to all layers
          */
         public Builder constraints(LayerConstraint... constraints){
-            return constraints(Arrays.asList(constraints),
-                    false, true);
-        }
+            List<LayerConstraint> currentConstraints = this.constraints;
+            for(LayerConstraint c : constraints ){
+                BaseConstraint constraint = (BaseConstraint) c.clone();
+                constraint.setApplyToBiases(true);
+                constraint.setApplyToWeights(true);
+                currentConstraints.add(constraint);
+            }
+            return constraints(currentConstraints);         }
 
         /**
          * Set constraints to be applied to all layers. Default: no constraints.<br>
@@ -1259,11 +1262,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          *
          * @param constraints Constraints to apply to all layers
          */
-        public Builder constraints(List<LayerConstraint> constraints, boolean hasBiasConstraints,
-                                   boolean hasWeightConstraints){
+        public Builder constraints(List<LayerConstraint> constraints){
             this.constraints = constraints;
-            this.hasBiasConstraints = hasBiasConstraints;
-            this.hasWeightConstraints = hasWeightConstraints;
             return this;
         }
 
@@ -1375,7 +1375,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 }
             }
             LayerValidation.generalValidation(layerName, layer, useDropConnect, dropOut, l2, l2Bias,
-                            l1, l1Bias, dist, constraints, hasBiasConstraints, hasWeightConstraints);
+                            l1, l1Bias, dist, constraints);
         }
 
         private void copyConfigToLayer(String layerName, Layer layer) {

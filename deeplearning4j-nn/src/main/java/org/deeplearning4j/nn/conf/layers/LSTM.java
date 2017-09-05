@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.constraint.BaseConstraint;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.layers.recurrent.LSTMHelpers;
@@ -86,10 +87,15 @@ public class LSTM extends AbstractLSTM {
 
 
         public Builder recurrentConstraints(LayerConstraint... constraints) {
-            Set<String> constraintParamNames = new HashSet<>();
-            constraintParamNames.add("RW");
-          return constraints(Arrays.asList(constraints), false,
-                false, constraintParamNames);
+            List<LayerConstraint> currentConstraints = this.constraints;
+            for(LayerConstraint c : constraints ){
+                BaseConstraint constraint = (BaseConstraint) c.clone();
+                Set<String> paramNames = constraint.getParamNames();
+                paramNames.add("RW");
+                constraint.setParamNames(paramNames);
+                currentConstraints.add(constraint);
+            }
+            return constraints(currentConstraints);
         }
 
 

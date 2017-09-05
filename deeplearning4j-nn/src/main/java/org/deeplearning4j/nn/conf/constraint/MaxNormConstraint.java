@@ -7,6 +7,9 @@ import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Constrain the maximum L2 norm of the incoming weights for each unit to be less than or equal to the specified value.
  * If the L2 norm exceeds the specified value, the weights will be scaled down to satisfy the constraint.
@@ -23,18 +26,33 @@ public class MaxNormConstraint extends BaseConstraint {
         //No arg for json ser/de
     }
 
+    /**
+     * @param maxNorm        Maximum L2 value
+     * @param applyToWeights If constraint should be applied to weights
+     * @param applyToBiases  If constraint should be applied to biases
+     * @param paramNames     Which parameter names to apply constraint to
+     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
+     *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
+     *                       parameters which have order [depthOut, depthIn, kH, kW]
+     */
+    public MaxNormConstraint(double maxNorm, boolean applyToWeights, boolean applyToBiases,
+                             Set<String> paramNames, int... dimensions){
+        super(applyToWeights, applyToBiases, paramNames, DEFAULT_EPSILON, dimensions);
+        this.maxNorm = maxNorm;
+    }
 
     /**
+     * Apply to weights but not biases by default
+     *
      * @param maxNorm        Maximum L2 value
      * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
-    public MaxNormConstraint(double maxNorm, int... dimensions){
-        super(DEFAULT_EPSILON, dimensions);
-        this.maxNorm = maxNorm;
-    }
+    public MaxNormConstraint(double maxNorm, int... dimensions) {
 
+        this(maxNorm, true, false, new HashSet<String>(), dimensions);
+    }
 
     @Override
     public void apply(INDArray param){
@@ -49,6 +67,6 @@ public class MaxNormConstraint extends BaseConstraint {
 
     @Override
     public MaxNormConstraint clone() {
-        return new MaxNormConstraint(maxNorm, dimensions);
+        return new MaxNormConstraint(maxNorm,  applyToWeights, applyToBiases, paramNames, dimensions);
     }
 }

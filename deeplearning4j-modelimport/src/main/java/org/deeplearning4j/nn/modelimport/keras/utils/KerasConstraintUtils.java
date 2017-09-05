@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.nn.modelimport.keras.utils;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.constraint.MaxNormConstraint;
 import org.deeplearning4j.nn.conf.constraint.MinMaxNormConstraint;
@@ -34,6 +35,7 @@ import java.util.Map;
  *
  * @author Max Pumperla
  */
+@Slf4j
 public class KerasConstraintUtils {
 
     /**
@@ -93,15 +95,13 @@ public class KerasConstraintUtils {
                                                            KerasLayerConfiguration conf, int kerasMajorVersion)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        if (!innerConfig.containsKey(constraintField))
-            throw new InvalidKerasConfigurationException("Keras layer is missing " + constraintField + " field");
-
-        // Constraint field is always present, but might be null.
-        HashMap constraintMap;
-        constraintMap = (HashMap) innerConfig.get(constraintField);
-        if (constraintMap == null) {
+        if (!innerConfig.containsKey(constraintField)) {
+            log.warn("Keras layer is missing " + constraintField + " field");
             return null;
         }
+        HashMap  constraintMap = (HashMap) innerConfig.get(constraintField);
+        if (constraintMap == null)
+            return null;
 
         String kerasConstraint;
         if (constraintMap.containsKey(conf.getLAYER_FIELD_CONSTRAINT_NAME())) {

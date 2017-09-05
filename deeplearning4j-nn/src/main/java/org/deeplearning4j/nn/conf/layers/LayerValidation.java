@@ -292,20 +292,15 @@ public class LayerValidation {
 
     public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, Double dropOut,
                                          Double l2, Double l2Bias, Double l1, Double l1Bias,
-                                         Distribution dist, List<LayerConstraint> constraints,
-                                         Boolean hasBiasConstraints,
-                                         Boolean hasWeightConstraints) {
+                                         Distribution dist, List<LayerConstraint> constraints) {
         generalValidation(layerName, layer, useDropConnect, dropOut == null ? 0.0 : dropOut,
                         l2 == null ? Double.NaN : l2, l2Bias == null ? Double.NaN : l2Bias,
-                        l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, dist, constraints,
-                        hasBiasConstraints, hasWeightConstraints);
+                        l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, dist, constraints);
     }
 
     public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, double dropOut,
                                          double l2, double l2Bias, double l1, double l1Bias,
-                                         Distribution dist, List<LayerConstraint> constraints,
-                                         Boolean hasBiasConstraints,
-                                         Boolean hasWeightConstraints) {
+                                         Distribution dist, List<LayerConstraint> constraints) {
 
         if (layer != null) {
 
@@ -327,14 +322,8 @@ public class LayerValidation {
             }
 
             if(constraints != null){
-                if(layer.getConstraints() == null){
+                if(layer.getConstraints().isEmpty()){
                     layer.setConstraints(constraints);
-                }
-                if (hasBiasConstraints != null) {
-                    layer.hasBiasConstraints = hasBiasConstraints;
-                }
-                if (hasWeightConstraints != null) {
-                    layer.hasWeightConstraints = hasWeightConstraints;
                 }
             }
         }
