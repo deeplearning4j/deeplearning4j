@@ -1178,7 +1178,53 @@ TEST_F(DeclarableOpsTests, Repeat1) {
 	Nd4jStatus status = repeat.execute(block);
 	ASSERT_EQ(ND4J_STATUS_OK, status);
 	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
-	
+
     ASSERT_TRUE(exp.equalsTo(result));
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Transpose1) {
+
+	NDArray<float> x('c', {3,5,2});
+	NDArray<float> exp('f', {2,5,3});
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+
+	Block<float>* block = new Block<float>(1, variableSpace, true);  // in-place
+    block->fillInputs({-1});
+	nd4j::ops::transpose<float> transpose;
+
+	transpose.execute(block);
+	// ASSERT_TRUE(x.isSameShapeStrict(&exp));
+
+	for (int e = 0; e < x.rankOf() * 2 + 2; e++) {
+        ASSERT_EQ(x._shapeInfo[e], exp._shapeInfo[e]);
+    }
+	ASSERT_EQ(x._shapeInfo[x.rankOf() * 2 + 2],-exp._shapeInfo[x.rankOf() * 2 + 2]);
+	ASSERT_EQ(x._shapeInfo[x.rankOf() * 2 + 3], exp._shapeInfo[x.rankOf() * 2 + 3]);
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, Transpose2) {
+	NDArray<float> x('c', {3,5,2});
+	NDArray<float> exp('f', {2,5,3});
+
+	VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+	variableSpace->putVariable(1, new Variable<float>());
+
+	Block<float>* block = new Block<float>(1, variableSpace, false);  // not-in-place
+    block->fillInputs({-1});
+	nd4j::ops::transpose<float> transpose;
+
+	transpose.execute(block);
+	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
+	// ASSERT_TRUE(result->isSameShapeStrict(&exp));
+	for (int e = 0; e < result->rankOf() * 2 + 2; e++) {
+        ASSERT_EQ(result->_shapeInfo[e], exp._shapeInfo[e]);
+    }
+	ASSERT_EQ(result->_shapeInfo[x.rankOf() * 2 + 2],-exp._shapeInfo[x.rankOf() * 2 + 2]);
+	ASSERT_EQ(result->_shapeInfo[x.rankOf() * 2 + 3], exp._shapeInfo[x.rankOf() * 2 + 3]);
+}

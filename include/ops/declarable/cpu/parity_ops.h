@@ -586,6 +586,24 @@ namespace nd4j {
 
 			return ND4J_STATUS_OK;				
         }
+		
+		//////////////////////////////////////////////////////////////////////////
+		DECLARE_CONFIGURABLE_OP(transpose, 1, 1, true, 0, -1) {
+			REQUIRE_OK(this->validateNonEmptyInput(block));			
+
+			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
+			
+			if(block.isInplace()) {
+				x->transposei();
+				STORE_RESULT(*x);
+			}
+			else {
+				NDArray<T>* ret = new NDArray<T>(*x);
+				ret = x->transpose();
+				STORE_RESULT(*ret);
+			}
+			return ND4J_STATUS_OK;
+        }
     }
 }
 

@@ -128,6 +128,9 @@ namespace nd4j {
         // Returns true if these two NDArrays have same shape
         inline bool isSameShape(const NDArray<T> *other) const;
 
+		// Returns true if these two NDArrays have same shape
+        inline bool isSameShapeStrict(const NDArray<T> *other) const;
+
         // This method returns sum of all elements of this NDArray
         T sumNumber() const;
 
@@ -294,6 +297,13 @@ namespace nd4j {
         return true;
     }	
 
+// returns true if these two NDArrays have same _shapeInfo
+// still the definition of inline function must be in header file
+    template<typename T>
+    inline bool NDArray<T>::isSameShapeStrict(const NDArray<T> *other) const {        
+    
+		return shape::equalsStrict(_shapeInfo, other->_shapeInfo);
+    }	
 
 
 }
