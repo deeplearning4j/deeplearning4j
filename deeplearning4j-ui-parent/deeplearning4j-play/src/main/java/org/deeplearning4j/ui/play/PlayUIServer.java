@@ -17,8 +17,6 @@ import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.i18n.I18NProvider;
 import org.deeplearning4j.ui.module.convolutional.ConvolutionalListenerModule;
 import org.deeplearning4j.ui.module.defaultModule.DefaultModule;
-import org.deeplearning4j.ui.module.flow.FlowListenerModule;
-import org.deeplearning4j.ui.module.histogram.HistogramModule;
 import org.deeplearning4j.ui.module.remote.RemoteReceiverModule;
 import org.deeplearning4j.ui.module.train.TrainModule;
 import org.deeplearning4j.ui.module.tsne.TsneModule;
@@ -123,10 +121,8 @@ public class PlayUIServer extends UIServer {
         routingDsl.GET("/assets/*file").routeTo(FunctionUtil.function(new Assets(ASSETS_ROOT_DIRECTORY)));
 
         uiModules.add(new DefaultModule()); //For: navigation page "/"
-        uiModules.add(new HistogramModule());
         uiModules.add(new TrainModule());
         uiModules.add(new ConvolutionalListenerModule());
-        uiModules.add(new FlowListenerModule());
         uiModules.add(new TsneModule());
         remoteReceiverModule = new RemoteReceiverModule();
         uiModules.add(remoteReceiverModule);
