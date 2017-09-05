@@ -21,6 +21,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Collections;
@@ -231,8 +232,7 @@ public class BackTrackLineSearchTest {
     private static MultiLayerConfiguration getIrisMultiLayerConfig(Activation activationFunction, int iterations,
                     OptimizationAlgorithm optimizer) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(optimizer)
-                        .iterations(iterations).miniBatch(false).momentum(0.9).learningRate(0.01)
-                        .updater(Updater.NESTEROVS).seed(12345L).list()
+                        .iterations(iterations).miniBatch(false).updater(new Nesterovs(0.9)).seed(12345L).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(100).weightInit(WeightInit.XAVIER)
                                         .activation(activationFunction).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(

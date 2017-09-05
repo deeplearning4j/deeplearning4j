@@ -38,6 +38,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.slf4j.Logger;
@@ -80,9 +81,9 @@ public class CenterLossOutputLayerTest {
         int outputNum = 10; // The number of possible outcomes
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).iterations(1) // Training iterations as above
-                        .regularization(true).l2(0.0005).learningRate(0.01).weightInit(WeightInit.XAVIER)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NESTEROVS)
-                        .momentum(0.9).graphBuilder().addInputs("input")
+                        .l2(0.0005).weightInit(WeightInit.XAVIER)
+                        .updater(new Nesterovs(0.01, 0.9))
+                        .graphBuilder().addInputs("input")
                         .setInputTypes(InputType.convolutionalFlat(28, 28, 1))
                         .addLayer("0", new ConvolutionLayer.Builder(5, 5)
                                         //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied

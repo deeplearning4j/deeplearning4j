@@ -35,6 +35,8 @@ import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.schedule.MapSchedule;
+import org.nd4j.linalg.schedule.ScheduleType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -469,11 +471,13 @@ public class TestDecayPolicies {
         double lr = 1e-2;
         double mu = 0.9;
         Map<Integer, Double> momentumAfter = new HashMap<>();
+        momentumAfter.put(0, mu);
         momentumAfter.put(1, 0.2);
         int iterations = 2;
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr).momentum(mu)
-                        .momentumAfter(momentumAfter).iterations(iterations).layer(new DenseLayer.Builder().nIn(nIn)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Nesterovs(lr, new MapSchedule(ScheduleType.ITERATION, momentumAfter)))
+                .iterations(iterations).layer(new DenseLayer.Builder().nIn(nIn)
                                         .nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
                         .build();
 
@@ -505,8 +509,9 @@ public class TestDecayPolicies {
         int[] nIns = {4, 2};
         int[] nOuts = {2, 3};
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr).momentum(mu)
-                        .momentumAfter(momentumAfter).iterations(iterations).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Nesterovs(lr, new MapSchedule(ScheduleType.ITERATION,momentumAfter)))
+                .iterations(iterations).list()
                         .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0])
                                         .updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
                         .layer(1, new OutputLayer.Builder().nIn(nIns[1]).nOut(nOuts[1])
@@ -593,8 +598,9 @@ public class TestDecayPolicies {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(oa).iterations(1)
                             .learningRateDecayPolicy(LearningRatePolicy.Schedule)
                             .learningRateSchedule(learningRateSchedule)
-                            .updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).weightInit(WeightInit.XAVIER)
-                            .momentum(0.9).momentumAfter(momentumSchedule).regularization(true).l2(0.0001).list()
+                            .updater(new Nesterovs(lr, new MapSchedule(ScheduleType.ITERATION, momentumSchedule)))
+                            .weightInit(WeightInit.XAVIER)
+                            .regularization(true).l2(0.0001).list()
                             .layer(0, new DenseLayer.Builder().nIn(784).nOut(10).build())
                             .layer(1, new OutputLayer.Builder().nIn(10).nOut(10).build()).pretrain(false).backprop(true)
                             .build();

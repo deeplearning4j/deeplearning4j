@@ -59,7 +59,7 @@ public class AutoEncoderTest {
     public void testAutoEncoder() throws Exception {
 
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(1).learningRate(1e-1f)
                         .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(784).nOut(600)
                                         .corruptionLevel(0.6)
@@ -88,7 +88,7 @@ public class AutoEncoderTest {
     public void testBackProp() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         //        LayerFactory layerFactory = LayerFactories.getFactory(new org.deeplearning4j.nn.conf.layers.AutoEncoder());
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(100)
                         .learningRate(1e-1f)
                         .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(784).nOut(600)

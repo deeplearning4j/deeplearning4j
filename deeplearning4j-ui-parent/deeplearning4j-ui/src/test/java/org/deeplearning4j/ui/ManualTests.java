@@ -38,6 +38,8 @@ import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,8 +140,7 @@ public class ManualTests {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
                         .activation(Activation.RELU).weightInit(WeightInit.XAVIER)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.01)
-                        .momentum(0.9).regularization(true).updater(Updater.ADAGRAD).useDropConnect(true).list()
+                        .updater(new AdaGrad(0.01)).useDropConnect(true).list()
                         .layer(0, new ConvolutionLayer.Builder(4, 4).name("cnn1").nIn(nChannels).stride(1, 1).nOut(20)
                                         .build())
                         .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
@@ -259,11 +260,9 @@ public class ManualTests {
 
         log.info("Build model....");
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
-                        .regularization(true).l2(0.0005).learningRate(0.01)//.biasLearningRate(0.02)
-                        //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
+                        .l2(0.0005)
                         .weightInit(WeightInit.XAVIER)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NESTEROVS)
-                        .momentum(0.9).list()
+                        .updater(new Nesterovs(0.01, 0.9)).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5)
                                         //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
                                         .nIn(nChannels).stride(1, 1).nOut(20).activation(Activation.IDENTITY).build())

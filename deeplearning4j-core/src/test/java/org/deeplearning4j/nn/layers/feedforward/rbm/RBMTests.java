@@ -381,7 +381,7 @@ public class RBMTests {
                     int nOut2, WeightInit weightInit) {
         MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder().seed(0xDEADBEEF).iterations(1000).biasInit(0)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NONE)
-                        .epsilon(1).weightInit(weightInit)
+                        .weightInit(weightInit)
                         .list(new org.deeplearning4j.nn.conf.layers.RBM.Builder(HiddenUnit.BINARY, VisibleUnit.BINARY)
                                         .lossFunction(LossFunctions.LossFunction.MSE).nOut(nOut1).build(),
                                         new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
@@ -399,7 +399,7 @@ public class RBMTests {
                     int nOut2, int nOut3, WeightInit weightInit) {
         MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder().seed(0xDEADBEEF).iterations(1000).biasInit(0)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NONE)
-                        .epsilon(1).weightInit(weightInit)
+                        .weightInit(weightInit)
                         .list(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                                         .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).nOut(nOut1).build(),
                                         new org.deeplearning4j.nn.conf.layers.RBM.Builder()

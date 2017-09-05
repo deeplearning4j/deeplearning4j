@@ -433,26 +433,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         /**
-         * Momentum rate.
-         *
-         * @param momentum
-         */
-        @Override
-        public Builder momentum(double momentum) {
-            return super.momentum(momentum);
-        }
-
-        /**
-         * Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration.
-         *
-         * @param momentumAfter
-         */
-        @Override
-        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
-            return super.momentumAfter(momentumAfter);
-        }
-
-        /**
          * Gradient updater. For example, SGD for standard stochastic gradient descent, NESTEROV for Nesterov momentum,
          * RSMPROP for RMSProp, etc.
          *
@@ -462,57 +442,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
         @Override
         public Builder updater(Updater updater) {
             return super.updater(updater);
-        }
-
-        /**
-         * Ada delta coefficient, rho. Only applies if using .updater(Updater.ADADELTA)
-         *
-         * @param rho
-         */
-        @Override
-        public Builder rho(double rho) {
-            return super.rho(rho);
-        }
-
-        /**
-         * Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
-         *
-         * @param rmsDecay
-         */
-        @Override
-        public Builder rmsDecay(double rmsDecay) {
-            return super.rmsDecay(rmsDecay);
-        }
-
-        /**
-         * Epsilon value for updaters: Adagrad and Adadelta. Only used if using Updater.ADAGRAD or Updater.ADADELTA
-         *
-         * @param epsilon Epsilon value to use for adagrad and adadelta
-         */
-        @Override
-        public Builder epsilon(double epsilon) {
-            return super.epsilon(epsilon);
-        }
-
-        /**
-         * Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
-         *
-         * @param adamMeanDecay
-         */
-        @Override
-        public Builder adamMeanDecay(double adamMeanDecay) {
-            return super.adamMeanDecay(adamMeanDecay);
-        }
-
-        /**
-         * Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
-         *
-         * @param adamVarDecay
-         */
-        @Override
-        public Builder adamVarDecay(double adamVarDecay) {
-            super.adamVarDecay(adamVarDecay);
-            return this;
         }
 
         /**

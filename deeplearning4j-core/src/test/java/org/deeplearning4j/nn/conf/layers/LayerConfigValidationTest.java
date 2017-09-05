@@ -14,6 +14,8 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.schedule.MapSchedule;
+import org.nd4j.linalg.schedule.ScheduleType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -82,70 +84,9 @@ public class LayerConfigValidationTest {
         testMomentumAfter.put(0, 0.1);
 
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().momentum(1.0).momentumAfter(testMomentumAfter).list()
+                        new NeuralNetConfiguration.Builder().updater(new Nesterovs(1.0, new MapSchedule(ScheduleType.ITERATION, testMomentumAfter))).list()
                                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-    }
-
-    @Test
-    public void testNesterovsNotSetLocalMomentum() {
-        // Warnings only thrown
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).momentum(0.3).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-    }
-
-    @Test
-    public void testNesterovsNotSetLocalMuAfter() {
-        // Warnings only thrown
-        Map<Integer, Double> testMomentumAfter = new HashMap<>();
-        testMomentumAfter.put(0, 0.1);
-
-        MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().list()
-                                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2)
-                                                        .momentumAfter(testMomentumAfter).build())
-                                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-    }
-
-
-    @Test
-    public void testAdaDeltaValidation() {
-        // Warnings only thrown
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().rho(0.5).list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).rho(0.01).build()).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-    }
-
-    @Test
-    public void testRmsPropValidation() {
-        // Warnings only thrown
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().rmsDecay(2.0).list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).rmsDecay(1.0).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(Updater.ADADELTA).rho(0.5).build())
-                        .build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-    }
-
-
-    @Test
-    public void testAdamValidation() {
-        // Warnings only thrown
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().adamMeanDecay(0.5).adamVarDecay(0.5).list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).adamMeanDecay(0.6).adamVarDecay(0.7).build())
-                        .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
     }
@@ -209,7 +150,7 @@ public class LayerConfigValidationTest {
     public void testCompGraphNullLayer() {
         ComputationGraphConfiguration.GraphBuilder gb = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.01)
-                        .iterations(3).seed(42).miniBatch(false).l1(0.2).l2(0.2).rmsDecay(0.3).regularization(true)
+                        .iterations(3).seed(42).miniBatch(false).l1(0.2).l2(0.2)
                         /* Graph Builder */
                         .updater(Updater.RMSPROP).graphBuilder().addInputs("in")
                         .addLayer("L" + 1,
@@ -240,8 +181,8 @@ public class LayerConfigValidationTest {
 
         // Nesterovs Updater
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.3).updater(Updater.NESTEROVS)
-                        .regularization(true).list().layer(0, new DenseLayer.Builder().nIn(2).nOut(2).l2(0.5).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).momentum(0.4).build()).build();
+                        .list().layer(0, new DenseLayer.Builder().nIn(2).nOut(2).l2(0.5).build())
+                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(new Nesterovs(0.3, 0.4)).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
@@ -276,7 +217,7 @@ public class LayerConfigValidationTest {
         //RMSProp Updater
         conf = new NeuralNetConfiguration.Builder().learningRate(0.3).updater(Updater.RMSPROP).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).rmsDecay(0.4).build()).build();
+                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(new RmsProp(0.3, 0.4, RmsProp.DEFAULT_RMSPROP_EPSILON)).build()).build();
         net = new MultiLayerNetwork(conf);
         net.init();
 

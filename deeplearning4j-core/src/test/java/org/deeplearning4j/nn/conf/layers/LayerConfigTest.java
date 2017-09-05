@@ -12,6 +12,8 @@ import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.schedule.MapSchedule;
+import org.nd4j.linalg.schedule.ScheduleType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -184,8 +186,8 @@ public class LayerConfigTest {
         Map<Integer, Double> testMomentumAfter = new HashMap<>();
         testMomentumAfter.put(0, 0.1);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.NESTEROVS).momentum(1.0)
-                        .momentumAfter(testMomentumAfter).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Nesterovs(1.0, new MapSchedule(ScheduleType.ITERATION, testMomentumAfter)))
+                        .list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -199,10 +201,10 @@ public class LayerConfigTest {
         Map<Integer, Double> testMomentumAfter2 = new HashMap<>();
         testMomentumAfter2.put(0, 0.2);
 
-        conf = new NeuralNetConfiguration.Builder().updater(Updater.NESTEROVS).momentum(1.0)
-                        .momentumAfter(testMomentumAfter).list()
+        conf = new NeuralNetConfiguration.Builder().updater(new Nesterovs(1.0, new MapSchedule(ScheduleType.ITERATION, testMomentumAfter) ))
+                        .list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build()).layer(1, new DenseLayer.Builder()
-                                        .nIn(2).nOut(2).momentum(2.0).momentumAfter(testMomentumAfter2).build())
+                                        .nIn(2).nOut(2).updater(new Nesterovs(1.0, new MapSchedule(ScheduleType.ITERATION, testMomentumAfter2))).build())
                         .build();
 
         net = new MultiLayerNetwork(conf);
@@ -218,9 +220,9 @@ public class LayerConfigTest {
 
     @Test
     public void testUpdaterRhoRmsDecayLayerwiseOverride() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.ADADELTA).rho(0.5).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new AdaDelta(0.5, 0.9)).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).rho(0.01).build()).build();
+                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(new AdaDelta(0.01,0.9)).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
@@ -229,9 +231,9 @@ public class LayerConfigTest {
         assertEquals(0.5, ((AdaDelta)((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getRho(), 0.0);
         assertEquals(0.01, ((AdaDelta)((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getRho(), 0.0);
 
-        conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP).rmsDecay(2.0).list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).rmsDecay(1.0).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(Updater.ADADELTA).rho(0.5).build())
+        conf = new NeuralNetConfiguration.Builder().updater(new RmsProp(1.0, 2.0, RmsProp.DEFAULT_RMSPROP_EPSILON)).list()
+                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).updater(new RmsProp(1.0, 1.0, RmsProp.DEFAULT_RMSPROP_EPSILON)).build())
+                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(new AdaDelta.Builder().rho(0.5).build()).build())
                         .build();
 
         net = new MultiLayerNetwork(conf);
@@ -247,11 +249,10 @@ public class LayerConfigTest {
     @Test
     public void testUpdaterAdamParamsLayerwiseOverride() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .updater(Updater.ADAM).adamMeanDecay(0.5)
-                        .adamVarDecay(0.5)
+                .updater(new Adam(1.0, 0.5, 0.5, 1e-8))
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).adamMeanDecay(0.6).adamVarDecay(0.7).build())
+                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(new Adam(1.0, 0.6, 0.7, 1e-8)).build())
                         .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();

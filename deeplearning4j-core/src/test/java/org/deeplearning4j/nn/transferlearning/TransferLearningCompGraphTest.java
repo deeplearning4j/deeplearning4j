@@ -14,6 +14,8 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -31,7 +33,7 @@ public class TransferLearningCompGraphTest {
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
         //original conf
         ComputationGraphConfiguration confToChange = new NeuralNetConfiguration.Builder().seed(rng)
-                        .optimizationAlgo(OptimizationAlgorithm.LBFGS).updater(Updater.NESTEROVS).momentum(0.99)
+                        .optimizationAlgo(OptimizationAlgorithm.LBFGS).updater(new Nesterovs(0.99))
                         .learningRate(0.01).graphBuilder().addInputs("layer0In").setInputTypes(InputType.feedForward(4))
                         .addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In")
                         .addLayer("layer1",
@@ -226,11 +228,9 @@ public class TransferLearningCompGraphTest {
         DataSet randomData = new DataSet(Nd4j.rand(10, 28 * 28 * 3).reshape(10, 3, 28, 28), Nd4j.rand(10, 10));
         ComputationGraph modelToFineTune =
                         new ComputationGraph(
-                                        new NeuralNetConfiguration.Builder().seed(123).iterations(1).learningRate(.01)
+                                        new NeuralNetConfiguration.Builder().seed(123).iterations(1)
                                                         .weightInit(WeightInit.XAVIER)
-                                                        .optimizationAlgo(
-                                                                        OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                                        .updater(Updater.NESTEROVS).momentum(0.9).graphBuilder()
+                                                        .updater(new Nesterovs(0.01, 0.9)).graphBuilder()
                                                         .addInputs("layer0In")
                                                         .setInputTypes(InputType.convolutionalFlat(28, 28,
                                                                         3))
@@ -380,8 +380,8 @@ public class TransferLearningCompGraphTest {
     @Test
     public void testTransferGlobalPool() {
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(Updater.ADAM)
-                        .adamMeanDecay(0.9).adamVarDecay(0.999).weightInit(WeightInit.XAVIER).learningRate(0.1)
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new Adam(0.1))
+                .weightInit(WeightInit.XAVIER)
                         .graphBuilder().addInputs("in")
                         .addLayer("blstm1",
                                         new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10)
@@ -401,15 +401,16 @@ public class TransferLearningCompGraphTest {
 
         ComputationGraph graph = new TransferLearning.GraphBuilder(g).fineTuneConfiguration(fineTuneConfiguration)
                         .removeVertexKeepConnections("out").setFeatureExtractor("dense")
-                        .addLayer("out", new OutputLayer.Builder().updater(Updater.ADAM).adamMeanDecay(0.9)
-                                        .adamVarDecay(0.999).weightInit(WeightInit.XAVIER)
+                        .addLayer("out", new OutputLayer.Builder().updater(new Adam(0.01))
+                                .weightInit(WeightInit.XAVIER)
                                         .activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT)
                                         .nIn(10).nOut(5).build(), "dense")
                         .build();
 
         ComputationGraphConfiguration confExpected = new NeuralNetConfiguration.Builder().seed(12345)
-                        .updater(Updater.ADAM).adamMeanDecay(0.9).adamVarDecay(0.999).weightInit(WeightInit.XAVIER)
-                        .learningRate(0.01).graphBuilder().addInputs("in")
+                        .updater(new Adam(0.01))
+                        .weightInit(WeightInit.XAVIER)
+                        .graphBuilder().addInputs("in")
                         .addLayer("blstm1",
                                         new FrozenLayer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10)
                                                         .activation(Activation.TANH).build()),

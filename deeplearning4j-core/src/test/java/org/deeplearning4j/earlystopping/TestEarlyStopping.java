@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Sin;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -285,8 +286,8 @@ public class TestEarlyStopping {
         Random rng = new Random(123);
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123).iterations(10)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.0)
-                        .updater(Updater.NESTEROVS).momentum(0.9).list()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(new Nesterovs(0.0,0.9)).list()
                         .layer(0, new DenseLayer.Builder().nIn(1).nOut(20)
                                         .weightInit(WeightInit.XAVIER).activation(
                                                         Activation.TANH)

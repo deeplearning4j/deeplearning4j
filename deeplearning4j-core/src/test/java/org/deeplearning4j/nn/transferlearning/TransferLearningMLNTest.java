@@ -17,6 +17,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -36,7 +37,7 @@ public class TransferLearningMLNTest {
         //original conf
         NeuralNetConfiguration.Builder confToChange =
                         new NeuralNetConfiguration.Builder().seed(rng).optimizationAlgo(OptimizationAlgorithm.LBFGS)
-                                        .updater(Updater.NESTEROVS).momentum(0.99).learningRate(0.01);
+                                        .updater(new Nesterovs(0.01, 0.99));
 
         MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(confToChange.list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
@@ -372,8 +373,7 @@ public class TransferLearningMLNTest {
                                                         .weightInit(WeightInit.XAVIER)
                                                         .optimizationAlgo(
                                                                         OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                                        .updater(Updater.NESTEROVS).momentum(
-                                                                        0.9)
+                                                        .updater(new Nesterovs(0.9))
                                                         .list()
                                                         .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).stride(1, 1)
                                                                         .nOut(20).activation(Activation.IDENTITY)
@@ -527,8 +527,7 @@ public class TransferLearningMLNTest {
                                                         .weightInit(WeightInit.XAVIER)
                                                         .optimizationAlgo(
                                                                         OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                                        .updater(Updater.NESTEROVS).momentum(
-                                                                        0.9)
+                                                        .updater(new Nesterovs(0.9))
                                                         .list()
                                                         .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).stride(1, 1)
                                                                         .nOut(20).activation(Activation.IDENTITY)

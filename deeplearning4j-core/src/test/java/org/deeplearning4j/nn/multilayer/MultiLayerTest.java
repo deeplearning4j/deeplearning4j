@@ -177,8 +177,8 @@ public class MultiLayerTest {
         Nd4j.MAX_SLICES_TO_PRINT = -1;
         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().iterations(100).momentum(0.9)
-                                        .optimizationAlgo(OptimizationAlgorithm.LBFGS).regularization(true).l2(2e-4)
+                        new NeuralNetConfiguration.Builder().iterations(100)
+                                        .optimizationAlgo(OptimizationAlgorithm.LBFGS).l2(2e-4)
                                         .list().layer(0,
                                                         new RBM.Builder(RBM.HiddenUnit.GAUSSIAN,
                                                                         RBM.VisibleUnit.GAUSSIAN).nIn(4).nOut(3)
@@ -505,7 +505,7 @@ public class MultiLayerTest {
     @Test
     public void testTranspose() {
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().iterations(100).momentum(0.9).regularization(true).l2(2e-4)
+                        new NeuralNetConfiguration.Builder().iterations(100).l2(2e-4)
                                         .list().layer(0,
                                                         new RBM.Builder(RBM.HiddenUnit.GAUSSIAN,
                                                                         RBM.VisibleUnit.GAUSSIAN).nIn(4).nOut(3)
@@ -843,8 +843,7 @@ public class MultiLayerTest {
 
     public MultiLayerNetwork getRBMModel(boolean preTrain, int nIn, int nOut) {
         MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder()
-                        .seed(42).iterations(1).updater(Updater.NONE).epsilon(
-                                        1)
+                        .seed(42).iterations(1).updater(Updater.NONE)
                         .weightInit(WeightInit.UNIFORM)
                         .list(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                                         .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)

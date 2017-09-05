@@ -108,10 +108,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 //    protected Map<String, Double> learningRateByParam = new HashMap<>();
     protected Map<String, Double> l1ByParam = new HashMap<>();
     protected Map<String, Double> l2ByParam = new HashMap<>();
-//    protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
-//    protected double lrPolicyDecayRate;
-//    protected double lrPolicySteps;
-//    protected double lrPolicyPower;
     protected boolean pretrain;
 
     // this field defines preOutput cache
@@ -593,20 +589,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         @Deprecated
         protected Updater updater = null;   //Updater.SGD;
         protected IUpdater iUpdater = null; //new Sgd();
-        @Deprecated
-        protected double momentum = Double.NaN;
-        @Deprecated
-        protected Map<Integer, Double> momentumSchedule = null;
-        @Deprecated
-        protected double epsilon = Double.NaN;
-        @Deprecated
-        protected double rho = Double.NaN;
-        @Deprecated
-        protected double rmsDecay = Double.NaN;
-        @Deprecated
-        protected double adamMeanDecay = Double.NaN;
-        @Deprecated
-        protected double adamVarDecay = Double.NaN;
         protected Layer layer;
         @Deprecated
         protected double leakyreluAlpha = 0.01;
@@ -1048,30 +1030,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Momentum rate
-         * Used only when Updater is set to {@link Updater#NESTEROVS}
-         *
-         * @deprecated Use {@code .updater(new Nesterov(momentum))} instead
-         */
-        @Deprecated
-        public Builder momentum(double momentum) {
-            this.momentum = momentum;
-            return this;
-        }
-
-        /**
-         * Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration
-         * Used only when Updater is set to {@link Updater#NESTEROVS}
-         *
-         * @deprecated Use {@code .updater(Nesterov.builder().momentumSchedule(schedule).build())} instead
-         */
-        @Deprecated
-        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
-            this.momentumSchedule = momentumAfter;
-            return this;
-        }
-
-        /**
          * Gradient updater. For example, Updater.SGD for standard stochastic gradient descent,
          * Updater.NESTEROV for Nesterov momentum, Updater.RSMPROP for RMSProp, etc.<br>
          * Note: default hyperparameters are used with this method. Use {@link #updater(IUpdater)} to configure
@@ -1112,64 +1070,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             else if (updater instanceof NoOp)
                 this.updater = Updater.NONE;
             this.iUpdater = updater;
-            return this;
-        }
-
-        /**
-         * Ada delta coefficient
-         *
-         * @param rho
-         * @deprecated use {@code .updater(new AdaDelta(rho,epsilon))} intead
-         */
-        @Deprecated
-        public Builder rho(double rho) {
-            this.rho = rho;
-            return this;
-        }
-
-
-        /**
-         * Epsilon value for updaters: Adam, RMSProp, Adagrad, Adadelta
-         *
-         * @param epsilon Epsilon value to use for adagrad or
-         * @deprecated Use use {@code .updater(Adam.builder().epsilon(epsilon).build())} or similar instead
-         */
-        @Deprecated
-        public Builder epsilon(double epsilon) {
-            this.epsilon = epsilon;
-            return this;
-        }
-
-        /**
-         * Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
-         *
-         * @deprecated use {@code .updater(new RmsProp(rmsDecay))} intead
-         */
-        @Deprecated
-        public Builder rmsDecay(double rmsDecay) {
-            this.rmsDecay = rmsDecay;
-            return this;
-        }
-
-        /**
-         * Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
-         *
-         * @deprecated use {@code .updater(Adam.builder().beta1(adamMeanDecay).build())} intead
-         */
-        @Deprecated
-        public Builder adamMeanDecay(double adamMeanDecay) {
-            this.adamMeanDecay = adamMeanDecay;
-            return this;
-        }
-
-        /**
-         * Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
-         *
-         * @deprecated use {@code .updater(Adam.builder().beta2(adamVarDecay).build())} intead
-         */
-        @Deprecated
-        public Builder adamVarDecay(double adamVarDecay) {
-            this.adamVarDecay = adamVarDecay;
             return this;
         }
 
@@ -1409,7 +1309,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     LayerValidation.setLegacyLr(bLayer.getBiasUpdater(), biasLearningRate);
                 }
 
-                LayerValidation.updaterValidation(layerName, layer, learningRate, biasLearningRate, momentum, momentumSchedule, adamMeanDecay, adamVarDecay, rho, rmsDecay, epsilon);
+                LayerValidation.updaterValidation(layerName, layer, learningRate, biasLearningRate);
                 if (bLayer.getGradientNormalization() == null)
                     bLayer.setGradientNormalization(gradientNormalization);
                 if (Double.isNaN(bLayer.getGradientNormalizationThreshold()))

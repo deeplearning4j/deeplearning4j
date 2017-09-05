@@ -276,7 +276,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
     public void testDistributedScoring() {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l1(0.1).l2(0.1)
-                        .seed(123).updater(Updater.NESTEROVS).learningRate(0.1).momentum(0.9).list()
+                        .seed(123).updater(new Nesterovs(0.1, 0.9)).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(nIn).nOut(3)
                                         .activation(Activation.TANH).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
