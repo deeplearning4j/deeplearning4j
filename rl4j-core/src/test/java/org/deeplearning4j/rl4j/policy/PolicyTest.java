@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.rl4j.policy;
 
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.junit.Test;
@@ -37,6 +38,11 @@ import static org.junit.Assert.assertTrue;
 public class PolicyTest {
 
     public static class DummyAC<NN extends DummyAC> implements IActorCritic<NN> {
+
+        @Override
+        public NeuralNetwork[] getNeuralNetworks() {
+            throw new UnsupportedOperationException();
+        }
 
         @Override
         public boolean isRecurrent() {

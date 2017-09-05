@@ -1,6 +1,7 @@
 package org.deeplearning4j.rl4j.network.ac;
 
 import lombok.Getter;
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -28,6 +29,10 @@ public class ActorCriticCompGraph<NN extends ActorCriticCompGraph> implements IA
     public ActorCriticCompGraph(ComputationGraph cg) {
         this.cg = cg;
         this.recurrent = cg.getOutputLayer(0) instanceof RnnOutputLayer;
+    }
+
+    public NeuralNetwork[] getNeuralNetworks() {
+        return new NeuralNetwork[] { cg };
     }
 
     public static ActorCriticCompGraph load(String path) throws IOException {

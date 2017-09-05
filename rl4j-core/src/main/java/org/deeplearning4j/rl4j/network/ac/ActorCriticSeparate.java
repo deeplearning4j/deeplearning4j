@@ -1,6 +1,7 @@
 package org.deeplearning4j.rl4j.network.ac;
 
 import lombok.Getter;
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
@@ -28,6 +29,10 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
         this.valueNet = valueNet;
         this.policyNet = policyNet;
         this.recurrent = valueNet.getOutputLayer() instanceof RnnOutputLayer;
+    }
+
+    public NeuralNetwork[] getNeuralNetworks() {
+        return new NeuralNetwork[] { valueNet, policyNet };
     }
 
     public static ActorCriticSeparate load(String pathValue, String pathPolicy) throws IOException {

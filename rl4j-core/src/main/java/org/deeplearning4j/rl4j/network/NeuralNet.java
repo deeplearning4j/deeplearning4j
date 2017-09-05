@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.network;
 
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -13,6 +14,11 @@ import java.io.OutputStream;
  * Useful for AsyncLearning and Thread code.
  */
 public interface NeuralNet<NN extends NeuralNet> {
+
+    /**
+     * Returns the underlying MultiLayerNetwork or ComputationGraph objects.
+     */
+    NeuralNetwork[] getNeuralNetworks();
 
     /**
      * returns true if this is a recurrent network

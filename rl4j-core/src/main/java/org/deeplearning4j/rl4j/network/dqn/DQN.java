@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.network.dqn;
 
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -23,6 +24,10 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
 
     public DQN(MultiLayerNetwork mln) {
         this.mln = mln;
+    }
+
+    public NeuralNetwork[] getNeuralNetworks() {
+        return new NeuralNetwork[] { mln };
     }
 
     public static DQN load(String path) throws IOException {
