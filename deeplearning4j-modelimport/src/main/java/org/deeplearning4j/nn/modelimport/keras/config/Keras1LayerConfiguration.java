@@ -89,8 +89,14 @@ public class Keras1LayerConfiguration extends KerasLayerConfiguration {
     private final String LAYER_FIELD_B_REGULARIZER = "b_regularizer";
 
     /* Keras constraints */
+    private final String LAYER_FIELD_CONSTRAINT_NAME = "name";
     private final String LAYER_FIELD_W_CONSTRAINT = "W_constraint";
     private final String LAYER_FIELD_B_CONSTRAINT = "b_constraint";
+    private final String LAYER_FIELD_MAX_CONSTRAINT = "m";
+    private final String LAYER_FIELD_MINMAX_MIN_CONSTRAINT = "low";
+    private final String LAYER_FIELD_MINMAX_MAX_CONSTRAINT = "high";
+
+
 
     /* Keras weight initializers. */
     private final String LAYER_FIELD_INIT = "init";
