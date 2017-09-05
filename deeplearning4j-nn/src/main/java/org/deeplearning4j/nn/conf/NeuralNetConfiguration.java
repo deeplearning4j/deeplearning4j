@@ -1362,8 +1362,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     bLayer.setWeightInit(weightInit);
                 if (Double.isNaN(bLayer.getBiasInit()))
                     bLayer.setBiasInit(biasInit);
-                if (bLayer.getUpdater() == null)
-                    bLayer.setUpdater(updater);
                 if (bLayer.getIUpdater() == null) {
                     bLayer.setIUpdater(iUpdater.clone());
                 }
