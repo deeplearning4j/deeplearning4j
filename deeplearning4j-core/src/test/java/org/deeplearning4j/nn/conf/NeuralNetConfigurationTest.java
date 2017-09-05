@@ -94,14 +94,12 @@ public class NeuralNetConfigurationTest {
     public void testClone() {
         NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.UNIFORM, true);
         BaseLayer bl = (BaseLayer) conf.getLayer();
-        bl.setMomentumSchedule(new HashMap<Integer, Double>());
         conf.setStepFunction(new DefaultStepFunction());
 
         NeuralNetConfiguration conf2 = conf.clone();
 
         assertEquals(conf, conf2);
         assertNotSame(conf, conf2);
-        assertNotSame(bl.getMomentumSchedule(), ((BaseLayer) conf2.getLayer()).getMomentumSchedule());
         assertNotSame(conf.getLayer(), conf2.getLayer());
         assertNotSame(bl.getDist(), ((BaseLayer) conf2.getLayer()).getDist());
         assertNotSame(conf.getStepFunction(), conf2.getStepFunction());

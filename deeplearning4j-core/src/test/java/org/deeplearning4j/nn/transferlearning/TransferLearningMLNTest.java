@@ -16,6 +16,8 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.*;
@@ -56,7 +58,7 @@ public class TransferLearningMLNTest {
 
         for (org.deeplearning4j.nn.api.Layer l : modelNow.getLayers()) {
             BaseLayer bl = ((BaseLayer) l.conf().getLayer());
-            assertEquals(Updater.RMSPROP, bl.getUpdater());
+            assertEquals(new RmsProp(), bl.getIUpdater());
 //            assertEquals(0.5, bl.getLearningRate(), 1e-6);
         }
 
@@ -486,16 +488,14 @@ public class TransferLearningMLNTest {
 
         //Check original net isn't modified:
         BaseLayer l0 = (BaseLayer) net.getLayer(0).conf().getLayer();
-        assertEquals(Updater.ADAM, l0.getUpdater());
+        assertEquals(new Adam(1e-4), l0.getIUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
-//        assertEquals(1e-4, l0.getLearningRate(), 1e-8);
         assertEquals(WeightInit.RELU, l0.getWeightInit());
         assertEquals(0.1, l0.getL1(), 1e-6);
 
         BaseLayer l1 = (BaseLayer) net.getLayer(1).conf().getLayer();
-        assertEquals(Updater.ADAM, l1.getUpdater());
+        assertEquals(new Adam(1e-4), l1.getIUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
-//        assertEquals(1e-4, l1.getLearningRate(), 1e-8);
         assertEquals(WeightInit.RELU, l1.getWeightInit());
         assertEquals(0.2, l1.getL2(), 1e-6);
 
@@ -503,16 +503,14 @@ public class TransferLearningMLNTest {
 
         //Check new net has only the appropriate things modified (i.e., LR)
         l0 = (BaseLayer) net2.getLayer(0).conf().getLayer();
-        assertEquals(Updater.ADAM, l0.getUpdater());
+        assertEquals(new Adam(2e-2), l0.getIUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
-//        assertEquals(2e-2, l0.getLearningRate(), 1e-8);
         assertEquals(WeightInit.RELU, l0.getWeightInit());
         assertEquals(0.1, l0.getL1(), 1e-6);
 
         l1 = (BaseLayer) net2.getLayer(1).conf().getLayer();
-        assertEquals(Updater.ADAM, l1.getUpdater());
+        assertEquals(new Adam(2e-2), l1.getIUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
-//        assertEquals(2e-2, l1.getLearningRate(), 1e-8);
         assertEquals(WeightInit.RELU, l1.getWeightInit());
         assertEquals(0.2, l1.getL2(), 1e-6);
 

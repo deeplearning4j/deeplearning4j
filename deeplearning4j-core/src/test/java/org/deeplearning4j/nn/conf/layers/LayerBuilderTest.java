@@ -15,6 +15,8 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.convolution.Convolution;
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.io.*;
@@ -47,6 +49,7 @@ public class LayerBuilderTest {
     Distribution dist = new NormalDistribution(1.0, 0.1);
     double dropOut = 0.1;
     Updater updater = Updater.ADAGRAD;
+    IUpdater iUpdater = new AdaGrad();
     GradientNormalization gradNorm = GradientNormalization.ClipL2PerParamType;
     double gradNormThreshold = 8;
 
@@ -62,7 +65,7 @@ public class LayerBuilderTest {
         assertEquals(weight, layer.getWeightInit());
         assertEquals(dist, layer.getDist());
         assertEquals(new Dropout(dropOut), layer.getIDropout());
-        assertEquals(updater, layer.getUpdater());
+        assertEquals(iUpdater, layer.getIUpdater());
         assertEquals(gradNorm, layer.getGradientNormalization());
         assertEquals(gradNormThreshold, layer.getGradientNormalizationThreshold(), 0.0);
     }

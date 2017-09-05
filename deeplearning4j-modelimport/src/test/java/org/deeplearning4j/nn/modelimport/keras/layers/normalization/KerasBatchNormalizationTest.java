@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.junit.Test;
+import org.nd4j.linalg.learning.config.Nesterovs;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -69,6 +70,6 @@ public class KerasBatchNormalizationTest {
         BatchNormalization layer = new KerasBatchNormalization(layerConfig).getBatchNormalizationLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(epsilon, layer.getEps(), 0.0);
-        assertEquals(momentum, layer.getMomentum(), 0.0);
+        assertEquals(momentum, ((Nesterovs)layer.getIUpdater()).getMomentum(), 0.0);
     }
 }

@@ -55,8 +55,7 @@ public class RegressionTest071 {
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
         assertEquals(WeightInit.XAVIER, l0.getWeightInit());
-        assertEquals(Updater.NESTEROVS, l0.getUpdater());
-        assertEquals(0.9, l0.getMomentum(), 1e-6);
+        assertEquals(new Nesterovs(0.15, 0.9), l0.getIUpdater());
         assertEquals(0.15, ((Nesterovs)l0.getIUpdater()).getLearningRate(), 1e-6);
 
         OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
@@ -66,7 +65,7 @@ public class RegressionTest071 {
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
         assertEquals(WeightInit.XAVIER, l1.getWeightInit());
-        assertEquals(Updater.NESTEROVS, l1.getUpdater());
+        assertEquals(0.9, ((Nesterovs)l1.getIUpdater()).getMomentum(), 1e-6);
         assertEquals(0.9, ((Nesterovs)l1.getIUpdater()).getMomentum(), 1e-6);
         assertEquals(0.15, ((Nesterovs)l1.getIUpdater()).getLearningRate(), 1e-6);
 
@@ -96,8 +95,7 @@ public class RegressionTest071 {
         assertEquals(4, l0.getNOut());
         assertEquals(WeightInit.DISTRIBUTION, l0.getWeightInit());
         assertEquals(new NormalDistribution(0.1, 1.2), l0.getDist());
-        assertEquals(Updater.RMSPROP, l0.getUpdater());
-        assertEquals(0.96, l0.getRmsDecay(), 1e-6);
+        assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l0.getIUpdater());
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(new Dropout(0.6), l0.getIDropout());
         assertEquals(0.1, l0.getL1(), 1e-6);
@@ -113,8 +111,7 @@ public class RegressionTest071 {
         assertEquals(5, l1.getNOut());
         assertEquals(WeightInit.DISTRIBUTION, l0.getWeightInit());
         assertEquals(new NormalDistribution(0.1, 1.2), l0.getDist());
-        assertEquals(Updater.RMSPROP, l0.getUpdater());
-        assertEquals(0.96, l1.getRmsDecay(), 1e-6);
+        assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l1.getIUpdater());
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(new Dropout(0.6), l1.getIDropout());
         assertEquals(0.1, l1.getL1(), 1e-6);
@@ -147,8 +144,7 @@ public class RegressionTest071 {
         assertEquals(3, l0.getNIn());
         assertEquals(3, l0.getNOut());
         assertEquals(WeightInit.RELU, l0.getWeightInit());
-        assertEquals(Updater.RMSPROP, l0.getUpdater());
-        assertEquals(0.96, l0.getRmsDecay(), 1e-6);
+        assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l0.getIUpdater());
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertArrayEquals(new int[] {2, 2}, l0.getKernelSize());
         assertArrayEquals(new int[] {1, 1}, l0.getStride());
@@ -169,8 +165,7 @@ public class RegressionTest071 {
         assertEquals(26 * 26 * 3, l2.getNIn());
         assertEquals(5, l2.getNOut());
         assertEquals(WeightInit.RELU, l0.getWeightInit());
-        assertEquals(Updater.RMSPROP, l0.getUpdater());
-        assertEquals(0.96, l0.getRmsDecay(), 1e-6);
+        assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l0.getIUpdater());
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
 
         assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);

@@ -490,8 +490,9 @@ public class TestDecayPolicies {
         for (int i = 0; i < 2; i++) {
             updater.update(layer, gradientSingle, i, 0, 1);
             mu = testNesterovsComputation(gradientSingle, gradientExpected, lr, mu, momentumAfter, i);
-            assertEquals(mu, ((BaseLayer) layer.conf().getLayer()).getMomentum(), 1e-4);
+//            assertEquals(mu, ((BaseLayer) layer.conf().getLayer()).getMomentum(), 1e-4);
         }
+        fail();
     }
 
     @Test
@@ -561,8 +562,9 @@ public class TestDecayPolicies {
         for (int i = 0; i < 2; i++) {
             updater.update(net, gradientMLN, i, 0, 1);
             mu = testNesterovsComputation(gradientMLN, gradientExpected, lr, mu, momentumAfter, i);
-            assertEquals(mu, ((BaseLayer) net.getLayer(1).conf().getLayer()).getMomentum(), 1e-4);
+//            assertEquals(mu, ((BaseLayer) net.getLayer(1).conf().getLayer()).getMomentum(), 1e-4);
         }
+        fail();
     }
 
 

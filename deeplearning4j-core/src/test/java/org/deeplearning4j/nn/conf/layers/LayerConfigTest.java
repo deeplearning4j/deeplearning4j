@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class LayerConfigTest {
 
@@ -190,10 +191,10 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(1.0, ((BaseLayer) conf.getConf(0).getLayer()).getMomentum(), 0.0);
-        assertEquals(1.0, ((BaseLayer) conf.getConf(1).getLayer()).getMomentum(), 0.0);
-        assertEquals(0.1, ((BaseLayer) conf.getConf(0).getLayer()).getMomentumSchedule().get(0), 0.0);
-        assertEquals(0.1, ((BaseLayer) conf.getConf(1).getLayer()).getMomentumSchedule().get(0), 0.0);
+        assertEquals(1.0, ((Nesterovs)((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentum(), 0.0);
+        assertEquals(1.0, ((Nesterovs)((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentum(), 0.0);
+        assertEquals(0.1, ((Nesterovs)((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentumISchedule().valueAt(0,0), 0.0);
+        assertEquals(0.1, ((Nesterovs)((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentumISchedule().valueAt(0,0), 0.0);
 
         Map<Integer, Double> testMomentumAfter2 = new HashMap<>();
         testMomentumAfter2.put(0, 0.2);
@@ -207,17 +208,12 @@ public class LayerConfigTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(1.0, ((BaseLayer) conf.getConf(0).getLayer()).getMomentum(), 0.0);
-        assertEquals(2.0, ((BaseLayer) conf.getConf(1).getLayer()).getMomentum(), 0.0);
+        assertEquals(1.0, ((Nesterovs)((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentum(), 0.0);
+        assertEquals(2.0, ((Nesterovs)((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentum(), 0.0);
         assertEquals(1.0, ((Nesterovs) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentum(), 0.0);
         assertEquals(2.0, ((Nesterovs) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentum(), 0.0);
-        assertEquals(0.1, ((BaseLayer) conf.getConf(0).getLayer()).getMomentumSchedule().get(0), 0.0);
-        assertEquals(0.2, ((BaseLayer) conf.getConf(1).getLayer()).getMomentumSchedule().get(0), 0.0);
-        assertEquals(0.1, ((Nesterovs) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentumSchedule()
-                        .get(0), 0.0);
-        assertEquals(0.2, ((Nesterovs) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentumSchedule()
-                        .get(0), 0.0);
-
+        assertEquals(0.1, ((Nesterovs)((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentumISchedule().valueAt(0,0), 0.0);
+        assertEquals(0.2, ((Nesterovs)((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentumISchedule().valueAt(0,0), 0.0);
     }
 
     @Test
@@ -228,10 +224,10 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals("ADADELTA", ((BaseLayer) conf.getConf(0).getLayer()).getUpdater().toString());
-        assertEquals("ADADELTA", ((BaseLayer) conf.getConf(1).getLayer()).getUpdater().toString());
-        assertEquals(0.5, ((BaseLayer) conf.getConf(0).getLayer()).getRho(), 0.0);
-        assertEquals(0.01, ((BaseLayer) conf.getConf(1).getLayer()).getRho(), 0.0);
+        assertTrue(((BaseLayer) conf.getConf(0).getLayer()).getIUpdater() instanceof AdaDelta);
+        assertTrue(((BaseLayer) conf.getConf(1).getLayer()).getIUpdater() instanceof AdaDelta);
+        assertEquals(0.5, ((AdaDelta)((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getRho(), 0.0);
+        assertEquals(0.01, ((AdaDelta)((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getRho(), 0.0);
 
         conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP).rmsDecay(2.0).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).rmsDecay(1.0).build())
@@ -241,10 +237,8 @@ public class LayerConfigTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals("RMSPROP", ((BaseLayer) conf.getConf(0).getLayer()).getUpdater().toString());
-        assertEquals("ADADELTA", ((BaseLayer) conf.getConf(1).getLayer()).getUpdater().toString());
-        assertEquals(1.0, ((BaseLayer) conf.getConf(0).getLayer()).getRmsDecay(), 0.0);
-        assertEquals(0.5, ((BaseLayer) conf.getConf(1).getLayer()).getRho(), 0.0);
+        assertTrue(((BaseLayer) conf.getConf(0).getLayer()).getIUpdater() instanceof RmsProp);
+        assertTrue(((BaseLayer) conf.getConf(1).getLayer()).getIUpdater() instanceof AdaDelta);
         assertEquals(1.0, ((RmsProp) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getRmsDecay(), 0.0);
         assertEquals(0.5, ((AdaDelta) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getRho(), 0.0);
     }
@@ -258,13 +252,6 @@ public class LayerConfigTest {
                         .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-
-        assertEquals("ADAM", ((BaseLayer) conf.getConf(0).getLayer()).getUpdater().toString());
-        assertEquals("ADAM", ((BaseLayer) conf.getConf(1).getLayer()).getUpdater().toString(), "ADAM");
-        assertEquals(0.5, ((BaseLayer) conf.getConf(0).getLayer()).getAdamMeanDecay(), 0.0);
-        assertEquals(0.6, ((BaseLayer) conf.getConf(1).getLayer()).getAdamMeanDecay(), 0.0);
-        assertEquals(0.5, ((BaseLayer) conf.getConf(0).getLayer()).getAdamVarDecay(), 0.0);
-        assertEquals(0.7, ((BaseLayer) conf.getConf(1).getLayer()).getAdamVarDecay(), 0.0);
 
         assertEquals(0.5, ((Adam) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getBeta1(), 0.0);
         assertEquals(0.6, ((Adam) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getBeta1(), 0.0);

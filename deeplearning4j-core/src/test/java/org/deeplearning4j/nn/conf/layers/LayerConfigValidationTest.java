@@ -11,6 +11,9 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.learning.config.RmsProp;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -243,12 +246,12 @@ public class LayerConfigValidationTest {
         net.init();
 
         BaseLayer layerConf = (BaseLayer) net.getLayer(0).conf().getLayer();
-        assertEquals(expectedMomentum, layerConf.getMomentum(), 1e-3);
+        assertEquals(expectedMomentum, ((Nesterovs)layerConf.getIUpdater()).getMomentum(), 1e-3);
         assertEquals(expectedL1, layerConf.getL1(), 1e-3);
         assertEquals(0.5, layerConf.getL2(), 1e-3);
 
         BaseLayer layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
-        assertEquals(0.4, layerConf1.getMomentum(), 1e-3);
+        assertEquals(0.4, ((Nesterovs)layerConf1.getIUpdater()).getMomentum(), 1e-3);
 
         // Adam Updater
         conf = new NeuralNetConfiguration.Builder().learningRate(0.3).updater(Updater.ADAM).regularization(true)
@@ -263,8 +266,8 @@ public class LayerConfigValidationTest {
         assertEquals(0.5, layerConf.getL2(), 1e-3);
 
         layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
-        assertEquals(expectedAdamMeanDecay, layerConf1.getAdamMeanDecay(), 1e-3);
-        assertEquals(expectedAdamVarDecay, layerConf1.getAdamVarDecay(), 1e-3);
+        assertEquals(expectedAdamMeanDecay, ((Adam)layerConf1.getIUpdater()).getBeta1(), 1e-3);
+        assertEquals(expectedAdamVarDecay, ((Adam)layerConf1.getIUpdater()).getBeta2(), 1e-3);
         assertEquals(expectedDist, layerConf1.getDist());
         // l1 & l2 local should still be set whether regularization true or false
         assertEquals(expectedL1, layerConf1.getL1(), 1e-3);
@@ -278,12 +281,12 @@ public class LayerConfigValidationTest {
         net.init();
 
         layerConf = (BaseLayer) net.getLayer(0).conf().getLayer();
-        assertEquals(expectedRmsDecay, layerConf.getRmsDecay(), 1e-3);
+        assertEquals(expectedRmsDecay, ((RmsProp)layerConf.getIUpdater()).getRmsDecay(), 1e-3);
         assertEquals(expectedL1, layerConf.getL1(), 1e-3);
         assertEquals(expectedL2, layerConf.getL2(), 1e-3);
 
         layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
-        assertEquals(0.4, layerConf1.getRmsDecay(), 1e-3);
+        assertEquals(0.4, ((RmsProp)layerConf1.getIUpdater()).getRmsDecay(), 1e-3);
 
 
     }

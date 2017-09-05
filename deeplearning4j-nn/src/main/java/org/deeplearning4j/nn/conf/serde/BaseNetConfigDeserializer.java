@@ -55,48 +55,48 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
 
             BaseLayer bl = (BaseLayer) l;
 
-            Updater u = bl.getUpdater();
-            double lr = Double.NaN; //TODO bl.getLearningRate();
-            double eps = bl.getEpsilon();
-            double rho = bl.getRho();
-
-            switch (u) {
-                case SGD:
-                    bl.setIUpdater(new Sgd(lr));
-                    break;
-                case ADAM:
-                    double meanDecay = bl.getAdamMeanDecay();
-                    double varDecay = bl.getAdamVarDecay();
-                    bl.setIUpdater(Adam.builder().learningRate(lr).beta1(meanDecay).beta2(varDecay).epsilon(eps)
-                                    .build());
-                    break;
-                case ADADELTA:
-                    bl.setIUpdater(new AdaDelta(rho, eps));
-                    break;
-                case NESTEROVS:
-                    Map<Integer, Double> momentumSchedule = bl.getMomentumSchedule();
-                    double momentum = bl.getMomentum();
-                    if(momentumSchedule != null){
-                        ISchedule ms = new MapSchedule(ScheduleType.ITERATION, momentumSchedule);
-                        bl.setIUpdater(new Nesterovs(lr, ms));
-                    } else {
-                        bl.setIUpdater(new Nesterovs(lr, momentum));
-                    }
-                    break;
-                case ADAGRAD:
-                    bl.setIUpdater(new AdaGrad(lr, eps));
-                    break;
-                case RMSPROP:
-                    double rmsDecay = bl.getRmsDecay();
-                    bl.setIUpdater(new RmsProp(lr, rmsDecay, eps));
-                    break;
-                case NONE:
-                    bl.setIUpdater(new NoOp());
-                    break;
-                case CUSTOM:
-                    //No op - shouldn't happen
-                    break;
-            }
+//            Updater u = bl.getUpdater();
+//            double lr = Double.NaN; //TODO bl.getLearningRate();
+//            double eps = bl.getEpsilon();
+//            double rho = bl.getRho();
+//
+//            switch (u) {
+//                case SGD:
+//                    bl.setIUpdater(new Sgd(lr));
+//                    break;
+//                case ADAM:
+//                    double meanDecay = bl.getAdamMeanDecay();
+//                    double varDecay = bl.getAdamVarDecay();
+//                    bl.setIUpdater(Adam.builder().learningRate(lr).beta1(meanDecay).beta2(varDecay).epsilon(eps)
+//                                    .build());
+//                    break;
+//                case ADADELTA:
+//                    bl.setIUpdater(new AdaDelta(rho, eps));
+//                    break;
+//                case NESTEROVS:
+//                    Map<Integer, Double> momentumSchedule = bl.getMomentumSchedule();
+//                    double momentum = bl.getMomentum();
+//                    if(momentumSchedule != null){
+//                        ISchedule ms = new MapSchedule(ScheduleType.ITERATION, momentumSchedule);
+//                        bl.setIUpdater(new Nesterovs(lr, ms));
+//                    } else {
+//                        bl.setIUpdater(new Nesterovs(lr, momentum));
+//                    }
+//                    break;
+//                case ADAGRAD:
+//                    bl.setIUpdater(new AdaGrad(lr, eps));
+//                    break;
+//                case RMSPROP:
+//                    double rmsDecay = bl.getRmsDecay();
+//                    bl.setIUpdater(new RmsProp(lr, rmsDecay, eps));
+//                    break;
+//                case NONE:
+//                    bl.setIUpdater(new NoOp());
+//                    break;
+//                case CUSTOM:
+//                    //No op - shouldn't happen
+//                    break;
+//            }
         }
     }
 

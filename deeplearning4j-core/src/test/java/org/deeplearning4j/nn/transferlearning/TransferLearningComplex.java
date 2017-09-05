@@ -80,7 +80,7 @@ public class TransferLearningComplex {
 
             //Also check config:
             BaseLayer bl = ((BaseLayer) l.conf().getLayer());
-            assertEquals(Updater.ADAM, bl.getUpdater());
+            assertEquals(new Adam(), bl.getIUpdater());
             assertEquals(2e-2, ((Adam)bl.getIUpdater()).getLearningRate(), 1e-5);
             assertEquals(Activation.LEAKYRELU.getActivationFunction(), bl.getActivationFn());
         }
