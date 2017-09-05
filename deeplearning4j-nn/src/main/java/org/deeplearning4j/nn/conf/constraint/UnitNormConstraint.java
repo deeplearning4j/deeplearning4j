@@ -12,7 +12,7 @@ import org.nd4j.linalg.factory.Broadcast;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class UnitNormConstraint extends BaseConstraint{
+public class UnitNormConstraint extends BaseConstraint {
 
     private UnitNormConstraint(){
         //No arg for json ser/de

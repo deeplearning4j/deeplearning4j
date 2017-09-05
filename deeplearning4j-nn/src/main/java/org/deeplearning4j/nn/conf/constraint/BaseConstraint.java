@@ -30,7 +30,6 @@ public abstract class BaseConstraint implements LayerConstraint {
         this(DEFAULT_EPSILON, dimensions);
     }
 
-
     @Override
     public void applyConstraint(Layer layer, int iteration, int epoch, Boolean hasBiasConstraint,
                                 Boolean hasWeightConstraint, Set<String> paramNames) {
