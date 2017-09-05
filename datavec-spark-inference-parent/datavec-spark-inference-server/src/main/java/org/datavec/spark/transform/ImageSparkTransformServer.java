@@ -9,14 +9,12 @@ import org.datavec.api.transform.TransformProcess;
 import org.datavec.image.transform.ImageTransformProcess;
 import org.datavec.spark.transform.model.*;
 import play.Mode;
-import play.libs.Json;
 import play.routing.RoutingDsl;
 import play.server.Server;
 
 import java.io.File;
 import java.io.IOException;
 
-import static play.mvc.Controller.request;
 import static play.mvc.Results.*;
 
 /**
@@ -61,7 +59,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                 if (transform == null)
                     return badRequest();
                 log.info("Transform process initialized");
-                return ok(Json.toJson(transform.getImageTransformProcess()));
+                return ok(objectMapper.writeValueAsString(transform.getImageTransformProcess()));
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
@@ -71,10 +69,10 @@ public class ImageSparkTransformServer extends SparkTransformServer {
         //return the host information for a given id
         routingDsl.POST("/transformprocess").routeTo(FunctionUtil.function0((() -> {
             try {
-                ImageTransformProcess transformProcess = ImageTransformProcess.fromJson(getObjectFromRequest(request(), String.class));
+                ImageTransformProcess transformProcess = ImageTransformProcess.fromJson(getJsonText());
                 setImageTransformProcess(transformProcess);
                 log.info("Transform process initialized");
-                return ok(Json.toJson(transformProcess));
+                return ok(objectMapper.writeValueAsString(transformProcess));
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
@@ -84,10 +82,10 @@ public class ImageSparkTransformServer extends SparkTransformServer {
         //return the host information for a given id
         routingDsl.POST("/transformincrementalarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                SingleImageRecord record = getObjectFromRequest(request(), SingleImageRecord.class);
+                SingleImageRecord record = objectMapper.readValue(getJsonText(), SingleImageRecord.class);
                 if (record == null)
                     return badRequest();
-                return ok(Json.toJson(transformIncrementalArray(record)));
+                return ok(objectMapper.writeValueAsString(transformIncrementalArray(record)));
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
@@ -97,10 +95,10 @@ public class ImageSparkTransformServer extends SparkTransformServer {
         //return the host information for a given id
         routingDsl.POST("/transformarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                BatchImageRecord batch = getObjectFromRequest(request(), BatchImageRecord.class);
+                BatchImageRecord batch = objectMapper.readValue(getJsonText(), BatchImageRecord.class);
                 if (batch == null)
                     return badRequest();
-                return ok(Json.toJson(transformArray(batch)));
+                return ok(objectMapper.writeValueAsString(transformArray(batch)));
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
