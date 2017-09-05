@@ -3,7 +3,6 @@ package org.nd4j.linalg;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.*;
-import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.util.ArrayUtil;
