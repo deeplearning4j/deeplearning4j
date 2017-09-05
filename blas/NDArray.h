@@ -155,7 +155,7 @@ namespace nd4j {
 
         // perform array transformation
         template<typename OpName>
-        void applyTransform(NDArray<T> *target, T *extraParams);
+        void applyTransform(NDArray<T> *target, T *extraParams = nullptr);
 
         // perform pairwise transformation
         template<typename OpName>

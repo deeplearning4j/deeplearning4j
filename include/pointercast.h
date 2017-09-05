@@ -24,6 +24,7 @@ typedef int Nd4jStatus;
 #define ND4J_STATUS_BAD_LENGTH      31
 #define ND4J_STATUS_BAD_DIMENSIONS      32
 #define ND4J_STATUS_BAD_ORDER      33
+#define ND4J_STATUS_BAD_ARGUMENTS      34
 
 
 

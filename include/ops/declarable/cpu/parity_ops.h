@@ -10,6 +10,7 @@
 #include <memory>
 #include <shape.h>
 #include <ops/ops.h>
+#include <loops/random.h>
 #include <NDArray.h>
 #include <ops/declarable/declarable_ops.h>
 
@@ -150,18 +151,49 @@ namespace nd4j {
 
 
 ///////////////////////
-        DECLARE_OP(randomUniform, 1, 1, true) {
+        /**
+         * uniform distribution
+         * takes 1 ndarray
+         *
+         * T argumens map:
+         * TArgs[0] - min for rng
+         * TArgs[1] - max for rng
+         */
+        DECLARE_CONFIGURABLE_OP(randomuniform, 1, 1, true, 2, 0) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));
+
             // uniform distribution
+            auto rng = block.getRNG();
+
+            if (rng == nullptr)
+                return ND4J_STATUS_BAD_RNG;
+
+            if (block.getTArguments()->size() != 2)
+                return ND4J_STATUS_BAD_ARGUMENTS;
+
+            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            auto z = x;
+            if (!block.isInplace())
+                z = new NDArray<T>(x);
+
+            functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(block.getRNG(), z->_buffer, z->_shapeInfo, block.getTArguments()->data());
+
+            STORE_RESULT(*z);
+
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_OP(shape, 2, 1, true) {
-            // ?
-            return ND4J_STATUS_OK;
-        }
 
         DECLARE_OP(floor, 1, 1, true) {
-            // ?
+            REQUIRE_OK(this->validateNonEmptyInput(block));
+
+            NDArray<T> *first = block.getVariables().at(0)->getNDArray();
+            auto z = this->getZ(block);
+
+            first->template applyTransform<simdOps::Floor<T>>(z, nullptr);
+
+            STORE_RESULT(*z);
+
             return ND4J_STATUS_OK;
         }
 
@@ -192,6 +224,16 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
+        /**
+         * tensorMmul/tensorDot operation
+         * takes 2 ndarrays, and 2 sets of axes
+         *
+         * Integer argumens map:
+         * IArgs[0] - number of axes along for first array
+         * IArgs[1]... axes values for first array
+         * IArgs[] - number of axes along for second array
+         * IArgs[1]... axes values for second array
+         */
         DECLARE_CONFIGURABLE_OP(tensormmul, 2, 1, false, 0, -1) {
             REQUIRE_OK(this->validateNonEmptyInput(block));
 
@@ -303,6 +345,7 @@ namespace nd4j {
         }
         DECLARE_SYN(tensordot, tensormmul);
 
+
         // test op, non-divergent
         DECLARE_OP(testop2i2o, 2, 2, true) {
             REQUIRE_OK(this->validateNonEmptyInput(block));
@@ -319,11 +362,25 @@ namespace nd4j {
         }
         DECLARE_SYN(TestOp2i2o, testop2i2o);
 
-        DECLARE_OP(assign, 2, 1, true) {
-            // NDArray->assign(NDArray)
+
+
+        DECLARE_OP(assign, 2, 1, false) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));
+            REQUIRE_OK(this->validateInputLengthMatch(block));
+            REQUIRE_OK(this->validateInputDimensionsMatch(block));
+
+            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *y = block.getVariables().at(1)->getNDArray();
+
+            x->assign(y);
+
+            STORE_RESULT(*x);
+
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(set, assign);
+        DECLARE_SYN(copy, assign);
+
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_OP(softmax, 2, 1, false) {
@@ -331,22 +388,32 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
+
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(relu, 1, 1, true) {
+        DECLARE_CONFIGURABLE_OP(relu, 1, 1, true, 1, 0) {
             REQUIRE_OK(this->validateNonEmptyInput(block));
 
             NDArray<T> *first = block.getVariables().at(0)->getNDArray();
-            first->template applyTransform<simdOps::RELU<T>>();
+            auto z = this->getZ(block);
+
+            first->template applyTransform<simdOps::RELU<T>>(z, &block.getTArguments()->at(0));
+
+            STORE_RESULT(*z);
 
             return ND4J_STATUS_OK;
         }
+
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_OP(identity, 1, 1, true) {
             REQUIRE_OK(this->validateNonEmptyInput(block));
 
             NDArray<T> *first = block.getVariables().at(0)->getNDArray();
-            first->template applyTransform<simdOps::Identity<T>>();
+            auto z = this->getZ(block);
+
+            first->template applyTransform<simdOps::Identity<T>>(z, nullptr);
+
+            STORE_RESULT(*z);
 
             return ND4J_STATUS_OK;
         }
@@ -544,6 +611,7 @@ namespace nd4j {
 			
 			return ND4J_STATUS_BAD_INPUT;
         }
+        DECLARE_SYN(shape, reshapeas);
 
 		//////////////////////////////////////////////////////////////////////////
 		// here iArgs is vector with shape dimensions at the beginning and last element in iArgs is order

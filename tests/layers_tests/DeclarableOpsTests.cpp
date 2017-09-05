@@ -411,6 +411,36 @@ TEST_F(DeclarableOpsTests, SubtractMatrices1) {
 
 }
 
+TEST_F(DeclarableOpsTests, TestRng1) {
+    Nd4jIndex *buffer = new Nd4jIndex[100000];
+
+    NativeOps nativeOps;
+
+    nd4j::random::RandomBuffer *rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);
+
+    if (rng == nullptr)
+        throw "RNG initialization failed";
+
+    NDArray<float> x(5, 3, 'c');
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    Block<float>* block = new Block<float>(1, variableSpace, true);
+    block->fillInputs({-1});
+    block->setRNG(rng);
+    block->getTArguments()->push_back(0.0f);
+    block->getTArguments()->push_back(1.0f);
+
+    nd4j::ops::randomuniform<float> uniform;
+
+    Nd4jStatus status = uniform.execute(block);
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    ASSERT_TRUE(x.sumNumber() > 0.0);
+
+    nativeOps.destroyRandom((Nd4jPointer) rng);
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests, SubtractMatrixVector1) {
 	

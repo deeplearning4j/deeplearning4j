@@ -20,7 +20,8 @@ namespace nd4j {
             // int ids of the input nodes
             std::vector<int> _inputs;
             std::vector<nd4j::graph::Variable<T> *> _variables;
-            nd4j::graph::VariableSpace<T> * _variableSpace;
+            nd4j::graph::VariableSpace<T>* _variableSpace;
+            nd4j::random::RandomBuffer* _rng;
             int _nodeId;
 
             std::vector<T> _tArgs;
@@ -41,6 +42,14 @@ namespace nd4j {
 
             ~Block() {
                 //
+            }
+
+            nd4j::random::RandomBuffer* getRNG() {
+                return _rng;
+            }
+
+            void setRNG(nd4j::random::RandomBuffer* rng) {
+                _rng = rng;
             }
 
             int getNodeId() {
