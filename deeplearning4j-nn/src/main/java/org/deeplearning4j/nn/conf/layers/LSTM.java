@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -32,8 +33,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 /**
  * LSTM recurrent net without peephole connections.
@@ -53,6 +53,7 @@ public class LSTM extends AbstractLSTM {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
         this.gateActivationFn = builder.gateActivationFn;
+
     }
 
     @Override
@@ -82,6 +83,15 @@ public class LSTM extends AbstractLSTM {
 
     @AllArgsConstructor
     public static class Builder extends AbstractLSTM.Builder<Builder> {
+
+
+        public Builder recurrentConstraints(LayerConstraint... constraints) {
+            Set<String> constraintParamNames = new HashSet<>();
+            constraintParamNames.add("RW");
+          return constraints(Arrays.asList(constraints), false,
+                false, constraintParamNames);
+        }
+
 
         @SuppressWarnings("unchecked")
         public LSTM build() {
