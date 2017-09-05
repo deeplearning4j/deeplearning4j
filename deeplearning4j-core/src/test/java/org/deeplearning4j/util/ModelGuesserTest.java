@@ -37,13 +37,13 @@ public class ModelGuesserTest {
     @Test
     public void testModelGuess() throws Exception {
         ClassPathResource sequenceResource =
-                        new ClassPathResource("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_model.h5");
+                        new ClassPathResource("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
         assertTrue(sequenceResource.exists());
         File f = getTempFile(sequenceResource);
         Model guess1 = ModelGuesser.loadModelGuess(f.getAbsolutePath());
         assumeNotNull(guess1);
         ClassPathResource sequenceResource2 =
-                        new ClassPathResource("modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_model.h5");
+                        new ClassPathResource("modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_1_model.h5");
         assertTrue(sequenceResource2.exists());
         File f2 = getTempFile(sequenceResource);
         Model guess2 = ModelGuesser.loadModelGuess(f2.getAbsolutePath());
