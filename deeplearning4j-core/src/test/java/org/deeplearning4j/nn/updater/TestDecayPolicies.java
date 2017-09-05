@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Test learning rate and momentum decay policies
@@ -118,12 +119,13 @@ public class TestDecayPolicies {
         Gradient gradientActual = new DefaultGradient();
         gradientActual.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
-        for (int i = 0; i < iterations; i++) {
-            updater.update(layer, gradientActual, i, 0, 1);
-            double expectedLr = calcExponentialDecay(lr, decayRate, i);
-            assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
-            assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
-        }
+//        for (int i = 0; i < iterations; i++) {
+//            updater.update(layer, gradientActual, i, 0, 1);
+//            double expectedLr = calcExponentialDecay(lr, decayRate, i);
+//            assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
+//            assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
+//        }
+        fail();
     }
 
 
@@ -152,12 +154,13 @@ public class TestDecayPolicies {
         gradientActual.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
-        for (int i = 0; i < iterations; i++) {
-            updater.update(layer, gradientActual, i, 0, 1);
-            double expectedLr = calcInverseDecay(lr, decayRate, i, power);
-            assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
-            assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
-        }
+//        for (int i = 0; i < iterations; i++) {
+//            updater.update(layer, gradientActual, i, 0, 1);
+//            double expectedLr = calcInverseDecay(lr, decayRate, i, power);
+//            assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
+//            assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
+//        }
+        fail();
     }
 
     @Test
@@ -185,12 +188,13 @@ public class TestDecayPolicies {
         gradientActual.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
-        for (int i = 0; i < iterations; i++) {
-            updater.update(layer, gradientActual, i, 0, 1);
-            double expectedLr = calcStepDecay(lr, decayRate, i, steps);
-            assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
-            assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
-        }
+//        for (int i = 0; i < iterations; i++) {
+//            updater.update(layer, gradientActual, i, 0, 1);
+//            double expectedLr = calcStepDecay(lr, decayRate, i, steps);
+//            assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
+//            assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
+//        }
+        fail();
     }
 
 
@@ -220,13 +224,14 @@ public class TestDecayPolicies {
         gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
         double expectedLr = lr;
-        for (int i = 0; i < iterations; i++) {
-            updater.update(layer, gradientActual, i, 0, 1);
-            if (i > 1 && steps % i == 0)
-                expectedLr = calcTorchStepDecay(expectedLr, decayRate);
-            assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
-            assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
-        }
+//        for (int i = 0; i < iterations; i++) {
+//            updater.update(layer, gradientActual, i, 0, 1);
+//            if (i > 1 && steps % i == 0)
+//                expectedLr = calcTorchStepDecay(expectedLr, decayRate);
+//            assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
+//            assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
+//        }
+        fail();
     }
 
     @Test
@@ -252,12 +257,13 @@ public class TestDecayPolicies {
         gradientActual.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
-        for (int i = 0; i < iterations; i++) {
-            updater.update(layer, gradientActual, i, 0, 1);
-            double expectedLr = calcPolyDecay(lr, i, power, iterations);
-            assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
-            assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
-        }
+//        for (int i = 0; i < iterations; i++) {
+//            updater.update(layer, gradientActual, i, 0, 1);
+//            double expectedLr = calcPolyDecay(lr, i, power, iterations);
+//            assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
+//            assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
+//        }
+        fail();
     }
 
 
@@ -286,12 +292,13 @@ public class TestDecayPolicies {
         gradientActual.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
-        for (int i = 0; i < iterations; i++) {
-            updater.update(layer, gradientActual, i, 0, 1);
-            double expectedLr = calcSigmoidDecay(layer.conf().getLearningRateByParam("W"), decayRate, i, steps);
-            assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
-            assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
-        }
+//        for (int i = 0; i < iterations; i++) {
+//            updater.update(layer, gradientActual, i, 0, 1);
+//            double expectedLr = calcSigmoidDecay(layer.conf().getLearningRateByParam("W"), decayRate, i, steps);
+//            assertEquals(expectedLr, layer.conf().getLearningRateByParam("W"), 1e-4);
+//            assertEquals(expectedLr, layer.conf().getLearningRateByParam("b"), 1e-4);
+//        }
+        fail();
     }
 
 
@@ -342,9 +349,10 @@ public class TestDecayPolicies {
                     lr = testRMSPropComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
                 else if (updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.ADAMAX))
                     lr = testAdaMaxComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
-                assertEquals(lr, layer.conf().getLearningRateByParam("W"), 1e-4);
+//                assertEquals(lr, layer.conf().getLearningRateByParam("W"), 1e-4);
             }
         }
+        fail();
     }
 
 
@@ -409,12 +417,13 @@ public class TestDecayPolicies {
                 else if (updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.RMSPROP))
                     lr = testRMSPropComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
 
-                if (i == 0)
-                    assertEquals(lr, net.getLayer(1).conf().getLearningRateByParam("W"), lr);
-                else
-                    assertEquals(lr, net.getLayer(1).conf().getLearningRateByParam("W"), learningRateAfter.get(1));
+//                if (i == 0)
+//                    assertEquals(lr, net.getLayer(1).conf().getLearningRateByParam("W"), lr);
+//                else
+//                    assertEquals(lr, net.getLayer(1).conf().getLearningRateByParam("W"), learningRateAfter.get(1));
             }
         }
+        fail();
     }
 
     @Test
@@ -448,10 +457,11 @@ public class TestDecayPolicies {
             mln.fit(ds);
         mln.computeGradientAndScore();
 
-        double lr0 = ((BaseLayer) mln.getLayer(0).conf().getLayer()).getLearningRate();
-        double lr1 = ((BaseLayer) mln.getLayer(1).conf().getLayer()).getLearningRate();
-        assertEquals(1.0, lr0, 0.0);
-        assertEquals(1.0, lr1, 0.0);
+//        double lr0 = ((BaseLayer) mln.getLayer(0).conf().getLayer()).getLearningRate();
+//        double lr1 = ((BaseLayer) mln.getLayer(1).conf().getLayer()).getLearningRate();
+//        assertEquals(1.0, lr0, 0.0);
+//        assertEquals(1.0, lr1, 0.0);
+        fail();
     }
 
     @Test
@@ -596,20 +606,21 @@ public class TestDecayPolicies {
 
 
             int count = 0;
-            while (trainIter.hasNext()) {
-                net.fit(trainIter.next());
-
-                // always print the same number (0.1 and 0.9)
-                double lrLastLayer = (net.getLayer(last_layer_index)).conf().getLearningRateByParam("W");
-                double mLastLayer = ((BaseLayer) (net.getLayer(last_layer_index)).conf().getLayer()).getMomentum();
-
-                assertEquals(learningRateSchedule.get(count), lrLastLayer, 1e-6);
-                assertEquals(momentumSchedule.get(count), mLastLayer, 1e-6);
-
-                if (count++ >= 100)
-                    break;
-            }
+//            while (trainIter.hasNext()) {
+//                net.fit(trainIter.next());
+//
+//                // always print the same number (0.1 and 0.9)
+//                double lrLastLayer = (net.getLayer(last_layer_index)).conf().getLearningRateByParam("W");
+//                double mLastLayer = ((BaseLayer) (net.getLayer(last_layer_index)).conf().getLayer()).getMomentum();
+//
+//                assertEquals(learningRateSchedule.get(count), lrLastLayer, 1e-6);
+//                assertEquals(momentumSchedule.get(count), mLastLayer, 1e-6);
+//
+//                if (count++ >= 100)
+//                    break;
+//            }
         }
+        fail();
     }
 
     ///// Updater Calculations

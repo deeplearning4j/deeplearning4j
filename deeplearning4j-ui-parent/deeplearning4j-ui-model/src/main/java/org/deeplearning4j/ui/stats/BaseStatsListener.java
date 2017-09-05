@@ -412,7 +412,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 int layerIdx = 0;
                 for (Layer l : ((MultiLayerNetwork) model).getLayers()) {
                     NeuralNetConfiguration conf = l.conf();
-                    Map<String, Double> layerLrs = conf.getLearningRateByParam();
+                    Map<String, Double> layerLrs = null;    //TODO conf.getLearningRateByParam();
                     Set<String> backpropParams = l.paramTable(true).keySet();
                     for (Map.Entry<String, Double> entry : layerLrs.entrySet()) {
                         if (!backpropParams.contains(entry.getKey()))
@@ -425,7 +425,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 for (Layer l : ((ComputationGraph) model).getLayers()) {
                     //Need to append layer name
                     NeuralNetConfiguration conf = l.conf();
-                    Map<String, Double> layerLrs = conf.getLearningRateByParam();
+                    Map<String, Double> layerLrs = null;    //TODO conf.getLearningRateByParam();
                     String layerName = conf.getLayer().getLayerName();
                     Set<String> backpropParams = l.paramTable(true).keySet();
                     for (Map.Entry<String, Double> entry : layerLrs.entrySet()) {
@@ -436,7 +436,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 }
             } else if (model instanceof Layer) {
                 Layer l = (Layer) model;
-                Map<String, Double> map = l.conf().getLearningRateByParam();
+                Map<String, Double> map = null; //TODO l.conf().getLearningRateByParam();
                 lrs.putAll(map);
             }
             report.reportLearningRates(lrs);

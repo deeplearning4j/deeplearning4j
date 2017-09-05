@@ -65,6 +65,7 @@ import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import scala.Tuple2;
 
@@ -197,13 +198,13 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
         netCopy.fit(data);
         Updater expectedUpdater = ((BaseLayer) netCopy.conf().getLayer()).getUpdater();
-        double expectedLR = ((BaseLayer) netCopy.conf().getLayer()).getLearningRate();
-        double expectedMomentum = ((BaseLayer) netCopy.conf().getLayer()).getMomentum();
+        double expectedLR = ((Nesterovs)((BaseLayer) netCopy.conf().getLayer()).getIUpdater()).getLearningRate();
+        double expectedMomentum = ((Nesterovs)((BaseLayer) netCopy.conf().getLayer()).getIUpdater()).getMomentum();
 
         Updater actualUpdater = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getUpdater();
         sparkNet.fit(sparkData);
-        double actualLR = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getLearningRate();
-        double actualMomentum = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getMomentum();
+        double actualLR = ((Nesterovs)((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getIUpdater()).getLearningRate();
+        double actualMomentum = ((Nesterovs)((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getIUpdater()).getMomentum();
 
         assertEquals(expectedUpdater, actualUpdater);
         assertEquals(expectedLR, actualLR, 0.01);

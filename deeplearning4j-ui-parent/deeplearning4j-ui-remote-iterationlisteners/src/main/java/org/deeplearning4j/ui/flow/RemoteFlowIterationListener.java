@@ -275,7 +275,9 @@ public class RemoteFlowIterationListener implements IterationListener {
         if (layers != null) {
             for (Layer layer : layers) {
                 if (layer.conf().getLayer() instanceof BaseLayer) {
-                    lrs.add(((BaseLayer) layer.conf().getLayer()).getLearningRate());
+//                    lrs.add(((BaseLayer) layer.conf().getLayer()).getLearningRate());
+                    //TODO
+                    lrs.add(0.0);
                 } else {
                     lrs.add(0.0);
                 }

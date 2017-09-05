@@ -285,7 +285,8 @@ public class FlowIterationListener implements IterationListener {
         if (layers != null) {
             for (Layer layer : layers) {
                 if (layer.conf().getLayer() instanceof BaseLayer) {
-                    lrs.add(((BaseLayer) layer.conf().getLayer()).getLearningRate());
+//                    lrs.add(((BaseLayer) layer.conf().getLayer()).getLearningRate());
+                    throw new RuntimeException();
                 } else {
                     lrs.add(0.0);
                 }

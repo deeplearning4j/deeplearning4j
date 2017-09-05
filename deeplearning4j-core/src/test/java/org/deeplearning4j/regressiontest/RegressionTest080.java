@@ -59,7 +59,7 @@ public class RegressionTest080 {
         assertTrue(l0.getIUpdater() instanceof Nesterovs);
         Nesterovs n = (Nesterovs) l0.getIUpdater();
         assertEquals(0.9, n.getMomentum(), 1e-6);
-        assertEquals(0.15, l0.getLearningRate(), 1e-6);
+        assertEquals(0.15, ((Nesterovs)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(0.15, n.getLearningRate(), 1e-6);
 
 
@@ -70,9 +70,8 @@ public class RegressionTest080 {
         assertEquals(5, l1.getNOut());
         assertEquals(WeightInit.XAVIER, l1.getWeightInit());
         assertTrue(l1.getIUpdater() instanceof Nesterovs);
-        n = (Nesterovs) l1.getIUpdater();
-        assertEquals(0.9, n.getMomentum(), 1e-6);
-        assertEquals(0.15, l1.getLearningRate(), 1e-6);
+        assertEquals(0.9, ((Nesterovs)l1.getIUpdater()).getMomentum(), 1e-6);
+        assertEquals(0.15, ((Nesterovs)l1.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(0.15, n.getLearningRate(), 1e-6);
 
         int numParams = net.numParams();
@@ -105,7 +104,7 @@ public class RegressionTest080 {
         RmsProp r = (RmsProp) l0.getIUpdater();
         assertEquals(0.96, r.getRmsDecay(), 1e-6);
         assertEquals(0.15, r.getLearningRate(), 1e-6);
-        assertEquals(0.15, l0.getLearningRate(), 1e-6);
+        assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(new Dropout(0.6), l0.getIDropout());
         assertEquals(0.1, l0.getL1(), 1e-6);
         assertEquals(0.2, l0.getL2(), 1e-6);
@@ -123,7 +122,7 @@ public class RegressionTest080 {
         r = (RmsProp) l1.getIUpdater();
         assertEquals(0.96, r.getRmsDecay(), 1e-6);
         assertEquals(0.15, r.getLearningRate(), 1e-6);
-        assertEquals(0.15, l1.getLearningRate(), 1e-6);
+        assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(new Dropout(0.6), l1.getIDropout());
         assertEquals(0.1, l1.getL1(), 1e-6);
         assertEquals(0.2, l1.getL2(), 1e-6);
@@ -159,7 +158,7 @@ public class RegressionTest080 {
         RmsProp r = (RmsProp) l0.getIUpdater();
         assertEquals(0.96, r.getRmsDecay(), 1e-6);
         assertEquals(0.15, r.getLearningRate(), 1e-6);
-        assertEquals(0.15, l0.getLearningRate(), 1e-6);
+        assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertArrayEquals(new int[] {2, 2}, l0.getKernelSize());
         assertArrayEquals(new int[] {1, 1}, l0.getStride());
         assertArrayEquals(new int[] {0, 0}, l0.getPadding());

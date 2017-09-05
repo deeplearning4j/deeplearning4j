@@ -35,6 +35,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.HashMap;
@@ -248,11 +250,11 @@ public class NeuralNetConfigurationTest {
         ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(),
                         new NegativeDefaultStepFunction(), null, net);
         opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
-        assertEquals(lr, net.getLayer(0).conf().getLearningRateByParam("W"), 1e-4);
-        assertEquals(biasLr, net.getLayer(0).conf().getLearningRateByParam("b"), 1e-4);
-        assertEquals(0.7, net.getLayer(1).conf().getLearningRateByParam("gamma"), 1e-4);
-        assertEquals(0.3, net.getLayer(2).conf().getLearningRateByParam("W"), 1e-4); //From global LR
-        assertEquals(0.3, net.getLayer(2).conf().getLearningRateByParam("b"), 1e-4); //From global LR
+        assertEquals(lr, ((Sgd)net.getLayer(0).conf().getLayer().getIUpdaterByParam("W")).getLearningRate(), 1e-4);
+        assertEquals(biasLr, ((Sgd)net.getLayer(0).conf().getLayer().getIUpdaterByParam("b")).getLearningRate(), 1e-4);
+        assertEquals(0.7, ((Sgd)net.getLayer(1).conf().getLayer().getIUpdaterByParam("gamma")).getLearningRate(), 1e-4);
+        assertEquals(0.3, ((Sgd)net.getLayer(2).conf().getLayer().getIUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
+        assertEquals(0.3, ((Sgd)net.getLayer(2).conf().getLayer().getIUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
     }
 
     @Test

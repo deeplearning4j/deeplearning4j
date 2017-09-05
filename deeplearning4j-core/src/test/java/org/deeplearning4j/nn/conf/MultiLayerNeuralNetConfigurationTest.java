@@ -31,6 +31,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.*;
@@ -379,17 +380,17 @@ public class MultiLayerNeuralNetConfigurationTest {
         org.deeplearning4j.nn.conf.layers.BaseLayer l2 = (BaseLayer) conf.getConf(2).getLayer();
         org.deeplearning4j.nn.conf.layers.BaseLayer l3 = (BaseLayer) conf.getConf(3).getLayer();
 
-        assertEquals(0.5, l0.getBiasLearningRate(), 1e-6);
-        assertEquals(1e-2, l0.getLearningRate(), 1e-6);
+        assertEquals(0.5, ((Adam)l0.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l0.getIUpdaterByParam("W")).getLearningRate(), 1e-6);
 
-        assertEquals(0.5, l1.getBiasLearningRate(), 1e-6);
-        assertEquals(1e-2, l1.getLearningRate(), 1e-6);
+        assertEquals(0.5, ((Adam)l1.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l0.getIUpdaterByParam("W")).getLearningRate(), 1e-6);
 
-        assertEquals(0.25, l2.getBiasLearningRate(), 1e-6);
-        assertEquals(1e-2, l2.getLearningRate(), 1e-6);
+        assertEquals(0.25, ((Adam)l2.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l0.getIUpdaterByParam("W")).getLearningRate(), 1e-6);
 
-        assertEquals(0.5, l3.getBiasLearningRate(), 1e-6);
-        assertEquals(1e-2, l3.getLearningRate(), 1e-6);
+        assertEquals(0.5, ((Adam)l3.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l3.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
     }
 
 }
