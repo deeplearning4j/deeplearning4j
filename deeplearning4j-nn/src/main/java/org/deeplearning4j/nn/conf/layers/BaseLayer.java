@@ -28,8 +28,7 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.learning.config.IUpdater;
-import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.linalg.learning.config.*;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -46,38 +45,12 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     protected WeightInit weightInit;
     protected double biasInit;
     protected Distribution dist;
-//    protected double learningRate;
-//    protected double biasLearningRate;
-//    protected ISchedule lrSchedule;
-//    protected ISchedule biasLRSchedule;
-
-    //learning rate after n iterations
-    @Deprecated
-    protected Map<Integer, Double> learningRateSchedule;
-    @Deprecated
-    protected double momentum;
-    //momentum after n iterations
-    @Deprecated
-    protected Map<Integer, Double> momentumSchedule;
     protected double l1;
     protected double l2;
     protected double l1Bias;
     protected double l2Bias;
-    @Deprecated
-    protected Updater updater;
     protected IUpdater iUpdater;
-    //adadelta - weight for how much to consider previous history
-    @Deprecated
-    protected double rho;
-    //Epsilon value for adagrad and adadelta
-    @Deprecated
-    protected double epsilon;
-    @Deprecated
-    protected double rmsDecay;
-    @Deprecated
-    protected double adamMeanDecay;
-    @Deprecated
-    protected double adamVarDecay;
+    protected IUpdater biasUpdater;
     protected GradientNormalization gradientNormalization = GradientNormalization.None; //Clipping, rescale based on l2 norm, etc
     protected double gradientNormalizationThreshold = 1.0; //Threshold for l2 and element-wise gradient clipping
 
@@ -89,24 +62,73 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.weightInit = builder.weightInit;
         this.biasInit = builder.biasInit;
         this.dist = builder.dist;
-//        this.learningRate = builder.learningRate;
-//        this.biasLearningRate = builder.biasLearningRate;
-        this.learningRateSchedule = builder.learningRateSchedule;
-        this.momentum = builder.momentum;
-        this.momentumSchedule = builder.momentumAfter;
         this.l1 = builder.l1;
         this.l2 = builder.l2;
         this.l1Bias = builder.l1Bias;
         this.l2Bias = builder.l2Bias;
-        this.updater = builder.updater;
         this.iUpdater = builder.iupdater;
-        this.rho = builder.rho;
-        this.epsilon = builder.epsilon;
-        this.rmsDecay = builder.rmsDecay;
-        this.adamMeanDecay = builder.adamMeanDecay;
-        this.adamVarDecay = builder.adamVarDecay;
+        this.biasUpdater = builder.biasUpdater;
         this.gradientNormalization = builder.gradientNormalization;
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
+
+
+        //Handle legacy config set by user:
+        if(builder.updater != null && builder.iupdater == null){
+
+            if(!Double.isNaN(builder.learningRate)){
+                //User has done something like .updater(Updater.NESTEROVS).learningRate(0.2)
+                switch(builder.updater){
+                    case SGD:
+                        iUpdater = new Sgd(builder.learningRate);
+                        break;
+                    case ADAM:
+                        double aEps = Double.isNaN(builder.epsilon) ? Adam.DEFAULT_ADAM_EPSILON : builder.epsilon;
+                        double aM = Double.isNaN(builder.adamMeanDecay) ? Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY : builder.adamMeanDecay;
+                        double aV = Double.isNaN(builder.adamVarDecay) ? Adam.DEFAULT_ADAM_BETA2_VAR_DECAY : builder.adamVarDecay;
+                        iUpdater = new Adam(builder.learningRate, aM, aV, aEps);
+                        break;
+                    case ADAMAX:
+                        double amEps = Double.isNaN(builder.epsilon) ? AdaMax.DEFAULT_ADAMAX_EPSILON : builder.epsilon;
+                        double amM = Double.isNaN(builder.adamMeanDecay) ? AdaMax.DEFAULT_ADAMAX_BETA1_MEAN_DECAY : builder.adamMeanDecay;
+                        double amV = Double.isNaN(builder.adamVarDecay) ? AdaMax.DEFAULT_ADAMAX_BETA2_VAR_DECAY : builder.adamVarDecay;
+                        iUpdater = new AdaMax(builder.learningRate, amM, amV, amEps);
+                        break;
+                    case ADADELTA:
+                        double adRho = Double.isNaN(builder.rho) ? AdaDelta.DEFAULT_ADADELTA_RHO : builder.rho;
+                        double adEps = Double.isNaN(builder.epsilon) ? AdaDelta.DEFAULT_ADADELTA_EPSILON : builder.epsilon;
+                        iUpdater = new AdaDelta(adRho, adEps);
+                        break;
+                    case NESTEROVS:
+                        double nM = Double.isNaN(builder.momentum) ? Nesterovs.DEFAULT_NESTEROV_MOMENTUM : builder.momentum;
+                        iUpdater = new Nesterovs(builder.learningRate, nM);
+                        break;
+                    case NADAM:
+                        double naEps = Double.isNaN(builder.epsilon) ? Nadam.DEFAULT_NADAM_EPSILON : builder.epsilon;
+                        double naM = Double.isNaN(builder.adamMeanDecay) ? Nadam.DEFAULT_NADAM_BETA1_MEAN_DECAY : builder.adamMeanDecay;
+                        double naV = Double.isNaN(builder.adamVarDecay) ? Nadam.DEFAULT_NADAM_BETA2_VAR_DECAY : builder.adamVarDecay;
+                        iUpdater = new Nadam(builder.learningRate, naM, naV, naEps);
+                        break;
+                    case ADAGRAD:
+                        double agEps = Double.isNaN(builder.epsilon) ? AdaGrad.DEFAULT_ADAGRAD_EPSILON : builder.epsilon;
+                        iUpdater = new AdaGrad(builder.learningRate, agEps);
+                        break;
+                    case RMSPROP:
+                        double rEps = Double.isNaN(builder.epsilon) ? RmsProp.DEFAULT_RMSPROP_EPSILON : builder.epsilon;
+                        double rRms = Double.isNaN(builder.rmsDecay) ? RmsProp.DEFAULT_RMSPROP_RMSDECAY : builder.rmsDecay;
+                        iUpdater = new RmsProp(builder.learningRate, rRms, rEps);
+                        break;
+                    case NONE:
+                        iUpdater = new NoOp();
+                        break;
+                    case CUSTOM:
+                        //No op
+                        break;
+                }
+            } else {
+                //Use default learning rate
+                this.iUpdater = builder.updater.getIUpdaterWithDefaultConfig();
+            }
+        }
     }
 
     /**
@@ -116,21 +138,12 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
      */
     public void resetLayerDefaultConfig() {
         //clear the learning related params for all layers in the origConf and set to defaults
-        this.setUpdater(null);
         this.setIUpdater(null);
-        this.setMomentum(Double.NaN);
         this.setWeightInit(null);
         this.setBiasInit(Double.NaN);
         this.setDist(null);
-        this.setLearningRateSchedule(null);
-        this.setMomentumSchedule(null);
         this.setL1(Double.NaN);
         this.setL2(Double.NaN);
-        this.setRho(Double.NaN);
-        this.setEpsilon(Double.NaN);
-        this.setRmsDecay(Double.NaN);
-        this.setAdamMeanDecay(Double.NaN);
-        this.setAdamVarDecay(Double.NaN);
         this.setGradientNormalization(GradientNormalization.None);
         this.setGradientNormalizationThreshold(1.0);
     }
@@ -140,10 +153,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         BaseLayer clone = (BaseLayer) super.clone();
         if (clone.dist != null)
             clone.dist = clone.dist.clone();
-        if (clone.learningRateSchedule != null)
-            clone.learningRateSchedule = new HashMap<>(clone.learningRateSchedule);
-        if (clone.momentumSchedule != null)
-            clone.momentumSchedule = new HashMap<>(clone.momentumSchedule);
         return clone;
     }
 
@@ -156,6 +165,9 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
      */
     @Override
     public IUpdater getIUpdaterByParam(String paramName) {
+        if(biasUpdater != null && initializer().isBiasParam(paramName)){
+            return biasUpdater;
+        }
         return iUpdater;
     }
 
@@ -182,6 +194,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         @Deprecated
         protected Updater updater = null;
         protected IUpdater iupdater = null;
+        protected IUpdater biasUpdater = null;
         @Deprecated
         protected double rho = Double.NaN;
         @Deprecated
@@ -358,6 +371,11 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          */
         public T updater(IUpdater updater) {
             this.iupdater = updater;
+            return (T) this;
+        }
+
+        public T biasUpdater(IUpdater biasUpdater){
+            this.biasUpdater = biasUpdater;
             return (T) this;
         }
 
