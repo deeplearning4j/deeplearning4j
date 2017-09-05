@@ -2,12 +2,14 @@ package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -69,10 +71,17 @@ public class KerasDense extends KerasLayer {
         hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
 
+        LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
+                layerConfig, conf.getLAYER_FIELD_B_CONSTRAINT(), conf, kerasMajorVersion);
+        LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
+                layerConfig, conf.getLAYER_FIELD_W_CONSTRAINT(), conf, kerasMajorVersion);
+
         this.layer = new DenseLayer.Builder().name(this.layerName).nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout).activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                         enforceTrainingConfig, conf, kerasMajorVersion))
+                .biasConstraints(biasConstraint)
+                .weightConstraints(weightConstraint)
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .hasBias(hasBias).build();

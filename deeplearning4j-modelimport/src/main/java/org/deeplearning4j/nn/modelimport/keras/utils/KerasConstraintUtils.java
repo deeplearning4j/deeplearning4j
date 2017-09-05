@@ -98,10 +98,8 @@ public class KerasConstraintUtils {
 
         // Constraint field is always present, but might be null.
         HashMap constraintMap;
-        try {
-            constraintMap = (HashMap) innerConfig.get(constraintField);
-        } catch (Exception e) {
-            // No constraint available in this case.
+        constraintMap = (HashMap) innerConfig.get(constraintField);
+        if (constraintMap == null) {
             return null;
         }
 

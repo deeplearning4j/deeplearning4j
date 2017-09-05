@@ -79,6 +79,13 @@ public class Keras2ModelConfigurationTest {
         runSequentialConfigTest("configs/keras2/keras2_mlp_config.json");
     }
 
+
+    @Test
+    public void mlpConstraintsConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/mnist_mlp_constraint_tf_keras_2_config.json");
+    }
+
+
     @Test
     public void mlpFapiConfigTest() throws Exception {
         runModelConfigTest("configs/keras2/keras2_mlp_fapi_config.json");
