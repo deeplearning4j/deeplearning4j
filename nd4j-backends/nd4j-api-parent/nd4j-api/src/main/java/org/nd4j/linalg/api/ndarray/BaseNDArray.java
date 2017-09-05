@@ -3045,12 +3045,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if (other.columns() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(BlasBufferUtil.getCharForTranspose(result),
                                 BlasBufferUtil.getCharForTranspose(this), 1.0, this, other, 0.0, temp);
-                        BlasBufferUtil.getCharForTranspose(this),
-                        1.0,
-                        this,
-                        other,
-                        0.0,
-                        temp);
             }
 
             else {

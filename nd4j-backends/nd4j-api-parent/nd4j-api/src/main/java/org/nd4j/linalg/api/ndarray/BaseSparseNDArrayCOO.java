@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ndarray;
 
 import com.google.common.primitives.Doubles;
 import net.ericaro.neoitertools.Generator;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
@@ -1035,6 +1036,34 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     @Override
     public INDArray putiRowVector(INDArray rowVector) {
+        return null;
+    }
+
+    @Override
+    public INDArray mmul(INDArray other, MMulTranspose mMulTranspose) {
+        return null;
+    }
+
+    /**
+     * Perform an copy matrix multiplication
+     *
+     * @param other         the other matrix to perform matrix multiply with
+     * @param result        the result ndarray
+     * @param mMulTranspose the transpose status of each array
+     * @return the result of the matrix multiplication
+     */
+    @Override
+    public INDArray mmul(INDArray other, INDArray result, MMulTranspose mMulTranspose) {
+        return null;
+    }
+
+    @Override
+    public INDArray mmuli(INDArray other, MMulTranspose transpose) {
+        return null;
+    }
+
+    @Override
+    public INDArray mmuli(INDArray other, INDArray result, MMulTranspose transpose) {
         return null;
     }
 
