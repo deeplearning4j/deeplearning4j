@@ -103,6 +103,163 @@ TEST_F(DeclarableOpsTests, SynonymInitialization2) {
     ASSERT_TRUE(op == op2);
 }
 
+
+TEST_F(DeclarableOpsTests, TestTensorMmul1) {
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> y('c', {2, 3, 4});
+
+    for (int i = 0; i < x.lengthOf(); i++) {
+        x.putScalar(i, i + 1);
+        y.putScalar(i, i + 1);
+    }
+
+    NDArray<float> exp(2, 2, 'c');
+    exp.putScalar(0, 650.0);
+    exp.putScalar(1, 1586.0);
+    exp.putScalar(2, 1586.0);
+    exp.putScalar(3, 4250.0);
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+    variableSpace->putVariable(1, new Variable<float>());
+    Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1, -2});
+    block->getIArguments()->push_back(2);
+    block->getIArguments()->push_back(1);
+    block->getIArguments()->push_back(2);
+    block->getIArguments()->push_back(2);
+    block->getIArguments()->push_back(1);
+    block->getIArguments()->push_back(2);
+
+    nd4j::ops::tensormmul<float> tm;
+
+    tm.execute(block);
+
+    auto z = variableSpace->getVariable(1)->getNDArray();
+
+    z->printBuffer("Result: ");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
+TEST_F(DeclarableOpsTests, TestTensorDot2) {
+    NDArray<float> x('f', {2, 3, 4});
+    NDArray<float> y('f', {2, 3, 4});
+
+    for (int i = 0; i < x.lengthOf(); i++) {
+        x.putScalar(i, i + 1);
+        y.putScalar(i, i + 1);
+    }
+
+    NDArray<float> exp(2, 2, 'c');
+    exp.putScalar(0, 2300.0);
+    exp.putScalar(1, 2444.0);
+    exp.putScalar(2, 2444.0);
+    exp.putScalar(3, 2600.0);
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+    variableSpace->putVariable(1, new Variable<float>());
+    Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1, -2});
+    block->getIArguments()->push_back(2);
+    block->getIArguments()->push_back(1);
+    block->getIArguments()->push_back(2);
+    block->getIArguments()->push_back(2);
+    block->getIArguments()->push_back(1);
+    block->getIArguments()->push_back(2);
+
+    nd4j::ops::tensormmul<float> tm;
+
+    tm.execute(block);
+
+    auto z = variableSpace->getVariable(1)->getNDArray();
+
+    z->printBuffer("Result: ");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
+TEST_F(DeclarableOpsTests, TestTensorDot3) {
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> y('f', {2, 3, 4});
+
+    for (int i = 0; i < x.lengthOf(); i++) {
+        x.putScalar(i, i + 1);
+        y.putScalar(i, i + 1);
+    }
+
+    NDArray<float> exp(2, 2, 'c');
+    exp.putScalar(0, 1090.0);
+    exp.putScalar(1, 2818.0);
+    exp.putScalar(2, 1168.0);
+    exp.putScalar(3, 3040.0);
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+    variableSpace->putVariable(1, new Variable<float>());
+    Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1, -2});
+    block->getIArguments()->push_back(2);
+    block->getIArguments()->push_back(1);
+    block->getIArguments()->push_back(2);
+    block->getIArguments()->push_back(2);
+    block->getIArguments()->push_back(1);
+    block->getIArguments()->push_back(2);
+
+    nd4j::ops::tensormmul<float> tm;
+
+    tm.execute(block);
+
+    auto z = variableSpace->getVariable(1)->getNDArray();
+
+    z->printBuffer("Result: ");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
+TEST_F(DeclarableOpsTests, TestTensorDot4) {
+    NDArray<float> x('f', {2, 3, 4});
+    NDArray<float> y('c', {2, 3, 4});
+
+    for (int i = 0; i < x.lengthOf(); i++) {
+        x.putScalar(i, i + 1);
+        y.putScalar(i, i + 1);
+    }
+
+    NDArray<float> exp(2, 2, 'c');
+    exp.putScalar(0, 1090.0);
+    exp.putScalar(1, 1168.0);
+    exp.putScalar(2, 2818.0);
+    exp.putScalar(3, 3040.0);
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+    variableSpace->putVariable(1, new Variable<float>());
+    Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1, -2});
+    block->getIArguments()->push_back(2);
+    block->getIArguments()->push_back(1);
+    block->getIArguments()->push_back(2);
+    block->getIArguments()->push_back(2);
+    block->getIArguments()->push_back(1);
+    block->getIArguments()->push_back(2);
+
+    nd4j::ops::tensormmul<float> tm;
+
+    tm.execute(block);
+
+    auto z = variableSpace->getVariable(1)->getNDArray();
+
+    z->printBuffer("Result: ");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests, DivergentCheck1) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("switch");

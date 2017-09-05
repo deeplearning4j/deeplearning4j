@@ -981,6 +981,36 @@ template<typename T> NDArray<T>* NDArray<T>::repeat(int dimension, const std::ve
     return ret;
 }
 
+    template <typename T>
+    bool NDArray<T>::permutei(const std::initializer_list<int> dimensions) {
+        std::vector<int> vec(dimensions);
+        return permutei(vec);
+    }
+
+    template <typename T>
+    bool NDArray<T>::permutei(const std::vector<int>& dimensions) {
+        return permutei(dimensions.data(), dimensions.size());
+    }
+
+    template <typename T>
+    bool NDArray<T>::permutei(const int* dimensions, const int rank) {
+
+        if(_buffer==nullptr || rank != rankOf())
+            return false;
+
+        // check if current object is _shapeInfo owner
+        if(!_isShapeAlloc) {             // if _shapeInfo is not its own
+            int* shapeInfo = new int[rank*2+4];
+            shape::permuteShapeBufferInPlace(_shapeInfo, const_cast<int*>(dimensions), shapeInfo);
+            _shapeInfo = shapeInfo;
+            _isShapeAlloc = true;
+        }
+        else
+            shape::permuteShapeBufferInPlace(_shapeInfo, const_cast<int*>(dimensions), _shapeInfo);
+
+        return true;
+    }
+
 //////////////////////////////////////////////////////////////////////////
 // tile an array by repeating it the number of times given by reps.
 template<typename T> NDArray<T>* NDArray<T>::tile(const std::vector<int>& reps) {
@@ -1090,12 +1120,14 @@ template<typename T> NDArray<T>* NDArray<T>::tile(const std::vector<int>& reps) 
                 result = new NDArray<T>(A->rows(), 1, 'f');
 
             // TODO: strides!!!
-            nd4j::blas::GEMV<float>::op(A->ordering() == 'f' ? CblasTrans : 0,  A->rows(), A->columns(), alpha, A->_buffer, B->rows(), B->_buffer, 1, beta, C->_buffer, 1);
+            nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0,  A->rows(), A->columns(), alpha, A->_buffer, B->rows(), B->_buffer, 1, beta, C->_buffer, 1);
         } else if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix())) {
             // gemm
             // int[] shape = {rows(), other.columns()};
-            if (result == nullptr)
+            if (result == nullptr) {
+                nd4j_verbose("Creating new array: [%i x %i]\n", A->rows(), B->columns());
                 result = new NDArray(A->rows(), B->columns(), 'f');
+            }
 
 
             char aOrder = A->ordering();
