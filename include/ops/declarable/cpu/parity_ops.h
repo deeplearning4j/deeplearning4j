@@ -396,6 +396,83 @@ namespace nd4j {
         DECLARE_SYN(copy, assign);
 
 
+        DECLARE_OP(mergemax, -1, 1, false) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));
+            REQUIRE_OK(this->validateInputDimensionsMatch(block));
+
+            Nd4jIndex numArgs = block.getVariables().size();
+            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            auto z = new NDArray<T>(x);
+
+
+#pragma omp parallel for proc_bind(close)
+            for (Nd4jIndex e = 0; e < x->lengthOf(); e++) {
+                T max = -MAX_FLOAT;
+                for (int i = 0; i < numArgs; i++){
+                    NDArray<T> *o = block.getVariables().at(0)->getNDArray();
+                    T v = o->getIndexedScalar(e);
+                    if (v > max)
+                        max = v;
+                }
+                z->putIndexedScalar(e, max);
+            }
+
+            STORE_RESULT(*z);
+
+            return ND4J_STATUS_OK;
+        }
+
+        DECLARE_OP(mergeadd, -1, 1, false) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));
+            REQUIRE_OK(this->validateInputDimensionsMatch(block));
+
+            Nd4jIndex numArgs = block.getVariables().size();
+            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            auto z = new NDArray<T>(x);
+
+
+#pragma omp parallel for proc_bind(close)
+            for (Nd4jIndex e = 0; e < x->lengthOf(); e++) {
+                T sum = (T) 0.0f;
+                for (int i = 0; i < numArgs; i++){
+                    NDArray<T> *o = block.getVariables().at(0)->getNDArray();
+                    T v = o->getIndexedScalar(e);
+                    sum += v;
+                }
+                z->putIndexedScalar(e, sum);
+            }
+
+            STORE_RESULT(*z);
+
+            return ND4J_STATUS_OK;
+        }
+        DECLARE_SYN(mergesum, mergeadd);
+
+        DECLARE_OP(mergeavg, -1, 1, false) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));
+            REQUIRE_OK(this->validateInputDimensionsMatch(block));
+
+            Nd4jIndex numArgs = block.getVariables().size();
+            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            auto z = new NDArray<T>(x);
+
+
+#pragma omp parallel for proc_bind(close)
+            for (Nd4jIndex e = 0; e < x->lengthOf(); e++) {
+                T sum = (T) 0.0f;
+                for (int i = 0; i < numArgs; i++){
+                    NDArray<T> *o = block.getVariables().at(0)->getNDArray();
+                    T v = o->getIndexedScalar(e);
+                    sum += v;
+                }
+                z->putIndexedScalar(e, sum / numArgs);
+            }
+
+            STORE_RESULT(*z);
+
+            return ND4J_STATUS_OK;
+        }
+
 //////////////////////////////////////////////////////////////////////////
         DECLARE_OP(softmax, 2, 1, false) {
             // YaY
