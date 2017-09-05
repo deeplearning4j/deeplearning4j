@@ -978,35 +978,78 @@ template<typename T> NDArray<T>* NDArray<T>::repeat(int dimension, const std::ve
     return ret;
 }
 
-    template <typename T>
-    bool NDArray<T>::permutei(const std::initializer_list<int> dimensions) {
-        std::vector<int> vec(dimensions);
-        return permutei(vec);
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+bool NDArray<T>::permutei(const int* dimensions, const int rank) {
+
+    if(_buffer==nullptr || rank != rankOf())
+        return false;
+
+    // check if current object is _shapeInfo owner
+    if(!_isShapeAlloc) {             // if _shapeInfo is not its own
+        int* shapeInfo = new int[rank*2+4];
+        shape::permuteShapeBufferInPlace(_shapeInfo, const_cast<int*>(dimensions), shapeInfo);
+        _shapeInfo = shapeInfo;
+        _isShapeAlloc = true;
     }
+    else
+        shape::permuteShapeBufferInPlace(_shapeInfo, const_cast<int*>(dimensions), _shapeInfo);
 
-    template <typename T>
-    bool NDArray<T>::permutei(const std::vector<int>& dimensions) {
-        return permutei(dimensions.data(), dimensions.size());
-    }
+    return true;
+}
 
-    template <typename T>
-    bool NDArray<T>::permutei(const int* dimensions, const int rank) {
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+bool NDArray<T>::permutei(const std::initializer_list<int> dimensions) {
+    std::vector<int> vec(dimensions);
+    return permutei(vec);
+}
 
-        if(_buffer==nullptr || rank != rankOf())
-            return false;
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+bool NDArray<T>::permutei(const std::vector<int>& dimensions) {
+    return permutei(dimensions.data(), dimensions.size());
+}
 
-        // check if current object is _shapeInfo owner
-        if(!_isShapeAlloc) {             // if _shapeInfo is not its own
-            int* shapeInfo = new int[rank*2+4];
-            shape::permuteShapeBufferInPlace(_shapeInfo, const_cast<int*>(dimensions), shapeInfo);
-            _shapeInfo = shapeInfo;
-            _isShapeAlloc = true;
-        }
-        else
-            shape::permuteShapeBufferInPlace(_shapeInfo, const_cast<int*>(dimensions), _shapeInfo);
 
-        return true;
-    }
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+NDArray<T>* NDArray<T>::permute(const int* dimensions, const int rank) {
+
+    if(_buffer==nullptr || rank != rankOf())
+        return false;
+	int buffLength = lengthOf();
+	int shapeInfoLength = rankOf()*2 + 4;
+	// allocate memory for new array - buffer and shapeInfo
+	T* bufferNew = new T[buffLength];
+	int* shapeInfoNew = new int[shapeInfoLength];
+	// copy this arrays _buffer  into new array	
+	memcpy(bufferNew, _buffer, buffLength*sizeOfT());	
+	// perform buffer permutation
+	shape::permuteShapeBufferInPlace(_shapeInfo, const_cast<int*>(dimensions), shapeInfoNew);
+	// create array to be returned
+    NDArray<T>* ret = new NDArray<T>(bufferNew, shapeInfoNew);
+	// don't forget to indicate that memory for new array was allocated
+    ret->_isBuffAlloc = true;
+    ret->_isShapeAlloc = true;
+
+    return ret;
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+NDArray<T>* NDArray<T>::permute(const std::vector<int>& dimensions) {
+    return permute(dimensions.data(), dimensions.size());
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+NDArray<T>* NDArray<T>::permute(const std::initializer_list<int> dimensions) {
+    std::vector<int> vec(dimensions);
+    return permute(vec);
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // tile an array by repeating it the number of times given by reps.

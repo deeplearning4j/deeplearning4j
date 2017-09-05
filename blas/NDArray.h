@@ -82,6 +82,10 @@ namespace nd4j {
         bool permutei(const std::vector<int>& dimensions);
         bool permutei(const int* dimensions, const int rank);
 
+		NDArray<T>* permute(const std::initializer_list<int> dimensions);
+        NDArray<T>* permute(const std::vector<int>& dimensions);
+        NDArray<T>* permute(const int* dimensions, const int rank);
+
         // This method returns number of rows in this NDArray
         int rows() const {
             return shapeOf()[0];
