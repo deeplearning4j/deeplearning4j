@@ -3081,11 +3081,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 paramShape = "";
                 in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
                 out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
-//                Set<String> paraNames = currentLayer.conf().getLearningRateByParam().keySet();
-//                for (String aP : paraNames) {
-//                    String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
-//                    paramShape += aP + ":" + paramS + ", ";
-//                }
+                Set<String> paraNames = currentLayer.paramTable().keySet();
+                for (String aP : paraNames) {
+                    String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
+                    paramShape += aP + ":" + paramS + ", ";
+                }
                 paramShape = paramShape.subSequence(0, paramShape.lastIndexOf(",")).toString();
             }
             if (currentLayer instanceof FrozenLayer) {

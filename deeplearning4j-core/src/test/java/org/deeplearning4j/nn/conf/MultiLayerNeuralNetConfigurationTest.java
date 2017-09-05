@@ -369,8 +369,7 @@ public class MultiLayerNeuralNetConfigurationTest {
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
                         .layer(1, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())
-                        .layer(2, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).biasLearningRate(0.25)
-                                        .build())
+                        .layer(2, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())
                         .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(10)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(28, 28, 1)).build();
@@ -384,13 +383,13 @@ public class MultiLayerNeuralNetConfigurationTest {
         assertEquals(1e-2, ((Adam)l0.getIUpdaterByParam("W")).getLearningRate(), 1e-6);
 
         assertEquals(0.5, ((Adam)l1.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
-        assertEquals(1e-2, ((Adam)l0.getIUpdaterByParam("W")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l1.getIUpdaterByParam("W")).getLearningRate(), 1e-6);
 
-        assertEquals(0.25, ((Adam)l2.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
-        assertEquals(1e-2, ((Adam)l0.getIUpdaterByParam("W")).getLearningRate(), 1e-6);
+        assertEquals(0.5, ((Adam)l2.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l2.getIUpdaterByParam("W")).getLearningRate(), 1e-6);
 
         assertEquals(0.5, ((Adam)l3.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
-        assertEquals(1e-2, ((Adam)l3.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l3.getIUpdaterByParam("W")).getLearningRate(), 1e-6);
     }
 
 }

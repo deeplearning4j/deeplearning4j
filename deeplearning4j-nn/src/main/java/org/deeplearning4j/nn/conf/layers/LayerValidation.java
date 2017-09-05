@@ -22,7 +22,10 @@ public class LayerValidation {
     /**
      * Validate the updater configuration - setting the default updater values, if necessary
      */
-    public static void updaterValidation(String layerName, Layer layer, Double learningRate) {
+//    public static void updaterValidation(String layerName, Layer layer, Double learningRate, Double biasLearningRate) {
+    public static void updaterValidation(String layerName, Layer layer, Double learningRate, Double biasLearningRate, Double momentum,
+                                         Map<Integer, Double> momentumSchedule, Double adamMeanDecay, Double adamVarDecay, Double rho,
+                                         Double rmsDecay, Double epsilon) {
         BaseLayer bLayer;
         if (layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer) {
             bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
@@ -31,13 +34,20 @@ public class LayerValidation {
         } else {
             return;
         }
-        updaterValidation(layerName, bLayer, learningRate == null ? Double.NaN : learningRate);
+        updaterValidation(layerName, bLayer, learningRate == null ? Double.NaN : learningRate,
+                biasLearningRate == null ? Double.NaN : biasLearningRate,
+                momentum == null ? Double.NaN : momentum, momentumSchedule,
+                adamMeanDecay == null ? Double.NaN : adamMeanDecay,
+                adamVarDecay == null ? Double.NaN : adamVarDecay, rho == null ? Double.NaN : rho,
+                rmsDecay == null ? Double.NaN : rmsDecay, epsilon == null ? Double.NaN : epsilon);
     }
 
     /**
      * Validate the updater configuration - setting the default updater values, if necessary
      */
-    public static void updaterValidation(String layerName, BaseLayer layer, double learningRate) {
+    public static void updaterValidation(String layerName, BaseLayer layer, double learningRate, double biasLearningRate, double momentum,
+                                         Map<Integer, Double> momentumSchedule, double adamMeanDecay, double adamVarDecay, double rho,
+                                         double rmsDecay, double epsilon) {
         //Set values from old (deprecated) .epsilon(), .momentum(), etc methods to the built-in updaters
         //Note that there are *layer* versions (available via the layer) and *global* versions (via the method args)
         //The layer versions take precedence over the global versions. If neither are set, we use whatever is set
@@ -54,13 +64,114 @@ public class LayerValidation {
 //            //Local layer LR set
 //            setLegacyLr(u, layer.getLearningRate() );
 //        } else
-            if (!Double.isNaN(learningRate)) {
+        if (!Double.isNaN(learningRate) && Double.isNaN(layer.getLearningRate())) {
             //Global LR set
             setLegacyLr(u, learningRate);
         }
+
+        if(!Double.isNaN(biasLearningRate) && Double.isNaN(layer.getBiasLearningRate())){
+            IUpdater ub = layer.getBiasUpdater();
+            if(ub == null){
+                ub = layer.getIUpdater().clone();
+            }
+            setLegacyLr(ub, biasLearningRate);
+        }
+
+
+
+        if (u instanceof Adam) {
+            Adam a = (Adam) u;
+            if (!Double.isNaN(layer.getEpsilon())) {
+                //user has done legacy .epsilon(...) on the layer itself
+                a.setEpsilon(layer.getEpsilon());
+            } else if (!Double.isNaN(epsilon)) {
+                //user has done legacy .epsilon(...) on MultiLayerNetwork or ComputationGraph
+                a.setEpsilon(epsilon);
+            }
+
+            if (!Double.isNaN(layer.getAdamMeanDecay())) {
+                a.setBeta1(layer.getAdamMeanDecay());
+            } else if (!Double.isNaN(adamMeanDecay)) {
+                a.setBeta1(adamMeanDecay);
+            }
+
+            if (!Double.isNaN(layer.getAdamVarDecay())) {
+                a.setBeta2(layer.getAdamVarDecay());
+            } else if (!Double.isNaN(adamVarDecay)) {
+                a.setBeta2(adamVarDecay);
+            }
+
+        } else if (u instanceof AdaDelta) {
+            AdaDelta a = (AdaDelta) u;
+
+            if (!Double.isNaN(layer.getRho())) {
+                a.setRho(layer.getRho());
+            } else if (!Double.isNaN(rho)) {
+                a.setRho(rho);
+            }
+
+            if (!Double.isNaN(layer.getEpsilon())) {
+                a.setEpsilon(layer.getEpsilon());
+            } else if (!Double.isNaN(epsilon)) {
+                a.setEpsilon(epsilon);
+            }
+
+        } else if (u instanceof Nesterovs) {
+            Nesterovs n = (Nesterovs) u;
+            if (!Double.isNaN(layer.getMomentum())) {
+                n.setMomentum(layer.getMomentum());
+            } else if (!Double.isNaN(momentum)) {
+                n.setMomentum(momentum);
+            }
+
+        } else if (u instanceof AdaGrad) {
+            AdaGrad a = (AdaGrad) u;
+            if (!Double.isNaN(layer.getEpsilon())) {
+                a.setEpsilon(layer.getEpsilon());
+            } else if (!Double.isNaN(epsilon)) {
+                a.setEpsilon(epsilon);
+            }
+
+        } else if (u instanceof RmsProp) {
+            RmsProp r = (RmsProp) u;
+
+            if (!Double.isNaN(layer.getEpsilon())) {
+                r.setEpsilon(layer.getEpsilon());
+            } else if (!Double.isNaN(epsilon)) {
+                r.setEpsilon(epsilon);
+            }
+
+            if (!Double.isNaN(layer.getRmsDecay())) {
+                r.setRmsDecay(layer.getRmsDecay());
+            } else if (!Double.isNaN(rmsDecay)) {
+                r.setRmsDecay(rmsDecay);
+            }
+
+        } else if (u instanceof AdaMax) {
+            AdaMax a = (AdaMax) u;
+
+            if (!Double.isNaN(layer.getEpsilon())) {
+                a.setEpsilon(layer.getEpsilon());
+            } else if (!Double.isNaN(epsilon)) {
+                a.setEpsilon(epsilon);
+            }
+
+            if (!Double.isNaN(layer.getAdamMeanDecay())) {
+                a.setBeta1(layer.getAdamMeanDecay());
+            } else if (!Double.isNaN(adamMeanDecay)) {
+                a.setBeta1(adamMeanDecay);
+            }
+
+            if (!Double.isNaN(layer.getAdamVarDecay())) {
+                a.setBeta2(layer.getAdamVarDecay());
+            } else if (!Double.isNaN(adamVarDecay)) {
+                a.setBeta2(adamVarDecay);
+            }
+
+        }
     }
 
-    private static void setLegacyLr(IUpdater u, double lr){
+    public static void setLegacyLr(IUpdater u, double lr){
         if(u instanceof AdaGrad){
             ((AdaGrad) u).setLearningRate(lr);
         } else if(u instanceof Adam){
@@ -76,6 +187,25 @@ public class LayerValidation {
         } else if(u instanceof Sgd){
             ((Sgd) u).setLearningRate(lr);
         }
+    }
+
+    public static Double getLr(IUpdater u){
+        if(u instanceof AdaGrad){
+            return ((AdaGrad) u).getLearningRate();
+        } else if(u instanceof Adam){
+            return ((Adam) u).getLearningRate();
+        } else if(u instanceof AdaMax){
+            return ((AdaMax) u).getLearningRate();
+        } else if(u instanceof Nadam){
+            return ((Nadam) u).getLearningRate();
+        } else if(u instanceof Nesterovs){
+            return ((Nesterovs) u).getLearningRate();
+        } else if(u instanceof RmsProp){
+            return ((RmsProp) u).getLearningRate();
+        } else if(u instanceof Sgd){
+            return ((Sgd) u).getLearningRate();
+        }
+        return null;
     }
 
 

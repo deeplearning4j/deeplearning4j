@@ -49,11 +49,27 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     protected double l2;
     protected double l1Bias;
     protected double l2Bias;
+    @Deprecated
+    protected double learningRate;
+    @Deprecated
+    protected double biasLearningRate;
     protected IUpdater iUpdater;
     protected IUpdater biasUpdater;
     protected GradientNormalization gradientNormalization = GradientNormalization.None; //Clipping, rescale based on l2 norm, etc
     protected double gradientNormalizationThreshold = 1.0; //Threshold for l2 and element-wise gradient clipping
 
+    @Deprecated
+    protected double rho = Double.NaN;
+    @Deprecated
+    protected double epsilon = Double.NaN;
+    @Deprecated
+    protected double rmsDecay = Double.NaN;
+    @Deprecated
+    protected double adamMeanDecay = Double.NaN;
+    @Deprecated
+    protected double adamVarDecay = Double.NaN;
+    @Deprecated
+    protected double momentum = Double.NaN;
 
     public BaseLayer(Builder builder) {
         super(builder);
@@ -71,63 +87,114 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.gradientNormalization = builder.gradientNormalization;
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
 
+        this.learningRate = builder.learningRate;
+        this.biasLearningRate = builder.biasLearningRate;
+        this.rho = builder.rho;
+        this.epsilon = builder.epsilon;
+        this.rmsDecay = builder.rmsDecay;
+        this.adamMeanDecay = builder.adamMeanDecay;
+        this.adamVarDecay = builder.adamVarDecay;
+        this.momentum = builder.momentum;
 
-        //Handle legacy config set by user:
+        //Handle legacy LR config set by user:
         if(builder.updater != null && builder.iupdater == null){
-
             if(!Double.isNaN(builder.learningRate)){
                 //User has done something like .updater(Updater.NESTEROVS).learningRate(0.2)
-                switch(builder.updater){
-                    case SGD:
-                        iUpdater = new Sgd(builder.learningRate);
-                        break;
-                    case ADAM:
-                        double aEps = Double.isNaN(builder.epsilon) ? Adam.DEFAULT_ADAM_EPSILON : builder.epsilon;
-                        double aM = Double.isNaN(builder.adamMeanDecay) ? Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY : builder.adamMeanDecay;
-                        double aV = Double.isNaN(builder.adamVarDecay) ? Adam.DEFAULT_ADAM_BETA2_VAR_DECAY : builder.adamVarDecay;
-                        iUpdater = new Adam(builder.learningRate, aM, aV, aEps);
-                        break;
-                    case ADAMAX:
-                        double amEps = Double.isNaN(builder.epsilon) ? AdaMax.DEFAULT_ADAMAX_EPSILON : builder.epsilon;
-                        double amM = Double.isNaN(builder.adamMeanDecay) ? AdaMax.DEFAULT_ADAMAX_BETA1_MEAN_DECAY : builder.adamMeanDecay;
-                        double amV = Double.isNaN(builder.adamVarDecay) ? AdaMax.DEFAULT_ADAMAX_BETA2_VAR_DECAY : builder.adamVarDecay;
-                        iUpdater = new AdaMax(builder.learningRate, amM, amV, amEps);
-                        break;
-                    case ADADELTA:
-                        double adRho = Double.isNaN(builder.rho) ? AdaDelta.DEFAULT_ADADELTA_RHO : builder.rho;
-                        double adEps = Double.isNaN(builder.epsilon) ? AdaDelta.DEFAULT_ADADELTA_EPSILON : builder.epsilon;
-                        iUpdater = new AdaDelta(adRho, adEps);
-                        break;
-                    case NESTEROVS:
-                        double nM = Double.isNaN(builder.momentum) ? Nesterovs.DEFAULT_NESTEROV_MOMENTUM : builder.momentum;
-                        iUpdater = new Nesterovs(builder.learningRate, nM);
-                        break;
-                    case NADAM:
-                        double naEps = Double.isNaN(builder.epsilon) ? Nadam.DEFAULT_NADAM_EPSILON : builder.epsilon;
-                        double naM = Double.isNaN(builder.adamMeanDecay) ? Nadam.DEFAULT_NADAM_BETA1_MEAN_DECAY : builder.adamMeanDecay;
-                        double naV = Double.isNaN(builder.adamVarDecay) ? Nadam.DEFAULT_NADAM_BETA2_VAR_DECAY : builder.adamVarDecay;
-                        iUpdater = new Nadam(builder.learningRate, naM, naV, naEps);
-                        break;
-                    case ADAGRAD:
-                        double agEps = Double.isNaN(builder.epsilon) ? AdaGrad.DEFAULT_ADAGRAD_EPSILON : builder.epsilon;
-                        iUpdater = new AdaGrad(builder.learningRate, agEps);
-                        break;
-                    case RMSPROP:
-                        double rEps = Double.isNaN(builder.epsilon) ? RmsProp.DEFAULT_RMSPROP_EPSILON : builder.epsilon;
-                        double rRms = Double.isNaN(builder.rmsDecay) ? RmsProp.DEFAULT_RMSPROP_RMSDECAY : builder.rmsDecay;
-                        iUpdater = new RmsProp(builder.learningRate, rRms, rEps);
-                        break;
-                    case NONE:
-                        iUpdater = new NoOp();
-                        break;
-                    case CUSTOM:
-                        //No op
-                        break;
-                }
+                configureUpdaterFromLegacyLR(this, builder, builder.learningRate, false);
             } else {
                 //Use default learning rate
                 this.iUpdater = builder.updater.getIUpdaterWithDefaultConfig();
             }
+
+            if(!Double.isNaN(builder.biasLearningRate)){
+                //User *also* set bias learning rate...
+                configureUpdaterFromLegacyLR(this, builder, builder.biasLearningRate, true);
+            }
+        }
+    }
+
+
+    private static void configureUpdaterFromLegacyLR(BaseLayer b, Builder builder, double learningRate, boolean isBias){
+        //User has done something like .updater(Updater.NESTEROVS).learningRate(0.2)
+        switch(builder.updater){
+            case SGD:
+                if(isBias){
+                    b.biasUpdater = new Sgd(learningRate);
+                } else {
+                    b.iUpdater = new Sgd(learningRate);
+                }
+                break;
+            case ADAM:
+                double aEps = Double.isNaN(builder.epsilon) ? Adam.DEFAULT_ADAM_EPSILON : builder.epsilon;
+                double aM = Double.isNaN(builder.adamMeanDecay) ? Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY : builder.adamMeanDecay;
+                double aV = Double.isNaN(builder.adamVarDecay) ? Adam.DEFAULT_ADAM_BETA2_VAR_DECAY : builder.adamVarDecay;
+                if(isBias){
+                    b.biasUpdater = new Adam(learningRate, aM, aV, aEps);
+                } else {
+                    b.iUpdater = new Adam(learningRate, aM, aV, aEps);
+                }
+                break;
+            case ADAMAX:
+                double amEps = Double.isNaN(builder.epsilon) ? AdaMax.DEFAULT_ADAMAX_EPSILON : builder.epsilon;
+                double amM = Double.isNaN(builder.adamMeanDecay) ? AdaMax.DEFAULT_ADAMAX_BETA1_MEAN_DECAY : builder.adamMeanDecay;
+                double amV = Double.isNaN(builder.adamVarDecay) ? AdaMax.DEFAULT_ADAMAX_BETA2_VAR_DECAY : builder.adamVarDecay;
+                if(isBias){
+                    b.biasUpdater = new AdaMax(learningRate, amM, amV, amEps);
+                } else {
+                    b.iUpdater = new AdaMax(learningRate, amM, amV, amEps);
+                }
+                break;
+            case ADADELTA:
+                double adRho = Double.isNaN(builder.rho) ? AdaDelta.DEFAULT_ADADELTA_RHO : builder.rho;
+                double adEps = Double.isNaN(builder.epsilon) ? AdaDelta.DEFAULT_ADADELTA_EPSILON : builder.epsilon;
+                if(isBias){
+                    b.biasUpdater = new AdaDelta(adRho, adEps);
+                } else {
+                    b.iUpdater = new AdaDelta(adRho, adEps);
+                }
+                break;
+            case NESTEROVS:
+                double nM = Double.isNaN(builder.momentum) ? Nesterovs.DEFAULT_NESTEROV_MOMENTUM : builder.momentum;
+                if(isBias){
+                    b.biasUpdater = new Nesterovs(learningRate, nM);
+                } else {
+                    b.iUpdater = new Nesterovs(learningRate, nM);
+                }
+                break;
+            case NADAM:
+                double naEps = Double.isNaN(builder.epsilon) ? Nadam.DEFAULT_NADAM_EPSILON : builder.epsilon;
+                double naM = Double.isNaN(builder.adamMeanDecay) ? Nadam.DEFAULT_NADAM_BETA1_MEAN_DECAY : builder.adamMeanDecay;
+                double naV = Double.isNaN(builder.adamVarDecay) ? Nadam.DEFAULT_NADAM_BETA2_VAR_DECAY : builder.adamVarDecay;
+                if(isBias){
+                    b.biasUpdater = new Nadam(learningRate, naM, naV, naEps);
+                } else {
+                    b.iUpdater = new Nadam(learningRate, naM, naV, naEps);
+                }
+                break;
+            case ADAGRAD:
+                double agEps = Double.isNaN(builder.epsilon) ? AdaGrad.DEFAULT_ADAGRAD_EPSILON : builder.epsilon;
+                if(isBias){
+                    b.biasUpdater = new AdaGrad(learningRate, agEps);
+                } else {
+                    b.iUpdater = new AdaGrad(learningRate, agEps);
+                }
+
+                break;
+            case RMSPROP:
+                double rEps = Double.isNaN(builder.epsilon) ? RmsProp.DEFAULT_RMSPROP_EPSILON : builder.epsilon;
+                double rRms = Double.isNaN(builder.rmsDecay) ? RmsProp.DEFAULT_RMSPROP_RMSDECAY : builder.rmsDecay;
+                if(isBias){
+                    b.biasUpdater = new RmsProp(learningRate, rRms, rEps);
+                } else {
+                    b.iUpdater = new RmsProp(learningRate, rRms, rEps);
+                }
+                break;
+            case NONE:
+                b.iUpdater = new NoOp();
+                break;
+            case CUSTOM:
+                //No op
+                break;
         }
     }
 
@@ -360,7 +427,9 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          */
         @Deprecated
         public T updater(Updater updater) {
-            return updater(updater.getIUpdaterWithDefaultConfig());
+//            return updater(updater.getIUpdaterWithDefaultConfig());
+            this.updater = updater;
+            return (T) this;
         }
 
         /**

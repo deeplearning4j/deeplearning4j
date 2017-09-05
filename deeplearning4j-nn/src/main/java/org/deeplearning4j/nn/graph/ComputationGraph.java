@@ -3193,7 +3193,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         paramShape = "";
                         in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
                         out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
-                        Set<String> paraNames = null;   //TODO currentLayer.conf().getLearningRateByParam().keySet();
+                        List<String> paraNames = currentLayer.conf().variables();
                         for (String aP : paraNames) {
                             String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
                             paramShape += aP + ":" + paramS + ", ";

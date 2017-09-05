@@ -377,8 +377,8 @@ public class TestUpdaters {
             count++;
         }
 
-        assertEquals(beta1, ((Adam)layer.layerConf().getIUpdater()).getBeta1(), 1e-4);
-        assertEquals(beta2, ((Adam)layer.layerConf().getIUpdater()).getBeta2(), 1e-4);
+        assertEquals(beta1, ((AdaMax)layer.layerConf().getIUpdater()).getBeta1(), 1e-4);
+        assertEquals(beta2, ((AdaMax)layer.layerConf().getIUpdater()).getBeta2(), 1e-4);
         assertEquals(2, count);
     }
 
@@ -718,11 +718,11 @@ public class TestUpdaters {
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).epsilon(0.123).build())
                         .layer(2, new OutputLayer.Builder().nIn(2).nOut(2).epsilon(0.456).build()).build();
 
-        assertEquals(1e-6, ((AdaDelta)((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getEpsilon(),
+        assertEquals(1e-6, ((AdaGrad)((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getEpsilon(),
                         0.0);
-        assertEquals(0.123, ((AdaDelta)((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getEpsilon(),
+        assertEquals(0.123, ((AdaGrad)((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getEpsilon(),
                         0.0);
-        assertEquals(0.456, ((AdaDelta)((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(2).getLayer()).getIUpdater()).getEpsilon(),
+        assertEquals(0.456, ((AdaGrad)((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(2).getLayer()).getIUpdater()).getEpsilon(),
                         0.0);
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

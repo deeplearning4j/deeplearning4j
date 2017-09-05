@@ -176,7 +176,7 @@ public class LayerConfigTest {
         net.init();
 
         assertEquals(new Dropout(1.0), conf.getConf(0).getLayer().getIDropout());
-        assertEquals(new Dropout(2.0), conf.getConf(0).getLayer().getIDropout());
+        assertEquals(new Dropout(2.0), conf.getConf(1).getLayer().getIDropout());
     }
 
     @Test
@@ -246,8 +246,11 @@ public class LayerConfigTest {
 
     @Test
     public void testUpdaterAdamParamsLayerwiseOverride() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.ADAM).adamMeanDecay(0.5)
-                        .adamVarDecay(0.5).list().layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.ADAM).adamMeanDecay(0.5)
+                        .adamVarDecay(0.5)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).adamMeanDecay(0.6).adamVarDecay(0.7).build())
                         .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

@@ -232,7 +232,7 @@ public class NeuralNetConfigurationTest {
         int iteration = 3;
         INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.3).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.3).updater(Updater.SGD).list()
                         .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0])
                                         .updater(org.deeplearning4j.nn.conf.Updater.SGD).learningRate(lr)
                                         .biasLearningRate(biasLr).build())
