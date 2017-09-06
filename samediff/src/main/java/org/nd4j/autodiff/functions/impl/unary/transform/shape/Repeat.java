@@ -8,22 +8,22 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-public class Repeat  extends AbstractUnaryFunction<ArrayField> {
+public class Repeat  extends AbstractUnaryFunction {
 
     private int axis;
 
-    public Repeat(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, int axis) {
+    public Repeat(SameDiff sameDiff, DifferentialFunction i_v, int axis) {
         super(sameDiff, i_v, i_v.getValue(true).getInput().getShape(), OpState.OpType.SHAPE,new Object[]{axis});
         this.axis = axis;
     }
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().repeat(arg().getValue(true),axis);
+        return a().repeat(arg().getValue(true),axis);
     }
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         throw new UnsupportedOperationException();
     }
 

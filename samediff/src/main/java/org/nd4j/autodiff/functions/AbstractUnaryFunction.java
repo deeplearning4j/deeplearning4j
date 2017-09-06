@@ -18,23 +18,41 @@ import java.util.UUID;
 
 @Data
 @NoArgsConstructor
-public abstract class AbstractUnaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
+public abstract class AbstractUnaryFunction extends DifferentialFunction {
 
-    protected DifferentialFunction<X> m_x;
+    protected DifferentialFunction m_x;
     protected int[] shape;
     protected OpState.OpType opType;
 
     public AbstractUnaryFunction(SameDiff sameDiff,
-                                 DifferentialFunction<X> i_v,
+                                 DifferentialFunction i_v,
                                  int[] shape,
                                  OpState.OpType opType,
                                  Object[] extraArgs) {
-        super(sameDiff,extraArgs);
+        this(sameDiff,
+                i_v,
+                shape,
+                opType,
+                false,
+                extraArgs);
+    }
+
+    public AbstractUnaryFunction(SameDiff sameDiff,DifferentialFunction i_v,boolean inPlace) {
+        this(sameDiff,i_v,i_v.getResultShape(), OpState.OpType.TRANSFORM,inPlace,null);
+    }
+
+    public AbstractUnaryFunction(SameDiff sameDiff,
+                                 DifferentialFunction i_v,
+                                 int[] shape,
+                                 OpState.OpType opType,
+                                 boolean inPlace,
+                                 Object[] extraArgs) {
+        super(sameDiff,inPlace,extraArgs);
         this.opType = opType;
         this.shape = shape;
 
         if (i_v != null) {
-            m_x = i_v;
+            m_x = sameDiff.setupFunction(i_v);
             validateFunctionReference(i_v);
             validateDifferentialFunctionsameDiff(i_v);
             addEdges(sameDiff,m_x,functionName(),shape);
@@ -44,7 +62,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
     }
 
     public AbstractUnaryFunction(SameDiff sameDiff,
-                                 DifferentialFunction<X> i_v,
+                                 DifferentialFunction i_v,
                                  int[] shape,
                                  Object[] extraArgs) {
         this(sameDiff,i_v,shape, OpState.OpType.TRANSFORM,extraArgs);
@@ -52,14 +70,14 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
 
 
     public AbstractUnaryFunction(SameDiff sameDiff,
-                                 DifferentialFunction<X> i_v,
+                                 DifferentialFunction i_v,
                                  Object[] extraArgs) {
-     this(sameDiff,i_v,i_v.getResultShape(), OpState.OpType.TRANSFORM,extraArgs);
+        this(sameDiff,i_v,i_v.getResultShape(), OpState.OpType.TRANSFORM,extraArgs);
     }
 
 
     @Override
-    public String doGetFormula(List<Variable<X>> variables) {
+    public String doGetFormula(List<Variable> variables) {
         return functionName() + "(" + arg().doGetFormula(variables) + ")";
     }
 
@@ -75,58 +93,67 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
      * @param opName
      */
     protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction<X> i_v1,
+                            DifferentialFunction i_v1,
                             String opName,
                             int...shape) {
         validateFunctionReference(i_v1);
-        if(i_v1.getValue(true) instanceof ArrayField) {
-            ArrayField v1 = (ArrayField) i_v1.getValue(true);
-            validateDifferentialFunctionsameDiff(v1);
-            NDArrayInformation information =    NDArrayInformation.builder()
-                    .arrId(UUID.randomUUID().toString())
-                    .id(opName + "(" + v1.getInput().getId() + " -> " +
-                            v1.getInput().getId() + ")")
-                    .shape(shape).build();
-            //result
-            NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information);
-            this.vertexId = newVertex.vertexID();
-            Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");
-            sameDiff.getGraph().addVertex(newVertex);
-            OpState owner =  OpState.builder()
-                    .opType(opType).differentialFunction((DifferentialFunction<ArrayField>) this)
-                    .opName(opName).extraArgs(extraArgs)
-                    .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
-                    .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                    .n(ArrayUtil.prod(shape)).result(information)
-                    .build();
-            sameDiff.getGraph().addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),owner,true);
-            newVertex.setOpState(owner);
-            information.setOwner(owner);
-            owner.setResult(information);
-            if(owner.isInPlace()) {
-                information.setArrId(v1.getInput().getArrId());
-            }
-            this.opState = owner;
+        ArrayField v1 = i_v1.getValue(true);
+        validateDifferentialFunctionsameDiff(v1);
+        NDArrayInformation information =    NDArrayInformation.builder()
+                .arrId(UUID.randomUUID().toString())
+                .id(opName + "(" + v1.getInput().getId() + " -> " +
+                        v1.getInput().getId() + ")")
+                .shape(shape).build();
+        //result
+        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.graph().nextVertexId(),information);
+        this.vertexId = newVertex.vertexID();
+        sameDiff.graph().addVertex(newVertex);
+        Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");
+        OpState owner =  OpState.builder()
+                .opType(opType).differentialFunction(this)
+                .opName(opName).inPlace(inPlace)
+                .extraArgs(extraArgs)
+                .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
+                .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                .n(ArrayUtil.prod(shape)).result(information)
+                .build();
 
+
+        sameDiff.getGraph().addEdge(
+                arg().resultVertexId(),
+                newVertex.vertexID(),
+                owner,
+                true);
+
+
+
+        newVertex.setOpState(owner);
+        information.setOwner(owner);
+        owner.setResult(information);
+        if(owner.isInPlace()) {
+            information.setArrId(v1.getInput().getArrId());
         }
+        this.opState = owner;
+
+
     }
 
 
     @Override
-    public DifferentialFunction<X>[] args() {
+    public DifferentialFunction[] args() {
         return new DifferentialFunction[] {arg()};
     }
 
     @Override
-    public DifferentialFunction<X> arg() {
+    public DifferentialFunction arg() {
         return m_x;
     }
 
 
     @Override
-    public DifferentialFunction<X> dup() {
+    public DifferentialFunction dup() {
         Cloner cloner = new Cloner();
-        return cloner.deepClone(this);
+        return sameDiff.setupFunction(cloner.deepClone(this));
     }
 
 

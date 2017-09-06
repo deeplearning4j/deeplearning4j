@@ -9,26 +9,26 @@ import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import java.util.Collections;
 import java.util.List;
 
-public class Neg extends AbstractUnaryFunction<ArrayField> {
-    public Neg(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+public class Neg extends AbstractUnaryFunction {
+    public Neg(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public Neg(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().neg(arg().getValue(true));
+        return a().neg(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        return -arg().getReal();
-    }
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
         validateDifferentialFunctionsameDiff(arg());
-        DifferentialFunction<ArrayField> ret = arg().negate();
+        DifferentialFunction ret = f().neg(i_v.get(0));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

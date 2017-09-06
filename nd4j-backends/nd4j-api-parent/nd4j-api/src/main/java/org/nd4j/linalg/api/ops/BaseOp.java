@@ -205,7 +205,7 @@ public abstract class BaseOp implements Op {
      * @param x the ndarray
      */
     public BaseOp(INDArray x) {
-        this(x, null, x, x ==  null ? 0 : x.lengthLong());
+        this(x, null, x, x == null ? 0 : x.lengthLong());
     }
 
     @Override

@@ -107,7 +107,7 @@ public class ACosh extends BaseTransformOp {
 
         if (y() != null)
             return new ACosh(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                    z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new ACosh(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -119,7 +119,7 @@ public class ACosh extends BaseTransformOp {
 
         if (y() != null)
             return new ACosh(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                    z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new ACosh(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 

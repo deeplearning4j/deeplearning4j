@@ -8,9 +8,13 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class Cos extends AbstractUnaryFunction<ArrayField> {
-    public Cos(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+public class Cos extends AbstractUnaryFunction {
+    public Cos(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public Cos(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     @Override
@@ -19,14 +23,9 @@ public class Cos extends AbstractUnaryFunction<ArrayField> {
     }
 
     @Override
-    public double getReal() {
-        return Math.cos(arg().getReal());
-    }
-
-    @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
-        DifferentialFunction<ArrayField> ret = f().sin(arg()).negate();
+        DifferentialFunction ret = f().neg(f().sin(arg()));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

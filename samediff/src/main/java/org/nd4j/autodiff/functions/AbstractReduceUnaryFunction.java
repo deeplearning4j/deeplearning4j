@@ -18,13 +18,13 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
+public abstract class AbstractReduceUnaryFunction extends DifferentialFunction {
 
-    protected DifferentialFunction<X> m_x;
+    protected DifferentialFunction m_x;
     protected int[] dimensions;
 
     public AbstractReduceUnaryFunction(SameDiff sameDiff,
-                                       DifferentialFunction<X> i_v,
+                                       DifferentialFunction i_v,
                                        int[] dimensions) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
@@ -39,23 +39,18 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
     }
 
     @Override
-    public X doGetValue() {
-        return (X) sameDiff.getArrayFactory().prod((ArrayField) arg().doGetValue(),dimensions);
+    public ArrayField doGetValue() {
+        return a().prod(arg().getValue(true),dimensions);
     }
 
-
-    @Override
-    public double getReal() {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public String toString() {
-        return functionName() + "(" + m_x.getFormula(new ArrayList<>()) + ",axes:" + Arrays.toString(dimensions) + ")";
+        return functionName() + "(" + m_x + ",axes:" + Arrays.toString(dimensions) + ")";
     }
 
     @Override
-    public String doGetFormula(List<Variable<X>> variables) {
+    public String doGetFormula(List<Variable> variables) {
         return functionName() + "(" + m_x.doGetFormula(new ArrayList<>()) + ",axes:" + Arrays.toString(dimensions) + ")";
     }
 
@@ -65,48 +60,47 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
      * @param i_v1
      * @param opName
      */
-    protected void addEdges(SameDiff sameDiff, DifferentialFunction<X> i_v1,String opName) {
-        if(i_v1.getValue(true) instanceof ArrayField) {
-            ArrayField v1 = (ArrayField) i_v1.getValue(true);
-            int[] resultShape = Shape.getReducedShape(v1.getInput().getShape(),dimensions);
-            //result
-            NDArrayInformation information =  NDArrayInformation.builder()
-                    .arrId(UUID.randomUUID().toString())
-                    .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
-                    .shape(resultShape).build();
-            NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information);
-            this.vertexId = newVertex.vertexID();
-            sameDiff.getGraph().addVertex(newVertex);
-            OpState opState =   OpState.builder()
-                    .opType(OpState.OpType.ACCUMULATION)
-                    .opName(opName).axes(dimensions)
-                    .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
-                    .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                    .n(ArrayUtil.prod(Shape.getReducedShape(v1.getInput().getShape(),dimensions)))
-                    .differentialFunction((DifferentialFunction<ArrayField>) this)
-                    .build();
-            newVertex.setOpState(opState);
-            sameDiff.getGraph().addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),opState
-                    ,true);
-            this.opState = opState;
-            information.setOwner(opState);
-            opState.setResult(information);
+    protected void addEdges(SameDiff sameDiff, DifferentialFunction i_v1,String opName) {
+        ArrayField v1 = i_v1.getValue(true);
+        int[] resultShape = Shape.getReducedShape(v1.getInput().getShape(),dimensions);
+        //result
+        NDArrayInformation information =  NDArrayInformation.builder()
+                .arrId(UUID.randomUUID().toString())
+                .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
+                .shape(resultShape).build();
+        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information);
+        this.vertexId = newVertex.vertexID();
+        sameDiff.getGraph().addVertex(newVertex);
+        OpState opState =   OpState.builder()
+                .opType(OpState.OpType.ACCUMULATION)
+                .opName(opName).axes(dimensions)
+                .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
+                .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                .n(ArrayUtil.prod(Shape.getReducedShape(v1.getInput().getShape(),dimensions)))
+                .differentialFunction(this)
+                .build();
+        newVertex.setOpState(opState);
+        sameDiff.getGraph().addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),opState
+                ,true);
+        this.opState = opState;
+        information.setOwner(opState);
+        opState.setResult(information);
 
-        }
+
     }
 
     @Override
-    public DifferentialFunction<X>[] args() {
+    public DifferentialFunction[] args() {
         return new DifferentialFunction[] {m_x};
     }
 
-    public DifferentialFunction<X> arg() {
+    public DifferentialFunction arg() {
         return m_x;
     }
 
 
     @Override
-    public DifferentialFunction<X> dup() {
+    public DifferentialFunction dup() {
         try {
             return getClass().getConstructor(sameDiff.getClass(),arg()
                     .getClass(),int[].class).newInstance(sameDiff,arg(),dimensions);

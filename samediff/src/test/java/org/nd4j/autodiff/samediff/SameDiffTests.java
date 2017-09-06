@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
@@ -132,7 +133,7 @@ public class SameDiffTests {
         SDVariable addResult = result.add(result);
 
         assertEquals("cosineSimilarity(x,y)", result.getVarName());
-        assertEquals(5, sameDiff.graph().numVertices());
+        assertEquals(6, sameDiff.graph().numVertices());
         assertArrayEquals(new int[]{1, 2}, result.getShape());
     }
 
@@ -146,9 +147,9 @@ public class SameDiffTests {
         SDVariable otherResult = result.add(result);
         assertEquals("mmul(x,y)", result.getVarName());
         //3 vertices and 1 op result
-        assertEquals(4, sameDiff.graph().numVertices()); // XXX: Why 5 instead of 3?
+        assertEquals(5, sameDiff.graph().numVertices()); // XXX: Why 5 instead of 3?
         //2 edges for matrix multiply and 1 op for result
-        assertEquals(3, sameDiff.graph().getEdges().size()); // XXX: Why 3 instead of 2?
+        assertEquals(4, sameDiff.graph().getEdges().size()); // XXX: Why 3 instead of 2?
         assertArrayEquals(new int[]{2, 2}, result.getShape());
     }
 
@@ -161,7 +162,7 @@ public class SameDiffTests {
         SDVariable y = sameDiff.var("y", arr);
         SDVariable result = sameDiff.mmul(x, y);
         SDVariable otherResult = result.add(result);
-        assertEquals(2, sameDiff.graph().getInputs().size());
+        assertEquals(3, sameDiff.graph().getInputs().size());
     }
 
     @Test
@@ -229,7 +230,7 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 8, 8)).reshape(2, 2, 2);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable y = sameDiff.var("y", arr);
-        SDVariable result = sameDiff.tensorMmul(x, y, new int[][]{{0}, {1}}, 0);
+        SDVariable result = sameDiff.tensorMmul(x, y, new int[][]{{0}, {1}});
         assertEquals("tensorMmul(x,y)", result.getVarName());
         assertEquals(3, sameDiff.graph().numVertices());
         assertEquals(2, sameDiff.graph().getEdges().size());
@@ -255,7 +256,7 @@ public class SameDiffTests {
         SDVariable log = sameDiff.log(input);
         SDVariable sum = sameDiff.sum(log,Integer.MAX_VALUE);
         INDArray result = null;
-        List<Op> execBackwards = sameDiff.execBackwards();
+        Pair<Map<SDVariable, Op>, List<Op>> execBackwards = sameDiff.execBackwards();
         System.out.println(execBackwards);
         //INDArray assertion = Nd4j.create(new double[]{1, 0.5, 0.33, 0.25});
         // assertTrue(assertion.equalsWithEps(result, 1e-2));
@@ -350,33 +351,30 @@ public class SameDiffTests {
                 SDVariable x = sameDiff.var("x",inputs.get("x"));
                 SDVariable w = sameDiff.var("w",inputs.get("w"));
                 SDVariable y = sameDiff.var("y",inputs.get("y"));
-                SDVariable ret = sameDiff.sigmoid(sameDiff.mmul(x,w));
-                return ret;
+                SDVariable activation = sameDiff.sigmoid("activation",sameDiff.mmul(x,w));
+                SDVariable oneMinusY = y.rsub("oneminusy",1.0);
+                SDVariable oneMinusPredictions = activation.rsub("oneminusactivations",1.0);
+                SDVariable outputTimesY = y.mul("output * y",activation);
+                SDVariable yHat = oneMinusY.mul("yhat",oneMinusPredictions);
+                SDVariable probs = outputTimesY.add("probs",yHat);
+                SDVariable logProbs = sameDiff.log("logprob",probs);
+                SDVariable ret = sameDiff.sum("totalsum",logProbs,Integer.MAX_VALUE);
+                SDVariable ret2 = sameDiff.neg("negtotalsum",ret);
+                return ret2;
             }
         },vars);
 
-        outside.defineFunction("loss", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                SDVariable activation = outside.invokeFunctionOn("activate",sameDiff);
-                SDVariable y = sameDiff.getVariable("y");
-                SDVariable oneMinusY = y.rsub(1.0);
-                SDVariable oneMinusPredictions = activation.rsub(1.0);
-                SDVariable outputTimesY = y.mul(activation);
-                SDVariable yHat = oneMinusY.mul(oneMinusPredictions);
-                SDVariable probs = outputTimesY.add(yHat);
-                SDVariable logProbs = sameDiff.log(probs);
-                SDVariable ret = sameDiff.sum(logProbs,Integer.MAX_VALUE);
-                return ret;
-            }
-        });
 
 
-        List<Op> ops = outside.getFunction("loss").execBackwards();
-        System.out.println(ops);
+        Pair<Map<SDVariable, Op>, List<Op>> opsForward = outside.getFunction("activate").exec();
+        System.out.println(opsForward);
+        SDVariable loss = outside.getFunction("activate").getVariable("negtotalsum");
+        assertEquals(loss.getArr().getDouble(0),2.77,1e-2);
+        Pair<Map<SDVariable, Op>, List<Op>> opsBackward = outside.getFunction("activate").execBackwards();
 
-        SDVariable gradWrtX = outside.getFunction("loss").grad("x");
-        SDVariable gradWrtW = outside.getFunction("loss").grad("w");
+
+        SDVariable gradWrtX = outside.getFunction("activate").grad("x");
+        SDVariable gradWrtW = outside.getFunction("activate").grad("w");
         assumeNotNull(gradWrtX);
         assumeNotNull(gradWrtW);
 
@@ -409,8 +407,7 @@ public class SameDiffTests {
             @Override
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                 SDVariable result = outer.invokeFunctionOn("firstadd", sameDiff);
-                SDVariable one = sameDiff.scalar("scalar", 1.0);
-                return result.add(one);
+                return result.add(1.0);
             }
         });
 
@@ -439,7 +436,7 @@ public class SameDiffTests {
         SDVariable preOutput = sameDiff.mmul(x, w);
 
         SDVariable outputs = sameDiff.sigmoid(preOutput);
-        List<Op> ops = sameDiff.exec();
+        List<Op> ops = sameDiff.exec().getRight();
         assertTrue(ops.get(0).z() == ops.get(1).x());
 
     }
@@ -502,7 +499,7 @@ public class SameDiffTests {
         SDVariable input = sameDiff.var("x",inputs.get("x"));
         SDVariable softmax = sameDiff.softmax(input);
         SDVariable sum = sameDiff.sum(softmax,Integer.MAX_VALUE);
-        List<Op> backwardsOps = sameDiff.execBackwards();
+        List<Op> backwardsOps = sameDiff.execBackwards().getRight();
         assertEquals(4,backwardsOps.size());
         assertEquals(Nd4j.zeros(2,2),backwardsOps.get(backwardsOps.size() - 1).z());
         System.out.println(backwardsOps);
@@ -517,7 +514,7 @@ public class SameDiffTests {
         SDVariable input = sameDiff.var("x",inputs.get("x"));
         SDVariable sigmoid = sameDiff.sigmoid(input);
         SDVariable sum = sameDiff.sum(sigmoid,Integer.MAX_VALUE);
-        List<Op> backwardsOps = sameDiff.execBackwards();
+        List<Op> backwardsOps = sameDiff.execBackwards().getRight();
         assertTrue(Nd4j.create(new double[][]{
                 {0.1966 , 0.1050},
                 {0.0452 , 0.0177}
@@ -547,7 +544,7 @@ public class SameDiffTests {
             }
         },inputs);
 
-        List<Op> ops = sameDiff.getFunction("mmulGradient").execBackwards();
+        List<Op> ops = sameDiff.getFunction("mmulGradient").execBackwards().getRight();
 
         assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad"));
         assumeNotNull(sameDiff.getFunction("mmulGradient").grad("x"));
@@ -592,7 +589,7 @@ public class SameDiffTests {
         },inputs);
 
 
-        List<Op> ops = sameDiff.getFunction("expGradient").execBackwards();
+        List<Op> ops = sameDiff.getFunction("expGradient").execBackwards().getRight();
 
         INDArray executions = ops.get(ops.size() - 1).z();
         INDArray assertion = Nd4j.create(new double[][]{
@@ -845,58 +842,15 @@ public class SameDiffTests {
 
     }
 
-    @Test
-    public void testLogisticTestOutput() {
-        SameDiff sameDiffOuter = SameDiff.create();
-        Map<String,INDArray> inputs = variablesForInput();
-
-        sameDiffOuter.defineFunction("logisticPredictions", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                SDVariable input = sameDiff.var("x",inputs.get("x"));
-                SDVariable w = sameDiff.var("w",inputs.get("w"));
-                SDVariable y = sameDiff.var("y",inputs.get("y"));
-                SDVariable preOutput = sameDiff.mmul(input,w);
-                SDVariable sigmoid = sameDiff.sigmoid(preOutput);
-                return sigmoid;
-            }
-        },inputs);
-
-        sameDiffOuter.defineFunction("loss", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
-                SDVariable outputs = sameDiffOuter.invokeFunctionOn("logisticPredictions",sameDiff);
-                SDVariable y = sameDiff.getVariableMap().get("y");
-                SDVariable oneMinusOutput = outputs.rsub(1.0);
-                SDVariable oneMinusPredictions = y.rsub(1.0);
-                SDVariable outputTimesY = outputs.mul(y);
-                SDVariable oneMinusMul = oneMinusOutput.mul(oneMinusPredictions);
-                SDVariable probs = outputTimesY.add(oneMinusMul);
-                SDVariable logProbs = sameDiff.log(probs);
-                SDVariable sum = sameDiff.sum(logProbs,Integer.MAX_VALUE);
-                SDVariable negSum = sameDiff.neg(sum);
-                return negSum;
-            }
-        },inputs);
-
-
-
-
-    }
-
-
-
-
 
     @Test
     public void testSums() {
         SameDiff sameDiff = SameDiff.create();
         INDArray ones = Nd4j.ones(4);
         SDVariable sdVariable = sameDiff.var("ones",ones);
-        SDVariable scalarOne = sameDiff.var("add1",Nd4j.scalar(1.0));
-        SDVariable result = sdVariable.addi(scalarOne);
+        SDVariable result = sdVariable.addi(1.0);
         SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
-        List<Op> ops = sameDiff.exec();
+        List<Op> ops = sameDiff.exec().getRight();
         INDArray output = null;
         for(int i = 0; i < 5; i++) {
             output = sameDiff.execAndEndResult(ops);

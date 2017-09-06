@@ -24,7 +24,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 
-public class Mmul extends TensorMmul<ArrayField> {
+public class Mmul extends TensorMmul {
 
     /**
      *
@@ -34,8 +34,8 @@ public class Mmul extends TensorMmul<ArrayField> {
      * @param mMulTranspose
      */
     public Mmul(SameDiff sameDiff,
-                DifferentialFunction<ArrayField> i_v1,
-                DifferentialFunction<ArrayField> i_v2,
+                DifferentialFunction i_v1,
+                DifferentialFunction i_v2,
                 MMulTranspose mMulTranspose) {
         super(sameDiff,
                 i_v1,
@@ -54,22 +54,22 @@ public class Mmul extends TensorMmul<ArrayField> {
      * @param i_v2
      */
     public Mmul(SameDiff sameDiff,
-                DifferentialFunction<ArrayField> i_v1,
-                DifferentialFunction<ArrayField> i_v2) {
+                DifferentialFunction i_v1,
+                DifferentialFunction i_v2) {
         this(sameDiff,i_v1,i_v2,MMulTranspose.allFalse());
     }
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v1) {
-        List<DifferentialFunction<ArrayField>> ret = new ArrayList<>();
-        DifferentialFunction<ArrayField> setup = sameDiff.setupFunction(i_v1.get(0));
-        DifferentialFunction<ArrayField> gradWrtX = f().reshape(f().mmul(setup,rarg(),
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+        List<DifferentialFunction> ret = new ArrayList<>();
+        DifferentialFunction setup = sameDiff.setupFunction(i_v1.get(0));
+        DifferentialFunction gradWrtX = f().reshape(f().mmul(setup,rarg(),
                 MMulTranspose.builder()
                         .transposeB(!mMulTranspose.isTransposeB())
                         .transposeResult(mMulTranspose.isTransposeA())
                         .build()),larg().getResultShape());
 
-        DifferentialFunction<ArrayField> gradWrtY = f().reshape(f().mmul(larg(),setup,
+        DifferentialFunction gradWrtY = f().reshape(f().mmul(larg(),setup,
                 MMulTranspose.builder()
                         .transposeA(!mMulTranspose.isTransposeA())
                         .transposeResult(mMulTranspose.isTransposeB())
@@ -86,8 +86,8 @@ public class Mmul extends TensorMmul<ArrayField> {
 
     @Override
     protected void addEdges(SameDiff sameDiff,
-                            DifferentialFunction<ArrayField> i_v1,
-                            DifferentialFunction<ArrayField> i_v2,
+                            DifferentialFunction i_v1,
+                            DifferentialFunction i_v2,
                             String opName) {
         ArrayField arrayField = i_v1.getValue(true);
         ArrayField secondVal = i_v2.getValue(true);

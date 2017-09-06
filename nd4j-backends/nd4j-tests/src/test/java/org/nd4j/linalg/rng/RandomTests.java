@@ -62,13 +62,16 @@ public class RandomTests extends BaseNd4jTest {
     @Test
     public void testCrossBackendEquality1() throws Exception {
 
-        int[] shape = {1,12};
+        int[] shape = {1, 12};
         double mean = 0;
         double standardDeviation = 1.0;
-        INDArray exp = Nd4j.create(new double[]{0.3201344790670888, 1.5718323114821624, 2.3576019088920157, 0.011034205622299313, -1.6848556179688527, 0.05479720804200661, -0.3641108263800006, -0.04683796849808572, -0.7358251292982549, 1.3590746854410898, 0.6587930319509204, 0.13347446589944548});
+        INDArray exp = Nd4j.create(new double[] {0.3201344790670888, 1.5718323114821624, 2.3576019088920157,
+                        0.011034205622299313, -1.6848556179688527, 0.05479720804200661, -0.3641108263800006,
+                        -0.04683796849808572, -0.7358251292982549, 1.3590746854410898, 0.6587930319509204,
+                        0.13347446589944548});
         Nd4j.getRandom().setSeed(12345);
         INDArray arr = Nd4j.getExecutioner().exec(new GaussianDistribution(
-                Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), Nd4j.getRandom());
+                        Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), Nd4j.getRandom());
 
 
         assertEquals(exp, arr);
@@ -629,7 +632,8 @@ public class RandomTests extends BaseNd4jTest {
         INDArray z1 = Nd4j.zeros(20);
         INDArray z2 = Nd4j.zeros(20);
         INDArray z1Dup = Nd4j.zeros(20);
-        INDArray exp = Nd4j.create(new double[]{1.00, 0.00, 1.00, 0.00, 1.00, 1.00, 0.00, 1.00, 1.00, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, 0.00, 0.00});
+        INDArray exp = Nd4j.create(new double[] {1.00, 0.00, 1.00, 0.00, 1.00, 1.00, 0.00, 1.00, 1.00, 0.00, 0.00, 0.00,
+                        1.00, 1.00, 1.00, 0.00, 0.00, 0.00, 0.00, 0.00});
 
         BernoulliDistribution op1 = new BernoulliDistribution(z1, 0.50);
         BernoulliDistribution op2 = new BernoulliDistribution(z2, 0.50);
@@ -650,12 +654,12 @@ public class RandomTests extends BaseNd4jTest {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
-        INDArray prob = Nd4j.create(new double[]{1.0, 0.1, 0.2, 0.5, 1.0, 1.0, 0.3, 0.7, 0.34, 0.119});
+        INDArray prob = Nd4j.create(new double[] {1.0, 0.1, 0.2, 0.5, 1.0, 1.0, 0.3, 0.7, 0.34, 0.119});
 
         INDArray z1 = Nd4j.zeros(10);
         INDArray z2 = Nd4j.zeros(10);
         INDArray z1Dup = Nd4j.zeros(10);
-        INDArray exp = Nd4j.create(new double[]{1.00, 0.00, 1.00, 0.00, 1.00, 1.00, 0.00, 1.00, 1.00, 0.00});
+        INDArray exp = Nd4j.create(new double[] {1.00, 0.00, 1.00, 0.00, 1.00, 1.00, 0.00, 1.00, 1.00, 0.00});
 
         BernoulliDistribution op1 = new BernoulliDistribution(z1, prob);
         BernoulliDistribution op2 = new BernoulliDistribution(z2, prob);

@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     protected AtomicLong bytes = new AtomicLong(0);
+
     /**
      * This method creates shapeInformation buffer, based on shape being passed in
      *
@@ -43,7 +44,8 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     }
 
     @Override
-    public Pair<DataBuffer, int[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order) {
+    public Pair<DataBuffer, int[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride,
+                    char order) {
         DataBuffer buffer = Shape.createShapeInformation(shape, stride, offset, elementWiseStride, order);
         buffer.setConstant(true);
         return Pair.create(buffer, buffer.asInt());

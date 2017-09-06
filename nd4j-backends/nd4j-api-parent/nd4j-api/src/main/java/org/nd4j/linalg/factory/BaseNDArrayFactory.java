@@ -1991,5 +1991,4 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return create(Nd4j.createBuffer(data), shape, stride, order, offset);
     }
 
-
 }

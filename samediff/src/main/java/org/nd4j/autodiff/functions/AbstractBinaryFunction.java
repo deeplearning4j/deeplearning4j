@@ -9,33 +9,47 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.List;
 
 @NoArgsConstructor
-public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extends DifferentialFunction<ArrayField> {
+public abstract class AbstractBinaryFunction extends DifferentialFunction {
 
-    protected DifferentialFunction<ArrayField> m_x1;
+    protected DifferentialFunction m_x1;
 
-    protected DifferentialFunction<ArrayField> m_x2;
+    protected DifferentialFunction m_x2;
 
     public AbstractBinaryFunction(SameDiff sameDiff,
-                                  DifferentialFunction<ArrayField> i_v1,
-                                  DifferentialFunction<ArrayField> i_v2) {
+                                  DifferentialFunction i_v1,
+                                  DifferentialFunction i_v2) {
         this(sameDiff,i_v1,i_v2, OpState.OpType.TRANSFORM);
     }
 
     public AbstractBinaryFunction(SameDiff sameDiff,
-                                  DifferentialFunction<ArrayField> i_v1,
-                                  DifferentialFunction<ArrayField> i_v2,
+                                  DifferentialFunction i_v1,
+                                  DifferentialFunction i_v2,
                                   OpState.OpType opType) {
-        super(sameDiff,new Object[] {i_v2});
+        this(sameDiff,i_v1,i_v2,false,opType);
+    }
+
+    public AbstractBinaryFunction(SameDiff sameDiff,
+                                  DifferentialFunction i_v1,
+                                  DifferentialFunction i_v2,
+                                  boolean inPlace,
+                                  OpState.OpType opType) {
+        super(sameDiff,inPlace,new Object[] {i_v2});
         if (i_v1 != null && i_v2 != null) {
-            m_x1 = i_v1;
-            m_x2 = i_v2;
+            m_x1 = sameDiff.setupFunction(i_v1);
+            m_x2 = sameDiff.setupFunction(i_v2);
             validateDifferentialFunctionsameDiff(i_v1);
             validateDifferentialFunctionsameDiff(i_v2);
             validateFunctionReference(i_v1);
             validateFunctionReference(i_v2);
             this.sameDiff = sameDiff;
 
-            addEdges(sameDiff,i_v1,i_v2,functionName(),opType,i_v1.getResultShape(),null);
+            addEdges(sameDiff,
+                    i_v1,
+                    i_v2,
+                    functionName(),
+                    opType,
+                    i_v1.getResultShape(),
+                    null);
         } else {
             throw new IllegalArgumentException("Input not null variables.");
         }
@@ -46,8 +60,8 @@ public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extend
     }
 
     public AbstractBinaryFunction(SameDiff sameDiff,
-                                  DifferentialFunction<ArrayField> i_v1,
-                                  DifferentialFunction<ArrayField> i_v2,
+                                  DifferentialFunction i_v1,
+                                  DifferentialFunction i_v2,
                                   OpState.OpType opType, Object[] extraArgs) {
         super(sameDiff,extraArgs);
         if (i_v1 != null && i_v2 != null) {
@@ -66,45 +80,39 @@ public abstract class AbstractBinaryFunction<X extends Field<ArrayField>> extend
 
 
     @Override
-    public DifferentialFunction<ArrayField>[] args() {
+    public DifferentialFunction[] args() {
         return new DifferentialFunction[] {larg(),rarg()};
     }
 
     @Override
-    public DifferentialFunction<ArrayField> arg() {
+    public DifferentialFunction arg() {
         return larg();
     }
 
-    public DifferentialFunction<ArrayField> larg() {
-        if(m_x1 == this)
-            return sameDiff.setupFunction(m_x1.dup());
-        return sameDiff.setupFunction(m_x1);
+    public DifferentialFunction larg() {
+        return m_x1;
     }
 
 
-    public DifferentialFunction<ArrayField> rarg() {
-        if(m_x2 == this)
-            return sameDiff.setupFunction(m_x2.dup());
-        return sameDiff.setupFunction(m_x2);
+    public DifferentialFunction rarg() {
+        return m_x2;
     }
 
 
     @Override
     public String toString() {
-        return functionName() + "(" + larg().toString() + ", " + rarg().toString() + ")";
+        return functionName();
     }
 
     @Override
-    public String doGetFormula(List<Variable<ArrayField> > variables) {
-        return functionName() + "(" + larg().doGetFormula(variables) + ","
-                + rarg().doGetFormula(variables) + ")";
+    public String doGetFormula(List<Variable > variables) {
+        return functionName();
     }
 
     @Override
-    public DifferentialFunction<ArrayField> dup() {
+    public DifferentialFunction dup() {
         try {
-            return getClass().getConstructor(sameDiff.getClass(),larg()
-                    .getClass(),rarg().getClass()).newInstance(sameDiff,larg(),
+            return getClass().getConstructor(sameDiff.getClass(),DifferentialFunction.class,DifferentialFunction.class).newInstance(sameDiff,larg(),
                     rarg());
         } catch (Exception e) {
             throw new RuntimeException(e);

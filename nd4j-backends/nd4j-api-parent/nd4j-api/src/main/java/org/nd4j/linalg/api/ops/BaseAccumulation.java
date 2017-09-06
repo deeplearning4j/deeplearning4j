@@ -54,8 +54,8 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public BaseAccumulation(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         init();
-  //      if (y != null)
-//            LinAlgExceptions.assertSameLength(x, y);
+        //      if (y != null)
+        //            LinAlgExceptions.assertSameLength(x, y);
         //LinAlgExceptions.assertSameLength(x, z);
 
     }
@@ -176,11 +176,11 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-            this.extraArgs = new Object[]{zeroDouble()};
+            this.extraArgs = new Object[] {zeroDouble()};
         } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            this.extraArgs = new Object[]{zeroFloat()};
+            this.extraArgs = new Object[] {zeroFloat()};
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
-            this.extraArgs = new Object[]{zeroHalf()};
+            this.extraArgs = new Object[] {zeroHalf()};
         }
     }
 
@@ -202,7 +202,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     @Override
     public double getAndSetFinalResult(double accum) {
         this.finalResult = accum;
-        if(z() != null && z.isScalar()) {
+        if (z() != null && z.isScalar()) {
             z.assign(accum);
         }
         return accum;
@@ -211,7 +211,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     @Override
     public float getAndSetFinalResult(float accum) {
         this.finalResult = accum;
-        if(z() != null && z.isScalar()) {
+        if (z() != null && z.isScalar()) {
             z.assign(accum);
         }
         return accum;
@@ -241,7 +241,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     @Override
     public void setFinalResult(Number number) {
         this.finalResult = number;
-        if(z() != null && z.isScalar()) {
+        if (z() != null && z.isScalar()) {
             z.assign(number);
         }
     }

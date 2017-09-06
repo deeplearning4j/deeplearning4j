@@ -51,6 +51,12 @@ public interface INDArray extends Serializable {
     DataBuffer shapeInfoDataBuffer();
 
     /**
+     * Sparse info
+     * @return
+     */
+    DataBuffer sparseInfoDataBuffer();
+
+    /**
      * Shape info
      * @return
      */
@@ -61,6 +67,12 @@ public interface INDArray extends Serializable {
      * @return
      */
     boolean isView();
+
+    /**
+     * Returns true if this array is sparse
+     * @return
+     */
+    boolean isSparse();
 
     /**
      * Returns true if this array is compressed, and false otherwise
@@ -1846,6 +1858,7 @@ public interface INDArray extends Serializable {
      * @return the sub array based on the calculations from the resolution
      */
     INDArray subArray(ShapeOffsetResolution resolution);
+    //INDArray subArray(ShapeOffsetResolution resolution, ShapeOffsetResolution resolutionWithoutNewAxis);
 
     /**
      * @param offsets
@@ -2631,11 +2644,11 @@ public interface INDArray extends Serializable {
     INDArray migrate();
 
     /**
-     * This method returns percentile value for this INDArray
-     *
-     * @param percentile target percentile in range of 0..100
-     * @return
-     */
+       * This method returns percentile value for this INDArray
+       *
+       * @param percentile target percentile in range of 0..100
+       * @return
+       */
     Number percentileNumber(Number percentile);
 
     /**
@@ -2659,4 +2672,45 @@ public interface INDArray extends Serializable {
      * @return
      */
     INDArray percentile(Number percentile, int... dimension);
+
+    /**
+     * ------------ Sparse methods ------------
+     */
+
+
+    /**
+     * Return a array of non-major pointers
+     * i.e. return the column indexes in case of row-major ndarray
+     * @return a DataBuffer of indexes
+     * */
+    DataBuffer getVectorCoordinates();
+
+    /**
+     * Return a dense representation of the sparse ndarray
+     * */
+    INDArray toDense();
+
+    /**
+     * Return the number of non-null element
+     * @return nnz
+     * */
+    int nnz();
+
+    /**
+     * Return the sparse format (i.e COO, CSR, ...)
+     * @return format
+     * @see SparseFormat
+     * */
+    SparseFormat getFormat();
+
+    int[] flags();
+
+    int[] hiddenDimensions();
+
+    int[] sparseOffsets();
+
+    int underlyingRank();
+
+
+
 }

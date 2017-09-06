@@ -167,14 +167,14 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             featuresToMerge[count] = ds.getFeatureMatrix();
             labelsToMerge[count] = ds.getLabels();
 
-            if(ds.getFeaturesMaskArray() != null){
-                if(featuresMasksToMerge == null){
+            if (ds.getFeaturesMaskArray() != null) {
+                if (featuresMasksToMerge == null) {
                     featuresMasksToMerge = new INDArray[data.size()];
                 }
                 featuresMasksToMerge[count] = ds.getFeaturesMaskArray();
             }
-            if(ds.getLabelsMaskArray() != null){
-                if(labelsMasksToMerge == null){
+            if (ds.getLabelsMaskArray() != null) {
+                if (labelsMasksToMerge == null) {
                     labelsMasksToMerge = new INDArray[data.size()];
                 }
                 labelsMasksToMerge[count] = ds.getLabelsMaskArray();
@@ -188,11 +188,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         INDArray featuresMaskOut;
         INDArray labelsMaskOut;
 
-        Pair<INDArray,INDArray> fp = DataSetUtil.mergeFeatures(featuresToMerge, featuresMasksToMerge);
+        Pair<INDArray, INDArray> fp = DataSetUtil.mergeFeatures(featuresToMerge, featuresMasksToMerge);
         featuresOut = fp.getFirst();
         featuresMaskOut = fp.getSecond();
 
-        Pair<INDArray,INDArray> lp = DataSetUtil.mergeLabels(labelsToMerge, labelsMasksToMerge);
+        Pair<INDArray, INDArray> lp = DataSetUtil.mergeLabels(labelsToMerge, labelsMasksToMerge);
         labelsOut = lp.getFirst();
         labelsMaskOut = lp.getSecond();
 
@@ -231,7 +231,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     public void load(InputStream from) {
         try {
 
-            DataInputStream dis = from instanceof BufferedInputStream ? new DataInputStream(from) : new DataInputStream(new BufferedInputStream(from));
+            DataInputStream dis = from instanceof BufferedInputStream ? new DataInputStream(from)
+                            : new DataInputStream(new BufferedInputStream(from));
 
             byte included = dis.readByte();
             boolean hasFeatures = (included & BITMASK_FEATURES_PRESENT) != 0;
@@ -260,7 +261,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void load(File from) {
-        try (FileInputStream fis = new FileInputStream(from); BufferedInputStream bis = new BufferedInputStream(fis, 1024 * 1024)) {
+        try (FileInputStream fis = new FileInputStream(from);
+                        BufferedInputStream bis = new BufferedInputStream(fis, 1024 * 1024)) {
             load(bis);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -1355,6 +1357,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             featuresMask = featuresMask.detach();
 
         if (labelsMask != null)
-           labelsMask = labelsMask.detach();
+            labelsMask = labelsMask.detach();
     }
 }

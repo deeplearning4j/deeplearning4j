@@ -179,7 +179,6 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
     }
 
-
     @Test
     public void testGetOffsetRange() throws Exception {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
@@ -218,28 +217,28 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testReallocation(){
-        DataBuffer buffer = Nd4j.createBuffer(new double[]{1, 2, 3, 4});
+    public void testReallocation() {
+        DataBuffer buffer = Nd4j.createBuffer(new double[] {1, 2, 3, 4});
         assertEquals(4, buffer.capacity());
+        double[] old = buffer.asDouble();
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());
+        assertArrayEquals(old, buffer.asDouble(), 1e-1);
     }
 
     @Test
-    public void testReallocationWorkspace(){
-        WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder()
-                .initialSize(10 * 1024L * 1024L)
-                .policyAllocation(AllocationPolicy.STRICT)
-                .policyLearning(LearningPolicy.NONE)
-                .build();
-        MemoryWorkspace  workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
+    public void testReallocationWorkspace() {
+        WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
+                        .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();
+        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
 
-        DataBuffer buffer = Nd4j.createBuffer(new double[]{1, 2, 3, 4});
-
+        DataBuffer buffer = Nd4j.createBuffer(new double[] {1, 2, 3, 4});
+        double[] old = buffer.asDouble();
         assertTrue(buffer.isAttached());
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());
+        assertArrayEquals(old, buffer.asDouble(), 1e-1);
         workspace.close();
 
     }

@@ -86,7 +86,6 @@ public interface OpExecutioner {
 
 
 
-
     /**
      * Execute and return the result from an accumulation
      *

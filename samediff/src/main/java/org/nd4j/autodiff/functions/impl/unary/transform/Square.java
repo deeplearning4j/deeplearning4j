@@ -9,10 +9,14 @@ import org.nd4j.linalg.api.ops.impl.transforms.Pow;
 import java.util.Collections;
 import java.util.List;
 
-public class Square extends AbstractUnaryFunction<ArrayField> {
+public class Square extends AbstractUnaryFunction {
 
-    public Square(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public Square(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public Square(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     @Override
@@ -23,8 +27,8 @@ public class Square extends AbstractUnaryFunction<ArrayField> {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = arg().mul(f().val(a().one(getResultShape()).mul(2L)));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().mul(arg(),f().val(a().one(getResultShape()).mul(2L)));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

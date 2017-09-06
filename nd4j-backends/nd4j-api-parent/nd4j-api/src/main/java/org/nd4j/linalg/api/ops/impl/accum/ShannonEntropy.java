@@ -154,7 +154,8 @@ public class ShannonEntropy extends BaseAccumulation {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new ShannonEntropy(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new ShannonEntropy(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
             return new ShannonEntropy(xAlongDimension);
 
@@ -165,7 +166,8 @@ public class ShannonEntropy extends BaseAccumulation {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new ShannonEntropy(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new ShannonEntropy(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                            xAlongDimension.length());
         else
             return new ShannonEntropy(xAlongDimension);
     }

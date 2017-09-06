@@ -8,10 +8,14 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class ACosh extends AbstractUnaryFunction<ArrayField> {
+public class ACosh extends AbstractUnaryFunction {
 
-    public ACosh(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public ACosh(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public ACosh(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     @Override
@@ -19,16 +23,13 @@ public class ACosh extends AbstractUnaryFunction<ArrayField> {
         return a().acosh(arg().getValue(true));
     }
 
-    @Override
-    public double getReal() {
-        throw new IllegalStateException("");
-    }
+
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().one(getResultShape()).div(
-                f().sqrt(arg().sub(f().one(getResultShape())))
-                        .mul(f().sqrt(arg().add(f().one(getResultShape())))));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().div(f().one(getResultShape()),
+                f().mul(f().sqrt(f().sub(arg(),f().one(getResultShape()))),f()
+                        .sqrt(f().add(arg(),f().one(getResultShape())))));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

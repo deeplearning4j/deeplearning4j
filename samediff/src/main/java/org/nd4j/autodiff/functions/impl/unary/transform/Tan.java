@@ -8,12 +8,15 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class Tan  extends AbstractUnaryFunction<ArrayField> {
+public class Tan  extends AbstractUnaryFunction {
 
-    public Tan(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public Tan(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
+    public Tan(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
 
     @Override
     public ArrayField doGetValue() {
@@ -23,7 +26,7 @@ public class Tan  extends AbstractUnaryFunction<ArrayField> {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         throw new UnsupportedOperationException();
     }
 

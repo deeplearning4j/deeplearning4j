@@ -86,7 +86,7 @@ public class NDArrayInformation implements Serializable {
         int result = super.hashCode();
         result = 31 * result + Arrays.hashCode(shape);
         result = 31 * result + (id != null ? id.hashCode() : 0);
-        result = 31 * result + (owner != null ? owner.hashCode() : 0);
+        result = 31 * result + (owner != null ? owner.toString().hashCode() : 0);
         result = 31 * result + (scalarValue != null ? scalarValue.hashCode() : 0);
         result = 31 * result + (arrId != null ? arrId.hashCode() : 0);
         return result;

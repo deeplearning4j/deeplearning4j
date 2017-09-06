@@ -28,8 +28,11 @@ import java.util.List;
 public class ShapeOffsetResolution implements Serializable {
 
     private INDArray arr;
+
+    private int[] fixed, prependAxis;
     private long[] offsets;
     private long[] shapes, strides;
+
     private long offset = -1;
 
     /**
@@ -260,7 +263,7 @@ public class ShapeOffsetResolution implements Serializable {
         }
 
         //all and newaxis
-        else if (numSpecified < 1 && interval < 1 && newAxis > 0  && pointIndex < 1 && numAll > 0) {
+        else if (numSpecified < 1 && interval < 1 && newAxis > 0 && pointIndex < 1 && numAll > 0) {
             int minDimensions = Math.max(arr.rank(), 2) + newAxis;
             //new axis dimensions + all
             long[] shape = new long[minDimensions];
@@ -273,13 +276,11 @@ public class ShapeOffsetResolution implements Serializable {
             int shapeAxis = 0;
             int allEncountered = 0;
             for (int i = 0; i < minDimensions; i++) {
-                if(i >= (indexes.length)) {
+                if (i >= (indexes.length)) {
                     shape[i] = arr.size(allEncountered);
                     stride[i] = arr.stride(allEncountered);
                     allEncountered++;
-                }
-                else if(!(indexes[i] instanceof NewAxis) &&
-                        indexes[i] instanceof NDArrayIndexAll) {
+                } else if (!(indexes[i] instanceof NewAxis) && indexes[i] instanceof NDArrayIndexAll) {
                     shape[allEncountered] = arr.size(allEncountered);
                     stride[allEncountered] = arr.stride(allEncountered);
                     allEncountered++;
@@ -314,14 +315,18 @@ public class ShapeOffsetResolution implements Serializable {
     public void exec(INDArrayIndex... indexes) {
         int[] shape = arr.shape();
 
+        if (arr.isSparse()) {
+            resolveFixedDimensionsCOO(indexes);
+        }
+
         // Check that given point indexes are not out of bounds
         for (int i = 0; i < indexes.length; i++) {
             INDArrayIndex idx = indexes[i];
             // On vectors, the first dimension can be ignored when indexing them with a single point index
             if (idx instanceof PointIndex && (arr.isVector() && indexes.length == 1 ? idx.current() >= shape[i + 1]
-                    : idx.current() >= shape[i])) {
+                            : idx.current() >= shape[i])) {
                 throw new IllegalArgumentException(
-                        "INDArrayIndex[" + i + "] is out of bounds (value: " + idx.current() + ")");
+                                "INDArrayIndex[" + i + "] is out of bounds (value: " + idx.current() + ")");
             }
         }
 
@@ -368,7 +373,7 @@ public class ShapeOffsetResolution implements Serializable {
                     oneDimensionWithAllEncountered.add(i);
                 //different dimension from new axis (look for new axis dimensions
                 //at at the beginning. track when the last new axis is encountered.
-                if(newAxesPrepend > 0 && lastPrependIndex < 0) {
+                if (newAxesPrepend > 0 && lastPrependIndex < 0) {
                     lastPrependIndex = i - 1;
                 }
             }
@@ -382,7 +387,7 @@ public class ShapeOffsetResolution implements Serializable {
                 strideIndex++;
                 //different dimension from new axis (look for new axis dimensions
                 //at at the beginning. track when the last new axis is encountered.
-                if(newAxesPrepend > 0 && lastPrependIndex < 0) {
+                if (newAxesPrepend > 0 && lastPrependIndex < 0) {
                     lastPrependIndex = i - 1;
                 }
                 continue;
@@ -401,7 +406,7 @@ public class ShapeOffsetResolution implements Serializable {
 
             //points and intervals both have a direct desired length
             else if (idx instanceof IntervalIndex && !(idx instanceof NDArrayIndexAll)
-                    || idx instanceof SpecifiedIndex) {
+                            || idx instanceof SpecifiedIndex) {
                 if (idx instanceof IntervalIndex) {
                     accumStrides.add(arr.stride(strideIndex) * idx.stride());
                     //used in computing an adjusted offset for the augmented strides
@@ -424,7 +429,7 @@ public class ShapeOffsetResolution implements Serializable {
 
                 //different dimension from new axis (look for new axis dimensions
                 //at at the beginning. track when the last new axis is encountered.
-                if(newAxesPrepend > 0 && lastPrependIndex < 0) {
+                if (newAxesPrepend > 0 && lastPrependIndex < 0) {
                     lastPrependIndex = i - 1;
                 }
 
@@ -477,8 +482,34 @@ public class ShapeOffsetResolution implements Serializable {
         }
 
 
+        /**
+         * For each dimension
+         * where we want to prepend a dimension
+         * we need to add it at the index such that
+         * we account for the offset of the number of indexes
+         * added up to that point.
+         *
+         * We do this by doing an offset
+         * for each item added "so far"
+         *
+         * Note that we also have an offset of - 1
+         * because we want to prepend to the given index.
+         *
+         * When prepend new axes for in the middle is triggered
+         * i is already > 0
+         */
+        int numAdded = 0;
+        for (int i = 0; i < prependNewAxes.size(); i++) {
+            accumShape.add(prependNewAxes.get(i) - numAdded, 1L);
+            //stride for the new axis is zero
+            accumStrides.add(prependNewAxes.get(i) - numAdded, 0L);
+            numAdded++;
+        }
+        for (int i = 0; i < newAxesPrepend; i++) {
+            prependNewAxes.add(0, i);
+        }
 
-
+        prependAxis = Ints.toArray(prependNewAxes);
 
         /**
          * Need to post process strides and offsets
@@ -570,7 +601,7 @@ public class ShapeOffsetResolution implements Serializable {
             }
             //special case where offsets aren't caught
             if (arr.isRowVector() && !intervalStrides.isEmpty() && pointOffsets.get(0) == 0
-                    && !(indexes[1] instanceof IntervalIndex))
+                            && !(indexes[1] instanceof IntervalIndex))
                 this.offset = indexes[1].offset();
             else
                 this.offset = ArrayUtil.dotProductLong2(pointOffsets, pointStrides);
@@ -588,23 +619,24 @@ public class ShapeOffsetResolution implements Serializable {
         } else if (numIntervals > 0 && anyHaveStrideOne(indexes))
             this.offset += ArrayUtil.calcOffsetLong2(accumShape, accumOffsets, accumStrides);
         else
-            this.offset += ArrayUtil.calcOffsetLong2(accumShape, accumOffsets, accumStrides) / Math.max(1, numIntervals);
+            this.offset += ArrayUtil.calcOffsetLong2(accumShape, accumOffsets, accumStrides)
+                            / Math.max(1, numIntervals);
 
 
         //collapse singular dimensions with specified index
         List<Integer> removeShape = new ArrayList<>();
-        for(int i = 0; i < Math.min(this.shapes.length,indexes.length); i++) {
-            if(this.shapes[i] == 1 && indexes[i] instanceof SpecifiedIndex) {
+        for (int i = 0; i < Math.min(this.shapes.length, indexes.length); i++) {
+            if (this.shapes[i] == 1 && indexes[i] instanceof SpecifiedIndex) {
                 removeShape.add(i);
             }
         }
 
 
-        if(!removeShape.isEmpty()) {
+        if (!removeShape.isEmpty()) {
             List<Long> newShape = new ArrayList<>();
             List<Long> newStrides = new ArrayList<>();
-            for(int i = 0; i < this.shapes.length; i++) {
-                if(!removeShape.contains(i)) {
+            for (int i = 0; i < this.shapes.length; i++) {
+                if (!removeShape.contains(i)) {
                     newShape.add(this.shapes[i]);
                     newStrides.add(this.strides[i]);
                 }
@@ -616,6 +648,38 @@ public class ShapeOffsetResolution implements Serializable {
 
     }
 
+    public void resolveFixedDimensionsCOO(INDArrayIndex... indexes) {
+
+        fixed = new int[arr.rank()];
+
+        int j = 0;
+        for (int i = 0; i < indexes.length; i++) {
+            if (indexes[i] instanceof PointIndex) {
+                fixed[j] = 1;
+                j++;
+            }
+            if (indexes[i] instanceof IntervalIndex || indexes[i] instanceof NDArrayIndexAll) {
+                fixed[j] = 0;
+                j++;
+            }
+            if (indexes[i] instanceof SpecifiedIndex) {
+                SpecifiedIndex idx = (SpecifiedIndex) indexes[i];
+                if (idx.getIndexes().length == 1) {
+                    fixed[j] = 1;
+                } else {
+                    fixed[j] = 0;
+                }
+                j++;
+            }
+            if (indexes[i] instanceof NewAxis) {
+                //do nothing, skip the index
+            }
+        }
+    }
+
+    public void resolveSparseOffsetsCOO() {
+
+    }
 
     private boolean anyHaveStrideOne(INDArrayIndex... indexes) {
         for (INDArrayIndex indArrayIndex : indexes)

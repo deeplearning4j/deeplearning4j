@@ -336,13 +336,15 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
-    public DataBuffer createInt(int[] data, MemoryWorkspace workspace){
+    public DataBuffer createInt(int[] data, MemoryWorkspace workspace) {
         return createInt(data, true, workspace);
     }
+
     @Override
-    public DataBuffer createInt(int[] data, boolean copy, MemoryWorkspace workspace){
+    public DataBuffer createInt(int[] data, boolean copy, MemoryWorkspace workspace) {
         return new IntBuffer(data, copy, workspace);
     }
+
     @Override
     public DataBuffer createDouble(double[] data) {
         return createDouble(data, true);

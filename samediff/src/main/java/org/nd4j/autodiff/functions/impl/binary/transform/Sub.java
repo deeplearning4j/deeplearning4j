@@ -2,36 +2,43 @@ package org.nd4j.autodiff.functions.impl.binary.transform;
 
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.AbstractBinaryFunction;
-import org.nd4j.autodiff.functions.Constant;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.functions.Variable;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
-public class Sub extends AbstractBinaryFunction<ArrayField> {
-    public Sub(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
-        super(sameDiff, i_v1, i_v2);
+public class Sub extends AbstractBinaryFunction {
+
+    public Sub(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2,boolean inPlace) {
+        super(sameDiff, i_v1, i_v2, inPlace, OpState.OpType.TRANSFORM);
+    }
+
+
+    public Sub(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
+        this(sameDiff,i_v1,i_v2,false);
     }
 
     @Override
     public ArrayField doGetValue() {
-        return larg().getValue(true).sub(rarg().getValue(true));
+        if(!isInPlace())
+            return larg().getValue(true).sub(rarg().getValue(true));
+        else
+            return larg().getValue(true).subi(rarg().getValue(true));
     }
 
-
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        Constant<ArrayField> ym1 = f()
-                .val(rarg().getValue(true).sub(a().one(getResultShape())));
-        DifferentialFunction<ArrayField> ret = rarg().mul(f().pow(larg(), ym1))
-                .mul(larg());
-        larg().setGradient(ret);
-        rarg().setGradient(ret);
-        return Collections.singletonList(ret);
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction gradWrtX = i_v.get(0);
+        DifferentialFunction gradWrtY = f().neg(i_v.get(0));
+        List<DifferentialFunction> ret = new ArrayList<>();
+        ret.add(gradWrtX);
+        ret.add(gradWrtY);
+        larg().setGradient(gradWrtX);
+        rarg().setGradient(gradWrtY);
+        return ret;
     }
 
 

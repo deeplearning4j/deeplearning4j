@@ -28,11 +28,12 @@ public class Nadam implements IUpdater {
     private double beta2 = DEFAULT_NADAM_BETA2_VAR_DECAY; // gradient sqrd decay rate
     private double epsilon = DEFAULT_NADAM_EPSILON;
 
-    public Nadam(){
-        this(DEFAULT_NADAM_LEARNING_RATE, DEFAULT_NADAM_BETA1_MEAN_DECAY, DEFAULT_NADAM_BETA2_VAR_DECAY, DEFAULT_NADAM_EPSILON);
+    public Nadam() {
+        this(DEFAULT_NADAM_LEARNING_RATE, DEFAULT_NADAM_BETA1_MEAN_DECAY, DEFAULT_NADAM_BETA2_VAR_DECAY,
+                        DEFAULT_NADAM_EPSILON);
     }
 
-    public Nadam(double learningRate, double beta1, double beta2, double epsilon){
+    public Nadam(double learningRate, double beta1, double beta2, double epsilon) {
         this.learningRate = learningRate;
         this.beta1 = beta1;
         this.beta2 = beta2;
@@ -41,7 +42,7 @@ public class Nadam implements IUpdater {
 
     @Override
     public long stateSize(long numParams) {
-        return 2*numParams;
+        return 2 * numParams;
     }
 
     @Override
@@ -51,7 +52,7 @@ public class Nadam implements IUpdater {
 
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
-        NadamUpdater u =  new NadamUpdater(this);
+        NadamUpdater u = new NadamUpdater(this);
         int[] gradientShape = viewArray.shape();
         gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
         gradientShape[1] /= 2;
@@ -72,7 +73,6 @@ public class Nadam implements IUpdater {
         private double beta2 = DEFAULT_NADAM_BETA2_VAR_DECAY;
         private double epsilon = DEFAULT_NADAM_EPSILON;
 
-        public Builder() {
-        }
+        public Builder() {}
     }
 }

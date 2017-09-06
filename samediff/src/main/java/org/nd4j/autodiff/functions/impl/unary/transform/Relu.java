@@ -9,9 +9,13 @@ import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
 import java.util.Collections;
 import java.util.List;
 
-public class Relu extends AbstractUnaryFunction<ArrayField> {
-    public Relu(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+public class Relu extends AbstractUnaryFunction {
+    public Relu(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public Relu(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     @Override
@@ -22,8 +26,8 @@ public class Relu extends AbstractUnaryFunction<ArrayField> {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().val(a().step(arg().getValue(true)));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().val(a().step(arg().getValue(true)));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

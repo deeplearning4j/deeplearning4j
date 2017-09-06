@@ -48,8 +48,8 @@ public class LossFMeasure implements ILossFunction {
         this(DEFAULT_BETA);
     }
 
-    public LossFMeasure( @JsonProperty("beta") double beta){
-        if(beta <= 0){
+    public LossFMeasure(@JsonProperty("beta") double beta) {
+        if (beta <= 0) {
             throw new UnsupportedOperationException("Invalid value: beta must be > 0. Got: " + beta);
         }
         this.beta = beta;
@@ -57,25 +57,28 @@ public class LossFMeasure implements ILossFunction {
 
 
     @Override
-    public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
+    public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask,
+                    boolean average) {
 
         double[] d = computeScoreNumDenom(labels, preOutput, activationFn, mask, average);
         double numerator = d[0];
         double denominator = d[1];
 
-        if(numerator == 0.0 && denominator == 0.0){
+        if (numerator == 0.0 && denominator == 0.0) {
             return 0.0;
         }
 
         return 1.0 - numerator / denominator;
     }
 
-    private double[] computeScoreNumDenom(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average){
+    private double[] computeScoreNumDenom(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask,
+                    boolean average) {
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         int n = labels.size(1);
-        if(n != 1 && n != 2){
-            throw new UnsupportedOperationException("For binary classification: expect output size of 1 or 2. Got: " + n);
+        if (n != 1 && n != 2) {
+            throw new UnsupportedOperationException(
+                            "For binary classification: expect output size of 1 or 2. Got: " + n);
         }
 
         //First: determine positives and negatives
@@ -83,7 +86,7 @@ public class LossFMeasure implements ILossFunction {
         INDArray isNegativeLabel;
         INDArray pClass0;
         INDArray pClass1;
-        if(n == 1){
+        if (n == 1) {
             isPositiveLabel = labels;
             isNegativeLabel = Transforms.not(isPositiveLabel);
             pClass0 = output.rsub(1.0);
@@ -95,7 +98,7 @@ public class LossFMeasure implements ILossFunction {
             pClass1 = output.getColumn(1);
         }
 
-        if(mask != null){
+        if (mask != null) {
             isPositiveLabel = isPositiveLabel.mulColumnVector(mask);
             isNegativeLabel = isNegativeLabel.mulColumnVector(mask);
         }
@@ -107,13 +110,13 @@ public class LossFMeasure implements ILossFunction {
         double numerator = (1.0 + beta * beta) * tp;
         double denominator = (1.0 + beta * beta) * tp + beta * beta * fn + fp;
 
-        return new double[]{numerator, denominator};
+        return new double[] {numerator, denominator};
     }
 
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        throw new UnsupportedOperationException("Cannot compute score array for FMeasure loss function: loss is only " +
-                "defined for minibatches");
+        throw new UnsupportedOperationException("Cannot compute score array for FMeasure loss function: loss is only "
+                        + "defined for minibatches");
     }
 
     @Override
@@ -122,7 +125,7 @@ public class LossFMeasure implements ILossFunction {
         double numerator = d[0];
         double denominator = d[1];
 
-        if(numerator == 0.0 && denominator == 0.0){
+        if (numerator == 0.0 && denominator == 0.0) {
             //Zero score -> zero gradient
             return Nd4j.create(preOutput.shape());
         }
@@ -130,14 +133,14 @@ public class LossFMeasure implements ILossFunction {
         double secondTerm = numerator / (denominator * denominator);
 
         INDArray dLdOut;
-        if(labels.size(1) == 1){
+        if (labels.size(1) == 1) {
             //Single binary output case
-            dLdOut = labels.mul(1+beta*beta).divi(denominator).subi(secondTerm);
+            dLdOut = labels.mul(1 + beta * beta).divi(denominator).subi(secondTerm);
         } else {
             //Softmax case: the getColumn(1) here is to account for the fact that we're using prob(class1)
             // only in the score function; column(1) is equivalent to output for the single output case
             dLdOut = Nd4j.create(labels.shape());
-            dLdOut.getColumn(1).assign(labels.getColumn(1).mul(1+beta*beta).divi(denominator).subi(secondTerm));
+            dLdOut.getColumn(1).assign(labels.getColumn(1).mul(1 + beta * beta).divi(denominator).subi(secondTerm));
         }
 
         //Negate relative to description in paper, as we want to *minimize* 1.0-fMeasure, which is equivalent to
@@ -146,7 +149,7 @@ public class LossFMeasure implements ILossFunction {
 
         INDArray dLdPreOut = activationFn.backprop(preOutput, dLdOut).getFirst();
 
-        if(mask != null){
+        if (mask != null) {
             dLdPreOut.muliColumnVector(mask);
         }
 
@@ -154,11 +157,11 @@ public class LossFMeasure implements ILossFunction {
     }
 
     @Override
-    public Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
+    public Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn,
+                    INDArray mask, boolean average) {
         //TODO optimize
-        return new Pair<>(
-                computeScore(labels, preOutput, activationFn, mask, average),
-                computeGradient(labels, preOutput, activationFn, mask));
+        return new Pair<>(computeScore(labels, preOutput, activationFn, mask, average),
+                        computeGradient(labels, preOutput, activationFn, mask));
     }
 
     /**
@@ -172,7 +175,7 @@ public class LossFMeasure implements ILossFunction {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "LossFMeasure(beta=" + beta + ")";
     }
 }

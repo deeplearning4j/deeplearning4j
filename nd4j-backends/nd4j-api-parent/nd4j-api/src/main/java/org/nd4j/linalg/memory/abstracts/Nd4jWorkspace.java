@@ -39,12 +39,15 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 public abstract class Nd4jWorkspace implements MemoryWorkspace {
-    @Getter protected int deviceId;
-    @Getter protected Long threadId;
+    @Getter
+    protected int deviceId;
+    @Getter
+    protected Long threadId;
 
     protected static final long SAFETY_OFFSET = 1024L;
 
-    @Getter protected String id;
+    @Getter
+    protected String id;
 
     protected AtomicLong currentSize = new AtomicLong(0);
     protected AtomicLong hostOffset = new AtomicLong(0);
@@ -84,7 +87,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected AtomicBoolean trimmedMode = new AtomicBoolean(false);
     protected AtomicLong trimmedStep = new AtomicLong(0);
 
-    @Getter protected final WorkspaceConfiguration workspaceConfiguration;
+    @Getter
+    protected final WorkspaceConfiguration workspaceConfiguration;
 
     // external allocations are purged at the end of loop
     protected List<PointersPair> externalAllocations = new ArrayList<>();
@@ -118,16 +122,18 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // and actual workspace allocation
         currentSize.set(workspaceConfiguration.getInitialSize());
 
-        if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE) {
+        if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED
+                        && workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE) {
             if (workspaceConfiguration.getOverallocationLimit() < 1.0)
-                throw new ND4JIllegalStateException("For cyclic workspace overallocation should be positive integral value.");
+                throw new ND4JIllegalStateException(
+                                "For cyclic workspace overallocation should be positive integral value.");
 
             stepsNumber = (int) (workspaceConfiguration.getOverallocationLimit() + 1);
             log.debug("Steps: {}", stepsNumber);
         }
 
         //if (workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME && workspaceConfiguration.getCyclesBeforeInitialization() < 1)
-            //log.warn("Workspace [{}]: initialization OVER_TIME was selected, but number of cycles isn't positive value!", id);
+        //log.warn("Workspace [{}]: initialization OVER_TIME was selected, but number of cycles isn't positive value!", id);
 
         // validate mmap option
         if (configuration.getPolicyLocation() == LocationPolicy.MMAP) {
@@ -256,8 +262,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         if (currentSize.get() > 0) {
             if (!isOver.get()) {
-                if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE &&
-                        workspaceConfiguration.getOverallocationLimit() > 0) {
+                if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE
+                                && workspaceConfiguration.getOverallocationLimit() > 0) {
                     currentSize.addAndGet((long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
                     isOver.set(true);
                 }
@@ -291,7 +297,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
          */
         // we enforce 8 byte alignment to ensure CUDA doesn't blame us
         long div = requiredMemory % 8;
-        if (div!= 0)
+        if (div != 0)
             requiredMemory += div;
 
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
@@ -301,7 +307,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             if (disabledCounter.incrementAndGet() % 10 == 0)
                 log.warn("Workspace was turned off, and wasn't enabled after {} allocations", disabledCounter.get());
 
-            PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
+            PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
+                            numElements);
 
             externalAllocations.add(new PointersPair(pointer, null));
 
@@ -313,7 +320,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             Basically idea is simple: if one of datasets coming out of iterator has size higher then expected - we should reallocate workspace to match this size.
             So, we switch to trimmed mode, and all allocations will be "pinned", and eventually workspace will be reallocated.
          */
-        boolean trimmer = (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && requiredMemory + cycleAllocations.get() > initialBlockSize.get() && initialBlockSize.get() > 0) || trimmedMode.get();
+        boolean trimmer = (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED
+                        && requiredMemory + cycleAllocations.get() > initialBlockSize.get()
+                        && initialBlockSize.get() > 0) || trimmedMode.get();
 
         if (trimmer && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && !trimmedMode.get()) {
             trimmedMode.set(true);
@@ -331,7 +340,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             PagedPointer ptr = workspace.getHostPointer().withOffset(prevOffset, numElements);
 
             if (isDebug.get())
-                log.info("Workspace [{}]: Allocating array of {} bytes, capacity of {} elements, prevOffset: {}; currentOffset: {}; address: {}", id, requiredMemory, numElements, prevOffset, hostOffset.get(), ptr.address());
+                log.info("Workspace [{}]: Allocating array of {} bytes, capacity of {} elements, prevOffset: {}; currentOffset: {}; address: {}",
+                                id, requiredMemory, numElements, prevOffset, hostOffset.get(), ptr.address());
 
             if (initialize)
                 Pointer.memset(ptr, 0, requiredMemory);
@@ -341,7 +351,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             // if current workspace isn't enough - we allocate it separately as spilled (or pinned, in case of circular mode)
 
             // in case of circular mode - we just reset offsets, and start from the beginning of the workspace
-            if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0 && !trimmer) {
+            if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0
+                            && !trimmer) {
                 reset();
                 resetPlanned.set(true);
                 return alloc(requiredMemory, kind, type, initialize);
@@ -354,7 +365,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 pinnedAllocationsSize.addAndGet(requiredMemory);
 
             if (isDebug.get())
-                log.info("Workspace [{}]: step: {}, spilled  {} bytes, capacity of {} elements",  id, stepsCount.get(), requiredMemory, numElements);
+                log.info("Workspace [{}]: step: {}, spilled  {} bytes, capacity of {} elements", id, stepsCount.get(),
+                                requiredMemory, numElements);
 
             switch (workspaceConfiguration.getPolicySpill()) {
                 case REALLOCATE:
@@ -363,14 +375,18 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                     if (!trimmer) {
                         externalCount.incrementAndGet();
 
-                        PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
+                        PagedPointer pointer = new PagedPointer(
+                                        memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
+                                        numElements);
 
                         externalAllocations.add(new PointersPair(pointer, null));
 
                         return pointer;
                     } else {
                         pinnedCount.incrementAndGet();
-                        PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
+                        PagedPointer pointer = new PagedPointer(
+                                        memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
+                                        numElements);
 
                         pinnedAllocations.add(new PointersPair(stepsCount.get(), requiredMemory, pointer, null));
 
@@ -392,7 +408,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     @Override
     public void initializeWorkspace() {
         // we can reallocate this workspace to larger size if that's needed and allowed by configuration
-        if ((currentSize.get() < maxCycle.get() || currentSize.get() < cycleAllocations.get()) && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && (workspaceConfiguration.getMaxSize() == 0 || (maxCycle.get() < workspaceConfiguration.getMaxSize()))) {
+        if ((currentSize.get() < maxCycle.get() || currentSize.get() < cycleAllocations.get())
+                        && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE
+                        && (workspaceConfiguration.getMaxSize() == 0
+                                        || (maxCycle.get() < workspaceConfiguration.getMaxSize()))) {
             if (workspaceConfiguration.getPolicyReset() != ResetPolicy.ENDOFBUFFER_REACHED) {
                 destroyWorkspace(true);
                 isInit.set(false);
@@ -425,8 +444,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
                 // handliong optional overallocation here, however it's usually good idea to use it everywhere, to avoid frequent realloc calls
                 if (!isOver.get()) {
-                    if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0 && currentSize.get() > 0) {
-                        currentSize.set(currentSize.get() + (long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
+                    if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE
+                                    && workspaceConfiguration.getOverallocationLimit() > 0 && currentSize.get() > 0) {
+                        currentSize.set(currentSize.get()
+                                        + (long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
                         isOver.set(true);
                     }
                 }
@@ -435,7 +456,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                     currentSize.set(workspaceConfiguration.getMinSize());
 
                 // purge spilled allocations
-                if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
+                if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT
+                                || resetPlanned.get())) {
                     clearExternalAllocations();
                     resetPlanned.set(false);
                 }
@@ -476,7 +498,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
      */
     @Override
     public void destroyWorkspace(boolean extended) {
-        if (workspace.getHostPointer() != null && workspace.getHostPointer().getOriginalPointer() != null && workspace.getHostPointer().getOriginalPointer() instanceof BytePointer)
+        if (workspace.getHostPointer() != null && workspace.getHostPointer().getOriginalPointer() != null
+                        && workspace.getHostPointer().getOriginalPointer() instanceof BytePointer)
             workspace.getHostPointer().getOriginalPointer().deallocate();
 
         workspace.setHostPointer(null);
@@ -499,7 +522,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     @Override
     public MemoryWorkspace notifyScopeBorrowed() {
         if (isBorrowed.get())
-            throw new ND4JIllegalStateException("Workspace ["+id+"]: Can't borrow from borrowed workspace");
+            throw new ND4JIllegalStateException("Workspace [" + id + "]: Can't borrow from borrowed workspace");
 
         borrowingWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         isBorrowed.set(true);
@@ -524,7 +547,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         // next we check, if the same workspace was opened multiple times sequentially. then we just decrement counter, without reset
         if (tagScope.get() > 0) {
-            if (tagScope.decrementAndGet() == 0){
+            if (tagScope.decrementAndGet() == 0) {
                 Nd4j.getMemoryManager().setCurrentWorkspace(this);
             }
             return;
@@ -554,7 +577,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // if during this cycle we've used more memory then before - increase max count. we'll use it in future for optional reallocation
         if (cycleAllocations.get() > maxCycle.get()) {
             if (isDebug.get())
-                log.info("Workspace [{}] device_{}, current cycle: {}; max cycle: {}", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), cycleAllocations.get(), maxCycle.get());
+                log.info("Workspace [{}] device_{}, current cycle: {}; max cycle: {}", id,
+                                Nd4j.getAffinityManager().getDeviceForCurrentThread(), cycleAllocations.get(),
+                                maxCycle.get());
 
             maxCycle.set(cycleAllocations.get());
         }
@@ -569,17 +594,21 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             //log.info("Delayed workspace {}, device_{} initialization starts...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
             // if we're going to resize - we're probably safe to purge spilled allocations
-            if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
+            if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT
+                            || resetPlanned.get())) {
                 clearExternalAllocations();
                 resetPlanned.set(false);
             }
 
             if ((workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME
-                    && workspaceConfiguration.getCyclesBeforeInitialization() == cyclesCount.intValue())
-                    || (workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP && currentSize.get() == 0)) {
+                            && workspaceConfiguration.getCyclesBeforeInitialization() == cyclesCount.intValue())
+                            || (workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP
+                                            && currentSize.get() == 0)) {
                 //log.info("Initializing on cycle {}", cyclesCount.get());
                 initializeWorkspace();
-            } else if (currentSize.get() > 0 && cycleAllocations.get() > 0 && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && workspaceConfiguration.getPolicyReset() != ResetPolicy.ENDOFBUFFER_REACHED) {
+            } else if (currentSize.get() > 0 && cycleAllocations.get() > 0
+                            && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE
+                            && workspaceConfiguration.getPolicyReset() != ResetPolicy.ENDOFBUFFER_REACHED) {
                 //log.debug("Reinit on cycle {}; step: {}", cyclesCount.get(), stepsCount.get());
                 initializeWorkspace();
             }
@@ -607,7 +636,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         if (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT) {
             reset();
-        } else if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0) {
+        } else if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED
+                        && currentSize.get() > 0) {
 
             // for variable input we want to ensure alignment to max block, to avoid accidental buffer overruns
             long diff = initialBlockSize.get() - cycleAllocations.get();
@@ -616,7 +646,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             if (diff > 0 && !trimmedMode.get() && deviceOffset.get() > 0) {
 
                 if (isDebug.get())
-                    log.info("Worskpace [{}]: Align to [{}]; diff: [{}]; block size: [{}]; currentOffset: [{}]; workspaceSize: [{}]; trimmedMode: {}", id, initialBlockSize.get(), diff, cycleAllocations.get(), deviceOffset.get(), currentSize.get(), trimmedMode.get());
+                    log.info("Worskpace [{}]: Align to [{}]; diff: [{}]; block size: [{}]; currentOffset: [{}]; workspaceSize: [{}]; trimmedMode: {}",
+                                    id, initialBlockSize.get(), diff, cycleAllocations.get(), deviceOffset.get(),
+                                    currentSize.get(), trimmedMode.get());
 
                 deviceOffset.getAndAdd(diff);
                 hostOffset.getAndAdd(diff);
@@ -655,7 +687,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
 
         // if we have any spilled allocations left from last cycle - purge them.
-        if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
+        if (externalCount.get() > 0
+                        && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
             clearExternalAllocations();
             resetPlanned.set(false);
         }
@@ -744,10 +777,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public String toString() {
-        return "Nd4jWorkspace{" +
-                "id='" + id + '\'' +
-                ", currentSize=" + currentSize.get() +
-                '}';
+        return "Nd4jWorkspace{" + "id='" + id + '\'' + ", currentSize=" + currentSize.get() + '}';
     }
 
     @Data

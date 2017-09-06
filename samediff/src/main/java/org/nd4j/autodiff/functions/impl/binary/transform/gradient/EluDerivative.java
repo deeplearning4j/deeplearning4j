@@ -10,11 +10,11 @@ import org.nd4j.linalg.api.ops.impl.transforms.ELUDerivative;
 import java.util.Arrays;
 import java.util.List;
 
-public class EluDerivative  extends AbstractBinaryFunction<ArrayField> {
+public class EluDerivative  extends AbstractBinaryFunction {
     public EluDerivative() {
     }
 
-    public EluDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
+    public EluDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2, OpState.OpType.GRADIENT);
     }
 
@@ -29,8 +29,8 @@ public class EluDerivative  extends AbstractBinaryFunction<ArrayField> {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().zero(getResultShape());
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().zero(getResultShape());
         arg().setGradient(ret);
         return Arrays.asList(ret);
     }

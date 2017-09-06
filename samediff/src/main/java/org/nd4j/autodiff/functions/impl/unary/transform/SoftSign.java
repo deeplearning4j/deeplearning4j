@@ -8,10 +8,14 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class SoftSign extends AbstractUnaryFunction<ArrayField> {
+public class SoftSign extends AbstractUnaryFunction {
 
-    public SoftSign(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+    public SoftSign(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public SoftSign(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     @Override
@@ -22,8 +26,8 @@ public class SoftSign extends AbstractUnaryFunction<ArrayField> {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().softsignDerivative(i_v.get(0));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().softsignDerivative(i_v.get(0));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

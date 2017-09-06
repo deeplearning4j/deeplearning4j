@@ -9,9 +9,13 @@ import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import java.util.Collections;
 import java.util.List;
 
-public class Softmax extends AbstractUnaryFunction<ArrayField> {
-    public Softmax(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v, Object[] extraArgs) {
+public class Softmax extends AbstractUnaryFunction {
+    public Softmax(SameDiff sameDiff, DifferentialFunction i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public Softmax(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     @Override
@@ -21,8 +25,8 @@ public class Softmax extends AbstractUnaryFunction<ArrayField> {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().softmaxDerivative(arg(), i_v.get(0));
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().softmaxDerivative(arg(), i_v.get(0));
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

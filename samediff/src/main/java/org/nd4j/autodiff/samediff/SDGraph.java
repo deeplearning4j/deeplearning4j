@@ -50,6 +50,26 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         this.sameDiff = sameDiff;
     }
 
+    /**
+     * Add a vertex to the graph
+     * (no effect when frozen)
+     *
+     * @param ndArrayInformationVertex
+     */
+    @Override
+    public void addVertex(Vertex<NDArrayInformation> ndArrayInformationVertex) {
+        if(getGraphApply() != null) {
+            ndArrayInformationVertex.setIdx(getGraphApply().getNextVertexId());
+        }
+
+        super.addVertex(ndArrayInformationVertex);
+    }
+
+    @Override
+    public SDGraph getGraphApply() {
+        return (SDGraph) super.getGraphApply();
+    }
+
     @Override
     public String toString() {
         return super.toString();

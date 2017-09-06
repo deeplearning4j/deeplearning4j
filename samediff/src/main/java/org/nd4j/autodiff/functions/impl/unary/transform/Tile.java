@@ -7,12 +7,17 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-public class Tile extends AbstractUnaryFunction<ArrayField> {
+public class Tile extends AbstractUnaryFunction {
 
     private int[] repeat;
 
-    public Tile(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v,int[] repeat) {
+    public Tile(SameDiff sameDiff, DifferentialFunction i_v,int[] repeat) {
         super(sameDiff, i_v, new Object[]{repeat});
+        this.repeat = repeat;
+    }
+
+    public Tile(SameDiff sameDiff, DifferentialFunction i_v, boolean inPlace, int[] repeat) {
+        super(sameDiff, i_v, inPlace);
         this.repeat = repeat;
     }
 
@@ -23,7 +28,7 @@ public class Tile extends AbstractUnaryFunction<ArrayField> {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
         throw new UnsupportedOperationException();
     }

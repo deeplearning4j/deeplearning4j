@@ -9,12 +9,12 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.Collections;
 import java.util.List;
 
-public class SoftSignDerivative extends AbstractBinaryFunction<ArrayField> {
+public class SoftSignDerivative extends AbstractBinaryFunction {
 
     public SoftSignDerivative() {
     }
 
-    public SoftSignDerivative(SameDiff sameDiff, DifferentialFunction<ArrayField> i_v1, DifferentialFunction<ArrayField> i_v2) {
+    public SoftSignDerivative(SameDiff sameDiff, DifferentialFunction i_v1, DifferentialFunction i_v2) {
         super(sameDiff, i_v1, i_v2, OpState.OpType.GRADIENT);
     }
 
@@ -29,8 +29,8 @@ public class SoftSignDerivative extends AbstractBinaryFunction<ArrayField> {
 
 
     @Override
-    public List<DifferentialFunction<ArrayField>> diff(List<DifferentialFunction<ArrayField>> i_v) {
-        DifferentialFunction<ArrayField> ret = f().zero(getResultShape());
+    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+        DifferentialFunction ret = f().zero(getResultShape());
         arg().setGradient(ret);
         return Collections.singletonList(ret);
     }

@@ -26,7 +26,7 @@ public class AdaGrad implements IUpdater {
     private double learningRate;
     private double epsilon;
 
-    public AdaGrad(){
+    public AdaGrad() {
         this(DEFAULT_ADAGRAD_LEARNING_RATE, DEFAULT_ADAGRAD_EPSILON);
     }
 
@@ -58,7 +58,6 @@ public class AdaGrad implements IUpdater {
         private double learningRate = DEFAULT_ADAGRAD_LEARNING_RATE;
         private double epsilon = DEFAULT_ADAGRAD_EPSILON;
 
-        public Builder() {
-        }
+        public Builder() {}
     }
 }
