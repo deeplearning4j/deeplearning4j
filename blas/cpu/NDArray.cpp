@@ -1187,11 +1187,10 @@ NDArray<T>* NDArray<T>::broadcast(const NDArray<T>& other) {
 	// create and fill ret shapeInfo
 	int* shapeInfoNew = new int[biggerRank*2 + 4];
 	memcpy(shapeInfoNew, biggerShapeInfo, (biggerRank*2 + 4)*sizeof(int));
-	for (int i = smallerRank; i<=1; --i)
-		if(biggerShapeInfo[diff+i] == 1 || smallerShapeInfo[i] == 1) {
-			std::cout<<"!!!!"<<std::endl;
+	for (int i = smallerRank; i>=1; --i) 
+		if(shapeInfoNew[diff+i] == 1 || smallerShapeInfo[i] == 1) 
 			shapeInfoNew[diff+i] *= smallerShapeInfo[i];
-	}
+
 	NDArray<T>* ret = new NDArray<T>(shapeInfoNew);
 	ret->updateStrides(order);
 	delete []shapeInfoNew;

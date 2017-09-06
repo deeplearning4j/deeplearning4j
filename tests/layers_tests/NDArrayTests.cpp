@@ -657,8 +657,7 @@ TEST_F(NDArrayTest, Broadcast1) {
     NDArray<float> arr2(shape2);    
 	NDArray<float> arr3(shape3);    
 
-	NDArray<float>* result = arr1.broadcast(arr2);	
-	result->printShapeInfo();
+	NDArray<float>* result = arr1.broadcast(arr2);		
 	ASSERT_TRUE(result->isSameShapeStrict(&arr3));
 	delete result;
 }
