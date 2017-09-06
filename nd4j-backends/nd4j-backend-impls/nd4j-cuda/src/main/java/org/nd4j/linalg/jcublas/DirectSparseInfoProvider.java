@@ -1,4 +1,4 @@
-package org.nd4j.linalg.cpu.nativecpu;
+package org.nd4j.linalg.jcublas;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseSparseInfoProvider;
@@ -37,7 +37,7 @@ public class DirectSparseInfoProvider extends BaseSparseInfoProvider {
         }
         return sparseCache.get(descriptor);
     }
-
+    
     @Override
     public void purgeCache() {
         sparseCache = new ConcurrentHashMap<>();
