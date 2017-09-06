@@ -81,11 +81,6 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     }
 
     @Override
-    public Gradient calcGradient(Gradient layerError, INDArray activation) {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         return backpropGradientHelper(epsilon, false, -1);
     }
@@ -183,11 +178,6 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         }
 
         return fwd;
-    }
-
-    @Override
-    public INDArray activationMean() {
-        return activate();
     }
 
     @Override

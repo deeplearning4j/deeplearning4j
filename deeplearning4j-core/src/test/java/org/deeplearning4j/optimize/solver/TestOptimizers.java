@@ -978,32 +978,7 @@ public class TestOptimizers {
         }
 
         @Override
-        public Gradient error(INDArray input) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray derivativeActivation(INDArray input) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void merge(Layer layer, int batchSize) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray activationMean() {
             throw new UnsupportedOperationException();
         }
 

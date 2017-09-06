@@ -455,19 +455,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         return false;
     }
 
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
     @Override
     public void fit(INDArray input) {}
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException(layerId());
-    }
 
     @Override
     public INDArray params() {

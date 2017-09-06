@@ -326,11 +326,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray activationMean() {
-        return activate();
-    }
-
-    @Override
     public INDArray activate(boolean training) {
         //Essentially: just apply activation functions...
 

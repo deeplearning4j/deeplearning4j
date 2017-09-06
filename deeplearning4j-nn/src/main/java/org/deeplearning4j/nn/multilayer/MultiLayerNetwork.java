@@ -738,18 +738,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return getLayer(layer).activate(input);
     }
 
-    @Override
-    public INDArray activationMean() {
-        //TODO determine how to pass back all activationMean for MLN
-        throw new UnsupportedOperationException();
-        //        List<INDArray> avgActivations =  new ArrayList<>();
-        //
-        //        for( Layer layer: getLayers() ){
-        //            avgActivations.add(layer.activationMean());
-        //            }
-        //        return Nd4j.toFlattened(avgActivations);
-    }
-
     /**
      * Sets the input and labels from this dataset
      *
@@ -2290,42 +2278,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
-    /**
-     * Averages the given logistic regression
-     * from a mini batch in to this one
-     *
-     * @param layer     the logistic regression to average in to this one
-     * @param batchSize the batch size
-     * @deprecated Not supported and not used
-     */
-    @Override
-    @Deprecated
-    public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Deprecated: Merges this network with the other one.
-     *
-     * @param network   the network to merge with
-     * @param batchSize the batch size (number of training examples)
-     *                  to average by
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used; parameter averaging is performed via alternative means/methods
-     */
-    @Deprecated
-    public void merge(MultiLayerNetwork network, int batchSize) {
-        if (network.layers.length != layers.length)
-            throw new IllegalArgumentException("Unable to merge networks that are not of equal length");
-        for (int i = 0; i < getnLayers(); i++) {
-            Layer n = layers[i];
-            Layer otherNetwork = network.layers[i];
-            n.merge(otherNetwork, batchSize);
-
-        }
-
-        getOutputLayer().merge(network.getOutputLayer(), batchSize);
-    }
-
 
     /**
      * Note that if input isn't null
@@ -2484,23 +2436,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     //Layer methods
 
     @Override
-    public Gradient error(INDArray errorSignal) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Type type() {
         return Type.MULTILAYER;
-    }
-
-    @Override
-    public INDArray derivativeActivation(INDArray input) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray activation) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

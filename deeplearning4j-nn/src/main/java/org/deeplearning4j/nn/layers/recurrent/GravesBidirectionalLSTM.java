@@ -72,11 +72,6 @@ public class GravesBidirectionalLSTM
     }
 
     @Override
-    public Gradient calcGradient(Gradient layerError, INDArray activation) {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         return backpropGradientHelper(epsilon, false, -1);
     }
@@ -263,11 +258,6 @@ public class GravesBidirectionalLSTM
                             prevOutputActivations, prevMemCellState, forBackprop, forwards, inputKey, maskArray, true,
                             null, forBackprop ? cacheMode : CacheMode.NONE);
         }
-    }
-
-    @Override
-    public INDArray activationMean() {
-        return activate();
     }
 
     @Override

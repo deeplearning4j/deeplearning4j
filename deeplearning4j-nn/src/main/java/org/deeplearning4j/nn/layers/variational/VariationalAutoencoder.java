@@ -633,21 +633,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public Gradient error(INDArray input) {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
-    public INDArray derivativeActivation(INDArray input) {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         if (!zeroedPretrainParamGradients) {
             for (Map.Entry<String, INDArray> entry : gradientViews.entrySet()) {
@@ -708,16 +693,6 @@ public class VariationalAutoencoder implements Layer {
         }
 
         return new Pair<>(gradient, epsilon);
-    }
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
-    public INDArray activationMean() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override

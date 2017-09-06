@@ -81,16 +81,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public Gradient error(INDArray input) {
-        return null;
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        return null;
-    }
-
-    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         INDArray nextEpsilon;
         int[] shape = getShape(epsilon);
@@ -217,11 +207,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         }
 
         return new Pair<>(retGradient, nextEpsilon);
-    }
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException(layerId());
     }
 
     @Override

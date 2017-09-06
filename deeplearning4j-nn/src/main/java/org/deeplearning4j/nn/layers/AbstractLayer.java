@@ -148,22 +148,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public Gradient error(INDArray errorSignal) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    @Deprecated
-    public INDArray derivativeActivation(INDArray input) {
-        throw new UnsupportedOperationException("Deprecated - " + layerId());
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray activation) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
     public void computeGradientAndScore() {
         throw new UnsupportedOperationException("Not supported");
     }
@@ -372,16 +356,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
             }
             dropoutApplied = true;
         }
-    }
-
-    /**
-     * Averages the given logistic regression from a mini batch into this layer
-     * @param l the logistic regression layer to average into this layer
-     * @param batchSize  the batch size
-     */
-    @Override
-    public void merge(Layer l, int batchSize) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

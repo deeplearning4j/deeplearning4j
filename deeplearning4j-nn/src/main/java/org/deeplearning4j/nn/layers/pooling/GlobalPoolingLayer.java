@@ -272,11 +272,6 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         return new Pair<>(retGradient, epsilonNd);
     }
 
-    @Override
-    public INDArray activationMean() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
     private INDArray epsilonHelperFullArray(INDArray inputArray, INDArray epsilon, int[] poolDim) {
 
         //Broadcast: occurs on the remaining dimensions, after the pool dimensions have been removed.

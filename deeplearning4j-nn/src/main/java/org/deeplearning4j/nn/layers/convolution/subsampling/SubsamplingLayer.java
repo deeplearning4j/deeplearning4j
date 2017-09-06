@@ -340,27 +340,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public Gradient error(INDArray input) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public INDArray activationMean() {
-        return null;
-    }
-
-    @Override
     public Layer transpose() {
         throw new UnsupportedOperationException(layerId());
     }

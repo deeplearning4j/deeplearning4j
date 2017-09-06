@@ -52,11 +52,6 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         return new Pair<>((Gradient) new DefaultGradient(), epsNext);
     }
 
-    @Override
-    public INDArray activationMean() {
-        throw new UnsupportedOperationException();
-    }
-
 
     @Override
     public INDArray activate(boolean training) {

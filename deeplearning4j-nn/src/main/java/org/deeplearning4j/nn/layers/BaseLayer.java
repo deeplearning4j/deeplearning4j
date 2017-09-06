@@ -66,29 +66,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public Gradient error(INDArray errorSignal) {
-        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        Gradient nextLayerGradient = new DefaultGradient();
-        INDArray wErrorSignal = errorSignal.mmul(W.transpose());
-        nextLayerGradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, wErrorSignal);
-        return nextLayerGradient;
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray activation) {
-        Gradient ret = new DefaultGradient();
-        INDArray weightErrorSignal = layerError.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray weightError = weightErrorSignal.transpose().mmul(activation).transpose();
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightError);
-        if(hasBias()){
-            INDArray biasGradient = weightError.mean(0);
-            ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradient);
-        }
-
-        return ret;
-    }
-
-    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(true); //Note: using preOutput(INDArray) can't be used as this does a setInput(input) and resets the 'appliedDropout' flag
@@ -369,29 +346,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                             * getParam(DefaultParamInitializer.BIAS_KEY).norm1Number().doubleValue();
         }
         return l1Sum;
-    }
-
-
-    @Override
-    public INDArray activationMean() {
-        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray ret = input().mmul(W);
-        if(hasBias()){
-            ret.addiRowVector(b);
-        }
-        return ret;
-    }
-
-    /**
-     * Averages the given logistic regression from a mini batch into this layer
-     * @param l the logistic regression layer to average into this layer
-     * @param batchSize  the batch size
-     */
-    @Override
-    public void merge(Layer l, int batchSize) {
-        setParams(params().addi(l.params().divi(batchSize)));
-        computeGradientAndScore();
     }
 
     @Override

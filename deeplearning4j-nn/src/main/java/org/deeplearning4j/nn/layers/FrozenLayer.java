@@ -75,40 +75,10 @@ public class FrozenLayer implements Layer {
         return insideLayer.type();
     }
 
-    @Override
-    public Gradient error(INDArray input) {
-        if (!logGradient) {
-            OneTimeLogger.info(log,
-                            "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
-            logGradient = true;
-        }
-        return zeroGradient;
-    }
-
-    @Override
-    public INDArray derivativeActivation(INDArray input) {
-        return insideLayer.derivativeActivation(input);
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        return zeroGradient;
-    }
-
     //FIXME
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         return new Pair<>(zeroGradient, null);
-    }
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        insideLayer.merge(layer, batchSize);
-    }
-
-    @Override
-    public INDArray activationMean() {
-        return insideLayer.activationMean();
     }
 
     @Override

@@ -77,45 +77,6 @@ public interface Layer extends Serializable, Cloneable, Model {
      */
     Type type();
 
-    /**
-     * Calculate error with respect to the
-     * current layer.
-     *
-     * This gradient will contain the error signal
-     * @param input the gradient for the forward layer
-     *              If this is the final layer, it will start
-     *              with the error from the output.
-     *              This is on the user to initialize.
-     * @return the gradient wrt the parameters
-     * on the current layer
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used.
-     */
-    @Deprecated
-    Gradient error(INDArray input);
-
-
-
-    /**
-     * Take the derivative of the given input
-     * based on the activation
-     * @param input the input to take the derivative of
-     * @return the derivative of the action
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used.
-     */
-    @Deprecated
-    INDArray derivativeActivation(INDArray input);
-
-
-    /**
-     * Calculate the gradient
-     * @param layerError the layer error
-     * @param indArray
-     * @return the gradient
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used.
-     */
-    @Deprecated
-    Gradient calcGradient(Gradient layerError, INDArray indArray);
-
 
     /**Calculate the gradient relative to the error in the next layer
      * @param epsilon w^(L+1)*delta^(L+1). Or, equiv: dC/da, i.e., (dC/dz)*(dz/da) = dC/da, where C 
@@ -125,26 +86,6 @@ public interface Layer extends Serializable, Cloneable, Model {
      *  L, then return.getSecond() == (w^(L)*(delta^(L))^T)^T
      */
     Pair<Gradient, INDArray> backpropGradient(INDArray epsilon);
-
-
-    /**
-     * Parameter averaging
-     * @param layer the layer to merge
-     * @param batchSize the batch size to merge on
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used. Merging (for parameter averaging) done via alternative means
-     */
-    @Deprecated
-    void merge(Layer layer, int batchSize);
-
-
-    /**
-     * Calculate the mean representation
-     * for the activation for this layer
-     * @return the activation mean for this layer
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used.
-     */
-    @Deprecated
-    INDArray activationMean();
 
     /**
      * Raw activations
