@@ -64,7 +64,7 @@ public class LSTM extends AbstractLSTM {
             if(constraints == null){
                 constraints = new ArrayList<>();
             }
-            for (LayerConstraint c : builder.allParamConstraints) {
+            for (LayerConstraint c : ((Builder) builder).recurrentConstraints) {
                 LayerConstraint c2 = c.clone();
                 c2.setParams(Collections.singleton(LSTMParamInitializer.RECURRENT_WEIGHT_KEY));
                 constraints.add(c2);

@@ -63,7 +63,7 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
             if(constraints == null){
                 constraints = new ArrayList<>();
             }
-            for (LayerConstraint c : builder.allParamConstraints) {
+            for (LayerConstraint c : ((Builder) builder).recurrentConstraints) {
                 LayerConstraint c2 = c.clone();
                 Set<String> s = new HashSet<>();
                 s.add(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS);
