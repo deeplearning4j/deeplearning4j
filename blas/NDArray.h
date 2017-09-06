@@ -269,11 +269,14 @@ namespace nd4j {
 		void updateStrides(const char order);
 
 		// change an array by repeating it the number of times given by reps.
-		void tileInPlace(const std::vector<int>& reps);
+		void tilei(const std::vector<int>& reps);
 
 		// tile an array by repeating it the number of times given by reps.
 		NDArray<T>*  tile(const std::vector<int>& reps);
         
+		// return array which is broadcasted from this and argument array  
+		NDArray<T>*  broadcast(const NDArray<T>& other);
+	
 		// default destructor
         ~NDArray();
 
