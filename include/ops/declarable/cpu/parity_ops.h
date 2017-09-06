@@ -711,7 +711,8 @@ namespace nd4j {
 			std::vector<int>* argumets = block.getIArguments();
 			int argsSize = argumets->size();
 			char order = (*argumets)[argsSize-1];
-			std::vector<int> shapeNew(argumets->begin(), argumets->end() - 1);						
+			std::vector<int> shapeNew = *argumets;
+			shapeNew.pop_back();
 
 			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
 			if(block.isInplace()) {
@@ -738,7 +739,8 @@ namespace nd4j {
 			std::vector<int>* argumets = block.getIArguments();
 			int argsSize = argumets->size();
 			int dimension = (*argumets)[argsSize-1];
-			std::vector<int> repeats(argumets->begin(), argumets->end() - 1);						
+			std::vector<int> repeats = *argumets;
+			repeats.pop_back();
 
 			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
 			NDArray<T>* ret = x->repeat(dimension, repeats);
