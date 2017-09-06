@@ -12,6 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  * @author Adam Gibson
  */
+@Deprecated
 public class Dropout {
 
     private Dropout() {}
@@ -22,6 +23,7 @@ public class Dropout {
      * @param variable the variable to apply
      * @return the post applied drop connect
      */
+    @Deprecated
     public static INDArray applyDropConnect(Layer layer, String variable) {
         double dropConnect = 0.5;       //TODO
         INDArray result = layer.getParam(variable).dup();
