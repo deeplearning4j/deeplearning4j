@@ -38,6 +38,9 @@ namespace nd4j {
 		// copy constructor
         NDArray(const NDArray<T>& other);
 
+		// constructor new NDArray using shape information from "shape" array, set all elements in new array to be zeros
+		NDArray(const int* shapeInfo);
+
         // this constructor creates new array using shape information contained in initializer_list/vector argument
         NDArray(const char order, const std::initializer_list<int> &shape);	
         NDArray(const char order, const std::vector<int> &shape);

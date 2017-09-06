@@ -70,6 +70,22 @@ template <typename T> NDArray<T>::NDArray(const int rows, const int columns, con
 }
 
 ////////////////////////////////////////////////////////////////////////
+// creates new NDArray using shape information from "shape" array, set all elements in new array to be zeros
+template <typename T> NDArray<T>::NDArray(const int* shapeInfo) {
+   
+    int arrLength = shape::length(const_cast<int*>(shapeInfo));
+    int shapeLength = shape::rank(const_cast<int*>(shapeInfo))*2 + 4;
+
+    _buffer = new T[arrLength];
+    memset(_buffer, 0, arrLength*sizeOfT());          // set all elements in new array to be zeros
+ 
+    _shapeInfo = new int[shapeLength];             
+    memcpy(_shapeInfo, shapeInfo, shapeLength*sizeof(int));     // copy shape information into new array
+    _isBuffAlloc = true; 
+    _isShapeAlloc = true;
+}
+
+////////////////////////////////////////////////////////////////////////
     template<typename T>
     std::vector<T> NDArray<T>::getBufferAsVector() {
         std::vector<T> vector;
@@ -988,13 +1004,14 @@ bool NDArray<T>::permutei(const int* dimensions, const int rank) {
 
     // check if current object is _shapeInfo owner
     if(!_isShapeAlloc) {             // if _shapeInfo is not its own
-        int* shapeInfo = new int[rank*2+4];
-        shape::permuteShapeBufferInPlace(_shapeInfo, const_cast<int*>(dimensions), shapeInfo);
-        _shapeInfo = shapeInfo;
+        int* shapeInfoNew = new int[rank*2+4];
+		memcpy(shapeInfoNew, _shapeInfo, (rank*2+4)*sizeof(int));	        
+		shape::doPermuteShapeBuffer(rank, shapeInfoNew, const_cast<int*>(dimensions));	
+        _shapeInfo = shapeInfoNew;
         _isShapeAlloc = true;
     }
-    else
-        shape::permuteShapeBufferInPlace(_shapeInfo, const_cast<int*>(dimensions), _shapeInfo);
+    else        
+		shape::doPermuteShapeBuffer(rank, _shapeInfo, const_cast<int*>(dimensions));	
 
     return true;
 }
@@ -1024,12 +1041,13 @@ NDArray<T>* NDArray<T>::permute(const int* dimensions, const int rank) {
 	// allocate memory for new array - buffer and shapeInfo
 	T* bufferNew = new T[buffLength];
 	int* shapeInfoNew = new int[shapeInfoLength];
-	// copy this arrays _buffer  into new array	
+	// copy this arrays _buffer and _shapeInfo into new array	
 	memcpy(bufferNew, _buffer, buffLength*sizeOfT());	
-	// perform buffer permutation
-	shape::permuteShapeBufferInPlace(_shapeInfo, const_cast<int*>(dimensions), shapeInfoNew);
+	memcpy(shapeInfoNew, _shapeInfo, shapeInfoLength*sizeof(int));	
+	// perform buffer permutation	
+	shape::doPermuteShapeBuffer(rank, shapeInfoNew, const_cast<int*>(dimensions));	
 	// create array to be returned
-    NDArray<T>* ret = new NDArray<T>(bufferNew, shapeInfoNew);
+    NDArray<T>* ret = new NDArray<T>(bufferNew, shapeInfoNew);	
 	// don't forget to indicate that memory for new array was allocated
     ret->_isBuffAlloc = true;
     ret->_isShapeAlloc = true;

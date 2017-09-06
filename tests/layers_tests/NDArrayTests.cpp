@@ -4,6 +4,7 @@
 
 #include "testlayers.h"
 
+//////////////////////////////////////////////////////////////////////
 class NDArrayTest : public testing::Test {
 public:
     int alpha = 0;
@@ -18,7 +19,7 @@ public:
 	const std::vector<int> tileShape1 = {2,2,2};
 };
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, AssignScalar1) {
     auto *array = new NDArray<float>(10, 'c');
 
@@ -29,8 +30,7 @@ TEST_F(NDArrayTest, AssignScalar1) {
     }
 }
 
-
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, NDArrayOrder1) {
     // original part
     float *c = new float[4] {1, 2, 3, 4};
@@ -63,6 +63,7 @@ TEST_F(NDArrayTest, NDArrayOrder1) {
     }
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestGetScalar1) {
     float *c = new float[4] {1, 2, 3, 4};
     int *cShape = new int[8]{2, 2, 2, 2, 1, 0, 1, 99};
@@ -87,7 +88,7 @@ TEST_F(NDArrayTest, TestGetScalar1) {
 
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, EqualityTest1) {
     auto *arrayA = new NDArray<float>(3, 5, 'f');
     auto *arrayB = new NDArray<float>(3, 5, 'f');
@@ -144,13 +145,14 @@ TEST_F(NDArrayTest, TestTad1) {
     delete row2;
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestTad2) {
     auto array = new NDArray<float>(3, 3, 'c');
 
     ASSERT_EQ(3, array->tensorsAlongDimension({1}));
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestTad3) {
     auto array = new NDArray<float>(4, 3, 'c');
 
@@ -170,7 +172,7 @@ TEST_F(NDArrayTest, TestTad3) {
     delete row2;
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestRepeat1) {
     auto eBuffer = new float[8] {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
     auto eShape = new int[8]{2, 4, 2, 2, 1, 0, 1, 99};
@@ -191,7 +193,7 @@ TEST_F(NDArrayTest, TestRepeat1) {
     ASSERT_TRUE(exp->equalsTo(rep));
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestIndexedPut1) {
     auto array = new NDArray<float>(3, 3, 'f');
 
@@ -200,6 +202,7 @@ TEST_F(NDArrayTest, TestIndexedPut1) {
     array->printBuffer();
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestSum1) {
     float *c = new float[4] {1, 2, 3, 4};
 
@@ -209,6 +212,7 @@ TEST_F(NDArrayTest, TestSum1) {
     ASSERT_EQ(2.5f, array->meanNumber());
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestAddiRowVector) {
     float *c = new float[4] {1, 2, 3, 4};
     float *e = new float[4] {2, 3, 4, 5};
@@ -223,6 +227,7 @@ TEST_F(NDArrayTest, TestAddiRowVector) {
     ASSERT_TRUE(exp->equalsTo(array));
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test3D_1) {
     auto arrayC = new NDArray<double>('c', {2, 5, 10});
     auto arrayF = new NDArray<double>('f', {2, 5, 10});
@@ -234,6 +239,7 @@ TEST_F(NDArrayTest, Test3D_1) {
     ASSERT_EQ('f', arrayF->ordering());
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestTranspose1) {
     auto *arrayC = new NDArray<double>('c', {2, 5, 10});
 
@@ -250,6 +256,7 @@ TEST_F(NDArrayTest, TestTranspose1) {
 
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestTranspose2) {
     auto *arrayC = new NDArray<double>('c', {2, 5, 10});
 
@@ -265,6 +272,7 @@ TEST_F(NDArrayTest, TestTranspose2) {
 
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestSumAlongDimension1) {
     float *c = new float[4] {1, 2, 3, 4};
     auto *array = new NDArray<float>(c, cShape);
@@ -277,6 +285,7 @@ TEST_F(NDArrayTest, TestSumAlongDimension1) {
     ASSERT_EQ(6.0f, res->getScalar(1));
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestSumAlongDimension2) {
     float *c = new float[4] {1, 2, 3, 4};
     auto *array = new NDArray<float>(c, cShape);
@@ -289,6 +298,7 @@ TEST_F(NDArrayTest, TestSumAlongDimension2) {
     ASSERT_EQ(7.0f, res->getScalar(1));
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestReduceAlongDimension1) {
     float *c = new float[4] {1, 2, 3, 4};
     auto *array = new NDArray<float>(c, cShape);
@@ -305,7 +315,7 @@ TEST_F(NDArrayTest, TestReduceAlongDimension1) {
 
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestTransform1) {
     float *c = new float[4] {-1, -2, -3, -4};
     auto *array = new NDArray<float>(c, cShape);
@@ -318,6 +328,7 @@ TEST_F(NDArrayTest, TestTransform1) {
     ASSERT_TRUE(exp->equalsTo(array));
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestReduceScalar1) {
     float *c = new float[4] {-1, -2, -3, -4};
     auto *array = new NDArray<float>(c, cShape);
@@ -325,6 +336,7 @@ TEST_F(NDArrayTest, TestReduceScalar1) {
     ASSERT_EQ(-4, array->reduceNumber<simdOps::Min<float>>(nullptr));
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestApplyTransform1) {
     float *c = new float[4] {-1, -2, -3, -4};
     auto *array = new NDArray<float>(c, cShape);
@@ -338,6 +350,7 @@ TEST_F(NDArrayTest, TestApplyTransform1) {
     ASSERT_TRUE(exp->equalsTo(array));
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestVectors1) {
     float *c = new float[4]{-1, -2, -3, -4};
     auto *array = new NDArray<float>(c, cShape);
@@ -358,7 +371,7 @@ TEST_F(NDArrayTest, TestVectors1) {
     }
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestChecks1) {
     NDArray<float> array(1, 5, 'c');
 
@@ -369,7 +382,7 @@ TEST_F(NDArrayTest, TestChecks1) {
     ASSERT_TRUE(array.isRowVector());
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestChecks2) {
     NDArray<float> array(5, 5, 'c');
 
@@ -380,7 +393,7 @@ TEST_F(NDArrayTest, TestChecks2) {
     ASSERT_FALSE(array.isRowVector());
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestChecks3) {
     NDArray<float> array(5, 1, 'c');
 
@@ -391,7 +404,7 @@ TEST_F(NDArrayTest, TestChecks3) {
     ASSERT_FALSE(array.isRowVector());
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestChecks4) {
     NDArray<float> array(1, 1, 'c');
 
@@ -402,7 +415,7 @@ TEST_F(NDArrayTest, TestChecks4) {
     ASSERT_TRUE(array.isScalar());
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestChecks5) {
     NDArray<float> array('c', {5, 5, 5});
 
@@ -413,6 +426,7 @@ TEST_F(NDArrayTest, TestChecks5) {
     ASSERT_FALSE(array.isScalar());
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestTile1) {
 
 	NDArray<float> array1(arr1,shape1);
@@ -431,6 +445,7 @@ TEST_F(NDArrayTest, TestTile1) {
     ASSERT_TRUE(expA->equalsTo(&array1));
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper1) {
     auto xBuffer = new float[3]{1.f, 2.f, 3.f};
     auto xShape = new int[8] {2, 1, 3, 1, 1, 0, 1, 99};
@@ -446,6 +461,7 @@ TEST_F(NDArrayTest, TestMmulHelper1) {
     ASSERT_NEAR(28, z->getScalar(0), 1e-5);
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper2) {
     auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
     auto xShape = new int[8] {2, 5, 3, 3, 1, 0, 1, 99};
@@ -469,7 +485,7 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
     ASSERT_TRUE(z->equalsTo(exp));
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper3) {
     auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
     auto xShape = new int[8] {2, 5, 3, 1, 5, 0, 1, 102};
@@ -493,7 +509,7 @@ TEST_F(NDArrayTest, TestMmulHelper3) {
     ASSERT_TRUE(z->equalsTo(exp));
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper4) {
     auto xBuffer = new float[6]{1, 2, 3, 4, 5, 6};
     auto xShape = new int[8] {2, 3, 2, 2, 1, 0, 1, 99};
@@ -512,6 +528,7 @@ TEST_F(NDArrayTest, TestMmulHelper4) {
     ASSERT_TRUE(z->equalsTo(exp));
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper5) {
     auto xBuffer = new float[6]{1, 2, 3, 4, 5, 6};
     auto xShape = new int[8] {2, 3, 2, 1, 3, 0, 1, 102};
@@ -530,6 +547,7 @@ TEST_F(NDArrayTest, TestMmulHelper5) {
     ASSERT_TRUE(z->equalsTo(exp));
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper6) {
     auto xBuffer = new float[6]{1, 2, 3, 4, 5, 6};
     auto xShape = new int[8] {2, 3, 2, 1, 3, 0, 1, 102};
@@ -548,7 +566,7 @@ TEST_F(NDArrayTest, TestMmulHelper6) {
     ASSERT_TRUE(z->equalsTo(exp));
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper7) {
     auto xBuffer = new float[15]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     auto xShape = new int[8] {2, 5, 3, 1, 5, 0, 1, 102};
@@ -567,4 +585,36 @@ TEST_F(NDArrayTest, TestMmulHelper7) {
 
     z->printBuffer();
     ASSERT_TRUE(z->equalsTo(exp));
+}
+
+//////////////////////////////////////////////////////////////////////
+// not-in-place
+TEST_F(NDArrayTest, Permute1) {  
+    
+    const int shape1[] = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
+	const int shape2[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
+    const std::initializer_list<int> perm = {2, 0, 1};    
+    
+    NDArray<float> arr1(shape1);
+    NDArray<float> arr2(shape2);    
+
+	NDArray<float>* result = arr1.permute(perm);        	
+	ASSERT_TRUE(result->isSameShapeStrict(&arr2));
+
+	delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+// in-place
+TEST_F(NDArrayTest, Permute2) {
+    
+    const int shape1[] = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
+	const int shape2[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
+    const std::initializer_list<int> perm = {2, 0, 1};    
+    
+    NDArray<float> arr1(shape1);
+    NDArray<float> arr2(shape2);    
+
+	ASSERT_TRUE(arr1.permutei(perm));
+	ASSERT_TRUE(arr1.isSameShapeStrict(&arr2));
 }
