@@ -21,8 +21,16 @@ public interface LayerConstraint extends Cloneable, Serializable {
      */
     void applyConstraint(Layer layer, int iteration, int epoch);
 
+    /**
+     * Set the parameters that this layer constraint should be applied to
+     *
+     * @param params Parameters that the layer constraint should be applied to
+     */
     void setParams(Set<String> params);
 
+    /**
+     * @return Set of parameters that this layer constraint will be applied to
+     */
     Set<String> getParams();
 
     LayerConstraint clone();

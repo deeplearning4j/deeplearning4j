@@ -54,6 +54,13 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
         protected List<LayerConstraint> recurrentConstraints;
 
+        /**
+         * Set constraints to be applied to the RNN recurrent weight paramaters of this layer. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to the recurrent weight parameters of this layer
+         */
         public T constrainRecurrent(LayerConstraint... constraints) {
             this.recurrentConstraints = Arrays.asList(constraints);
             return (T) this;

@@ -35,14 +35,42 @@ public interface ParamInitializer {
 
     int numParams(org.deeplearning4j.nn.conf.layers.Layer layer);
 
+    /**
+     * Get a list of all parameter keys given the layer configuration
+     *
+     * @param layer Layer
+     * @return All parameter keys
+     */
     List<String> paramKeys(org.deeplearning4j.nn.conf.layers.Layer layer);
 
+    /**
+     * Weight parameter keys given the layer configuration
+     *
+     * @param layer Layer
+     * @return Weight parameter keys
+     */
     List<String> weightKeys(org.deeplearning4j.nn.conf.layers.Layer layer);
 
+    /**
+     * Bias parameter keys given the layer configuration
+     *
+     * @param layer Layer
+     * @return Bias parameter keys
+     */
     List<String> biasKeys(org.deeplearning4j.nn.conf.layers.Layer layer);
 
+    /**
+     * Is the specified parameter a weight?
+     * @param key Key to check
+     * @return True if parameter is a weight
+     */
     boolean isWeightParam(String key);
 
+    /**
+     * Is the specified parameter a bias?
+     * @param key Key to check
+     * @return True if parameter is a bias
+     */
     boolean isBiasParam(String key);
 
     /**
