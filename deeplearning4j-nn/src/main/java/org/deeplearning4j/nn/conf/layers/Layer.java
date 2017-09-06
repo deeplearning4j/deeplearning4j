@@ -315,7 +315,7 @@ public abstract class Layer implements Serializable, Cloneable {
         }
 
         /**
-         * Set constraints to be applied to the weight paramaters of this layer. Default: no constraints.<br>
+         * Set constraints to be applied to the weight parameters of this layer. Default: no constraints.<br>
          * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
          * etc). These constraints are applied at each iteration, after the parameters have been updated.
          *

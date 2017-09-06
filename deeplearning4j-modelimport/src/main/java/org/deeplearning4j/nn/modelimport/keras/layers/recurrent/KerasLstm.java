@@ -136,7 +136,7 @@ public class KerasLstm extends KerasLayer {
         if (biasConstraint != null)
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
-            builder.constrainWeights(weightConstraint);
+            builder.constrainInputWeights(weightConstraint);
         if (recurrentConstraint != null)
             builder.constrainRecurrent(recurrentConstraint);
         this.layer = builder.build();

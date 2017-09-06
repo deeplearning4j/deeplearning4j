@@ -7,7 +7,6 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.constraint.BaseConstraint;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -18,10 +17,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Batch normalization configuration
@@ -226,6 +222,8 @@ public class BatchNormalization extends FeedForwardLayer {
         protected boolean lockGammaBeta = false;
         protected double gamma = 1.0;
         protected double beta = 0.0;
+        protected List<LayerConstraint> betaConstraints;
+        protected List<LayerConstraint> gammaConstraints;
 
         public Builder(double decay, boolean isMinibatch) {
             this.decay = decay;
@@ -321,28 +319,28 @@ public class BatchNormalization extends FeedForwardLayer {
             return this;
         }
 
-        public Builder constrainGamma(LayerConstraint... constraints) {
-            List<LayerConstraint> currentConstraints = this.constraints;
-            for(LayerConstraint c : constraints ){
-                BaseConstraint constraint = (BaseConstraint) c.clone();
-                Set<String> paramNames = constraint.getParamNames();
-                paramNames.add("gamma");
-                constraint.setParamNames(paramNames);
-                currentConstraints.add(constraint);
-            }
-            return applyConstraints(currentConstraints);
+        /**
+         * Set constraints to be applied to the beta parameter of this batch normalisation layer. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to the beta parameter of this layer
+         */
+        public Builder constrainBeta(LayerConstraint... constraints) {
+            this.betaConstraints = Arrays.asList(constraints);
+            return this;
         }
 
-        public Builder constrainBeta(LayerConstraint... constraints) {
-            List<LayerConstraint> currentConstraints = this.constraints;
-            for(LayerConstraint c : constraints ){
-                BaseConstraint constraint = (BaseConstraint) c.clone();
-                Set<String> paramNames = constraint.getParamNames();
-                paramNames.add("beta");
-                constraint.setParamNames(paramNames);
-                currentConstraints.add(constraint);
-            }
-            return applyConstraints(currentConstraints);
+        /**
+         * Set constraints to be applied to the gamma parameter of this batch normalisation layer. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to the gamma parameter of this layer
+         */
+        public Builder constrainGamma(LayerConstraint... constraints) {
+            this.gammaConstraints = Arrays.asList(constraints);
+            return this;
         }
 
         @Override
