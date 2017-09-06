@@ -1477,11 +1477,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             String[] another = op.split(":");
 
             CustomOpDescriptor descriptor = CustomOpDescriptor.builder()
-                    .numInputs(Integer.valueOf(another[1]))
-                    .numOutputs(Integer.valueOf(another[2]))
-                    .allowsInplace(Integer.valueOf(another[3]) == 1)
-                    .numTArgs(Integer.valueOf(another[4]))
-                    .numIArgs(Integer.valueOf(another[5]))
+                    .hash(Long.valueOf(another[1]))
+                    .numInputs(Integer.valueOf(another[2]))
+                    .numOutputs(Integer.valueOf(another[3]))
+                    .allowsInplace(Integer.valueOf(another[4]) == 1)
+                    .numTArgs(Integer.valueOf(another[5]))
+                    .numIArgs(Integer.valueOf(another[6]))
                     .build();
 
             map.put(another[0], descriptor);

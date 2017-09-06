@@ -12,6 +12,7 @@ import lombok.Getter;
 @AllArgsConstructor
 @Builder
 public class CustomOpDescriptor {
+    @Getter private long hash;
     @Getter private int numInputs;
     @Getter private int numOutputs;
     @Getter private boolean allowsInplace;

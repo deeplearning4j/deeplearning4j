@@ -27,6 +27,7 @@ public class DynamicCustomOp implements CustomOp {
     @Getter private List<Double> tArguments = new ArrayList<>();
     @Getter private List<Integer> iArguments = new ArrayList<>();
     @Getter private boolean inplaceCall;
+    @Getter private long hash;
 
     protected DynamicCustomOp(String opName) {
         this.opName = opName;
@@ -49,7 +50,7 @@ public class DynamicCustomOp implements CustomOp {
      */
     @Override
     public long opHash() {
-        return HashUtil.getLongHash(opName.toLowerCase());
+        return hash;
     }
 
     /**
@@ -65,7 +66,7 @@ public class DynamicCustomOp implements CustomOp {
         if (desc == null)
             throw new ND4JIllegalStateException("Unknown operations requested: [" + opName + "]");
 
-        return new Builder(opName, desc.getNumInputs(), desc.getNumOutputs(), desc.isAllowsInplace(), desc.getNumTArgs(), desc.getNumIArgs());
+        return new Builder(opName, desc.getHash(), desc.getNumInputs(), desc.getNumOutputs(), desc.isAllowsInplace(), desc.getNumTArgs(), desc.getNumIArgs());
     }
 
     public static class Builder {
@@ -76,13 +77,15 @@ public class DynamicCustomOp implements CustomOp {
         protected int numIArguments;
         protected boolean inplaceCall;
         protected boolean inplaceAllowed;
+        protected long opHash;
 
         private List<INDArray> inputArguments = new ArrayList<>();
         private List<INDArray> outputArguments = new ArrayList<>();
         private List<Double> tArguments = new ArrayList<>();
         private List<Integer> iArguments = new ArrayList<>();
 
-        protected Builder(String opName, int numInputs, int numOutputs, boolean inplaceAllowed, int numTArguments, int numIArguments) {
+        protected Builder(String opName, long hash, int numInputs, int numOutputs, boolean inplaceAllowed, int numTArguments, int numIArguments) {
+            this.opHash = hash;
             this.opName = opName;
             this.numInputs = numInputs;
             this.numOutputs = numOutputs;
@@ -207,6 +210,7 @@ public class DynamicCustomOp implements CustomOp {
             result.iArguments = iArguments;
             result.tArguments = tArguments;
             result.inplaceCall = inplaceCall;
+            result.hash = opHash;
 
             return result;
         }
