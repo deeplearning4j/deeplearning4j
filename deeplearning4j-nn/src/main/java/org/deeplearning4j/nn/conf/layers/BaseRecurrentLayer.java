@@ -1,8 +1,12 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -46,9 +50,14 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     }
 
 
-    @AllArgsConstructor
+    @NoArgsConstructor
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+        protected List<LayerConstraint> recurrentConstraints;
 
+        public T constrainRecurrent(LayerConstraint... constraints) {
+            this.recurrentConstraints = Arrays.asList(constraints);
+            return (T) this;
+        }
     }
 
 }

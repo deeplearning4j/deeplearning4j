@@ -7,7 +7,9 @@ import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -28,16 +30,13 @@ public class MaxNormConstraint extends BaseConstraint {
 
     /**
      * @param maxNorm        Maximum L2 value
-     * @param applyToWeights If constraint should be applied to weights
-     * @param applyToBiases  If constraint should be applied to biases
      * @param paramNames     Which parameter names to apply constraint to
      * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
-    public MaxNormConstraint(double maxNorm, boolean applyToWeights, boolean applyToBiases,
-                             Set<String> paramNames, int... dimensions){
-        super(applyToWeights, applyToBiases, paramNames, DEFAULT_EPSILON, dimensions);
+    public MaxNormConstraint(double maxNorm, Set<String> paramNames, int... dimensions){
+        super(paramNames, DEFAULT_EPSILON, dimensions);
         this.maxNorm = maxNorm;
     }
 
@@ -51,7 +50,7 @@ public class MaxNormConstraint extends BaseConstraint {
      */
     public MaxNormConstraint(double maxNorm, int... dimensions) {
 
-        this(maxNorm, true, false, new HashSet<String>(), dimensions);
+        this(maxNorm, Collections.<String>emptySet(), dimensions);
     }
 
     @Override
@@ -67,6 +66,6 @@ public class MaxNormConstraint extends BaseConstraint {
 
     @Override
     public MaxNormConstraint clone() {
-        return new MaxNormConstraint(maxNorm,  applyToWeights, applyToBiases, paramNames, dimensions);
+        return new MaxNormConstraint(maxNorm,  params, dimensions);
     }
 }

@@ -185,7 +185,6 @@ public class LocalResponseNormalization extends Layer {
         public LocalResponseNormalization build() {
             return new LocalResponseNormalization(this);
         }
-
     }
 
 }

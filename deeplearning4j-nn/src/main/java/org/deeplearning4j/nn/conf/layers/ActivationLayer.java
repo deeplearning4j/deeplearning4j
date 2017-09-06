@@ -30,6 +30,7 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     protected ActivationLayer(Builder builder) {
         super(builder);
         this.activationFn = builder.activationFn;
+        initializeConstraints(builder);
     }
 
     @Override

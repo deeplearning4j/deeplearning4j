@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Set;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
@@ -19,6 +20,10 @@ public interface LayerConstraint extends Cloneable, Serializable {
      * @param epoch current epoch as integer
      */
     void applyConstraint(Layer layer, int iteration, int epoch);
+
+    void setParams(Set<String> params);
+
+    Set<String> getParams();
 
     LayerConstraint clone();
 

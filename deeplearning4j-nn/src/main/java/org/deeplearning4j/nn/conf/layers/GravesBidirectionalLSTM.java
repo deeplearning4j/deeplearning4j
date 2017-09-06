@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -32,8 +33,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 /**
  * LSTM recurrent net, based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
@@ -52,6 +52,26 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
         this.gateActivationFn = builder.gateActivationFn;
+
+        initializeConstraints(builder);
+    }
+
+    @Override
+    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
+        super.initializeConstraints(builder);
+        if(((Builder)builder).recurrentConstraints != null){
+            if(constraints == null){
+                constraints = new ArrayList<>();
+            }
+            for (LayerConstraint c : builder.allParamConstraints) {
+                LayerConstraint c2 = c.clone();
+                Set<String> s = new HashSet<>();
+                s.add(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS);
+                s.add(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS);
+                c2.setParams(s);
+                constraints.add(c2);
+            }
+        }
     }
 
     @Override

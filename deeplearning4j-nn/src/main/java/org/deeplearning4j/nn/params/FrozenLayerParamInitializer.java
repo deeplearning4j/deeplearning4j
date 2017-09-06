@@ -6,6 +6,8 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,6 +33,21 @@ public class FrozenLayerParamInitializer implements ParamInitializer {
         FrozenLayer fl = (FrozenLayer) layer;
         ParamInitializer initializer = fl.getLayer().initializer();
         return initializer.numParams(fl.getLayer());
+    }
+
+    @Override
+    public List<String> paramKeys(Layer layer) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<String> weightKeys(Layer layer) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<String> biasKeys(Layer layer) {
+        return Collections.emptyList();
     }
 
     @Override
