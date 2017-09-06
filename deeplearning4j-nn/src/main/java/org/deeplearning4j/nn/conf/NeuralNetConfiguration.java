@@ -588,8 +588,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double l2Bias = Double.NaN;
         protected IDropout idropOut = null;
         protected IWeightNoise weightNoise;
-        @Deprecated
-        protected Updater updater = null;   //Updater.SGD;
         protected IUpdater iUpdater = null; //new Sgd();
         protected Layer layer;
         @Deprecated
@@ -1037,18 +1035,13 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+
         /**
-         * Gradient updater. For example, Updater.SGD for standard stochastic gradient descent,
-         * Updater.NESTEROV for Nesterov momentum, Updater.RSMPROP for RMSProp, etc.<br>
-         * Note: default hyperparameters are used with this method. Use {@link #updater(IUpdater)} to configure
-         * the updater-specific hyperparameters.
-         *
-         * @see Updater
+         * @deprecated Use {@link #updater(IUpdater)}
          */
         @Deprecated
         public Builder updater(Updater updater) {
-            this.updater = updater;
-            return this;
+            return updater(updater.getIUpdaterWithDefaultConfig());
         }
 
         /**
@@ -1058,25 +1051,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param updater Updater to use
          */
         public Builder updater(IUpdater updater) {
-            //Ensure legacy field is set...
-            if (updater instanceof Sgd)
-                this.updater = Updater.SGD;
-            else if (updater instanceof Adam)
-                this.updater = Updater.ADAM;
-            else if (updater instanceof AdaMax)
-                this.updater = Updater.ADAMAX;
-            else if (updater instanceof AdaDelta)
-                this.updater = Updater.ADADELTA;
-            else if (updater instanceof Nesterovs)
-                this.updater = Updater.NESTEROVS;
-            else if (updater instanceof Nadam)
-                this.updater = Updater.NADAM;
-            else if (updater instanceof AdaGrad)
-                this.updater = Updater.ADAGRAD;
-            else if (updater instanceof RmsProp)
-                this.updater = Updater.RMSPROP;
-            else if (updater instanceof NoOp)
-                this.updater = Updater.NONE;
             this.iUpdater = updater;
             return this;
         }
@@ -1273,32 +1247,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     bLayer.setIUpdater(iUpdater.clone());
                 }
 
-                //Legacy case: user set updater globally, and LR locally...
-                if(!Double.isNaN(bLayer.getLearningRate()) && bLayer.getIUpdater() == null && updater != null){
-                    bLayer.setIUpdater(updater.getIUpdaterWithDefaultConfig());
-                    LayerValidation.setLegacyLr(bLayer.getIUpdater(), bLayer.getLearningRate());
-                }
-
-                //Legacy case: user set global Updater field (and possibly global LR), and nothing on layer (except possibly LR)...
-                if(updater != null && bLayer.getIUpdater() == null){
-                    bLayer.setIUpdater(updater.getIUpdaterWithDefaultConfig());
-                    if(!Double.isNaN(bLayer.getLearningRate())){
-                        LayerValidation.setLegacyLr(bLayer.getIUpdater(), bLayer.getLearningRate());
-                    } else if(!Double.isNaN(learningRate)){
-                        LayerValidation.setLegacyLr(bLayer.getIUpdater(), learningRate);
-                    }
-                }
-
-                //Legacy case: user set global Updater field (and possibly global *bias* LR), and nothing on layer (except possibly bias LR)...
-                if(updater != null && bLayer.getBiasUpdater() == null){
-                    bLayer.setBiasUpdater(updater.getIUpdaterWithDefaultConfig());
-                    if(!Double.isNaN(bLayer.getBiasLearningRate())){
-                        LayerValidation.setLegacyLr(bLayer.getBiasUpdater(), bLayer.getBiasLearningRate());
-                    } else if(!Double.isNaN(biasLearningRate)){
-                        LayerValidation.setLegacyLr(bLayer.getBiasUpdater(), biasLearningRate);
-                    }
-                }
-
                 //Legacy case: user hasn't set updater anywhere - set default
                 if(bLayer.getIUpdater() == null && iUpdater == null){
                     if(Double.isNaN(bLayer.getLearningRate())){
@@ -1315,6 +1263,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 if (bLayer.getBiasUpdater() == null && !Double.isNaN(biasLearningRate) && iUpdater != null ) {
                     bLayer.setBiasUpdater(iUpdater.clone());
                     LayerValidation.setLegacyLr(bLayer.getBiasUpdater(), biasLearningRate);
+                }
+
+                //Configure weight noise:
+                if(weightNoise != null && ((BaseLayer) layer).getWeightNoise() == null){
+                    ((BaseLayer) layer).setWeightNoise(weightNoise.clone());
                 }
 
                 LayerValidation.updaterValidation(layerName, layer, learningRate, biasLearningRate);

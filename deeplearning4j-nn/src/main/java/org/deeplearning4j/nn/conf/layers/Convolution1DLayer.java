@@ -43,7 +43,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
                     Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
                     boolean initializeParams) {
-        org.deeplearning4j.util.LayerValidation.assertNInNOutSet("Convolution1DLayer", getLayerName(), layerIndex,
+        LayerValidation.assertNInNOutSet("Convolution1DLayer", getLayerName(), layerIndex,
                         getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.Convolution1DLayer ret =
