@@ -86,7 +86,7 @@ public class LSTM extends AbstractLSTM {
     public static class Builder extends AbstractLSTM.Builder<Builder> {
 
 
-        public Builder recurrentConstraints(LayerConstraint... constraints) {
+        public Builder constrainRecurrent(LayerConstraint... constraints) {
             List<LayerConstraint> currentConstraints = this.constraints;
             for(LayerConstraint c : constraints ){
                 BaseConstraint constraint = (BaseConstraint) c.clone();
@@ -95,7 +95,7 @@ public class LSTM extends AbstractLSTM {
                 constraint.setParamNames(paramNames);
                 currentConstraints.add(constraint);
             }
-            return constraints(currentConstraints);
+            return applyConstraints(currentConstraints);
         }
 
 

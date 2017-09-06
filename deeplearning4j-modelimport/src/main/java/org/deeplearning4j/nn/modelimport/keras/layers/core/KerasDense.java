@@ -84,10 +84,10 @@ public class KerasDense extends KerasLayer {
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .hasBias(hasBias);
         if (biasConstraint != null) {
-            builder.biasConstraints(biasConstraint);
+            builder.constrainBias(biasConstraint);
         }
         if (weightConstraint != null){
-            builder.weightConstraints(weightConstraint);
+            builder.constrainWeights(weightConstraint);
         }
         this.layer = builder.build();
     }

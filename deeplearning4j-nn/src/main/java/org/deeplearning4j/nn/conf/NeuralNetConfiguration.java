@@ -1243,9 +1243,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
          * etc). These constraints are applied at each iteration, after the parameters have been updated.
          *
-         * @param constraints Constraints to apply to all layers
+         * @param constraints Constraints to apply to all parameters of all layers
          */
-        public Builder constraints(LayerConstraint... constraints){
+        public Builder constrainAllParameters(LayerConstraint... constraints){
             List<LayerConstraint> currentConstraints = this.constraints;
             for(LayerConstraint c : constraints ){
                 BaseConstraint constraint = (BaseConstraint) c.clone();
@@ -1253,7 +1253,42 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 constraint.setApplyToWeights(true);
                 currentConstraints.add(constraint);
             }
-            return constraints(currentConstraints);         }
+            return applyConstraints(currentConstraints);
+        }
+
+        /**
+         * Set constraints to be applied to all layers. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to all bias parameters of all layers
+         */
+        public Builder constrainBias(LayerConstraint... constraints) {
+            List<LayerConstraint> currentConstraints = this.constraints;
+            for(LayerConstraint c : constraints ){
+                BaseConstraint constraint = (BaseConstraint) c.clone();
+                constraint.setApplyToBiases(true);
+                currentConstraints.add(constraint);
+            }
+            return applyConstraints(currentConstraints);
+        }
+
+        /**
+         * Set constraints to be applied to all layers. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to all weight parameters of all layers
+         */
+        public Builder constrainWeights(LayerConstraint... constraints) {
+            List<LayerConstraint> currentConstraints = this.constraints;
+            for(LayerConstraint c : constraints ){
+                BaseConstraint constraint = (BaseConstraint) c.clone();
+                constraint.setApplyToWeights(true);
+                currentConstraints.add(constraint);
+            }
+            return applyConstraints(currentConstraints);
+        }
 
         /**
          * Set constraints to be applied to all layers. Default: no constraints.<br>
@@ -1262,7 +1297,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          *
          * @param constraints Constraints to apply to all layers
          */
-        public Builder constraints(List<LayerConstraint> constraints){
+        public Builder applyConstraints(List<LayerConstraint> constraints){
             this.constraints = constraints;
             return this;
         }

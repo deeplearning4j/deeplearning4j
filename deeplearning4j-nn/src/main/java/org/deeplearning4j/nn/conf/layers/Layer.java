@@ -264,9 +264,9 @@ public abstract class Layer implements Serializable, Cloneable {
          * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
          * etc). These constraints are applied at each iteration, after the parameters have been updated.
          *
-         * @param constraints Constraints to apply to all layers
+         * @param constraints Constraints to apply to all parameters of this layer
          */
-        public T constraints(LayerConstraint... constraints) {
+        public T constrainAllParameters(LayerConstraint... constraints) {
             List<LayerConstraint> currentConstraints = this.constraints;
             for(LayerConstraint c : constraints ){
                 BaseConstraint constraint = (BaseConstraint) c.clone();
@@ -274,23 +274,23 @@ public abstract class Layer implements Serializable, Cloneable {
                 constraint.setApplyToWeights(true);
                 currentConstraints.add(constraint);
             }
-            return constraints(currentConstraints);        }
+            return applyConstraints(currentConstraints);        }
 
         /**
          * Set constraints to be applied to bias parameters of this layer. Default: no constraints.<br>
          * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
          * etc). These constraints are applied at each iteration, after the parameters have been updated.
          *
-         * @param constraints Constraints to apply to all layers
+         * @param constraints Constraints to apply to all bias parameters of this layer
          */
-        public T biasConstraints(LayerConstraint... constraints) {
+        public T constrainBias(LayerConstraint... constraints) {
             List<LayerConstraint> currentConstraints = this.constraints;
             for(LayerConstraint c : constraints ){
                 BaseConstraint constraint = (BaseConstraint) c.clone();
                 constraint.setApplyToBiases(true);
                 currentConstraints.add(constraint);
             }
-            return constraints(currentConstraints);
+            return applyConstraints(currentConstraints);
         }
 
         /**
@@ -298,16 +298,16 @@ public abstract class Layer implements Serializable, Cloneable {
          * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
          * etc). These constraints are applied at each iteration, after the parameters have been updated.
          *
-         * @param constraints Constraints to apply to all layers
+         * @param constraints Constraints to apply to all weight parameters of this layer
          */
-        public T weightConstraints(LayerConstraint... constraints) {
+        public T constrainWeights(LayerConstraint... constraints) {
             List<LayerConstraint> currentConstraints = this.constraints;
             for(LayerConstraint c : constraints ){
                 BaseConstraint constraint = (BaseConstraint) c.clone();
                 constraint.setApplyToWeights(true);
                 currentConstraints.add(constraint);
             }
-            return constraints(currentConstraints);
+            return applyConstraints(currentConstraints);
         }
 
         /**
@@ -318,7 +318,7 @@ public abstract class Layer implements Serializable, Cloneable {
          * @param constraints Constraints to apply to this layer
          * @return Constraints
          */
-        public T constraints(List<LayerConstraint> constraints) {
+        public T applyConstraints(List<LayerConstraint> constraints) {
             this.constraints = constraints;
             return (T) this;
         }
