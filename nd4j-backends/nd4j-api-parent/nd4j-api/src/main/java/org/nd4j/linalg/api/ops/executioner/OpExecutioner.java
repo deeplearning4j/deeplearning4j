@@ -26,8 +26,12 @@ import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cache.TADManager;
+import org.nd4j.linalg.primitives.ImmutablePair;
+import org.nd4j.linalg.primitives.ImmutableTriple;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -334,4 +338,18 @@ public interface OpExecutioner {
      * @return
      */
     INDArray bitmapDecode(INDArray encoded, INDArray target);
+
+    /**
+     * This method returns names of all custom operations available in current backend, and their number of input/output arguments
+     * @return
+     */
+    Map<String, CustomOpDescriptor> getCustomOperations();
+
+    /**
+     * This method executes given CustomOp
+     *
+     * PLEASE NOTE: You're responsible for input/output validation
+     * @param op
+     */
+    void exec(CustomOp op);
 }

@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.nd4j.linalg.primitives.ImmutablePair;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.compression.impl.AbstractCompressor;
@@ -1452,5 +1454,113 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         return target;
+    }
+
+
+    @Override
+    public Map<String, CustomOpDescriptor> getCustomOperations() {
+        String list = loop.getAllCustomOps();
+
+        val map = new HashMap<String, CustomOpDescriptor>();
+
+
+        if (list == null || list.isEmpty()) {
+            log.warn("No customs ops available!");
+            return map;
+        }
+
+        String[] split = list.split(";");
+        for (String op: split) {
+            if (op == null || op.isEmpty())
+                continue;
+
+            String[] another = op.split(":");
+
+            CustomOpDescriptor descriptor = CustomOpDescriptor.builder()
+                    .hash(Long.valueOf(another[1]))
+                    .numInputs(Integer.valueOf(another[2]))
+                    .numOutputs(Integer.valueOf(another[3]))
+                    .allowsInplace(Integer.valueOf(another[4]) == 1)
+                    .numTArgs(Integer.valueOf(another[5]))
+                    .numIArgs(Integer.valueOf(another[6]))
+                    .build();
+
+            map.put(another[0], descriptor);
+        }
+
+
+        return map;
+    }
+
+
+    /**
+     * This method executes given CustomOp
+     *
+     * PLEASE NOTE: You're responsible for input/output validation
+     * @param op
+     */
+    public void exec(CustomOp op) {
+        val lc = op.opName().toLowerCase();
+        val hash = op.opHash();
+
+
+        val inputShapes = new PointerPointer<>(op.getInputArguments().size());
+        val inputBuffers = new PointerPointer<>(op.getInputArguments().size());
+
+        int cnt= 0;
+        for (val in: op.getInputArguments()) {
+            inputBuffers.put(cnt, in.data().addressPointer());
+            inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
+        }
+
+        val outputShapes = new PointerPointer<>(op.getOutputArguments().size());
+        val outputBuffers = new PointerPointer<>(op.getOutputArguments().size());
+
+        cnt= 0;
+        for (val out: op.getOutputArguments()) {
+            outputBuffers.put(cnt, out.data().addressPointer());
+            outputShapes.put(cnt++, out.shapeInfoDataBuffer().addressPointer());
+        }
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            val tArgs = op.getTArguments().size() > 0 ? new FloatPointer(op.getTArguments().size()) : null;
+            val iArgs = op.getIArguments().size() > 0 ? new IntPointer(op.getIArguments().size()) : null;
+
+            cnt = 0;
+            for (val t: op.getTArguments())
+                tArgs.put(cnt++, t.floatValue());
+
+            cnt = 0;
+            for (val i: op.getIArguments())
+                iArgs.put(cnt++, i.intValue());
+
+            loop.execCustomOpFloat(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall());
+        }  else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            val tArgs = op.getTArguments().size() > 0 ? new DoublePointer(op.getTArguments().size()) : null;
+            val iArgs = op.getIArguments().size() > 0 ? new IntPointer(op.getIArguments().size()) : null;
+
+            cnt = 0;
+            for (val t: op.getTArguments())
+                tArgs.put(cnt++, t.doubleValue());
+
+            cnt = 0;
+            for (val i: op.getIArguments())
+                iArgs.put(cnt++, i.intValue());
+
+            loop.execCustomOpDouble(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall());
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            val tArgs = op.getTArguments().size() > 0 ? new ShortPointer(op.getTArguments().size()) : null;
+            val iArgs = op.getIArguments().size() > 0 ? new IntPointer(op.getIArguments().size()) : null;
+
+            cnt = 0;
+            for (val t: op.getTArguments())
+                tArgs.put(cnt++, ArrayUtil.toHalf(t.floatValue()));
+
+            cnt = 0;
+            for (val i: op.getIArguments())
+                iArgs.put(cnt++, i.intValue());
+
+            loop.execCustomOpHalf(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall());
+        }
     }
 }

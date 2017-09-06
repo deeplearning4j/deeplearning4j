@@ -58,7 +58,7 @@ public class Min extends BaseTransformOp {
 
     @Override
     public String name() {
-        return "min";
+        return "min_transform";
     }
 
     @Override

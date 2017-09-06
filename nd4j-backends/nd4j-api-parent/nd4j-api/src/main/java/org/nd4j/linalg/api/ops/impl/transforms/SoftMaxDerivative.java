@@ -114,7 +114,7 @@ public class SoftMaxDerivative extends SoftMax {
 
     @Override
     public String name() {
-        return "softmaxderivative";
+        return "_softmaxderivative";
     }
 
     @Override

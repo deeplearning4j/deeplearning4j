@@ -57,7 +57,7 @@ public class TanhDerivative extends BaseTransformOp {
 
     @Override
     public String name() {
-        return "tanhderivative";
+        return "_tanhderivative";
     }
 
     @Override

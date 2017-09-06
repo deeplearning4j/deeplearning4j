@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.ImmutablePair;
 import org.nd4j.linalg.profiler.OpProfiler;
 
 import java.util.*;
@@ -477,5 +478,22 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     public void invoke(Op op) {
         processOp(op);
 
+    }
+
+    @Override
+    public Map<String, CustomOpDescriptor> getCustomOperations() {
+        return backendExecutioner.getCustomOperations();
+    }
+
+    /**
+     * This method executes given CustomOp
+     * <p>
+     * PLEASE NOTE: You're responsible for input/output validation
+     *
+     * @param op
+     */
+    @Override
+    public void exec(CustomOp op) {
+        backendExecutioner.exec(op);
     }
 }

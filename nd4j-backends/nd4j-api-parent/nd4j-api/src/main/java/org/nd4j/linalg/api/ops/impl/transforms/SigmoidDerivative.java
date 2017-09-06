@@ -59,7 +59,7 @@ public class SigmoidDerivative extends BaseTransformOp {
 
     @Override
     public String name() {
-        return "sigmoidderivative";
+        return "_sigmoidderivative";
     }
 
     @Override

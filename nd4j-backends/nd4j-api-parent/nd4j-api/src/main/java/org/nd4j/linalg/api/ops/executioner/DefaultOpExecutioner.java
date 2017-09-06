@@ -33,9 +33,11 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.ImmutablePair;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.util.ArrayUtil;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -637,5 +639,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public INDArray bitmapDecode(INDArray encoded, INDArray target) {
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+
+    @Override
+    public Map<String, CustomOpDescriptor> getCustomOperations() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void exec(CustomOp op) {
+        throw new UnsupportedOperationException();
     }
 }
