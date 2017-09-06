@@ -309,15 +309,8 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
     }
 
     public INDArray preOutput(INDArray v, boolean training) {
-        INDArray weights;
-        INDArray bias;
-        if(layerConf().getWeightNoise() != null){
-            weights = layerConf().getWeightNoise().getParameter(this, PretrainParamInitializer.WEIGHT_KEY, getIterationCount(), getEpochCount(), training);
-            bias = layerConf().getWeightNoise().getParameter(this, PretrainParamInitializer.BIAS_KEY, getIterationCount(), getEpochCount(), training);
-        } else {
-            weights = getParam(PretrainParamInitializer.WEIGHT_KEY);
-            bias = getParam(PretrainParamInitializer.BIAS_KEY);
-        }
+        INDArray weights = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, training);
+        INDArray bias = getParamWithNoise(PretrainParamInitializer.BIAS_KEY, training);
         return v.mmul(weights).addiRowVector(bias);
     }
 

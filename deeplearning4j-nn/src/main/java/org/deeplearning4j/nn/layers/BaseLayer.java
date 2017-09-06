@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers;
 
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
@@ -51,6 +52,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected ConvexOptimizer optimizer;
     protected Gradient gradient;
     protected Solver solver;
+
+    protected Map<String,INDArray> weightNoiseParams;
 
     public BaseLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -90,7 +93,11 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
         }
 
-        INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
+        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true);
+
+        INDArray epsilonNext = W.mmul(delta.transpose()).transpose();
+
+        weightNoiseParams.clear();
 
         return new Pair<>(ret, epsilonNext);
     }
@@ -272,10 +279,35 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return params;
     }
 
+    protected INDArray getParamWithNoise(String param, boolean training){
+        INDArray p;
+        if(layerConf().getWeightNoise() != null){
+            if(training && weightNoiseParams.size() > 0 ){
+                //Re-use these weights for both forward pass and backprop - don't want to use 2 different params here
+                //These should be cleared during  backprop
+                return weightNoiseParams.get(param);
+            } else {
+                try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    p = layerConf().getWeightNoise().getParameter(this, param, getIterationCount(), getEpochCount(), training);
+                }
+            }
+
+            if(training){
+                //Store for re-use in backprop
+                weightNoiseParams.put(param, p);
+            }
+        } else {
+            return getParam(param);
+        }
+
+        return p;
+    }
+
     public INDArray preOutput(boolean training) {
         applyDropOutIfNecessary(training);
-        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
+        INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
+        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training);
+
 
         //Input validation:
         if (input.rank() != 2 || input.columns() != W.rows()) {
@@ -290,10 +322,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                                             + W.size(0) + ") " + layerId());
         }
 
-        if (conf.isUseDropConnect() && training ){// && layerConf().getDropOut() > 0) {
-//            W = Dropout.applyDropConnect(this, DefaultParamInitializer.WEIGHT_KEY);
-            throw new UnsupportedOperationException("Not yet reimplemented");
-        }
 
         INDArray ret = input.mmul(W);
         if(hasBias()){

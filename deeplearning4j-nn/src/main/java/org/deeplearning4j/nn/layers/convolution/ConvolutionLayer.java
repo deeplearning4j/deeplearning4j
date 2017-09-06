@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
@@ -120,7 +121,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        INDArray weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
+        INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true);
 
         int miniBatch = input.size(0);
         int inH = input.size(2);
@@ -240,6 +241,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         }
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
 
+        weightNoiseParams.clear();
+
         return new Pair<>(retGradient, epsNext);
     }
 
@@ -267,15 +270,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
      * @return            Pair of arrays: preOutput (activations) and optionally the im2col2d array
      */
     protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop) {
-        INDArray weights;
-        INDArray bias;
-        if(layerConf().getWeightNoise() != null){
-            weights = layerConf().getWeightNoise().getParameter(this, ConvolutionParamInitializer.WEIGHT_KEY, getIterationCount(), getEpochCount(), training);
-            bias = layerConf().getWeightNoise().getParameter(this, ConvolutionParamInitializer.BIAS_KEY, getIterationCount(), getEpochCount(), training);
-        } else {
-            weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
-            bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
-        }
+        INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training);
+        INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training);
 
         //Input validation: expect rank 4 matrix
         if (input.rank() != 4) {

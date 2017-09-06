@@ -212,6 +212,9 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         INDArray vBiasGradient = gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY);
         result.getFirst().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
         vBiasGradient.assign(0);
+
+        weightNoiseParams.clear();
+
         return result;
     }
 

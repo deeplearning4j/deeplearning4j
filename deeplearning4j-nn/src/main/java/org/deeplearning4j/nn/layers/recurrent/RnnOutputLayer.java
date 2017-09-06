@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.nn.layers.recurrent;
 
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
@@ -64,6 +65,9 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         this.input = inputTemp;
         INDArray epsilon2d = gradAndEpsilonNext.getSecond();
         INDArray epsilon3d = TimeSeriesUtils.reshape2dTo3d(epsilon2d, input.size(0));
+
+        weightNoiseParams.clear();
+
         return new Pair<>(gradAndEpsilonNext.getFirst(), epsilon3d);
     }
 
@@ -158,15 +162,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
                             "Input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
-        INDArray b;
-        INDArray W;
-        if(layerConf().getWeightNoise() != null){
-            b = layerConf().getWeightNoise().getParameter(this, DefaultParamInitializer.BIAS_KEY, getIterationCount(), getEpochCount(), training);
-            W = layerConf().getWeightNoise().getParameter(this, DefaultParamInitializer.WEIGHT_KEY, getIterationCount(), getEpochCount(), training);
-        } else {
-            b = getParam(DefaultParamInitializer.BIAS_KEY);
-            W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        }
+        INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
+        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training);
 
         INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input);
 

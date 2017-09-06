@@ -168,9 +168,14 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray centersForExamples = labels.mmul(centers);
         INDArray dLcdai = input.sub(centersForExamples);
 
-        INDArray epsilonNext = params.get(CenterLossParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
+        INDArray w = getParamWithNoise(CenterLossParamInitializer.WEIGHT_KEY, true);
+
+        INDArray epsilonNext = w.mmul(delta.transpose()).transpose();
         double lambda = layerConf().getLambda();
         epsilonNext.addi(dLcdai.muli(lambda)); // add center loss here
+
+        weightNoiseParams.clear();
+
         return new Pair<>(pair.getFirst(), epsilonNext);
     }
 
