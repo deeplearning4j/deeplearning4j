@@ -62,6 +62,9 @@ public abstract class Policy<O extends Encodable, A> {
                         history = new INDArray[] {input};
                 }
                 INDArray hstack = Transition.concat(history);
+                if (isHistoryProcessor) {
+                    hstack.muli(1.0 / hp.getScale());
+                }
                 if (getNeuralNet().isRecurrent()) {
                     //flatten everything for the RNN
                     hstack = hstack.reshape(Learning.makeShape(1, hstack.shape(), 1));

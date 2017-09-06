@@ -16,6 +16,8 @@ public interface IHistoryProcessor {
 
     Configuration getConf();
 
+    /** Returns compressed arrays, which must be rescaled based
+     *  on the value returned by {@link #getScale()}. */
     INDArray[] getHistory();
 
     void record(INDArray image);
@@ -28,6 +30,8 @@ public interface IHistoryProcessor {
 
     boolean isMonitoring();
 
+    /** Returns the scale of the arrays returned by {@link #getHistory()}, typically 255. */
+    double getScale();
 
     @AllArgsConstructor
     @Builder

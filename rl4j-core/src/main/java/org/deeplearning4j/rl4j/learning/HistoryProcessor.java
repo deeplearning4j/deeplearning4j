@@ -119,11 +119,14 @@ public class HistoryProcessor implements IHistoryProcessor {
             e.printStackTrace();
         }
         //System.out.println(out.shapeInfoToString());
-        out = out.reshape(1, conf.getCroppingHeight(), conf.getCroppingWidth()).muli(1.0 / 255.0);
+        out = out.reshape(1, conf.getCroppingHeight(), conf.getCroppingWidth());
         INDArray compressed = compressor.compress(out);
         return compressed;
     }
 
+    public double getScale() {
+        return 255;
+    }
 
     public void waitKP() {
         try {

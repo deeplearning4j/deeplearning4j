@@ -125,6 +125,9 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             }
             //concat the history into a single INDArray input
             INDArray hstack = Transition.concat(Transition.dup(history));
+            if (isHistoryProcessor) {
+                hstack.muli(1.0 / getHistoryProcessor().getScale());
+            }
 
             //if input is not 2d, you have to append that the batch is 1 length high
             if (hstack.shape().length > 2)
@@ -205,6 +208,10 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                 for (int j = 0; j < nextObsArray.length; j++) {
                     nextObs.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.point(j)}, nextObsArray[j]);
                 }
+            }
+            if (getHistoryProcessor() != null) {
+                obs.muli(1.0 / getHistoryProcessor().getScale());
+                nextObs.muli(1.0 / getHistoryProcessor().getScale());
             }
         }
 

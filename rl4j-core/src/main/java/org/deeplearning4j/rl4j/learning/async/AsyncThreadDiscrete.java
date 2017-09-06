@@ -135,6 +135,9 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
             history = new INDArray[] {input};
         //concat the history into a single INDArray input
         INDArray hstack = Transition.concat(history);
+        if (hp != null) {
+            hstack.muli(1.0 / hp.getScale());
+        }
 
         if (getCurrent().isRecurrent()) {
             //flatten everything for the RNN
