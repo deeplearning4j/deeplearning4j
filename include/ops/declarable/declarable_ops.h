@@ -5,6 +5,7 @@
 #ifndef LIBND4J_DECLARABLE_OPS_H
 #define LIBND4J_DECLARABLE_OPS_H
 
+#include <types/float16.h>
 #include <pointercast.h>
 #include <NDArray.h>
 #include <Variable.h>
@@ -126,6 +127,9 @@ namespace nd4j {
             std::map<Nd4jIndex, nd4j::ops::DeclarableOp<double> *> _declarablesLD;
             std::map<std::string, nd4j::ops::DeclarableOp<double> *> _declarablesD;
 
+            std::map<Nd4jIndex, nd4j::ops::DeclarableOp<float16> *> _declarablesLH;
+            std::map<std::string, nd4j::ops::DeclarableOp<float16> *> _declarablesH;
+
             std::mutex _locker;
             std::string _opsList;
             bool isInit = false;
@@ -190,7 +194,22 @@ namespace nd4j {
                 return true;
             }
 
-            bool registerOperationDouble(nd4j::ops::DeclarableOp<double > *op) {
+            bool registerOperationHalf(const char* name, nd4j::ops::DeclarableOp<float16>* op) {
+                auto str = new std::string(name);
+                std::pair<std::string, nd4j::ops::DeclarableOp<float16>*> pair(*str, op);
+                _declarablesH.insert(pair);
+
+                auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(*str);
+                std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<float16>*> pair2(hash, op);
+                _declarablesLH.insert(pair2);
+                return true;
+            }
+
+            bool registerOperationHalf(nd4j::ops::DeclarableOp<float16> *op) {
+                return registerOperationHalf(op->getOpName()->c_str(), op);
+            }
+
+            bool registerOperationDouble(nd4j::ops::DeclarableOp<double> *op) {
                 return registerOperationDouble(op->getOpName()->c_str(), op);
             }
 
@@ -222,6 +241,32 @@ namespace nd4j {
                 }
 
                 return _declarablesLF.at(hash);
+            }
+
+
+            nd4j::ops::DeclarableOp<float16> *getOperationHalf(Nd4jIndex hash) {
+                if (!_declarablesLH.count(hash)) {
+                    nd4j_verbose("Unknown operation requested by hash: [%lld]\n", hash);
+                    return nullptr;
+                }
+
+                return _declarablesLH.at(hash);
+            }
+
+
+            nd4j::ops::DeclarableOp<float16>* getOperationHalf(const char *name) {
+                std::string str(name);
+                return getOperationHalf(str);
+            }
+
+
+            nd4j::ops::DeclarableOp<float16> *getOperationHalf(std::string& name) {
+                if (!_declarablesH.count(name)) {
+                    nd4j_verbose("Unknown operation requested: [%s]\n", name.c_str())
+                    return nullptr;
+                }
+
+                return _declarablesH.at(name);
             }
 
 
@@ -259,6 +304,14 @@ namespace nd4j {
         };
 
         template <typename OpName>
+        struct __registratorSynonymHalf {
+            __registratorSynonymHalf(const char *name, const char *oname) {
+                OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationHalf(oname);
+                OpRegistrator::getInstance()->registerOperationHalf(name, ptr);
+            }
+        };
+
+        template <typename OpName>
         struct __registratorSynonymDouble {
             __registratorSynonymDouble(const char *name, const char *oname) {
                 OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationDouble(oname);
@@ -271,6 +324,14 @@ namespace nd4j {
             __registratorFloat() {
                 OpName *ptr = new OpName();
                 OpRegistrator::getInstance()->registerOperationFloat(ptr);
+            }
+        };
+
+        template <typename OpName>
+        struct __registratorHalf {
+            __registratorHalf() {
+                OpName *ptr = new OpName();
+                OpRegistrator::getInstance()->registerOperationHalf(ptr);
             }
         };
 
