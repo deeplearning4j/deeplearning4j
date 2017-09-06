@@ -5,6 +5,7 @@ import com.rits.cloning.Cloner;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.Constant;
@@ -53,6 +54,7 @@ import java.util.*;
 @AllArgsConstructor
 @Data
 @Builder
+@Slf4j
 public class SameDiff {
     private SDGraph graph = new SDGraph();
     private ArrayFactory arrayFactory = new ArrayFactory(this);
@@ -274,6 +276,11 @@ public class SameDiff {
 
     }
 
+    /**
+     * Returns the {@link SDGraph}
+     * asociated with this samediff instance.
+     * @return
+     */
     public SDGraph getGraph() {
         return graph();
     }
@@ -503,19 +510,6 @@ public class SameDiff {
         return new SameDiff();
     }
 
-
-    /**
-     * Set the ndarray for the given value
-     * @param value
-     * @param arr
-     */
-    public void updateNDArray(String value,INDArray arr) {
-        if(!variableMap.containsKey(value))
-            throw new IllegalArgumentException("Illegal key specified vor variable " + value);
-        if(!Arrays.equals(arr.shape(),variableMap.get(value).getShape()))
-            throw new IllegalArgumentException("Illegal array specified must be of shape " + Arrays.toString(variableMap.get(value).getShape()));
-        getVariableMap().get(value).setArr(arr);
-    }
 
 
     /**
@@ -754,7 +748,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable neq(SDVariable iX, SDVariable iy) {
-        return neq("neq(" + iX.getVarName() + "," + iy.getVarName() + ")",iX,iy);
+        return neq(generateVariableName("neq",false,iX,iy),iX,iy);
     }
 
     /**
@@ -763,7 +757,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable eq(SDVariable iX, SDVariable iy) {
-        return eq("eq(" + iX.getVarName() + "," + iy.getVarName() + ")",iX,iy);
+        return eq(generateVariableName("eq",false,iX,iy),iX,iy);
     }
 
     /**
@@ -772,7 +766,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable or(SDVariable iX, SDVariable iy) {
-        return or("or(" + iX.getVarName() + "," + iy.getVarName() + ")",iX,iy);
+        return or(generateVariableName("or",false,iX,iy),iX,iy);
     }
 
     /**
@@ -781,7 +775,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable neg(SDVariable iX) {
-        return neg("neg(" + iX.getVarName() + ")",iX);
+        return neg(generateVariableName("neg",false,iX),iX);
     }
 
 
@@ -791,7 +785,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable cos(SDVariable iX) {
-        return cos("cos(" + iX.getVarName() + ")",iX);
+        return cos(generateVariableName("cos",false,iX),iX);
     }
 
     /**
@@ -800,7 +794,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable sin(SDVariable iX) {
-        return sin("sin(" + iX.getVarName() + ")",iX);
+        return sin(generateVariableName("sin",false,iX),iX);
     }
 
     /**
@@ -809,7 +803,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable tan(SDVariable iX) {
-        return tan("tan(" + iX.getVarName() + ")",iX);
+        return tan(generateVariableName("tan",false,iX),iX);
     }
 
     /**
@@ -818,7 +812,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable acos(SDVariable iX) {
-        return acos("acos(" + iX.getVarName() + ")",iX);
+        return acos(generateVariableName("acos",false,iX),iX);
     }
 
     /**
@@ -828,7 +822,7 @@ public class SameDiff {
      */
 
     public SDVariable asin(SDVariable iX) {
-        return asin("asin(" + iX.getVarName() + ")",iX);
+        return asin(generateVariableName("asin",false,iX),iX);
     }
 
     /**
@@ -837,7 +831,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable atan(SDVariable iX) {
-        return atan("atan(" + iX.getVarName() + ")",iX);
+        return atan(generateVariableName("atan",false,iX),iX);
     }
 
     /**
@@ -846,7 +840,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable cosh(SDVariable iX) {
-        return cosh("cosh(" + iX.getVarName() + ")",iX);
+        return cosh(generateVariableName("cosh",false,iX),iX);
     }
 
     /**
@@ -855,7 +849,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable sinh(SDVariable iX) {
-        return sinh("sinh(" + iX.getVarName() + ")",iX);
+        return sinh(generateVariableName("sinh",false,iX),iX);
     }
 
     /**
@@ -864,7 +858,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable tanh(SDVariable iX) {
-        return tanh("tanh(" + iX.getVarName() + ")",iX);
+        return tanh(generateVariableName("tanh",false,iX),iX);
     }
 
     /**
@@ -873,7 +867,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable acosh(SDVariable iX) {
-        return acosh("acosh(" + iX.getVarName() + ")",iX);
+        return acosh(generateVariableName("acosh",false,iX),iX);
     }
 
     /**
@@ -882,7 +876,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable asinh(SDVariable iX) {
-        return asin("asinh(" + iX.getVarName() + ")",iX);
+        return asin(generateVariableName("asin",false,iX),iX);
     }
 
     /**
@@ -891,7 +885,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable atanh(SDVariable iX) {
-        return atanh("atanh(" + iX.getVarName() + ")",iX);
+        return atanh(generateVariableName("atanh",false,iX),iX);
     }
 
     /**
@@ -900,7 +894,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable exp(SDVariable iX) {
-        return exp("exp(" + iX.getVarName() + ")",iX);
+        return exp(generateVariableName("exp",false,iX),iX);
     }
 
     /**
@@ -909,7 +903,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable log(SDVariable iX) {
-        return log("log(" + iX.getVarName() + ")",iX);
+        return log(generateVariableName("log",false,iX),iX);
     }
 
     /**
@@ -919,7 +913,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable pow(SDVariable iX,double value) {
-        return pow("pow(" + iX.getVarName() + ")",iX,value);
+        return pow(generateVariableName("pow",false,iX),iX,value);
     }
 
     /**
@@ -928,7 +922,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable sqrt(SDVariable iX) {
-        return sqrt("sqrt(" + iX.getVarName() + ")",iX);
+        return sqrt(generateVariableName("sqrt",false,iX),iX);
     }
 
     /**
@@ -937,7 +931,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable square(SDVariable iX) {
-        return square("square(" + iX.getVarName() + ")",iX);
+        return square(generateVariableName("square",false,iX),iX);
     }
 
     /**
@@ -946,7 +940,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable floor(SDVariable iX) {
-        return floor("floor(" + iX.getVarName() + ")",iX);
+        return floor(generateVariableName("floor",false,iX),iX);
     }
 
     /**
@@ -955,7 +949,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable relu(SDVariable iX,double cutoff) {
-        return relu("relu(" + iX.getVarName() + ")",iX,cutoff);
+        return relu(generateVariableName("relu",false,iX),iX,cutoff);
     }
 
     /**
@@ -964,7 +958,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable softmax(SDVariable iX) {
-        return softmax("softmax(" + iX.getVarName() + ")",iX);
+        return softmax(generateVariableName("softmax",false,iX),iX);
     }
 
     /**
@@ -973,7 +967,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable softmaxDerivative(SDVariable iX,SDVariable wrt) {
-        return softmaxDerivative("softmaxderivative(" + iX.getVarName() + ")",iX,wrt);
+        return softmaxDerivative(generateVariableName("softmaxderivative",false,iX),iX,wrt);
     }
 
     /**
@@ -982,7 +976,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable hardTanh(SDVariable iX) {
-        return hardTanh("hardTanh(" + iX.getVarName() + ")",iX);
+        return hardTanh(generateVariableName("hardTanh",false,iX),iX);
     }
 
     /**
@@ -991,7 +985,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable hardTanhDerivative(SDVariable iX) {
-        return hardTanhDerivative("hardTanhDerivative(" + iX.getVarName() + ")",iX);
+        return hardTanhDerivative(generateVariableName("hardTanhDerivative",false,iX),iX);
     }
 
     /**
@@ -1000,7 +994,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable sigmoid(SDVariable iX) {
-        return sigmoid("sigmoid(" + iX.getVarName() + ")",iX);
+        return sigmoid(generateVariableName("sigmoid",false,iX),iX);
     }
 
 
@@ -1010,7 +1004,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable sigmoidDerivative(SDVariable iX,SDVariable wrt) {
-        return sigmoidDerivative("sigmoidDerivative(" + iX.getVarName() + ")",iX,wrt);
+        return sigmoidDerivative(generateVariableName("sigmoidDerivative",false,iX),iX,wrt);
     }
 
     /**
@@ -1019,7 +1013,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable sign(SDVariable iX) {
-        return sign("sign(" + iX.getVarName() + ")",iX);
+        return sign(generateVariableName("sign",false,iX),iX);
     }
 
     /**
@@ -1028,7 +1022,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable softsign(SDVariable iX) {
-        return softsign("softsign(" + iX.getVarName() + ")",iX);
+        return softsign(generateVariableName("softsign",false,iX),iX);
     }
 
     /**
@@ -1037,7 +1031,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable softsignDerivative(SDVariable iX) {
-        return softsignDerivative("softsignDerivative(" + iX.getVarName() + ")",iX);
+        return softsignDerivative(generateVariableName("softsignDerivative",false,iX),iX);
     }
 
     /**
@@ -1046,7 +1040,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable softplus(SDVariable iX) {
-        return softplus("softplus(" + iX.getVarName() + ")",iX);
+        return softplus(generateVariableName("softplus",false,iX),iX);
     }
 
     /**
@@ -1055,7 +1049,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable elu(SDVariable iX) {
-        return elu("elu(" + iX.getVarName() + ")",iX);
+        return elu(generateVariableName("elu",false,iX),iX);
     }
 
     /**
@@ -1064,7 +1058,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable eluDerivative(SDVariable iX) {
-        return eluDerivative("eluDerivative(" + iX.getVarName() + ")",iX);
+        return eluDerivative(generateVariableName("eluDerivative",false,iX),iX);
     }
 
     /**
@@ -1074,7 +1068,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable leakyRelu(SDVariable iX, double cutoff) {
-        return leakyRelu("leakyRelu(" + iX.getVarName() + ")",iX,cutoff);
+        return leakyRelu(generateVariableName("leakyRelu",false,iX),iX,cutoff);
     }
 
     /**
@@ -1083,7 +1077,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable mean(SDVariable iX) {
-        return mean("mean(" + iX.getVarName() + ")",iX);
+        return mean(generateVariableName("mean",false,iX),iX);
     }
 
     /**
@@ -1096,7 +1090,7 @@ public class SameDiff {
     public SDVariable standardDeviation(SDVariable iX,
                                         boolean biasCorrected,
                                         int...dimensions) {
-        return standardDeviation("std(" + iX.getVarName() + ")",iX,biasCorrected,dimensions);
+        return standardDeviation(generateVariableName("std",false,iX),iX,biasCorrected,dimensions);
     }
 
     /**
@@ -1109,7 +1103,7 @@ public class SameDiff {
     public SDVariable variance(SDVariable iX,
                                boolean biasCorrected,
                                int...dimensions) {
-        return variance("variance(" + iX.getVarName() + ")",iX,biasCorrected,dimensions);
+        return variance(generateVariableName("variance",false,iX),iX,biasCorrected,dimensions);
     }
 
     /**
@@ -1120,7 +1114,7 @@ public class SameDiff {
      */
     public SDVariable sum(SDVariable iX,
                           int...dimensions) {
-        return sum("sum(" + iX.getVarName() + ")",iX,dimensions);
+        return sum(generateVariableName("sum",false,iX),iX,dimensions);
     }
 
     /**
@@ -1131,7 +1125,7 @@ public class SameDiff {
      */
     public SDVariable prod(SDVariable iX,
                            int...dimensions) {
-        return prod("prod(" + iX.getVarName() + ")",iX,dimensions);
+        return prod(generateVariableName("prod",false,iX),iX,dimensions);
     }
 
 
@@ -1142,7 +1136,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable max(SDVariable iX, int...dimensions) {
-        return max("max(" + iX.getVarName() + ")",iX,dimensions);
+        return max(generateVariableName("max",false,iX),iX,dimensions);
 
     }
 
@@ -1155,7 +1149,7 @@ public class SameDiff {
      */
     public SDVariable min(SDVariable iX,
                           int...dimensions) {
-        return min("min(" + iX.getVarName() + ")",iX,dimensions);
+        return min(generateVariableName("min",false,iX),iX,dimensions);
     }
 
 
@@ -1167,7 +1161,7 @@ public class SameDiff {
      */
     public SDVariable reshape(SDVariable iX,
                               int...shape) {
-        return reshape("reshape(" + iX.getVarName() + ")",iX,shape);
+        return reshape(generateVariableName("reshape",false,iX),iX,shape);
     }
 
     /**
@@ -1176,7 +1170,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable transpose(SDVariable iX) {
-        return transpose("transpose(" + iX.getVarName() + ")",iX);
+        return transpose(generateVariableName("transpose",false,iX),iX);
     }
 
 
@@ -1187,7 +1181,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable rollAxis(SDVariable x, int axis) {
-        return rollAxis("rollAxis(" + x.getVarName() + ")",x,axis);
+        return rollAxis(generateVariableName("rollAxis",false,x),x,axis);
     }
 
     /**
@@ -1197,7 +1191,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable mmul(SDVariable x, SDVariable y) {
-        return mmul("mmul(" + x.getVarName() + "," + y.getVarName()  + ")",x,y);
+        return mmul(generateVariableName("mmul",false,x,y),x,y);
     }
 
     /**
@@ -1210,7 +1204,7 @@ public class SameDiff {
     public SDVariable tensorMmul(SDVariable x,
                                  SDVariable y,
                                  int[][] dimensions) {
-        return tensorMmul("tensorMmul(" + x.getVarName() + "," + y.getVarName() +  ")",x,y,dimensions);
+        return tensorMmul(generateVariableName("tensorMmul",false,x,y),x,y,dimensions);
     }
 
 
@@ -1222,7 +1216,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable cosineSimilarity(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return cosineSimilarity("cosineSimilarity(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return cosineSimilarity(generateVariableName("cosineSimilarity",false,iX,i_y),iX,i_y,dimensions);
     }
 
     /**
@@ -1233,7 +1227,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable euclideanDistance(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return euclideanDistance("euclideanDistance(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return euclideanDistance(generateVariableName("euclideandistance",false,iX,i_y),iX,i_y,dimensions);
     }
 
     /**
@@ -1244,7 +1238,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable manhattanDistance(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return manhattanDistance("manhattanDistance(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return manhattanDistance(generateVariableName("manhattanDistance",false,iX,i_y),iX,i_y,dimensions);
     }
 
     /**
@@ -1255,7 +1249,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossBinaryXENT(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossBinaryXENT("lossBinaryXENT(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return lossBinaryXENT(generateVariableName("lossBinaryXENT",false,iX,i_y),iX,i_y,dimensions);
     }
 
     /**
@@ -1266,7 +1260,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossCosineSimilarity(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossCosineSimilarity("lossCosineSimilarity(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return lossCosineSimilarity(generateVariableName("lossCosineSimilarity",false,iX),iX,i_y,dimensions);
     }
 
     /**
@@ -1277,7 +1271,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossHinge(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossHinge("lossHinge(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return lossHinge(generateVariableName("lossHinge",false,iX,i_y),iX,i_y,dimensions);
 
     }
 
@@ -1289,7 +1283,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossKLD(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossKLD("lossKLD(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return lossKLD(generateVariableName("lossKKLD",false,iX,i_y),iX,i_y,dimensions);
 
     }
 
@@ -1301,7 +1295,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossL1(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossL1("lossL1(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return lossL1(generateVariableName("lossL1",false,iX),iX,i_y,dimensions);
 
     }
 
@@ -1313,7 +1307,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossL2(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossL2("lossL2(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return lossL2(generateVariableName("lossL2",false,iX),iX,i_y,dimensions);
 
     }
 
@@ -1325,25 +1319,11 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossMAE(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossMAE("lossMAE(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return lossMAE(generateVariableName("lossMAE",false,iX,i_y),iX,i_y,dimensions);
 
     }
 
     /**
-     public SDVariable lossMAPE(SDVariable iX,SDVariable i_y,int...dimensions) {
-     int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
-
-     SDVariable ret = SDVariable.builder()
-     .arr(null).shape(arrayReduceShape)
-     .differentialFunction(functionFactory.lossMAPE(getFunctionInput(iX),i_y.getArrayField(),dimensions))
-     .varName("lossMAPE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-     .build();
-     Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
-     addVariable(ret);
-     return ret;
-     }
-
-     /**
      *
      * @param iX
      * @param i_y
@@ -1351,7 +1331,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossMSE(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossMSE("lossMSE(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return lossMSE(generateVariableName("lossMSE",false,iX,i_y),iX,i_y,dimensions);
 
     }
 
@@ -1363,7 +1343,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossMCXENT(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossMCXENT("lossMCXENT(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return lossMCXENT(generateVariableName("lossMCXENT",false,iX,i_y),iX,i_y,dimensions);
 
     }
 
@@ -1375,7 +1355,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossMSLE(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossMSLE("lossMSLE(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return lossMSLE(generateVariableName("lossMLE",false,iX),iX,i_y,dimensions);
 
     }
 
@@ -1387,7 +1367,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossNegativeLogLikelihood(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossNegativeLogLikelihood("lossNegativeLogLikelihood(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return lossNegativeLogLikelihood(generateVariableName("lossNegativeLogLikelihood",false,iX,i_y),iX,i_y,dimensions);
 
     }
 
@@ -1399,7 +1379,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossPoisson(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossPoisson("lossPoisson(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return lossPoisson(generateVariableName("lossPoisson",false,iX,i_y),iX,i_y,dimensions);
 
     }
 
@@ -1412,7 +1392,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossSquaredHinge(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossSquaredHinge("lossSquaredHinge(" + iX.getVarName() + "," + i_y.getVarName() +  ")",iX,i_y,dimensions);
+        return lossSquaredHinge(generateVariableName("lossPoisson",false,iX,i_y),iX,i_y,dimensions);
     }
 
 
@@ -2679,21 +2659,92 @@ public class SameDiff {
         }
 
 
+        /**
+         * Of note here:
+         * We don't validate base don vertex id
+         * because more than one input can have the same
+         * vertex id as a result.
+         *
+         * We validate based on variable name instead
+         * which takes in to account function names as well
+         * as input ids
+         */
+        if(variableMap.containsKey(variable.getVarName()) && !variableMap.get(variable.getVarName()).equals(variable)) {
+            throw new IllegalArgumentException("Variable already found with variable name " + variable.getVarName());
+        }
+
         vertexIdToVariable.put(getFunctionInput(variable).getVertexId(),variable);
         variableMap.put(variable.getVarName(),variable);
     }
 
-    private boolean isInPlace(Object[] extraArgs) {
-        if(extraArgs == null)
-            return false;
-        for(int i = 0; i < extraArgs.length; i++) {
-            if(extraArgs[i] instanceof Boolean) {
-                return (Boolean) extraArgs[i];
+
+    /**
+     *
+     * @param funcName
+     * @param grad
+     * @param inputs
+     * @return
+     */
+    public String generateVariableName(String funcName,boolean grad,DifferentialFunction...inputs) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(funcName).append("(");
+        if(inputs != null) {
+            for (DifferentialFunction variable : inputs) {
+                if (grad) {
+                    sb.append("-grad");
+                }
+
+                sb.append("-");
+                sb.append(variable.resultVertexId());
+                sb.append("-");
+
+
+                if (variable.getOpState() != null)
+                    sb.append(Arrays.toString(variable.getOpState().getVertexIds()));
+                sb.append(",");
             }
         }
 
-        return false;
+
+        return sb.toString();
+
     }
+
+    /**
+     *
+     * @param funcName
+     * @param grad
+     * @param inputs
+     * @return
+     */
+    public String generateVariableName(String funcName,boolean grad,SDVariable...inputs) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(funcName).append("(");
+        if(inputs != null) {
+            for (SDVariable variable : inputs) {
+                sb.append(variable.getVarName());
+                if (grad) {
+                    sb.append("-grad");
+                }
+
+                sb.append("-");
+                if ((getFunctionInput(variable) != null)) {
+                    sb.append(getFunctionInput(variable).resultVertexId());
+                    sb.append("-");
+                }
+
+                if (getFunctionInput(variable).getOpState() != null)
+                    sb.append(Arrays.toString(getFunctionInput(variable).getOpState().getVertexIds()));
+                sb.append(",");
+            }
+        }
+
+
+        return sb.toString();
+
+    }
+
+
 
     /**
      * Get a function instance
@@ -2975,15 +3026,25 @@ public class SameDiff {
                                     sameDiff.setupFunction(opState.getDifferentialFunction()) : null;
                             if(func != null) {
                                 currentDiff = func.diff(currentDiff);
+                                /**
+                                 * Think of better naming conventions.
+                                 * Appears to be failing on the addition gradient.
+                                 */
                                 for(DifferentialFunction differentialFunction : currentDiff) {
-                                    sameDiff.addVariable(SDVariable.builder()
+                                    SDVariable add = SDVariable.builder()
                                             .arr(null).differentialFunction(differentialFunction)
-                                            .vertexId(differentialFunction.resultVertexId()).shape(differentialFunction.getResultShape())
-                                            .sameDiff(sameDiff).varName(differentialFunction.functionName() + "-" + UUID.randomUUID().toString()).build());
+                                            .vertexId(differentialFunction.resultVertexId())
+                                            .shape(differentialFunction.getResultShape())
+                                            .sameDiff(sameDiff)
+                                            .varName(sameDiff.generateVariableName(differentialFunction.functionName(),
+                                                    true,
+                                                    differentialFunction))
+                                            .build();
+                                    sameDiff.addVariable(add);
                                 }
                             }
                             else if(action.getOpState().getArrayField() != null) {
-
+                                log.trace("Array field occurred for " + action.getOutputId());
                             }
                         }
                     }

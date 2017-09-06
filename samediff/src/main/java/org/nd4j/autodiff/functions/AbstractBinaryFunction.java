@@ -28,7 +28,7 @@ public abstract class AbstractBinaryFunction extends DifferentialFunction {
         this(sameDiff,i_v1,i_v2,false,opType);
     }
 
-        public AbstractBinaryFunction(SameDiff sameDiff,
+    public AbstractBinaryFunction(SameDiff sameDiff,
                                   DifferentialFunction i_v1,
                                   DifferentialFunction i_v2,
                                   boolean inPlace,
@@ -101,13 +101,12 @@ public abstract class AbstractBinaryFunction extends DifferentialFunction {
 
     @Override
     public String toString() {
-        return functionName() + "(" + larg().toString() + ", " + rarg().toString() + ")";
+        return functionName();
     }
 
     @Override
     public String doGetFormula(List<Variable > variables) {
-        return functionName() + "(" + larg().doGetFormula(variables) + ","
-                + rarg().doGetFormula(variables) + ")";
+        return functionName();
     }
 
     @Override

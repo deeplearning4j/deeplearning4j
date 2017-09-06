@@ -40,7 +40,6 @@ public abstract class AbstractBinaryReduceFunction extends AbstractBinaryFunctio
                             DifferentialFunction i_v1,
                             DifferentialFunction i_v2,
                             String opName) {
-        if(i_v1.getValue(true) instanceof ArrayField) {
             ArrayField arrayField = i_v1.getValue(true);
             //skip empty dimensions
             if(dimensions == null)
@@ -50,15 +49,12 @@ public abstract class AbstractBinaryReduceFunction extends AbstractBinaryFunctio
                     Shape.getReducedShape(arrayField.getInput().getShape(),
                             dimensions));
 
-        }
 
-        else
-            throw new UnsupportedOperationException("Only supporting array fields");
     }
 
     @Override
     public String doGetFormula(List<Variable> variables) {
-        return toString();
+        return functionName();
     }
 
 
