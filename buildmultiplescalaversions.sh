@@ -46,7 +46,14 @@ fi
 if [ -z "$(whatchanged)" ]; then
     scalaError;
 else
-    mvn -Dmaven.clean.skip=true -pl $(whatchanged| tr '\n' ',') -amd "$@"
+    if [[ "${@#-pl}" = "$@" ]]; then
+        mvn -Dmaven.clean.skip=true -pl $(whatchanged| tr '\n' ',') -amd "$@"
+    else
+        # the arguments already tweak the project list ! don't tweak them more
+        # as this can lead to conflicts (excluding a project that's not part of
+        # the reactor)
+        mvn "$@"
+    fi
 fi
 ./change-scala-versions.sh 2.11 # back to the default
 
