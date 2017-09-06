@@ -29,9 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Initialize convolution params.
@@ -64,6 +62,33 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
         return nIn * nOut * kernel[0] * kernel[1] + (layerConf.hasBias() ? nOut : 0);
+    }
+
+    @Override
+    public List<String> paramKeys(Layer layer) {
+        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer;
+        if(layerConf.hasBias()){
+            return Arrays.asList(WEIGHT_KEY, BIAS_KEY);
+        } else {
+            return weightKeys(layer);
+        }
+    }
+
+    @Override
+    public List<String> weightKeys(Layer layer) {
+        return Collections.singletonList(WEIGHT_KEY);
+    }
+
+    @Override
+    public List<String> biasKeys(Layer layer) {
+        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer;
+        if(layerConf.hasBias()){
+            return Collections.singletonList(BIAS_KEY);
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     @Override

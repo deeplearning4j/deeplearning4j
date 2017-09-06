@@ -48,6 +48,7 @@ public class BatchNormalization extends FeedForwardLayer {
         this.gamma = builder.gamma;
         this.beta = builder.beta;
         this.lockGammaBeta = builder.lockGammaBeta;
+        initializeConstraints(builder);
     }
 
     @Override

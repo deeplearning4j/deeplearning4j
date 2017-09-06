@@ -29,9 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**LSTM Parameter initializer, for LSTM based on
  * Graves: Supervised Sequence Labelling with Recurrent Neural Networks
@@ -67,6 +65,21 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
                         + 4 * nL; //bias
 
         return nParams;
+    }
+
+    @Override
+    public List<String> paramKeys(Layer layer) {
+        return Arrays.asList(INPUT_WEIGHT_KEY, RECURRENT_WEIGHT_KEY, BIAS_KEY);
+    }
+
+    @Override
+    public List<String> weightKeys(Layer layer) {
+        return Arrays.asList(INPUT_WEIGHT_KEY, RECURRENT_WEIGHT_KEY);
+    }
+
+    @Override
+    public List<String> biasKeys(Layer layer) {
+        return Collections.singletonList(BIAS_KEY);
     }
 
     @Override

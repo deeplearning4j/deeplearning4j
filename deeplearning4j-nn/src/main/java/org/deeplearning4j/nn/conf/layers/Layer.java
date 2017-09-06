@@ -82,7 +82,36 @@ public abstract class Layer implements Serializable, Cloneable {
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
         this.dropOut = builder.dropOut;
-        this.constraints = builder.constraints;
+    }
+
+    protected void initializeConstraints(Builder<?> builder){
+        //Note: this has to be done AFTER all constructors have finished - otherwise the required
+        // fields may not yet be set yet
+        List<LayerConstraint> allConstraints = new ArrayList<>();
+        if (builder.allParamConstraints != null && initializer().paramKeys(this).size() > 0) {
+            for (LayerConstraint c : builder.allParamConstraints) {
+                LayerConstraint c2 = c.clone();
+                c2.setParams(new HashSet<>(initializer().paramKeys(this)));
+                allConstraints.add(c2);
+            }
+        }
+
+        if (builder.weightConstraints != null && initializer().weightKeys(this).size() > 0) {
+            for (LayerConstraint c : builder.weightConstraints) {
+                LayerConstraint c2 = c.clone();
+                c2.setParams(new HashSet<>(initializer().weightKeys(this)));
+                allConstraints.add(c2);
+            }
+        }
+
+        if (builder.biasConstraints != null && initializer().biasKeys(this).size() > 0) {
+            for (LayerConstraint c : builder.biasConstraints) {
+                LayerConstraint c2 = c.clone();
+                c2.setParams(new HashSet<>(initializer().biasKeys(this)));
+                allConstraints.add(c2);
+            }
+        }
+        this.constraints = allConstraints;
     }
 
     /**
@@ -221,7 +250,9 @@ public abstract class Layer implements Serializable, Cloneable {
     public abstract static class Builder<T extends Builder<T>> {
         protected String layerName = null;
         protected double dropOut = Double.NaN;
-        protected List<LayerConstraint> constraints = new ArrayList<LayerConstraint>();
+        protected List<LayerConstraint> allParamConstraints;
+        protected List<LayerConstraint> weightConstraints;
+        protected List<LayerConstraint> biasConstraints;
 
         /**
          * Layer name assigns layer string name.
@@ -267,14 +298,9 @@ public abstract class Layer implements Serializable, Cloneable {
          * @param constraints Constraints to apply to all parameters of this layer
          */
         public T constrainAllParameters(LayerConstraint... constraints) {
-            List<LayerConstraint> currentConstraints = this.constraints;
-            for(LayerConstraint c : constraints ){
-                BaseConstraint constraint = (BaseConstraint) c.clone();
-                constraint.setApplyToBiases(true);
-                constraint.setApplyToWeights(true);
-                currentConstraints.add(constraint);
-            }
-            return applyConstraints(currentConstraints);        }
+            this.allParamConstraints = Arrays.asList(constraints);
+            return (T) this;
+        }
 
         /**
          * Set constraints to be applied to bias parameters of this layer. Default: no constraints.<br>
@@ -284,42 +310,19 @@ public abstract class Layer implements Serializable, Cloneable {
          * @param constraints Constraints to apply to all bias parameters of this layer
          */
         public T constrainBias(LayerConstraint... constraints) {
-            List<LayerConstraint> currentConstraints = this.constraints;
-            for(LayerConstraint c : constraints ){
-                BaseConstraint constraint = (BaseConstraint) c.clone();
-                constraint.setApplyToBiases(true);
-                currentConstraints.add(constraint);
-            }
-            return applyConstraints(currentConstraints);
+            this.biasConstraints = Arrays.asList(constraints);
+            return (T) this;
         }
 
         /**
-         * Set constraints to be applied to this layer. Default: no constraints.<br>
+         * Set constraints to be applied to the weight paramaters of this layer. Default: no constraints.<br>
          * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
          * etc). These constraints are applied at each iteration, after the parameters have been updated.
          *
          * @param constraints Constraints to apply to all weight parameters of this layer
          */
         public T constrainWeights(LayerConstraint... constraints) {
-            List<LayerConstraint> currentConstraints = this.constraints;
-            for(LayerConstraint c : constraints ){
-                BaseConstraint constraint = (BaseConstraint) c.clone();
-                constraint.setApplyToWeights(true);
-                currentConstraints.add(constraint);
-            }
-            return applyConstraints(currentConstraints);
-        }
-
-        /**
-         * Set constraints to be applied to this layer. Default: no constraints.<br>
-         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
-         * etc). These constraints are applied at each iteration, after the parameters have been updated.
-         *
-         * @param constraints Constraints to apply to this layer
-         * @return Constraints
-         */
-        public T applyConstraints(List<LayerConstraint> constraints) {
-            this.constraints = constraints;
+            this.weightConstraints = Arrays.asList(constraints);
             return (T) this;
         }
 

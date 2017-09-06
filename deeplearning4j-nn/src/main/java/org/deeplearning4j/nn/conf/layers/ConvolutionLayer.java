@@ -103,6 +103,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
         this.cudnnFwdAlgo = builder.cudnnFwdAlgo;
         this.cudnnBwdFilterAlgo = builder.cudnnBwdFilterAlgo;
         this.cudnnBwdDataAlgo = builder.cudnnBwdDataAlgo;
+
+        initializeConstraints(builder);
     }
 
     public boolean hasBias(){

@@ -40,6 +40,7 @@ public class EmbeddingLayer extends FeedForwardLayer {
     private EmbeddingLayer(Builder builder) {
         super(builder);
         this.hasBias = builder.hasBias;
+        initializeConstraints(builder);
     }
 
     @Override

@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Broadcast;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,7 +30,7 @@ public class UnitNormConstraint extends BaseConstraint {
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
     public UnitNormConstraint(int... dimensions){
-        this(true, false, new HashSet<String>(), dimensions);
+        this(Collections.<String>emptySet(), dimensions);
     }
 
 
@@ -38,9 +39,8 @@ public class UnitNormConstraint extends BaseConstraint {
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
-    public UnitNormConstraint(boolean applyToWeights, boolean applyToBiases, Set<String> paramNames,
-                              int... dimensions){
-        super(applyToWeights, applyToBiases, paramNames, dimensions);
+    public UnitNormConstraint(Set<String> paramNames, int... dimensions){
+        super(paramNames, dimensions);
     }
 
     @Override
@@ -51,6 +51,6 @@ public class UnitNormConstraint extends BaseConstraint {
 
     @Override
     public UnitNormConstraint clone() {
-        return new UnitNormConstraint( applyToWeights, applyToBiases, paramNames, dimensions);
+        return new UnitNormConstraint( params, dimensions);
     }
 }

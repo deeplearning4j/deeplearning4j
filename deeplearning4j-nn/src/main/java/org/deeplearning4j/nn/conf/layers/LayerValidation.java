@@ -10,9 +10,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.learning.config.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by Alex on 22/02/2017.
@@ -292,15 +290,17 @@ public class LayerValidation {
 
     public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, Double dropOut,
                                          Double l2, Double l2Bias, Double l1, Double l1Bias,
-                                         Distribution dist, List<LayerConstraint> constraints) {
+                                         Distribution dist, List<LayerConstraint> allParamConstraints,
+                                         List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
         generalValidation(layerName, layer, useDropConnect, dropOut == null ? 0.0 : dropOut,
                         l2 == null ? Double.NaN : l2, l2Bias == null ? Double.NaN : l2Bias,
-                        l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, dist, constraints);
+                        l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, dist, allParamConstraints, weightConstraints, biasConstraints);
     }
 
     public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, double dropOut,
                                          double l2, double l2Bias, double l1, double l1Bias,
-                                         Distribution dist, List<LayerConstraint> constraints) {
+                                         Distribution dist, List<LayerConstraint> allParamConstraints,
+                                         List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
 
         if (layer != null) {
 
@@ -321,10 +321,33 @@ public class LayerValidation {
                                 l1Bias, dist);
             }
 
-            if(constraints != null){
-                if(layer.getConstraints().isEmpty()){
-                    layer.setConstraints(constraints);
+            if(layer.getConstraints() == null || layer.constraints.isEmpty()) {
+                List<LayerConstraint> allConstraints = new ArrayList<>();
+                if (allParamConstraints != null && layer.initializer().paramKeys(layer).size() > 0) {
+                    for (LayerConstraint c : allConstraints) {
+                        LayerConstraint c2 = c.clone();
+                        c2.setParams(new HashSet<>(layer.initializer().paramKeys(layer)));
+                        allConstraints.add(c2);
+                    }
                 }
+
+                if (weightConstraints != null && layer.initializer().weightKeys(layer).size() > 0) {
+                    for (LayerConstraint c : weightConstraints) {
+                        LayerConstraint c2 = c.clone();
+                        c2.setParams(new HashSet<>(layer.initializer().weightKeys(layer)));
+                        allConstraints.add(c2);
+                    }
+                }
+
+                if (weightConstraints != null && layer.initializer().biasKeys(layer).size() > 0) {
+                    for (LayerConstraint c : weightConstraints) {
+                        LayerConstraint c2 = c.clone();
+                        c2.setParams(new HashSet<>(layer.initializer().biasKeys(layer)));
+                        allConstraints.add(c2);
+                    }
+                }
+
+                layer.setConstraints(allConstraints);
             }
         }
     }

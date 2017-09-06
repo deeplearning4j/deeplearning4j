@@ -54,7 +54,22 @@ public class LSTM extends AbstractLSTM {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
         this.gateActivationFn = builder.gateActivationFn;
+        initializeConstraints(builder);
+    }
 
+    @Override
+    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
+        super.initializeConstraints(builder);
+        if(((Builder)builder).recurrentConstraints != null){
+            if(constraints == null){
+                constraints = new ArrayList<>();
+            }
+            for (LayerConstraint c : ((Builder) builder).recurrentConstraints) {
+                LayerConstraint c2 = c.clone();
+                c2.setParams(Collections.singleton(LSTMParamInitializer.RECURRENT_WEIGHT_KEY));
+                constraints.add(c2);
+            }
+        }
     }
 
     @Override
@@ -84,19 +99,6 @@ public class LSTM extends AbstractLSTM {
 
     @AllArgsConstructor
     public static class Builder extends AbstractLSTM.Builder<Builder> {
-
-
-        public Builder constrainRecurrent(LayerConstraint... constraints) {
-            List<LayerConstraint> currentConstraints = this.constraints;
-            for(LayerConstraint c : constraints ){
-                BaseConstraint constraint = (BaseConstraint) c.clone();
-                Set<String> paramNames = constraint.getParamNames();
-                paramNames.add("RW");
-                constraint.setParamNames(paramNames);
-                currentConstraints.add(constraint);
-            }
-            return applyConstraints(currentConstraints);
-        }
 
 
         @SuppressWarnings("unchecked")

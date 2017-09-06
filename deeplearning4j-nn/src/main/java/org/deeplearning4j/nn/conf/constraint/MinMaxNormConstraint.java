@@ -8,6 +8,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -44,7 +45,7 @@ public class MinMaxNormConstraint extends BaseConstraint {
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
     public MinMaxNormConstraint(double min, double max, int... dimensions){
-        this(min, max, DEFAULT_RATE, true, false, null, dimensions);
+        this(min, max, DEFAULT_RATE, null, dimensions);
     }
 
     /**
@@ -58,7 +59,7 @@ public class MinMaxNormConstraint extends BaseConstraint {
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
     public MinMaxNormConstraint(double min, double max, double rate, int... dimensions){
-        this(min, max, rate, true, false, new HashSet<String>(), dimensions);
+        this(min, max, rate, Collections.<String>emptySet(), dimensions);
     }
 
     /**
@@ -66,16 +67,13 @@ public class MinMaxNormConstraint extends BaseConstraint {
      * @param max            Maximum L2 value
      * @param min            Minimum L2 value
      * @param rate           Constraint rate
-     * @param applyToWeights If constraint should be applied to weights
-     * @param applyToBiases  If constraint should be applied to biases
      * @param paramNames     Which parameter names to apply constraint to
      * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
-    public MinMaxNormConstraint(double min, double max, double rate, boolean applyToWeights, boolean applyToBiases,
-                                Set<String> paramNames, int... dimensions){
-        super(applyToWeights, applyToBiases, paramNames, dimensions);
+    public MinMaxNormConstraint(double min, double max, double rate, Set<String> paramNames, int... dimensions){
+        super(paramNames, dimensions);
         if(rate <= 0 || rate > 1.0){
             throw new IllegalStateException("Invalid rate: must be in interval (0,1]: got " + rate);
         }
@@ -103,6 +101,6 @@ public class MinMaxNormConstraint extends BaseConstraint {
 
     @Override
     public MinMaxNormConstraint clone() {
-        return new MinMaxNormConstraint(min, max, rate, applyToWeights, applyToBiases, paramNames, dimensions);
+        return new MinMaxNormConstraint(min, max, rate, params, dimensions);
     }
 }

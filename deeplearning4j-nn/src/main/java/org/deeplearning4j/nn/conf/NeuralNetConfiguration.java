@@ -636,7 +636,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double lrPolicySteps = Double.NaN;
         protected double lrPolicyPower = Double.NaN;
         protected boolean pretrain = false;
-        protected List<LayerConstraint> constraints = new ArrayList<>();
+        protected List<LayerConstraint> allParamConstraints;
+        protected List<LayerConstraint> weightConstraints;
+        protected List<LayerConstraint> biasConstraints;
 
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
@@ -1246,14 +1248,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param constraints Constraints to apply to all parameters of all layers
          */
         public Builder constrainAllParameters(LayerConstraint... constraints){
-            List<LayerConstraint> currentConstraints = this.constraints;
-            for(LayerConstraint c : constraints ){
-                BaseConstraint constraint = (BaseConstraint) c.clone();
-                constraint.setApplyToBiases(true);
-                constraint.setApplyToWeights(true);
-                currentConstraints.add(constraint);
-            }
-            return applyConstraints(currentConstraints);
+            this.allParamConstraints = Arrays.asList(constraints);
+            return this;
         }
 
         /**
@@ -1264,13 +1260,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param constraints Constraints to apply to all bias parameters of all layers
          */
         public Builder constrainBias(LayerConstraint... constraints) {
-            List<LayerConstraint> currentConstraints = this.constraints;
-            for(LayerConstraint c : constraints ){
-                BaseConstraint constraint = (BaseConstraint) c.clone();
-                constraint.setApplyToBiases(true);
-                currentConstraints.add(constraint);
-            }
-            return applyConstraints(currentConstraints);
+            this.biasConstraints = Arrays.asList(constraints);
+            return this;
         }
 
         /**
@@ -1281,24 +1272,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param constraints Constraints to apply to all weight parameters of all layers
          */
         public Builder constrainWeights(LayerConstraint... constraints) {
-            List<LayerConstraint> currentConstraints = this.constraints;
-            for(LayerConstraint c : constraints ){
-                BaseConstraint constraint = (BaseConstraint) c.clone();
-                constraint.setApplyToWeights(true);
-                currentConstraints.add(constraint);
-            }
-            return applyConstraints(currentConstraints);
-        }
-
-        /**
-         * Set constraints to be applied to all layers. Default: no constraints.<br>
-         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
-         * etc). These constraints are applied at each iteration, after the parameters have been updated.
-         *
-         * @param constraints Constraints to apply to all layers
-         */
-        public Builder applyConstraints(List<LayerConstraint> constraints){
-            this.constraints = constraints;
+            this.weightConstraints = Arrays.asList(constraints);
             return this;
         }
 
@@ -1410,7 +1384,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 }
             }
             LayerValidation.generalValidation(layerName, layer, useDropConnect, dropOut, l2, l2Bias,
-                            l1, l1Bias, dist, constraints);
+                            l1, l1Bias, dist, allParamConstraints, weightConstraints, biasConstraints);
         }
 
         private void copyConfigToLayer(String layerName, Layer layer) {

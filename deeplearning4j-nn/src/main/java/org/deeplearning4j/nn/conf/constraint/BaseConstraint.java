@@ -1,8 +1,6 @@
 package org.deeplearning4j.nn.conf.constraint;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -19,10 +17,9 @@ import java.util.Set;
 @Data
 public abstract class BaseConstraint implements LayerConstraint {
     public static final double DEFAULT_EPSILON = 1e-6;
-
-    protected boolean applyToWeights;
-    protected boolean applyToBiases;
-    protected Set<String> paramNames = new HashSet<>();
+    @Setter
+    @Getter
+    protected Set<String> params = new HashSet<>();
     protected double epsilon = 1e-6;
     protected int[] dimensions;
 
@@ -30,8 +27,8 @@ public abstract class BaseConstraint implements LayerConstraint {
         //No arg for json ser/de
     }
 
-    protected BaseConstraint(boolean applyToWeights, boolean applyToBiases, Set<String> paramNames, int... dimensions){
-        this(applyToWeights, applyToBiases, paramNames, DEFAULT_EPSILON, dimensions);
+    protected BaseConstraint(Set<String> paramNames, int... dimensions){
+        this(paramNames, DEFAULT_EPSILON, dimensions);
     }
 
     @Override
@@ -43,11 +40,10 @@ public abstract class BaseConstraint implements LayerConstraint {
 
         ParamInitializer i = layer.conf().getLayer().initializer();
         for(Map.Entry<String,INDArray> e : paramTable.entrySet()){
-            if (applyToWeights && i.isWeightParam(e.getKey())
-                    || applyToBiases && i.isBiasParam(e.getKey())){
+            if(params.contains(e.getKey())){
                 apply(e.getValue());
             }
-            if (paramNames != null && paramNames.contains(e.getKey())) {
+            if (params != null && params.contains(e.getKey())) {
                 apply(e.getValue());
             }
         }
