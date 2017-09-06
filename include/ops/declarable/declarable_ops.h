@@ -147,6 +147,7 @@ namespace nd4j {
                 if (!isInit) {
                     for (std::map<std::string, nd4j::ops::DeclarableOp<float>*>::iterator it=_declarablesF.begin(); it!=_declarablesF.end(); ++it) {
                         _opsList += it->first + ":"
+                                    + std::to_string(it->second->getOpDescriptor()->getHash()) + ":"
                                     + std::to_string(it->second->getOpDescriptor()->getNumberOfInputs()) + ":"
                                     + std::to_string(it->second->getOpDescriptor()->getNumberOfOutputs()) + ":"
                                     + std::to_string(it->second->getOpDescriptor()->allowsInplace())  + ":"

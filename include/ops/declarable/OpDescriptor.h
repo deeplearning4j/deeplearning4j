@@ -6,6 +6,7 @@
 #define LIBND4J_OPDESCRIPTOR_H
 
 #include <string>
+#include <helpers/helper_hash.h>
 
 namespace nd4j {
     namespace ops {
@@ -14,6 +15,7 @@ namespace nd4j {
         protected:
             int _opNum = 0;
             std::string _opName;
+            Nd4jIndex _hash;
 
             int _numInputs;
             int _numOutputs;
@@ -38,6 +40,7 @@ namespace nd4j {
                 std::string tmp(opName);
                 _opName = tmp;
                 _allowsInplace = allowsInplace;
+                _hash = nd4j::ops::HashHelper::getInstance()->getLongHash(tmp);
                 _divergent = false;
             }
 
@@ -77,6 +80,10 @@ namespace nd4j {
 
             int getNumberOfInputs() {
                 return _numInputs;
+            }
+
+            Nd4jIndex getHash() {
+                return _hash;
             }
 
             int getNumberOfOutputs() {
