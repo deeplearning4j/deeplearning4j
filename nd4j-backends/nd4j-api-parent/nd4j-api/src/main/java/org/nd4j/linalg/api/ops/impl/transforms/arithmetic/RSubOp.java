@@ -25,7 +25,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
- * Subtraction operation
+ * Reverse 'Subtraction operation
  *
  * @author Adam Gibson
  */

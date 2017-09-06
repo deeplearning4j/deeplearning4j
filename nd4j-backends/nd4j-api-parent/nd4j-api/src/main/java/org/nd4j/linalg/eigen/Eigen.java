@@ -53,7 +53,7 @@ public class Eigen {
      */
     public static INDArray symmetricGeneralizedEigenvalues(INDArray A) {
         INDArray eigenvalues = Nd4j.create(A.rows());
-        Nd4j.getBlasWrapper().syev( 'V', 'L', A, eigenvalues );
+        Nd4j.getBlasWrapper().syev('V', 'L', A, eigenvalues);
         return eigenvalues;
     }
 
@@ -68,7 +68,7 @@ public class Eigen {
      */
     public static INDArray symmetricGeneralizedEigenvalues(INDArray A, boolean calculateVectors) {
         INDArray eigenvalues = Nd4j.create(A.rows());
-        Nd4j.getBlasWrapper().syev( 'V', 'L', (calculateVectors ? A : A.dup()), eigenvalues );
+        Nd4j.getBlasWrapper().syev('V', 'L', (calculateVectors ? A : A.dup()), eigenvalues);
         return eigenvalues;
     }
 
@@ -126,7 +126,7 @@ public class Eigen {
         INDArray W = Nd4j.create(A.rows());
 
         A = InvertMatrix.invert(B, false).mmuli(A);
-        Nd4j.getBlasWrapper().syev( 'V', 'L', A, W);
+        Nd4j.getBlasWrapper().syev('V', 'L', A, W);
         return W;
     }
 
@@ -143,10 +143,12 @@ public class Eigen {
         assert A.rows() == A.columns();
         assert B.rows() == B.columns();
         INDArray W = Nd4j.create(A.rows());
-	if (calculateVectors) A.assign(InvertMatrix.invert(B, false).mmuli(A));
-        else A = InvertMatrix.invert(B, false).mmuli(A);
+        if (calculateVectors)
+            A.assign(InvertMatrix.invert(B, false).mmuli(A));
+        else
+            A = InvertMatrix.invert(B, false).mmuli(A);
 
-        Nd4j.getBlasWrapper().syev( 'V', 'L', A, W);
+        Nd4j.getBlasWrapper().syev('V', 'L', A, W);
         return W;
     }
 

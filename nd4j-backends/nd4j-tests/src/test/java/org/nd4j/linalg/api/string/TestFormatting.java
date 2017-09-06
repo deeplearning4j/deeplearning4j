@@ -38,14 +38,14 @@ public class TestFormatting extends BaseNd4jTest {
         String serializedData1 = new NDArrayStrings(",", 2).format(arr);
 
         // ignoring whitespace differences here
-        Assert.assertEquals(expected1.replaceAll(" ",""), serializedData1.replaceAll(" ",""));
+        Assert.assertEquals(expected1.replaceAll(" ", ""), serializedData1.replaceAll(" ", ""));
 
         //remove commas
         String expected2 = "[[1.00,40.84],\n" + " [20000000.00,3.00]]";
         String serializedData2 = new NDArrayStrings(",", 2, "######0").format(arr);
 
         // ignoring whitespace differences here
-        Assert.assertEquals(expected2.replaceAll(" ",""), serializedData2.replaceAll(" ",""));
+        Assert.assertEquals(expected2.replaceAll(" ", ""), serializedData2.replaceAll(" ", ""));
 
     }
 

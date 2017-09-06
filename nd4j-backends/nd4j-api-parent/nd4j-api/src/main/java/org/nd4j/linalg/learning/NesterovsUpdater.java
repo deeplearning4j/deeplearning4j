@@ -83,7 +83,7 @@ public class NesterovsUpdater implements GradientUpdater<Nesterovs> {
 
         //v = mu * v - lr * gradient
         INDArray vPrev = v.dup(gradientReshapeOrder);
-        v.muli(momentum).subi(gradient.dup(gradientReshapeOrder).muli(learningRate));              //Modify state array in-place
+        v.muli(momentum).subi(gradient.dup(gradientReshapeOrder).muli(learningRate)); //Modify state array in-place
 
         /*
         Next line is equivalent to:

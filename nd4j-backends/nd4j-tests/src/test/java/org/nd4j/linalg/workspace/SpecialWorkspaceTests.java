@@ -42,16 +42,11 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testVariableTimeSeries1() throws Exception {
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .overallocationLimit(3.0)
-                .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .policySpill(SpillPolicy.EXTERNAL)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                .build();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(3.0)
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.EXTERNAL)
+                        .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.ENDOFBUFFER_REACHED).build();
 
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
             Nd4j.create(500);
             Nd4j.create(500);
         }
@@ -62,7 +57,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         assertEquals(0, workspace.getStepNumber());
 
         long requiredMemory = 1000 * Nd4j.sizeOfDataType();
-        long shiftedSize = ((long)(requiredMemory * 1.3)) + (8 -(((long)(requiredMemory * 1.3)) % 8));
+        long shiftedSize = ((long) (requiredMemory * 1.3)) + (8 - (((long) (requiredMemory * 1.3)) % 8));
         assertEquals(requiredMemory, workspace.getSpilledSize());
         assertEquals(shiftedSize, workspace.getInitialBlockSize());
         assertEquals(workspace.getInitialBlockSize() * 4, workspace.getCurrentSize());
@@ -93,13 +88,14 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
                     Nd4j.create(500);
                 }
 
-                assertEquals("Failed on iteration " + i, (i + 1) * workspace.getInitialBlockSize(), workspace.getDeviceOffset());
+                assertEquals("Failed on iteration " + i, (i + 1) * workspace.getInitialBlockSize(),
+                                workspace.getDeviceOffset());
             }
 
             if (e >= 2) {
-                assertEquals("Failed on iteration " + e,0, workspace.getNumberOfPinnedAllocations());
+                assertEquals("Failed on iteration " + e, 0, workspace.getNumberOfPinnedAllocations());
             } else {
-                assertEquals("Failed on iteration " + e,1, workspace.getNumberOfPinnedAllocations());
+                assertEquals("Failed on iteration " + e, 1, workspace.getNumberOfPinnedAllocations());
             }
         }
 
@@ -152,16 +148,12 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testVariableTimeSeries2() throws Exception {
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .overallocationLimit(3.0)
-                .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .policySpill(SpillPolicy.REALLOCATE)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                .build();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(3.0)
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
+                        .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.ENDOFBUFFER_REACHED).build();
 
-        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "WS1");
+        Nd4jWorkspace workspace =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "WS1");
         workspace.enableDebug(true);
 
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
@@ -174,7 +166,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         assertEquals(0, workspace.getStepNumber());
 
         long requiredMemory = 1000 * Nd4j.sizeOfDataType();
-        long shiftedSize = ((long)(requiredMemory * 1.3)) + (8 -(((long)(requiredMemory * 1.3)) % 8));
+        long shiftedSize = ((long) (requiredMemory * 1.3)) + (8 - (((long) (requiredMemory * 1.3)) % 8));
         assertEquals(requiredMemory, workspace.getSpilledSize());
         assertEquals(shiftedSize, workspace.getInitialBlockSize());
         assertEquals(workspace.getInitialBlockSize() * 4, workspace.getCurrentSize());

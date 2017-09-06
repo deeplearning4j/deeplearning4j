@@ -42,7 +42,7 @@ public interface Lapack {
      * @param The R array if null R is not returned
      * @throws Error - with a message to indicate failure (usu. bad params)
      */
-    public void geqrf(INDArray A, INDArray R );
+    public void geqrf(INDArray A, INDArray R);
 
 
 
@@ -61,7 +61,7 @@ public interface Lapack {
      * @returns Permutation array
      * @throws Error - with a message to indicate failure (usu. bad params)
      */
-    public void potrf(INDArray A, boolean lower ) ;
+    public void potrf(INDArray A, boolean lower);
 
 
     /**
@@ -75,9 +75,9 @@ public interface Lapack {
      * @param V the resulting eigenvalues
      * @throws Error - with a message to indicate failure (usu. bad params)
      */
-    public int syev( char jobz, char uplo, INDArray A, INDArray V ) ;
+    public int syev(char jobz, char uplo, INDArray A, INDArray V);
 
-    
+
 
     /**
      * SVD decomposiiton of a matrix
@@ -95,7 +95,6 @@ public interface Lapack {
      * @throws Error - with a message to indicate failure (usu. bad params)
      */
     public void gesvd(INDArray A, INDArray S, INDArray U, INDArray VT);
-
 
 
 

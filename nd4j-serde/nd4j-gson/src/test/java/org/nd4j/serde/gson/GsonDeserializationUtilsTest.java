@@ -51,10 +51,9 @@ public class GsonDeserializationUtilsTest {
 
     @Test
     public void testSimpleVector() {
-        INDArray arr = Nd4j.linspace(1,4,4);
-        assertEquals(GsonDeserializationUtils.deserializeRawJson(arr.toString()),arr);
+        INDArray arr = Nd4j.linspace(1, 4, 4);
+        assertEquals(GsonDeserializationUtils.deserializeRawJson(arr.toString()), arr);
     }
-
 
 
 

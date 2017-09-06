@@ -31,7 +31,9 @@ public class UnderSamplingByMaskingPreProcessor extends BaseUnderSamplingPreProc
      */
     public UnderSamplingByMaskingPreProcessor(double targetDist, int windowSize) {
         if (targetDist > 0.5 || targetDist <= 0) {
-            throw new IllegalArgumentException("Target distribution for the minorityLabel class has to be greater than 0 and no greater than 0.5. Target distribution of " + targetDist + "given");
+            throw new IllegalArgumentException(
+                            "Target distribution for the minorityLabel class has to be greater than 0 and no greater than 0.5. Target distribution of "
+                                            + targetDist + "given");
         }
         this.targetMinorityDist = targetDist;
         this.tbpttWindowSize = windowSize;
@@ -48,7 +50,7 @@ public class UnderSamplingByMaskingPreProcessor extends BaseUnderSamplingPreProc
     public void preProcess(DataSet toPreProcess) {
         INDArray label = toPreProcess.getLabels();
         INDArray labelMask = toPreProcess.getLabelsMaskArray();
-        INDArray sampledMask = adjustMasks(label,labelMask,minorityLabel,targetMinorityDist);
+        INDArray sampledMask = adjustMasks(label, labelMask, minorityLabel, targetMinorityDist);
         toPreProcess.setLabelsMaskArray(sampledMask);
     }
 }

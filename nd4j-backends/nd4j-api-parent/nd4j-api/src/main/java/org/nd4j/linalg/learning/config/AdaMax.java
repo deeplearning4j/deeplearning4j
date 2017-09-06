@@ -33,7 +33,7 @@ public class AdaMax implements IUpdater {
 
     @Override
     public long stateSize(long numParams) {
-        return 2*numParams;
+        return 2 * numParams;
     }
 
     @Override
@@ -64,7 +64,6 @@ public class AdaMax implements IUpdater {
         private double beta2 = DEFAULT_ADAMAX_BETA2_VAR_DECAY;
         private double epsilon = DEFAULT_ADAMAX_EPSILON;
 
-        public Builder() {
-        }
+        public Builder() {}
     }
 }

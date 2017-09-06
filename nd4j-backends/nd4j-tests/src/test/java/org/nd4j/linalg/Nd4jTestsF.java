@@ -32,7 +32,7 @@ public class Nd4jTestsF extends BaseNd4jTest {
 
     @Test
     public void testConcat3D_Vstack_F() throws Exception {
-        int[] shape = new int[]{1,1000,150};
+        int[] shape = new int[] {1, 1000, 150};
         //INDArray cOrder =  Nd4j.rand(shape,123);
 
 
@@ -41,7 +41,7 @@ public class Nd4jTestsF extends BaseNd4jTest {
 
         for (int e = 0; e < 32; e++) {
             cArrays.add(Nd4j.create(shape, 'f').assign(e));
-//            fArrays.add(cOrder.dup('f'));
+            //            fArrays.add(cOrder.dup('f'));
         }
 
         Nd4j.getExecutioner().commit();
@@ -52,8 +52,8 @@ public class Nd4jTestsF extends BaseNd4jTest {
 
         log.info("Time spent: {} ms", time2 - time1);
 
-        for (int e = 0; e < 32; e++ ) {
-            INDArray tad = res.tensorAlongDimension(e, 1,2);
+        for (int e = 0; e < 32; e++) {
+            INDArray tad = res.tensorAlongDimension(e, 1, 2);
             assertEquals((double) e, tad.meanNumber().doubleValue(), 1e-5);
         }
     }

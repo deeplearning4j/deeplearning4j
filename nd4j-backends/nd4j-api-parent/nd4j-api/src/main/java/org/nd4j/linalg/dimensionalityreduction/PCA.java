@@ -65,10 +65,12 @@ public class PCA {
         for (int i = 0; i < vars.columns(); i++) {
             ndims++;
             total += vars.getDouble(i);
-            if (total/res > variance) break;
+            if (total / res > variance)
+                break;
         }
         INDArray result = Nd4j.create(eigenvectors.rows(), ndims);
-        for (int i = 0; i < ndims; i++) result.putColumn(i, eigenvectors.getColumn(i));
+        for (int i = 0; i < ndims; i++)
+            result.putColumn(i, eigenvectors.getColumn(i));
         return result;
     }
 
@@ -81,7 +83,7 @@ public class PCA {
      */
     public INDArray convertToComponents(INDArray data) {
         INDArray dx = data.subRowVector(mean);
-        return Nd4j.tensorMmul(eigenvectors.transpose(), dx, new int[][] {{1},{1}}).transposei();
+        return Nd4j.tensorMmul(eigenvectors.transpose(), dx, new int[][] {{1}, {1}}).transposei();
     }
 
 
@@ -107,9 +109,9 @@ public class PCA {
         INDArray dx = data.sub(mean);
         INDArray v = eigenvectors.transpose().mmul(dx.reshape(dx.columns(), 1));
         INDArray t2 = Transforms.pow(v, 2);
-        double fraction = t2.get(NDArrayIndex.interval(0,ndims)).sumNumber().doubleValue();
+        double fraction = t2.get(NDArrayIndex.interval(0, ndims)).sumNumber().doubleValue();
         double total = t2.sumNumber().doubleValue();
-        return fraction/total;
+        return fraction / total;
     }
 
 
@@ -128,7 +130,7 @@ public class PCA {
 
 
     /**
-     * Calculates pca vectors of a matrix, for a fixed number of reduced features
+     * Calculates pca vectors of a matrix, for a flags number of reduced features
      * returns the reduced feature set
      * The return is a projection of A onto principal nDims components
      *
@@ -158,7 +160,7 @@ public class PCA {
 
 
     /**
-     * Calculates pca factors of a matrix, for a fixed number of reduced features
+     * Calculates pca factors of a matrix, for a flags number of reduced features
      * returns the factors to scale observations 
      *
      * The return is a factor matrix to reduce (normalized) feature sets
@@ -309,10 +311,12 @@ public class PCA {
         for (int i = 0; i < vars.columns(); i++) {
             ndims++;
             total += vars.getDouble(i);
-            if (total/res > variance) break;
+            if (total / res > variance)
+                break;
         }
         INDArray result = Nd4j.create(in.columns(), ndims);
-        for (int i = 0; i < ndims; i++) result.putColumn(i, pce[0].getColumn(i));
+        for (int i = 0; i < ndims; i++)
+            result.putColumn(i, pce[0].getColumn(i));
         return result;
     }
 
@@ -333,11 +337,11 @@ public class PCA {
         INDArray product = Nd4j.create(vlength, vlength);
 
         for (int i = 0; i < vlength; i++)
-            sum.getColumn(i).assign(in.getColumn(i).sumNumber().doubleValue()/dlength);
+            sum.getColumn(i).assign(in.getColumn(i).sumNumber().doubleValue() / dlength);
 
         for (int i = 0; i < dlength; i++) {
             INDArray dx1 = in.getRow(i).sub(sum);
-            product.addi(dx1.reshape(vlength,1).mmul(dx1.reshape(1,vlength)));
+            product.addi(dx1.reshape(vlength, 1).mmul(dx1.reshape(1, vlength)));
         }
         product.divi(dlength);
         return new INDArray[] {product, sum};

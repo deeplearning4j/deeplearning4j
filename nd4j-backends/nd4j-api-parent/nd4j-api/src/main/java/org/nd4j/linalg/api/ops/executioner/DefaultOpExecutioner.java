@@ -263,7 +263,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public Op exec(Op op, int... dimension) {
         //do op along all dimensions
         if (dimension.length == op.x().rank()) {
-            dimension = new int[]{Integer.MAX_VALUE};
+            dimension = new int[] {Integer.MAX_VALUE};
         }
 
         if (op.isPassThrough()) {
@@ -274,7 +274,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (op instanceof Accumulation || op instanceof IndexAccumulation) {
             //Overloaded exec(Accumulation,int...) and exec(IndexAccumulation,int...) should always be called instead of this
             throw new IllegalStateException(
-                    "exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
+                            "exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
         }
         if (op instanceof ScalarOp) {
             //Scalar op along dimension should be same as on the entire NDArray
@@ -282,7 +282,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
         if (op instanceof TransformOp) {
             throw new UnsupportedOperationException(
-                    "Executing transform ops along a dimension should be done via exec special");
+                            "Executing transform ops along a dimension should be done via exec special");
         }
         throw new UnsupportedOperationException("Unknown op type");
     }
@@ -514,24 +514,26 @@ public class DefaultOpExecutioner implements OpExecutioner {
      * @param op
      */
     public static void validateDataType(DataBuffer.Type expectedType, Op op) {
-        if(op.x() != null && op.x().data().dataType() == DataBuffer.Type.COMPRESSED) {
+        if (op.x() != null && op.x().data().dataType() == DataBuffer.Type.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.x());
         }
 
-        if(op.y() != null && op.y().data().dataType() == DataBuffer.Type.COMPRESSED) {
+        if (op.y() != null && op.y().data().dataType() == DataBuffer.Type.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.y());
         }
 
-        if(op.z() != null && op.z().data().dataType() == DataBuffer.Type.COMPRESSED) {
+        if (op.z() != null && op.z().data().dataType() == DataBuffer.Type.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.z());
         }
 
 
-        if (op.x() != null && op.x().data().dataType() != expectedType && op.x().data().dataType() != DataBuffer.Type.COMPRESSED)
+        if (op.x() != null && op.x().data().dataType() != expectedType
+                        && op.x().data().dataType() != DataBuffer.Type.COMPRESSED)
             throw new ND4JIllegalStateException("op.X dataType is [" + op.x().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
 
-        if (op.z() != null && op.z().data().dataType() != expectedType && op.z().data().dataType() != DataBuffer.Type.COMPRESSED)
+        if (op.z() != null && op.z().data().dataType() != expectedType
+                        && op.z().data().dataType() != DataBuffer.Type.COMPRESSED)
             throw new ND4JIllegalStateException("op.Z dataType is [" + op.z().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
 

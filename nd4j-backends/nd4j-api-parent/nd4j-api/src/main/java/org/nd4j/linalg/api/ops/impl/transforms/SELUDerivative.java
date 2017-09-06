@@ -88,12 +88,12 @@ public class SELUDerivative extends BaseTransformOp {
 
     @Override
     public double op(double d1) {
-        return d1 > 0.0f ? SELU_LAMBDA :  SELU_ALPHA * SELU_LAMBDA * FastMath.exp(d1);
+        return d1 > 0.0f ? SELU_LAMBDA : SELU_ALPHA * SELU_LAMBDA * FastMath.exp(d1);
     }
 
     @Override
     public float op(float d1) {
-        return d1 > 0.0f ? (float) SELU_LAMBDA : (float) SELU_ALPHA *  (float) SELU_LAMBDA * (float) FastMath.exp(d1);
+        return d1 > 0.0f ? (float) SELU_LAMBDA : (float) SELU_ALPHA * (float) SELU_LAMBDA * (float) FastMath.exp(d1);
     }
 
     @Override
@@ -101,10 +101,10 @@ public class SELUDerivative extends BaseTransformOp {
         throw new UnsupportedOperationException();
     }
 
-     @Override
+    @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-         return new SELUDerivative(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+        return new SELUDerivative(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
     }
 
     @Override

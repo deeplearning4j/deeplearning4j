@@ -58,20 +58,22 @@ public class BinarySerdeTest {
 
     @Test
     public void testReadWriteFile() throws Exception {
-     File tmpFile = new File(System.getProperty("java.io.tmpdir"),"ndarraytmp-" + UUID.randomUUID().toString() + " .bin");
+        File tmpFile = new File(System.getProperty("java.io.tmpdir"),
+                        "ndarraytmp-" + UUID.randomUUID().toString() + " .bin");
         tmpFile.deleteOnExit();
-        INDArray rand = Nd4j.randn(5,5);
-        BinarySerde.writeArrayToDisk(rand,tmpFile);
+        INDArray rand = Nd4j.randn(5, 5);
+        BinarySerde.writeArrayToDisk(rand, tmpFile);
         INDArray fromDisk = BinarySerde.readFromDisk(tmpFile);
-        assertEquals(rand,fromDisk);
+        assertEquals(rand, fromDisk);
     }
 
     @Test
     public void testReadShapeFile() throws Exception {
-        File tmpFile = new File(System.getProperty("java.io.tmpdir"),"ndarraytmp-" + UUID.randomUUID().toString() + " .bin");
+        File tmpFile = new File(System.getProperty("java.io.tmpdir"),
+                        "ndarraytmp-" + UUID.randomUUID().toString() + " .bin");
         tmpFile.deleteOnExit();
-        INDArray rand = Nd4j.randn(5,5);
-        BinarySerde.writeArrayToDisk(rand,tmpFile);
+        INDArray rand = Nd4j.randn(5, 5);
+        BinarySerde.writeArrayToDisk(rand, tmpFile);
         DataBuffer buffer = BinarySerde.readShapeFromDisk(tmpFile);
 
         assertArrayEquals(rand.shapeInfoDataBuffer().asInt(), buffer.asInt());
