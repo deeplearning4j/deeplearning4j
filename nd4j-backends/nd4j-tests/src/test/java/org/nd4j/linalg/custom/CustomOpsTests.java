@@ -63,6 +63,42 @@ public class CustomOpsTests {
     }
 
     @Test
+    public void testNoOp1() throws Exception {
+        val arrayX = Nd4j.create(10, 10);
+        val arrayY = Nd4j.create(10, 10);
+
+        arrayX.assign(3.0);
+        arrayY.assign(1.0);
+
+        val exp = Nd4j.create(10,10).assign(4.0);
+
+        CustomOp op = DynamicCustomOp.builder("noop")
+                .setInputs(arrayX, arrayY)
+                .setOutputs(arrayX)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+    }
+
+    @Test
+    public void testFloor() throws Exception {
+        val arrayX = Nd4j.create(10, 10);
+
+        arrayX.assign(3.0);
+
+        val exp = Nd4j.create(10,10).assign(3.0);
+
+        CustomOp op = DynamicCustomOp.builder("floor")
+                .setInputs(arrayX)
+                .setOutputs(arrayX)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(exp, arrayX);
+    }
+
+    @Test
     public void testInplaceOp1() throws Exception {
         val arrayX = Nd4j.create(10, 10);
         val arrayY = Nd4j.create(10, 10);
@@ -125,5 +161,28 @@ public class CustomOpsTests {
 
         assertEquals(exp, arrayX);
         assertEquals(expZ, arrayZ);
+    }
+
+
+    @Test
+    public void testMergeMax1() throws Exception {
+        val array0 = Nd4j.create(new double[] {1, 0, 0, 0, 0});
+        val array1 = Nd4j.create(new double[] {0, 2, 0, 0, 0});
+        val array2 = Nd4j.create(new double[] {0, 0, 3, 0, 0});
+        val array3 = Nd4j.create(new double[] {0, 0, 0, 4, 0});
+        val array4 = Nd4j.create(new double[] {0, 0, 0, 0, 5});
+
+        val z = Nd4j.create(5);
+        val exp = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+
+        CustomOp op = DynamicCustomOp.builder("mergemax")
+                .setInputs(array0, array1, array2, array3, array4)
+                .setOutputs(z)
+                .callInplace(false)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(exp, z);
     }
 }
