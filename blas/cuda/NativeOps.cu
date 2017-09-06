@@ -33,6 +33,15 @@
 #include <helpers/threshold.h>
 
 #include <ops/specials_cuda.h>
+
+// FIXME: we need cuda-specific implementations
+#include <helpers/logger.h>
+#include <NDArray.h>
+#include "../cpu/NDArray.cpp"
+#include "../cpu/GraphExecutioner.cpp"
+#include <ops/declarable/declarable_ops.h>
+#include <ops/declarable/cpu/parity_ops.h>
+
 //#include <sys/time.h>
 
 // b40c only available for gcc :(
@@ -6909,7 +6918,7 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
 		auto buffer = (T *) inputBuffers[e];
 		auto shape = (int *) inputShapes[e];
 
-		auto var = new Variable<T>(new NDArray<T>(buffer, shape));
+		auto var = new nd4j::graph::Variable<T>(new nd4j::NDArray<T>(buffer, shape));
 		block.getVariables().push_back(var);
 	}
 
@@ -6917,7 +6926,7 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
 		auto buffer = (T *) outputBuffers[e];
 		auto shape = (int *) outputShapes[e];
 
-		auto var = new Variable<T>(new NDArray<T>(buffer, shape));
+		auto var = new nd4j::graph::Variable<T>(new nd4j::NDArray<T>(buffer, shape));
 		std::pair<int, int> pair(nodeId, e);
 		variableSpace.putVariable(pair, var);
 	}

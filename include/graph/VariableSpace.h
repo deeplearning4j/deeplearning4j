@@ -5,6 +5,7 @@
 #ifndef LIBND4J_VARIABLESPACE_H
 #define LIBND4J_VARIABLESPACE_H
 
+#include <helpers/logger.h>
 #include <string>
 #include <list>
 #include <map>

@@ -7,6 +7,7 @@
 #ifndef LIBND4J_PARITY_OPS_H
 #define LIBND4J_PARITY_OPS_H
 
+#include <helpers/logger.h>
 #include <memory>
 #include <shape.h>
 #include <ops/ops.h>

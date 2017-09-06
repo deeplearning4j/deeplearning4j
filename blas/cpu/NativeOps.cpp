@@ -28,9 +28,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <layers/layers_factory.h>
 #include "NDArray.cpp"
 #include "GraphExecutioner.cpp"
-#include <layers/layers_factory.h>
 #include <ops/declarable/declarable_ops.h>
 #include <ops/declarable/cpu/parity_ops.h>
 

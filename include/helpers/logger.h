@@ -16,6 +16,8 @@
 #else
 
 #define nd4j_logger(FORMAT, A, ...)
+#define nd4j_verbose(FORMAT, ...)
+#define nd4j_printf(FORMAT, ...)
 
 #endif
 

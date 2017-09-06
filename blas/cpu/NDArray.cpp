@@ -2,6 +2,7 @@
 #define NDARRAY_CPP
 
 #include "../NDArray.h"
+#include <ops/gemm.h>
 #include <pointercast.h>
 #include <stdexcept>
 #include <memory>
