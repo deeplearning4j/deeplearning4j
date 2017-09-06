@@ -7,7 +7,7 @@
 #ifndef LIBND4J_PARITY_OPS_H
 #define LIBND4J_PARITY_OPS_H
 
-#include <helpers/logger.h>
+#include <op_boilerplate.h>
 #include <memory>
 #include <shape.h>
 #include <ops/ops.h>
@@ -403,7 +403,7 @@ namespace nd4j {
 
             Nd4jIndex numArgs = block.getVariables().size();
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            auto z = new NDArray<T>(x);
+            auto z = this->getZ(block);
 
 
 #pragma omp parallel for proc_bind(close)
@@ -429,7 +429,7 @@ namespace nd4j {
 
             Nd4jIndex numArgs = block.getVariables().size();
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            auto z = new NDArray<T>(x);
+            auto z = this->getZ(block);
 
 
 #pragma omp parallel for proc_bind(close)
@@ -455,7 +455,7 @@ namespace nd4j {
 
             Nd4jIndex numArgs = block.getVariables().size();
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            auto z = new NDArray<T>(x);
+            auto z = this->getZ(block);
 
 
 #pragma omp parallel for proc_bind(close)

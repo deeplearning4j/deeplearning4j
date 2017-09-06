@@ -482,11 +482,42 @@ TEST_F(DeclarableOpsTests, MergeSumTest1) {
     variableSpace->putVariable(-1, &x);
     variableSpace->putVariable(-2, &y);
     variableSpace->putVariable(-3, &z);
-    variableSpace->putVariable(1, new Variable<float>());
+    variableSpace->putVariable(1, new Variable<float>(new NDArray<float>(5,5,'c')));
     Block<float>* block = new Block<float>(1, variableSpace, false);
     block->fillInputs({-1, -2, -3});
 
     nd4j::ops::mergeadd<float> merge;
+
+    merge.execute(block);
+
+    auto res = variableSpace->getVariable(1)->getNDArray();
+
+    res->printBuffer("Result");
+    ASSERT_TRUE(res->equalsTo(&exp));
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, MergeMaxTest1) {
+
+    NDArray<float> x(5, 5, 'c');
+    NDArray<float> y(5, 5, 'c');
+    NDArray<float> z(5, 5, 'c');
+    NDArray<float> exp(5, 5, 'c');
+    x.assign(3);
+    y.assign(1);
+    z.assign(2);
+    exp.assign(3);
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(-2, &y);
+    variableSpace->putVariable(-3, &z);
+    variableSpace->putVariable(1, new Variable<float>(new NDArray<float>(5,5,'c')));
+    Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1, -2, -3});
+
+    nd4j::ops::mergemax<float> merge;
 
     merge.execute(block);
 

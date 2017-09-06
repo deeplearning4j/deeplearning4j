@@ -35,7 +35,8 @@
 #endif
 
 #ifdef __CUDACC__
-#define op_def inline __device__
+#define op_def inline __device__ __host__
+#define op_def_special inline __device__
 
 // 610 is for tests only
 // 600 is Tesla P100
@@ -46,10 +47,13 @@
 
 #elif _MSC_VER
 #define op_def __pragma("omp declare simd") inline
+#define op_def_special __pragma("omp declare simd") inline
 #elif __clang__
 #define op_def inline
+#define op_def_special inline
 #elif __GNUC__
 #define op_def _Pragma("omp declare simd") inline
+#define op_def_special _Pragma("omp declare simd") inline
 #endif
 
 #define SELU_ALPHA 1.6732632423543772848170429916717
@@ -2769,7 +2773,10 @@ template<typename T>
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static T op(T d1, T *params) {
+#ifdef __CUDACC__
+        __device__
+#endif
+		inline static T op(T d1, T *params) {
 			T prob = params[0];
 
 #ifdef __CUDACC__
@@ -2789,7 +2796,10 @@ template<typename T>
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static T op(T d1, T *params) {
+#ifdef __CUDACC__
+    __device__
+#endif
+        inline static T op(T d1, T *params) {
 			T prob = params[0];
 #ifdef __CUDACC__
 			T length = params[1];

@@ -47,6 +47,9 @@
  */
 
 #pragma once
+#ifndef OP_BOILERPLATE_HH
+#define OP_BOILERPLATE_HH
+
 #define EXTRACT(...) EXTRACT __VA_ARGS__ 
 #define NOTHING_EXTRACT 
 #define PASTE(x, ...) x ## __VA_ARGS__ 
@@ -873,3 +876,4 @@
 
 
 
+#endif
