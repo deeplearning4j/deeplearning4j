@@ -34,7 +34,7 @@ Note that if you want a parameter server based approach (requires more setup!), 
 * [Using Kryo Serialization with Deeplearning4j](#kryo)
 * [Using Intel MKL on Amazon Elastic MapReduce with Deeplearning4j](#mklemr)
 
-prerequisites
+
 ## <a name="prerequisites">Pre requisites</a>
 
 This page assumes a working knowledge of spark. If you are not familiar with how to both: setup spark clusters and run
