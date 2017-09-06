@@ -840,7 +840,7 @@ template <typename T> bool NDArray<T>::reshape(const char order, const std::vect
 
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
-template <typename T> void NDArray<T>::tileInPlace(const std::vector<int>& reps) {
+template <typename T> void NDArray<T>::tilei(const std::vector<int>& reps) {
 	// check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities (then simply reshape or do nothing)
 	int dim = reps.size();	
 	int product = 1;
@@ -1073,226 +1073,271 @@ NDArray<T>* NDArray<T>::permute(const std::initializer_list<int>& dimensions) {
 // tile an array by repeating it the number of times given by reps.
 template<typename T> NDArray<T>* NDArray<T>::tile(const std::vector<int>& reps) {
 	// check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities (then simply reshape or do nothing)
-	    if(std::find(reps.begin(), reps.end(), 0) != reps.end())
-		    throw "Tile method: one of the elements in reps array is zero !";
+	if(std::find(reps.begin(), reps.end(), 0) != reps.end())
+	    throw "Tile method: one of the elements in reps array is zero !";
 
-        bool wasReshaped = false;
-        std::vector<int> origShape(this->_shapeInfo+1, this->_shapeInfo + 1 + this->rankOf());
-        char origOrder = this->ordering();
+    bool wasReshaped = false;
+    std::vector<int> origShape(this->_shapeInfo+1, this->_shapeInfo + 1 + this->rankOf());
+    char origOrder = this->ordering();
 
-        if (reps.size() > this->rankOf()) {
-            wasReshaped = true;
-            std::vector<int> newS;
-            for (int e = 0; e < (reps.size() - this->rankOf()); e++)
-                newS.push_back(1);
+    if (reps.size() > this->rankOf()) {
+        wasReshaped = true;
+        std::vector<int> newS;
+        for (int e = 0; e < (reps.size() - this->rankOf()); e++)
+            newS.push_back(1);
 
-            for (auto v: origShape)
-                newS.push_back(v);
+        for (auto v: origShape)
+            newS.push_back(v);
 
-            this->reshape('c', newS);
+        this->reshape('c', newS);
+    }
+
+    // evaluate new shape
+	int dim = reps.size();
+	int rank = this->rankOf();
+	int diff = rank - dim;
+	std::vector<int> shapeNew;
+	if(diff < 0) {
+	    shapeNew = reps;
+	    for(int i=0; i<rank; ++i)
+		    shapeNew[dim-1-i] *= this->_shapeInfo[rank-i];
+	} else {
+	    shapeNew = std::vector<int>(this->_shapeInfo + 1, this->_shapeInfo + 1 + rank);
+	    for(int i=1; i<=dim; ++i)
+		    shapeNew[rank-i] *= reps[dim-i];
+	}
+
+	// create empty array with new shape
+
+	// ret = this->repeat()
+
+    int d = reps.size();
+    int *shape = new int[this->rankOf()];
+    std::memcpy(shape, this->shapeOf(), this->rankOf() * sizeof(int));
+
+    int l = (int) this->lengthOf();
+    int n = nd4j::math::nd4j_max<int>(l, 1);
+    std::vector<int> repeats;
+    if (d < this->rankOf()) {
+        for (int e = 0; e < this->rankOf() - reps.size(); e++)
+            repeats.push_back(1);
+    }
+    for (auto r: reps)
+        repeats.push_back(r);
+
+    int* repeat = repeats.data();
+    NDArray<T>* result = this;
+    for (int i = 0; i < rank; i++) {
+        if (repeat[i] != 1) {
+            result->reshape('c', {-1, n});
+            NDArray<T> *tmp = result->repeat(0, {repeat[i]});
+
+            if (result->_shapeInfo != this->_shapeInfo)
+                delete result;
+
+            result = tmp;
         }
 
-        // evaluate new shape
-	    int dim = reps.size();
-	    int rank = this->rankOf();
-	    int diff = rank - dim;
-	    std::vector<int> shapeNew;
-	    if(diff < 0) {
-		    shapeNew = reps;
-		    for(int i=0; i<rank; ++i)
-			    shapeNew[dim-1-i] *= this->_shapeInfo[rank-i];
-	    } else {
-		    shapeNew = std::vector<int>(this->_shapeInfo + 1, this->_shapeInfo + 1 + rank);
-		    for(int i=1; i<=dim; ++i)
-			    shapeNew[rank-i] *= reps[dim-i];
-	    }
+        //int in = shape[i];
+        //n /= nd4j::math::nd4j_max<int>(in, 1);
+        int in = shape[i];
+        int nOut = in * repeat[i];
+        shape[i] = nOut;
+        n /= nd4j::math::nd4j_max<int>(in, 1);
+    }
+    delete[] shape;
 
-	    // create empty array with new shape
+    result->reshape('c', shapeNew);
 
-		// ret = this->repeat()
-
-        int d = reps.size();
-        int *shape = new int[this->rankOf()];
-        std::memcpy(shape, this->shapeOf(), this->rankOf() * sizeof(int));
-
-        int l = (int) this->lengthOf();
-        int n = nd4j::math::nd4j_max<int>(l, 1);
-        std::vector<int> repeats;
-        if (d < this->rankOf()) {
-            for (int e = 0; e < this->rankOf() - reps.size(); e++)
-                repeats.push_back(1);
-        }
-        for (auto r: reps)
-            repeats.push_back(r);
-
-        int* repeat = repeats.data();
-        NDArray<T>* result = this;
-        for (int i = 0; i < rank; i++) {
-            if (repeat[i] != 1) {
-                result->reshape('c', {-1, n});
-                NDArray<T> *tmp = result->repeat(0, {repeat[i]});
-
-                if (result->_shapeInfo != this->_shapeInfo)
-                    delete result;
-
-                result = tmp;
-            }
-
-            //int in = shape[i];
-            //n /= nd4j::math::nd4j_max<int>(in, 1);
-            int in = shape[i];
-            int nOut = in * repeat[i];
-            shape[i] = nOut;
-            n /= nd4j::math::nd4j_max<int>(in, 1);
-        }
-        delete[] shape;
-
-        result->reshape('c', shapeNew);
-
-        if (wasReshaped)
-            this->reshape(origOrder, origShape);
-
+    if (wasReshaped)
+        this->reshape(origOrder, origShape);
 
     return result;
 }
 
-    template<typename T>
-    NDArray<T>* NDArray<T>::mmulHelper(NDArray<T>* A, NDArray<T>* B, NDArray<T>* C , T alpha, T beta) {
-        NDArray<T>* result = C;
+//////////////////////////////////////////////////////////////////////////
+// return array which is broadcasted from this and argument array  
+template<typename T>
+NDArray<T>* NDArray<T>::broadcast(const NDArray<T>& other) {	
+	// the orders must be the same
+	char order = ordering();
+	if(order != other.ordering())
+		throw "Broadcast method: arrays have different orders!";
+	// recognize shapes with smaller and bigger rank
+	int* biggerShapeInfo = nullptr;
+	int* smallerShapeInfo = nullptr;
+	int smallerRank, biggerRank;
+	if (rankOf() > other.rankOf()) {
+		biggerShapeInfo = _shapeInfo;
+		biggerRank = _shapeInfo[0];
+		smallerShapeInfo = other._shapeInfo;
+		smallerRank = other._shapeInfo[0];
+	}
+	else {
+		biggerShapeInfo = other._shapeInfo;
+		biggerRank = other._shapeInfo[0];
+		smallerShapeInfo = _shapeInfo;
+		smallerRank = _shapeInfo[0];
+	}
+	// check shapes on consistency	
+	int diff = biggerRank - smallerRank;
+	for (int i = smallerRank; i<=1; --i)
+		if(biggerShapeInfo[diff+i] != smallerShapeInfo[i] && biggerShapeInfo[i] != 1 && smallerShapeInfo[i] != 1)
+			throw "Broadcast method: arrays have incompatible shapes !";
+	// create and fill ret shapeInfo
+	int* shapeInfoNew = new int[biggerRank*2 + 4];
+	memcpy(shapeInfoNew, biggerShapeInfo, (biggerRank*2 + 4)*sizeof(int));
+	for (int i = smallerRank; i<=1; --i)
+		if(biggerShapeInfo[diff+i] == 1 || smallerShapeInfo[i] == 1) {
+			std::cout<<"!!!!"<<std::endl;
+			shapeInfoNew[diff+i] *= smallerShapeInfo[i];
+	}
+	NDArray<T>* ret = new NDArray<T>(shapeInfoNew);
+	ret->updateStrides(order);
+	delete []shapeInfoNew;
 
-        // dot
-        if (A->isVector() && B->isVector()) {
-            if (A->lengthOf() != B->lengthOf())
-                throw "A length != B length";
-
-            if (result == nullptr)
-                result = new NDArray<T>(1,1, 'c');
-
-            result->putScalar(0, nd4j::math::nd4j_dot(A->_buffer, B->_buffer, A->lengthOf()));
-        } if (A->isMatrix() && B->isVector()) {
-            // gemv
-            if (A->columns() != B->rows())
-                throw "A columns != B length";
-
-            if (result == nullptr)
-                result = new NDArray<T>(A->rows(), 1, 'f');
-
-            // TODO: strides!!!
-            nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0,  A->rows(), A->columns(), alpha, A->_buffer, B->rows(), B->_buffer, 1, beta, C->_buffer, 1);
-        } else if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix())) {
-            // gemm
-            // int[] shape = {rows(), other.columns()};
-            if (result == nullptr) {
-                nd4j_verbose("Creating new array: [%i x %i]\n", A->rows(), B->columns());
-                result = new NDArray(A->rows(), B->columns(), 'f');
-            }
-
-
-            char aOrder = A->ordering();
-            char bOrder = B->ordering();
-            char cOrder = result->ordering();
-
-            int *aShape = A->shapeOf();
-            int *bShape = B->shapeOf();
-            int *cShape = result->shapeOf();
-
-            char rOrder;
-
-            int M, N, K, lda, ldb, ldc;
-            char transA, transB;
-
-            NDArray<T> *_A, *_B, *_C;
-
-            //_C = new NDArray<T>(C, cShapeInfo);
-
-            auto tA = new NDArray<T>(A->_buffer, A->_shapeInfo);
-            auto tB = new NDArray<T>(B->_buffer, B->_shapeInfo);
-            auto tC = new NDArray<T>(result->_buffer, result->_shapeInfo);
-
-            if (cOrder != 'f') {
-                _C = tC->dup('f');
-            } else {
-                _C = tC;
-            }
-
-            if (aOrder == bOrder) {
-                //printf("Going dRoute here\n");
-
-                if (aOrder == 'c') {
-                    // we might need to transpose matrices,
-                    // todo: we need dup(c/f) helper here
-                    _A = tA->dup('f');
-                    _B = tB->dup('f');
-                } else {
-                    _A = tA;
-                    _B = tB;
-                }
-
-                rOrder = 'f';
-
-                M = cShape[0];
-                N = cShape[1];
-                K = aShape[1];
-
-                lda = aShape[0];
-                ldb = bShape[0];
-                ldc = cShape[0];
-
-                transA = 'N';
-                transB = 'N';
-            } else {
-                //printf("Going tRoute here\n");
-                if (aOrder == 'c') {
-                    // dup(F) A here
-                    _A = tA->dup('f');
-                    _B = tB;
-                } else {
-                    // dup(F) B here
-                    _A = tA;
-                    _B = tB->dup('f');
-                }
-
-                // _C = tC->dup('f');
-
-                M = cShape[0];
-                N = cShape[1];
-                K = aShape[1];
-
-                rOrder = aOrder;
-
-                lda = aShape[0];
-                ldb = bShape[0];
-                ldc = cShape[0];
-
-                transA = 'N';
-                transB = 'N';
-            }
-
-            // we'll use platform-specific gemm here eventually. maybe tomorrow.
-            // TODO: put proper _gemm here
-            nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, _A->_buffer, lda, _B->_buffer, ldb, beta, _C->_buffer, ldc);
-
-            if (cOrder != 'f') {
-                tC->assign(_C);
-            }
-
-            if (tA != _A)
-                delete _A;
-
-            if (tB != _B)
-                delete _B;
-
-            if (tC != _C)
-                delete _C;
+	return ret;
+}
 
 
-            delete tA;
-            delete tB;
-            delete tC;
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+NDArray<T>* NDArray<T>::mmulHelper(NDArray<T>* A, NDArray<T>* B, NDArray<T>* C , T alpha, T beta) {
+    NDArray<T>* result = C;
+
+    // dot
+    if (A->isVector() && B->isVector()) {
+        if (A->lengthOf() != B->lengthOf())
+            throw "A length != B length";
+
+        if (result == nullptr)
+            result = new NDArray<T>(1,1, 'c');
+
+        result->putScalar(0, nd4j::math::nd4j_dot(A->_buffer, B->_buffer, A->lengthOf()));
+    } if (A->isMatrix() && B->isVector()) {
+        // gemv
+        if (A->columns() != B->rows())
+            throw "A columns != B length";
+
+        if (result == nullptr)
+            result = new NDArray<T>(A->rows(), 1, 'f');
+
+        // TODO: strides!!!
+        nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0,  A->rows(), A->columns(), alpha, A->_buffer, B->rows(), B->_buffer, 1, beta, C->_buffer, 1);
+    } else if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix())) {
+        // gemm
+        // int[] shape = {rows(), other.columns()};
+        if (result == nullptr) {
+            nd4j_verbose("Creating new array: [%i x %i]\n", A->rows(), B->columns());
+            result = new NDArray(A->rows(), B->columns(), 'f');
         }
 
-        return result;
+
+        char aOrder = A->ordering();
+        char bOrder = B->ordering();
+        char cOrder = result->ordering();
+
+        int *aShape = A->shapeOf();
+        int *bShape = B->shapeOf();
+        int *cShape = result->shapeOf();
+
+        char rOrder;
+
+        int M, N, K, lda, ldb, ldc;
+        char transA, transB;
+
+        NDArray<T> *_A, *_B, *_C;
+
+        //_C = new NDArray<T>(C, cShapeInfo);
+
+        auto tA = new NDArray<T>(A->_buffer, A->_shapeInfo);
+        auto tB = new NDArray<T>(B->_buffer, B->_shapeInfo);
+        auto tC = new NDArray<T>(result->_buffer, result->_shapeInfo);
+
+        if (cOrder != 'f') {
+            _C = tC->dup('f');
+        } else {
+            _C = tC;
+        }
+
+        if (aOrder == bOrder) {
+            //printf("Going dRoute here\n");
+
+            if (aOrder == 'c') {
+                // we might need to transpose matrices,
+                // todo: we need dup(c/f) helper here
+                _A = tA->dup('f');
+                _B = tB->dup('f');
+            } else {
+                _A = tA;
+                _B = tB;
+            }
+
+            rOrder = 'f';
+
+            M = cShape[0];
+            N = cShape[1];
+            K = aShape[1];
+
+            lda = aShape[0];
+            ldb = bShape[0];
+            ldc = cShape[0];
+
+            transA = 'N';
+            transB = 'N';
+        } else {
+            //printf("Going tRoute here\n");
+            if (aOrder == 'c') {
+                // dup(F) A here
+                _A = tA->dup('f');
+                _B = tB;
+            } else {
+                // dup(F) B here
+                _A = tA;
+                _B = tB->dup('f');
+            }
+
+            // _C = tC->dup('f');
+
+            M = cShape[0];
+            N = cShape[1];
+            K = aShape[1];
+
+            rOrder = aOrder;
+
+            lda = aShape[0];
+            ldb = bShape[0];
+            ldc = cShape[0];
+
+            transA = 'N';
+            transB = 'N';
+        }
+
+        // we'll use platform-specific gemm here eventually. maybe tomorrow.
+        // TODO: put proper _gemm here
+        nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, _A->_buffer, lda, _B->_buffer, ldb, beta, _C->_buffer, ldc);
+
+        if (cOrder != 'f') {
+            tC->assign(_C);
+        }
+
+        if (tA != _A)
+            delete _A;
+
+        if (tB != _B)
+            delete _B;
+
+        if (tC != _C)
+            delete _C;
+
+
+        delete tA;
+        delete tB;
+        delete tC;
     }
+
+    return result;
+}
 
 // default destructor
     template<typename T>

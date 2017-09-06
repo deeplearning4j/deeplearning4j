@@ -438,11 +438,38 @@ TEST_F(NDArrayTest, TestTile1) {
     tiled->printShapeInfo();
     tiled->printBuffer();
 
-	ASSERT_TRUE(tiled->isSameShape(&array2));
+	ASSERT_TRUE(tiled->isSameShapeStrict(&array2));
 	ASSERT_TRUE(tiled->equalsTo(&array2));
 
-    ASSERT_TRUE(expA->isSameShape(&array1));
+    ASSERT_TRUE(expA->isSameShapeStrict(&array1));
     ASSERT_TRUE(expA->equalsTo(&array1));
+	
+	delete tiled;
+	delete expA;
+}
+
+TEST_F(NDArrayTest, TestTile2) {
+
+	NDArray<float> array1(arr1,shape1);
+	NDArray<float> array2(arr2,shape2);
+
+    NDArray<float>* tiled = array1.tile(tileShape1);
+
+	ASSERT_TRUE(tiled->isSameShapeStrict(&array2));
+	ASSERT_TRUE(tiled->equalsTo(&array2));
+	delete tiled;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, TestTile3) {
+
+	NDArray<float> array1(arr1,shape1);
+	NDArray<float> array2(arr2,shape2);
+
+    array1.tilei(tileShape1);
+
+	ASSERT_TRUE(array1.isSameShapeStrict(&array2));
+	ASSERT_TRUE(array1.equalsTo(&array2));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -617,4 +644,21 @@ TEST_F(NDArrayTest, Permute2) {
 
 	ASSERT_TRUE(arr1.permutei(perm));
 	ASSERT_TRUE(arr1.isSameShapeStrict(&arr2));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, Broadcast1) {
+    
+    const int shape1[10] = {3, 5, 1, 10, 10, 10, 1, 0, 1, 99};
+	const int shape2[8]  = {2,    7, 10, 10, 1, 0, 1, 99};
+	const int shape3[10] = {3, 5, 7, 10, 70, 10, 1, 0, 1, 99};    
+    
+	NDArray<float> arr1(shape1);
+    NDArray<float> arr2(shape2);    
+	NDArray<float> arr3(shape3);    
+
+	NDArray<float>* result = arr1.broadcast(arr2);	
+	result->printShapeInfo();
+	ASSERT_TRUE(result->isSameShapeStrict(&arr3));
+	delete result;
 }
