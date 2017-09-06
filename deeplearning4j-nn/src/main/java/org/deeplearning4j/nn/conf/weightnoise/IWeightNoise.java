@@ -19,7 +19,7 @@ import java.io.Serializable;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface IWeightNoise extends Serializable, Cloneable{
 
-    INDArray getParameter(Layer layer, String paramKey, boolean train);
+    INDArray getParameter(Layer layer, String paramKey, int iteration, int epoch, boolean train);
 
     IWeightNoise clone();
 

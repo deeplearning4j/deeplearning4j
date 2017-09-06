@@ -32,7 +32,7 @@ public class WeightNoise implements IWeightNoise {
     }
 
     @Override
-    public INDArray getParameter(Layer layer, String paramKey, boolean train) {
+    public INDArray getParameter(Layer layer, String paramKey, int iteration, int epoch, boolean train) {
 
         ParamInitializer init = layer.conf().getLayer().initializer();
         INDArray param = layer.getParam(paramKey);

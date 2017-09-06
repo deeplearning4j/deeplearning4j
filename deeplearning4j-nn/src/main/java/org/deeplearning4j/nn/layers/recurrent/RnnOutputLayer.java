@@ -161,8 +161,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         INDArray b;
         INDArray W;
         if(layerConf().getWeightNoise() != null){
-            b = layerConf().getWeightNoise().getParameter(this, DefaultParamInitializer.BIAS_KEY, training);
-            W = layerConf().getWeightNoise().getParameter(this, DefaultParamInitializer.WEIGHT_KEY, training);
+            b = layerConf().getWeightNoise().getParameter(this, DefaultParamInitializer.BIAS_KEY, getIterationCount(), getEpochCount(), training);
+            W = layerConf().getWeightNoise().getParameter(this, DefaultParamInitializer.WEIGHT_KEY, getIterationCount(), getEpochCount(), training);
         } else {
             b = getParam(DefaultParamInitializer.BIAS_KEY);
             W = getParam(DefaultParamInitializer.WEIGHT_KEY);

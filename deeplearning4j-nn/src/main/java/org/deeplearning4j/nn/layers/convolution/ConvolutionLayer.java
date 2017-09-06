@@ -270,8 +270,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray weights;
         INDArray bias;
         if(layerConf().getWeightNoise() != null){
-            weights = layerConf().getWeightNoise().getParameter(this, ConvolutionParamInitializer.WEIGHT_KEY, training);
-            bias = layerConf().getWeightNoise().getParameter(this, ConvolutionParamInitializer.BIAS_KEY, training);
+            weights = layerConf().getWeightNoise().getParameter(this, ConvolutionParamInitializer.WEIGHT_KEY, getIterationCount(), getEpochCount(), training);
+            bias = layerConf().getWeightNoise().getParameter(this, ConvolutionParamInitializer.BIAS_KEY, getIterationCount(), getEpochCount(), training);
         } else {
             weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
             bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
