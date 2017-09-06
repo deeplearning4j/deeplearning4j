@@ -3,9 +3,11 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.constraint.BaseConstraint;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -17,7 +19,9 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Batch normalization configuration
@@ -314,6 +318,30 @@ public class BatchNormalization extends FeedForwardLayer {
         public Builder lockGammaBeta(boolean lockGammaBeta) {
             this.lockGammaBeta = lockGammaBeta;
             return this;
+        }
+
+        public Builder constrainGamma(LayerConstraint... constraints) {
+            List<LayerConstraint> currentConstraints = this.constraints;
+            for(LayerConstraint c : constraints ){
+                BaseConstraint constraint = (BaseConstraint) c.clone();
+                Set<String> paramNames = constraint.getParamNames();
+                paramNames.add("gamma");
+                constraint.setParamNames(paramNames);
+                currentConstraints.add(constraint);
+            }
+            return applyConstraints(currentConstraints);
+        }
+
+        public Builder constrainBeta(LayerConstraint... constraints) {
+            List<LayerConstraint> currentConstraints = this.constraints;
+            for(LayerConstraint c : constraints ){
+                BaseConstraint constraint = (BaseConstraint) c.clone();
+                Set<String> paramNames = constraint.getParamNames();
+                paramNames.add("beta");
+                constraint.setParamNames(paramNames);
+                currentConstraints.add(constraint);
+            }
+            return applyConstraints(currentConstraints);
         }
 
         @Override

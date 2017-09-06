@@ -2,12 +2,14 @@ package org.deeplearning4j.nn.modelimport.keras.layers.embeddings;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.activations.Activation;
@@ -63,12 +65,18 @@ public class KerasEmbedding extends KerasLayer {
         this.inputShape[1] = inputDim;
         /* TODO: what about mask_zero field? */
 
-        this.layer = new EmbeddingLayer.Builder().name(this.layerName).nIn(inputDim)
+        LayerConstraint embeddingConstraint = KerasConstraintUtils.getConstraintsFromConfig(
+                layerConfig, conf.getLAYER_FIELD_EMBEDDINGS_CONSTRAINT(), conf, kerasMajorVersion);
+
+        EmbeddingLayer.Builder builder = new EmbeddingLayer.Builder().name(this.layerName).nIn(inputDim)
                         .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout).activation(Activation.IDENTITY)
                         .weightInit(getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_EMBEDDING_INIT(),
                                 enforceTrainingConfig, conf, kerasMajorVersion))
                         .biasInit(0.0)
-                        .l1(this.weightL1Regularization).l2(this.weightL2Regularization).hasBias(false).build();
+                        .l1(this.weightL1Regularization).l2(this.weightL2Regularization).hasBias(false);
+        if (embeddingConstraint != null)
+            builder.constrainWeights(embeddingConstraint);
+        this.layer = builder.build();
     }
 
     /**

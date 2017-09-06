@@ -2,11 +2,13 @@ package org.deeplearning4j.nn.modelimport.keras.layers.normalization;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -78,9 +80,19 @@ public class KerasBatchNormalization extends KerasLayer {
         int batchNormMode = getBatchNormMode(layerConfig, enforceTrainingConfig);
         int batchNormAxis = getBatchNormAxis(layerConfig, enforceTrainingConfig);
 
-        this.layer = new BatchNormalization.Builder().name(this.layerName).dropOut(this.dropout).minibatch(true)
+        LayerConstraint betaConstraint = KerasConstraintUtils.getConstraintsFromConfig(
+                layerConfig, conf.getLAYER_FIELD_BATCHNORMALIZATION_BETA_CONSTRAINT(), conf, kerasMajorVersion);
+        LayerConstraint gammaConstraint = KerasConstraintUtils.getConstraintsFromConfig(
+                layerConfig, conf.getLAYER_FIELD_BATCHNORMALIZATION_GAMMA_CONSTRAINT(), conf, kerasMajorVersion);
+
+        BatchNormalization.Builder builder = new BatchNormalization.Builder().name(this.layerName).dropOut(this.dropout).minibatch(true)
                         .lockGammaBeta(false).eps(getEpsFromConfig(layerConfig))
-                        .momentum(getMomentumFromConfig(layerConfig)).build();
+                        .momentum(getMomentumFromConfig(layerConfig));
+        if (betaConstraint != null)
+            builder.constrainBeta(betaConstraint);
+        if (gammaConstraint != null)
+            builder.constrainGamma(gammaConstraint);
+        this.layer = builder.build();
     }
 
     /**
