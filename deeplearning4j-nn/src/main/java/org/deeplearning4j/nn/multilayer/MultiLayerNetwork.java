@@ -2252,6 +2252,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 }
             }
         }
+
+        //Clear the post noise/dropconnect parameters on the output layer
+        getOutputLayer().clearNoiseWeightParams();
     }
 
     @Override
@@ -2391,6 +2394,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Override
     public boolean isPretrainLayer() {
         return false;
+    }
+
+    @Override
+    public void clearNoiseWeightParams() {
+        for(Layer l : layers){
+            l.clearNoiseWeightParams();
+        }
     }
 
     @Override

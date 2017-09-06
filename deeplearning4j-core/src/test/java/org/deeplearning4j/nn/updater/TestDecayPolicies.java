@@ -360,7 +360,9 @@ public class TestDecayPolicies {
 
     @Test
     public void testLearningRateScheduleMLN() {
+        double lr = 1e-2;
         Map<Integer, Double> learningRateAfter = new HashMap<>();
+        learningRateAfter.put(0, lr);
         learningRateAfter.put(1, 0.2);
         int iterations = 2;
         int[] nIns = {4, 2};
@@ -369,7 +371,7 @@ public class TestDecayPolicies {
         for (org.deeplearning4j.nn.conf.Updater updaterFunc : updaters) {
             beforeDo();
 
-            double lr = 1e-2;
+
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr)
                             .learningRateDecayPolicy(LearningRatePolicy.Schedule)

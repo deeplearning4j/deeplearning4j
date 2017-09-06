@@ -214,8 +214,6 @@ public class TestDropout {
                 assertTrue(countInverse <= 20);
             }
         }
-
-
     }
 
     @Test

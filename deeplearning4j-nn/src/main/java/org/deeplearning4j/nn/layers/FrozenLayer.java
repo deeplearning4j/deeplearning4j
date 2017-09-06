@@ -425,6 +425,11 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
+    public void clearNoiseWeightParams() {
+        insideLayer.clearNoiseWeightParams();
+    }
+
+    @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
         return insideLayer.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);

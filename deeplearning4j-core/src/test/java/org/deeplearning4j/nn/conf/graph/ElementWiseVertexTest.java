@@ -240,7 +240,7 @@ public class ElementWiseVertexTest {
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
 
 
-        INDArray output = nullsafe(cg.getOutputLayer(0).activate());
+        INDArray output = nullsafe(cg.output(input1, input2, input3)[0]);
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
 
@@ -415,7 +415,7 @@ public class ElementWiseVertexTest {
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
 
 
-        INDArray output = nullsafe(cg.getOutputLayer(0).activate());
+        INDArray output = nullsafe(cg.output(input1, input2, input3)[0]);
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
 
@@ -579,7 +579,7 @@ public class ElementWiseVertexTest {
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
 
 
-        INDArray output = nullsafe(cg.getOutputLayer(0).activate());
+        INDArray output = nullsafe(cg.output(input1, input2)[0]);
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
 

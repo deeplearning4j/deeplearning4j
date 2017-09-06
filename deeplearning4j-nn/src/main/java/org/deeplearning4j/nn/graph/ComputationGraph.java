@@ -73,8 +73,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
@@ -1344,6 +1342,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     tl.onBackwardPass(this);
                 }
             }
+        }
+
+        //Clear the fields (inc. post noise/dropconnect parameters) on the output layers
+        for( int i=0; i<numOutputArrays; i++ ){
+            getOutputLayer(i).clearNoiseWeightParams();
         }
     }
 

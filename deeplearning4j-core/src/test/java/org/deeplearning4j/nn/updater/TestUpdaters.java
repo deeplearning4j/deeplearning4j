@@ -331,7 +331,8 @@ public class TestUpdaters {
         double beta2 = 0.888;
         double epsilon = AdaMax.DEFAULT_ADAMAX_EPSILON;
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().updater(new AdaMax(lr, beta1, beta2, AdaMax.DEFAULT_ADAMAX_EPSILON))
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new AdaMax(lr, beta1, beta2, AdaMax.DEFAULT_ADAMAX_EPSILON))
                 .layer(new DenseLayer.Builder()
                                         .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
                         .build();

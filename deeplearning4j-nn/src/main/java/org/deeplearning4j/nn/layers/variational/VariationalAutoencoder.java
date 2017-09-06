@@ -75,7 +75,7 @@ public class VariationalAutoencoder implements Layer {
 
     protected boolean zeroedPretrainParamGradients = false;
 
-    protected Map<String,INDArray> weightNoiseParams;
+    protected Map<String,INDArray> weightNoiseParams = new HashMap<>();
 
     @Getter @Setter
     protected int iterationCount;
@@ -923,6 +923,11 @@ public class VariationalAutoencoder implements Layer {
     @Override
     public boolean isPretrainLayer() {
         return true;
+    }
+
+    @Override
+    public void clearNoiseWeightParams() {
+        weightNoiseParams.clear();
     }
 
     @Override

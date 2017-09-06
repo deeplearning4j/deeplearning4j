@@ -189,6 +189,11 @@ public class LocalResponseNormalization
     }
 
     @Override
+    public void clearNoiseWeightParams() {
+        //No op
+    }
+
+    @Override
     public INDArray params() {
         return null;
     }

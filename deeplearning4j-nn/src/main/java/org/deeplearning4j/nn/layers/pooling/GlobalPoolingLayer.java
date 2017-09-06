@@ -73,6 +73,11 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     }
 
     @Override
+    public void clearNoiseWeightParams() {
+        //No op
+    }
+
+    @Override
     public double calcL2(boolean backpropParamsOnly) {
         return 0;
     }

@@ -109,6 +109,11 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         return false;
     }
 
+    @Override
+    public void clearNoiseWeightParams() {
+        //No op
+    }
+
 
     @Override
     public INDArray params() {

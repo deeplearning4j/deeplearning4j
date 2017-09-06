@@ -99,7 +99,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     }
 
 
-    private static void configureUpdaterFromLegacyLR(BaseLayer b, Builder builder, double learningRate, boolean isBias){
+    protected static void configureUpdaterFromLegacyLR(BaseLayer b, Builder builder, double learningRate, boolean isBias){
         //User has done something like .updater(Updater.NESTEROVS).learningRate(0.2)
         switch(builder.updater){
             case SGD:

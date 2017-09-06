@@ -248,6 +248,8 @@ public interface Layer extends Serializable, Cloneable, Model {
      */
     boolean isPretrainLayer();
 
+    void clearNoiseWeightParams();
+
 
     /**
      * Feed forward the input mask array, setting in in the layer as appropriate. This allows different layers to

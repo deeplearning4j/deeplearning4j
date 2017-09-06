@@ -355,6 +355,11 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
+    public void clearNoiseWeightParams() {
+        //no op
+    }
+
+    @Override
     public void iterate(INDArray input) {
         throw new UnsupportedOperationException(layerId());
     }

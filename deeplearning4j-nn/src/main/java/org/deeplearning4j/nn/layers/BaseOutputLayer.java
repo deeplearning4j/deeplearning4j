@@ -150,7 +150,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         INDArray epsilonNext = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true).mmul(delta.transpose()).transpose();
 
-        weightNoiseParams.clear();
+        //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
+        // So this is instead done in MultiLayerNetwork/CompGraph backprop methods
 
         return new Pair<>(pair.getFirst(), epsilonNext);
     }
@@ -372,10 +373,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     public void clear() {
         super.clear();
-        if (labels != null) {
-            labels.data().destroy();
-            labels = null;
-        }
+        labels = null;
         solver = null;
     }
 

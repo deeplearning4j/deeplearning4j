@@ -54,6 +54,11 @@ public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     }
 
     @Override
+    public void clearNoiseWeightParams() {
+        //No op
+    }
+
+    @Override
     public Type type() {
         return Type.RECURRENT;
     }

@@ -372,6 +372,11 @@ public class TestOptimizers {
         public boolean isPretrainLayer() {
             return false;
         }
+
+        @Override
+        public void clearNoiseWeightParams() {
+
+        }
     }
 
 
@@ -555,6 +560,11 @@ public class TestOptimizers {
         @Override
         public boolean isPretrainLayer() {
             return false;
+        }
+
+        @Override
+        public void clearNoiseWeightParams() {
+
         }
     }
 
@@ -747,6 +757,11 @@ public class TestOptimizers {
         @Override
         public boolean isPretrainLayer() {
             return false;
+        }
+
+        @Override
+        public void clearNoiseWeightParams() {
+
         }
     }
 

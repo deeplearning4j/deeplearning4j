@@ -53,7 +53,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected Gradient gradient;
     protected Solver solver;
 
-    protected Map<String,INDArray> weightNoiseParams;
+    protected Map<String,INDArray> weightNoiseParams = new HashMap<>();
 
     public BaseLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -282,7 +282,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected INDArray getParamWithNoise(String param, boolean training){
         INDArray p;
         if(layerConf().getWeightNoise() != null){
-            if(training && weightNoiseParams.size() > 0 ){
+            if(training && weightNoiseParams.size() > 0 && weightNoiseParams.containsKey(param) ){
                 //Re-use these weights for both forward pass and backprop - don't want to use 2 different params here
                 //These should be cleared during  backprop
                 return weightNoiseParams.get(param);
@@ -305,9 +305,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     public INDArray preOutput(boolean training) {
         applyDropOutIfNecessary(training);
-        INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
         INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training);
-
+        INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
 
         //Input validation:
         if (input.rank() != 2 || input.columns() != W.rows()) {
@@ -477,6 +476,17 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void accumulateScore(double accum) {
         score += accum;
+    }
+
+    @Override
+    public void clear(){
+        super.clear();
+        weightNoiseParams.clear();
+    }
+
+    @Override
+    public void clearNoiseWeightParams(){
+        weightNoiseParams.clear();;
     }
 
     /**

@@ -590,6 +590,11 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         return false;
     }
 
+    @Override
+    public void clearNoiseWeightParams() {
+        //No op
+    }
+
     /**
      * Given the network output and a detection threshold (in range 0 to 1) determine the objects detected by
      * the network.<br>
