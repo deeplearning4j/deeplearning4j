@@ -162,8 +162,25 @@ public class KerasLayerConfiguration {
     private final String REGULARIZATION_TYPE_L2 = "l2";
 
     /* Keras constraints */
+    private final String LAYER_FIELD_MINMAX_NORM_CONSTRAINT = "MinMaxNorm";
+    private final String LAYER_FIELD_MINMAX_NORM_CONSTRAINT_ALIAS = "min_max_norm";
+    private final String LAYER_FIELD_MAX_NORM_CONSTRAINT = "MaxNorm";
+    private final String LAYER_FIELD_MAX_NORM_CONSTRAINT_ALIAS = "max_norm";
+    private final String LAYER_FIELD_MAX_NORM_CONSTRAINT_ALIAS_2 = "maxnorm";
+    private final String LAYER_FIELD_NON_NEG_CONSTRAINT = "NonNeg";
+    private final String LAYER_FIELD_NON_NEG_CONSTRAINT_ALIAS = "nonneg";
+    private final String LAYER_FIELD_NON_NEG_CONSTRAINT_ALIAS_2 = "non_neg";
+    private final String LAYER_FIELD_UNIT_NORM_CONSTRAINT = "UnitNorm";
+    private final String LAYER_FIELD_UNIT_NORM_CONSTRAINT_ALIAS = "unitnorm";
+    private final String LAYER_FIELD_UNIT_NORM_CONSTRAINT_ALIAS_2 = "unit_norm";
+    private final String LAYER_FIELD_CONSTRAINT_NAME = ""; // 1: name, 2: class_name
     private final String LAYER_FIELD_W_CONSTRAINT = ""; // 1: W_constraint, 2: kernel_constraint
     private final String LAYER_FIELD_B_CONSTRAINT = ""; // 1: b_constraint, 2: bias_constraint
+    private final String LAYER_FIELD_MAX_CONSTRAINT = ""; // 1: m, 2: max_value
+    private final String LAYER_FIELD_MINMAX_MIN_CONSTRAINT = ""; // 1: low, 2: min_value
+    private final String LAYER_FIELD_MINMAX_MAX_CONSTRAINT = ""; // 1: high, 2: max_value
+    private final String LAYER_FIELD_CONSTRAINT_DIM = "axis";
+    private final String LAYER_FIELD_CONSTRAINT_RATE = "rate";
 
 
     /* Keras weight initializers. */

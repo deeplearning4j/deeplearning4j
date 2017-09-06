@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.constraint.BaseConstraint;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
@@ -39,9 +40,7 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo.Id;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * A neural network layer.
@@ -83,7 +82,36 @@ public abstract class Layer implements Serializable, Cloneable {
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
         this.dropOut = builder.dropOut;
-        this.constraints = builder.constraints;
+    }
+
+    protected void initializeConstraints(Builder<?> builder){
+        //Note: this has to be done AFTER all constructors have finished - otherwise the required
+        // fields may not yet be set yet
+        List<LayerConstraint> allConstraints = new ArrayList<>();
+        if (builder.allParamConstraints != null && initializer().paramKeys(this).size() > 0) {
+            for (LayerConstraint c : builder.allParamConstraints) {
+                LayerConstraint c2 = c.clone();
+                c2.setParams(new HashSet<>(initializer().paramKeys(this)));
+                allConstraints.add(c2);
+            }
+        }
+
+        if (builder.weightConstraints != null && initializer().weightKeys(this).size() > 0) {
+            for (LayerConstraint c : builder.weightConstraints) {
+                LayerConstraint c2 = c.clone();
+                c2.setParams(new HashSet<>(initializer().weightKeys(this)));
+                allConstraints.add(c2);
+            }
+        }
+
+        if (builder.biasConstraints != null && initializer().biasKeys(this).size() > 0) {
+            for (LayerConstraint c : builder.biasConstraints) {
+                LayerConstraint c2 = c.clone();
+                c2.setParams(new HashSet<>(initializer().biasKeys(this)));
+                allConstraints.add(c2);
+            }
+        }
+        this.constraints = allConstraints;
     }
 
     /**
@@ -222,7 +250,9 @@ public abstract class Layer implements Serializable, Cloneable {
     public abstract static class Builder<T extends Builder<T>> {
         protected String layerName = null;
         protected double dropOut = Double.NaN;
-        protected List<LayerConstraint> constraints = null;
+        protected List<LayerConstraint> allParamConstraints;
+        protected List<LayerConstraint> weightConstraints;
+        protected List<LayerConstraint> biasConstraints;
 
         /**
          * Layer name assigns layer string name.
@@ -265,21 +295,34 @@ public abstract class Layer implements Serializable, Cloneable {
          * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
          * etc). These constraints are applied at each iteration, after the parameters have been updated.
          *
-         * @param constraints Constraints to apply to all layers
+         * @param constraints Constraints to apply to all parameters of this layer
          */
-        public T constraints(LayerConstraint... constraints) {
-            return constraints(Arrays.asList(constraints));
+        public T constrainAllParameters(LayerConstraint... constraints) {
+            this.allParamConstraints = Arrays.asList(constraints);
+            return (T) this;
         }
 
         /**
-         * Set constraints to be applied to this layer. Default: no constraints.<br>
+         * Set constraints to be applied to bias parameters of this layer. Default: no constraints.<br>
          * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
          * etc). These constraints are applied at each iteration, after the parameters have been updated.
          *
-         * @param constraints Constraints to apply to all layers
+         * @param constraints Constraints to apply to all bias parameters of this layer
          */
-        public T constraints(List<LayerConstraint> constraints) {
-            this.constraints = constraints;
+        public T constrainBias(LayerConstraint... constraints) {
+            this.biasConstraints = Arrays.asList(constraints);
+            return (T) this;
+        }
+
+        /**
+         * Set constraints to be applied to the weight parameters of this layer. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to all weight parameters of this layer
+         */
+        public T constrainWeights(LayerConstraint... constraints) {
+            this.weightConstraints = Arrays.asList(constraints);
             return (T) this;
         }
 

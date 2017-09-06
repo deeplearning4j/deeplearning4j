@@ -51,7 +51,7 @@ public class CNN1DGradientCheckTest {
         int zeroPadding = 2;
         int paddedLength = length + 2 * zeroPadding;
 
-        Activation[] activations = {Activation.SIGMOID, Activation.TANH};
+        Activation[] activations = {Activation.SIGMOID};
         SubsamplingLayer.PoolingType[] poolingTypes =
                 new SubsamplingLayer.PoolingType[] {SubsamplingLayer.PoolingType.MAX,
                         SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};

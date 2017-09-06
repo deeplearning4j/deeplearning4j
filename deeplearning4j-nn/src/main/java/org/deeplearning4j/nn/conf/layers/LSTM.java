@@ -21,7 +21,9 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.constraint.BaseConstraint;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.layers.recurrent.LSTMHelpers;
@@ -32,8 +34,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 /**
  * LSTM recurrent net without peephole connections.
@@ -53,6 +54,22 @@ public class LSTM extends AbstractLSTM {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
         this.gateActivationFn = builder.gateActivationFn;
+        initializeConstraints(builder);
+    }
+
+    @Override
+    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
+        super.initializeConstraints(builder);
+        if(((Builder)builder).recurrentConstraints != null){
+            if(constraints == null){
+                constraints = new ArrayList<>();
+            }
+            for (LayerConstraint c : ((Builder) builder).recurrentConstraints) {
+                LayerConstraint c2 = c.clone();
+                c2.setParams(Collections.singleton(LSTMParamInitializer.RECURRENT_WEIGHT_KEY));
+                constraints.add(c2);
+            }
+        }
     }
 
     @Override
@@ -82,6 +99,7 @@ public class LSTM extends AbstractLSTM {
 
     @AllArgsConstructor
     public static class Builder extends AbstractLSTM.Builder<Builder> {
+
 
         @SuppressWarnings("unchecked")
         public LSTM build() {

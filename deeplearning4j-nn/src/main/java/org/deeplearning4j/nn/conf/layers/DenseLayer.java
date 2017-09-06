@@ -45,6 +45,8 @@ public class DenseLayer extends FeedForwardLayer {
     private DenseLayer(Builder builder) {
         super(builder);
         this.hasBias = builder.hasBias;
+
+        initializeConstraints(builder);
     }
 
     @Override

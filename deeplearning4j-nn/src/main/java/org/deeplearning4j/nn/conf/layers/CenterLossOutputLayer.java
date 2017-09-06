@@ -67,6 +67,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         this.alpha = builder.alpha;
         this.lambda = builder.lambda;
         this.gradientCheck = builder.gradientCheck;
+        initializeConstraints(builder);
     }
 
     @Override

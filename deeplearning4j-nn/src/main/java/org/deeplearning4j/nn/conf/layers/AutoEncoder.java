@@ -51,6 +51,7 @@ public class AutoEncoder extends BasePretrainNetwork {
         super(builder);
         this.corruptionLevel = builder.corruptionLevel;
         this.sparsity = builder.sparsity;
+        initializeConstraints(builder);
     }
 
     @Override

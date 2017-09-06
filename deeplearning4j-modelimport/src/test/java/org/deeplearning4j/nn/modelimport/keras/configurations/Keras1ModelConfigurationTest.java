@@ -79,6 +79,11 @@ public class Keras1ModelConfigurationTest {
     }
 
     @Test
+    public void mlpConstraintsConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras1/mnist_mlp_constraint_tf_keras_1_config.json", true);
+    }
+
+    @Test
     public void reshapeMlpConfigTest() throws Exception {
         runSequentialConfigTest("configs/keras1/mnist_mlp_reshape_tf_keras_1_config.json", true);
     }

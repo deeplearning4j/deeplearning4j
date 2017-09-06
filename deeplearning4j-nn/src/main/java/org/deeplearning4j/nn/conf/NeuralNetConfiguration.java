@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.constraint.BaseConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -635,7 +636,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double lrPolicySteps = Double.NaN;
         protected double lrPolicyPower = Double.NaN;
         protected boolean pretrain = false;
-        protected List<LayerConstraint> constraints = null;
+        protected List<LayerConstraint> allParamConstraints;
+        protected List<LayerConstraint> weightConstraints;
+        protected List<LayerConstraint> biasConstraints;
 
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
@@ -1242,10 +1245,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
          * etc). These constraints are applied at each iteration, after the parameters have been updated.
          *
-         * @param constraints Constraints to apply to all layers
+         * @param constraints Constraints to apply to all parameters of all layers
          */
-        public Builder constraints(LayerConstraint... constraints){
-            return constraints(Arrays.asList(constraints));
+        public Builder constrainAllParameters(LayerConstraint... constraints){
+            this.allParamConstraints = Arrays.asList(constraints);
+            return this;
         }
 
         /**
@@ -1253,10 +1257,22 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
          * etc). These constraints are applied at each iteration, after the parameters have been updated.
          *
-         * @param constraints Constraints to apply to all layers
+         * @param constraints Constraints to apply to all bias parameters of all layers
          */
-        public Builder constraints(List<LayerConstraint> constraints){
-            this.constraints = constraints;
+        public Builder constrainBias(LayerConstraint... constraints) {
+            this.biasConstraints = Arrays.asList(constraints);
+            return this;
+        }
+
+        /**
+         * Set constraints to be applied to all layers. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to all weight parameters of all layers
+         */
+        public Builder constrainWeights(LayerConstraint... constraints) {
+            this.weightConstraints = Arrays.asList(constraints);
             return this;
         }
 
@@ -1368,7 +1384,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 }
             }
             LayerValidation.generalValidation(layerName, layer, useDropConnect, dropOut, l2, l2Bias,
-                            l1, l1Bias, dist, constraints);
+                            l1, l1Bias, dist, allParamConstraints, weightConstraints, biasConstraints);
         }
 
         private void copyConfigToLayer(String layerName, Layer layer) {

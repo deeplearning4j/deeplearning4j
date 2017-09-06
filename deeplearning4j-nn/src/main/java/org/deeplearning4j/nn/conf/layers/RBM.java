@@ -186,7 +186,5 @@ public class RBM extends BasePretrainNetwork {
             this.sparsity = sparsity;
             return this;
         }
-
-
     }
 }

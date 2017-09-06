@@ -2,11 +2,13 @@ package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -112,7 +114,15 @@ public class KerasLstm extends KerasLayer {
                 log.warn("Specifying different initialization for recurrent weights not supported.");
         getRecurrentDropout(layerConfig);
         this.unroll = getUnrollRecurrentLayer(layerConfig);
-        this.layer = new LSTM.Builder()
+
+        LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
+                layerConfig, conf.getLAYER_FIELD_B_CONSTRAINT(), conf, kerasMajorVersion);
+        LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
+                layerConfig, conf.getLAYER_FIELD_W_CONSTRAINT(), conf, kerasMajorVersion);
+        LayerConstraint recurrentConstraint = KerasConstraintUtils.getConstraintsFromConfig(
+                layerConfig, conf.getLAYER_FIELD_RECURRENT_CONSTRAINT(), conf, kerasMajorVersion);
+
+        LSTM.Builder builder = new LSTM.Builder()
                         .gateActivationFunction(getGateActivationFromConfig(layerConfig))
                         .forgetGateBiasInit(getForgetBiasInitFromConfig(layerConfig, enforceTrainingConfig))
                         .name(this.layerName)
@@ -122,7 +132,14 @@ public class KerasLstm extends KerasLayer {
                         .weightInit(weightInit)
                         .biasInit(0.0)
                         .l1(this.weightL1Regularization)
-                        .l2(this.weightL2Regularization).build();
+                        .l2(this.weightL2Regularization);
+        if (biasConstraint != null)
+            builder.constrainBias(biasConstraint);
+        if (weightConstraint != null)
+            builder.constrainInputWeights(weightConstraint);
+        if (recurrentConstraint != null)
+            builder.constrainRecurrent(recurrentConstraint);
+        this.layer = builder.build();
     }
 
     /**

@@ -17,10 +17,12 @@
  */
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 
 import java.util.Map;
 
@@ -75,6 +77,11 @@ public class KerasAtrousConvolution2D extends KerasConvolution {
         hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
 
+        LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
+                layerConfig, conf.getLAYER_FIELD_B_CONSTRAINT(), conf, kerasMajorVersion);
+        LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
+                layerConfig, conf.getLAYER_FIELD_W_CONSTRAINT(), conf, kerasMajorVersion);
+
         ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig, conf))
@@ -91,6 +98,10 @@ public class KerasAtrousConvolution2D extends KerasConvolution {
             builder.biasInit(0.0);
         if (padding != null)
             builder.padding(padding);
+        if (biasConstraint != null)
+            builder.constrainBias(biasConstraint);
+        if (weightConstraint != null)
+            builder.constrainWeights(weightConstraint);
         this.layer = builder.build();
     }
 
