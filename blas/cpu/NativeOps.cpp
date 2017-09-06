@@ -2,19 +2,23 @@
 // Created by agibsonccc on 2/21/16.
 //
 
+#ifndef NATIVEOPS_CPP
+#define NATIVEOPS_CPP
 
 #define __STDC_CONSTANT_MACROS
 
 #include "../NativeOps.h"
 #include "../NativeOpExcutioner.h"
-#include <pointercast.h>
-#include <pairwise_util.h>
+#include "../NDArray.h"
+#include "../GraphExecutioner.h"
 #include <templatemath.h>
 #include <types/float8.h>
 #include <loops/type_conversions.h>
 #include <loops/aggregates.h>
 #include <helpers/helper_ptrmap.h>
 #include <helpers/logger.h>
+#include <pointercast.h>
+#include <pairwise_util.h>
 #ifndef _WIN32
 #include <sys/mman.h>
 #else
@@ -23,6 +27,12 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+#include <layers/layers_factory.h>
+#include "NDArray.cpp"
+#include "GraphExecutioner.cpp"
+#include <ops/declarable/declarable_ops.h>
+#include <ops/declarable/cpu/parity_ops.h>
 
 char *name;
 bool nameSet = false;
@@ -3044,26 +3054,110 @@ void NativeOps::decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex
     //NativeOpExcutioner<float16>::decodeBitmap(dx, N, dz);
 }
 
+
 Nd4jIndex* NativeOps::mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jIndex length) {
-    Nd4jIndex * result = new Nd4jIndex[2];
-    int fd = open(fileName, O_RDWR, 0);
-    void * ptr = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+Nd4jIndex * result = new Nd4jIndex[2];
+int fd = open(fileName, O_RDWR, 0);
+void * ptr = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
-    // check for failed allocation
-    if (ptr == MAP_FAILED)
-        return nullptr;
+// check for failed allocation
+if (ptr == MAP_FAILED)
+return nullptr;
 
-    result[0] = (Nd4jIndex) ptr;
-    result[1] = fd;
+result[0] = (Nd4jIndex) ptr;
+result[1] = fd;
 
-    return result;
+return result;
 
 
 }
 
 void NativeOps::munmapFile(Nd4jPointer *extraPointers, Nd4jIndex *ptrMap, Nd4jIndex length) {
-    munmap((Nd4jPointer) ptrMap[0], length);
-    close((int) ptrMap[1]);
+munmap((Nd4jPointer) ptrMap[0], length);
+close((int) ptrMap[1]);
 
-    delete[] ptrMap;
+delete[] ptrMap;
 }
+
+Nd4jPointer NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+    return nd4j::graph::GraphExecutioner<float>::executeFlatBuffer(flatBufferPointer);
+}
+
+Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer protoBufferPointer) {
+    return nullptr;
+}
+
+Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, const char *fileName) {
+    return nullptr;
+}
+
+const char* NativeOps::getAllCustomOps() {
+    return nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
+}
+
+
+template<typename T>
+Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, T* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
+    if (op == nullptr)
+        nd4j_printf("Can't find requested operation: [%lld]\n", hash);
+
+    // we're using the same fake nodeId everywhere here
+    int nodeId = 1;
+
+    nd4j::graph::VariableSpace<T> variableSpace;
+    nd4j::graph::Block<T> block(1, &variableSpace, isInplace);
+
+
+    // filling block now
+    for (int e = 0; e < numInputs; e++) {
+        auto buffer = (T *) inputBuffers[e];
+        auto shape = (int *) inputShapes[e];
+
+        auto var = new Variable<T>(new NDArray<T>(buffer, shape));
+        block.getVariables().push_back(var);
+    }
+
+    for (int e = 0; e < numOutputs; e++) {
+        auto buffer = (T *) outputBuffers[e];
+        auto shape = (int *) outputShapes[e];
+
+        auto var = new Variable<T>(new NDArray<T>(buffer, shape));
+        std::pair<int, int> pair(nodeId, e);
+        variableSpace.putVariable(pair, var);
+    }
+
+    for (int e = 0; e < numIArgs; e++) {
+        block.getIArguments()->push_back(iArgs[e]);
+    }
+
+    for (int e = 0; e < numTArgs; e++) {
+        block.getTArguments()->push_back(tArgs[e]);
+    }
+
+    // hypothetically at this point we have everything filled
+    return op->execute(&block);
+
+
+    // TODO: we need to destroy vars properly
+    // but hopefully c++ will do that for us
+}
+
+int NativeOps::execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, float* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(hash);
+
+    return realExec<float>(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs, tArgs, numTArgs, iArgs, numIArgs, isInplace);
+}
+
+int NativeOps::execCustomOpDouble(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationDouble(hash);
+
+    return realExec<double>(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs, tArgs, numTArgs, iArgs, numIArgs, isInplace);
+}
+
+int NativeOps::execCustomOpHalf(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, float16* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationHalf(hash);
+
+    return realExec<float16>(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs, tArgs, numTArgs, iArgs, numIArgs, isInplace);
+}
+
+#endif

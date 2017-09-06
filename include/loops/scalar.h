@@ -453,8 +453,7 @@ template<typename OpType>
                 char resultOrdering = shape::order(resultShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
-                if (debug && verbose)
-                    nd4j::Logger::info("Launching scalar: xOrder: %i; zOrder: %i; xEWS: %i\n", xOrdering, resultOrdering, xElementWiseStride);
+                nd4j_logger("Launching scalar: xOrder: %i; zOrder: %i; xEWS: %i\n", xOrdering, resultOrdering, xElementWiseStride);
 
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
                 if(xOrdering != resultOrdering || xElementWiseStride < 1 || resultElementWiseStride < 0) {

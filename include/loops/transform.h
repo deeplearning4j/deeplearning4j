@@ -321,6 +321,7 @@ template<typename OpType>
                 int n = shape::length(xShapeInfo);
                 int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
                 int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+
                 if(xElementWiseStride >= 1 && resultElementWiseStride >= 1 && shape::order(xShapeInfo) == shape::order(resultShapeInfo)) {
                     exec<OpType>(dx,xElementWiseStride,result,resultElementWiseStride,extraParams,n);
                 }
@@ -348,7 +349,7 @@ template<typename OpType>
                                                  resultStridesIter) >= 0) {
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter);
                         {
-                            /* Process the innermost dimension */
+                            // Process the innermost dimension
                             T *xIter = dx;
                             T *resultIter = result;
                             resultIter[0] = OpType::op(xIter[0], extraParams);
@@ -365,6 +366,7 @@ template<typename OpType>
                     }
 
                 }
+
 
             }
 
@@ -408,6 +410,7 @@ template<typename OpType>
                         int start = span * tid;
                         int end = span * (tid + 1);
                         if (end > n) end = n;
+
 #pragma omp simd
                         for (Nd4jIndex i = start; i < end; i++) {
                             result[i] = OpType::op(dx[i], extraParams);
@@ -421,6 +424,7 @@ template<typename OpType>
                         int start = span * tid;
                         int end = span * (tid + 1);
                         if (end > n) end = n;
+
 #pragma omp simd
                         for (Nd4jIndex i = start; i < end; i++) {
                             result[i*resultStride] = OpType::op(dx[i * xStride], extraParams);

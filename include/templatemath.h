@@ -45,10 +45,10 @@ template<typename T>
 		template<typename T>
         math_def inline T nd4j_min(T val1, T val2);
 
-#ifndef __CUDACC__
+//#ifndef __CUDACC__
         template<typename T>
         math_def inline T nd4j_dot(T *x, T *y, int length);
-#endif
+//#endif
 
 		template<typename T>
         math_def inline T nd4j_ceil(T val1);
@@ -185,7 +185,7 @@ template<typename T>
             return nd4j_sgn<T>(val);
         }
 
-#ifndef __CUDACC__
+//#ifndef __CUDACC__
 
         template<>
         math_def inline float16 nd4j_dot<float16>(float16 *x, float16 *y, int length) {
@@ -210,7 +210,7 @@ template<typename T>
 
 			return dot;
 		}
-#endif
+//#endif
 
 		template<typename T>
         math_def inline T nd4j_acos(T val);

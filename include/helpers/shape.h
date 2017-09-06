@@ -99,6 +99,16 @@ namespace shape {
 
 #ifdef __CUDACC__
     __host__ __device__
+#endif
+    INLINEDEF bool equalsSoft(int *shapeA, int *shapeB);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF bool equalsStrict(int *shapeA, int *shapeB);
+
+#ifdef __CUDACC__
+    __host__ __device__
     INLINEDEF void traceNew(int id) {
         //printf("new happened: [%i]\n", id);
     }
@@ -536,6 +546,20 @@ namespace shape {
 
     INLINEDEF int shapeInfoLength(int rank);
 
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF int shapeInfoByteLength(int rank);
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF int shapeInfoByteLength(int* shapeInfo);
+
 /**
  * Returns the rank portion of
  * an information buffer
@@ -580,6 +604,11 @@ namespace shape {
 #endif
 
     Nd4jIndex length(int *shapeInfo);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    Nd4jIndex length(std::initializer_list<int>& shape);
 
 /***
  * Returns the offset portion of an information buffer
@@ -3773,6 +3802,24 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         return rank * 2 + 4;
     }
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF int shapeInfoByteLength(int rank) {
+        //FIXME magic numbers
+        return (rank * 2 + 4) * sizeof(int);
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF int shapeInfoByteLength(int* shapeInfo) {
+        //FIXME magic numbers
+        return shapeInfoByteLength(shapeInfo[0]);
+    }
+
 /**
  * Returns the rank portion of
  * an information buffer
@@ -3842,6 +3889,17 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 
     INLINEDEF Nd4jIndex length(int *shapeInfo) {
         return shape::prodLong(shape::shapeOf(shapeInfo), shape::rank(shapeInfo));
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF Nd4jIndex length(std::initializer_list<int>& shape) {
+        Nd4jIndex ret = 0;
+        for (auto v : shape) {
+            ret *= v;
+        }
+        return ret;
     }
 
 /***
@@ -4149,6 +4207,54 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 
     INLINEDEF int *ensureVectorShape(int *shape) {
         return ensureVectorShape(shape, 0);
+    }
+
+    /**
+     * This method does STRICT comparison for two shape buffers
+     *
+     * @param shape
+     * @return
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF bool equalsStrict(int *shapeA, int *shapeB) {
+        if (shapeA[0] != shapeB[0])
+            return false;
+
+        // we do full comparison here
+        int length = shapeA[0] * 2 + 4;
+
+        for (int e = 1; e < length; e++)
+            if (shapeA[e] != shapeB[e])
+                return false;
+
+        return true;
+    }
+
+    /**
+     * This method does SOFT comparison for two shape buffers, we compare only rank & shapes
+     *
+     * @param shape
+     * @return
+     */
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF bool equalsSoft(int *shapeA, int *shapeB) {
+        if (shapeA[0] != shapeB[0])
+            return false;
+
+        // we compare only shapes, and ignoring stride & ews
+        int length = shapeA[0];
+
+        for (int e = 1; e < length; e++)
+            if (shapeA[e] != shapeB[e])
+                return false;
+
+        return true;
     }
 
 /**

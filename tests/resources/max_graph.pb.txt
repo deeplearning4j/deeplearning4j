@@ -1,0 +1,1849 @@
+node {
+  name: "dense_1_input"
+  op: "Placeholder"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: -1
+        }
+        dim {
+          size: 784
+        }
+      }
+    }
+  }
+}
+node {
+  name: "dense_1/random_uniform/shape"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 2
+          }
+        }
+        tensor_content: "\020\003\000\000\000\002\000\000"
+      }
+    }
+  }
+}
+node {
+  name: "dense_1/random_uniform/min"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: -0.0680413842201
+      }
+    }
+  }
+}
+node {
+  name: "dense_1/random_uniform/max"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 0.0680413842201
+      }
+    }
+  }
+}
+node {
+  name: "dense_1/random_uniform/RandomUniform"
+  op: "RandomUniform"
+  input: "dense_1/random_uniform/shape"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "seed"
+    value {
+      i: 87654321
+    }
+  }
+  attr {
+    key: "seed2"
+    value {
+      i: 8533442
+    }
+  }
+}
+node {
+  name: "dense_1/random_uniform/sub"
+  op: "Sub"
+  input: "dense_1/random_uniform/max"
+  input: "dense_1/random_uniform/min"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dense_1/random_uniform/mul"
+  op: "Mul"
+  input: "dense_1/random_uniform/RandomUniform"
+  input: "dense_1/random_uniform/sub"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dense_1/random_uniform"
+  op: "Add"
+  input: "dense_1/random_uniform/mul"
+  input: "dense_1/random_uniform/min"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dense_1/kernel"
+  op: "VariableV2"
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 784
+        }
+        dim {
+          size: 512
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "dense_1/kernel/Assign"
+  op: "Assign"
+  input: "dense_1/kernel"
+  input: "dense_1/random_uniform"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_1/kernel"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "dense_1/kernel/read"
+  op: "Identity"
+  input: "dense_1/kernel"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_1/kernel"
+      }
+    }
+  }
+}
+node {
+  name: "dense_1/Const"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 512
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "dense_1/bias"
+  op: "VariableV2"
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 512
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "dense_1/bias/Assign"
+  op: "Assign"
+  input: "dense_1/bias"
+  input: "dense_1/Const"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_1/bias"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "dense_1/bias/read"
+  op: "Identity"
+  input: "dense_1/bias"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_1/bias"
+      }
+    }
+  }
+}
+node {
+  name: "dense_1/MatMul"
+  op: "MatMul"
+  input: "dense_1_input"
+  input: "dense_1/kernel/read"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "transpose_a"
+    value {
+      b: false
+    }
+  }
+  attr {
+    key: "transpose_b"
+    value {
+      b: false
+    }
+  }
+}
+node {
+  name: "dense_1/BiasAdd"
+  op: "BiasAdd"
+  input: "dense_1/MatMul"
+  input: "dense_1/bias/read"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "data_format"
+    value {
+      s: "NHWC"
+    }
+  }
+}
+node {
+  name: "dense_1/Relu"
+  op: "Relu"
+  input: "dense_1/BiasAdd"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_1/keras_learning_phase"
+  op: "Placeholder"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_BOOL
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        unknown_rank: true
+      }
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/Switch"
+  op: "Switch"
+  input: "dropout_1/keras_learning_phase"
+  input: "dropout_1/keras_learning_phase"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/switch_t"
+  op: "Identity"
+  input: "dropout_1/cond/Switch:1"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/switch_f"
+  op: "Identity"
+  input: "dropout_1/cond/Switch"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/pred_id"
+  op: "Identity"
+  input: "dropout_1/keras_learning_phase"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/mul/y"
+  op: "Const"
+  input: "^dropout_1/cond/switch_t"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 1.0
+      }
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/mul/Switch"
+  op: "Switch"
+  input: "dense_1/Relu"
+  input: "dropout_1/cond/pred_id"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_1/Relu"
+      }
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/mul"
+  op: "Mul"
+  input: "dropout_1/cond/mul/Switch:1"
+  input: "dropout_1/cond/mul/y"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/dropout/keep_prob"
+  op: "Const"
+  input: "^dropout_1/cond/switch_t"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 0.800000011921
+      }
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/dropout/Shape"
+  op: "Shape"
+  input: "dropout_1/cond/mul"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "out_type"
+    value {
+      type: DT_INT32
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/dropout/random_uniform/min"
+  op: "Const"
+  input: "^dropout_1/cond/switch_t"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/dropout/random_uniform/max"
+  op: "Const"
+  input: "^dropout_1/cond/switch_t"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 1.0
+      }
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/dropout/random_uniform/RandomUniform"
+  op: "RandomUniform"
+  input: "dropout_1/cond/dropout/Shape"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "seed"
+    value {
+      i: 87654321
+    }
+  }
+  attr {
+    key: "seed2"
+    value {
+      i: 8479052
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/dropout/random_uniform/sub"
+  op: "Sub"
+  input: "dropout_1/cond/dropout/random_uniform/max"
+  input: "dropout_1/cond/dropout/random_uniform/min"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/dropout/random_uniform/mul"
+  op: "Mul"
+  input: "dropout_1/cond/dropout/random_uniform/RandomUniform"
+  input: "dropout_1/cond/dropout/random_uniform/sub"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/dropout/random_uniform"
+  op: "Add"
+  input: "dropout_1/cond/dropout/random_uniform/mul"
+  input: "dropout_1/cond/dropout/random_uniform/min"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/dropout/add"
+  op: "Add"
+  input: "dropout_1/cond/dropout/keep_prob"
+  input: "dropout_1/cond/dropout/random_uniform"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/dropout/Floor"
+  op: "Floor"
+  input: "dropout_1/cond/dropout/add"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/dropout/div"
+  op: "RealDiv"
+  input: "dropout_1/cond/mul"
+  input: "dropout_1/cond/dropout/keep_prob"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/dropout/mul"
+  op: "Mul"
+  input: "dropout_1/cond/dropout/div"
+  input: "dropout_1/cond/dropout/Floor"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/Switch_1"
+  op: "Switch"
+  input: "dense_1/Relu"
+  input: "dropout_1/cond/pred_id"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_1/Relu"
+      }
+    }
+  }
+}
+node {
+  name: "dropout_1/cond/Merge"
+  op: "Merge"
+  input: "dropout_1/cond/Switch_1"
+  input: "dropout_1/cond/dropout/mul"
+  attr {
+    key: "N"
+    value {
+      i: 2
+    }
+  }
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dense_2/random_uniform/shape"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 2
+          }
+        }
+        tensor_content: "\000\002\000\000\000\002\000\000"
+      }
+    }
+  }
+}
+node {
+  name: "dense_2/random_uniform/min"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: -0.0765465572476
+      }
+    }
+  }
+}
+node {
+  name: "dense_2/random_uniform/max"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 0.0765465572476
+      }
+    }
+  }
+}
+node {
+  name: "dense_2/random_uniform/RandomUniform"
+  op: "RandomUniform"
+  input: "dense_2/random_uniform/shape"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "seed"
+    value {
+      i: 87654321
+    }
+  }
+  attr {
+    key: "seed2"
+    value {
+      i: 3972139
+    }
+  }
+}
+node {
+  name: "dense_2/random_uniform/sub"
+  op: "Sub"
+  input: "dense_2/random_uniform/max"
+  input: "dense_2/random_uniform/min"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dense_2/random_uniform/mul"
+  op: "Mul"
+  input: "dense_2/random_uniform/RandomUniform"
+  input: "dense_2/random_uniform/sub"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dense_2/random_uniform"
+  op: "Add"
+  input: "dense_2/random_uniform/mul"
+  input: "dense_2/random_uniform/min"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dense_2/kernel"
+  op: "VariableV2"
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 512
+        }
+        dim {
+          size: 512
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "dense_2/kernel/Assign"
+  op: "Assign"
+  input: "dense_2/kernel"
+  input: "dense_2/random_uniform"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_2/kernel"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "dense_2/kernel/read"
+  op: "Identity"
+  input: "dense_2/kernel"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_2/kernel"
+      }
+    }
+  }
+}
+node {
+  name: "dense_2/Const"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 512
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "dense_2/bias"
+  op: "VariableV2"
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 512
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "dense_2/bias/Assign"
+  op: "Assign"
+  input: "dense_2/bias"
+  input: "dense_2/Const"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_2/bias"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "dense_2/bias/read"
+  op: "Identity"
+  input: "dense_2/bias"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_2/bias"
+      }
+    }
+  }
+}
+node {
+  name: "dense_2/MatMul"
+  op: "MatMul"
+  input: "dropout_1/cond/Merge"
+  input: "dense_2/kernel/read"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "transpose_a"
+    value {
+      b: false
+    }
+  }
+  attr {
+    key: "transpose_b"
+    value {
+      b: false
+    }
+  }
+}
+node {
+  name: "dense_2/BiasAdd"
+  op: "BiasAdd"
+  input: "dense_2/MatMul"
+  input: "dense_2/bias/read"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "data_format"
+    value {
+      s: "NHWC"
+    }
+  }
+}
+node {
+  name: "dense_2/Relu"
+  op: "Relu"
+  input: "dense_2/BiasAdd"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/Switch"
+  op: "Switch"
+  input: "dropout_1/keras_learning_phase"
+  input: "dropout_1/keras_learning_phase"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/switch_t"
+  op: "Identity"
+  input: "dropout_2/cond/Switch:1"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/switch_f"
+  op: "Identity"
+  input: "dropout_2/cond/Switch"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/pred_id"
+  op: "Identity"
+  input: "dropout_1/keras_learning_phase"
+  attr {
+    key: "T"
+    value {
+      type: DT_BOOL
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/mul/y"
+  op: "Const"
+  input: "^dropout_2/cond/switch_t"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 1.0
+      }
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/mul/Switch"
+  op: "Switch"
+  input: "dense_2/Relu"
+  input: "dropout_2/cond/pred_id"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_2/Relu"
+      }
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/mul"
+  op: "Mul"
+  input: "dropout_2/cond/mul/Switch:1"
+  input: "dropout_2/cond/mul/y"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/dropout/keep_prob"
+  op: "Const"
+  input: "^dropout_2/cond/switch_t"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 0.800000011921
+      }
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/dropout/Shape"
+  op: "Shape"
+  input: "dropout_2/cond/mul"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "out_type"
+    value {
+      type: DT_INT32
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/dropout/random_uniform/min"
+  op: "Const"
+  input: "^dropout_2/cond/switch_t"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/dropout/random_uniform/max"
+  op: "Const"
+  input: "^dropout_2/cond/switch_t"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 1.0
+      }
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/dropout/random_uniform/RandomUniform"
+  op: "RandomUniform"
+  input: "dropout_2/cond/dropout/Shape"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "seed"
+    value {
+      i: 87654321
+    }
+  }
+  attr {
+    key: "seed2"
+    value {
+      i: 1499773
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/dropout/random_uniform/sub"
+  op: "Sub"
+  input: "dropout_2/cond/dropout/random_uniform/max"
+  input: "dropout_2/cond/dropout/random_uniform/min"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/dropout/random_uniform/mul"
+  op: "Mul"
+  input: "dropout_2/cond/dropout/random_uniform/RandomUniform"
+  input: "dropout_2/cond/dropout/random_uniform/sub"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/dropout/random_uniform"
+  op: "Add"
+  input: "dropout_2/cond/dropout/random_uniform/mul"
+  input: "dropout_2/cond/dropout/random_uniform/min"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/dropout/add"
+  op: "Add"
+  input: "dropout_2/cond/dropout/keep_prob"
+  input: "dropout_2/cond/dropout/random_uniform"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/dropout/Floor"
+  op: "Floor"
+  input: "dropout_2/cond/dropout/add"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/dropout/div"
+  op: "RealDiv"
+  input: "dropout_2/cond/mul"
+  input: "dropout_2/cond/dropout/keep_prob"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/dropout/mul"
+  op: "Mul"
+  input: "dropout_2/cond/dropout/div"
+  input: "dropout_2/cond/dropout/Floor"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/Switch_1"
+  op: "Switch"
+  input: "dense_2/Relu"
+  input: "dropout_2/cond/pred_id"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_2/Relu"
+      }
+    }
+  }
+}
+node {
+  name: "dropout_2/cond/Merge"
+  op: "Merge"
+  input: "dropout_2/cond/Switch_1"
+  input: "dropout_2/cond/dropout/mul"
+  attr {
+    key: "N"
+    value {
+      i: 2
+    }
+  }
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dense_3/random_uniform/shape"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+          dim {
+            size: 2
+          }
+        }
+        tensor_content: "\000\002\000\000\n\000\000\000"
+      }
+    }
+  }
+}
+node {
+  name: "dense_3/random_uniform/min"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: -0.107211254537
+      }
+    }
+  }
+}
+node {
+  name: "dense_3/random_uniform/max"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+        }
+        float_val: 0.107211254537
+      }
+    }
+  }
+}
+node {
+  name: "dense_3/random_uniform/RandomUniform"
+  op: "RandomUniform"
+  input: "dense_3/random_uniform/shape"
+  attr {
+    key: "T"
+    value {
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "seed"
+    value {
+      i: 87654321
+    }
+  }
+  attr {
+    key: "seed2"
+    value {
+      i: 8500307
+    }
+  }
+}
+node {
+  name: "dense_3/random_uniform/sub"
+  op: "Sub"
+  input: "dense_3/random_uniform/max"
+  input: "dense_3/random_uniform/min"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dense_3/random_uniform/mul"
+  op: "Mul"
+  input: "dense_3/random_uniform/RandomUniform"
+  input: "dense_3/random_uniform/sub"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dense_3/random_uniform"
+  op: "Add"
+  input: "dense_3/random_uniform/mul"
+  input: "dense_3/random_uniform/min"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "dense_3/kernel"
+  op: "VariableV2"
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 512
+        }
+        dim {
+          size: 10
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "dense_3/kernel/Assign"
+  op: "Assign"
+  input: "dense_3/kernel"
+  input: "dense_3/random_uniform"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_3/kernel"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "dense_3/kernel/read"
+  op: "Identity"
+  input: "dense_3/kernel"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_3/kernel"
+      }
+    }
+  }
+}
+node {
+  name: "dense_3/Const"
+  op: "Const"
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_FLOAT
+        tensor_shape {
+          dim {
+            size: 10
+          }
+        }
+        float_val: 0.0
+      }
+    }
+  }
+}
+node {
+  name: "dense_3/bias"
+  op: "VariableV2"
+  attr {
+    key: "container"
+    value {
+      s: ""
+    }
+  }
+  attr {
+    key: "dtype"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "shape"
+    value {
+      shape {
+        dim {
+          size: 10
+        }
+      }
+    }
+  }
+  attr {
+    key: "shared_name"
+    value {
+      s: ""
+    }
+  }
+}
+node {
+  name: "dense_3/bias/Assign"
+  op: "Assign"
+  input: "dense_3/bias"
+  input: "dense_3/Const"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_3/bias"
+      }
+    }
+  }
+  attr {
+    key: "use_locking"
+    value {
+      b: true
+    }
+  }
+  attr {
+    key: "validate_shape"
+    value {
+      b: true
+    }
+  }
+}
+node {
+  name: "dense_3/bias/read"
+  op: "Identity"
+  input: "dense_3/bias"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "_class"
+    value {
+      list {
+        s: "loc:@dense_3/bias"
+      }
+    }
+  }
+}
+node {
+  name: "dense_3/MatMul"
+  op: "MatMul"
+  input: "dropout_2/cond/Merge"
+  input: "dense_3/kernel/read"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "transpose_a"
+    value {
+      b: false
+    }
+  }
+  attr {
+    key: "transpose_b"
+    value {
+      b: false
+    }
+  }
+}
+node {
+  name: "dense_3/BiasAdd"
+  op: "BiasAdd"
+  input: "dense_3/MatMul"
+  input: "dense_3/bias/read"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+  attr {
+    key: "data_format"
+    value {
+      s: "NHWC"
+    }
+  }
+}
+node {
+  name: "dense_3/Softmax"
+  op: "Softmax"
+  input: "dense_3/BiasAdd"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "init"
+  op: "NoOp"
+  input: "^dense_1/kernel/Assign"
+  input: "^dense_1/bias/Assign"
+  input: "^dense_2/kernel/Assign"
+  input: "^dense_2/bias/Assign"
+  input: "^dense_3/kernel/Assign"
+  input: "^dense_3/bias/Assign"
+}
+versions {
+  producer: 22
+}

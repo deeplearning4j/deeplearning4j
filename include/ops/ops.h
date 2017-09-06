@@ -8,6 +8,7 @@
 #define MIN 1e-12
 #define MAX_FLOAT 1e37
 #define MIN_FLOAT 1e-37
+#define MAX_INT 2147483647
 #define MIN_CUTFOFF -3.79297773665f
 #define FLOAT_MIN_NORMAL 1.17549435e-38
 #define FLOAT_MAX_VALUE 3.4028235E38
@@ -34,7 +35,8 @@
 #endif
 
 #ifdef __CUDACC__
-#define op_def inline __device__
+#define op_def inline __device__ __host__
+#define op_def_special inline __device__
 
 // 610 is for tests only
 // 600 is Tesla P100
@@ -45,10 +47,13 @@
 
 #elif _MSC_VER
 #define op_def __pragma("omp declare simd") inline
+#define op_def_special __pragma("omp declare simd") inline
 #elif __clang__
 #define op_def inline
+#define op_def_special inline
 #elif __GNUC__
 #define op_def _Pragma("omp declare simd") inline
+#define op_def_special _Pragma("omp declare simd") inline
 #endif
 
 #define SELU_ALPHA 1.6732632423543772848170429916717
@@ -964,7 +969,7 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return 1;
+			return (T) 1.0f;
 		}
 	};
 
@@ -2780,7 +2785,10 @@ template<typename T>
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static T op(T d1, T *params) {
+#ifdef __CUDACC__
+        __device__
+#endif
+		inline static T op(T d1, T *params) {
 			T prob = params[0];
 
 #ifdef __CUDACC__
@@ -2800,7 +2808,10 @@ template<typename T>
 		no_op_exec_special
 		no_op_exec_special_cuda
 
-		op_def static T op(T d1, T *params) {
+#ifdef __CUDACC__
+    __device__
+#endif
+        inline static T op(T d1, T *params) {
 			T prob = params[0];
 #ifdef __CUDACC__
 			T length = params[1];

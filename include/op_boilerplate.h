@@ -47,6 +47,9 @@
  */
 
 #pragma once
+#ifndef OP_BOILERPLATE_HH
+#define OP_BOILERPLATE_HH
+
 #define EXTRACT(...) EXTRACT __VA_ARGS__ 
 #define NOTHING_EXTRACT 
 #define PASTE(x, ...) x ## __VA_ARGS__ 
@@ -283,6 +286,49 @@
 #define FZ_97(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_96(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
 #define FZ_98(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_97(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
 #define FZ_99(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(FZ_98(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+
+#define FF_1(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)
+#define FF_2(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_1(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_3(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_2(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_4(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_3(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_5(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_4(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_6(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_5(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_7(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_6(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_8(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_7(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_9(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_8(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_10(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_9(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_11(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_10(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_12(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_11(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_13(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_12(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_14(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_13(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_15(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_14(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_16(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_15(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_17(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_16(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_18(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_17(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_19(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_18(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FF_20(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FF_19(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+
+
+#define FFI_1(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)
+#define FFI_2(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_1(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_3(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_2(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_4(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_3(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_5(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_4(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_6(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_5(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_7(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_6(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_8(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_7(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_9(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_8(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_10(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_9(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_11(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_10(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_12(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_11(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_13(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_12(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_14(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_13(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_15(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_14(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_16(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_15(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_17(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_16(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_18(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_17(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_19(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_18(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FFI_20(WHAT, TYPE, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(TYPE, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FFI_19(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
 
 #define FM_1(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)
 #define FM_2(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B, ...) WHAT(FN, SIG, OPCLASS, OPNUM_PAIR, OPNUM_PAIR_B)EVAL(FM_1(WHAT, FN, SIG, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
@@ -685,12 +731,16 @@
 #endif
 #define _EXPAND_OP_SIMPLE(NAME, TYPE, PARAMZ, NUM_A, TYPE_A) else if(opNum == NUM_A) {MIX3(NAME, NUM_A, TYPE) LAUNCH(launchDims.x, launchDims.y, launchDims.z, *stream) PARAMZ;}
 
+#define _EXPAND_FACTORY_CALL(TYPE, LAYER_ID, LAYER_NAME, ACTIVATION_ID, ACTIVATION_NAME) if (activationNum == ACTIVATION_ID && layerNum == LAYER_ID) { return new LAYER_NAME<TYPE, ACTIVATION_NAME<TYPE>>(); };
+
 #define _EXPAND_KERNEL_CALL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, NUM_A, TYPE_A, NUM_B, TYPE_B) extern "C" __global__ void ARGMIX4(NAME, NUM_A, NUM_B, TYPE)INPUTZ {KERNEL<TYPE, OPCLASS<TYPE, TYPE_A<TYPE>, TYPE_B<TYPE>>>PARAMZ ;};
 #define _EXPAND_KERNEL_SIMPLE(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, NUM_A, TYPE_A) extern "C" __global__ void ARGMIX3(NAME, NUM_A, TYPE)INPUTZ {KERNEL<TYPE, TYPE_A<TYPE>>PARAMZ ;};
 #define _EXPAND_PACKED_SIMPLE(NAME, TYPE, PARAMZ, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_SIMPLE(NAME, TYPE, PARAMZ, UNPAREN(OPNUM_PAIR)))
 #define _EXPAND_PACKED_KERNEL_SIMPLE(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _KERNEL_SIMPLE (NAME, KERNEL, TYPE, INPUTZ, PARAMZ, UNPAREN(OPNUM_PAIR)))
 #define _EXPAND_PACKED_KERNEL_CALL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_A, OPNUM_PAIR_B) EVALUATING_PASTE(_EXPAND, _KERNEL_CALL (NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, UNPAREN(OPNUM_PAIR_B), UNPAREN(OPNUM_PAIR_A)))
 #define _EXPAND_PACKED_META_CALL(FN, SIG, OPCLASS, OPNUM_PAIR_A, OPNUM_PAIR_B) EVALUATING_PASTE(_EXPAND, _META_CALL (FN, SIG, OPCLASS, UNPAREN(OPNUM_PAIR_B), UNPAREN(OPNUM_PAIR_A) ))
+
+#define _EXPAND_PACKED_FACTORY_CALL(TYPE, OPNUM_PAIR_A, OPNUM_PAIR_B) EVALUATING_PASTE(_EXPAND, _FACTORY_CALL (TYPE, UNPAREN(OPNUM_PAIR_B), UNPAREN(OPNUM_PAIR_A)))
 //////////////////////////////
 
 
@@ -701,6 +751,7 @@
 #define GET_MACROE(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, NAME,...) NAME
 #define GET_MACROK(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, NAME,...) NAME
 #define GET_MACROI(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, NAME,...) NAME
+#define GET_MACROF(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, NAME,...) NAME
 #define FOR_EACH(WHAT, NAME, SIGNATURE, ...) EVAL(GET_MACRO(__VA_ARGS__,  FE_99, FE_98, FE_97, FE_96, FE_95, FE_94, FE_93, FE_92, FE_91, FE_90, FE_89, FE_88, FE_87, FE_86, FE_85, FE_84, FE_83, FE_82, FE_81, FE_80, FE_79, FE_78, FE_77, FE_76, FE_75, FE_74, FE_73, FE_72, FE_71, FE_70, FE_69, FE_68, FE_67, FE_66, FE_65, FE_64, FE_63, FE_62, FE_61, FE_60, FE_59, FE_58, FE_57, FE_56, FE_55, FE_54, FE_53, FE_52, FE_51, FE_50, FE_49, FE_48, FE_47, FE_46, FE_45, FE_44, FE_43, FE_42, FE_41, FE_40, FE_39, FE_38, FE_37, FE_36, FE_35, FE_34, FE_33, FE_32, FE_31, FE_30, FE_29, FE_28, FE_27, FE_26, FE_25, FE_24, FE_23, FE_22, FE_21, FE_20, FE_19, FE_18, FE_17, FE_16, FE_15, FE_14, FE_13, FE_12, FE_11, FE_10, FE_9, FE_8, FE_7, FE_6, FE_5, FE_4, FE_3, FE_2, FE_1)(WHAT, NAME, SIGNATURE, __VA_ARGS__))
 
 #define FOR_EACH_M(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, ...) EXPAND(GET_MACROX(__VA_ARGS__, FM_70, FM_69, FM_68, FM_67, FM_66, FM_65, FM_64, FM_63, FM_62, FM_61, FM_60, FM_59, FM_58, FM_57, FM_56, FM_55, FM_54, FM_53, FM_52, FM_51, FM_50, FM_49, FM_48, FM_47, FM_46, FM_45, FM_44, FM_43, FM_42, FM_41, FM_40, FM_39, FM_38, FM_37, FM_36, FM_35, FM_34, FM_33, FM_32, FM_31, FM_30, FM_29, FM_28, FM_27, FM_26, FM_25, FM_24, FM_23, FM_22, FM_21, FM_20, FM_19, FM_18, FM_17, FM_16, FM_15, FM_14, FM_13, FM_12, FM_11, FM_10, FM_9, FM_8, FM_7, FM_6, FM_5, FM_4, FM_3, FM_2, FM_1)(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
@@ -711,11 +762,17 @@
 #define FOR_EACH_I(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, ...) EXPAND(GET_MACROI(__VA_ARGS__, FI_70, FI_69, FI_68, FI_67, FI_66, FI_65, FI_64, FI_63, FI_62, FI_61, FI_60, FI_59, FI_58, FI_57, FI_56, FI_55, FI_54, FI_53, FI_52, FI_51, FI_50, FI_49, FI_48, FI_47, FI_46, FI_45, FI_44, FI_43, FI_42, FI_41, FI_40, FI_39, FI_38, FI_37, FI_36, FI_35, FI_34, FI_33, FI_32, FI_31, FI_30, FI_29, FI_28, FI_27, FI_26, FI_25, FI_24, FI_23, FI_22, FI_21, FI_20, FI_19, FI_18, FI_17, FI_16, FI_15, FI_14, FI_13, FI_12, FI_11, FI_10, FI_9, FI_8, FI_7, FI_6, FI_5, FI_4, FI_3, FI_2, FI_1)(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
 #define FOR_EACH_K(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, ...) EXPAND(GET_MACROK(__VA_ARGS__, FK_70, FK_69, FK_68, FK_67, FK_66, FK_65, FK_64, FK_63, FK_62, FK_61, FK_60, FK_59, FK_58, FK_57, FK_56, FK_55, FK_54, FK_53, FK_52, FK_51, FK_50, FK_49, FK_48, FK_47, FK_46, FK_45, FK_44, FK_43, FK_42, FK_41, FK_40, FK_39, FK_38, FK_37, FK_36, FK_35, FK_34, FK_33, FK_32, FK_31, FK_30, FK_29, FK_28, FK_27, FK_26, FK_25, FK_24, FK_23, FK_22, FK_21, FK_20, FK_19, FK_18, FK_17, FK_16, FK_15, FK_14, FK_13, FK_12, FK_11, FK_10, FK_9, FK_8, FK_7, FK_6, FK_5, FK_4, FK_3, FK_2, FK_1)(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR, __VA_ARGS__))
 
+#define FOR_EACH_F(WHAT, TYPE, OPNUM_PAIR, ...) EXPAND(GET_MACROF(__VA_ARGS__, FF_20, FF_19, FF_18, FF_17, FF_16, FF_15, FF_14, FF_13, FF_12, FF_11, FF_10, FF_9, FF_8, FF_7, FF_6, FF_5, FF_4, FF_3, FF_2, FF_1)(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+#define FOR_EACH_FI(WHAT, TYPE, OPNUM_PAIR, ...) EXPAND(GET_MACROF(__VA_ARGS__, FFI_20, FFI_19, FFI_18, FFI_17, FFI_16, FFI_15, FFI_14, FFI_13, FFI_12, FFI_11, FFI_10, FFI_9, FFI_8, FFI_7, FFI_6, FFI_5, FFI_4, FFI_3, FFI_2, FFI_1)(WHAT, TYPE, OPNUM_PAIR, __VA_ARGS__))
+
+
 #define _EXEC_OPS(WHAT, NAME, SIGNATURE, ...) EVAL(FOR_EACH(WHAT, NAME, SIGNATURE, __VA_ARGS__))
 #define _EXEC_OP_SIMPLE(NAME, TYPE, SIGNATURE, ...) EVAL(FOR_EACH_Z(THETA, NAME, TYPE, SIGNATURE, __VA_ARGS__))
 
 #define _EXEC_META_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_A, ...) EVAL(FOR_EACH_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_A, __VA_ARGS__))
 #define _EXEC_META_M(WHAT, NAME, SIGNATURE, OPCLASS, LIST_A, ...) EVAL(FOR_EACH_M(ALPHA, NAME, SIGNATURE, OPCLASS, OPS_A(LIST_A), __VA_ARGS__))
+#define _EXEC_FACTORY(WHAT, TYPE, LIST_A, ...) EVAL(FOR_EACH_F(PHI, TYPE, OPS_A(LIST_A), __VA_ARGS__))
+#define _EXEC_FACTORY_INTERNAL(WHAT, TYPE, ACTIVATION, ...) EVAL(FOR_EACH_FI(WHAT, TYPE, ACTIVATION, __VA_ARGS__))
 
 #define _EXEC_KERNEL_F(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, ...) EVAL(FOR_EACH_S(GAMMA, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__ ))
 #define _EXEC_KERNEL_M(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, LIST_A, ...) EVAL(FOR_EACH_K(BETA, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPS_A(LIST_A), __VA_ARGS__ ))
@@ -733,13 +790,19 @@
 #define DISPATCH_METAOP(NAME, SIGNATURE, OPCLASS, LIST_A, LIST_B) if(false){} EVAL(_EXEC_META_M(RANDOMWHAT, NAME, (SIGNATURE), OPCLASS, (LIST_A), LIST_B)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNumA, __FILE__, __LINE__); }
 #endif
 
+#define BUILD_LAYERS_FACTORY(TYPE, LIST_A, LIST_B) EVAL(_EXEC_FACTORY(RANDOMWHAT, TYPE, (LIST_A), LIST_B))
+
 #define DISPATCH_SIMPLE(NAME, TYPE, SIGNATURE, LIST_A) if(false){} EVAL(_EXEC_OP_SIMPLE(NAME, TYPE, (SIGNATURE), LIST_A)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }
 
 #define DISPATCH_KERNEL_SIMPLE(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, LIST_A) EVAL(_EXEC_KERNEL_F(NAME, KERNEL, TYPE, (INPUTZ), (PARAMZ), LIST_A))
 #define DISPATCH_KERNEL_META(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, LIST_A, LIST_B ) EVAL(_EXEC_KERNEL_M(NAME, KERNEL, TYPE, OPCLASS, (INPUTZ), (PARAMZ), (LIST_A), LIST_B))
 #define DISPATCH_INTERNAL(NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_B, ...) EXPAND(_EXEC_META_X(_EXPAND_PACKED_META_CALL, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_B, __VA_ARGS__))
 
+#define DISPATCH_FACTORY(TYPE, ACTIVATION, ...) EXPAND(_EXEC_FACTORY_INTERNAL(_EXPAND_PACKED_FACTORY_CALL, TYPE, ACTIVATION, __VA_ARGS__))
+
 #define DISPATCH_KERNEL_INTERNAL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_B, ...) EXPAND(_EXEC_KERNEL_X(_EXPAND_PACKED_KERNEL_CALL, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_B, __VA_ARGS__))
+
+
 
 #define RETURNING_DISPATCH_BY_OPNUM(NAME, SIGNATURE, ...) if(false){} EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); return 0; }
 #define PARAMS(...) __VA_ARGS__
@@ -751,8 +814,66 @@
 #define BETA(A, B, C, D, E, F, G, H) EXPAND(DISPATCH_KERNEL_INTERNAL(A, B, C, D, E, F, H, UNPAREN(G)))
 #define GAMMA(A, B, C, D, E, F) EXPAND(_EXPAND_PACKED_KERNEL_SIMPLE(A, B, C, D, E, F))
 #define THETA(A, B, C, D) EXPAND(_EXPAND_PACKED_SIMPLE(A, B, C, D))
+#define PHI(A, B, C) EXPAND(DISPATCH_FACTORY(A, C, UNPAREN(B)))
+
+
+/// graph definitions
+#define REQUIRE_OK(A) nd4j::ops::resultHelper( (A), #A, __FILE__, __LINE__ );
+
+
+#define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)   DECLARE_OP_UNIQ(__COUNTER__, NAME, NIN, NOUT, INPLACEABLE)
+#define DECLARE_OP_UNIQ(CTR, NAME, NIN, NOUT, INPLACEABLE)   template <typename T> \
+                                                class NAME: public nd4j::ops::DeclarableOp<T> { \
+                                                public:\
+                                                    NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE) { } \
+                                                protected: \
+                                                    Nd4jStatus validateAndExecute(Block<T>& block); \
+                                                };\
+                                                static nd4j::ops::__registratorFloat<NAME<float>> register_opf_##NAME; \
+                                                static nd4j::ops::__registratorHalf<NAME<float16>> register_oph_##NAME; \
+                                                static nd4j::ops::__registratorDouble<NAME<double>> register_opd_##NAME; \
+                                                template <typename T> \
+                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
+
+#define DECLARE_SYN(NAME, ORIGINAL)     static nd4j::ops::__registratorSynonymFloat<ORIGINAL<float>> register_opf_##NAME(#NAME, #ORIGINAL); \
+                                        static nd4j::ops::__registratorSynonymHalf<ORIGINAL<float16>> register_oph_##NAME(#NAME, #ORIGINAL); \
+                                        static nd4j::ops::__registratorSynonymDouble<ORIGINAL<double>> register_opd_##NAME(#NAME, #ORIGINAL)
+
+#define DECLARE_DIVERGENT_OP(NAME, NIN, NOUT, INPLACEABLE)  template <typename T> \
+                                                class NAME: public nd4j::ops::DeclarableOp<T> { \
+                                                public:\
+                                                    NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, true) { } \
+                                                protected: \
+                                                    Nd4jStatus validateAndExecute(Block<T>& block); \
+                                                };\
+                                                static nd4j::ops::__registratorFloat<NAME<float>> register_opf_##NAME; \
+                                                static nd4j::ops::__registratorDouble<NAME<double>> register_opd_##NAME; \
+                                                static nd4j::ops::__registratorHalf<NAME<float16>> register_oph_##NAME; \
+                                                template <typename T> \
+                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
+
+
+#define DECLARE_CONFIGURABLE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     template <typename T> \
+                                                                                class NAME: public nd4j::ops::DeclarableOp<T> { \
+                                                                                public:\
+                                                                                    NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { } \
+                                                                                protected: \
+                                                                                    Nd4jStatus validateAndExecute(Block<T>& block); \
+                                                                                };\
+                                                                                static nd4j::ops::__registratorFloat<NAME<float>> register_opf_##NAME; \
+                                                                                static nd4j::ops::__registratorHalf<NAME<float16>> register_oph_##NAME; \
+                                                                                static nd4j::ops::__registratorDouble<NAME<double>> register_opd_##NAME; \
+                                                                                template <typename T> \
+                                                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
+
+
+#define STORE_RESULT(A) this->storeResult(block, 0, A)
+#define STORE_2_RESULTS(A, B) this->storeResult(block, 0, A); this->storeResult(block, 1, B)
+#define STORE_3_RESULTS(A, B, C) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
+#define STORE_4_RESULTS(A, B, C, D) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
+#define STORE_5_RESULTS(A, B, C, D, E) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D); this->storeResult(block, 4, E)
 
 
 
 
-
+#endif

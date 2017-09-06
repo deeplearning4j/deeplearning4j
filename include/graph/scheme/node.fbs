@@ -1,0 +1,48 @@
+namespace nd4j.graph;
+
+enum OpType:byte {
+    TRANSFORM = 0,
+    ACCUMULATION = 1, // for both reduce & reduce3
+    INDEX_ACCUMULATION = 2,
+    SCALAR = 3,
+    BROADCAST = 4,
+//    PAIRWISE = 5, <--- using TRANSFORM instead, for compatibility reasons
+//    ACCUMULATION3 = 6, <--- using ACCUMULATION instead, for compatibility reasons
+    SUMMARYSTATS = 7,
+    SHAPE = 8,
+    AGGREGATION = 9, // ???
+    CUSTOM = 10, // custom ops
+    VARIABLE = 119,
+}
+
+enum DataType:byte {
+    INHERIT,
+    HALF,
+    FLOAT,
+    DOUBLE,
+}
+
+table FlatVariable {
+    id:int;
+    name:string;
+    shape:[int];
+    values:[float];
+    device:int; // default is -1, which means _auto_
+}
+
+table FlatNode {
+    id:int; // unique id for this node
+    name: string; // literal id of this node (optional)
+    opType:OpType;
+    opNum:short;
+    input:[int]; // ID's of input nodes for this node
+    dataType:DataType;
+    output:[int]; // ID's of connected nodes for this node
+    extraParams:[float]; // extra params for this op (if any)
+    extraInteger:[int]; // optional integer extra params
+    dimensions:[int]; // dimension for this operation
+    device:int; // default is -1, which means _auto_
+    scalar:float; // optional scalar. used in scalar ops & SummaryStats
+}
+
+root_type FlatNode;

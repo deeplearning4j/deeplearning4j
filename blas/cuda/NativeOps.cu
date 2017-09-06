@@ -33,6 +33,15 @@
 #include <helpers/threshold.h>
 
 #include <ops/specials_cuda.h>
+
+// FIXME: we need cuda-specific implementations
+#include <helpers/logger.h>
+#include <NDArray.h>
+#include "../cpu/NDArray.cpp"
+#include "../cpu/GraphExecutioner.cpp"
+#include <ops/declarable/declarable_ops.h>
+#include <ops/declarable/cpu/parity_ops.h>
+
 //#include <sys/time.h>
 
 // b40c only available for gcc :(
@@ -5636,7 +5645,7 @@ void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opT
 
 	if (opTypeA == 2) {
 		if (opTypeB == 0) {
-			DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+            DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
 		}
 	}
 
@@ -6872,4 +6881,86 @@ Nd4jIndex* NativeOps::mmapFile(Nd4jPointer *extraPointers, const char *fileName,
 
 void NativeOps::munmapFile(Nd4jPointer *extraPointers, Nd4jIndex* ptrMap, Nd4jIndex length) {
 
+}
+
+Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer protoBufferPointer) {
+	return nullptr;
+}
+
+Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, const char *fileName) {
+	return nullptr;
+}
+
+Nd4jPointer NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+return nullptr;
+}
+
+
+const char* NativeOps::getAllCustomOps() {
+	return nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
+}
+
+
+template<typename T>
+Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, T* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
+	if (op == nullptr)
+		nd4j_printf("Can't find requested operation: [%lld]\n", hash);
+
+	// we're using the same fake nodeId everywhere here
+	int nodeId = 1;
+
+	nd4j::graph::VariableSpace<T> variableSpace;
+	nd4j::graph::Block<T> block(1, &variableSpace, isInplace);
+
+
+	// filling block now
+	for (int e = 0; e < numInputs; e++) {
+		auto buffer = (T *) inputBuffers[e];
+		auto shape = (int *) inputShapes[e];
+
+		auto var = new nd4j::graph::Variable<T>(new nd4j::NDArray<T>(buffer, shape));
+		block.getVariables().push_back(var);
+	}
+
+	for (int e = 0; e < numOutputs; e++) {
+		auto buffer = (T *) outputBuffers[e];
+		auto shape = (int *) outputShapes[e];
+
+		auto var = new nd4j::graph::Variable<T>(new nd4j::NDArray<T>(buffer, shape));
+		std::pair<int, int> pair(nodeId, e);
+		variableSpace.putVariable(pair, var);
+	}
+
+	for (int e = 0; e < numIArgs; e++) {
+		block.getIArguments()->push_back(iArgs[e]);
+	}
+
+	for (int e = 0; e < numTArgs; e++) {
+		block.getTArguments()->push_back(tArgs[e]);
+	}
+
+	// hypothetically at this point we have everything filled
+	return op->execute(&block);
+
+
+	// TODO: we need to destroy vars properly
+	// but hopefully c++ will do that for us
+}
+
+int NativeOps::execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, float* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
+	auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(hash);
+
+	return realExec<float>(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs, tArgs, numTArgs, iArgs, numIArgs, isInplace);
+}
+
+int NativeOps::execCustomOpDouble(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
+	auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationDouble(hash);
+
+	return realExec<double>(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs, tArgs, numTArgs, iArgs, numIArgs, isInplace);
+}
+
+int NativeOps::execCustomOpHalf(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, float16* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
+	auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationHalf(hash);
+
+	return realExec<float16>(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs, tArgs, numTArgs, iArgs, numIArgs, isInplace);
 }

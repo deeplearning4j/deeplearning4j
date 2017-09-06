@@ -10,10 +10,14 @@
 #ifndef __CUDACC__
 
 #define nd4j_logger(FORMAT, ...) if (debug && verbose) nd4j::Logger::info(FORMAT, __VA_ARGS__);
+#define nd4j_verbose(FORMAT, ...) if (verbose) nd4j::Logger::info(FORMAT, __VA_ARGS__);
+#define nd4j_printf(FORMAT, ...) nd4j::Logger::info(FORMAT, __VA_ARGS__);
 
 #else
 
 #define nd4j_logger(FORMAT, A, ...)
+#define nd4j_verbose(FORMAT, ...)
+#define nd4j_printf(FORMAT, ...)
 
 #endif
 
@@ -35,7 +39,20 @@ namespace nd4j {
 
             fflush(stdout);
         }
+
+#ifdef __CUDACC__
+        __host__
+#endif
+        static void printv(const char *format, std::vector<int>& vec) {
+            printf("%s: [", format);
+            for(auto v: vec) {
+                printf("%i, ", v);
+            }
+            printf("]\n");
+            fflush(stdout);
+        }
     };
+
 }
 
 

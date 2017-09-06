@@ -5,6 +5,7 @@
 #ifndef NATIVEOPERATIONS_NATIVEOPS_H
 #define NATIVEOPERATIONS_NATIVEOPS_H
 
+
 #ifndef thread_local
 # if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__
 #  define thread_local _Thread_local
@@ -42,7 +43,7 @@ int tad_threshold = 1;
 int element_threshold = 32;
 
 bool debug = false;
-bool verbose = true;
+bool verbose = false;
 
 
 
@@ -2954,6 +2955,22 @@ public:
     Nd4jIndex* mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jIndex length);
 
     void munmapFile(Nd4jPointer *extraPointers, Nd4jIndex* ptrMap, Nd4jIndex length);
+
+
+    // flatbuffers execution
+    Nd4jPointer executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer);
+
+    // protobuf execution
+    Nd4jPointer executeProtoGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer protoBufferPointer);
+    Nd4jPointer executeProtoGraphFloat(Nd4jPointer *extraPointers, const char *fileName);
+
+    const char* getAllCustomOps();
+
+    // customOp executioner
+    int execCustomOpFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, float* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace);
+    int execCustomOpDouble(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace);
+    int execCustomOpHalf(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, float16* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace);
+
 };
 
 
