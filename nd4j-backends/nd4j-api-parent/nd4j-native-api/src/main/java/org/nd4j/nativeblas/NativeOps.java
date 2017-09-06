@@ -1598,5 +1598,7 @@ public abstract class NativeOps extends Pointer {
 
     public abstract String getAllCustomOps();
 
-    public abstract void execCustomOpFloat(PointerPointer extraPointers, long opHashCode, PointerPointer inputBuffers, PointerPointer inputShapes, int numInput, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs, FloatPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs, boolean isInplace);
+    public abstract int execCustomOpFloat(PointerPointer extraPointers, long opHashCode, PointerPointer inputBuffers, PointerPointer inputShapes, int numInput, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs, FloatPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs, boolean isInplace);
+    public abstract int execCustomOpDouble(PointerPointer extraPointers, long opHashCode, PointerPointer inputBuffers, PointerPointer inputShapes, int numInput, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs, boolean isInplace);
+    public abstract int execCustomOpHalf(PointerPointer extraPointers, long opHashCode, PointerPointer inputBuffers, PointerPointer inputShapes, int numInput, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs, @Cast("float16*") ShortPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs, boolean isInplace);
 }
