@@ -772,11 +772,11 @@ namespace nd4j {
 			std::vector<int>* argumets = block.getIArguments();								
 			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
 			
-			if(block.isInplace()) {
-				x->permutei(*argumets);
+			if(block.isInplace()) {		// in-place
+				x->permutei(*argumets);				
 				STORE_RESULT(*x);
 			}
-			else {
+			else {						// not-in-place
 				NDArray<T>* ret = x->permute(*argumets);
 				STORE_RESULT(*ret);
 			}
