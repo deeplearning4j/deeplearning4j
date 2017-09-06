@@ -12,33 +12,26 @@ backends. You can learn more about saving Keras models on the Keras [FAQ Page](h
 
 ![Model Import Schema](./img/dl4j_model_import.jpg)
 
-An `IncompatibleKerasConfigurationException` message indicates that you are attempting to import a Keras model configuration
-that is not currently supported in Deeplearning4j (either because model import does not cover it, or DL4J does not implement the model, layer, or feature).
+Once you have imported your model into DL4J, our full production stack is at your disposal. Please check [here](https://deeplearning4j.org/keras-supported-features) for a complete list of keras features supported through model import.
 
-Once you have imported your model we recommend our own modelserializer class for further saving and reloading of your model.
+## Getting started: Keras Model Import Video
 
-You can inquire further by visiting the [DL4J gitter channel](https://gitter.im/deeplearning4j/deeplearning4j). You might consider filing a [feature request via Github](https://github.com/deeplearning4j/deeplearning4j/issues) so that this missing functionality can be placed on the DL4J development roadmap or even sending us a pull request with the necessary changes!
+Below is a [video tutorial](https://www.youtube.com/embed/bI1aR1Tj2DM) demonstrating working code to load a Keras model into Deeplearning4j and validating the working network. Instructor Tom Hanlon provides an overview of a simple classifier over Iris data built in Keras with a Theano backend, and exported and loaded into Deeplearning4j:
 
-Check back for frequent updates to both the model import module *and* to this page!
+<iframe width="560" height="315" src="https://www.youtube.com/embed/bI1aR1Tj2DM" frameborder="0" allowfullscreen></iframe>
 
-## Popular Model Support
+If you have trouble viewing the video, please click here to [view it on YouTube](https://www.youtube.com/embed/bI1aR1Tj2DM).
 
-VGG16 and other pre-trained models are widely used for demonstration purposes and for retraining for a specific use case. We are proud to announce support for VGG16 import along with some helper functions to properly format and normalize data for ingest, and helper functions to convert the numeric output to labelled text classes.  
-
-## DeepLearning4J Model Zoo
-
-In addition to being able to import pre-trained Keras models, DeepLearning4j will actively add models to our own model zoo.
-
-## Configuring your IDE to have access to the modelimport classes
+## Configuring your IDE to have access to the `modelimport` classes
 
 Edit your pom.xml adding the following dependency
 
 ```
 <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-modelimport</artifactId>
-            <version>${dl4j.version}</version>
-        </dependency>
+    <groupId>org.deeplearning4j</groupId>
+    <artifactId>deeplearning4j-modelimport</artifactId>
+    <version>${dl4j.version}</version>
+</dependency>
 ```
 
 ## Available Methods
@@ -103,21 +96,32 @@ If you want to import a pre-trained model only for inference, then you should se
 
 If you want to import a model for training and want to ensure the resulting model matches a trained Keras model as closely as possible, then you should set enforceTrainingConfig=true. In that case, unsupported training-only configurations will throw an `UnsupportedKerasConfigurationException` and stop model import.
 
-## Keras Model Import Video
+## Troubleshooting
+An `IncompatibleKerasConfigurationException` message indicates that you are attempting to import a Keras model configuration
+that is not currently supported in Deeplearning4j (either because model import does not cover it, or DL4J does not implement the model, layer, or feature).
 
-Below is a [video tutorial](https://www.youtube.com/embed/bI1aR1Tj2DM) demonstrating working code to load a Keras model into Deeplearning4j and validating the working network. Instructor Tom Hanlon provides an overview of a simple classifier over Iris data built in Keras with a Theano backend, and exported and loaded into Deeplearning4j:
+Once you have imported your model we recommend our own modelserializer class for further saving and reloading of your model.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/bI1aR1Tj2DM" frameborder="0" allowfullscreen></iframe>
+You can inquire further by visiting the [DL4J gitter channel](https://gitter.im/deeplearning4j/deeplearning4j). You might consider filing a [feature request via Github](https://github.com/deeplearning4j/deeplearning4j/issues) so that this missing functionality can be placed on the DL4J development roadmap or even sending us a pull request with the necessary changes!
 
-If you have trouble viewing the video, please click here to [view it on YouTube](https://www.youtube.com/embed/bI1aR1Tj2DM).
+Check back for frequent updates to both the model import module *and* to this page!
+
+## Popular Model Support
+
+VGG16 and other pre-trained models are widely used for demonstration purposes and for retraining for a specific use case. We are proud to announce support for VGG16 import along with some helper functions to properly format and normalize data for ingest, and helper functions to convert the numeric output to labelled text classes.  
+
+## DeepLearning4J Model Zoo
+
+In addition to being able to import pre-trained Keras models, DeepLearning4j will actively add models to our own model zoo.
+
 
 ## Why Keras?
 
-Keras is a layer of abstraction that sits atop Python libraries like Theano or Tensorflow, providing an easier to use interface for deep learning.
+Keras is a layer of abstraction that sits atop Python libraries like Theano, Tensorflow CNTK, providing an easier to use interface for deep learning.
 
 To define a layer in a framework like Theano, you have to precisely define the weights, biases, activation functions and how your input data will be transformed into outputs.
 Moreover, you need to deal with backpropagation and updating those weights and biases. Keras wraps all that. It gives you prefab layers that encompass those calculations and updates.
 
-With Keras, the only thing you define is the shape of the input, the shape of the output, and how you want to calculate the loss. Keras ensures that all the layers are the right size, and that the error gets backpropagated properly. It even does batching.
+With Keras, the only thing you define is the shape of the input, the shape of the output, and how you want to calculate the loss. Keras ensures that all the layers are the right size, and that the error gets backpropagated properly.
 
 More information is also available [here](http://deeplearning4j.org/keras).
