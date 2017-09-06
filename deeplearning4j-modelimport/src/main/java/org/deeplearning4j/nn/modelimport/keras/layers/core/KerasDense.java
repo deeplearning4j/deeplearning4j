@@ -76,19 +76,17 @@ public class KerasDense extends KerasLayer {
         LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_W_CONSTRAINT(), conf, kerasMajorVersion);
 
-        DenseLayer.Builder builder =new DenseLayer.Builder().name(this.layerName).nOut(getNOutFromConfig(layerConfig, conf))
+        DenseLayer.Builder builder = new DenseLayer.Builder().name(this.layerName).nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout).activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                         enforceTrainingConfig, conf, kerasMajorVersion))
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .hasBias(hasBias);
-        if (biasConstraint != null) {
+        if (biasConstraint != null)
             builder.constrainBias(biasConstraint);
-        }
-        if (weightConstraint != null){
+        if (weightConstraint != null)
             builder.constrainWeights(weightConstraint);
-        }
         this.layer = builder.build();
     }
 
