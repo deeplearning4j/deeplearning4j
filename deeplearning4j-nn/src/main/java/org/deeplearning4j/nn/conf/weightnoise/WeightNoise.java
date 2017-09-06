@@ -15,13 +15,20 @@ public class WeightNoise implements IWeightNoise {
     private boolean applyToBias;
     private boolean additive;
 
+    public WeightNoise(Distribution distribution) {
+        this(distribution, false, true);
+    }
+
+    public WeightNoise(Distribution distribution, boolean additive) {
+        this(distribution, false, additive);
+    }
 
     public WeightNoise(@JsonProperty("distribution") Distribution distribution,
                        @JsonProperty("applyToBias") boolean applyToBias,
-                       @JsonProperty("additive") boolean addditive){
+                       @JsonProperty("additive") boolean additive) {
         this.distribution = distribution;
         this.applyToBias = applyToBias;
-        this.additive = addditive;
+        this.additive = additive;
     }
 
     @Override
@@ -29,11 +36,11 @@ public class WeightNoise implements IWeightNoise {
 
         ParamInitializer init = layer.conf().getLayer().initializer();
         INDArray param = layer.getParam(paramKey);
-        if (init.isWeightParam(paramKey) || (applyToBias && init.isBiasParam(paramKey))) {
+        if (train && init.isWeightParam(paramKey) || (applyToBias && init.isBiasParam(paramKey))) {
             INDArray noise = distribution.sample(param.shape());
             INDArray out = Nd4j.createUninitialized(param.shape(), param.ordering());
 
-            if(additive){
+            if (additive) {
                 Nd4j.getExecutioner().exec(new AddOp(param, noise, out));
             } else {
                 Nd4j.getExecutioner().exec(new MulOp(param, noise, out));

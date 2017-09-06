@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
+import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
 import org.nd4j.linalg.activations.Activation;
@@ -102,10 +103,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     //whether to constrain the gradient to unit norm or not
     //adadelta - weight for how much to consider previous history
     protected StepFunction stepFunction;
+    @Deprecated
     protected boolean useDropConnect = false;
     //minimize or maximize objective
     protected boolean minimize = true;
-//    protected Map<String, Double> learningRateByParam = new HashMap<>();
     protected Map<String, Double> l1ByParam = new HashMap<>();
     protected Map<String, Double> l2ByParam = new HashMap<>();
     protected boolean pretrain;
@@ -586,6 +587,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double l1Bias = Double.NaN;
         protected double l2Bias = Double.NaN;
         protected IDropout idropOut = null;
+        protected IWeightNoise weightNoise;
         @Deprecated
         protected Updater updater = null;   //Updater.SGD;
         protected IUpdater iUpdater = null; //new Sgd();
@@ -700,6 +702,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param useDropConnect whether to use drop connect or not
          * @return the
          */
+        @Deprecated
         public Builder useDropConnect(boolean useDropConnect) {
             this.useDropConnect = useDropConnect;
             return this;
@@ -1026,6 +1029,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         public Builder dropOut(IDropout dropout){
             this.idropOut = dropout;
+            return this;
+        }
+
+        public Builder weightNoise(IWeightNoise weightNoise){
+            this.weightNoise = weightNoise;
             return this;
         }
 

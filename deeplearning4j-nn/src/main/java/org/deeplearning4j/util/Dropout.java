@@ -23,17 +23,17 @@ public class Dropout {
      * @param variable the variable to apply
      * @return the post applied drop connect
      */
-    @Deprecated
-    public static INDArray applyDropConnect(Layer layer, String variable) {
-        double dropConnect = 0.5;       //TODO
-        INDArray result = layer.getParam(variable).dup();
-        if (Nd4j.getRandom().getStatePointer() != null) {
-            Nd4j.getExecutioner().exec(new DropOut(result, result, dropConnect));
-        } else {
-            Nd4j.getExecutioner().exec(new LegacyDropOut(result, result, dropConnect));
-        }
-        return result;
-    }
+//    @Deprecated
+//    public static INDArray applyDropConnect(Layer layer, String variable) {
+//        double dropConnect = 0.5;       //TODO
+//        INDArray result = layer.getParam(variable).dup();
+//        if (Nd4j.getRandom().getStatePointer() != null) {
+//            Nd4j.getExecutioner().exec(new DropOut(result, result, dropConnect));
+//        } else {
+//            Nd4j.getExecutioner().exec(new LegacyDropOut(result, result, dropConnect));
+//        }
+//        return result;
+//    }
 
 
 }

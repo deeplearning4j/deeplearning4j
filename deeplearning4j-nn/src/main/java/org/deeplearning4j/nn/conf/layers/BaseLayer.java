@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -55,6 +56,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     protected double biasLearningRate;
     protected IUpdater iUpdater;
     protected IUpdater biasUpdater;
+    protected IWeightNoise weightNoise;
     protected GradientNormalization gradientNormalization = GradientNormalization.None; //Clipping, rescale based on l2 norm, etc
     protected double gradientNormalizationThreshold = 1.0; //Threshold for l2 and element-wise gradient clipping
 
@@ -74,6 +76,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.biasUpdater = builder.biasUpdater;
         this.gradientNormalization = builder.gradientNormalization;
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
+        this.weightNoise = builder.weightNoise;
 
         this.learningRate = builder.learningRate;
         this.biasLearningRate = builder.biasLearningRate;
@@ -229,6 +232,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         protected double gradientNormalizationThreshold = Double.NaN;
         @Deprecated
         protected LearningRatePolicy learningRatePolicy = null;
+        protected IWeightNoise weightNoise;
 
 
         /**
@@ -412,6 +416,12 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         public T learningRateDecayPolicy(LearningRatePolicy policy) {
             this.learningRatePolicy = policy;
             return (T) this;
+        }
+
+
+        public T weightNoise(IWeightNoise weightNoise){
+            this.weightNoise = weightNoise;
+            return (T)this;
         }
     }
 }

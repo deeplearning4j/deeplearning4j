@@ -267,10 +267,14 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
      * @return            Pair of arrays: preOutput (activations) and optionally the im2col2d array
      */
     protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop) {
-        INDArray weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
-        INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
-        if (conf.isUseDropConnect() && training ){// && conf.getLayer().getDropOut() > 0) {
-            weights = Dropout.applyDropConnect(this, ConvolutionParamInitializer.WEIGHT_KEY);
+        INDArray weights;
+        INDArray bias;
+        if(layerConf().getWeightNoise() != null){
+            weights = layerConf().getWeightNoise().getParameter(this, ConvolutionParamInitializer.WEIGHT_KEY, training);
+            bias = layerConf().getWeightNoise().getParameter(this, ConvolutionParamInitializer.BIAS_KEY, training);
+        } else {
+            weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
+            bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
         }
 
         //Input validation: expect rank 4 matrix
