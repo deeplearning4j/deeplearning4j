@@ -270,8 +270,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
         if (conf.isUseDropConnect() && training ){// && conf.getLayer().getDropOut() > 0) {
-//            weights = Dropout.applyDropConnect(this, ConvolutionParamInitializer.WEIGHT_KEY);
-            throw new UnsupportedOperationException("Not yet reimplemented");
+            weights = Dropout.applyDropConnect(this, ConvolutionParamInitializer.WEIGHT_KEY);
         }
 
         //Input validation: expect rank 4 matrix

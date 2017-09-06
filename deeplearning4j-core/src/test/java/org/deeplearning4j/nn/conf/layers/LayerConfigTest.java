@@ -186,15 +186,14 @@ public class LayerConfigTest {
         Map<Integer, Double> testMomentumAfter = new HashMap<>();
         testMomentumAfter.put(0, 0.1);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Nesterovs(1.0, new MapSchedule(ScheduleType.ITERATION, testMomentumAfter)))
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Nesterovs(1.0, new MapSchedule(ScheduleType.ITERATION, testMomentumAfter)))
                         .list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(1.0, ((Nesterovs)((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentum(), 0.0);
-        assertEquals(1.0, ((Nesterovs)((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentum(), 0.0);
         assertEquals(0.1, ((Nesterovs)((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentumISchedule().valueAt(0,0), 0.0);
         assertEquals(0.1, ((Nesterovs)((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentumISchedule().valueAt(0,0), 0.0);
 
@@ -209,11 +208,6 @@ public class LayerConfigTest {
 
         net = new MultiLayerNetwork(conf);
         net.init();
-
-        assertEquals(1.0, ((Nesterovs)((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentum(), 0.0);
-        assertEquals(2.0, ((Nesterovs)((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentum(), 0.0);
-        assertEquals(1.0, ((Nesterovs) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentum(), 0.0);
-        assertEquals(2.0, ((Nesterovs) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentum(), 0.0);
         assertEquals(0.1, ((Nesterovs)((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentumISchedule().valueAt(0,0), 0.0);
         assertEquals(0.2, ((Nesterovs)((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentumISchedule().valueAt(0,0), 0.0);
     }

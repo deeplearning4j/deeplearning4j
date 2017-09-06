@@ -91,61 +91,6 @@ public class LayerConfigValidationTest {
         net.init();
     }
 
-
-    @Test(expected = IllegalStateException.class)
-    public void testLRPolicyMissingDecayRate() {
-        double lr = 2;
-        double power = 3;
-        int iterations = 1;
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(iterations).learningRate(lr)
-                        .learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyPower(power).list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testLRPolicyMissingPower() {
-        double lr = 2;
-        double lrDecayRate = 5;
-        int iterations = 1;
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(iterations).learningRate(lr)
-                        .learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(lrDecayRate).list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testLRPolicyMissingSteps() {
-        double lr = 2;
-        double lrDecayRate = 5;
-        int iterations = 1;
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(iterations).learningRate(lr)
-                        .learningRateDecayPolicy(LearningRatePolicy.Step).lrPolicyDecayRate(lrDecayRate).list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testLRPolicyMissingSchedule() {
-        double lr = 2;
-        double lrDecayRate = 5;
-        int iterations = 1;
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(iterations).learningRate(lr)
-                        .learningRateDecayPolicy(LearningRatePolicy.Schedule).lrPolicyDecayRate(lrDecayRate).list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-    }
-
     @Test
     public void testCompGraphNullLayer() {
         ComputationGraphConfiguration.GraphBuilder gb = new NeuralNetConfiguration.Builder()

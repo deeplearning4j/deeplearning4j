@@ -311,9 +311,8 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
     public INDArray preOutput(INDArray v, boolean training) {
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        if (training && conf.isUseDropConnect() ){// && conf.getLayer().getDropOut() > 0) {
-//            W = Dropout.applyDropConnect(this, DefaultParamInitializer.WEIGHT_KEY);
-            throw new UnsupportedOperationException("Not yet reimplemented");
+        if (training && conf.isUseDropConnect() ){
+            W = Dropout.applyDropConnect(this, DefaultParamInitializer.WEIGHT_KEY);
         }
         return v.mmul(W).addiRowVector(hBias);
     }
