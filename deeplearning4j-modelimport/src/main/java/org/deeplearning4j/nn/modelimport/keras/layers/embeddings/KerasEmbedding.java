@@ -63,7 +63,13 @@ public class KerasEmbedding extends KerasLayer {
         this.inputShape = new int[inputShapeOld.length + 1];
         this.inputShape[0] = inputShapeOld[0];
         this.inputShape[1] = inputDim;
-        /* TODO: what about mask_zero field? */
+
+        boolean hasZeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
+        if (hasZeroMasking)
+            log.warn("Masking in keras and DL4J work differently. We do not support mask_zero flag" +
+                    "on Embedding layers. If you want to have this behaviour for your imported model" +
+                    "in DL4J, apply masking as a pre-processing step to your input." +
+                    "See https://deeplearning4j.org/usingrnns#masking for more on this.");
 
         LayerConstraint embeddingConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_EMBEDDINGS_CONSTRAINT(), conf, kerasMajorVersion);

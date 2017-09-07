@@ -438,5 +438,22 @@ public class KerasLayerUtils {
         return hasBias;
     }
 
+    /**
+     * Get zero masking flag
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return if masking to zeros or not
+     * @throws InvalidKerasConfigurationException Invalid Keras configuration
+     */
+    public static boolean getZeroMaskingFromConfig(Map<String, Object> layerConfig,
+                                                   KerasLayerConfiguration conf)
+            throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        boolean hasZeroMasking = true;
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_MASK_ZERO())) {
+            hasZeroMasking = (boolean) innerConfig.get(conf.getLAYER_FIELD_MASK_ZERO());
+        }
+        return hasZeroMasking;
+    }
 
 }
