@@ -16,6 +16,8 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -33,8 +35,8 @@ public class TransferLearningCompGraphTest {
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
         //original conf
         ComputationGraphConfiguration confToChange = new NeuralNetConfiguration.Builder().seed(rng)
-                        .optimizationAlgo(OptimizationAlgorithm.LBFGS).updater(new Nesterovs(0.99))
-                        .learningRate(0.01).graphBuilder().addInputs("layer0In").setInputTypes(InputType.feedForward(4))
+                        .optimizationAlgo(OptimizationAlgorithm.LBFGS).updater(new Nesterovs(0.01, 0.99))
+                        .graphBuilder().addInputs("layer0In").setInputTypes(InputType.feedForward(4))
                         .addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In")
                         .addLayer("layer1",
                                         new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
@@ -46,8 +48,8 @@ public class TransferLearningCompGraphTest {
 
         //conf with learning parameters changed
         ComputationGraphConfiguration expectedConf = new NeuralNetConfiguration.Builder().seed(rng)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.RMSPROP)
-                        .learningRate(0.2).regularization(true).graphBuilder().addInputs("layer0In")
+                        .updater(new RmsProp(0.2))
+                        .graphBuilder().addInputs("layer0In")
                         .setInputTypes(InputType.feedForward(4))
                         .addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In")
                         .addLayer("layer1",
@@ -67,10 +69,7 @@ public class TransferLearningCompGraphTest {
         ComputationGraph modelNow =
                         new TransferLearning.GraphBuilder(modelToFineTune)
                                         .fineTuneConfiguration(new FineTuneConfiguration.Builder().seed(rng)
-                                                        .optimizationAlgo(
-                                                                        OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                                        .updater(Updater.RMSPROP).learningRate(0.2).regularization(true)
-                                                        .build())
+                                                        .updater(new RmsProp(0.2)).build())
                                         .build();
 
         //Check json
@@ -87,11 +86,9 @@ public class TransferLearningCompGraphTest {
     public void testNoutChanges() {
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 2));
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
                         .activation(Activation.IDENTITY);
-        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().learningRate(0.1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().updater(new Sgd(0.1))
                         .activation(Activation.IDENTITY).build();
 
         ComputationGraph modelToFineTune = new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In")
@@ -158,11 +155,9 @@ public class TransferLearningCompGraphTest {
     public void testRemoveAndAdd() {
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
                         .activation(Activation.IDENTITY);
-        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().learningRate(0.1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().updater(new Sgd(0.1))
                         .activation(Activation.IDENTITY).build();
 
         ComputationGraph modelToFineTune = new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In")
@@ -281,10 +276,8 @@ public class TransferLearningCompGraphTest {
         modelToFineTune.init();
 
         //this will override the learning configuration set in the model
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().seed(456).learningRate(0.001)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
-        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().seed(456).learningRate(0.001)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().seed(456).updater(new Sgd(0.001));
+        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().seed(456).updater(new Sgd(0.001))
                         .build();
 
         ComputationGraph modelNow =
@@ -397,7 +390,7 @@ public class TransferLearningCompGraphTest {
         g.init();
 
         FineTuneConfiguration fineTuneConfiguration =
-                        new FineTuneConfiguration.Builder().seed(12345).learningRate(0.01).build();
+                        new FineTuneConfiguration.Builder().seed(12345).updater(new Sgd(0.01)).build();
 
         ComputationGraph graph = new TransferLearning.GraphBuilder(g).fineTuneConfiguration(fineTuneConfiguration)
                         .removeVertexKeepConnections("out").setFeatureExtractor("dense")

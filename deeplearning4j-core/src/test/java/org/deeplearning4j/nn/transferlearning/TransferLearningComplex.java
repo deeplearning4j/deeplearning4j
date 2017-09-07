@@ -19,6 +19,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.*;
@@ -37,8 +38,8 @@ public class TransferLearningComplex {
         // (b) Test global override (should be selective)
 
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.ADAM)
-                        .learningRate(1e-4).activation(Activation.LEAKYRELU).graphBuilder().addInputs("in1", "in2")
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Adam(1e-4))
+                        .activation(Activation.LEAKYRELU).graphBuilder().addInputs("in1", "in2")
                         .addLayer("A", new DenseLayer.Builder().nIn(10).nOut(9).build(), "in1")
                         .addLayer("B", new DenseLayer.Builder().nIn(9).nOut(8).build(), "A")
                         .addLayer("C", new DenseLayer.Builder().nIn(7).nOut(6).build(), "in2")
@@ -61,7 +62,7 @@ public class TransferLearningComplex {
         ComputationGraph graph2 =
                         new TransferLearning.GraphBuilder(graph)
                                         .fineTuneConfiguration(
-                                                        new FineTuneConfiguration.Builder().learningRate(2e-2).build())
+                                                        new FineTuneConfiguration.Builder().updater(new Adam(2e-2)).build())
                                         .setFeatureExtractor("C").build();
 
         boolean cFound = false;
@@ -91,9 +92,9 @@ public class TransferLearningComplex {
     @Test
     public void testSimplerMergeBackProp() {
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.9)
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.9))
                         .activation(Activation.IDENTITY)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT);
 
         /*
                 inCentre                inRight
@@ -173,9 +174,8 @@ public class TransferLearningComplex {
     @Test
     public void testLessSimpleMergeBackProp() {
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.9)
-                        .activation(Activation.IDENTITY)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.9))
+                        .activation(Activation.IDENTITY);
 
         /*
                 inCentre                inRight
@@ -240,9 +240,8 @@ public class TransferLearningComplex {
 
     @Test
     public void testAddOutput() {
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.9)
-                        .activation(Activation.IDENTITY)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.9))
+                        .activation(Activation.IDENTITY);
 
         ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
                         .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inCentre")

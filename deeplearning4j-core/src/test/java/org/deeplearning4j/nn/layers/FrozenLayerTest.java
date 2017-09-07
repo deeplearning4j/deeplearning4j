@@ -17,6 +17,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.List;
@@ -37,11 +38,10 @@ public class FrozenLayerTest {
     public void testFrozen() {
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
                         .activation(Activation.IDENTITY);
 
-        FineTuneConfiguration finetune = new FineTuneConfiguration.Builder().learningRate(0.1).build();
+        FineTuneConfiguration finetune = new FineTuneConfiguration.Builder().updater(new Sgd(0.1)).build();
 
         MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(overallConf.clone().list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
@@ -93,8 +93,7 @@ public class FrozenLayerTest {
 
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
                         .activation(Activation.IDENTITY);
         MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(overallConf.list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
@@ -146,8 +145,7 @@ public class FrozenLayerTest {
     public void testFrozenCompGraph() {
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
                         .activation(Activation.IDENTITY);
 
         ComputationGraph modelToFineTune = new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In")
@@ -198,8 +196,7 @@ public class FrozenLayerTest {
 
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
                         .activation(Activation.IDENTITY);
 
         ComputationGraph modelToFineTune = new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In")

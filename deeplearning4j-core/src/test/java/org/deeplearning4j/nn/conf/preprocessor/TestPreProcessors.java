@@ -433,11 +433,6 @@ public class TestPreProcessors {
     public void testCnnToDense() {
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder()
-                                        //.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .learningRate(0.01) // default
-                                        //.momentum(0.9)
-                                        .regularization(true)
                                         .list().layer(0,
                                                         new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
                                                                         4, 4) // 28*28*1 => 15*15*10

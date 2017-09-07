@@ -360,36 +360,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         /**
-         * Learning rate. Defaults to 1e-1
-         *
-         * @param learningRate
-         */
-        @Override
-        public Builder learningRate(double learningRate) {
-            return super.learningRate(learningRate);
-        }
-
-        /**
-         * Bias learning rate. Set this to apply a different learning rate to the bias
-         *
-         * @param biasLearningRate
-         */
-        @Override
-        public Builder biasLearningRate(double biasLearningRate) {
-            return super.biasLearningRate(biasLearningRate);
-        }
-
-        /**
-         * Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration.
-         *
-         * @param learningRateSchedule
-         */
-        @Override
-        public Builder learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
-            return super.learningRateSchedule(learningRateSchedule);
-        }
-
-        /**
          * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
          * coefficient for the bias.
          *
@@ -439,6 +409,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
          * @see Updater
          */
         @Override
+        @Deprecated
         public Builder updater(Updater updater) {
             return super.updater(updater);
         }

@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.slf4j.Logger;
@@ -90,18 +91,14 @@ public class GravesLSTMOutputTest {
     private MultiLayerConfiguration getNetworkConf(int iterations, boolean useTBPTT) {
         MultiLayerConfiguration.Builder builder =
                         new NeuralNetConfiguration.Builder()
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .learningRate(0.1).regularization(true).l2(0.0025)
-                                        .iterations(iterations).stepFunction(
-                                                        new NegativeDefaultStepFunction())
+                                        .updater(new AdaGrad(0.1)).l2(0.0025)
+                                        .iterations(iterations).stepFunction(new NegativeDefaultStepFunction())
                                         .list()
                                         .layer(0, new GravesLSTM.Builder().weightInit(WeightInit.DISTRIBUTION)
                                                         .dist(new NormalDistribution(0.0, 0.01)).nIn(nIn)
-                                                        .nOut(layerSize).updater(Updater.ADAGRAD)
-                                                        .activation(Activation.TANH).build())
+                                                        .nOut(layerSize).activation(Activation.TANH).build())
                                         .layer(1, new OutputLayer.Builder(
-                                                        LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                                                        .updater(Updater.ADAGRAD).nIn(layerSize)
+                                                        LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(layerSize)
                                                                         .nOut(nIn).activation(Activation.SOFTMAX)
                                                                         .build())
                                         .inputPreProcessor(1, new RnnToFeedForwardPreProcessor()).backprop(true)

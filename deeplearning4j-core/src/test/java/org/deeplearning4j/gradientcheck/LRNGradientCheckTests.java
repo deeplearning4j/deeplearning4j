@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Random;
@@ -52,8 +53,8 @@ public class LRNGradientCheckTests {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder().nOut(6).kernelSize(2, 2).stride(1, 1)
                                         .activation(Activation.TANH).build())

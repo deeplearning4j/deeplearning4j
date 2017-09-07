@@ -50,10 +50,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     protected double l2;
     protected double l1Bias;
     protected double l2Bias;
-    @Deprecated
-    protected double learningRate;
-    @Deprecated
-    protected double biasLearningRate;
     protected IUpdater iUpdater;
     protected IUpdater biasUpdater;
     protected IWeightNoise weightNoise;
@@ -77,95 +73,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.gradientNormalization = builder.gradientNormalization;
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
         this.weightNoise = builder.weightNoise;
-
-        this.learningRate = builder.learningRate;
-        this.biasLearningRate = builder.biasLearningRate;
-
-        //Handle legacy LR config set by user:
-        if(builder.updater != null && builder.iupdater == null){
-            if(!Double.isNaN(builder.learningRate)){
-                //User has done something like .updater(Updater.NESTEROVS).learningRate(0.2)
-                configureUpdaterFromLegacyLR(this, builder, builder.learningRate, false);
-            } else {
-                //Use default learning rate
-                this.iUpdater = builder.updater.getIUpdaterWithDefaultConfig();
-            }
-
-            if(!Double.isNaN(builder.biasLearningRate)){
-                //User *also* set bias learning rate...
-                configureUpdaterFromLegacyLR(this, builder, builder.biasLearningRate, true);
-            }
-        }
-    }
-
-
-    protected static void configureUpdaterFromLegacyLR(BaseLayer b, Builder builder, double learningRate, boolean isBias){
-        //User has done something like .updater(Updater.NESTEROVS).learningRate(0.2)
-        switch(builder.updater){
-            case SGD:
-                if(isBias){
-                    b.biasUpdater = new Sgd(learningRate);
-                } else {
-                    b.iUpdater = new Sgd(learningRate);
-                }
-                break;
-            case ADAM:
-                if(isBias){
-                    b.biasUpdater = new Adam(learningRate);
-                } else {
-                    b.iUpdater = new Adam(learningRate);
-                }
-                break;
-            case ADAMAX:
-                if(isBias){
-                    b.biasUpdater = new AdaMax(learningRate);
-                } else {
-                    b.iUpdater = new AdaMax(learningRate);
-                }
-                break;
-            case ADADELTA:
-                if(isBias){
-                    b.biasUpdater = new AdaDelta();
-                } else {
-                    b.iUpdater = new AdaDelta();
-                }
-                break;
-            case NESTEROVS:
-                if(isBias){
-                    b.biasUpdater = new Nesterovs(learningRate);
-                } else {
-                    b.iUpdater = new Nesterovs(learningRate);
-                }
-                break;
-            case NADAM:
-                if(isBias){
-                    b.biasUpdater = new Nadam(learningRate);
-                } else {
-                    b.iUpdater = new Nadam(learningRate);
-                }
-                break;
-            case ADAGRAD:
-                if(isBias){
-                    b.biasUpdater = new AdaGrad(learningRate);
-                } else {
-                    b.iUpdater = new AdaGrad(learningRate);
-                }
-
-                break;
-            case RMSPROP:
-                if(isBias){
-                    b.biasUpdater = new RmsProp(learningRate);
-                } else {
-                    b.iUpdater = new RmsProp(learningRate);
-                }
-                break;
-            case NONE:
-                b.iUpdater = new NoOp();
-                break;
-            case CUSTOM:
-                //No op
-                break;
-        }
     }
 
     /**
@@ -214,10 +121,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         protected WeightInit weightInit = null;
         protected double biasInit = Double.NaN;
         protected Distribution dist = null;
-        @Deprecated
-        protected double learningRate = Double.NaN;
-        @Deprecated
-        protected double biasLearningRate = Double.NaN;
         @Deprecated
         protected Map<Integer, Double> learningRateSchedule = null;
         protected double l1 = Double.NaN;
@@ -292,33 +195,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          */
         public T dist(Distribution dist) {
             this.dist = dist;
-            return (T) this;
-        }
-
-        /**
-         * Learning rate. Defaults to 1e-1
-         */
-        @Deprecated
-        public T learningRate(double learningRate) {
-            this.learningRate = learningRate;
-            return (T) this;
-        }
-
-        /**
-         * Bias learning rate. Set this to apply a different learning rate to the bias
-         */
-        @Deprecated
-        public T biasLearningRate(double biasLearningRate) {
-            this.biasLearningRate = biasLearningRate;
-            return (T) this;
-        }
-
-        /**
-         * Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration.
-         */
-        @Deprecated
-        public T learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
-            this.learningRateSchedule = learningRateSchedule;
             return (T) this;
         }
 

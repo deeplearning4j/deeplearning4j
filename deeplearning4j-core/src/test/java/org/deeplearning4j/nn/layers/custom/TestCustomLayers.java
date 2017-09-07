@@ -72,7 +72,7 @@ public class TestCustomLayers {
         //Second: let's create a MultiLayerCofiguration with one, and check JSON and YAML config actually works...
 
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().learningRate(0.1).list()
+                        new NeuralNetConfiguration.Builder().list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                                         .layer(1, new CustomLayer(3.14159)).layer(2,
                                                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -95,7 +95,7 @@ public class TestCustomLayers {
     public void testJsonComputationGraph() {
         //ComputationGraph with a custom layer; check JSON and YAML config actually works...
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.1).graphBuilder()
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder()
                         .addInputs("in").addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
                         .addLayer("1", new CustomLayer(3.14159), "0").addLayer("2",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10)
@@ -120,7 +120,7 @@ public class TestCustomLayers {
     public void checkInitializationFF() {
         //Actually create a network with a custom layer; check initialization and forward pass
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.1).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
                         .layer(0, new DenseLayer.Builder().nIn(9).nOut(10).build()).layer(1, new CustomLayer(3.14159)) //hard-coded nIn/nOut of 10
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(11).build())
                         .pretrain(false).backprop(true).build();
@@ -161,7 +161,7 @@ public class TestCustomLayers {
 
         //Second: let's create a MultiLayerCofiguration with one, and check JSON and YAML config actually works...
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().seed(12345).learningRate(0.1).list()
+                        new NeuralNetConfiguration.Builder().seed(12345).list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                                         .layer(1, new CustomOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                         .nIn(10).nOut(10).build())
@@ -187,7 +187,7 @@ public class TestCustomLayers {
 
         //Fourth: compare to an equivalent standard output layer (should be identical)
         MultiLayerConfiguration conf2 =
-                        new NeuralNetConfiguration.Builder().seed(12345).learningRate(0.1).weightInit(WeightInit.XAVIER)
+                        new NeuralNetConfiguration.Builder().seed(12345).weightInit(WeightInit.XAVIER)
                                         .list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(1,
                                                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -212,7 +212,7 @@ public class TestCustomLayers {
     @Test
     public void testCustomOutputLayerCG() {
         //Create a ComputationGraphConfiguration with custom output layer, and check JSON and YAML config actually works...
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).learningRate(0.1)
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in").addLayer("1",
                                         new CustomOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10)
@@ -239,7 +239,7 @@ public class TestCustomLayers {
         assertTrue(net.getLayer(1) instanceof CustomOutputLayerImpl);
 
         //Fourth: compare to an equivalent standard output layer (should be identical)
-        ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(12345).learningRate(0.1)
+        ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(12345)
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in").addLayer("1",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10)

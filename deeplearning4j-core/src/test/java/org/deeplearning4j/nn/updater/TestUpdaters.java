@@ -133,9 +133,8 @@ public class TestUpdaters {
         double epsilon = AdaGrad.DEFAULT_ADAGRAD_EPSILON;
 
         NeuralNetConfiguration conf =
-                        new NeuralNetConfiguration.Builder().learningRate(lr)
-                                        .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut)
-                                                        .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                        new NeuralNetConfiguration.Builder().updater(new AdaGrad(lr))
+                                        .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).build())
                                         .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
@@ -239,12 +238,12 @@ public class TestUpdaters {
         double epsilon = Nadam.DEFAULT_NADAM_EPSILON;
 
         NeuralNetConfiguration conf =
-                        new NeuralNetConfiguration.Builder().learningRate(lr).iterations(iteration)
-                                        .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut)
-                                                        .updater(new Nadam.Builder().learningRate(lr).beta1(beta1)
-                                                                        .beta2(beta2).epsilon(epsilon).build())
-                                                        .build())
-                                        .build();
+                new NeuralNetConfiguration.Builder().iterations(iteration)
+                        .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut)
+                                .updater(new Nadam.Builder().learningRate(lr).beta1(beta1)
+                                        .beta2(beta2).epsilon(epsilon).build())
+                                .build())
+                        .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -483,9 +482,8 @@ public class TestUpdaters {
         double lr = 0.05;
 
         NeuralNetConfiguration conf =
-                        new NeuralNetConfiguration.Builder().learningRate(lr)
-                                        .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut)
-                                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                        new NeuralNetConfiguration.Builder().updater(new Sgd(lr))
+                                        .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).build())
                                         .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
@@ -518,9 +516,8 @@ public class TestUpdaters {
         double lr = 0.5;
 
         NeuralNetConfiguration conf =
-                        new NeuralNetConfiguration.Builder().learningRate(lr)
-                                        .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut)
-                                                        .updater(org.deeplearning4j.nn.conf.Updater.NONE).build())
+                        new NeuralNetConfiguration.Builder().updater(new NoOp())
+                                        .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).build())
                                         .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
@@ -555,13 +552,12 @@ public class TestUpdaters {
         Nd4j.getRandom().setSeed(12345L);
         double lr = 0.03;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr).list()
-                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(5)
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(5).updater(new Sgd(lr)).build())
                         .layer(1, new DenseLayer.Builder().nIn(5).nOut(6)
-                                        .updater(org.deeplearning4j.nn.conf.Updater.NONE).build())
+                                        .updater(new NoOp()).build())
                         .layer(2, new DenseLayer.Builder().nIn(6).nOut(7)
-                                        .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                                        .updater(new AdaGrad(lr)).build())
                         .layer(3, new OutputLayer.Builder().nIn(7).nOut(8)
                                         .updater(new Nesterovs(0.6))
                                         .activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE)
@@ -725,8 +721,7 @@ public class TestUpdaters {
         gradient.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbiasGradient);
 
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr).seed(42)
-                        .updater(org.deeplearning4j.nn.conf.Updater.SGD)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(lr)).seed(42)
                         .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                                         .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
                                         .activation(Activation.IDENTITY).nIn(nIn).nOut(nOut).build())
@@ -807,18 +802,18 @@ public class TestUpdaters {
 
             List<UpdaterBlock> blocks;
             if (i == 0) {
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.5).list()
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
                                 .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).name("l0")
-                                                .updater(org.deeplearning4j.nn.conf.Updater.ADAM).build())
+                                                .updater(new Adam(0.5)).build())
                                 .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).name("l1")
-                                                .updater(org.deeplearning4j.nn.conf.Updater.ADAM).biasLearningRate(0.25)
+                                                .updater(new Adam(0.5)).biasUpdater(new Adam(0.25))
                                                 .build())
                                 .layer(2, new DenseLayer.Builder().nIn(10).nOut(10).name("l2")
-                                                .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
+                                                .updater(new AdaDelta()).build())
                                 .layer(3, new DenseLayer.Builder().nIn(10).nOut(10).name("l3")
-                                                .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                                                .updater(new AdaGrad(0.5)).build())
                                 .layer(4, new OutputLayer.Builder().nIn(10).nOut(10).name("l4")
-                                                .updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
+                                                .updater(new AdaMax(0.5)).build())
                                 .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -827,19 +822,19 @@ public class TestUpdaters {
                 MultiLayerUpdater u = (MultiLayerUpdater) net.getUpdater();
                 blocks = u.getUpdaterBlocks();
             } else {
-                ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.5)
+                ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .graphBuilder().addInputs("in")
                                 .addLayer("l0", new DenseLayer.Builder().nIn(10).nOut(10)
-                                                .updater(org.deeplearning4j.nn.conf.Updater.ADAM).build(), "in")
+                                        .updater(new Adam(0.5)).build(), "in")
                                 .addLayer("l1", new DenseLayer.Builder().nIn(10).nOut(10)
-                                                .updater(org.deeplearning4j.nn.conf.Updater.ADAM).biasLearningRate(0.25)
+                                                .updater(new Adam(0.5)).biasUpdater(new Adam(0.25))
                                                 .build(), "l0")
                                 .addLayer("l2", new DenseLayer.Builder().nIn(10).nOut(10)
-                                                .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build(), "l1")
+                                                .updater(new AdaDelta()).build(), "l1")
                                 .addLayer("l3", new DenseLayer.Builder().nIn(10).nOut(10)
-                                                .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build(), "l2")
+                                                .updater(new AdaGrad(0.5)).build(), "l2")
                                 .addLayer("l4", new OutputLayer.Builder().nIn(10).nOut(10)
-                                                .updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build(), "l3")
+                                                .updater(new AdaMax(0.5)).build(), "l3")
                                 .setOutputs("l4").build();
 
                 ComputationGraph net = new ComputationGraph(conf);
@@ -940,8 +935,7 @@ public class TestUpdaters {
 
         List<UpdaterBlock> blocks;
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().learningRate(0.5)
-                                        .updater(org.deeplearning4j.nn.conf.Updater.ADAM).list()
+                        new NeuralNetConfiguration.Builder().updater(new Adam(0.5)).list()
                                         .layer(0, new VariationalAutoencoder.Builder().nIn(8).nOut(12)
                                                         .encoderLayerSizes(10, 11).decoderLayerSizes(13, 14).build())
                                         .build();

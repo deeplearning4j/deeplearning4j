@@ -578,20 +578,15 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected WeightInit weightInit = WeightInit.XAVIER;
         protected double biasInit = 0.0;
         protected Distribution dist = null;
-        @Deprecated
-        protected double learningRate = Double.NaN;
-        @Deprecated
-        protected double biasLearningRate = Double.NaN;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
         protected double l1Bias = Double.NaN;
         protected double l2Bias = Double.NaN;
         protected IDropout idropOut = null;
         protected IWeightNoise weightNoise;
-        protected IUpdater iUpdater = null; //new Sgd();
+        protected IUpdater iUpdater = null;
+        protected IUpdater biasUpdater = null;
         protected Layer layer;
-        @Deprecated
-        protected double leakyreluAlpha = 0.01;
         protected boolean miniBatch = true;
         protected int numIterations = 1;
         protected int maxNumLineSearchIterations = 5;
@@ -602,14 +597,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected boolean minimize = true;
         protected GradientNormalization gradientNormalization = GradientNormalization.None;
         protected double gradientNormalizationThreshold = 1.0;
-        @Deprecated
-        protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
-        @Deprecated
-        protected double lrPolicyDecayRate = Double.NaN;
-        @Deprecated
-        protected double lrPolicySteps = Double.NaN;
-        @Deprecated
-        protected double lrPolicyPower = Double.NaN;
         protected ISchedule learningRateSchedule;
         protected ISchedule biasLearningRateSchedule;
         protected boolean pretrain = false;
@@ -889,15 +876,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * @deprecated Use {@link #activation(IActivation)} with leaky relu, setting alpha value directly in constructor.
-         */
-        @Deprecated
-        public Builder leakyreluAlpha(double leakyreluAlpha) {
-            this.leakyreluAlpha = leakyreluAlpha;
-            return this;
-        }
-
-        /**
          * Weight initialization scheme.
          *
          * @see org.deeplearning4j.nn.weights.WeightInit
@@ -923,42 +901,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public Builder dist(Distribution dist) {
             this.dist = dist;
-            return this;
-        }
-
-        /**
-         * Learning rate. Defaults to 1e-1
-         */
-        @Deprecated
-        public Builder learningRate(double learningRate) {
-            this.learningRate = learningRate;
-            return this;
-        }
-
-        /**
-         * Bias learning rate. Set this to apply a different learning rate to the bias
-         */
-        @Deprecated
-        public Builder biasLearningRate(double biasLearningRate) {
-            this.biasLearningRate = biasLearningRate;
-            return this;
-        }
-
-        /**
-         * Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration.
-         */
-        @Deprecated
-        public Builder learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
-            return learningRateSchedule(new MapSchedule(ScheduleType.ITERATION, learningRateSchedule));
-        }
-
-        /**
-         * Rate to decrease learningRate by when the score stops improving.
-         * Learning rate is multiplied by this rate so ideally keep between 0 and 1.
-         */
-        @Deprecated
-        public Builder learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
-//            this.lrScoreBasedDecay = lrScoreBasedDecay;
             return this;
         }
 
@@ -1055,6 +997,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        public Builder biasUpdater(IUpdater updater){
+            this.biasUpdater = updater;
+            return this;
+        }
+
         /**
          * Gradient normalization strategy. Used to specify gradient renormalization, gradient clipping etc.
          *
@@ -1074,50 +1021,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public Builder gradientNormalizationThreshold(double threshold) {
             this.gradientNormalizationThreshold = threshold;
-            return this;
-        }
-
-        /**
-         * Learning rate decay policy. Used to adapt learning rate based on policy.
-         *
-         * @param policy Type of policy to use. Defaults to None.
-         */
-        @Deprecated
-        public Builder learningRateDecayPolicy(LearningRatePolicy policy) {
-            this.learningRatePolicy = policy;
-            return this;
-        }
-
-        /**
-         * Set the decay rate for the learning rate decay policy.
-         *
-         * @param lrPolicyDecayRate rate.
-         */
-        @Deprecated
-        public Builder lrPolicyDecayRate(double lrPolicyDecayRate) {
-            this.lrPolicyDecayRate = lrPolicyDecayRate;
-            return this;
-        }
-
-        /**
-         * Set the number of steps used for learning decay rate steps policy.
-         *
-         * @param lrPolicySteps number of steps
-         */
-        @Deprecated
-        public Builder lrPolicySteps(double lrPolicySteps) {
-            this.lrPolicySteps = lrPolicySteps;
-            return this;
-        }
-
-        /**
-         * Set the power used for learning rate inverse policy.
-         *
-         * @param lrPolicyPower power
-         */
-        @Deprecated
-        public Builder lrPolicyPower(double lrPolicyPower) {
-            this.lrPolicyPower = lrPolicyPower;
             return this;
         }
 
@@ -1243,37 +1146,13 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     bLayer.setWeightInit(weightInit);
                 if (Double.isNaN(bLayer.getBiasInit()))
                     bLayer.setBiasInit(biasInit);
-                if (bLayer.getIUpdater() == null && iUpdater != null) {
-                    bLayer.setIUpdater(iUpdater.clone());
-                    if(!Double.isNaN(bLayer.getLearningRate())){
-                        LayerValidation.setLegacyLr(bLayer.getIUpdater(), bLayer.getLearningRate());
-                    }
-                }
-
-                //Legacy case: user hasn't set updater anywhere - set default
-                if(bLayer.getIUpdater() == null && iUpdater == null){
-                    if(Double.isNaN(bLayer.getLearningRate())){
-                        bLayer.setIUpdater(new Sgd());
-                    } else {
-                        bLayer.setIUpdater(new Sgd(bLayer.getLearningRate()));
-                    }
-                }
-
-
-                if (Double.isNaN(bLayer.getLearningRate()) && !Double.isNaN(learningRate)){
-                    LayerValidation.setLegacyLr(bLayer.getIUpdater(), learningRate);
-                }
-                if (bLayer.getBiasUpdater() == null && !Double.isNaN(biasLearningRate) && iUpdater != null ) {
-                    bLayer.setBiasUpdater(iUpdater.clone());
-                    LayerValidation.setLegacyLr(bLayer.getBiasUpdater(), biasLearningRate);
-                }
 
                 //Configure weight noise:
                 if(weightNoise != null && ((BaseLayer) layer).getWeightNoise() == null){
                     ((BaseLayer) layer).setWeightNoise(weightNoise.clone());
                 }
 
-                LayerValidation.updaterValidation(layerName, layer, learningRate, biasLearningRate);
+                LayerValidation.updaterValidation(layerName, layer);
                 if (bLayer.getGradientNormalization() == null)
                     bLayer.setGradientNormalization(gradientNormalization);
                 if (Double.isNaN(bLayer.getGradientNormalizationThreshold()))

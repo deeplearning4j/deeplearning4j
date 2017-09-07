@@ -19,6 +19,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
@@ -83,11 +84,9 @@ public class VaeGradientCheckTests {
                             double l1 = l1vals[k];
 
                             MultiLayerConfiguration conf =
-                                            new NeuralNetConfiguration.Builder().regularization(true).l2(l2).l1(l1)
+                                            new NeuralNetConfiguration.Builder().l2(l2).l1(l1)
                                                             .l2Bias(biasL2[k]).l1Bias(biasL1[k])
-                                                            .optimizationAlgo(
-                                                                            OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                                            .learningRate(1.0).seed(12345L).list()
+                                                            .updater(new NoOp()).seed(12345L).list()
                                                             .layer(0, new VariationalAutoencoder.Builder().nIn(4)
                                                                             .nOut(3).encoderLayerSizes(encoderSizes)
                                                                             .decoderLayerSizes(decoderSizes)
@@ -159,10 +158,9 @@ public class VaeGradientCheckTests {
                     double l2 = l2vals[j]; //Ideally we'd do the cartesian product of l1/l2 and the activation functions, but that takes too long...
                     double l1 = l1vals[j];
 
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l2(l2)
-                                    .l1(l1).l2Bias(biasL2[j]).l1Bias(biasL1[j])
-                                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                    .learningRate(1.0).seed(12345L).weightInit(WeightInit.XAVIER).list()
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(l2)
+                                    .l1(l1).l2Bias(biasL2[j]).l1Bias(biasL1[j]).updater(new NoOp())
+                                    .seed(12345L).weightInit(WeightInit.XAVIER).list()
                                     .layer(0, new VariationalAutoencoder.Builder().nIn(4).nOut(3)
                                                     .encoderLayerSizes(encoderSizes).decoderLayerSizes(decoderSizes)
                                                     .pzxActivationFunction(pzxAfn)
@@ -255,8 +253,8 @@ public class VaeGradientCheckTests {
                         throw new RuntimeException();
                 }
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l2(0.2).l1(0.3)
-                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(1.0)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.3)
+                                .updater(new NoOp())
                                 .seed(12345L).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                                 .list().layer(0,
                                                 new VariationalAutoencoder.Builder().nIn(inOutSize).nOut(3)
@@ -299,8 +297,8 @@ public class VaeGradientCheckTests {
                 //            for (int numSamples : new int[]{10}) {
                 INDArray features = Nd4j.rand(minibatch, 4);
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l2(0.2).l1(0.3)
-                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(1.0)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.3)
+                                .updater(new NoOp())
                                 .seed(12345L).weightInit(WeightInit.XAVIER).list()
                                 .layer(0, new VariationalAutoencoder.Builder().nIn(4).nOut(3).encoderLayerSizes(5, 6)
                                                 .decoderLayerSizes(7, 8).pzxActivationFunction(Activation.TANH)

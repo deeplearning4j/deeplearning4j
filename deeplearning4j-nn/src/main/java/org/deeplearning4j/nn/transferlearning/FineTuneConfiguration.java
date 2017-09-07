@@ -38,18 +38,13 @@ public class FineTuneConfiguration {
     protected WeightInit weightInit;
     protected Double biasInit;
     protected Distribution dist;
-    @Deprecated
-    protected Double learningRate;
-    @Deprecated
-    protected Double biasLearningRate;
-    protected Map<Integer, Double> learningRateSchedule;
-    protected Double lrScoreBasedDecay;
     protected Double l1;
     protected Double l2;
     protected Double l1Bias;
     protected Double l2Bias;
     protected IDropout iDropout;
     protected IUpdater iUpdater;
+    protected IUpdater biasUpdater;
     protected Boolean miniBatch;
     protected Integer numIterations;
     protected Integer maxNumLineSearchIterations;
@@ -60,10 +55,6 @@ public class FineTuneConfiguration {
     protected Boolean minimize;
     protected GradientNormalization gradientNormalization;
     protected Double gradientNormalizationThreshold;
-    protected LearningRatePolicy learningRatePolicy;
-    protected Double lrPolicyDecayRate;
-    protected Double lrPolicySteps;
-    protected Double lrPolicyPower;
     protected ConvolutionMode convolutionMode;
     protected List<LayerConstraint> constraints;
     protected Boolean hasBiasConstraints;
@@ -114,6 +105,7 @@ public class FineTuneConfiguration {
             return iUpdater(updater);
         }
 
+        @Deprecated
         public Builder updater(Updater updater) {
             return updater(updater.getIUpdaterWithDefaultConfig());
         }
@@ -193,7 +185,7 @@ public class FineTuneConfiguration {
 
         //Perform validation. This also sets the defaults for updaters. For example, Updater.RMSProp -> set rmsDecay
         if (l != null) {
-            LayerValidation.updaterValidation(l.getLayerName(), l, learningRate, biasLearningRate);
+            LayerValidation.updaterValidation(l.getLayerName(), l);
             boolean useDropCon = (useDropConnect == null ? nnc.isUseDropConnect() : useDropConnect);
             LayerValidation.generalValidation(l.getLayerName(), l, useDropCon, iDropout, l2, l2Bias, l1, l1Bias, dist,
                     constraints, null, null);
@@ -243,16 +235,6 @@ public class FineTuneConfiguration {
             confBuilder.setBiasInit(biasInit);
         if (dist != null)
             confBuilder.setDist(dist);
-        if (learningRate != null) {
-            //usually the same learning rate is applied to both bias and weights
-            //HOWEVER: this is set elsewhere. in the NNC, we only want to override the normal LR
-            confBuilder.setLearningRate(learningRate);
-        }
-        if (biasLearningRate != null)
-            confBuilder.setBiasLearningRate(biasLearningRate);
-//        if (learningRateSchedule != null)
-//            confBuilder.setLearningRateSchedule(learningRateSchedule);
-        //      if(lrScoreBasedDecay != null)
         if (l1 != null)
             confBuilder.setL1(l1);
         if (l2 != null)
@@ -265,6 +247,8 @@ public class FineTuneConfiguration {
             confBuilder.setIdropOut(iDropout);
         if (iUpdater != null)
             confBuilder.updater(iUpdater);
+        if(biasUpdater != null)
+            confBuilder.biasUpdater(biasUpdater);
         if (miniBatch != null)
             confBuilder.setMiniBatch(miniBatch);
         if (numIterations != null)
@@ -285,12 +269,6 @@ public class FineTuneConfiguration {
             confBuilder.setGradientNormalization(gradientNormalization);
         if (gradientNormalizationThreshold != null)
             confBuilder.setGradientNormalizationThreshold(gradientNormalizationThreshold);
-        if (learningRatePolicy != null)
-            confBuilder.setLearningRatePolicy(learningRatePolicy);
-        if (lrPolicySteps != null)
-            confBuilder.setLrPolicySteps(lrPolicySteps);
-        if (lrPolicyPower != null)
-            confBuilder.setLrPolicyPower(lrPolicyPower);
 
         return confBuilder;
     }

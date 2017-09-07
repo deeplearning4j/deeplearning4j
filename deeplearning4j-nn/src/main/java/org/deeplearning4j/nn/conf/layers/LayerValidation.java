@@ -41,7 +41,7 @@ public class LayerValidation {
     /**
      * Validate the updater configuration - setting the default updater values, if necessary
      */
-    public static void updaterValidation(String layerName, Layer layer, Double learningRate, Double biasLearningRate) {
+    public static void updaterValidation(String layerName, Layer layer) {
         BaseLayer bLayer;
         if (layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer) {
             bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
@@ -50,74 +50,10 @@ public class LayerValidation {
         } else {
             return;
         }
-        updaterValidation(layerName, bLayer, learningRate == null ? Double.NaN : learningRate,
-                biasLearningRate == null ? Double.NaN : biasLearningRate);
+        updaterValidation(layerName, bLayer);
     }
 
-    /**
-     * Validate the updater configuration - setting the default updater values, if necessary
-     */
-    public static void updaterValidation(String layerName, BaseLayer layer, double learningRate, double biasLearningRate) {
-        //Set values from old (deprecated) .epsilon(), .momentum(), etc methods to the built-in updaters
-        //Note that there are *layer* versions (available via the layer) and *global* versions (via the method args)
-        //The layer versions take precedence over the global versions. If neither are set, we use whatever is set
-        // on the IUpdater instance, which may be the default, or may be user-configured
-        //Note that default values for all other parameters are set by default in the Sgd/Adam/whatever classes
-        //Hence we don't need to set them here
-        //Finally: we'll also set the (updater enumeration field to something sane) to avoid updater=SGD,
-        // iupdater=Adam() type situations. Though the updater field isn't used, we don't want to confuse users
 
-        IUpdater u = layer.getIUpdater();
-        if (!Double.isNaN(learningRate) && Double.isNaN(layer.getLearningRate())) {
-            //Global LR set only
-            setLegacyLr(u, learningRate);
-        }
-
-        if(!Double.isNaN(biasLearningRate) && Double.isNaN(layer.getBiasLearningRate())){
-            IUpdater ub = layer.getBiasUpdater();
-            if(ub == null){
-                ub = layer.getIUpdater().clone();
-            }
-            setLegacyLr(ub, biasLearningRate);
-        }
-    }
-
-    public static void setLegacyLr(IUpdater u, double lr){
-        if(u instanceof AdaGrad){
-            ((AdaGrad) u).setLearningRate(lr);
-        } else if(u instanceof Adam){
-            ((Adam) u).setLearningRate(lr);
-        } else if(u instanceof AdaMax){
-            ((AdaMax) u).setLearningRate(lr);
-        } else if(u instanceof Nadam){
-            ((Nadam) u).setLearningRate(lr);
-        } else if(u instanceof Nesterovs){
-            ((Nesterovs) u).setLearningRate(lr);
-        } else if(u instanceof RmsProp){
-            ((RmsProp) u).setLearningRate(lr);
-        } else if(u instanceof Sgd){
-            ((Sgd) u).setLearningRate(lr);
-        }
-    }
-
-    public static Double getLr(IUpdater u){
-        if(u instanceof AdaGrad){
-            return ((AdaGrad) u).getLearningRate();
-        } else if(u instanceof Adam){
-            return ((Adam) u).getLearningRate();
-        } else if(u instanceof AdaMax){
-            return ((AdaMax) u).getLearningRate();
-        } else if(u instanceof Nadam){
-            return ((Nadam) u).getLearningRate();
-        } else if(u instanceof Nesterovs){
-            return ((Nesterovs) u).getLearningRate();
-        } else if(u instanceof RmsProp){
-            return ((RmsProp) u).getLearningRate();
-        } else if(u instanceof Sgd){
-            return ((Sgd) u).getLearningRate();
-        }
-        return null;
-    }
 
 
     public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, IDropout iDropOut,
@@ -135,14 +71,6 @@ public class LayerValidation {
                                          List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
 
         if (layer != null) {
-
-//            if (useDropConnect && (Double.isNaN(dropOut) && (Double.isNaN(layer.getDropOut()))))
-//                OneTimeLogger.warn(log, "Layer \"" + layerName
-//                                + "\" dropConnect is set to true but dropout rate has not been added to configuration.");
-//            if (useDropConnect && layer.getDropOut() == 0.0)
-//                OneTimeLogger.warn(log,
-//                                "Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
-
             if (layer instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) layer;
                 configureBaseLayer(layerName, bLayer, useDropConnect, iDropout, l2, l2Bias, l1,

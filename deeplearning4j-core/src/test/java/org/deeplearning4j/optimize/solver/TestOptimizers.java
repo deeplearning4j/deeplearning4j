@@ -1,5 +1,7 @@
 package org.deeplearning4j.optimize.solver;
 
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -115,15 +117,13 @@ public class TestOptimizers {
 
     private static MultiLayerConfiguration getMLPConfigIris(OptimizationAlgorithm oa, int nIterations) {
         MultiLayerConfiguration c = new NeuralNetConfiguration.Builder().optimizationAlgo(oa).iterations(nIterations)
-                        .learningRate(1e-1).seed(12345L)
+                        .updater(new AdaGrad(1e-1)).seed(12345L)
                         .list().layer(0,
                                         new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
-                                                        .updater(Updater.ADAGRAD).activation(
-                                                                        Activation.RELU)
+                                                        .activation(Activation.RELU)
                                                         .build())
                         .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
-                                        .weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD)
-                                        .activation(Activation.SOFTMAX).build())
+                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
                         .backprop(true).pretrain(false).build();
 
         return c;
@@ -188,8 +188,8 @@ public class TestOptimizers {
                             + nDimensions);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().maxNumLineSearchIterations(numLineSearchIter)
-                        .iterations(100).learningRate(1e-2)
-                        .layer(new RBM.Builder().nIn(1).nOut(1).updater(Updater.SGD).build()).build();
+                        .iterations(100).updater(new Sgd(1e-2))
+                        .layer(new RBM.Builder().nIn(1).nOut(1).build()).build();
         conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
         Random rng = new DefaultRandom(12345L);
@@ -278,8 +278,8 @@ public class TestOptimizers {
             org.nd4j.linalg.api.rng.distribution.Distribution dist =
                             new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -10, 10);
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .maxNumLineSearchIterations(maxNumLineSearchIter).iterations(i).learningRate(0.1)
-                            .layer(new DenseLayer.Builder().nIn(1).nOut(1).updater(Updater.SGD).build()).build();
+                            .maxNumLineSearchIterations(maxNumLineSearchIter).iterations(i).updater(new Sgd(0.1))
+                            .layer(new DenseLayer.Builder().nIn(1).nOut(1).build()).build();
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new SphereFunctionModel(100, dist, conf);
@@ -412,8 +412,8 @@ public class TestOptimizers {
         for (int i = 0; i <= nOptIter; i++) {
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                             .maxNumLineSearchIterations(maxNumLineSearchIter).iterations(i).miniBatch(false)
-                            .learningRate(1e-2)
-                            .layer(new DenseLayer.Builder().nIn(1).nOut(1).updater(Updater.ADAGRAD).build()).build();
+                            .updater(new AdaGrad(1e-2))
+                            .layer(new DenseLayer.Builder().nIn(1).nOut(1).build()).build();
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RastriginFunctionModel(10, conf);
@@ -595,8 +595,9 @@ public class TestOptimizers {
         for (int i = 0; i <= nOptIter; i++) {
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                             .maxNumLineSearchIterations(maxNumLineSearchIter).iterations(i)
+                            .updater(new Sgd(1e-1))
                             .stepFunction(new org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction())
-                            .learningRate(1e-1).layer(new RBM.Builder().nIn(1).nOut(1).updater(Updater.SGD).build())
+                            .layer(new RBM.Builder().nIn(1).nOut(1).build())
                             .build();
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 

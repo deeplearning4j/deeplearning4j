@@ -232,14 +232,11 @@ public class NeuralNetConfigurationTest {
         int iteration = 3;
         INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.3).updater(Updater.SGD).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.3)).list()
                         .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).learningRate(lr)
-                                        .biasLearningRate(biasLr).build())
-                        .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).learningRate(0.7)
-                                        .build())
-                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                                        .updater(new Sgd(lr)).biasUpdater(new Sgd(biasLr)).build())
+                        .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(new Sgd(0.7)).build())
+                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).build())
                         .backprop(true).pretrain(false).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -297,13 +294,11 @@ public class NeuralNetConfigurationTest {
         int iteration = 3;
         INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(8).regularization(true).l1(l1)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l1(l1)
                         .l2(l2).list()
-                        .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                        .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).build())
                         .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).l2(0.5).build())
-                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).build())
                         .backprop(true).pretrain(false).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -328,7 +323,7 @@ public class NeuralNetConfigurationTest {
 
         org.deeplearning4j.nn.conf.layers.RBM layer =
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder(RBM.HiddenUnit.BINARY, RBM.VisibleUnit.BINARY)
-                                        .nIn(10).nOut(5).learningRate(1e-1f)
+                                        .nIn(10).nOut(5).updater(new Sgd(1e-1))
                                         .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).seed(42).layer(layer).build();

@@ -98,7 +98,7 @@ public class MultipleEpochsIteratorTest {
     public void testCifarDataSetIteratorReset() {
         int epochs = 2;
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false).learningRate(1.0)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .weightInit(WeightInit.XAVIER).seed(12345L).list()
                         .layer(0, new DenseLayer.Builder().nIn(400).nOut(50).activation(Activation.RELU).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)

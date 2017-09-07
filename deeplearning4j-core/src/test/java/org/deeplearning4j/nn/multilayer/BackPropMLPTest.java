@@ -19,6 +19,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Arrays;
@@ -299,19 +300,18 @@ public class BackPropMLPTest {
      */
     private static MultiLayerConfiguration getIrisMLPSimpleConfig(int[] hiddenLayerSizes,
                     Activation activationFunction) {
-        NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder().iterations(1).learningRate(0.1)
-                        .updater(Updater.SGD).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .regularization(false).seed(12345L).list();
+        NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder().iterations(1).updater(new Sgd(0.1))
+                    .seed(12345L).list();
 
         for (int i = 0; i < hiddenLayerSizes.length; i++) {
             int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
             lb.layer(i, new DenseLayer.Builder().nIn(nIn).nOut(hiddenLayerSizes[i]).weightInit(WeightInit.XAVIER)
-                            .updater(Updater.SGD).activation(activationFunction).build());
+                            .activation(activationFunction).build());
         }
 
         lb.layer(hiddenLayerSizes.length,
                         new OutputLayer.Builder(LossFunction.MCXENT).nIn(hiddenLayerSizes[hiddenLayerSizes.length - 1])
-                                        .nOut(3).weightInit(WeightInit.XAVIER).updater(Updater.SGD)
+                                        .nOut(3).weightInit(WeightInit.XAVIER)
                                         .activation(activationFunction.equals(Activation.IDENTITY) ? Activation.IDENTITY
                                                         : Activation.SOFTMAX)
                                         .build());
