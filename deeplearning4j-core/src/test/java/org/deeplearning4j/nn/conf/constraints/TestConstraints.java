@@ -41,7 +41,7 @@ public class TestConstraints {
         for (LayerConstraint lc : constraints) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .learningRate(0.0)
+                    .updater(new Sgd(0.0))
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
                     .list()
                     .layer(new LSTM.Builder().nIn(12).nOut(10)
@@ -101,7 +101,7 @@ public class TestConstraints {
         for (LayerConstraint lc : constraints) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .learningRate(0.0)
+                    .updater(new Sgd(0.0))
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
                     .biasInit(10.0)
                     .list()
@@ -162,7 +162,7 @@ public class TestConstraints {
         for (LayerConstraint lc : constraints) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .learningRate(0.0)
+                    .updater(new Sgd(0.0))
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
                     .list()
                     .layer(new DenseLayer.Builder().nIn(12).nOut(10)
@@ -222,7 +222,7 @@ public class TestConstraints {
         for (LayerConstraint lc : constraints) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .learningRate(0.0)
+                    .updater(new Sgd(0.0))
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
                     .biasInit(0.2)
                     .list()
@@ -291,7 +291,7 @@ public class TestConstraints {
         for (LayerConstraint lc : constraints) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .learningRate(0.0)
+                    .updater(new Sgd(0.0))
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
                     .biasInit(0.2)
                     .list()

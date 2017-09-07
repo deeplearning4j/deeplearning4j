@@ -24,19 +24,13 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
-<<<<<<< HEAD
-import org.deeplearning4j.nn.conf.constraint.BaseConstraint;
-=======
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
->>>>>>> Start plugging new dropout in to layers/config
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
-import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -87,7 +81,7 @@ public abstract class Layer implements Serializable, Cloneable {
 
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
-        this.dropOut = builder.dropOut;
+        this.iDropout = builder.iDropout;
     }
 
     protected void initializeConstraints(Builder<?> builder){

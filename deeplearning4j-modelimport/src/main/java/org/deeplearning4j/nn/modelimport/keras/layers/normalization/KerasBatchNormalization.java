@@ -93,8 +93,7 @@ public class KerasBatchNormalization extends KerasLayer {
                 layerConfig, conf.getLAYER_FIELD_BATCHNORMALIZATION_GAMMA_CONSTRAINT(), conf, kerasMajorVersion);
 
         BatchNormalization.Builder builder = new BatchNormalization.Builder().name(this.layerName).dropOut(this.dropout).minibatch(true)
-                        .lockGammaBeta(false).eps(getEpsFromConfig(layerConfig))
-                        .momentum(getMomentumFromConfig(layerConfig));
+                        .lockGammaBeta(false).eps(getEpsFromConfig(layerConfig));
         if (betaConstraint != null)
             builder.constrainBeta(betaConstraint);
         if (gammaConstraint != null)
