@@ -31,7 +31,7 @@ public class TestCustomUpdater {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder().seed(12345)
-                        .activation(Activation.TANH).updater(new CustomIUpdater()) //Specify custom IUpdater
+                        .activation(Activation.TANH).updater(new CustomIUpdater(lr)) //Specify custom IUpdater
                         .list().layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                         .layer(1, new OutputLayer.Builder().nIn(10).nOut(10)
                                         .lossFunction(LossFunctions.LossFunction.MSE).build())
@@ -39,7 +39,7 @@ public class TestCustomUpdater {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(12345)
-                        .activation(Activation.TANH).updater(Updater.SGD).list()
+                        .activation(Activation.TANH).updater(new Sgd(lr)).list()
                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(1, new OutputLayer.Builder()
                                         .nIn(10).nOut(10).lossFunction(LossFunctions.LossFunction.MSE).build())
                         .build();

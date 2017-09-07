@@ -177,8 +177,7 @@ public class TestUpdaters {
         double epsilon = Adam.DEFAULT_ADAM_EPSILON;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Adam(lr, beta1, beta2, Adam.DEFAULT_ADAM_EPSILON))
-                .layer(new DenseLayer.Builder()
-                                        .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADAM).build())
+                .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).build())
                         .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
@@ -222,10 +221,9 @@ public class TestUpdaters {
             count++;
         }
 
-//        assertEquals(beta1, layer.layerConf().getAdamMeanDecay(), 1e-4);
-//        assertEquals(beta2, layer.layerConf().getAdamVarDecay(), 1e-4);
-//        assertEquals(2, count);
-        fail();
+        assertEquals(beta1, ((Adam)layer.layerConf().getIUpdater()).getBeta1(), 1e-4);
+        assertEquals(beta2, ((Adam)layer.layerConf().getIUpdater()).getBeta2(), 1e-4);
+        assertEquals(2, count);
     }
 
     @Test
@@ -332,8 +330,7 @@ public class TestUpdaters {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(new AdaMax(lr, beta1, beta2, AdaMax.DEFAULT_ADAMAX_EPSILON))
-                .layer(new DenseLayer.Builder()
-                                        .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
+                .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).build())
                         .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
@@ -657,7 +654,7 @@ public class TestUpdaters {
                         .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(5)
                                         .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                         .layer(1, new DenseLayer.Builder().nIn(5).nOut(6)
-                                        .updater(org.deeplearning4j.nn.conf.Updater.NONE).build())
+                                        .updater(new NoOp()).build())
                         .layer(2, new DenseLayer.Builder().nIn(6).nOut(7)
                                         .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
                         .layer(3, new OutputLayer.Builder().nIn(7).nOut(nOut)
@@ -688,7 +685,7 @@ public class TestUpdaters {
                         .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(5)
                                         .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
                         .layer(1, new DenseLayer.Builder().nIn(5).nOut(6)
-                                        .updater(org.deeplearning4j.nn.conf.Updater.NONE).build())
+                                        .updater(new NoOp()).build())
                         .layer(2, new DenseLayer.Builder().nIn(6).nOut(7)
                                         .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
                         .layer(3, new OutputLayer.Builder().nIn(7).nOut(nOut)

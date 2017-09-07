@@ -242,8 +242,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          */
         @Deprecated
         public T updater(Updater updater) {
-            this.updater = updater;
-            return (T) this;
+            return updater(updater.getIUpdaterWithDefaultConfig());
         }
 
         /**

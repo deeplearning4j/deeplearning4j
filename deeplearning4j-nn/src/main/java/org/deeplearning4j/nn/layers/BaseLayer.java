@@ -410,6 +410,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void fit(INDArray input) {
         if (input != null) {
+            setInput(input);
             applyDropOutIfNecessary(true);
         }
         if (solver == null) {

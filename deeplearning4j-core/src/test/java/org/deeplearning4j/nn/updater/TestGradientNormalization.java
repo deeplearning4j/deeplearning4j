@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.NoOp;
 
 import static org.junit.Assert.*;
 
@@ -24,7 +25,7 @@ public class TestGradientNormalization {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .layer(new DenseLayer.Builder().nIn(10).nOut(20)
-                                        .updater(org.deeplearning4j.nn.conf.Updater.NONE)
+                                        .updater(new NoOp())
                                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build())
                         .build();
 
@@ -70,7 +71,7 @@ public class TestGradientNormalization {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .layer(new DenseLayer.Builder().nIn(10).nOut(20)
-                                        .updater(org.deeplearning4j.nn.conf.Updater.NONE)
+                                        .updater(new NoOp())
                                         .gradientNormalization(GradientNormalization.RenormalizeL2PerParamType).build())
                         .build();
 
@@ -102,7 +103,7 @@ public class TestGradientNormalization {
         double threshold = 3;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(
-                        new DenseLayer.Builder().nIn(10).nOut(20).updater(org.deeplearning4j.nn.conf.Updater.NONE)
+                        new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
                                         .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                         .gradientNormalizationThreshold(threshold).build())
                         .build();
@@ -158,7 +159,7 @@ public class TestGradientNormalization {
             //t=1: large -> clipping
 
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(
-                            new DenseLayer.Builder().nIn(10).nOut(20).updater(org.deeplearning4j.nn.conf.Updater.NONE)
+                            new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
                                             .gradientNormalization(GradientNormalization.ClipL2PerLayer)
                                             .gradientNormalizationThreshold(threshold).build())
                             .build();
@@ -213,7 +214,7 @@ public class TestGradientNormalization {
         double threshold = 3;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(
-                        new DenseLayer.Builder().nIn(10).nOut(20).updater(org.deeplearning4j.nn.conf.Updater.NONE)
+                        new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
                                         .gradientNormalization(GradientNormalization.ClipL2PerParamType)
                                         .gradientNormalizationThreshold(threshold).build())
                         .build();

@@ -296,8 +296,7 @@ public class TransferLearningMLNTest {
                         .addLayer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3, 3)
                                         .stride(2, 2).build())
                         .addLayer(new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
-                                        .activation(Activation.RELU).weightInit(WeightInit.RELU)
-                                        .updater(Updater.ADAGRAD).build())
+                                        .activation(Activation.RELU).weightInit(WeightInit.RELU).build())
                         .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(490).nOut(50)
                                         .weightInit(WeightInit.RELU).updater(new AdaGrad(0.5))
                                         .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
@@ -308,7 +307,7 @@ public class TransferLearningMLNTest {
                                         .gradientNormalizationThreshold(10).build())
                         .addLayer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(50).nOut(4) //4 possible shapes: circle, square, arc, line
-                                        .updater(Updater.ADAGRAD).weightInit(WeightInit.XAVIER)
+                                        .weightInit(WeightInit.XAVIER)
                                         .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                         .gradientNormalizationThreshold(10).build())
                         .setInputPreProcessor(3, new CnnToFeedForwardPreProcessor(7, 7, 10))

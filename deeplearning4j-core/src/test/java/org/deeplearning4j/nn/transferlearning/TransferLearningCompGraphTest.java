@@ -375,8 +375,7 @@ public class TransferLearningCompGraphTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new Adam(0.1))
                 .weightInit(WeightInit.XAVIER)
                         .graphBuilder().addInputs("in")
-                        .addLayer("blstm1",
-                                        new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10)
+                        .addLayer("blstm1",new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10)
                                                         .activation(Activation.TANH).build(),
                                         "in")
                         .addLayer("pool", new GlobalPoolingLayer.Builder().build(), "blstm1")
@@ -400,7 +399,7 @@ public class TransferLearningCompGraphTest {
                         .build();
 
         ComputationGraphConfiguration confExpected = new NeuralNetConfiguration.Builder().seed(12345)
-                        .updater(new Adam(0.1))
+                        .updater(new Sgd(0.01))
                         .weightInit(WeightInit.XAVIER)
                         .graphBuilder().addInputs("in")
                         .addLayer("blstm1",
@@ -410,6 +409,7 @@ public class TransferLearningCompGraphTest {
                         .addLayer("pool", new FrozenLayer(new GlobalPoolingLayer.Builder().build()), "blstm1")
                         .addLayer("dense", new FrozenLayer(new DenseLayer.Builder().nIn(10).nOut(10).build()), "pool")
                         .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).activation(Activation.SOFTMAX)
+                                        .updater(new Adam(0.1))
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "dense")
                         .setOutputs("out").build();
 
