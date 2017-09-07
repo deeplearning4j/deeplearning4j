@@ -5,7 +5,7 @@ layout: default
 
 # Tensorflow & Deeplearning4j
 
-Tensorflow and Deeplearning4j are complementary. Complimentary as in snacks on an airplane, and complementary as in they work together. Deeplearning4j has a model impport function. While our model import is chiefly focused on Tensorflow models created with Keras, later in 2017 it will apply directly to Tensorflow models. 
+Tensorflow and Deeplearning4j are complementary. Actually, they're complimentary as in snacks on an airplane, and complementary as in they work together. Deeplearning4j has a model impport function. While our model import is chiefly focused on Tensorflow models created with Keras, later in 2017 it will apply directly to Tensorflow models. So Tensorflow users who need to run their models on a JVM stack have an easy way to do it. Deeplearning4j also makes it easy to perform more complex inference-related tasks; e.g. vectorize a lexicon, store the word vectors in an index, and run K-nearest neighbors on it. 
 
 ### <a name="tensorflow">TensorFlow</a>
 
