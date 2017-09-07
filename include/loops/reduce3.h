@@ -908,15 +908,8 @@ template<typename OpType>
                     int *yStride = shape::stride(yShapeInfo);
 
                     for(unsigned int i = 0 ;i < length; i++) {
-                        if (xOrder == 'c')
-                            shape::ind2subC(xRank, xShape, i, xCoords);
-                        else
-                            shape::ind2sub(xRank, xShape, i, xCoords);
-
-                        if (yOrder == 'c')
-                            shape::ind2subC(yRank, yShape, i, yCoords);
-                        else
-                            shape::ind2sub(yRank, yShape, i, yCoords);
+                        shape::ind2subC(xRank, xShape, i, xCoords);
+                        shape::ind2subC(yRank, yShape, i, yCoords);
 
                         Nd4jIndex offset = shape::getOffset(0, xShape, xStride, xCoords, xRank);
                         Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoords, yRank);

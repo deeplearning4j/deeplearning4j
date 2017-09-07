@@ -191,7 +191,7 @@ TEST_F(DeclarableOpsTests, TestTensorDot3) {
         y.putScalar(i, i + 1);
     }
 
-    NDArray<float> exp(2, 2, 'c');
+    NDArray<float> exp(2, 2, 'f');
     exp.putScalar(0, 1090.0);
     exp.putScalar(1, 2818.0);
     exp.putScalar(2, 1168.0);
@@ -230,7 +230,7 @@ TEST_F(DeclarableOpsTests, TestTensorDot4) {
         y.putScalar(i, i + 1);
     }
 
-    NDArray<float> exp(2, 2, 'c');
+    NDArray<float> exp(2, 2, 'f');
     exp.putScalar(0, 1090.0);
     exp.putScalar(1, 1168.0);
     exp.putScalar(2, 2818.0);

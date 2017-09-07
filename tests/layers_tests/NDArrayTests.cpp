@@ -19,6 +19,24 @@ public:
 	const std::vector<int> tileShape1 = {2,2,2};
 };
 
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, TestDup1) {
+    NDArray<float> array(arr1, shape1);
+
+    auto arrC = array.dup('c');
+    auto arrF = array.dup('f');
+
+    arrC->printShapeInfo("C shape");
+    arrF->printShapeInfo("F shape");
+
+    ASSERT_TRUE(array.equalsTo(arrF));
+    ASSERT_TRUE(array.equalsTo(arrC));
+
+    ASSERT_TRUE(arrF->equalsTo(arrC));
+}
+
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, AssignScalar1) {
     auto *array = new NDArray<float>(10, 'c');
