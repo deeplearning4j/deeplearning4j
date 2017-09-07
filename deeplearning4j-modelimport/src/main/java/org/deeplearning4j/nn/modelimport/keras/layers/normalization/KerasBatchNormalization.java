@@ -78,7 +78,14 @@ public class KerasBatchNormalization extends KerasLayer {
         getGammaRegularizerFromConfig(layerConfig, enforceTrainingConfig);
         getBetaRegularizerFromConfig(layerConfig, enforceTrainingConfig);
         int batchNormMode = getBatchNormMode(layerConfig, enforceTrainingConfig);
+        if (batchNormMode != 0)
+            throw new UnsupportedKerasConfigurationException("Unsupported batch normalization mode " + batchNormMode +
+                    "Keras modes 1 and 2 have been removed from keras 2.x altogether." +
+                    "Try running with mode 0.");
         int batchNormAxis = getBatchNormAxis(layerConfig, enforceTrainingConfig);
+        if (!(batchNormAxis == 3 || batchNormAxis == -1 ))
+            throw new UnsupportedKerasConfigurationException("Unsupported batch normalization axis " + batchNormAxis +
+                    "DL4J currently supports axis=3 only. Consider reshaping your input.");
 
         LayerConstraint betaConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_BATCHNORMALIZATION_BETA_CONSTRAINT(), conf, kerasMajorVersion);
