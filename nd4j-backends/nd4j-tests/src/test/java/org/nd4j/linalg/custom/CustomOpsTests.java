@@ -5,6 +5,8 @@ import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -184,5 +186,53 @@ public class CustomOpsTests {
         Nd4j.getExecutioner().exec(op);
 
         assertEquals(exp, z);
+    }
+
+
+    @Test
+    public void testScatterUpdate1() throws Exception {
+        val matrix = Nd4j.create(5, 5);
+        val updates = Nd4j.create(2, 5).assign(1.0);
+        int[] dims = new int[]{1};
+        int[] indices = new int[]{1, 3};
+
+        val exp0 = Nd4j.create(1, 5).assign(0);
+        val exp1 = Nd4j.create(1, 5).assign(1);
+
+        ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
+        Nd4j.getExecutioner().exec(op);
+
+        log.info("Matrix: {}", matrix);
+        assertEquals(exp0, matrix.getRow(0));
+        assertEquals(exp1, matrix.getRow(1));
+        assertEquals(exp0, matrix.getRow(2));
+        assertEquals(exp1, matrix.getRow(3));
+        assertEquals(exp0, matrix.getRow(4));
+    }
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testScatterUpdate2() throws Exception {
+        val matrix = Nd4j.create(5, 5);
+        val updates = Nd4j.create(2, 5).assign(1.0);
+        int[] dims = new int[]{0};
+        int[] indices = new int[]{0, 1};
+
+        val exp0 = Nd4j.create(1, 5).assign(0);
+        val exp1 = Nd4j.create(1, 5).assign(1);
+
+        ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
+    }
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testScatterUpdate3() throws Exception {
+        val matrix = Nd4j.create(5, 5);
+        val updates = Nd4j.create(2, 5).assign(1.0);
+        int[] dims = new int[]{1};
+        int[] indices = new int[]{0, 6};
+
+        val exp0 = Nd4j.create(1, 5).assign(0);
+        val exp1 = Nd4j.create(1, 5).assign(1);
+
+        ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
     }
 }
