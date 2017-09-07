@@ -2,24 +2,20 @@ package org.deeplearning4j.nn.conf.serde;
 
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.nd4j.linalg.learning.config.*;
+import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.nd4j.shade.jackson.core.JsonLocation;
 import org.nd4j.shade.jackson.core.JsonParser;
-import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
 import org.nd4j.shade.jackson.databind.JsonDeserializer;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.node.ArrayNode;
 import org.nd4j.shade.jackson.databind.node.ObjectNode;
-import org.nd4j.shade.jackson.databind.util.TokenBuffer;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializer<MultiLayerConfiguration> {
 
@@ -53,9 +49,11 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
 
             for( int i=0; i<layers.length; i++ ){
                 ObjectNode on = (ObjectNode) confsNode.get(i);
+                ObjectNode confNode = null;
                 if(layers[i] instanceof BaseLayer && ((BaseLayer)layers[i]).getIUpdater() == null){
                     //layer -> (first/only child) -> updater
                     if(on.has("layer")){
+                        confNode = on;
                         on = (ObjectNode) on.get("layer");
                     } else {
                         continue;
@@ -66,11 +64,17 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
                 }
 
                 if(layers[i].getIDropout() == null){
-                    //Check for legacy dropout
+                    //Check for legacy dropout/dropconnect
                     if(on.has("dropOut")){
                         double d = on.get("dropOut").asDouble();
                         if(!Double.isNaN(d)){
-                            layers[i].setIDropout(new Dropout(d));
+                            //Might be dropout or dropconnect...
+                            if(confNode != null && layers[i] instanceof BaseLayer && confNode.has("useDropConnect")
+                                    && confNode.get("useDropConnect").asBoolean(false)){
+                                ((BaseLayer)layers[i]).setWeightNoise(new DropConnect(d));
+                            } else {
+                                layers[i].setIDropout(new Dropout(d));
+                            }
                         }
                     }
                 }

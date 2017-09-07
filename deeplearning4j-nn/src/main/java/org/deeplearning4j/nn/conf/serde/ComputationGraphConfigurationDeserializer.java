@@ -7,14 +7,13 @@ import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.nd4j.shade.jackson.core.JsonLocation;
 import org.nd4j.shade.jackson.core.JsonParser;
-import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
 import org.nd4j.shade.jackson.databind.JsonDeserializer;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.node.ArrayNode;
 import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
@@ -67,10 +66,12 @@ public class ComputationGraphConfigurationDeserializer
             int layerIdx = 0;
             while(iter.hasNext()){
                 JsonNode next = iter.next();
+                ObjectNode confNode = null;
                 if(next.has("LayerVertex")){
                     next = next.get("LayerVertex");
                     if(next.has("layerConf")){
-                        next = next.get("layerConf").get("layer").elements().next();
+                        confNode = (ObjectNode) next.get("layerConf");
+                        next = confNode.get("layer").elements().next();
                     } else {
                         continue;
                     }
@@ -84,7 +85,13 @@ public class ComputationGraphConfigurationDeserializer
                         if(next.has("dropOut")){
                             double d = next.get("dropOut").asDouble();
                             if(!Double.isNaN(d)){
-                                layers[layerIdx].setIDropout(new Dropout(d));
+                                //Might be dropout or dropconnect...
+                                if(layers[layerIdx] instanceof BaseLayer && confNode.has("useDropConnect")
+                                        && confNode.get("useDropConnect").asBoolean(false)){
+                                    ((BaseLayer)layers[layerIdx]).setWeightNoise(new DropConnect(d));
+                                } else {
+                                    layers[layerIdx].setIDropout(new Dropout(d));
+                                }
                             }
                         }
                     }
