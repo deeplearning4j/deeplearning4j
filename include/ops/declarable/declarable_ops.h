@@ -5,6 +5,7 @@
 #ifndef LIBND4J_DECLARABLE_OPS_H
 #define LIBND4J_DECLARABLE_OPS_H
 
+#include <sstream>
 #include <types/float16.h>
 #include <pointercast.h>
 #include <NDArray.h>
@@ -141,18 +142,31 @@ namespace nd4j {
                 return _INSTANCE;
             }
 
+            template <typename T>
+            std::string local_to_string(T value)
+            {
+                //create an output string stream
+                std::ostringstream os ;
+
+                //throw the value into the string stream
+                os << value ;
+
+                //convert the string stream into a string and return
+                return os.str() ;
+            }
+
             const char * getAllCustomOperations() {
                 _locker.lock();
 
                 if (!isInit) {
                     for (std::map<std::string, nd4j::ops::DeclarableOp<float>*>::iterator it=_declarablesF.begin(); it!=_declarablesF.end(); ++it) {
                         _opsList += it->first + ":"
-                                    + std::to_string(it->second->getOpDescriptor()->getHash()) + ":"
-                                    + std::to_string(it->second->getOpDescriptor()->getNumberOfInputs()) + ":"
-                                    + std::to_string(it->second->getOpDescriptor()->getNumberOfOutputs()) + ":"
-                                    + std::to_string(it->second->getOpDescriptor()->allowsInplace())  + ":"
-                                    + std::to_string(it->second->getOpDescriptor()->getNumberOfTArgs())  + ":"
-                                    + std::to_string(it->second->getOpDescriptor()->getNumberOfIArgs())  + ":"
+                                    + local_to_string(it->second->getOpDescriptor()->getHash()) + ":"
+                                    + local_to_string(it->second->getOpDescriptor()->getNumberOfInputs()) + ":"
+                                    + local_to_string(it->second->getOpDescriptor()->getNumberOfOutputs()) + ":"
+                                    + local_to_string(it->second->getOpDescriptor()->allowsInplace())  + ":"
+                                    + local_to_string(it->second->getOpDescriptor()->getNumberOfTArgs())  + ":"
+                                    + local_to_string(it->second->getOpDescriptor()->getNumberOfIArgs())  + ":"
                                     + ";" ;
                     }
 
