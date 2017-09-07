@@ -56,7 +56,7 @@ var PAGES = [{
 "url": "https://deeplearning4j.org/cn/compare-dl4j-torch7-pylearn",
 "title": "DL4J与Torch、Theano、Caffe、TensorFlow的比较",
 "description": "Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他项目相比，DL4J在编程语言和宗旨两方面都独具特色。",
-"tags": ["tensor flow", "torch", "python", "caffe", "cntk", "比较", "bigdl", "keras", "mxnet", "tensorflow", "paddle", "dsstne"]
+"tags": ["tensor flow", "torch", "python", "caffe", "caffe2", "cntk", "比较", "bigdl", "keras", "mxnet", "tensorflow", "paddle", "dsstne"]
 },
 {
 "url": "https://deeplearning4j.org/cn/convolutionalnets",

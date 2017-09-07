@@ -1,6 +1,6 @@
 ---
 title: Deep Learning With Clojure
-layout: cn-default
+layout: default
 ---
 
 # Deep Learning With Clojure
