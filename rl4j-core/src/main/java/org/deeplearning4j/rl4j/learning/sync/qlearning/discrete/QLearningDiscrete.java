@@ -209,10 +209,10 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                     nextObs.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.point(j)}, nextObsArray[j]);
                 }
             }
-            if (getHistoryProcessor() != null) {
-                obs.muli(1.0 / getHistoryProcessor().getScale());
-                nextObs.muli(1.0 / getHistoryProcessor().getScale());
-            }
+        }
+        if (getHistoryProcessor() != null) {
+            obs.muli(1.0 / getHistoryProcessor().getScale());
+            nextObs.muli(1.0 / getHistoryProcessor().getScale());
         }
 
         INDArray dqnOutputAr = dqnOutput(obs);
