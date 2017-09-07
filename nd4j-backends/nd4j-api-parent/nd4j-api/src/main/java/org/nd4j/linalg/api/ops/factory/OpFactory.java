@@ -248,4 +248,26 @@ public interface OpFactory {
      */
     BroadcastOp createBroadcastOp(String name, INDArray x, INDArray z, int... dimension);
 
+    /**
+     * This method returns op id number for given opName
+     *
+     * @return
+     */
+    int getOpNumByName(String opName);
+
+    /**
+     * This method returns op id number if opName exists, or -1 otherwise
+     *
+     * @param opName
+     * @return
+     */
+    int getOpNumIfExists(String opName);
+
+
+    /**
+     * This method returns Op instance if opName exists, null otherwise
+     * @param opName
+     * @return
+     */
+    Op getOpByName(String opName);
 }

@@ -667,7 +667,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable var(String name, INDArray arr) {
-        if(variableMap.containsKey(name))
+        if(variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
             return variableMap.get(name);
 
 

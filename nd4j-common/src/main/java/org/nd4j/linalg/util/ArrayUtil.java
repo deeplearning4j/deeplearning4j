@@ -95,6 +95,14 @@ public class ArrayUtil {
         return result;
     }
 
+    public static short toHalf(float data) {
+        return fromFloat(data);
+    }
+
+    public static short toHalf(double data) {
+        return fromFloat((float) data);
+    }
+
     public static short[] toHalfs(float[] data) {
         short[] ret = new short[data.length];
         for (int i = 0; i < ret.length; i++) {

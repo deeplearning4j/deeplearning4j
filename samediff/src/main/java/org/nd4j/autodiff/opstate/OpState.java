@@ -27,11 +27,13 @@ public class OpState implements Serializable {
     private long n;
     private OpType opType;
     private String opName;
+    private int opNum;
     private Number scalarValue;
     private String[] vertexIds;
     private String id;
     private int[] axes;
     private Object[] extraArgs;
+    private Integer[] extraBits;
     private Object[] extraArgsWithoutInPlace;
     private NDArrayInformation result;
     //function handle mainly used for autodiff invocation
@@ -52,6 +54,7 @@ public class OpState implements Serializable {
     public static OpState fromOp(Op op, Map<INDArray,Integer> arrToVertexID) {
         OpState opState = OpState.builder()
                 .extraArgs(op.extraArgs())
+                .opNum(op.opNum())
                 .n(op.n()).vertexIds(null)
                 .id(UUID.randomUUID().toString())
                 .opName(op.name()).vertexIds(new String[]{
@@ -89,6 +92,8 @@ public class OpState implements Serializable {
            return OpType.SHAPE;
        else if(op instanceof BroadcastOp)
            return OpType.BROADCAST;
+       else if (op instanceof CustomOp)
+           return OpType.CUSTOM;
        throw new IllegalStateException("Illegal op type " + op.getClass().getName());
     }
 
@@ -132,7 +137,8 @@ public class OpState implements Serializable {
         INDEX_ACCUMULATION,
         AGGREGATE,
         SHAPE,
-        GRADIENT
+        GRADIENT,
+        CUSTOM,
     }
 
 

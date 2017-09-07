@@ -26,6 +26,10 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
 
     protected SameDiff sameDiff;
 
+    public SDGraph(boolean allowMultipleEdges) {
+        super(allowMultipleEdges);
+    }
+
     public SDGraph(SDGraph gradGraph) {
         setEdges(gradGraph.getEdges());
         setVertices(gradGraph.getVertices());
