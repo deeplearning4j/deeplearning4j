@@ -37,6 +37,6 @@ public class SigmoidDerivative extends AbstractBinaryFunction {
 
     @Override
     public String functionName() {
-        return new org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative().name();
+        return new org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative().name();
     }
 }

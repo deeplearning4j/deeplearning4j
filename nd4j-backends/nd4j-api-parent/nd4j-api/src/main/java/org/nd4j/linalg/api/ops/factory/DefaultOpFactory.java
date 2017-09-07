@@ -363,7 +363,7 @@ public class DefaultOpFactory implements OpFactory {
         TransformOp op = null;
 
         switch (name) {
-            case "softmaxderivative":
+            case "_softmaxderivative":
                 op = new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative(x, z);
                 break;
             case "set":

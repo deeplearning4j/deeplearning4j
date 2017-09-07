@@ -29,7 +29,7 @@ public class Tile extends AbstractUnaryFunction {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        validateDifferentialFunctionsamedoDiff(i_v);
+        validateDifferentialFunctionsameDiff(i_v);
         throw new UnsupportedOperationException();
     }
 

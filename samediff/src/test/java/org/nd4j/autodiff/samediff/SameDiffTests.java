@@ -350,6 +350,7 @@ public class SameDiffTests {
         outside.defineFunction("activate", new SameDiff.SameDiffFunctionDefinition() {
             @Override
             public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                sameDiff.enableDebugMode();
                 SDVariable x = sameDiff.var("x",inputs.get("x"));
                 SDVariable w = sameDiff.var("w",inputs.get("w"));
                 SDVariable y = sameDiff.var("y",inputs.get("y"));
@@ -373,7 +374,7 @@ public class SameDiffTests {
         SDVariable loss = outside.getFunction("activate").getVariable("negtotalsum");
         assertEquals(loss.getArr().getDouble(0),2.77,1e-2);*/
         Pair<Map<SDVariable, Op>, List<Op>> opsBackward = outside.getFunction("activate").execBackwards();
-
+        SameDiff gradSameDiff = outside.getFunction("activate").getFunction("grad");
 
         SDVariable gradWrtX = outside.getFunction("activate").grad("x");
         SDVariable gradWrtW = outside.getFunction("activate").grad("w");

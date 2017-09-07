@@ -68,10 +68,14 @@ public class SameDiff {
     private Map<String,SameDiff> sameDiffFunctionInstances;
     private Map<Integer,DifferentialFunction> functionInstances;
     private Map<Integer,ArrayField> arrayFieldInstances;
-    private Map<OpExecAction,ForwardBackwardState> forwardBackwardStates;
     private static Cloner cloner = new Cloner();
-    private boolean debugMode;
     private static Map<String,Method> opMethods;
+
+
+    //debug mode variables
+    private boolean debugMode;
+    private Map<Integer,Op> opsForResult;
+    private Map<OpExecAction,ForwardBackwardState> forwardBackwardStates;
 
     static {
         opMethods = new HashMap<>();
@@ -378,6 +382,7 @@ public class SameDiff {
         functionInstances = new HashMap<>();
         vertexIdToVariable = new HashMap<>();
         forwardBackwardStates = new HashMap<>();
+        opsForResult = new HashMap<>();
     }
 
 
@@ -3035,6 +3040,9 @@ public class SameDiff {
                 public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
                     //propagate graph to this samediff instance
                     //which wil also contain the backward
+                    if(SameDiff.this.debugMode) {
+                        sameDiff.enableDebugMode();
+                    }
 
                     outer.invokeGraphOn(sameDiff);
                     List<OpExecAction> opOrder = sameDiff.graph().getOpOrder().getActions();
@@ -3089,7 +3097,10 @@ public class SameDiff {
                                                     differentialFunction))
                                             .build();
                                     sameDiff.addVariable(add);
+
                                     if (debugMode) {
+                                        if(add.gradient() != null)
+                                            sameDiff.addVariable(add.gradient());
                                         functionVars.add(add);
                                     }
                                 }
@@ -3103,7 +3114,7 @@ public class SameDiff {
                                             .forward(Arrays.asList(opState.getDifferentialFunction()))
                                             .forwardVariable(Arrays.asList(getVertexIdToVariable().get(opState.getDifferentialFunction().resultVertexId())))
                                             .build();
-                                    SameDiff.this.forwardBackwardStates.put(action, forwardBackwardState);
+                                    sameDiff.forwardBackwardStates.put(action, forwardBackwardState);
                                 }
 
                             }
@@ -3112,6 +3123,14 @@ public class SameDiff {
                             }
                         }
                     }
+
+                    if(sameDiff.isDebugMode()) {
+                        //ensure all gradients are present for all variables
+                        for(SDVariable sdVariable : variables()) {
+                            sdVariable.gradient();
+                        }
+                    }
+
 
                     return SDVariable.builder()
                             .differentialFunction(currentDiff.get(0))
@@ -3123,6 +3142,14 @@ public class SameDiff {
 
 
         Pair<Map<SDVariable, Op>, List<Op>> forward = exec("grad");
+        SameDiff grad = getFunction("grad");
+        if(grad.isDebugMode()) {
+            //ensure all gradients are present for all variables
+            for(SDVariable sdVariable : grad.variables()) {
+                sdVariable.gradient();
+            }
+        }
+
         return forward;
     }
 
@@ -3154,6 +3181,9 @@ public class SameDiff {
             Op op = createOp(
                     opExecAction.getOpState().getOpType(),
                     opExecAction);
+            if(debugMode) {
+                opsForResult.put(opExecAction.getOutputId(),op);
+            }
 
             ops.add(op);
 

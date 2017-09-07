@@ -109,7 +109,7 @@ public class Variable extends DifferentialFunction {
     }
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         //default value is 1.0 (constant)
         List<DifferentialFunction> ret = new ArrayList<>();
        if(i_v == this)

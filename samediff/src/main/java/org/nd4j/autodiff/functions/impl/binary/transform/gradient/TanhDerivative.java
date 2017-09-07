@@ -37,6 +37,6 @@ public class TanhDerivative extends AbstractBinaryFunction {
 
     @Override
     public String functionName() {
-        return new org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative().name();
+        return new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative().name();
     }
 }
