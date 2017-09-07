@@ -725,6 +725,9 @@ namespace nd4j {
                     default:
                         return ND4J_STATUS_BAD_PARAMS;
                 }
+
+                delete tad;
+                delete tadUpdates;
             }
 
             STORE_RESULT(*z);
