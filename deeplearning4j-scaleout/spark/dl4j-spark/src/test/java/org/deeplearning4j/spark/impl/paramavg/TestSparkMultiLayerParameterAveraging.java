@@ -67,6 +67,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import scala.Tuple2;
 
@@ -250,7 +251,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         //Idea: Test spark training where some executors don't get any data
         //in this case: by having fewer examples (2 DataSets) than executors (local[*])
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(nIn).nOut(3)
                                         .activation(Activation.TANH).build())
@@ -360,7 +361,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
             list.add(iter.next());
         }
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(28 * 28).nOut(50)
                                         .activation(Activation.TANH).build())
@@ -421,7 +422,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
 
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(28 * 28).nOut(50)
                                         .activation(Activation.TANH).build())
@@ -487,7 +488,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
 
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(28 * 28).nOut(50)
                                         .activation(Activation.TANH).build())
@@ -571,7 +572,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
 
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP)
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(28 * 28).nOut(50)
@@ -638,7 +639,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
     @Test
     public void testSeedRepeatability() throws Exception {
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(Updater.RMSPROP)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new RmsProp())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
                         .weightInit(WeightInit.XAVIER).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(4).nOut(4)
@@ -717,7 +718,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
             list.add(iter.next());
         }
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(28 * 28).nOut(50)
                                         .activation(Activation.TANH).build())
@@ -763,7 +764,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
             list.add(iter.next());
         }
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP)
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(28 * 28).nOut(50)
@@ -803,11 +804,11 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         int nIn = 8;
 
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(Updater.RMSPROP)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new RmsProp())
                         .weightInit(WeightInit.XAVIER).list()
                         .layer(0, new VariationalAutoencoder.Builder().nIn(8).nOut(10).encoderLayerSizes(12)
                                         .decoderLayerSizes(13).reconstructionDistribution(
-                                                        new GaussianReconstructionDistribution("identity"))
+                                                        new GaussianReconstructionDistribution(Activation.IDENTITY))
                                         .build())
                         .pretrain(true).backprop(false).build();
 
@@ -838,11 +839,11 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         int nIn = 8;
 
         Nd4j.getRandom().setSeed(12345);
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(Updater.RMSPROP)
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new RmsProp())
                         .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .addLayer("0", new VariationalAutoencoder.Builder().nIn(8).nOut(10).encoderLayerSizes(12)
                                         .decoderLayerSizes(13).reconstructionDistribution(
-                                                        new GaussianReconstructionDistribution("identity"))
+                                                        new GaussianReconstructionDistribution(Activation.IDENTITY))
                                         .build(), "in")
                         .setOutputs("0").pretrain(true).backprop(false).build();
 

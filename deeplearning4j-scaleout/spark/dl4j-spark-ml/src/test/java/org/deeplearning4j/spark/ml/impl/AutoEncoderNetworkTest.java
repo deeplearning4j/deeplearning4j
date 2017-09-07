@@ -20,6 +20,7 @@ import org.deeplearning4j.spark.ml.utils.ParamSerializer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -93,7 +94,7 @@ public class AutoEncoderNetworkTest {
                                         .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
                         .layer(4, new RBM.Builder().nIn(5).nOut(8)
                                         .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build()) //decoding starts
-                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("sigmoid").nIn(8)
+                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(8)
                                         .nOut(10).build())
                         .pretrain(true).backprop(true).build();
     }

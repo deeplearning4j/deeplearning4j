@@ -83,7 +83,7 @@ public class TestParallelEarlyStopping {
     public void testEarlyStoppingEveryNEpoch() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.SGD).weightInit(WeightInit.XAVIER).list()
+                        .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .pretrain(false).backprop(true).build();

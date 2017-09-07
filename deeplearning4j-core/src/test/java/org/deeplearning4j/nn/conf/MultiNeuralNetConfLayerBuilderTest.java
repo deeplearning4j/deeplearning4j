@@ -29,7 +29,7 @@ public class MultiNeuralNetConfLayerBuilderTest {
     int numIn = 10;
     int numOut = 5;
     double drop = 0.3;
-    String act = "softmax";
+    Activation act = Activation.SOFTMAX;
     PoolingType poolType = PoolingType.MAX;
     int[] filterSize = new int[] {2, 2};
     int filterDepth = 6;

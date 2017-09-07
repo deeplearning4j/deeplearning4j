@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.graph;
 
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -175,7 +176,7 @@ public class ElementWiseVertexTest {
         int midsz = 13;
         int outputsz = 11;
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
-                        .biasInit(0.0).updater(Updater.SGD)
+                        .biasInit(0.0).updater(new Sgd())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                         .addInputs("input1", "input2", "input3")
                         .addLayer("dense1",
@@ -350,7 +351,7 @@ public class ElementWiseVertexTest {
         int midsz = 13;
         int outputsz = 11;
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
-                        .biasInit(0.0).updater(Updater.SGD)
+                        .biasInit(0.0).updater(new Sgd())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                         .addInputs("input1", "input2", "input3")
                         .addLayer("dense1",
@@ -524,7 +525,7 @@ public class ElementWiseVertexTest {
         int midsz = 13;
         int outputsz = 11;
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
-                        .biasInit(0.0).updater(Updater.SGD)
+                        .biasInit(0.0).updater(new Sgd())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                         .addInputs("input1", "input2")
                         .addLayer("dense1",

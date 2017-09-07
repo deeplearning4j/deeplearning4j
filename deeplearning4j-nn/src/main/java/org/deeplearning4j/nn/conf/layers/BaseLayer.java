@@ -139,19 +139,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         protected LearningRatePolicy learningRatePolicy = null;
         protected IWeightNoise weightNoise;
 
-
-        /**
-         * Layer activation function.
-         * Typical values include:<br>
-         * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
-         * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
-         * @deprecated Use {@link #activation(Activation)} or {@link @activation(IActivation)}
-         */
-        @Deprecated
-        public T activation(String activationFunction) {
-            return activation(Activation.fromString(activationFunction));
-        }
-
         /**
          * Set the activation function for the layer. This overload can be used for custom {@link IActivation} instances
          *

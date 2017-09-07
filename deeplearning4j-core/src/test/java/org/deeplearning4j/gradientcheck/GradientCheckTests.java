@@ -49,11 +49,11 @@ public class GradientCheckTests {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        String[] activFns = {"sigmoid", "tanh", "softplus"}; //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH};
         boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
-        String[] outputActivations = {"softmax", "tanh"}; //i.e., lossFunctions[i] used with outputActivations[i] here
+        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
         DataNormalization scaler = new NormalizerMinMaxScaler();
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         scaler.fit(iter);
@@ -63,11 +63,11 @@ public class GradientCheckTests {
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
-        for (String afn : activFns) {
+        for (Activation afn : activFns) {
             for (boolean doLearningFirst : characteristic) {
                 for (int i = 0; i < lossFunctions.length; i++) {
                     LossFunction lf = lossFunctions[i];
-                    String outputActivation = outputActivations[i];
+                    Activation outputActivation = outputActivations[i];
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                     .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
@@ -76,12 +76,11 @@ public class GradientCheckTests {
                                                     new DenseLayer.Builder().nIn(4).nOut(3)
                                                                     .weightInit(WeightInit.DISTRIBUTION)
                                                                     .dist(new NormalDistribution(0, 1))
-                                                                    .activation(afn).updater(
-                                                                                    Updater.SGD)
+                                                                    .activation(afn)
                                                                     .build())
                                     .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nIn(3).nOut(3)
                                                     .weightInit(WeightInit.DISTRIBUTION)
-                                                    .dist(new NormalDistribution(0, 1)).updater(Updater.SGD).build())
+                                                    .dist(new NormalDistribution(0, 1)).build())
                                     .pretrain(false).backprop(true).build();
 
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -129,11 +128,11 @@ public class GradientCheckTests {
         //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
         //Need to run gradient through updater, so that L2 can be applied
 
-        String[] activFns = {"sigmoid", "tanh"};
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH};
         boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
-        String[] outputActivations = {"softmax", "tanh"}; //i.e., lossFunctions[i] used with outputActivations[i] here
+        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
 
         DataNormalization scaler = new NormalizerMinMaxScaler();
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -150,12 +149,12 @@ public class GradientCheckTests {
         double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
         double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
 
-        for (String afn : activFns) {
+        for (Activation afn : activFns) {
             for (boolean doLearningFirst : characteristic) {
                 for (int i = 0; i < lossFunctions.length; i++) {
                     for (int k = 0; k < l2vals.length; k++) {
                         LossFunction lf = lossFunctions[i];
-                        String outputActivation = outputActivations[i];
+                        Activation outputActivation = outputActivations[i];
                         double l2 = l2vals[k];
                         double l1 = l1vals[k];
 
@@ -269,7 +268,7 @@ public class GradientCheckTests {
         boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         LossFunction[] lossFunctions = {LossFunction.MSE, LossFunction.KL_DIVERGENCE};
-        String[] outputActivations = {"softmax", "sigmoid"}; //i.e., lossFunctions[i] used with outputActivations[i] here
+        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
 
         DataNormalization scaler = new NormalizerMinMaxScaler();
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -288,20 +287,20 @@ public class GradientCheckTests {
                 for (int i = 0; i < lossFunctions.length; i++) {
                     for (int k = 0; k < l2vals.length; k++) {
                         LossFunction lf = lossFunctions[i];
-                        String outputActivation = outputActivations[i];
+                        Activation outputActivation = outputActivations[i];
                         double l2 = l2vals[k];
                         double l1 = l1vals[k];
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(l2).l1(l1).updater(new NoOp())
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                        .updater(new NoOp())
                                         .seed(12345L)
                                         .list().layer(0,
                                                         new RBM.Builder(hidunit, RBM.VisibleUnit.BINARY).nIn(4).nOut(3)
-                                                                        .weightInit(WeightInit.UNIFORM).updater(
-                                                                                        Updater.SGD)
+                                                                        .weightInit(WeightInit.UNIFORM)
                                                                         .build())
                                         .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
-                                                        .weightInit(WeightInit.XAVIER).updater(Updater.SGD)
+                                                        .weightInit(WeightInit.XAVIER)
                                                         .activation(outputActivation).build())
                                         .pretrain(false).backprop(true).build();
 
@@ -354,11 +353,11 @@ public class GradientCheckTests {
         //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
         //Need to run gradient through updater, so that L2 can be applied
 
-        String[] activFns = {"sigmoid", "tanh"};
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH};
         boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
-        String[] outputActivations = {"softmax", "tanh"}; //i.e., lossFunctions[i] used with outputActivations[i] here
+        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH};
 
         DataNormalization scaler = new NormalizerMinMaxScaler();
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
@@ -375,12 +374,12 @@ public class GradientCheckTests {
         double[] l2vals = {0.2, 0.0, 0.2};
         double[] l1vals = {0.0, 0.3, 0.3}; //i.e., use l2vals[i] with l1vals[i]
 
-        for (String afn : activFns) {
+        for (Activation afn : activFns) {
             for (boolean doLearningFirst : characteristic) {
                 for (int i = 0; i < lossFunctions.length; i++) {
                     for (int k = 0; k < l2vals.length; k++) {
                         LossFunction lf = lossFunctions[i];
-                        String outputActivation = outputActivations[i];
+                        Activation outputActivation = outputActivations[i];
                         double l2 = l2vals[k];
                         double l1 = l1vals[k];
 
@@ -391,7 +390,7 @@ public class GradientCheckTests {
                                                         .l2(l2).l1(l1)
                                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                                         .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
-                                                        .dist(new NormalDistribution(0, 1)).updater(Updater.SGD)
+                                                        .dist(new NormalDistribution(0, 1))
                                                         .list().layer(0,
                                                                         new AutoEncoder.Builder().nIn(4).nOut(3)
                                                                                         .activation(afn).build())

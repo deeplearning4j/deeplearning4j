@@ -49,7 +49,7 @@ public class TestEarlyStopping {
     public void testEarlyStoppingIris() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.SGD).weightInit(WeightInit.XAVIER).list()
+                        .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .pretrain(false).backprop(true).build();
@@ -92,7 +92,7 @@ public class TestEarlyStopping {
     public void testEarlyStoppingEveryNEpoch() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.SGD).weightInit(WeightInit.XAVIER).list()
+                        .updater(new Sgd(0.01)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .pretrain(false).backprop(true).build();
@@ -120,7 +120,7 @@ public class TestEarlyStopping {
     public void testEarlyStoppingIrisMultiEpoch() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.SGD).weightInit(WeightInit.XAVIER).list()
+                        .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .pretrain(false).backprop(true).build();
@@ -335,7 +335,7 @@ public class TestEarlyStopping {
     public void testEarlyStoppingGetBestModel() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.SGD).weightInit(WeightInit.XAVIER).list()
+                        .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .pretrain(false).backprop(true).build();
@@ -373,7 +373,7 @@ public class TestEarlyStopping {
     public void testListeners() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.SGD).weightInit(WeightInit.XAVIER).list()
+                        .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .pretrain(false).backprop(true).build();

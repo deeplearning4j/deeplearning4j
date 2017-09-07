@@ -57,7 +57,7 @@ public class CuDNNGradientChecks {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        String[] activFns = {"sigmoid", "tanh"};
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH};
         boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         int[] minibatchSizes = {1, 4};
@@ -70,7 +70,7 @@ public class CuDNNGradientChecks {
         f.setAccessible(true);
 
         Random r = new Random(12345);
-        for (String afn : activFns) {
+        for (Activation afn : activFns) {
             for (boolean doLearningFirst : characteristic) {
                 for (int minibatchSize : minibatchSizes) {
 

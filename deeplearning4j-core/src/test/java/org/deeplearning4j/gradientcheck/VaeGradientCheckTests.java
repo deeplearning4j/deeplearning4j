@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -49,10 +50,10 @@ public class VaeGradientCheckTests {
         //Post pre-training: a VAE can be used as a MLP, by taking the mean value from p(z|x) as the output
         //This gradient check tests this part
 
-        String[] activFns = {"identity", "tanh"}; //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
+        Activation[] activFns = {Activation.IDENTITY, Activation.TANH}; //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
 
         LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
-        String[] outputActivations = {"softmax", "tanh"}; //i.e., lossFunctions[i] used with outputActivations[i] here
+        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
 
         //use l2vals[i] with l1vals[i]
         double[] l2vals = {0.4, 0.0, 0.4, 0.4};
@@ -75,16 +76,17 @@ public class VaeGradientCheckTests {
                 int[] encoderSizes = encoderLayerSizes[ls];
                 int[] decoderSizes = decoderLayerSizes[ls];
 
-                for (String afn : activFns) {
+                for (Activation afn : activFns) {
                     for (int i = 0; i < lossFunctions.length; i++) {
                         for (int k = 0; k < l2vals.length; k++) {
                             LossFunction lf = lossFunctions[i];
-                            String outputActivation = outputActivations[i];
+                            Activation outputActivation = outputActivations[i];
                             double l2 = l2vals[k];
                             double l1 = l1vals[k];
 
                             MultiLayerConfiguration conf =
                                             new NeuralNetConfiguration.Builder().l2(l2).l1(l1)
+                                                            .updater(new NoOp())
                                                             .l2Bias(biasL2[k]).l1Bias(biasL1[k])
                                                             .updater(new NoOp()).seed(12345L).list()
                                                             .layer(0, new VariationalAutoencoder.Builder().nIn(4)
@@ -92,14 +94,13 @@ public class VaeGradientCheckTests {
                                                                             .decoderLayerSizes(decoderSizes)
                                                                             .weightInit(WeightInit.DISTRIBUTION)
                                                                             .dist(new NormalDistribution(0, 1))
-                                                                            .activation(afn).updater(
-                                                                                            Updater.SGD)
+                                                                            .activation(afn)
                                                                             .build())
                                                             .layer(1, new OutputLayer.Builder(lf)
                                                                             .activation(outputActivation).nIn(3).nOut(3)
                                                                             .weightInit(WeightInit.DISTRIBUTION)
                                                                             .dist(new NormalDistribution(0, 1))
-                                                                            .updater(Updater.SGD).build())
+                                                                            .build())
                                                             .pretrain(false).backprop(true).build();
 
                             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -130,9 +131,9 @@ public class VaeGradientCheckTests {
     @Test
     public void testVaePretrain() {
 
-        String[] activFns = {"identity", "identity", "tanh", "tanh"}; //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
+        Activation[] activFns = {Activation.IDENTITY, Activation.IDENTITY, Activation.TANH, Activation.TANH}; //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
         Activation[] pzxAfns = {Activation.IDENTITY, Activation.TANH, Activation.IDENTITY, Activation.TANH};
-        String[] pxzAfns = {"tanh", "identity", "tanh", "identity"};
+        Activation[] pxzAfns = {Activation.TANH, Activation.IDENTITY, Activation.TANH, Activation.IDENTITY};
 
         //use l2vals[i] with l1vals[i]
         double[] l2vals = {0.4, 0.0, 0.4, 0.4};
@@ -152,9 +153,9 @@ public class VaeGradientCheckTests {
                 int[] decoderSizes = decoderLayerSizes[ls];
 
                 for (int j = 0; j < activFns.length; j++) {
-                    String afn = activFns[j];
+                    Activation afn = activFns[j];
                     Activation pzxAfn = pzxAfns[j];
-                    String pxzAfn = pxzAfns[j];
+                    Activation pxzAfn = pxzAfns[j];
                     double l2 = l2vals[j]; //Ideally we'd do the cartesian product of l1/l2 and the activation functions, but that takes too long...
                     double l1 = l1vals[j];
 
@@ -166,7 +167,7 @@ public class VaeGradientCheckTests {
                                                     .pzxActivationFunction(pzxAfn)
                                                     .reconstructionDistribution(
                                                                     new GaussianReconstructionDistribution(pxzAfn))
-                                                    .activation(afn).updater(Updater.SGD).build())
+                                                    .activation(afn).build())
                                     .pretrain(true).backprop(false).build();
 
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -262,7 +263,7 @@ public class VaeGradientCheckTests {
                                                                 .pzxActivationFunction(Activation.TANH)
                                                                 .reconstructionDistribution(
                                                                                 reconstructionDistributions[i])
-                                                                .activation(Activation.TANH).updater(Updater.SGD)
+                                                                .activation(Activation.TANH)
                                                                 .build())
                                 .pretrain(true).backprop(false).build();
 
@@ -304,7 +305,7 @@ public class VaeGradientCheckTests {
                                                 .decoderLayerSizes(7, 8).pzxActivationFunction(Activation.TANH)
                                                 .reconstructionDistribution(
                                                                 new GaussianReconstructionDistribution(Activation.TANH))
-                                                .numSamples(numSamples).activation(Activation.TANH).updater(Updater.SGD)
+                                                .numSamples(numSamples).activation(Activation.TANH)
                                                 .build())
                                 .pretrain(true).backprop(false).build();
 

@@ -45,23 +45,23 @@ public class CNNGradientCheckTest {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        String[] activFns = {"sigmoid", "tanh"};
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH};
         boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         LossFunctions.LossFunction[] lossFunctions =
                         {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
-        String[] outputActivations = {"softmax", "tanh"}; //i.e., lossFunctions[i] used with outputActivations[i] here
+        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
 
         DataSet ds = new IrisDataSetIterator(150, 150).next();
         ds.normalizeZeroMeanZeroUnitVariance();
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
-        for (String afn : activFns) {
+        for (Activation afn : activFns) {
             for (boolean doLearningFirst : characteristic) {
                 for (int i = 0; i < lossFunctions.length; i++) {
                     LossFunctions.LossFunction lf = lossFunctions[i];
-                    String outputActivation = outputActivations[i];
+                    Activation outputActivation = outputActivations[i];
 
                     MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                                     .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
@@ -118,12 +118,12 @@ public class CNNGradientCheckTest {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        String[] activFns = {"sigmoid", "tanh"};
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH};
         boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         LossFunctions.LossFunction[] lossFunctions =
                         {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
-        String[] outputActivations = {"softmax", "tanh"}; //i.e., lossFunctions[i] used with outputActivations[i] here
+        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
 
         DataSet ds = new IrisDataSetIterator(150, 150).next();
         ds.normalizeZeroMeanZeroUnitVariance();
@@ -136,12 +136,12 @@ public class CNNGradientCheckTest {
         double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
         double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
 
-        for (String afn : activFns) {
+        for (Activation afn : activFns) {
             for (boolean doLearningFirst : characteristic) {
                 for (int i = 0; i < lossFunctions.length; i++) {
                     for (int k = 0; k < l2vals.length; k++) {
                         LossFunctions.LossFunction lf = lossFunctions[i];
-                        String outputActivation = outputActivations[i];
+                        Activation outputActivation = outputActivations[i];
                         double l2 = l2vals[k];
                         double l1 = l1vals[k];
 

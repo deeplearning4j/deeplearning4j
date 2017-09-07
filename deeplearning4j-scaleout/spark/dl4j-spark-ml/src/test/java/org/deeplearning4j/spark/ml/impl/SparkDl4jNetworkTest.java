@@ -99,9 +99,9 @@ public class SparkDl4jNetworkTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(10)
                         .weightInit(WeightInit.UNIFORM).updater(new Nesterovs(0.1)).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(100).weightInit(WeightInit.XAVIER)
-                                        .activation("relu").build())
+                                        .activation(Activation.RELU).build())
                         .layer(1, new DenseLayer.Builder().nIn(100).nOut(120).weightInit(WeightInit.XAVIER)
-                                        .activation("relu").build())
+                                        .activation(Activation.RELU).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SOFTMAX).nIn(120)
                                         .nOut(2).build())
                         .pretrain(false).backprop(true).build();

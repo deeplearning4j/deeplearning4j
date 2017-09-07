@@ -24,31 +24,31 @@ public class JsonTest {
                         new LossNegativeLogLikelihood(), new LossNegativeLogLikelihood(), new LossPoisson(),
                         new LossSquaredHinge(), new LossFMeasure(), new LossFMeasure(2.0)};
 
-        String[] outputActivationFn = new String[] {"sigmoid", //xent
-                        "sigmoid", //xent
-                        "tanh", //cosine
-                        "tanh", //hinge -> trying to predict 1 or -1
-                        "sigmoid", //kld -> probab so should be between 0 and 1
-                        "softmax", //kld + softmax
-                        "tanh", //l1
-                        "softmax", //l1 + softmax
-                        "tanh", //l2
-                        "softmax", //l2 + softmax
-                        "identity", //mae
-                        "softmax", //mae + softmax
-                        "identity", //mape
-                        "softmax", //mape + softmax
-                        "softmax", //mcxent
-                        "identity", //mse
-                        "softmax", //mse + softmax
-                        "sigmoid", //msle  -   requires positive labels/activations due to log
-                        "softmax", //msle + softmax
-                        "sigmoid", //nll
-                        "softmax", //nll + softmax
-                        "sigmoid", //poisson - requires positive predictions due to log... not sure if this is the best option
-                        "tanh", //squared hinge
-                        "sigmoid", //f-measure (binary, single sigmoid output)
-                        "softmax" //f-measure (binary, 2-label softmax output)
+        Activation[] outputActivationFn = new Activation[] {Activation.SIGMOID, //xent
+                        Activation.SIGMOID, //xent
+                        Activation.TANH, //cosine
+                        Activation.TANH, //hinge -> trying to predict 1 or -1
+                        Activation.SIGMOID, //kld -> probab so should be between 0 and 1
+                        Activation.SOFTMAX, //kld + softmax
+                        Activation.TANH, //l1
+                        Activation.SOFTMAX, //l1 + softmax
+                        Activation.TANH, //l2
+                        Activation.SOFTMAX, //l2 + softmax
+                        Activation.IDENTITY, //mae
+                        Activation.SOFTMAX, //mae + softmax
+                        Activation.IDENTITY, //mape
+                        Activation.SOFTMAX, //mape + softmax
+                        Activation.SOFTMAX, //mcxent
+                        Activation.IDENTITY, //mse
+                        Activation.SOFTMAX, //mse + softmax
+                        Activation.SIGMOID, //msle  -   requires positive labels/activations due to log
+                        Activation.SOFTMAX, //msle + softmax
+                        Activation.SIGMOID, //nll
+                        Activation.SOFTMAX, //nll + softmax
+                        Activation.SIGMOID, //poisson - requires positive predictions due to log... not sure if this is the best option
+                        Activation.TANH, //squared hinge
+                        Activation.SIGMOID, //f-measure (binary, single sigmoid output)
+                        Activation.SOFTMAX //f-measure (binary, 2-label softmax output)
         };
 
         int[] nOut = new int[] {1, //xent
