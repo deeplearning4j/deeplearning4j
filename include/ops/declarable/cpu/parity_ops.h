@@ -666,7 +666,7 @@ namespace nd4j {
          * scatter update operation
          *
          * IArgs map:
-         * IArgs[0] - update operation: 0 - add; 1 - sub; 2 - mul; 3 - div; 4 - rsub; 5 - rdiv;
+         * IArgs[0] - update operation: 0 - add; 1 - sub; 2 - mul; 3 - div; 4 - rsub; 5 - rdiv; 6 - assign
          * IArgs[1] - number of dimensions
          * IArgs[...] - dimensions
          * IArgs[...] - number of indices
@@ -697,24 +697,30 @@ namespace nd4j {
                 NDArray<T> *tad = operand->tensorAlongDimension(indices.at(x), tadDimension);
                 NDArray<T> *tadUpdates = updates->tensorAlongDimension(x, tadDimension);
 
+                if (tad->lengthOf() != tadUpdates->lengthOf())
+                    return ND4J_STATUS_BAD_DIMENSIONS;
+
                 switch (opCode) {
                     case 0:
-                        tad->template applyPairwiseTransform<simdOps::Add<T>>(tadUpdates, z, nullptr);
+                        tad->template applyPairwiseTransform<simdOps::Add<T>>(tadUpdates, tad, nullptr);
                         break;
                     case 1:
-                        tad->template applyPairwiseTransform<simdOps::Subtract<T>>(tadUpdates, z, nullptr);
+                        tad->template applyPairwiseTransform<simdOps::Subtract<T>>(tadUpdates, tad, nullptr);
                         break;
                     case 2:
-                        tad->template applyPairwiseTransform<simdOps::Multiply<T>>(tadUpdates, z, nullptr);
+                        tad->template applyPairwiseTransform<simdOps::Multiply<T>>(tadUpdates, tad, nullptr);
                         break;
                     case 3:
-                        tad->template applyPairwiseTransform<simdOps::Divide<T>>(tadUpdates, z, nullptr);
+                        tad->template applyPairwiseTransform<simdOps::Divide<T>>(tadUpdates, tad, nullptr);
                         break;
                     case 4:
-                        tad->template applyPairwiseTransform<simdOps::ReverseSubtract<T>>(tadUpdates, z, nullptr);
+                        tad->template applyPairwiseTransform<simdOps::ReverseSubtract<T>>(tadUpdates, tad, nullptr);
                         break;
                     case 5:
-                        tad->template applyPairwiseTransform<simdOps::ReverseDivide<T>>(tadUpdates, z, nullptr);
+                        tad->template applyPairwiseTransform<simdOps::ReverseDivide<T>>(tadUpdates, tad, nullptr);
+                        break;
+                    case 6:
+                        tad->template applyPairwiseTransform<simdOps::Copy<T>>(tadUpdates, tad, nullptr);
                         break;
                     default:
                         return ND4J_STATUS_BAD_PARAMS;
