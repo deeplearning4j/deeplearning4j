@@ -159,6 +159,23 @@ public class CSVRecordReaderTest {
     }
 
     @Test
+    public void testPipesAsSplit() throws Exception {
+
+        CSVRecordReader reader = new CSVRecordReader(0, '|');
+        reader.initialize(new FileSplit(new ClassPathResource("issue414.csv").getFile()));
+        int lineidx = 0;
+        List<Integer> sixthColumn = Arrays.asList(13, 95, 15, 25);
+        while (reader.hasNext()) {
+            List<Writable> list = new ArrayList<>(reader.next());
+
+            assertEquals(10, list.size());
+            assertEquals((long)sixthColumn.get(lineidx), list.get(5).toInt());
+            lineidx++;
+        }
+    }
+
+
+    @Test
     public void testWithQuotes() throws Exception {
         CSVRecordReader reader = new CSVRecordReader(0, ',', '\"');
         reader.initialize(new StringSplit("1,0,3,\"Braund, Mr. Owen Harris\",male,\"\"\"\""));
