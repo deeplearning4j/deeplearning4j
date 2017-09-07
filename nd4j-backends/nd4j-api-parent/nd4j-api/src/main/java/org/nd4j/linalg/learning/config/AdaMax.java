@@ -20,7 +20,6 @@ import java.util.Arrays;
  */
 @Data
 @Builder(builderClassName = "Builder")
-@NoArgsConstructor
 public class AdaMax implements IUpdater {
     public static final double DEFAULT_ADAMAX_LEARNING_RATE = 1e-3;
     public static final double DEFAULT_ADAMAX_EPSILON = 1e-8;
@@ -32,6 +31,10 @@ public class AdaMax implements IUpdater {
     @lombok.Builder.Default private double beta1 = DEFAULT_ADAMAX_BETA1_MEAN_DECAY; // gradient moving avg decay rate
     @lombok.Builder.Default private double beta2 = DEFAULT_ADAMAX_BETA2_VAR_DECAY; // gradient sqrd decay rate
     @lombok.Builder.Default private double epsilon = DEFAULT_ADAMAX_EPSILON;
+
+    public AdaMax(){
+        this(DEFAULT_ADAMAX_LEARNING_RATE);
+    }
 
     public AdaMax(double learningRate){
         this(learningRate, null, DEFAULT_ADAMAX_BETA1_MEAN_DECAY, DEFAULT_ADAMAX_BETA2_VAR_DECAY, DEFAULT_ADAMAX_EPSILON);
