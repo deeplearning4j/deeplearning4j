@@ -1,16 +1,25 @@
 package org.deeplearning4j.nn.conf.serde;
 
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.nd4j.shade.jackson.core.JsonLocation;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
 import org.nd4j.shade.jackson.databind.JsonDeserializer;
+import org.nd4j.shade.jackson.databind.JsonNode;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.node.ArrayNode;
+import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -23,9 +32,10 @@ public class ComputationGraphConfigurationDeserializer
     }
 
     @Override
-    public ComputationGraphConfiguration deserialize(JsonParser jp, DeserializationContext ctxt)
-                    throws IOException, JsonProcessingException {
+    public ComputationGraphConfiguration deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+        long charOffsetStart = jp.getCurrentLocation().getCharOffset();
         ComputationGraphConfiguration conf = (ComputationGraphConfiguration) defaultDeserializer.deserialize(jp, ctxt);
+
 
         //Updater configuration changed after 0.8.0 release
         //Previously: enumerations and fields. Now: classes
@@ -41,7 +51,48 @@ public class ComputationGraphConfigurationDeserializer
         }
 
         Layer[] layers = layerList.toArray(new Layer[layerList.size()]);
-        handleUpdaterBackwardCompatibility(layers);
+        //Now, check if we need to manually handle IUpdater deserialization from legacy format
+        boolean attemptIUpdaterFromLegacy = requiresIUpdaterFromLegacy(layers);
+
+        if(attemptIUpdaterFromLegacy) {
+            JsonLocation endLocation = jp.getCurrentLocation();
+            long charOffsetEnd = endLocation.getCharOffset();
+            String jsonSubString = endLocation.getSourceRef().toString().substring((int) charOffsetStart - 1, (int) charOffsetEnd);
+
+            ObjectMapper om = NeuralNetConfiguration.mapper();
+            JsonNode rootNode = om.readTree(jsonSubString);
+
+            ObjectNode verticesNode = (ObjectNode) rootNode.get("vertices");
+            Iterator<JsonNode> iter = verticesNode.elements();
+            int layerIdx = 0;
+            while(iter.hasNext()){
+                JsonNode next = iter.next();
+                if(next.has("LayerVertex")){
+                    next = next.get("LayerVertex");
+                    if(next.has("layerConf")){
+                        next = next.get("layerConf").get("layer").elements().next();
+                    } else {
+                        continue;
+                    }
+
+                    if(layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getIUpdater() == null){
+                        handleUpdaterBackwardCompatibility((BaseLayer)layers[layerIdx], (ObjectNode)next);
+                    }
+
+                    if(layers[layerIdx].getIDropout() == null){
+                        //Check for legacy dropout
+                        if(next.has("dropOut")){
+                            double d = next.get("dropOut").asDouble();
+                            if(!Double.isNaN(d)){
+                                layers[layerIdx].setIDropout(new Dropout(d));
+                            }
+                        }
+                    }
+
+                    layerIdx++;
+                }
+            }
+        }
 
         return conf;
     }
