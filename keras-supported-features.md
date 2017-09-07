@@ -6,7 +6,17 @@ layout: default
 
 While not every concept in DL4J has an equivalent in Keras and vice versa, many of the key concepts can be matched. Importing keras models into DL4J is done in our [deeplearning4j-modelimport](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras) module. Below is a comprehensive list of currently supported features.
 
-## Layers
+* [Layers](#layers)
+* [Losses](#losses)
+* [Activations](#activations)
+* [Initializers](#initializers)
+* [Regularizers](#regularizers)
+* [Constraints](#constraints)
+* [Metrics](#metrics)
+* [Optimizers](#optimizers)
+
+
+## <a name="layers">Layers</a>
 Mapping keras to DL4J layers is done in the [layers](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers) sub-module of model import. The structure of this project loosely reflects the structure of Keras.
 
 ### [Core Layers](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/layers/core)
@@ -95,7 +105,7 @@ DL4j does not have the concept of layer wrappers, but there is an implementation
 - [ ] TimeDistributed
 - [ ] Bidirectional
 
-## [Losses](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasLossUtils.java)
+## <a name="losses">[Losses](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasLossUtils.java)</a>
 
 - [x] mean_squared_error
 - [x] mean_absolute_error
@@ -112,7 +122,7 @@ DL4j does not have the concept of layer wrappers, but there is an implementation
 - [x] poisson
 - [x] cosine_proximity
 
-## [Activations](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasActivationUtils.java)
+## <a name="activations">[Activations](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasActivationUtils.java)</a>
 - [x] softmax
 - [x] elu
 - [x] selu
@@ -124,7 +134,7 @@ DL4j does not have the concept of layer wrappers, but there is an implementation
 - [x] hard_sigmoid
 - [x] linear
 
-## [Initializers](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasInitilizationUtils.java).
+## <a name="initializers">[Initializers](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasInitilizationUtils.java)</a>
 
 - [x] Zeros
 - [x] Ones
@@ -142,25 +152,25 @@ DL4j does not have the concept of layer wrappers, but there is an implementation
 - [x] he_normal
 - [x] he_uniform
 
-## [Regularizers](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasRegularizerUtils.java)
+## <a name="regularizers">[Regularizers](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasRegularizerUtils.java)</a>
 - [x] l1
 - [x] l2
 - [x] l1_l2
 
-## [Constraints](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasConstraintUtils.java)
+## <a name="constraints">[Constraints](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasConstraintUtils.java)</a>
 - [x] max_norm
 - [x] non_neg
 - [x] unit_norm
 - [x] min_max_norm
 
-## Metrics
+## <a name="metrics">Metrics</a>
 - [x] binary_accuracy
 - [x] categorical_accuracy
 - [x] sparse_categorical_accuracy
 - [x] top_k_categorical_accuracy
 - [x] sparse_top_k_categorical_accuracy
 
-## Optimizers
+## <a name="optimizers">Optimizers</a>
 - [x] SGD
 - [x] RMSprop
 - [x] Adagrad
