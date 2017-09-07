@@ -226,6 +226,11 @@ public class JacksonRecordReaderTest {
         public Writable getLabelForPath(URI uri) {
             return getLabelForPath(uri.getPath());
         }
+
+        @Override
+        public boolean inferLabelClasses() {
+            return true;
+        }
     }
 
 }

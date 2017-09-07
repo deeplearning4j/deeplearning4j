@@ -52,4 +52,9 @@ public class PatternPathLabelGenerator implements PathLabelGenerator {
     public Writable getLabelForPath(URI uri) {
         return getLabelForPath(new File(uri).toString());
     }
+
+    @Override
+    public boolean inferLabelClasses() {
+        return true;
+    }
 }
