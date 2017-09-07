@@ -18,7 +18,7 @@ In this post, we will cover the below technologies and their interactions:
  3. cuDNN
  4. DL4J Ecosystem (Deeplearning4j,ND4J,DataVec,JavaCPP)
 
-![Alt text](./img/dl4j-diagram.png)
+
 
 ## Apache Spark
 
