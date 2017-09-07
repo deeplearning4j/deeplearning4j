@@ -99,15 +99,7 @@ public class LSTMHelpers {
         }
 
 
-        INDArray recurrentWeightsIFOG = recurrentWeights
-                        .get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4 * hiddenLayerSize)).dup('f');
-
-
-        //Apply dropconnect to input (not recurrent) weights only:
-        if (conf.isUseDropConnect() && training ){// && conf.getLayer().getDropOut() > 0) {
-//            inputWeights = Dropout.applyDropConnect(layer, inputWeightKey);
-            throw new UnsupportedOperationException("Not yet reimplemented");
-        }
+        INDArray recurrentWeightsIFOG = recurrentWeights.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4 * hiddenLayerSize)).dup('f');
 
         INDArray wFFTranspose = null;
         INDArray wOOTranspose = null;

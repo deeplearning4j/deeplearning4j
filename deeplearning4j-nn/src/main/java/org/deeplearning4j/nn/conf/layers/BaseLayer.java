@@ -90,6 +90,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.setL2(Double.NaN);
         this.setGradientNormalization(GradientNormalization.None);
         this.setGradientNormalizationThreshold(1.0);
+        this.iUpdater = null;
+        this.biasUpdater = null;
     }
 
     @Override

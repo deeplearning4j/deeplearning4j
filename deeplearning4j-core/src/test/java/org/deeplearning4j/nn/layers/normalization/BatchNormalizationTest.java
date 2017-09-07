@@ -394,7 +394,7 @@ public class BatchNormalizationTest {
         // i.e., make sure state is properly stored
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(12345)
+                        .iterations(2).seed(12345)
                         .list()
                         .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.IDENTITY).build())

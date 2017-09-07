@@ -48,8 +48,7 @@ public class LayerBuilderTest {
     double corruptionLevel = 0.5;
     Distribution dist = new NormalDistribution(1.0, 0.1);
     double dropOut = 0.1;
-    Updater updater = Updater.ADAGRAD;
-    IUpdater iUpdater = new AdaGrad();
+    IUpdater updater = new AdaGrad();
     GradientNormalization gradNorm = GradientNormalization.ClipL2PerParamType;
     double gradNormThreshold = 8;
 
@@ -65,7 +64,7 @@ public class LayerBuilderTest {
         assertEquals(weight, layer.getWeightInit());
         assertEquals(dist, layer.getDist());
         assertEquals(new Dropout(dropOut), layer.getIDropout());
-        assertEquals(iUpdater, layer.getIUpdater());
+        assertEquals(updater, layer.getIUpdater());
         assertEquals(gradNorm, layer.getGradientNormalization());
         assertEquals(gradNormThreshold, layer.getGradientNormalizationThreshold(), 0.0);
     }

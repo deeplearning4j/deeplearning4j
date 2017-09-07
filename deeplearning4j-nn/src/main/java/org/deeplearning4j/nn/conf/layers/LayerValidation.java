@@ -38,34 +38,19 @@ public class LayerValidation {
         }
     }
 
-    /**
-     * Validate the updater configuration - setting the default updater values, if necessary
-     */
-    public static void updaterValidation(String layerName, Layer layer) {
-        BaseLayer bLayer;
-        if (layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer) {
-            bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
-        } else if (layer instanceof BaseLayer) {
-            bLayer = (BaseLayer) layer;
-        } else {
-            return;
-        }
-        updaterValidation(layerName, bLayer);
-    }
 
 
 
-
-    public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, IDropout iDropOut,
+    public static void generalValidation(String layerName, Layer layer, IDropout iDropOut,
                                          Double l2, Double l2Bias, Double l1, Double l1Bias,
                                          Distribution dist, List<LayerConstraint> allParamConstraints,
                                          List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
-        generalValidation(layerName, layer, useDropConnect, dropOut == null ? 0.0 : dropOut,
+        generalValidation(layerName, layer, iDropOut,
                         l2 == null ? Double.NaN : l2, l2Bias == null ? Double.NaN : l2Bias,
                         l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, dist, allParamConstraints, weightConstraints, biasConstraints);
     }
 
-    public static void generalValidation(String layerName, Layer layer, boolean useDropConnect, IDropout iDropout,
+    public static void generalValidation(String layerName, Layer layer, IDropout iDropout,
                                          double l2, double l2Bias, double l1, double l1Bias,
                                          Distribution dist, List<LayerConstraint> allParamConstraints,
                                          List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
@@ -73,12 +58,10 @@ public class LayerValidation {
         if (layer != null) {
             if (layer instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) layer;
-                configureBaseLayer(layerName, bLayer, useDropConnect, iDropout, l2, l2Bias, l1,
-                                l1Bias, dist);
+                configureBaseLayer(layerName, bLayer, iDropout, l2, l2Bias, l1, l1Bias, dist);
             } else if (layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
-                configureBaseLayer(layerName, bLayer, useDropConnect, iDropout, l2, l2Bias, l1,
-                                l1Bias, dist);
+                configureBaseLayer(layerName, bLayer, iDropout, l2, l2Bias, l1, l1Bias, dist);
             }
 
             if(layer.getConstraints() == null || layer.constraints.isEmpty()) {
@@ -112,8 +95,8 @@ public class LayerValidation {
         }
     }
 
-    private static void configureBaseLayer(String layerName, BaseLayer bLayer,  boolean useDropConnect,
-                                           IDropout iDropout, Double l2, Double l2Bias, Double l1, Double l1Bias,
+    private static void configureBaseLayer(String layerName, BaseLayer bLayer, IDropout iDropout, Double l2, Double l2Bias,
+                                           Double l1, Double l1Bias,
                     Distribution dist) {
 
         if (!Double.isNaN(l1) && Double.isNaN(bLayer.getL1())) {

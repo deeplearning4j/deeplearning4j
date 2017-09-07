@@ -47,16 +47,16 @@ public class TransferLearningMLNTest {
 
         //model after applying changes with transfer learning
         MultiLayerNetwork modelNow =
-                        new TransferLearning.Builder(modelToFineTune)
-                                        .fineTuneConfiguration(new FineTuneConfiguration.Builder().seed(rng)
-                                                        .updater(new RmsProp(0.5)) //Intent: override both weight and bias LR, unless bias LR is manually set also
-                                                        .l2(0.4).build())
-                                        .build();
+                new TransferLearning.Builder(modelToFineTune)
+                        .fineTuneConfiguration(new FineTuneConfiguration.Builder().seed(rng)
+                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                .updater(new RmsProp(0.5)) //Intent: override both weight and bias LR, unless bias LR is manually set also
+                                .l2(0.4).build())
+                        .build();
 
         for (org.deeplearning4j.nn.api.Layer l : modelNow.getLayers()) {
             BaseLayer bl = ((BaseLayer) l.conf().getLayer());
-            assertEquals(new RmsProp(), bl.getIUpdater());
-//            assertEquals(0.5, bl.getLearningRate(), 1e-6);
+            assertEquals(new RmsProp(0.5), bl.getIUpdater());
         }
 
 

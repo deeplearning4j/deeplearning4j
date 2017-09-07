@@ -40,6 +40,7 @@ import org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.util.OneTimeLogger;
 import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -101,10 +102,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> variables = new ArrayList<>();
     //whether to constrain the gradient to unit norm or not
-    //adadelta - weight for how much to consider previous history
     protected StepFunction stepFunction;
-    @Deprecated
-    protected boolean useDropConnect = false;
     //minimize or maximize objective
     protected boolean minimize = true;
     protected Map<String, Double> l1ByParam = new HashMap<>();
@@ -582,9 +580,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double l2 = Double.NaN;
         protected double l1Bias = Double.NaN;
         protected double l2Bias = Double.NaN;
-        protected IDropout idropOut = null;
+        protected IDropout idropOut;
         protected IWeightNoise weightNoise;
-        protected IUpdater iUpdater = null;
+        protected IUpdater iUpdater = new Sgd();
         protected IUpdater biasUpdater = null;
         protected Layer layer;
         protected boolean miniBatch = true;
@@ -593,7 +591,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected long seed = System.currentTimeMillis();
         protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
         protected StepFunction stepFunction = null;
-        protected boolean useDropConnect = false;
         protected boolean minimize = true;
         protected GradientNormalization gradientNormalization = GradientNormalization.None;
         protected double gradientNormalizationThreshold = 1.0;
@@ -623,7 +620,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 optimizationAlgo = newConf.optimizationAlgo;
                 seed = newConf.seed;
                 stepFunction = newConf.stepFunction;
-                useDropConnect = newConf.useDropConnect;
                 miniBatch = newConf.miniBatch;
                 pretrain = newConf.pretrain;
             }
@@ -934,8 +930,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * dropOut(0.0) is a special value / special case - when set to 0.0., dropout is disabled (not applied). Note
          * that a dropout value of 1.0 is functionally equivalent to no dropout: i.e., 100% probability of retaining
          * each input activation.<br>
-         * When {@link #useDropConnect(boolean)} is set to true (false by default), this method sets the drop connect
-         * probability instead.
          * <p>
          * Note 1: Dropout is applied at training time only - and is automatically not applied at test time
          * (for evaluation, etc)<br>
@@ -1072,7 +1066,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.optimizationAlgo = optimizationAlgo;
             conf.seed = seed;
             conf.stepFunction = stepFunction;
-            conf.useDropConnect = useDropConnect;
             conf.miniBatch = miniBatch;
             conf.pretrain = pretrain;
             conf.cacheMode = this.cacheMode;
@@ -1112,8 +1105,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     sl.setConvolutionMode(convolutionMode);
                 }
             }
-            LayerValidation.generalValidation(layerName, layer, useDropConnect, idropOut, l2, l2Bias,
-                            l1, l1Bias, dist, allParamConstraints, weightConstraints, biasConstraints);
+            LayerValidation.generalValidation(layerName, layer, idropOut, l2, l2Bias, l1, l1Bias, dist,
+                    allParamConstraints, weightConstraints, biasConstraints);
         }
 
         private void copyConfigToLayer(String layerName, Layer layer) {
@@ -1139,7 +1132,21 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     ((BaseLayer) layer).setWeightNoise(weightNoise.clone());
                 }
 
-                LayerValidation.updaterValidation(layerName, layer);
+                //Configure updaters:
+                if(iUpdater != null && bLayer.getIUpdater() == null){
+                    bLayer.setIUpdater(iUpdater);
+                }
+                if(biasUpdater != null && bLayer.getBiasUpdater() == null){
+                    bLayer.setBiasUpdater(biasUpdater);
+                }
+
+                if(bLayer.getIUpdater() == null && iUpdater == null && bLayer.initializer().numParams(bLayer) > 0){
+                    //No updater set anywhere
+                    IUpdater u = new Sgd();
+                    bLayer.setIUpdater(u);
+                    log.warn("*** No updater configuration is set for layer {} - defaulting to {} ***", layerName, u);
+                }
+
                 if (bLayer.getGradientNormalization() == null)
                     bLayer.setGradientNormalization(gradientNormalization);
                 if (Double.isNaN(bLayer.getGradientNormalizationThreshold()))

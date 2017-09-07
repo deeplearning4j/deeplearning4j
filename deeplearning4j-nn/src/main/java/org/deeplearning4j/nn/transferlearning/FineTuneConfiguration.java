@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
+import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -43,6 +44,7 @@ public class FineTuneConfiguration {
     protected Double l1Bias;
     protected Double l2Bias;
     protected IDropout iDropout;
+    protected IWeightNoise weightNoise;
     protected IUpdater iUpdater;
     protected IUpdater biasUpdater;
     protected Boolean miniBatch;
@@ -51,7 +53,6 @@ public class FineTuneConfiguration {
     protected Long seed;
     protected OptimizationAlgorithm optimizationAlgo;
     protected StepFunction stepFunction;
-    protected Boolean useDropConnect;
     protected Boolean minimize;
     protected GradientNormalization gradientNormalization;
     protected Double gradientNormalizationThreshold;
@@ -152,6 +153,15 @@ public class FineTuneConfiguration {
                 bl.setGradientNormalization(gradientNormalization);
             if (gradientNormalizationThreshold != null)
                 bl.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+            if (iUpdater != null){
+                bl.setIUpdater(iUpdater);
+            }
+            if (biasUpdater != null){
+                bl.setBiasUpdater(biasUpdater);
+            }
+            if (weightNoise != null){
+                bl.setWeightNoise(weightNoise);
+            }
         }
         if (miniBatch != null)
             nnc.setMiniBatch(miniBatch);
@@ -165,8 +175,6 @@ public class FineTuneConfiguration {
             nnc.setOptimizationAlgo(optimizationAlgo);
         if (stepFunction != null)
             nnc.setStepFunction(stepFunction);
-        if (useDropConnect != null)
-            nnc.setUseDropConnect(useDropConnect);
         if (minimize != null)
             nnc.setMinimize(minimize);
 
@@ -185,10 +193,7 @@ public class FineTuneConfiguration {
 
         //Perform validation. This also sets the defaults for updaters. For example, Updater.RMSProp -> set rmsDecay
         if (l != null) {
-            LayerValidation.updaterValidation(l.getLayerName(), l);
-            boolean useDropCon = (useDropConnect == null ? nnc.isUseDropConnect() : useDropConnect);
-            LayerValidation.generalValidation(l.getLayerName(), l, useDropCon, iDropout, l2, l2Bias, l1, l1Bias, dist,
-                    constraints, null, null);
+            LayerValidation.generalValidation(l.getLayerName(), l, iDropout, l2, l2Bias, l1, l1Bias, dist, constraints, null, null);
         }
 
         //Also: update the LR, L1 and L2 maps, based on current config (which might be different to original config)
@@ -261,8 +266,6 @@ public class FineTuneConfiguration {
             confBuilder.setOptimizationAlgo(optimizationAlgo);
         if (stepFunction != null)
             confBuilder.setStepFunction(stepFunction);
-        if (useDropConnect != null)
-            confBuilder.setUseDropConnect(useDropConnect);
         if (minimize != null)
             confBuilder.setMinimize(minimize);
         if (gradientNormalization != null)
