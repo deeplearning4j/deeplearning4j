@@ -4,7 +4,7 @@ import org.nd4j.linalg.api.complex.{IComplexNDArray, IComplexNumber}
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.indexing.{NDArrayIndex, INDArrayIndex}
-
+import scala.collection.breakOut
 object Implicits {
 
   implicit class RichINDArray[A <: INDArray](val underlying: A) extends SliceableNDArray[A] with OperatableNDArray[A] with CollectionLikeNDArray[A]
@@ -21,6 +21,7 @@ object Implicits {
 
   implicit def floatArray2INDArray(s:Array[Float]):FloatArray2INDArray = new FloatArray2INDArray(s)
   implicit def floatColl2INDArray(s:Seq[Float]):FloatArray2INDArray = new FloatArray2INDArray(s.toArray)
+  implicit def jfloatColl2INDArray(s:Seq[java.lang.Float]):FloatArray2INDArray = new FloatArray2INDArray(s.map(x => x: Float)(breakOut))
   class FloatArray2INDArray(val underlying: Array[Float]) extends AnyVal {
     def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = Nd4j.create(underlying, shape, ord.value, offset)
 
@@ -31,6 +32,7 @@ object Implicits {
 
   implicit def doubleArray2INDArray(s:Array[Double]):DoubleArray2INDArray = new DoubleArray2INDArray(s)
   implicit def doubleArray2CollArray(s:Seq[Double]):DoubleArray2INDArray = new DoubleArray2INDArray(s.toArray)
+  implicit def jdoubleColl2INDArray(s:Seq[java.lang.Double]):DoubleArray2INDArray = new DoubleArray2INDArray(s.map(x => x: Double)(breakOut))
   class DoubleArray2INDArray(val underlying: Array[Double]) extends AnyVal {
     def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = Nd4j.create(underlying, shape, offset, ord.value)
 
@@ -41,7 +43,7 @@ object Implicits {
 
   implicit def intColl2INDArray(s:Seq[Int]):IntArray2INDArray = new IntArray2INDArray(s.toArray)
   implicit def intArray2INDArray(s:Array[Int]):IntArray2INDArray = new IntArray2INDArray(s)
-
+  implicit def jintColl2INDArray(s:Seq[java.lang.Integer]):IntArray2INDArray = new IntArray2INDArray(s.map(x => x: Int)(breakOut))
   class IntArray2INDArray(val underlying: Array[Int]) extends AnyVal {
     def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = Nd4j.create(underlying.map(_.toFloat), shape, ord.value, offset)
 
