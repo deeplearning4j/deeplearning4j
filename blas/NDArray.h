@@ -313,8 +313,6 @@ namespace nd4j {
     inline bool NDArray<T>::isSameShapeStrict(const NDArray<T> *other) const {        
     
 		return shape::equalsStrict(_shapeInfo, other->_shapeInfo);
-    }	
-
-
+    }
 }
 #endif

@@ -14,6 +14,7 @@
 #include <loops/random.h>
 #include <NDArray.h>
 #include <ops/declarable/declarable_ops.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
     namespace ops {
@@ -690,12 +691,19 @@ namespace nd4j {
 
             int numIndices = block.getIArguments()->at(e++);
             std::vector<int> indices;
-            for (; e< block.getIArguments()->size(); e++)
+            std::vector<int> indicesU;
+            int cnt = 0;
+            for (; e< block.getIArguments()->size(); e++) {
                 indices.push_back((int) block.getIArguments()->at(e));
+                indicesU.push_back(cnt++);
+            }
+
+            std::unique_ptr<ArrayList<T>> tadsOperand(nd4j::NDArrayFactory::multipleTensorsAlongDimension(operand, indices, tadDimension));
+            std::unique_ptr<ArrayList<T>> tadsUpdate(nd4j::NDArrayFactory::multipleTensorsAlongDimension(updates, indicesU, tadDimension));
 
             for (unsigned long x = 0; x < indices.size(); x++) {
-                NDArray<T> *tad = operand->tensorAlongDimension(indices.at(x), tadDimension);
-                NDArray<T> *tadUpdates = updates->tensorAlongDimension(x, tadDimension);
+                NDArray<T> *tad = tadsOperand->at(x);
+                NDArray<T> *tadUpdates = tadsUpdate->at(x);
 
                 if (tad->lengthOf() != tadUpdates->lengthOf())
                     return ND4J_STATUS_BAD_DIMENSIONS;
@@ -725,9 +733,6 @@ namespace nd4j {
                     default:
                         return ND4J_STATUS_BAD_PARAMS;
                 }
-
-                delete tad;
-                delete tadUpdates;
             }
 
             STORE_RESULT(*z);

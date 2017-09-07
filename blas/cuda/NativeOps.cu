@@ -38,6 +38,7 @@
 #include <helpers/logger.h>
 #include <NDArray.h>
 #include "../cpu/NDArray.cpp"
+#include "../cpu/NDArrayFactory.cpp"
 #include "../cpu/GraphExecutioner.cpp"
 #include <ops/declarable/declarable_ops.h>
 #include <ops/declarable/cpu/parity_ops.h>
