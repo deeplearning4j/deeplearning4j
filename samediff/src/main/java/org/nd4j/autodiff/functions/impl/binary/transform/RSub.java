@@ -31,7 +31,7 @@ public class RSub extends AbstractBinaryFunction {
     }
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction gradWrtX = f().div(i_v.get(0),rarg());
         DifferentialFunction gradWrtY = f().mul(f().neg(gradWrtX),f().div(larg(),rarg()));
         larg().setGradient(gradWrtX);

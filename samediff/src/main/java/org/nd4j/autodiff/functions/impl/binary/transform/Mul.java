@@ -31,7 +31,7 @@ public class Mul extends AbstractBinaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction g = sameDiff.setupFunction(i_v.get(0));
         DifferentialFunction gradWrtX = f().mul(g,rarg());
         DifferentialFunction gradWrtY = f().mul(g,larg());

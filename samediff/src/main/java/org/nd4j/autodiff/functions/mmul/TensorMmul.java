@@ -116,7 +116,7 @@ public class TensorMmul extends AbstractBinaryReduceFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         List<DifferentialFunction> ret = new ArrayList<>();
         int[] bAxes = range(0, rarg().getResultShape().length);
         int[] aAxes = range(0, larg().getResultShape().length);

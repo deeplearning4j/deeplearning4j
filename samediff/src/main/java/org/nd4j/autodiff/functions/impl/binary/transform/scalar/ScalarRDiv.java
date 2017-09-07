@@ -52,7 +52,7 @@ public class ScalarRDiv extends AbstractScalarFunction {
     }
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         DifferentialFunction g = f().rdiv(f().mul(i_v1.get(0),scalarValue.doubleValue()),f().pow(arg(),2.0));
         arg().setGradient(g);
         return Arrays.asList(g);

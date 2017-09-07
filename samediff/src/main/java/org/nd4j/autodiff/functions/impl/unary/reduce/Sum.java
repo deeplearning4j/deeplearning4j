@@ -29,7 +29,7 @@ public class Sum extends AbstractReduceUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
         validateFunctionReference(i_v1);
         DifferentialFunction repeat =  sameDiff.getFunctionFactory().doRepeat(

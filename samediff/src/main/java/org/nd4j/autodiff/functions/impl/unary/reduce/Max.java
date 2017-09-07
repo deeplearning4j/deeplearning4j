@@ -30,7 +30,7 @@ public class Max extends AbstractReduceUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
         List<DifferentialFunction> ret = new ArrayList<>(1);
         ret.add(sameDiff.getFunctionFactory().doGradChoose(this,i_v1.get(0),dimensions));

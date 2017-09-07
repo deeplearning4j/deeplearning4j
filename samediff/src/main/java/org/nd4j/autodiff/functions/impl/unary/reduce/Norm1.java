@@ -28,7 +28,7 @@ public class Norm1  extends AbstractReduceUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         DifferentialFunction ret = f().doNormGrad(this,i_v1.get(0),"norm1",dimensions);
         arg().setGradient(ret);
         return Collections.singletonList(ret);

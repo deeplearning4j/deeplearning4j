@@ -79,7 +79,7 @@ public class Constant extends DifferentialFunction {
     }
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
         Zero ret = new Zero(sameDiff,shape);
         DifferentialFunction add = ret;
@@ -105,8 +105,9 @@ public class Constant extends DifferentialFunction {
     @Override
     public DifferentialFunction dup() {
         Constant ret = sameDiff.setupFunction(new Constant(sameDiff, m_x, shape));
-        Constant differentialFunction = (Constant) ret;
-        return differentialFunction;    }
+        Constant differentialFunction = ret;
+        return differentialFunction;
+    }
 
     // This class must be immutable.
     // set and assign must not be implemented.

@@ -68,8 +68,9 @@ public class SameDiff {
     private Map<String,SameDiff> sameDiffFunctionInstances;
     private Map<Integer,DifferentialFunction> functionInstances;
     private Map<Integer,ArrayField> arrayFieldInstances;
+    private Map<OpExecAction,ForwardBackwardState> forwardBackwardStates;
     private static Cloner cloner = new Cloner();
-
+    private boolean debugMode;
     private static Map<String,Method> opMethods;
 
     static {
@@ -82,6 +83,24 @@ public class SameDiff {
         }
     }
 
+
+    /**
+     * Clears debugging state
+     * and disables debug mode.
+     */
+    public SameDiff disableDebugging() {
+        forwardBackwardStates.clear();
+        debugMode = false;
+        return this;
+    }
+
+    /**
+     * Enables tracing of graphs automatically.
+     */
+    public SameDiff enableDebugMode() {
+        debugMode = true;
+        return this;
+    }
 
     /**
      * Returns this samediff instance's
@@ -358,6 +377,7 @@ public class SameDiff {
         arrayFieldInstances = new HashMap<>();
         functionInstances = new HashMap<>();
         vertexIdToVariable = new HashMap<>();
+        forwardBackwardStates = new HashMap<>();
     }
 
 
@@ -2979,7 +2999,12 @@ public class SameDiff {
      * @return
      */
     public Pair<Map<SDVariable, Op>, List<Op>> exec(String functionName) {
-        return sameDiffFunctionInstances.get(functionName).exec();
+        if(debugMode) {
+            return sameDiffFunctionInstances.get(functionName).enableDebugMode().exec();
+
+        }
+        else
+            return sameDiffFunctionInstances.get(functionName).exec();
     }
 
     /**
@@ -3017,7 +3042,30 @@ public class SameDiff {
                     //start with scalar backprop
                     List<DifferentialFunction> currentDiff = Arrays.asList(sameDiff.functionFactory.one(new int[]{1,1}));
 
-
+                    /**
+                     * TODO: Add metadata to differential function
+                     * indicating it is a gradient operation.
+                     * A simple boolean will allow us to separate the graph
+                     * from forward to backward.
+                     *
+                     * We also need to add a reference to the "backwards" function(s)
+                     * to the forward differential function.
+                     * This will allow us to build a more coherent
+                     * op execution action that will build 2 graphs:
+                     * 1 forward op execution setup and 1 backward.
+                     *
+                     * We also need to add a reference to the inputs
+                     * for debugging purposes.
+                     *
+                     * From that, we should ensure that the
+                     * SDVariable's understand this forward/backward
+                     * state as well.
+                     *
+                     * Another problem is the debuggability of the
+                     * "lazy execution" in the context of the
+                     * actual ops executed. Need to strive for more metadata
+                     * alongside an op execution occurring.
+                     */
                     for(int i = 0; i < opOrder.size(); i++) {
                         OpExecAction action = opOrder.get(i);
                         OpState opState = action.getOpState();
@@ -3025,11 +3073,11 @@ public class SameDiff {
                             DifferentialFunction func = opState.getDifferentialFunction() != null ?
                                     sameDiff.setupFunction(opState.getDifferentialFunction()) : null;
                             if(func != null) {
+                                List<DifferentialFunction> diffOutput = func.diff(currentDiff);
                                 currentDiff = func.diff(currentDiff);
-                                /**
-                                 * Think of better naming conventions.
-                                 * Appears to be failing on the addition gradient.
-                                 */
+                                //clear out all the variables
+                                List<SDVariable> functionVars = debugMode ? new ArrayList<>(2) : null;
+
                                 for(DifferentialFunction differentialFunction : currentDiff) {
                                     SDVariable add = SDVariable.builder()
                                             .arr(null).differentialFunction(differentialFunction)
@@ -3041,7 +3089,23 @@ public class SameDiff {
                                                     differentialFunction))
                                             .build();
                                     sameDiff.addVariable(add);
+                                    if (debugMode) {
+                                        functionVars.add(add);
+                                    }
                                 }
+
+                                if(debugMode) {
+                                    ForwardBackwardState forwardBackwardState = ForwardBackwardState
+                                            .builder()
+                                            .forwardOpExecAction(action)
+                                            .backward(diffOutput)
+                                            .backwardVariable(functionVars)
+                                            .forward(Arrays.asList(opState.getDifferentialFunction()))
+                                            .forwardVariable(Arrays.asList(getVertexIdToVariable().get(opState.getDifferentialFunction().resultVertexId())))
+                                            .build();
+                                    SameDiff.this.forwardBackwardStates.put(action, forwardBackwardState);
+                                }
+
                             }
                             else if(action.getOpState().getArrayField() != null) {
                                 log.trace("Array field occurred for " + action.getOutputId());

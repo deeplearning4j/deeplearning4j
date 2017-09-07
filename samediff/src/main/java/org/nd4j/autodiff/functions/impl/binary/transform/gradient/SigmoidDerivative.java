@@ -30,7 +30,7 @@ public class SigmoidDerivative extends AbstractBinaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         throw new UnsupportedOperationException();
     }
 

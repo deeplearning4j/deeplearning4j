@@ -22,7 +22,7 @@ public class Broadcast extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         throw new UnsupportedOperationException();
     }
 

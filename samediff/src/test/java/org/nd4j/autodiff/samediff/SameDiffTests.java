@@ -341,6 +341,8 @@ public class SameDiffTests {
 
 
 
+
+
     @Test
     public void testLogisticRegression() {
         Map<String,INDArray> vars = this.variablesForInput();
@@ -351,7 +353,7 @@ public class SameDiffTests {
                 SDVariable x = sameDiff.var("x",inputs.get("x"));
                 SDVariable w = sameDiff.var("w",inputs.get("w"));
                 SDVariable y = sameDiff.var("y",inputs.get("y"));
-                SDVariable activation = sameDiff.sigmoid("activation",sameDiff.mmul(x,w));
+                SDVariable activation = sameDiff.sigmoid("activation",sameDiff.mmul("mmul",x,w));
                 SDVariable oneMinusY = y.rsub("oneminusy",1.0);
                 SDVariable oneMinusPredictions = activation.rsub("oneminusactivations",1.0);
                 SDVariable outputTimesY = y.mul("output * y",activation);
@@ -366,10 +368,10 @@ public class SameDiffTests {
 
 
 
-        Pair<Map<SDVariable, Op>, List<Op>> opsForward = outside.getFunction("activate").exec();
+   /*     Pair<Map<SDVariable, Op>, List<Op>> opsForward = outside.getFunction("activate").exec();
         System.out.println(opsForward);
         SDVariable loss = outside.getFunction("activate").getVariable("negtotalsum");
-        assertEquals(loss.getArr().getDouble(0),2.77,1e-2);
+        assertEquals(loss.getArr().getDouble(0),2.77,1e-2);*/
         Pair<Map<SDVariable, Op>, List<Op>> opsBackward = outside.getFunction("activate").execBackwards();
 
 
@@ -378,9 +380,31 @@ public class SameDiffTests {
         assumeNotNull(gradWrtX);
         assumeNotNull(gradWrtW);
 
+        INDArray wGradAssertion = Nd4j.create(new double[]{0.81,-1.255,1.80499983}).reshape(3,1);
+        INDArray inputAssertion = Nd4j.zeros(vars.get("x").shape());
+        INDArray yGradAssertion = Nd4j.zeros(vars.get("y").shape());
+        INDArray mmulGrad = Nd4j.create(new double[]{-0.5,-0.5,0.5,-0.5}).reshape(4,1);
+        INDArray predsGradAssertion = Nd4j.create(new double[]{-2,-2,2,-2}).reshape(4,1);
+        INDArray oneMinusPredsGradAssertion = Nd4j.create(new double[]{0,0,-2,0}).reshape(4,1);
+        INDArray oneMinusLabelsAssertion = Nd4j.valueArrayOf(4,-1).reshape(4,1);
+        INDArray outputTimesYGradAssertion = Nd4j.valueArrayOf(4,-2).reshape(4,1);
+        INDArray yHatAssertion = outputTimesYGradAssertion.dup();
+        INDArray labelProbsGradAssertion = yHatAssertion.dup();
+        INDArray logProbsGradAssertion = Nd4j.valueArrayOf(4,-1).reshape(4,1);
 
-        INDArray assertion = Nd4j.create(new double[]{0.81,-1.255,1.80499983}).reshape(3,1);
-        assertEquals(assertion,gradWrtW.getArr());
+        assertEquals(logProbsGradAssertion,outside.getFunction("activate").grad("logprob").getArr());
+        assertEquals(labelProbsGradAssertion,outside.getFunction("activate").grad("probs").getArr());
+        assertEquals(yHatAssertion,outside.getFunction("activate").grad("yhat").getArr());
+        assertEquals(outputTimesYGradAssertion,outside.getFunction("activate").grad("output * y").getArr());
+        assertEquals(oneMinusLabelsAssertion,outside.getFunction("activate").grad("oneminusy").getArr());
+        assertEquals(oneMinusPredsGradAssertion,outside.getFunction("activate").grad("oneminusactivations").getArr());
+        assertEquals(predsGradAssertion,outside.getFunction("activate").grad("activation").getArr());
+        assertEquals(mmulGrad,outside.getFunction("activate").grad("mmul").getArr());
+        assertEquals(yGradAssertion,outside.getFunction("activate").grad("y").getArr());
+        assertEquals(inputAssertion,outside.getFunction("activate").grad("x").getArr());
+        assertEquals(wGradAssertion,outside.getFunction("activate").grad("w").getArr());
+
+
         System.out.println(gradWrtX);
         System.out.println(gradWrtW);
 
@@ -523,6 +547,33 @@ public class SameDiffTests {
         System.out.println(backwardsOps);
     }
 
+
+    @Test
+    public void testMmulGradientLogistic() {
+        SameDiff sameDiff = SameDiff.create();
+        Map<String,INDArray> inputs = variablesForInput();
+
+        sameDiff.defineFunction("mmulGradient", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable define(SameDiff sameDiff, Map<String, INDArray> inputs) {
+                SDVariable input = sameDiff.var("x",inputs.get("x"));
+                SDVariable input2 = sameDiff.var("w",inputs.get("w"));
+                SDVariable exp = sameDiff.mmul("mmul",input,input2);
+                SDVariable sigmoid = sameDiff.sigmoid("sigmoid",exp);
+                SDVariable sum = sameDiff.sum("sum",sigmoid,Integer.MAX_VALUE);
+                return sum;
+            }
+        },inputs);
+
+        Pair<Map<SDVariable, Op>, List<Op>> ops = sameDiff.getFunction("mmulGradient").execBackwards();
+        INDArray wGradAssertion = Nd4j.create(new double[]{0.665,-.5975,0.2525}).reshape(3,1);
+        INDArray mmulGradAssertion = Nd4j.valueArrayOf(4,0.25).reshape(4,1);
+        SDVariable wGrad = sameDiff.getFunction("mmulGradient").grad("w");
+        SDVariable mmulGrad = sameDiff.getFunction("mmulGradient").grad("mmul");
+        assertEquals(wGradAssertion,wGrad.getArr());
+        assertEquals(mmulGradAssertion,mmulGrad.getArr());
+
+    }
 
 
     @Test

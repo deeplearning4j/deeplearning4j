@@ -6,6 +6,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.Variable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class CosineSimilarity extends AbstractBinaryReduceFunction {
@@ -19,11 +20,6 @@ public class CosineSimilarity extends AbstractBinaryReduceFunction {
         return a().cosineSimilarity(larg(), rarg(), dimensions);
     }
 
-    private DifferentialFunction formula() {
-        DifferentialFunction numerator = f().mul(larg(),rarg());
-        DifferentialFunction denom = f().sqrt(f().mul(f().pow(larg(),2),f().pow(rarg(),2)));
-        return f().div(numerator,denom);
-    }
 
 
 
@@ -40,7 +36,9 @@ public class CosineSimilarity extends AbstractBinaryReduceFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
-        return formula().diff(i_v1);
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
+        DifferentialFunction numerator = f().mul(larg(),rarg());
+        DifferentialFunction denom = f().sqrt(f().mul(f().pow(larg(),2),f().pow(rarg(),2)));
+        return Arrays.asList(f().div(numerator,denom));
     }
 }

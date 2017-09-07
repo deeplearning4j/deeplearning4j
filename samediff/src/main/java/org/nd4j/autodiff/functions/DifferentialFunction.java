@@ -38,6 +38,9 @@ public abstract class DifferentialFunction implements Differential {
     @Getter
     @Setter
     protected boolean inPlace;
+    @Getter
+    @Setter
+    protected boolean gradFunction;
 
     protected Object[] extraArgs;
 
@@ -86,6 +89,14 @@ public abstract class DifferentialFunction implements Differential {
      */
     public abstract ArrayField doGetValue();
 
+
+    /**
+     * The actual implementation for automatic differentiation.
+     *
+     * @param f1
+     * @return
+     */
+    public abstract List<DifferentialFunction> doDiff(List<DifferentialFunction> f1);
 
     /**
      * Shortcut for the {@link DifferentialFunctionFactory}
@@ -174,7 +185,14 @@ public abstract class DifferentialFunction implements Differential {
 
 
     @Override
-    public abstract List<DifferentialFunction> diff(List<DifferentialFunction> i_v1);
+    public  List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+        List<DifferentialFunction> vals = doDiff(i_v1);
+        for(DifferentialFunction differentialFunction : vals) {
+            differentialFunction.setGradFunction(true);
+        }
+
+        return vals;
+    }
 
     private void validateDifferentialFunctionGraph(DifferentialFunction function) {
         Preconditions.checkState(function.getSameDiff() == this.getSameDiff(),"Function applications must be contained in same graph. The left " + function +" must match this function " + this);

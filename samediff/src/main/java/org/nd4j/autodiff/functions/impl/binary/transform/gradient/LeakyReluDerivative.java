@@ -36,12 +36,12 @@ public class LeakyReluDerivative  extends AbstractBinaryFunction {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().leakyReluDerivative(larg().getValue(true),rarg().getValue(true) , cutoff);
+        return a().leakyReluDerivative(larg().getValue(true),rarg().getValue(true) , cutoff);
     }
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().zero(getResultShape());
         arg().setGradient(ret);
         return Arrays.asList(ret);

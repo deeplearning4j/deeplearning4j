@@ -60,7 +60,7 @@ public class Mmul extends TensorMmul {
     }
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
+        public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         List<DifferentialFunction> ret = new ArrayList<>();
         DifferentialFunction setup = sameDiff.setupFunction(i_v1.get(0));
         DifferentialFunction gradWrtX = f().reshape(f().mmul(setup,rarg(),

@@ -26,7 +26,7 @@ public class SoftPlus extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().sigmoid(arg());
         arg().setGradient(ret);
         return Collections.singletonList(ret);

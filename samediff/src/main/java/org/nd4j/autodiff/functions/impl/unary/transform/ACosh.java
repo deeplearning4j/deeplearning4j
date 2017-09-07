@@ -26,7 +26,7 @@ public class ACosh extends AbstractUnaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().div(f().one(getResultShape()),
                 f().mul(f().sqrt(f().sub(arg(),f().one(getResultShape()))),f()
                         .sqrt(f().add(arg(),f().one(getResultShape())))));

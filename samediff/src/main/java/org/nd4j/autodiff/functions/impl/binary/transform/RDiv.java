@@ -30,7 +30,7 @@ public class RDiv extends AbstractBinaryFunction {
     }
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction gradWrtX = f().div(i_v.get(0),larg());
         DifferentialFunction gradWrtY = f().mul(f().neg(gradWrtX),f().div(rarg(),larg()));
         List<DifferentialFunction> ret = new ArrayList<>(2);

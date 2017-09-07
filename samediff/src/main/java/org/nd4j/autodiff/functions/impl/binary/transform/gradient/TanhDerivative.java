@@ -29,7 +29,7 @@ public class TanhDerivative extends AbstractBinaryFunction {
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().div(f().one(getResultShape()),f().pow(f().cosh(arg()),2));
         arg().setGradient(ret);
         return Collections.singletonList(ret);

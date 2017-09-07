@@ -24,12 +24,12 @@ public class SELUDerivative extends AbstractBinaryFunction {
 
     @Override
     public ArrayField doGetValue() {
-        return sameDiff.getArrayFactory().seluDerivative(larg().getValue(true),rarg().getValue(true));
+        return a().seluDerivative(larg().getValue(true),rarg().getValue(true));
     }
 
 
     @Override
-    public List<DifferentialFunction> diff(List<DifferentialFunction> i_v) {
+    public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().div(arg(),f().seluDerivative(arg()));
         arg().setGradient(ret);
         return Arrays.asList(ret);
