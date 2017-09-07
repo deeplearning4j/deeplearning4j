@@ -1247,6 +1247,39 @@ TEST_F(DeclarableOpsTests, Reshape2) {
 	ASSERT_TRUE(result->isSameShape(&y));	
 }
 
+TEST_F(DeclarableOpsTests, TestScatterUpdate1) {
+    NDArray<float> matrix(3, 2, 'c');
+    NDArray<float> updates(2, 2, 'c');
+    updates.assign(1.0);
+
+    updates.printBuffer("Updates");
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &matrix);
+    variableSpace->putVariable(-2, &updates);
+    variableSpace->putVariable(1, new Variable<float>(&matrix));
+
+    Block<float>* block = new Block<float>(1, variableSpace, false);
+    block->fillInputs({-1, -2});
+
+    std::vector<int>* arguments = block->getIArguments();
+    arguments->push_back(0);
+    arguments->push_back(1);
+    arguments->push_back(1);
+    arguments->push_back(2);
+    arguments->push_back(1);
+    arguments->push_back(2);
+
+    nd4j::ops::scatter_update<float> op;
+
+
+    Nd4jStatus result = op.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    matrix.printBuffer("Result");
+}
+
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests, Repeat1) {
 	

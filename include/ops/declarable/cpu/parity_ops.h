@@ -662,6 +662,78 @@ namespace nd4j {
         }
 
 
+        /**
+         * scatter update operation
+         *
+         * IArgs map:
+         * IArgs[0] - update operation: 0 - add; 1 - sub; 2 - mul; 3 - div; 4 - rsub; 5 - rdiv; 6 - assign
+         * IArgs[1] - number of dimensions
+         * IArgs[...] - dimensions
+         * IArgs[...] - number of indices
+         * IArgs[...] - indices
+         *
+         * @tparam T
+         */
+        DECLARE_CONFIGURABLE_OP(scatter_update, 2, 1, true, 0, -1) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));
+
+            NDArray<T> *operand = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *updates = block.getVariables().at(1)->getNDArray();
+            NDArray<T> *z = this->getZ(block);
+
+            int opCode = block.getIArguments()->at(0);
+            int dimSize = block.getIArguments()->at(1);
+            std::vector<int> tadDimension;
+            unsigned long e;
+            for (e = 2; e < 2 + dimSize; e++)
+                tadDimension.push_back((int) block.getIArguments()->at(e));
+
+            int numIndices = block.getIArguments()->at(e++);
+            std::vector<int> indices;
+            for (; e< block.getIArguments()->size(); e++)
+                indices.push_back((int) block.getIArguments()->at(e));
+
+            for (unsigned long x = 0; x < indices.size(); x++) {
+                NDArray<T> *tad = operand->tensorAlongDimension(indices.at(x), tadDimension);
+                NDArray<T> *tadUpdates = updates->tensorAlongDimension(x, tadDimension);
+
+                if (tad->lengthOf() != tadUpdates->lengthOf())
+                    return ND4J_STATUS_BAD_DIMENSIONS;
+
+                switch (opCode) {
+                    case 0:
+                        tad->template applyPairwiseTransform<simdOps::Add<T>>(tadUpdates, tad, nullptr);
+                        break;
+                    case 1:
+                        tad->template applyPairwiseTransform<simdOps::Subtract<T>>(tadUpdates, tad, nullptr);
+                        break;
+                    case 2:
+                        tad->template applyPairwiseTransform<simdOps::Multiply<T>>(tadUpdates, tad, nullptr);
+                        break;
+                    case 3:
+                        tad->template applyPairwiseTransform<simdOps::Divide<T>>(tadUpdates, tad, nullptr);
+                        break;
+                    case 4:
+                        tad->template applyPairwiseTransform<simdOps::ReverseSubtract<T>>(tadUpdates, tad, nullptr);
+                        break;
+                    case 5:
+                        tad->template applyPairwiseTransform<simdOps::ReverseDivide<T>>(tadUpdates, tad, nullptr);
+                        break;
+                    case 6:
+                        tad->template applyPairwiseTransform<simdOps::Copy<T>>(tadUpdates, tad, nullptr);
+                        break;
+                    default:
+                        return ND4J_STATUS_BAD_PARAMS;
+                }
+            }
+
+            STORE_RESULT(*z);
+
+            return ND4J_STATUS_OK;
+        }
+        DECLARE_SYN(scatterupdate, scatter_update);
+
+
 //////////////////////////////////////////////////////////////////////////
         DECLARE_CONFIGURABLE_OP(relu, 1, 1, true, 1, 0) {
             REQUIRE_OK(this->validateNonEmptyInput(block));
