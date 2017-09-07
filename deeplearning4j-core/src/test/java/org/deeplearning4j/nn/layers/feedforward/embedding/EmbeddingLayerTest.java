@@ -16,6 +16,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.List;
@@ -244,7 +245,7 @@ public class EmbeddingLayerTest {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                            .updater(Updater.SGD).learningRate(0.1).seed(12345).list()
+                            .updater(new Sgd(0.1)).seed(12345).list()
                             .layer(0, new EmbeddingLayer.Builder().hasBias(true).activation(Activation.TANH).nIn(numInputClasses)
                                             .nOut(5).build())
                             .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())
@@ -259,7 +260,7 @@ public class EmbeddingLayerTest {
 
             MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                            .updater(Updater.SGD).learningRate(0.1).seed(12345).list()
+                            .updater(new Sgd(0.1)).seed(12345).list()
                             .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(numInputClasses).nOut(5)
                                             .build())
                             .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())

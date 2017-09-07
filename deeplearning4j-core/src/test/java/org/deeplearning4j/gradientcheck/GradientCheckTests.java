@@ -20,6 +20,7 @@ import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Random;
@@ -68,8 +69,8 @@ public class GradientCheckTests {
                     LossFunction lf = lossFunctions[i];
                     String outputActivation = outputActivations[i];
 
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                                    .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).learningRate(1.0)
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                    .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
                                     .seed(12345L)
                                     .list().layer(0,
                                                     new DenseLayer.Builder().nIn(4).nOut(3)
@@ -291,8 +292,7 @@ public class GradientCheckTests {
                         double l2 = l2vals[k];
                         double l1 = l1vals[k];
 
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l2(l2)
-                                        .l1(l1).learningRate(1.0)
+                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(l2).l1(l1).updater(new NoOp())
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .seed(12345L)
                                         .list().layer(0,
@@ -386,7 +386,8 @@ public class GradientCheckTests {
 
                         Nd4j.getRandom().setSeed(12345);
                         MultiLayerConfiguration conf =
-                                        new NeuralNetConfiguration.Builder().regularization(true).learningRate(1.0)
+                                        new NeuralNetConfiguration.Builder()
+                                                        .updater(new NoOp())
                                                         .l2(l2).l1(l1)
                                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                                         .seed(12345L).weightInit(WeightInit.DISTRIBUTION)

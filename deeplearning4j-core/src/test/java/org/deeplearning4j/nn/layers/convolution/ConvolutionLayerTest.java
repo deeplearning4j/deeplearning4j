@@ -50,7 +50,7 @@ public class ConvolutionLayerTest {
     public void testTwdFirstLayer() throws Exception {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).iterations(5)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4)
-                        .updater(new Nesterovs(0.9)).useDropConnect(true).dropOut(0.5)
+                        .updater(new Nesterovs(0.9)).dropOut(0.5)
                         .list().layer(0,
                                         new ConvolutionLayer.Builder(8, 8) //16 filters kernel size 8 stride 4
                                                         .stride(4, 4).nOut(16).dropOut(0.5)

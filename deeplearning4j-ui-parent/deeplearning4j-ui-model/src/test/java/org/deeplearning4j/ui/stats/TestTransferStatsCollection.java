@@ -11,6 +11,7 @@ import org.deeplearning4j.ui.storage.FileStatsStorage;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,7 +36,7 @@ public class TestTransferStatsCollection {
         MultiLayerNetwork net2 =
                         new TransferLearning.Builder(net)
                                         .fineTuneConfiguration(
-                                                        new FineTuneConfiguration.Builder().learningRate(0.01).build())
+                                                        new FineTuneConfiguration.Builder().updater(new Sgd(0.01)).build())
                                         .setFeatureExtractor(0).build();
 
         File f = Files.createTempFile("dl4jTestTransferStatsCollection", "bin").toFile();

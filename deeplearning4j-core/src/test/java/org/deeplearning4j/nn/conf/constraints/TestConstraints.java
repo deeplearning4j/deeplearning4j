@@ -17,6 +17,7 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.ByteArrayInputStream;
@@ -359,7 +360,7 @@ public class TestConstraints {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .constrainWeights(lc)
-                    .learningRate(0.0)
+                    .updater(new Sgd(0.0))
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,5))
                     .biasInit(1)
                     .list()

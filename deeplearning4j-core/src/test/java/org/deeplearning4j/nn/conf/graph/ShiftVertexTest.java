@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.graph;
 
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -121,7 +122,7 @@ public class ShiftVertexTest {
                         {0.55, 0.60, 0.65, 0.70, 0.75}, {0.80, 0.85, 0.90, 0.95, 0.99}});
 
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
-                        .learningRate(0.01).updater(Updater.SGD)
+                        .updater(new Sgd(0.01))
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                         .addInputs("input")
                         .addLayer("denselayer",

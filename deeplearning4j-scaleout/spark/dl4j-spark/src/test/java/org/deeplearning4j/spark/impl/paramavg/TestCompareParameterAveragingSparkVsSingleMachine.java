@@ -25,6 +25,9 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.ArrayList;
@@ -48,10 +51,10 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
     }
 
 
-    private static MultiLayerConfiguration getConf(int seed, Updater updater) {
+    private static MultiLayerConfiguration getConf(int seed, IUpdater updater) {
         Nd4j.getRandom().setSeed(seed);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.5)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.XAVIER).updater(updater).iterations(1).seed(seed).list()
                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(1, new OutputLayer.Builder()
                                         .lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build())
@@ -59,10 +62,10 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         return conf;
     }
 
-    private static MultiLayerConfiguration getConfCNN(int seed, Updater updater) {
+    private static MultiLayerConfiguration getConfCNN(int seed, IUpdater updater) {
         Nd4j.getRandom().setSeed(seed);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.5)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.XAVIER).updater(updater).iterations(1).seed(seed).list()
                         .layer(0, new ConvolutionLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .activation(Activation.TANH).build())
@@ -74,10 +77,10 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         return conf;
     }
 
-    private static ComputationGraphConfiguration getGraphConf(int seed, Updater updater) {
+    private static ComputationGraphConfiguration getGraphConf(int seed, IUpdater updater) {
         Nd4j.getRandom().setSeed(seed);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.5)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.XAVIER).updater(updater).iterations(1).seed(seed).graphBuilder()
                         .addInputs("in")
                         .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in").addLayer("1",
@@ -88,10 +91,10 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         return conf;
     }
 
-    private static ComputationGraphConfiguration getGraphConfCNN(int seed, Updater updater) {
+    private static ComputationGraphConfiguration getGraphConfCNN(int seed, IUpdater updater) {
         Nd4j.getRandom().setSeed(seed);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.5)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.XAVIER).updater(updater).iterations(1).seed(seed).graphBuilder()
                         .addInputs("in")
                         .addLayer("0", new ConvolutionLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1)
@@ -171,7 +174,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 //Do training locally, for 3 minibatches
                 int[] seeds = {1, 2, 3};
 
-                MultiLayerNetwork net = new MultiLayerNetwork(getConf(12345, Updater.RMSPROP));
+                MultiLayerNetwork net = new MultiLayerNetwork(getConf(12345, new RmsProp(0.5)));
                 net.init();
                 INDArray initialParams = net.params().dup();
 
@@ -185,7 +188,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 //Do training on Spark with one executor, for 3 separate minibatches
                 TrainingMaster tm = getTrainingMaster(1, miniBatchSize, saveUpdater);
-                SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConf(12345, Updater.RMSPROP), tm);
+                SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConf(12345, new RmsProp(0.5)), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
 
@@ -221,7 +224,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 //Do training locally, for 3 minibatches
                 int[] seeds = {1, 2, 3};
 
-                ComputationGraph net = new ComputationGraph(getGraphConf(12345, Updater.RMSPROP));
+                ComputationGraph net = new ComputationGraph(getGraphConf(12345, new RmsProp(0.5)));
                 net.init();
                 INDArray initialParams = net.params().dup();
 
@@ -236,7 +239,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 //Do training on Spark with one executor, for 3 separate minibatches
                 TrainingMaster tm = getTrainingMaster(1, miniBatchSize, saveUpdater);
                 SparkComputationGraph sparkNet =
-                                new SparkComputationGraph(sc, getGraphConf(12345, Updater.RMSPROP), tm);
+                                new SparkComputationGraph(sc, getGraphConf(12345, new RmsProp(0.5)), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
 
@@ -280,7 +283,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 //                CudaGridExecutioner executioner = (CudaGridExecutioner) Nd4j.getExecutioner();
 
-                MultiLayerNetwork net = new MultiLayerNetwork(getConf(12345, Updater.SGD));
+                MultiLayerNetwork net = new MultiLayerNetwork(getConf(12345, new Sgd(0.5)));
                 net.init();
                 INDArray initialParams = net.params().dup();
                 //              executioner.addToWatchdog(initialParams, "initialParams");
@@ -301,7 +304,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                                 .saveUpdater(saveUpdater).workerPrefetchNumBatches(0)
                                 //                        .rddTrainingApproach(RDDTrainingApproach.Direct)
                                 .rddTrainingApproach(RDDTrainingApproach.Export).build();
-                SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConf(12345, Updater.SGD), tm);
+                SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConf(12345, new Sgd(0.5)), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
 
@@ -357,7 +360,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 //Do training locally, for 3 minibatches
                 int[] seeds = {1, 2, 3};
 
-                MultiLayerNetwork net = new MultiLayerNetwork(getConfCNN(12345, Updater.SGD));
+                MultiLayerNetwork net = new MultiLayerNetwork(getConfCNN(12345, new Sgd(0.5)));
                 net.init();
                 INDArray initialParams = net.params().dup();
 
@@ -374,7 +377,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                                 .averagingFrequency(1).batchSizePerWorker(miniBatchSizePerWorker)
                                 .saveUpdater(saveUpdater).workerPrefetchNumBatches(0)
                                 .rddTrainingApproach(RDDTrainingApproach.Export).build();
-                SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConfCNN(12345, Updater.SGD), tm);
+                SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, getConfCNN(12345, new Sgd(0.5)), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
 
@@ -430,7 +433,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 //                CudaGridExecutioner executioner = (CudaGridExecutioner) Nd4j.getExecutioner();
 
-                ComputationGraph net = new ComputationGraph(getGraphConf(12345, Updater.SGD));
+                ComputationGraph net = new ComputationGraph(getGraphConf(12345, new Sgd(0.5)));
                 net.init();
                 INDArray initialParams = net.params().dup();
                 //                executioner.addToWatchdog(initialParams, "initialParams");
@@ -446,7 +449,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 //Do training on Spark with one executor, for 3 separate minibatches
                 TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, saveUpdater);
-                SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConf(12345, Updater.SGD), tm);
+                SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConf(12345, new Sgd(0.5)), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
 
@@ -506,7 +509,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                 //Do training locally, for 3 minibatches
                 int[] seeds = {1, 2, 3};
 
-                ComputationGraph net = new ComputationGraph(getGraphConfCNN(12345, Updater.SGD));
+                ComputationGraph net = new ComputationGraph(getGraphConfCNN(12345, new Sgd(0.5)));
                 net.init();
                 INDArray initialParams = net.params().dup();
 
@@ -520,7 +523,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
 
                 //Do training on Spark with one executor, for 3 separate minibatches
                 TrainingMaster tm = getTrainingMaster(1, miniBatchSizePerWorker, saveUpdater);
-                SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConfCNN(12345, Updater.SGD), tm);
+                SparkComputationGraph sparkNet = new SparkComputationGraph(sc, getGraphConfCNN(12345, new Sgd(0.5)), tm);
                 sparkNet.setCollectTrainingStats(true);
                 INDArray initialSparkParams = sparkNet.getNetwork().params().dup();
 

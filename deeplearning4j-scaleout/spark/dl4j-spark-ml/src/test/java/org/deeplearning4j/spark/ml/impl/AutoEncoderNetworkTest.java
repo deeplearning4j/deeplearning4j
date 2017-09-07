@@ -20,6 +20,7 @@ import org.deeplearning4j.spark.ml.utils.ParamSerializer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -80,7 +81,7 @@ public class AutoEncoderNetworkTest {
     }
 
     private MultiLayerConfiguration getNNConfiguration() {
-        return new NeuralNetConfiguration.Builder().seed(12345).iterations(5).learningRate(.1)
+        return new NeuralNetConfiguration.Builder().seed(12345).iterations(5).updater(new Sgd(0.1))
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                         .layer(0, new RBM.Builder().nIn(10).nOut(8)
                                         .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())

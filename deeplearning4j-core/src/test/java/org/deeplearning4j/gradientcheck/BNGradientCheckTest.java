@@ -23,6 +23,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Random;
@@ -54,8 +55,8 @@ public class BNGradientCheckTest {
         INDArray labels = ds.getLabels();
 
         MultiLayerConfiguration.Builder builder =
-                        new NeuralNetConfiguration.Builder().learningRate(1.0).regularization(false)
-                                        .updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        new NeuralNetConfiguration.Builder().updater(new NoOp())
+                                .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).list()
                                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3)
                                                         .activation(Activation.IDENTITY).build())
@@ -93,8 +94,8 @@ public class BNGradientCheckTest {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                        .updater(new NoOp()).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
                                         .activation(Activation.IDENTITY).build())
@@ -325,8 +326,8 @@ public class BNGradientCheckTest {
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 1)).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY).build())
                         .layer(1, new BatchNormalization.Builder().lockGammaBeta(true).gamma(2.0).beta(0.5).nOut(3)
@@ -364,8 +365,8 @@ public class BNGradientCheckTest {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
                                         .activation(Activation.IDENTITY).build())

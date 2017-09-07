@@ -47,6 +47,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 
@@ -179,7 +180,7 @@ public class EvalTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(1).seed(42)
-                        .learningRate(1e-6).list()
+                        .updater(new Sgd(1e-6)).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(2).activation(Activation.TANH)
                                         .weightInit(WeightInit.XAVIER).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
@@ -623,8 +624,8 @@ public class EvalTest {
 
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).iterations(1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
-                        .learningRate(0.1).list()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Sgd(0.1))
+                        .list()
                         .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
                         .pretrain(false).backprop(true).build();

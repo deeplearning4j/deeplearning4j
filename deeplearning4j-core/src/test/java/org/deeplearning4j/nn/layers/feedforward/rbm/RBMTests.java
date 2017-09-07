@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers.feedforward.rbm;
 
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
@@ -130,7 +131,7 @@ public class RBMTests {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(30)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(1e-1f)
+                        .updater(new Sgd(0.1))
                         .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder().nIn(784).nOut(600)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1, 1e-5))
                                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
@@ -355,7 +356,7 @@ public class RBMTests {
                     int learningRate) {
         org.deeplearning4j.nn.conf.layers.RBM layer =
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder(hiddenUnit, visibleUnit).nIn(nIn).nOut(nOut)
-                                        .learningRate(learningRate).lossFunction(lossFunctions).build();
+                                        .updater(new Sgd(learningRate)).lossFunction(lossFunctions).build();
 
         NeuralNetConfiguration conf =
                         new NeuralNetConfiguration.Builder().iterations(iterations).seed(42).layer(layer).build();
@@ -368,7 +369,7 @@ public class RBMTests {
                     boolean pretrain, boolean initialize, int iterations, LossFunctions.LossFunction lossFunctions) {
         org.deeplearning4j.nn.conf.layers.RBM layer =
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder(hiddenUnit, visibleUnit).nIn(nIn).nOut(nOut)
-                                        .learningRate(1e-1f).lossFunction(lossFunctions).build();
+                                        .updater(new Sgd(1e-1f)).lossFunction(lossFunctions).build();
 
         NeuralNetConfiguration conf =
                         new NeuralNetConfiguration.Builder().iterations(iterations).seed(42).layer(layer).build();

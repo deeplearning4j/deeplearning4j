@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 
 import static org.junit.Assert.*;
 
@@ -64,7 +65,7 @@ public class YoloGradientCheckTests {
                     INDArray labels = yoloLabels(mb, c, h, w);
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                            .learningRate(1.0).updater(Updater.SGD)
+                            .updater(new NoOp())
                             .activation(a)
                             .l1(l1[i]).l2(l2[i])
                             .convolutionMode(ConvolutionMode.Same)

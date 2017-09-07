@@ -131,7 +131,7 @@ public class VaeGradientCheckTests {
     public void testVaePretrain() {
 
         String[] activFns = {"identity", "identity", "tanh", "tanh"}; //activation functions such as relu and hardtanh: may randomly fail due to discontinuities
-        String[] pzxAfns = {"identity", "tanh", "identity", "tanh"};
+        Activation[] pzxAfns = {Activation.IDENTITY, Activation.TANH, Activation.IDENTITY, Activation.TANH};
         String[] pxzAfns = {"tanh", "identity", "tanh", "identity"};
 
         //use l2vals[i] with l1vals[i]
@@ -153,7 +153,7 @@ public class VaeGradientCheckTests {
 
                 for (int j = 0; j < activFns.length; j++) {
                     String afn = activFns[j];
-                    String pzxAfn = pzxAfns[j];
+                    Activation pzxAfn = pzxAfns[j];
                     String pxzAfn = pxzAfns[j];
                     double l2 = l2vals[j]; //Ideally we'd do the cartesian product of l1/l2 and the activation functions, but that takes too long...
                     double l1 = l1vals[j];

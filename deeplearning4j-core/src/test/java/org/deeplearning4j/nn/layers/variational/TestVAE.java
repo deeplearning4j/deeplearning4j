@@ -18,6 +18,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
@@ -334,8 +335,8 @@ public class TestVAE {
                         throw new RuntimeException();
                 }
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l2(0.2).l1(0.3)
-                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(1.0)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.3)
+                                .updater(new Sgd(1.0))
                                 .seed(12345L).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                                 .list().layer(0,
                                                 new VariationalAutoencoder.Builder().nIn(inOutSize).nOut(3)
@@ -343,7 +344,7 @@ public class TestVAE {
                                                                 .pzxActivationFunction(Activation.TANH)
                                                                 .reconstructionDistribution(
                                                                                 reconstructionDistributions[i])
-                                                                .activation(new ActivationTanH()).updater(Updater.SGD)
+                                                                .activation(new ActivationTanH())
                                                                 .build())
                                 .pretrain(true).backprop(false).build();
 
@@ -400,8 +401,8 @@ public class TestVAE {
             for (int i = 0; i < reconstructionDistributions.length; i++) {
                 INDArray data = Nd4j.rand(minibatch, inOutSize).muli(2).subi(1);
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l2(0.2).l1(0.3)
-                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(1.0)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.3)
+                                .updater(new Sgd(1.0))
                                 .seed(12345L).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                                 .list().layer(0,
                                                 new VariationalAutoencoder.Builder().nIn(inOutSize).nOut(3)
@@ -409,7 +410,7 @@ public class TestVAE {
                                                                 .pzxActivationFunction(Activation.TANH)
                                                                 .reconstructionDistribution(
                                                                                 reconstructionDistributions[i])
-                                                                .activation(new ActivationTanH()).updater(Updater.SGD)
+                                                                .activation(new ActivationTanH())
                                                                 .build())
                                 .pretrain(true).backprop(false).build();
 

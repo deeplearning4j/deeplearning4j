@@ -1,5 +1,6 @@
 package org.deeplearning4j.convolution;
 
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -84,7 +85,7 @@ public class TestConvolution {
                 }
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).regularization(true)
-                                .l2(0.0005).learningRate(.01).weightInit(WeightInit.XAVIER).convolutionMode(c).list()
+                                .l2(0.0005).updater(new Sgd(0.01)).weightInit(WeightInit.XAVIER).convolutionMode(c).list()
                                 .layer(0, l)
                                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                                 .nOut(10).activation(Activation.SOFTMAX).build())

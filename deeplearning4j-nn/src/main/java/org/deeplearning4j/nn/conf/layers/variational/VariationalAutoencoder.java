@@ -259,15 +259,6 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
             return this;
         }
 
-
-        /**
-         * @deprecated Use {@link #pzxActivationFunction(Activation)}
-         */
-        @Deprecated
-        public Builder pzxActivationFunction(String activationFunction) {
-            return pzxActivationFn(Activation.fromString(activationFunction).getActivationFunction());
-        }
-
         /**
          * Activation function for the input to P(z|data).<br>
          * Care should be taken with this, as some activation functions (relu, etc) are not suitable due to being

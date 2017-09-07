@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.*;
+import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -32,6 +33,8 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -247,7 +250,7 @@ public class TestComputationGraphNetwork {
                 .addInput("iris", 0, 3).addOutputOneHot("iris", 4, 3).build();
 
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.1)
+                .updater(new Sgd(0.1))
                 .graphBuilder().addInputs("in")
                 .addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in").addLayer("out",
                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3)
@@ -499,7 +502,7 @@ public class TestComputationGraphNetwork {
         ComputationGraphConfiguration conf =
                 new NeuralNetConfiguration.Builder().iterations(100)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .iterations(1).updater(Updater.SGD).learningRate(1e-6).regularization(true)
+                        .iterations(1).updater(new Sgd(1e-6))
                         .l2(2e-4).graphBuilder().addInputs("in")
                         .addLayer("layer0",
                                 new RBM.Builder(RBM.HiddenUnit.GAUSSIAN,
@@ -554,8 +557,9 @@ public class TestComputationGraphNetwork {
         int nIn = 5;
         int nOut = 6;
         ComputationGraphConfiguration conf =
-                new NeuralNetConfiguration.Builder().seed(12345).regularization(true).l1(0.01).l2(0.01)
-                        .learningRate(0.1).activation(Activation.TANH).weightInit(WeightInit.XAVIER)
+                new NeuralNetConfiguration.Builder().seed(12345).l1(0.01).l2(0.01)
+                        .updater(new Sgd(0.1))
+                        .activation(Activation.TANH).weightInit(WeightInit.XAVIER)
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(20).build(), "in")
                         .addLayer("1", new DenseLayer.Builder().nIn(20).nOut(30).build(), "0")
@@ -565,7 +569,7 @@ public class TestComputationGraphNetwork {
                         .setOutputs("2").build();
 
         ComputationGraphConfiguration confNoReg =
-                new NeuralNetConfiguration.Builder().seed(12345).learningRate(0.1).activation(Activation.TANH)
+                new NeuralNetConfiguration.Builder().seed(12345).updater(new Sgd(0.1)).activation(Activation.TANH)
                         .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(20).build(), "in")
                         .addLayer("1", new DenseLayer.Builder().nIn(20).nOut(30).build(), "0")
@@ -619,8 +623,8 @@ public class TestComputationGraphNetwork {
         INDArray outData = Nd4j.rand(3, 10);
 
         Nd4j.getRandom().setSeed(12345);
-        ComputationGraphConfiguration standard = new NeuralNetConfiguration.Builder().learningRate(0.1)
-                .updater(Updater.SGD).seed(12345).graphBuilder().addInputs("in")
+        ComputationGraphConfiguration standard = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
+                .seed(12345).graphBuilder().addInputs("in")
                 .addLayer("l0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
                 .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10)
                         .nOut(10).build(), "l0")
@@ -630,8 +634,8 @@ public class TestComputationGraphNetwork {
 
 
         Nd4j.getRandom().setSeed(12345);
-        ComputationGraphConfiguration external = new NeuralNetConfiguration.Builder().learningRate(0.1)
-                .updater(Updater.SGD).seed(12345).graphBuilder().addInputs("in")
+        ComputationGraphConfiguration external = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
+                .seed(12345).graphBuilder().addInputs("in")
                 .addLayer("l0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in").setOutputs("l0")
                 .pretrain(false).backprop(true).build();
 
@@ -903,9 +907,8 @@ public class TestComputationGraphNetwork {
 
     @Test
     public void printSummary() {
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
-                .activation(Activation.IDENTITY)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
+                .activation(Activation.IDENTITY);
 
         ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
                 .addLayer("denseCentre0", new DenseLayer.Builder().nIn(10).nOut(9).build(), "inCentre")
@@ -982,7 +985,7 @@ public class TestComputationGraphNetwork {
     public void testDropoutValidation() {
         //At one point: this threw an exception due to incorrect validation
         for (boolean dropConnect : new boolean[]{false, true}) {
-            new NeuralNetConfiguration.Builder().regularization(true).useDropConnect(dropConnect).dropOut(0.5)
+            new NeuralNetConfiguration.Builder().regularization(true).weightNoise(new DropConnect(0.5))
                     .graphBuilder().setInputTypes(InputType.feedForward(1)).addInputs("input1")
                     .addLayer("output",
                             new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(1).nOut(1)
@@ -1147,35 +1150,29 @@ public class TestComputationGraphNetwork {
         int V_HEIGHT = 130;
         int V_NFRAMES = 150;
         ComputationGraphConfiguration confForArchitecture =
-                new NeuralNetConfiguration.Builder().seed(12345).regularization(true).l2(0.001) //l2 regularization on all layers
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .iterations(1).learningRate(0.4).graphBuilder()
+                new NeuralNetConfiguration.Builder().seed(12345).l2(0.001) //l2 regularization on all layers
+                        .updater(new AdaGrad(0.4)).graphBuilder()
                         .addInputs("in")
                         .addLayer("layer0", new ConvolutionLayer.Builder(10, 10).nIn(3) //3 channels: RGB
                                 .nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(
-                                        WeightInit.RELU)
-                                .updater(Updater.ADAGRAD).build(),"in") //Output: (130-10+0)/4+1 = 31 -> 31*31*30
+                                        WeightInit.RELU).build(),"in") //Output: (130-10+0)/4+1 = 31 -> 31*31*30
                         .addLayer("layer1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
                                 .kernelSize(3, 3).stride(2, 2).build(),"layer0") //(31-3+0)/2+1 = 15
                         .addLayer("layer2", new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
                                 .activation(Activation.RELU).weightInit(WeightInit.RELU)
                                 .updater(Updater.ADAGRAD).build(), "layer1") //Output: (15-3+0)/2+1 = 7 -> 7*7*10 = 490
                         .addLayer("layer3", new DenseLayer.Builder().activation(Activation.RELU).nIn(490).nOut(50)
-                                .weightInit(WeightInit.RELU).updater(Updater.ADAGRAD)
-                                .gradientNormalization(
-                                        GradientNormalization.ClipElementWiseAbsoluteValue)
-                                .gradientNormalizationThreshold(10).learningRate(0.5).build(), "layer2")
+                                .weightInit(WeightInit.RELU).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+                                .gradientNormalizationThreshold(10).build(), "layer2")
                         .addLayer("layer4", new GravesLSTM.Builder().activation(Activation.SOFTSIGN).nIn(50)
                                 .nOut(50).weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD)
-                                .gradientNormalization(
-                                        GradientNormalization.ClipElementWiseAbsoluteValue)
-                                .gradientNormalizationThreshold(10).learningRate(0.6)
+                                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+                                .gradientNormalizationThreshold(10)
                                 .build(), "layer3")
                         .addLayer("layer5", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                 .activation(Activation.SOFTMAX).nIn(50).nOut(4) //4 possible shapes: circle, square, arc, line
-                                .updater(Updater.ADAGRAD).weightInit(WeightInit.XAVIER)
-                                .gradientNormalization(
-                                        GradientNormalization.ClipElementWiseAbsoluteValue)
+                                .weightInit(WeightInit.XAVIER)
+                                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                 .gradientNormalizationThreshold(10).build(), "layer4")
                         .setOutputs("layer5")
                         .inputPreProcessor("layer0", new RnnToCnnPreProcessor(V_HEIGHT, V_WIDTH, 3))

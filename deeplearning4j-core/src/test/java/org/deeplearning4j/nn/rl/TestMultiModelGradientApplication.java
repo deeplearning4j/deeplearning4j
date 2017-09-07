@@ -14,6 +14,10 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
@@ -34,12 +38,11 @@ public class TestMultiModelGradientApplication {
         int nOut = 10;
 
         for (boolean regularization : new boolean[] {false, true}) {
-            for (Updater u : new Updater[] {Updater.SGD, Updater.NESTEROVS, Updater.ADAM}) {
-                //            for (Updater u : new Updater[]{Updater.ADAM}) {
+            for (IUpdater u : new IUpdater[] {new Sgd(0.1), new Nesterovs(0.1), new Adam(0.1)}) {
 
                 MultiLayerConfiguration conf =
                                 new NeuralNetConfiguration.Builder().seed(12345).activation(Activation.TANH)
-                                                .weightInit(WeightInit.XAVIER).updater(u).learningRate(0.1)
+                                                .weightInit(WeightInit.XAVIER).updater(u)
                                                 .regularization(regularization).l1(regularization ? 0.2 : 0.0)
                                                 .l2(regularization ? 0.3 : 0.0).list()
                                                 .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(10).build())
@@ -99,7 +102,7 @@ public class TestMultiModelGradientApplication {
 
 
                 //=============================
-                if (u != Updater.SGD) {
+                if (!(u instanceof Sgd)) {
                     net2GradUpd.getUpdater().getStateViewArray().assign(net1GradCalc.getUpdater().getStateViewArray());
                 }
                 assertEquals(net1GradCalc.params(), net2GradUpd.params());
@@ -127,11 +130,11 @@ public class TestMultiModelGradientApplication {
         int nOut = 10;
 
         for (boolean regularization : new boolean[] {false, true}) {
-            for (Updater u : new Updater[] {Updater.SGD, Updater.ADAM}) {
+            for (IUpdater u : new IUpdater[] {new Sgd(0.1), new Adam(0.1)}) {
 
                 ComputationGraphConfiguration conf =
                                 new NeuralNetConfiguration.Builder().seed(12345).activation(Activation.TANH)
-                                                .weightInit(WeightInit.XAVIER).updater(u).learningRate(0.1)
+                                                .weightInit(WeightInit.XAVIER).updater(u)
                                                 .regularization(regularization).l1(regularization ? 0.2 : 0.0)
                                                 .l2(regularization ? 0.3 : 0.0).graphBuilder().addInputs("in")
                                                 .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(10).build(), "in")
@@ -190,7 +193,7 @@ public class TestMultiModelGradientApplication {
                 assertEquals(net1GradCalc.params(), net2GradUpd.params());
 
                 //=============================
-                if (u != Updater.SGD) {
+                if (!(u instanceof Sgd)) {
                     net2GradUpd.getUpdater().getStateViewArray().assign(net1GradCalc.getUpdater().getStateViewArray());
                 }
                 assertEquals(net1GradCalc.params(), net2GradUpd.params());

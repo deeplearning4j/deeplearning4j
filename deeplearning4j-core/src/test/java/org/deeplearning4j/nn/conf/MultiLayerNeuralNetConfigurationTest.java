@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -88,7 +89,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
         //setup the network
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
-                        .regularization(true).l1(1e-1).l2(2e-4).useDropConnect(true).dropOut(0.5).miniBatch(true)
+                        .regularization(true).l1(1e-1).l2(2e-4).weightNoise(new DropConnect(0.5)).miniBatch(true)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
@@ -364,8 +365,8 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testBiasLr() {
         //setup the network
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).learningRate(1e-2)
-                        .biasLearningRate(0.5).updater(Updater.ADAM).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new Adam(1e-2))
+                        .biasUpdater(new Adam(0.5)).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
                         .layer(1, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())

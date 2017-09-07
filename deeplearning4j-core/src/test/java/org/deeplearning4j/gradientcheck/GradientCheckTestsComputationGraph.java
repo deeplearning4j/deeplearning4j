@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
@@ -54,8 +55,8 @@ public class GradientCheckTestsComputationGraph {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(Updater.NONE)
-                        .learningRate(1.0).graphBuilder().addInputs("input")
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(new NoOp())
+                        .graphBuilder().addInputs("input")
                         .addLayer("firstLayer",
                                         new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
                                         "input")
@@ -99,8 +100,8 @@ public class GradientCheckTestsComputationGraph {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(Updater.NONE)
-                        .learningRate(1.0).graphBuilder().addInputs("input")
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(new NoOp())
+                        .graphBuilder().addInputs("input")
                         .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
                                         "input")
                         .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
@@ -156,7 +157,7 @@ public class GradientCheckTestsComputationGraph {
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                            .updater(Updater.NONE).learningRate(1.0).graphBuilder().addInputs("input")
+                            .updater(new NoOp()).graphBuilder().addInputs("input")
                             .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
                                             "input")
                             .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.SIGMOID)
@@ -213,7 +214,7 @@ public class GradientCheckTestsComputationGraph {
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                            .updater(Updater.NONE).learningRate(1.0).graphBuilder().addInputs("input")
+                            .updater(new NoOp()).graphBuilder().addInputs("input")
                             .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
                                             "input")
                             .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.SIGMOID)
@@ -266,8 +267,8 @@ public class GradientCheckTestsComputationGraph {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1)).updater(Updater.NONE)
-                        .learningRate(1.0).graphBuilder().addInputs("input")
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
+                        .updater(new NoOp()).graphBuilder().addInputs("input")
                         .addLayer("l1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
                         .addLayer("l2", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
@@ -313,7 +314,7 @@ public class GradientCheckTestsComputationGraph {
                         new NeuralNetConfiguration.Builder().seed(12345)
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0.2, 0.6))
-                                        .updater(Updater.NONE).learningRate(1.0).graphBuilder().addInputs("input")
+                                        .updater(new NoOp()).graphBuilder().addInputs("input")
                                         .setOutputs("out")
                                         .addLayer("lstm1",
                                                         new GravesLSTM.Builder().nIn(3).nOut(4)
@@ -371,8 +372,8 @@ public class GradientCheckTestsComputationGraph {
         Nd4j.getRandom().setSeed(1234);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(1234)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(Updater.NONE)
-                        .learningRate(1.0).graphBuilder().addInputs("input").setOutputs("out")
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .updater(new NoOp()).graphBuilder().addInputs("input").setOutputs("out")
                         .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(8).activation(Activation.TANH).build(),
                                         "input")
                         .addVertex("subset", new SubsetVertex(0, 3), "lstm1")
@@ -412,8 +413,8 @@ public class GradientCheckTestsComputationGraph {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(Updater.NONE)
-                        .learningRate(1.0).graphBuilder().addInputs("input").setOutputs("out")
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .updater(new NoOp()).graphBuilder().addInputs("input").setOutputs("out")
                         .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation(Activation.TANH).build(),
                                         "input")
                         .addVertex("lastTS", new LastTimeStepVertex("input"), "lstm1")
@@ -465,7 +466,7 @@ public class GradientCheckTestsComputationGraph {
                         new NeuralNetConfiguration.Builder().seed(12345)
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                        .updater(Updater.NONE).learningRate(1.0).graphBuilder()
+                                        .updater(new NoOp()).graphBuilder()
                                         .addInputs("input1", "input2").setOutputs("out")
                                         .addLayer("lstm1",
                                                         new GravesLSTM.Builder().nIn(3).nOut(4)
@@ -517,8 +518,8 @@ public class GradientCheckTestsComputationGraph {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(Updater.NONE)
-                        .learningRate(1.0).activation(Activation.TANH).graphBuilder().addInputs("i0", "i1", "i2")
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .updater(new NoOp()).activation(Activation.TANH).graphBuilder().addInputs("i0", "i1", "i2")
                         .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i0")
                         .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i1")
                         .addLayer("d2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i2")
@@ -559,8 +560,8 @@ public class GradientCheckTestsComputationGraph {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(Updater.NONE)
-                        .learningRate(1.0).activation(Activation.TANH).graphBuilder().addInputs("i0")
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .updater(new NoOp()).activation(Activation.TANH).graphBuilder().addInputs("i0")
                         .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i0")
                         .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "d0")
                         .addLayer("d2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "d0")
@@ -598,8 +599,8 @@ public class GradientCheckTestsComputationGraph {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(Updater.NONE)
-                        .learningRate(1.0).activation(Activation.TANH).graphBuilder().addInputs("i0", "i1", "i2")
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .updater(new NoOp()).activation(Activation.TANH).graphBuilder().addInputs("i0", "i1", "i2")
                         .addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i0")
                         .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i1")
                         .addLayer("d2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "i2")
@@ -645,8 +646,8 @@ public class GradientCheckTestsComputationGraph {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(Updater.NONE)
-                        .learningRate(1.0).activation(Activation.TANH).graphBuilder().addInputs("input")
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .updater(new NoOp()).activation(Activation.TANH).graphBuilder().addInputs("input")
                         .addLayer("l0", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
                         .addLayer("l1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
@@ -694,7 +695,7 @@ public class GradientCheckTestsComputationGraph {
                         new NeuralNetConfiguration.Builder().seed(12345)
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                        .updater(Updater.NONE).learningRate(1.0).graphBuilder()
+                                        .updater(new NoOp()).graphBuilder()
                                         .addInputs("input1", "input2", "input3")
                                         .addVertex("stack1", new StackVertex(), "input1", "input2", "input3")
                                         .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5)
@@ -767,7 +768,7 @@ public class GradientCheckTestsComputationGraph {
                 ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new GaussianDistribution(0, 1))
-                                .updater(Updater.NONE).learningRate(1.0).graphBuilder().addInputs("input1")
+                                .updater(new NoOp()).graphBuilder().addInputs("input1")
                                 .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH)
                                                 .build(), "input1")
                                 .addLayer("cl", new CenterLossOutputLayer.Builder()
@@ -883,7 +884,7 @@ public class GradientCheckTestsComputationGraph {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                        .activation(Activation.TANH).updater(Updater.NONE).learningRate(1.0).graphBuilder()
+                        .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
                         .addInputs("in1", "in2").addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in1")
                         .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in2")
                         .addVertex("l2", new L2Vertex(), "d0", "d1")
@@ -934,7 +935,7 @@ public class GradientCheckTestsComputationGraph {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                        .activation(Activation.TANH).updater(Updater.NONE).learningRate(1.0).graphBuilder()
+                        .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
                         .addInputs("in1", "in2")
                         .addLayer("d0", new DenseLayer.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in1")
                         .addLayer("d1", new DenseLayer.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in2")
@@ -988,7 +989,7 @@ public class GradientCheckTestsComputationGraph {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                        .activation(Activation.TANH).updater(Updater.NONE).learningRate(1.0).graphBuilder()
+                        .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
                         .addInputs("in1", "in2").addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in1")
                         .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in2")
                         .addVertex("stack", new StackVertex(), "d0", "d1")
@@ -1047,7 +1048,7 @@ public class GradientCheckTestsComputationGraph {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                        .activation(Activation.TANH).updater(Updater.NONE).learningRate(1.0).graphBuilder()
+                        .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
                         .addInputs("in1", "in2")
                         .addLayer("d0", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in1")
                         .addLayer("d1", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in2")
@@ -1109,7 +1110,7 @@ public class GradientCheckTestsComputationGraph {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                        .activation(Activation.TANH).updater(Updater.NONE).learningRate(1.0).graphBuilder()
+                        .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
                         .addInputs("in1", "in2").addLayer("d0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in1")
                         .addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "in2")
                         .addLayer("out1",
@@ -1164,7 +1165,7 @@ public class GradientCheckTestsComputationGraph {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                        .activation(Activation.TANH).updater(Updater.NONE).learningRate(1.0).graphBuilder()
+                        .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
                         .addInputs("in1").addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(3).build(), "in1")
                         .addVertex("norm", new L2NormalizeVertex(), "d1")
                         .addLayer("out1",
@@ -1210,7 +1211,7 @@ public class GradientCheckTestsComputationGraph {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                        .activation(Activation.TANH).updater(Updater.NONE).learningRate(1.0).graphBuilder()
+                        .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
                         .addInputs("in1")
                         .addLayer("d1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(2).build(),
                                         "in1")

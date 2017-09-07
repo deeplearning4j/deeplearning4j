@@ -15,6 +15,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
@@ -268,8 +269,8 @@ public class NoBiasGradientCheckTests {
             for(boolean cnnHasBias : new boolean[]{true, false}) {
 
                 MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().learningRate(1.0)
-                                .updater(Updater.SGD).weightInit(WeightInit.DISTRIBUTION)
+                        new NeuralNetConfiguration.Builder().updater(new NoOp())
+                                .weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new NormalDistribution(0, 1))
                                 .list()
                                 .layer(new ConvolutionLayer.Builder(kernel,

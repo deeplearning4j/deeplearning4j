@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.lang.reflect.Field;
@@ -110,8 +111,7 @@ public class TestDropout {
         int nOut = 4;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
-                        .iterations(1).regularization(true).dropOut(0.5).learningRate(1e-9)
+                        .iterations(1).dropOut(0.5).updater(new Sgd(1e-9))
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(10, 11)) //Weight init to cause sigmoid saturation
                         .list()
                         .layer(0, new DenseLayer.Builder().activation(Activation.SIGMOID).nIn(nIn).nOut(layerSize)

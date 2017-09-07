@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -140,7 +141,7 @@ public class ManualTests {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
                         .activation(Activation.RELU).weightInit(WeightInit.XAVIER)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-                        .updater(new AdaGrad(0.01)).useDropConnect(true).list()
+                        .updater(new AdaGrad(0.01)).weightNoise(new DropConnect(0.5)).list()
                         .layer(0, new ConvolutionLayer.Builder(4, 4).name("cnn1").nIn(nChannels).stride(1, 1).nOut(20)
                                         .build())
                         .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})

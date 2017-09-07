@@ -681,19 +681,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Use drop connect: multiply the weight by a binomial sampling wrt the dropout probability.
-         * Dropconnect probability is set using {@link #dropOut(double)}; this is the probability of retaining a weight
-         *
-         * @param useDropConnect whether to use drop connect or not
-         * @return the
-         */
-        @Deprecated
-        public Builder useDropConnect(boolean useDropConnect) {
-            this.useDropConnect = useDropConnect;
-            return this;
-        }
-
-        /**
          * Objective function to minimize or maximize cost function
          * Default set to minimize true.
          */

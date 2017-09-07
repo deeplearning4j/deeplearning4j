@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -14,6 +15,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.schedule.MapSchedule;
 import org.nd4j.linalg.schedule.ScheduleType;
 
@@ -28,7 +30,7 @@ public class LayerConfigValidationTest {
     @Test
     public void testDropConnect() {
         // Warning thrown only since some layers may not have l1 or l2
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.3).useDropConnect(true)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1)).weightNoise(new DropConnect(0.5))
                         .list().layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -39,7 +41,7 @@ public class LayerConfigValidationTest {
     @Test
     public void testL1L2NotSet() {
         // Warning thrown only since some layers may not have l1 or l2
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.3).regularization(true)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.3))
                         .list().layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -49,7 +51,7 @@ public class LayerConfigValidationTest {
     @Test(expected = IllegalStateException.class)
     @Ignore //Old assumption: throw exception on l1 but no regularization. Current design: warn, not exception
     public void testRegNotSetL1Global() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.3).l1(0.5).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.3)).l1(0.5).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -59,7 +61,7 @@ public class LayerConfigValidationTest {
     @Test(expected = IllegalStateException.class)
     @Ignore //Old assumption: throw exception on l1 but no regularization. Current design: warn, not exception
     public void testRegNotSetL2Local() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.3).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.3)).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).l2(0.5).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -70,7 +72,7 @@ public class LayerConfigValidationTest {
     public void testWeightInitDistNotSet() {
         // Warning thrown only since global dist can be set with a different weight init locally
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().learningRate(0.3).dist(new GaussianDistribution(1e-3, 2))
+                        new NeuralNetConfiguration.Builder().updater(new Sgd(0.3)).dist(new GaussianDistribution(1e-3, 2))
                                         .list().layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -94,7 +96,7 @@ public class LayerConfigValidationTest {
     @Test
     public void testCompGraphNullLayer() {
         ComputationGraphConfiguration.GraphBuilder gb = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.01)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Sgd(0.01))
                         .iterations(3).seed(42).miniBatch(false).l1(0.2).l2(0.2)
                         /* Graph Builder */
                         .updater(Updater.RMSPROP).graphBuilder().addInputs("in")
@@ -125,7 +127,7 @@ public class LayerConfigValidationTest {
         double expectedL2 = 0.0;
 
         // Nesterovs Updater
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.3).updater(Updater.NESTEROVS)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Nesterovs(0.9))
                         .list().layer(0, new DenseLayer.Builder().nIn(2).nOut(2).l2(0.5).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(new Nesterovs(0.3, 0.4)).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -140,7 +142,7 @@ public class LayerConfigValidationTest {
         assertEquals(0.4, ((Nesterovs)layerConf1.getIUpdater()).getMomentum(), 1e-3);
 
         // Adam Updater
-        conf = new NeuralNetConfiguration.Builder().learningRate(0.3).updater(Updater.ADAM).regularization(true)
+        conf = new NeuralNetConfiguration.Builder().updater(new Adam(0.3))
                         .weightInit(WeightInit.DISTRIBUTION).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).l2(0.5).l1(0.3).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
@@ -160,7 +162,7 @@ public class LayerConfigValidationTest {
         assertEquals(expectedL2, layerConf1.getL2(), 1e-3);
 
         //RMSProp Updater
-        conf = new NeuralNetConfiguration.Builder().learningRate(0.3).updater(Updater.RMSPROP).list()
+        conf = new NeuralNetConfiguration.Builder().updater(new RmsProp(0.3)).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(new RmsProp(0.3, 0.4, RmsProp.DEFAULT_RMSPROP_EPSILON)).build()).build();
         net = new MultiLayerNetwork(conf);

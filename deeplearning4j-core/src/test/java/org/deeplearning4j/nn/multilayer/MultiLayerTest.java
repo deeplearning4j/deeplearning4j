@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.multilayer;
 
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -363,7 +364,7 @@ public class MultiLayerTest {
 
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                                        .iterations(5).learningRate(1e-3)
+                                .updater(new Sgd(1e-3)).iterations(5)
                                         .list().layer(
                                                         0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED,
                                                                         RBM.VisibleUnit.GAUSSIAN).nIn(nIn)
@@ -423,7 +424,7 @@ public class MultiLayerTest {
         int miniBatch = 5;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).learningRate(0.1).list()
+                        .updater(new Sgd(0.1)).list()
                         .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).activation(Activation.RELU)
                                         .weightInit(WeightInit.XAVIER).build())
                         .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).activation(Activation.RELU)
@@ -485,7 +486,7 @@ public class MultiLayerTest {
         layerNameList.add("dnn3");
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).learningRate(0.1).list()
+                        .updater(new Sgd(0.1)).list()
                         .layer(0, new DenseLayer.Builder().name("dnn1").nIn(nIn).nOut(20).activation(Activation.RELU)
                                         .weightInit(WeightInit.XAVIER).build())
                         .layer(1, new DenseLayer.Builder().name("dnn2").nIn(20).nOut(30).activation(Activation.RELU)
@@ -558,14 +559,14 @@ public class MultiLayerTest {
         int nIn = 5;
         int nOut = 6;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).regularization(true).l1(0.01)
-                        .l2(0.01).learningRate(0.1).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list()
+                        .l2(0.01).updater(new Sgd(0.1)).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
                         .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder()
                                         .lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
                         .build();
 
         MultiLayerConfiguration confNoReg = new NeuralNetConfiguration.Builder().seed(12345).regularization(false)
-                        .learningRate(0.1).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list()
+                        .updater(new Sgd(0.1)).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
                         .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder()
                                         .lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
@@ -609,7 +610,7 @@ public class MultiLayerTest {
     public void testDataSetScore() {
 
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false).learningRate(1.0)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
                         .weightInit(WeightInit.XAVIER).seed(12345L).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation(Activation.SIGMOID).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -634,7 +635,7 @@ public class MultiLayerTest {
         int height = 3;
         int nOut = 2;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false).learningRate(1.0)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .seed(12345L).list().layer(0, new ConvolutionLayer.Builder(2, 2).nOut(1).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(2).build())
@@ -659,7 +660,7 @@ public class MultiLayerTest {
     public void testPredict() throws Exception {
 
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false).learningRate(1.0)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
                         .weightInit(WeightInit.XAVIER).seed(12345L).list()
                         .layer(0, new DenseLayer.Builder().nIn(784).nOut(50).activation(Activation.RELU).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -699,7 +700,7 @@ public class MultiLayerTest {
     @Test
     public void testOutput() throws Exception {
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false).learningRate(1.0)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
                         .weightInit(WeightInit.XAVIER).seed(12345L).list()
                         .layer(0, new DenseLayer.Builder().nIn(784).nOut(50).activation(Activation.RELU).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -735,8 +736,8 @@ public class MultiLayerTest {
         expectedGradient.setGradientFor("1_b", Nd4j.ones(1, 3));
 
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().updater(org.deeplearning4j.nn.conf.Updater.SGD)
-                                        .learningRate(1).activation(Activation.RELU).weightInit(WeightInit.XAVIER)
+                        new NeuralNetConfiguration.Builder().updater(new Sgd(1.0))
+                                        .activation(Activation.RELU).weightInit(WeightInit.XAVIER)
                                         .list().layer(0, new DenseLayer.Builder().name("dnn1").nIn(4).nOut(5).build())
                                         .layer(1, new OutputLayer.Builder().name("output").nIn(5).nOut(3)
                                                         .activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER)
@@ -1001,7 +1002,7 @@ public class MultiLayerTest {
         MultiLayerConfiguration confForArchitecture =
                         new NeuralNetConfiguration.Builder().seed(12345).regularization(true).l2(0.001) //l2 regularization on all layers
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).learningRate(0.4).list()
+                                        .iterations(1).list()
                                         .layer(0, new ConvolutionLayer.Builder(10, 10).nIn(3) //3 channels: RGB
                                                         .nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(
                                                                         WeightInit.RELU)
@@ -1015,12 +1016,12 @@ public class MultiLayerTest {
                                                         .weightInit(WeightInit.RELU).updater(Updater.ADAGRAD)
                                                         .gradientNormalization(
                                                                         GradientNormalization.ClipElementWiseAbsoluteValue)
-                                                        .gradientNormalizationThreshold(10).learningRate(0.5).build())
+                                                        .gradientNormalizationThreshold(10).build())
                                         .layer(4, new GravesLSTM.Builder().activation(Activation.SOFTSIGN).nIn(50)
                                                         .nOut(50).weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD)
                                                         .gradientNormalization(
                                                                         GradientNormalization.ClipElementWiseAbsoluteValue)
-                                                        .gradientNormalizationThreshold(10).learningRate(0.6)
+                                                        .gradientNormalizationThreshold(10)
                                                         .build())
                                         .layer(5, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                         .activation(Activation.SOFTMAX).nIn(50).nOut(4) //4 possible shapes: circle, square, arc, line
