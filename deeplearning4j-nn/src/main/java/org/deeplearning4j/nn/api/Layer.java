@@ -37,15 +37,6 @@ import java.util.Collection;
  */
 public interface Layer extends Serializable, Cloneable, Model {
 
-    enum Type {
-        FEED_FORWARD, RECURRENT, CONVOLUTIONAL, SUBSAMPLING, RECURSIVE, MULTILAYER, NORMALIZATION
-    }
-
-    enum TrainingMode {
-        TRAIN, TEST
-    }
-
-
     /**
      * This method sets given CacheMode for current layer
      *
@@ -71,52 +62,6 @@ public interface Layer extends Serializable, Cloneable, Model {
      */
     double calcL1(boolean backpropOnlyParams);
 
-    /**
-     * Returns the layer type
-     * @return
-     */
-    Type type();
-
-    /**
-     * Calculate error with respect to the
-     * current layer.
-     *
-     * This gradient will contain the error signal
-     * @param input the gradient for the forward layer
-     *              If this is the final layer, it will start
-     *              with the error from the output.
-     *              This is on the user to initialize.
-     * @return the gradient wrt the parameters
-     * on the current layer
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used.
-     */
-    @Deprecated
-    Gradient error(INDArray input);
-
-
-
-    /**
-     * Take the derivative of the given input
-     * based on the activation
-     * @param input the input to take the derivative of
-     * @return the derivative of the action
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used.
-     */
-    @Deprecated
-    INDArray derivativeActivation(INDArray input);
-
-
-    /**
-     * Calculate the gradient
-     * @param layerError the layer error
-     * @param indArray
-     * @return the gradient
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used.
-     */
-    @Deprecated
-    Gradient calcGradient(Gradient layerError, INDArray indArray);
-
-
     /**Calculate the gradient relative to the error in the next layer
      * @param epsilon w^(L+1)*delta^(L+1). Or, equiv: dC/da, i.e., (dC/dz)*(dz/da) = dC/da, where C 
      * 	is cost function a=sigma(z) is activation.
@@ -125,26 +70,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      *  L, then return.getSecond() == (w^(L)*(delta^(L))^T)^T
      */
     Pair<Gradient, INDArray> backpropGradient(INDArray epsilon);
-
-
-    /**
-     * Parameter averaging
-     * @param layer the layer to merge
-     * @param batchSize the batch size to merge on
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used. Merging (for parameter averaging) done via alternative means
-     */
-    @Deprecated
-    void merge(Layer layer, int batchSize);
-
-
-    /**
-     * Calculate the mean representation
-     * for the activation for this layer
-     * @return the activation mean for this layer
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used.
-     */
-    @Deprecated
-    INDArray activationMean();
+    Pair<Gradient, INDArray[]> backpropGradients(INDArray... epsilons);
 
     /**
      * Raw activations
@@ -153,34 +79,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * for this layer
      */
     INDArray preOutput(INDArray x);
-
-
-
-    /**
-     * Raw activations
-     * @param x the input to transform
-     * @return the raw activation
-     * for this layer
-     */
-    INDArray preOutput(INDArray x, TrainingMode training);
-
-
-    /**
-     * Trigger an activation with the last specified input
-     * @param training  training or test mode
-     * @return the activation of the last specified input
-     */
-    INDArray activate(TrainingMode training);
-
-    /**
-     * Initialize the layer with the given input
-     * and return the activation for this layer
-     * given this input
-     * @param input the input to use
-     * @param training  train or test mode
-     * @return
-     */
-    INDArray activate(INDArray input, TrainingMode training);
+    INDArray[] preOutputs(INDArray x);
 
 
     /**
@@ -190,6 +89,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * for this layer
      */
     INDArray preOutput(INDArray x, boolean training);
+    INDArray[] preOutputs(INDArray x, boolean training);
 
 
     /**
@@ -198,6 +98,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @return the activation of the last specified input
      */
     INDArray activate(boolean training);
+    INDArray[] activates(boolean training);
 
     /**
      * Initialize the layer with the given input
@@ -208,12 +109,14 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @return
      */
     INDArray activate(INDArray input, boolean training);
+    INDArray[] activates(INDArray[] input, boolean training);
 
     /**
      * Trigger an activation with the last specified input
      * @return the activation of the last specified input
      */
     INDArray activate();
+    INDArray[] activates();
 
     /**
      * Initialize the layer with the given input
@@ -223,21 +126,13 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @return
      */
     INDArray activate(INDArray input);
-
-    /**
-     * Return a transposed copy of the weights/bias
-     * (this means reverse the number of inputs and outputs on the weights)
-     *
-     * @return the transposed layer
-     */
-    Layer transpose();
+    INDArray[] activates(INDArray... input);
 
     /**
      * Clone the layer
      * @return
      */
     Layer clone();
-
 
 
     /**
@@ -269,18 +164,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * Get the layer input.
      */
     void setInput(INDArray input);
-
-    /** Set current/last input mini-batch size.<br>
-     * Used for score and gradient calculations. Mini batch size may be different from
-     * getInput().size(0) due to reshaping operations - for example, when using RNNs with
-     * DenseLayer and OutputLayer. Called automatically during forward pass.
-     */
-    void setInputMiniBatchSize(int size);
-
-    /** Get current/last input mini-batch size, as set by setInputMiniBatchSize(int)
-     * @see Layer#setInputMiniBatchSize(int)
-     */
-    int getInputMiniBatchSize();
+    void setInputs(INDArray... inputs);
 
     /**
      * Set the mask array. Note: In general, {@link #feedForwardMaskArray(INDArray, MaskState, int)} should be used in
@@ -315,4 +199,6 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @return                 New mask array after this layer, along with the new mask state.
      */
     Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize);
+
+    Pair<INDArray[], MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize);
 }
