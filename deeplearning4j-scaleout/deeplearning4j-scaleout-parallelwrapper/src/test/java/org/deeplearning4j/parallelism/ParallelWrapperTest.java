@@ -49,7 +49,7 @@ public class ParallelWrapperTest {
 
         log.info("Build model....");
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
-                        .regularization(true).l2(0.0005)
+                        .l2(0.0005)
                         //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
                         .weightInit(WeightInit.XAVIER)
                         .updater(new Nesterovs(0.01, 0.9)).list()

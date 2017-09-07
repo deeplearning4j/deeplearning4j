@@ -80,10 +80,10 @@ public class CuDNNGradientChecks {
                         labels.putScalar(i, r.nextInt(nOut), 1.0);
                     }
 
-                    MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().regularization(false)
+                    MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                                     .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                     .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-1, 1))
-                                    .updater(Updater.NONE).seed(12345L).list()
+                                    .updater(new NoOp()).seed(12345L).list()
                                     .layer(0, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(1, 1).nOut(3)
                                                     .activation(afn).build())
                                     .layer(1, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(0, 0).nOut(3)
@@ -173,9 +173,9 @@ public class CuDNNGradientChecks {
                     labels.putScalar(i, r.nextInt(nOut), 1.0);
                 }
 
-                MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().regularization(false)
+                MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-1, 1))
-                        .updater(Updater.NONE).seed(12345L)
+                        .updater(new NoOp()).seed(12345L)
                         .list()
                         .layer(0, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(1, 1).nOut(3)
                                 .hasBias(convHasBias)

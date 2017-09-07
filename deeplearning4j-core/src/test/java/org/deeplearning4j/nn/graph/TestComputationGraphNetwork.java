@@ -985,7 +985,7 @@ public class TestComputationGraphNetwork {
     public void testDropoutValidation() {
         //At one point: this threw an exception due to incorrect validation
         for (boolean dropConnect : new boolean[]{false, true}) {
-            new NeuralNetConfiguration.Builder().regularization(true).weightNoise(new DropConnect(0.5))
+            new NeuralNetConfiguration.Builder().weightNoise(new DropConnect(0.5))
                     .graphBuilder().setInputTypes(InputType.feedForward(1)).addInputs("input1")
                     .addLayer("output",
                             new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(1).nOut(1)
@@ -1001,7 +1001,7 @@ public class TestComputationGraphNetwork {
 
         //Don't care about this being valid
         ComputationGraphConfiguration c =
-                new NeuralNetConfiguration.Builder().regularization(true).l1(0.5).l2(0.6).graphBuilder()
+                new NeuralNetConfiguration.Builder().l1(0.5).l2(0.6).graphBuilder()
                         .addInputs("in")
                         .addLayer("sub1", new SubsamplingLayer.Builder(2, 2).build(), "in")
                         .addLayer("sub2", new Subsampling1DLayer.Builder(2).build(), "sub1")

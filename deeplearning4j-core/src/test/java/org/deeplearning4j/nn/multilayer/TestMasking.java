@@ -20,6 +20,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.*;
@@ -124,7 +125,7 @@ public class TestMasking {
                 Activation a = act[i];
 
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.NONE)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
                                 .list()
                                 .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
@@ -169,7 +170,7 @@ public class TestMasking {
 
 
                 //Do the same for CompGraph
-                ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().updater(Updater.NONE)
+                ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().updater(new NoOp())
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
                                 .graphBuilder().addInputs("in")
                                 .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(layerSize)
@@ -209,7 +210,7 @@ public class TestMasking {
         int nIn = 5;
         int nOut = 4;
 
-        ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().updater(Updater.NONE)
+        ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().updater(new NoOp())
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)

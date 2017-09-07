@@ -176,7 +176,7 @@ public class ResNet50 extends ZooModel {
                         .iterations(iterations).activation(Activation.IDENTITY)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new RmsProp(0.1, 0.96, 0.001)).weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new NormalDistribution(0.0, 0.5)).regularization(true).l1(1e-7).l2(5e-5).miniBatch(true)
+                        .dist(new NormalDistribution(0.0, 0.5)).l1(1e-7).l2(5e-5).miniBatch(true)
                         .convolutionMode(ConvolutionMode.Truncate).graphBuilder();
 
 

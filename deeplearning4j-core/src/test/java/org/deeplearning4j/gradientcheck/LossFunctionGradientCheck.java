@@ -21,6 +21,7 @@ import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -140,7 +141,7 @@ public class LossFunctionGradientCheck {
                 Nd4j.getRandom().setSeed(12345);
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1)
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
-                                .updater(Updater.NONE).regularization(false).weightInit(WeightInit.DISTRIBUTION)
+                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new UniformDistribution(-2, 2)).list()
                                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH).build())
                                 .layer(1, new OutputLayer.Builder().lossFunction(lossFunctions[i])
@@ -294,7 +295,7 @@ public class LossFunctionGradientCheck {
                 Nd4j.getRandom().setSeed(12345);
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1)
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
-                                .updater(Updater.NONE).regularization(false).weightInit(WeightInit.DISTRIBUTION)
+                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new UniformDistribution(-2, 2)).list()
                                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(nOut[i]).activation(Activation.TANH)
                                                 .build())
@@ -513,7 +514,7 @@ public class LossFunctionGradientCheck {
                     Nd4j.getRandom().setSeed(12345);
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1)
                                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
-                                    .updater(Updater.NONE).regularization(false).weightInit(WeightInit.DISTRIBUTION)
+                                    .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                     .dist(new UniformDistribution(-3, 3)).list()
                                     .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH)
                                                     .build())

@@ -146,7 +146,7 @@ public class CNN1DGradientCheckTest {
                             }
                         }
 
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
+                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                         .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                                         .layer(0, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)

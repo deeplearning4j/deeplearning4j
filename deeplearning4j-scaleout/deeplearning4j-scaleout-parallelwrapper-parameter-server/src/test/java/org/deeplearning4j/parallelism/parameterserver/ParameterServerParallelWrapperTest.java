@@ -43,7 +43,7 @@ public class ParameterServerParallelWrapperTest {
 
         log.info("Build model....");
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
-                        .regularization(true).l2(0.0005)
+                        .l2(0.0005)
                         .weightInit(WeightInit.XAVIER)
                         .updater(new Nesterovs(0.01, 0.9)).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5)

@@ -207,7 +207,7 @@ public class NeuralNetConfigurationTest {
                         .activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(3)
-                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).regularization(false).layer(layer)
+                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer)
                         .build();
         conf.setPretrain(pretrain);
         return conf;

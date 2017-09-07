@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import junit.framework.TestCase;
 import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Model;
@@ -258,7 +259,7 @@ public class GravesBidirectionalLSTMTest {
                                         .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                                                         .nIn(nIn).nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
                                                         .dist(new UniformDistribution(-0.1, 0.1))
-                                                        .activation(Activation.TANH).updater(Updater.NONE).build())
+                                                        .activation(Activation.TANH).updater(new NoOp()).build())
                                         .build();
 
         final NeuralNetConfiguration confForwards = new NeuralNetConfiguration.Builder()

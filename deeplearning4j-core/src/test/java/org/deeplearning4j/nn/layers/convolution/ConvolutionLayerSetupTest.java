@@ -62,7 +62,7 @@ public class ConvolutionLayerSetupTest {
 
         //setup the network
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
-                        .regularization(true).l1(1e-1).l2(2e-4).dropOut(0.5).miniBatch(true)
+                        .l1(1e-1).l2(2e-4).dropOut(0.5).miniBatch(true)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())

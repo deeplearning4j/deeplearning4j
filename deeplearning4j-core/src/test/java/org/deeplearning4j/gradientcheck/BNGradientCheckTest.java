@@ -160,7 +160,7 @@ public class BNGradientCheckTest {
                         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(12345)
                                         .regularization(l1vals[j] > 0 || l2vals[j] > 0).l1(l1vals[j]).l2(l2vals[j])
                                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                                        .updater(Updater.NONE).weightInit(WeightInit.DISTRIBUTION)
+                                        .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new UniformDistribution(-2, 2)).seed(12345L).list()
                                         .layer(0, new ConvolutionLayer.Builder(2, 2).stride(1, 1).nOut(3)
                                                         .activation(afn).build())
@@ -260,7 +260,7 @@ public class BNGradientCheckTest {
                                                         .regularization(l1vals[j] > 0 || l2vals[j] > 0).l1(l1vals[j])
                                                         .l2(l2vals[j])
                                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                                                        .updater(Updater.NONE).weightInit(WeightInit.DISTRIBUTION)
+                                                        .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                                         .dist(new UniformDistribution(-2, 2)).seed(12345L).list()
                                                         .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(4)
                                                                         .activation(afn).build())
@@ -401,8 +401,8 @@ public class BNGradientCheckTest {
 
         int minibatchSize = 3;
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).updater(Updater.NONE)
-                        .weightInit(WeightInit.XAVIER).regularization(false).graphBuilder().addInputs("in")
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).updater(new NoOp())
+                        .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .setInputTypes(InputType.convolutional(height, width, channels))
                         .addLayer("bn", new BatchNormalization.Builder().build(), "in")
                         .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
@@ -468,7 +468,7 @@ public class BNGradientCheckTest {
                         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                                         .regularization(l1vals[j] > 0 || l2vals[j] > 0).l1(l1vals[j]).l2(l2vals[j])
                                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                                        .updater(Updater.NONE).weightInit(WeightInit.DISTRIBUTION)
+                                        .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new UniformDistribution(-2, 2)).seed(12345L).graphBuilder()
                                         .addInputs("in")
                                         .addLayer("0", new ConvolutionLayer.Builder(2, 2).stride(1, 1).nOut(3)

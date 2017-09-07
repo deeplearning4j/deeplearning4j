@@ -160,7 +160,7 @@ public class GradientCheckTests {
                         double l1 = l1vals[k];
 
                         MultiLayerConfiguration conf =
-                                        new NeuralNetConfiguration.Builder().regularization(true).l2(l2).l1(l1)
+                                        new NeuralNetConfiguration.Builder().l2(l2).l1(l1)
                                                         .l2Bias(biasL2[k]).l1Bias(biasL1[k])
                                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                                         .seed(12345L)
@@ -169,12 +169,12 @@ public class GradientCheckTests {
                                                                                         .weightInit(WeightInit.DISTRIBUTION)
                                                                                         .dist(new NormalDistribution(0,
                                                                                                         1))
-                                                                                        .updater(Updater.NONE)
+                                                                                        .updater(new NoOp())
                                                                                         .activation(afn).build())
                                                         .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
                                                                         .weightInit(WeightInit.DISTRIBUTION)
                                                                         .dist(new NormalDistribution(0, 1))
-                                                                        .updater(Updater.NONE)
+                                                                        .updater(new NoOp())
                                                                         .activation(outputActivation).build())
                                                         .pretrain(false).backprop(true).build();
 
@@ -231,17 +231,17 @@ public class GradientCheckTests {
             labels.putScalar(new int[] {i, r.nextInt(3)}, 1.0);
         }
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l2(0.2).l1(0.1)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.1)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
                         .list().layer(0,
                                         new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
                                                         .dist(new NormalDistribution(0, 1))
-                                                        .updater(Updater.NONE).activation(
+                                                        .updater(new NoOp()).activation(
                                                                         Activation.TANH)
                                                         .build())
                         .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
                                         .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
-                                        .updater(Updater.NONE).activation(Activation.SOFTMAX).build())
+                                        .updater(new NoOp()).activation(Activation.SOFTMAX).build())
                         .pretrain(false).backprop(true).build();
 
         MultiLayerNetwork mln = new MultiLayerNetwork(conf);

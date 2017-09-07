@@ -43,6 +43,7 @@ import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
@@ -269,11 +270,11 @@ public class OutputLayerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list()
                         .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).activation(Activation.TANH)
-                                        .updater(Updater.NONE).build())
+                                        .updater(new NoOp()).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                        .updater(Updater.NONE).build())
+                                        .updater(new NoOp()).build())
                         .inputPreProcessor(1, new RnnToFeedForwardPreProcessor()).build();
 
         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -296,11 +297,11 @@ public class OutputLayerTest {
         MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder().seed(12345L).list()
                         .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).activation(Activation.TANH)
-                                        .updater(Updater.NONE).build())
+                                        .updater(new NoOp()).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder(LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                        .updater(Updater.NONE).build())
+                                        .updater(new NoOp()).build())
                         .build();
 
         MultiLayerNetwork mlnRnn = new MultiLayerNetwork(confRnn);
@@ -356,11 +357,11 @@ public class OutputLayerTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
                                             .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                            .activation(Activation.TANH).updater(Updater.NONE).build())
+                                            .activation(Activation.TANH).updater(new NoOp()).build())
                             .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                                             .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                            .updater(Updater.NONE).build())
+                                            .updater(new NoOp()).build())
                             .inputPreProcessor(1, new RnnToFeedForwardPreProcessor()).pretrain(false).backprop(true)
                             .build();
 
@@ -373,11 +374,11 @@ public class OutputLayerTest {
             MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder().seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
                                             .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                            .activation(Activation.TANH).updater(Updater.NONE).build())
+                                            .activation(Activation.TANH).updater(new NoOp()).build())
                             .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder(LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                                             .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                            .updater(Updater.NONE).build())
+                                            .updater(new NoOp()).build())
                             .pretrain(false).backprop(true).build();
 
             MultiLayerNetwork mlnRnn = new MultiLayerNetwork(confRnn);

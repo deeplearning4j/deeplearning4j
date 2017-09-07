@@ -37,7 +37,7 @@ public class TestDropout {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
-                        .iterations(1).regularization(true).dropOut(0.5).list()
+                        .iterations(1).dropOut(0.5).list()
                         .layer(0, new OutputLayer.Builder().activation(Activation.IDENTITY)
                                         .lossFunction(LossFunctions.LossFunction.MSE).nIn(nIn).nOut(nOut)
                                         .weightInit(WeightInit.XAVIER).build())

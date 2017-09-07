@@ -111,7 +111,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
     @Test
     public void testDistributedScoring() {
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l1(0.1).l2(0.1)
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().l1(0.1).l2(0.1)
                         .seed(123).updater(new Nesterovs(0.1, 0.9)).graphBuilder()
                         .addInputs("in")
                         .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(nIn).nOut(3)

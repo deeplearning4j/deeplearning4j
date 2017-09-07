@@ -133,7 +133,7 @@ public class LayerConfigTest {
         assertEquals(0.2, ((BaseLayer) conf.getConf(1).getLayer()).getLearningRate(), 0.0);
 
         //L1 and L2 without layerwise override:
-        conf = new NeuralNetConfiguration.Builder().regularization(true).l1(0.1).l2(0.2).list()
+        conf = new NeuralNetConfiguration.Builder().l1(0.1).l2(0.2).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
         net = new MultiLayerNetwork(conf);
@@ -145,7 +145,7 @@ public class LayerConfigTest {
         assertEquals(0.2, ((BaseLayer) conf.getConf(1).getLayer()).getL2(), 0.0);
 
         //L1 and L2 with layerwise override:
-        conf = new NeuralNetConfiguration.Builder().regularization(true).l1(0.1).l2(0.2).list()
+        conf = new NeuralNetConfiguration.Builder().l1(0.1).l2(0.2).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).l1(0.9).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).l2(0.8).build()).build();
         net = new MultiLayerNetwork(conf);

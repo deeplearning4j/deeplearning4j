@@ -829,8 +829,8 @@ public class GradientCheckTestsComputationGraph {
         for (boolean train : trainFirst) {
             for (double lambda : new double[] {0.0, 0.5, 2.0}) {
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                                .updater(Updater.NONE).weightInit(WeightInit.DISTRIBUTION)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                                 .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(3).build())
                                 .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build())
@@ -1259,9 +1259,9 @@ public class GradientCheckTestsComputationGraph {
             labels.putScalar(new int[] {i, r.nextInt(3)}, 1.0);
         }
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l2(0.2).l1(0.1)
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.1)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
-                        .updater(Updater.NONE).graphBuilder().addInputs("in")
+                        .updater(new NoOp()).graphBuilder().addInputs("in")
                         .addLayer("0", new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.TANH).build(), "in")
                         .addLayer("1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3)

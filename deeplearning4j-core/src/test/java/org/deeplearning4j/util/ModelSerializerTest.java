@@ -38,7 +38,7 @@ public class ModelSerializerTest {
         int nIn = 5;
         int nOut = 6;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).regularization(true).l1(0.01)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01)
                         .l2(0.01).updater(new Sgd(0.1)).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
                         .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder()
@@ -65,7 +65,7 @@ public class ModelSerializerTest {
         int nIn = 5;
         int nOut = 6;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).regularization(true).l1(0.01)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01)
                         .l2(0.01).updater(new Sgd(0.1)).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list()
                         .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
                         .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder()

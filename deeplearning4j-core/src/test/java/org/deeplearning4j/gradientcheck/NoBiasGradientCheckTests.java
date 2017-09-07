@@ -71,8 +71,8 @@ public class NoBiasGradientCheckTests {
             for (boolean denseHasBias : new boolean[]{true, false}) {
                 for (boolean outHasBias : new boolean[]{true, false}) {
 
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                            .updater(Updater.NONE)
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .updater(new NoOp())
                             .seed(12345L)
                             .list()
                             .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(layerSize)
@@ -143,8 +143,8 @@ public class NoBiasGradientCheckTests {
 
             for (boolean rnnOutHasBias : new boolean[]{true, false}) {
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                        .updater(Updater.NONE)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .updater(new NoOp())
                         .seed(12345L)
                         .list()
                         .layer(0, new LSTM.Builder().nIn(nIn).nOut(layerSize)
@@ -203,8 +203,8 @@ public class NoBiasGradientCheckTests {
 
             for (boolean embeddingHasBias : new boolean[]{true, false}) {
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                        .updater(Updater.NONE)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .updater(new NoOp())
                         .seed(12345L)
                         .list()
                         .layer(0, new EmbeddingLayer.Builder().nIn(nIn).nOut(layerSize)

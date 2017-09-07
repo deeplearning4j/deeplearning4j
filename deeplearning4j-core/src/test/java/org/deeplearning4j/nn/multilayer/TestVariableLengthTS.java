@@ -17,6 +17,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -271,17 +272,17 @@ public class TestVariableLengthTS {
                         INDArray labels = Nd4j.ones(miniBatch, nOut, tsLength);
 
                         MultiLayerConfiguration conf =
-                                        new NeuralNetConfiguration.Builder().regularization(false).seed(12345L).list()
+                                        new NeuralNetConfiguration.Builder().seed(12345L).list()
                                                         .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
                                                                         .weightInit(WeightInit.DISTRIBUTION)
                                                                         .dist(new NormalDistribution(0, 1))
-                                                                        .updater(Updater.NONE).build())
+                                                                        .updater(new NoOp()).build())
                                                         .layer(1, new RnnOutputLayer.Builder(
                                                                         LossFunctions.LossFunction.MSE)
                                                                                         .activation(Activation.IDENTITY)
                                                                                         .nIn(5).nOut(nOut)
                                                                                         .weightInit(WeightInit.ZERO)
-                                                                                        .updater(Updater.NONE).build())
+                                                                                        .updater(new NoOp()).build())
                                                         .pretrain(false).backprop(true).build();
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();
@@ -334,33 +335,33 @@ public class TestVariableLengthTS {
                         INDArray input = Nd4j.rand(new int[] {miniBatch, nIn, tsLength});
 
                         MultiLayerConfiguration conf =
-                                        new NeuralNetConfiguration.Builder().regularization(false).seed(12345L).list()
+                                        new NeuralNetConfiguration.Builder().seed(12345L).list()
                                                         .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
                                                                         .weightInit(WeightInit.DISTRIBUTION)
                                                                         .dist(new NormalDistribution(0, 1))
-                                                                        .updater(Updater.NONE).build())
+                                                                        .updater(new NoOp()).build())
                                                         .layer(1, new RnnOutputLayer.Builder(
                                                                         LossFunctions.LossFunction.MSE)
                                                                                         .activation(Activation.IDENTITY)
                                                                                         .nIn(5).nOut(nOut)
                                                                                         .weightInit(WeightInit.XAVIER)
-                                                                                        .updater(Updater.NONE).build())
+                                                                                        .updater(new NoOp()).build())
                                                         .pretrain(false).backprop(true).build();
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();
 
                         MultiLayerConfiguration conf2 =
-                                        new NeuralNetConfiguration.Builder().regularization(false).seed(12345L).list()
+                                        new NeuralNetConfiguration.Builder().seed(12345L).list()
                                                         .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
                                                                         .weightInit(WeightInit.DISTRIBUTION)
                                                                         .dist(new NormalDistribution(0, 1))
-                                                                        .updater(Updater.NONE).build())
+                                                                        .updater(new NoOp()).build())
                                                         .layer(1, new RnnOutputLayer.Builder(
                                                                         LossFunctions.LossFunction.MCXENT)
                                                                                         .activation(Activation.SOFTMAX)
                                                                                         .nIn(5).nOut(nOut)
                                                                                         .weightInit(WeightInit.XAVIER)
-                                                                                        .updater(Updater.NONE).build())
+                                                                                        .updater(new NoOp()).build())
                                                         .pretrain(false).backprop(true).build();
                         MultiLayerNetwork mln2 = new MultiLayerNetwork(conf2);
                         mln2.init();

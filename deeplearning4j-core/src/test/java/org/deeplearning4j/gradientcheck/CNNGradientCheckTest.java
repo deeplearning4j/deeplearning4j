@@ -63,8 +63,8 @@ public class CNNGradientCheckTest {
                     LossFunctions.LossFunction lf = lossFunctions[i];
                     String outputActivation = outputActivations[i];
 
-                    MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().regularization(false)
-                                    .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(Updater.NONE)
+                    MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                                    .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
                                     .weightInit(WeightInit.XAVIER).seed(12345L).list()
                                     .layer(0, new ConvolutionLayer.Builder(1, 1).nOut(6).activation(afn).build())
                                     .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3).build())
@@ -146,15 +146,15 @@ public class CNNGradientCheckTest {
                         double l1 = l1vals[k];
 
                         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                                        .regularization(true).l2(l2).l1(l1).l2Bias(biasL2[k]).l1Bias(biasL1[k])
+                                        .l2(l2).l1(l1).l2Bias(biasL2[k]).l1Bias(biasL1[k])
                                         .optimizationAlgo(
                                                         OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                         .seed(12345L).list()
                                         .layer(0, new ConvolutionLayer.Builder(new int[] {1, 1}).nIn(1).nOut(6)
                                                         .weightInit(WeightInit.XAVIER).activation(afn)
-                                                        .updater(Updater.NONE).build())
+                                                        .updater(new NoOp()).build())
                                         .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3)
-                                                        .weightInit(WeightInit.XAVIER).updater(Updater.NONE).build())
+                                                        .weightInit(WeightInit.XAVIER).updater(new NoOp()).build())
                                         .pretrain(false).backprop(true)
                                         .setInputType(InputType.convolutionalFlat(1, 4, 1));
 

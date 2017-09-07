@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.*;
@@ -89,7 +90,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
         //setup the network
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
-                        .regularization(true).l1(1e-1).l2(2e-4).weightNoise(new DropConnect(0.5)).miniBatch(true)
+                        .l1(1e-1).l2(2e-4).weightNoise(new DropConnect(0.5)).miniBatch(true)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
@@ -146,7 +147,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     @Test
     public void testGlobalPoolingJson() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false).updater(Updater.NONE)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                         .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(5).build())
                         .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.PNORM).pnorm(3).build())

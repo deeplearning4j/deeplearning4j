@@ -84,7 +84,7 @@ public class TestConvolution {
                     l = new SubsamplingLayer.Builder().kernelSize(4, 4).stride(2, 2).build();
                 }
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).regularization(true)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                                 .l2(0.0005).updater(new Sgd(0.01)).weightInit(WeightInit.XAVIER).convolutionMode(c).list()
                                 .layer(0, l)
                                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)

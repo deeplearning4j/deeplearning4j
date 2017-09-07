@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers.feedforward.rbm;
 
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
@@ -381,7 +382,7 @@ public class RBMTests {
     private static MultiLayerNetwork getRBMMLNNet(boolean backprop, boolean pretrain, INDArray input, int nOut1,
                     int nOut2, WeightInit weightInit) {
         MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder().seed(0xDEADBEEF).iterations(1000).biasInit(0)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NONE)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new NoOp())
                         .weightInit(weightInit)
                         .list(new org.deeplearning4j.nn.conf.layers.RBM.Builder(HiddenUnit.BINARY, VisibleUnit.BINARY)
                                         .lossFunction(LossFunctions.LossFunction.MSE).nOut(nOut1).build(),
@@ -399,7 +400,7 @@ public class RBMTests {
     private static MultiLayerNetwork getMultiLayerRBMNet(boolean backprop, boolean pretrain, INDArray input, int nOut1,
                     int nOut2, int nOut3, WeightInit weightInit) {
         MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder().seed(0xDEADBEEF).iterations(1000).biasInit(0)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NONE)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new NoOp())
                         .weightInit(weightInit)
                         .list(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                                         .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).nOut(nOut1).build(),
