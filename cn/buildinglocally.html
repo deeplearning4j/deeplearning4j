@@ -34,7 +34,14 @@ layout: cn-default
 <p>GPU架构：</p>
 <ul>
   <li>CUDA</li>
-  <li>JOCL（即将支持）</li>
+</ul>
+<p>IDE特定要求：</p>
+<ul>
+  <li>IntelliJ Lombok插件</li>
+</ul>
+<p>DL4J测试依赖：</p>
+<ul>
+  <li>dl4j测试资源</li>
 </ul>
 <br />
 <p><h2>安装必备工具</h2></p>
@@ -57,8 +64,9 @@ xcode-select --install
 <p>最后安装必备工具：</p>
 <pre class="line-numbers"><code class="language-java">
 brew update
-brew install maven clang-omp
-</code></pre>
+brew install maven gcc5
+</code></pre><br>
+<p>注意：你不能使用cl。你也不能使用新版本的gcc。如果您有较新的gcc版本，请使用<a href="https://apple.stackexchange.com/questions/190684/homebrew-how-to-switch-between-gcc-versions-gcc49-and-gcc" target="_blank">此链接</a>切换版本</p>
 <br />
 <p><h3>Windows</h3></p>
 <p>libnd4j的编译依赖一些Unix实用工具，因此需要安装<a href="https://msys2.github.io/" target="_blank">Msys2</a>才能对其进行编译。</p>
@@ -110,7 +118,7 @@ gcc --version
 <br />
 
 <p><h4>OS X</h4></p>
-<p>您可以用Homebrew Science在OS X上安装OpenBLAS：</p>
+<p>您可以用Home Science在OS X上安装OpenBLAS：</p>
 <pre><code class="language-java">
 brew install homebrew/science/openblas
 </code></pre>
@@ -178,6 +186,23 @@ make install
 </ol>
 <p>此命令将会构建 <strong>CUDA nd4j.dll</strong>。</p>
 <br />
+
+<p><h3>IDE要求</h3></p>
+<p><br>
+如果您正在通过IDE（如IntelliJ）构建Deeplearning4j，那么您将需要安装某些插件，以确保您的IDE正确地渲染代码突出显示。您将需要为Lombok安装一个插件：</p>
+<ul>
+	<li>IntelliJ Lombok 插件:<a href="https://plugins.jetbrains.com/plugin/6317-lombok-plugin" target="_blank">https://plugins.jetbrains.com/plugin/6317-lombok-plugin</a></li>
+	<li>Eclipse Lombok 插件: 根据这里的指示 <a href="https://projectlombok.org/download.html">https://projectlombok.org/download.html</a></li>
+</ul>
+<p>如果您想在ScalNet，Scala API或某些模块（如DL4J UI）上工作，则需要确保您的IDE已安装Scala支持并可用。</p>
+<br />
+
+<p><h3>测试依赖关系</h3></p>
+<p>Deeplearning4j使用单独的存储库，其中包含测试所需的所有资源。这是为了确保中央DL4J存储库的轻量化，并避免GIT历史上的BLOB。如果您希望在DL4J堆栈中运行测试：</p>
+<ol>
+  <li>在本地机器上拷贝<a href="https://github.com/deeplearning4j/dl4j-test-resources " target="_blank">https://github.com/deeplearning4j/dl4j-test-resources</a>。</li>
+	<li><code>cd dl4j-test-resources; mvn install</code></li>
+</ol>
 
 <p><h2>安装DL4J堆栈</h2></p>
 <p>
