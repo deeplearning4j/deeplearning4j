@@ -23,6 +23,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.primitives.ImmutablePair;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
@@ -2482,7 +2483,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             for (val i: op.getIArguments())
                 iArgs.put(cnt++, i.intValue());
 
-            nativeOps.execCustomOpFloat(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall());
+            val status = OpStatus.byNumber(nativeOps.execCustomOpFloat(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall()));
+            if (status != OpStatus.ND4J_STATUS_OK)
+                throw new ND4JIllegalStateException("Op execution failed: " + status);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             val tArgs = op.getTArguments().size() > 0 ? new DoublePointer(op.getTArguments().size()) : null;
             val iArgs = op.getIArguments().size() > 0 ? new IntPointer(op.getIArguments().size()) : null;
@@ -2494,7 +2497,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             for (val i: op.getIArguments())
                 iArgs.put(cnt++, i.intValue());
 
-            nativeOps.execCustomOpDouble(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall());
+            val status = OpStatus.byNumber(nativeOps.execCustomOpDouble(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall()));
+            if (status != OpStatus.ND4J_STATUS_OK)
+                throw new ND4JIllegalStateException("Op execution failed: " + status);
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
             val tArgs = op.getTArguments().size() > 0 ? new ShortPointer(op.getTArguments().size()) : null;
             val iArgs = op.getIArguments().size() > 0 ? new IntPointer(op.getIArguments().size()) : null;
@@ -2507,7 +2512,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             for (val i: op.getIArguments())
                 iArgs.put(cnt++, i.intValue());
 
-            nativeOps.execCustomOpHalf(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall());
+            val status = OpStatus.byNumber(nativeOps.execCustomOpHalf(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall()));
+            if (status != OpStatus.ND4J_STATUS_OK)
+                throw new ND4JIllegalStateException("Op execution failed: " + status);
         }
     }
 }
