@@ -153,6 +153,10 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public INDArray activate(boolean training) {
 
+        if (training && conf.getLayer().getDropOut() > 0) {
+            Dropout.applyDropout(input, conf.getLayer().getDropOut());
+        }
+
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
 

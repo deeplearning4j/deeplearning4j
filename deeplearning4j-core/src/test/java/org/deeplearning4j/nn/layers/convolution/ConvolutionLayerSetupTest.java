@@ -289,6 +289,27 @@ public class ConvolutionLayerSetupTest {
         assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
     }
 
+    @Test
+    public void testUpsampling() {
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
+                .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                .layer(new Upsampling2D.Builder().size(3).build()) // 14 * 3 = 42!
+                .layer(new OutputLayer.Builder().nOut(3).build())
+                .setInputType(InputType.convolutional(28, 28, 1));
+
+        MultiLayerConfiguration conf = builder.build();
+
+        assertNotNull(conf.getInputPreProcess(2));
+        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
+        assertEquals(42, proc.getInputHeight());
+        assertEquals(42, proc.getInputWidth());
+        assertEquals(3, proc.getNumChannels());
+
+        assertEquals(42 * 42 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
+    }
+
 
     @Test
     public void testCNNDBNMultiLayer() throws Exception {
