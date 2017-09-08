@@ -31,7 +31,7 @@ A **reward** is the feedback by which we measure the success or failure of an ag
 
 ![Alt text](./img/simple_RL_schema.png)
 
-In the feedback loop above, the subscripts denote time steps t and t+1, each of which refer to different states: the state at moment t, and the state at moment t+1. Unlike other forms of machine learning – such as supervised and unsupervised learning -- reinforcement learning can only be thought about sequentially in terms of state-action pairs that occur one after the other. 
+In the feedback loop above, the subscripts denote time steps `t` and `t+1`, each of which refer to different states: the state at moment `t`, and the state at moment `t+1`. Unlike other forms of machine learning – such as supervised and unsupervised learning -- reinforcement learning can only be thought about sequentially in terms of state-action pairs that occur one after the other. 
 
 Reinforcement learning judges actions by the results they produce. It is goal oriented, and its aim is to learn sequences of actions that will lead it to achieve its goal. In video games, the goal is to finish the game with the most points, so each additional point obtained throughout the game will affect the agent’s subsequent behavior; i.e. the agent may learn that it should shoot battleships, touch coins or dodge meteors to maximize its score. 
 
@@ -39,9 +39,9 @@ In the real world, the goal might be for a robot to travel from point A to point
 
 RL differs from both supervised and unsupervised learning by how it interprets inputs. We can illustrate their difference by describing what they learn about a "thing." 
 
-Unsupervised learning: That thing is like this other thing. (Similarities w/o names)
-Supervised learning: That thing is a “double bacon cheese burger”. (Labels)
-Reinforcement learning: Eat that thing because it tastes good and will keep you alive. (Actions based on short- and long-term rewards.) 
+* Unsupervised learning: That thing is like this other thing. (Similarities w/o names, and the inverse: anomaly detection)
+* Supervised learning: That thing is a “double bacon cheese burger”. (Labels, putting names to faces...)
+* Reinforcement learning: Eat that thing because it tastes good and will keep you alive. (Actions based on short- and long-term rewards.) 
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/-uXVu0l8guo" frameborder="0" allowfullscreen></iframe>
 
