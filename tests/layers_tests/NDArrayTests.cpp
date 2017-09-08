@@ -3,6 +3,7 @@
 //
 
 #include "testlayers.h"
+#include <NDArrayFactory.h>
 
 //////////////////////////////////////////////////////////////////////
 class NDArrayTest : public testing::Test {
@@ -500,7 +501,7 @@ TEST_F(NDArrayTest, TestMmulHelper1) {
     auto yShape = new int[8] {2, 1, 3, 1, 1, 0, 1, 99};
     auto y = new NDArray<float>(yBuffer, yShape);
 
-    auto z = NDArray<float>::mmulHelper(x, y);
+    auto z = NDArrayFactory::mmulHelper(x, y);
 
     ASSERT_EQ(1, z->lengthOf());
     ASSERT_NEAR(28, z->getScalar(0), 1e-5);
@@ -523,7 +524,7 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
 
     //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->_buffer, y->rows(), y->_buffer, 1, 0.0, z->_buffer, 1);
 
-    NDArray<float>::mmulHelper(x, y, z);
+    NDArrayFactory::mmulHelper(x, y, z);
 
     z->printBuffer();
 
@@ -547,7 +548,7 @@ TEST_F(NDArrayTest, TestMmulHelper3) {
 
     //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->_buffer, y->rows(), y->_buffer, 1, 0.0, z->_buffer, 1);
 
-    NDArray<float>::mmulHelper(x, y, z);
+    NDArrayFactory::mmulHelper(x, y, z);
 
     z->printBuffer();
 
@@ -569,7 +570,7 @@ TEST_F(NDArrayTest, TestMmulHelper4) {
     auto expBuffer = new float[9]{7.0, 21.0, 35.0, 10.0, 28.0, 46.0, 13.0, 35.0, 57.0};
     auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
 
-    NDArray<float>::mmulHelper(x, y, z);
+    NDArrayFactory::mmulHelper(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
 }
 
@@ -588,7 +589,7 @@ TEST_F(NDArrayTest, TestMmulHelper5) {
     auto expBuffer = new float[9]{7.0, 14.0, 21.0, 12.0, 21.0, 30.0, 17.0, 28.0, 39.0};
     auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
 
-    NDArray<float>::mmulHelper(x, y, z);
+    NDArrayFactory::mmulHelper(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
 }
 
@@ -607,7 +608,7 @@ TEST_F(NDArrayTest, TestMmulHelper6) {
     auto expBuffer = new float[9]{39.0, 54.0, 69.0, 9.0, 18.0, 27.0, 9.0, 12.0, 15.0};
     auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
 
-    NDArray<float>::mmulHelper(x, y, z);
+    NDArrayFactory::mmulHelper(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
 }
 
@@ -626,7 +627,7 @@ TEST_F(NDArrayTest, TestMmulHelper7) {
     auto expBuffer = new float[9]{110.00,  260.00,  410.00};
     auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
 
-    NDArray<float>::mmulHelper(y, x, z);
+    NDArrayFactory::mmulHelper(y, x, z);
 
     z->printBuffer();
     ASSERT_TRUE(z->equalsTo(exp));

@@ -119,8 +119,6 @@ namespace nd4j {
             }
         }
 
-        static NDArray<T>* mmulHelper(NDArray<T>* A, NDArray<T>* B, NDArray<T>* C = nullptr, T alpha = 1.0f, T beta = 0.0f);
-
         void printBuffer(const char* msg = nullptr);
 
         // This method assigns values of given NDArray to this one, wrt order
@@ -313,8 +311,6 @@ namespace nd4j {
     inline bool NDArray<T>::isSameShapeStrict(const NDArray<T> *other) const {        
     
 		return shape::equalsStrict(_shapeInfo, other->_shapeInfo);
-    }	
-
-
+    }
 }
 #endif
