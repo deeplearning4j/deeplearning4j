@@ -15,6 +15,7 @@
 #include <NDArray.h>
 #include <ops/declarable/declarable_ops.h>
 #include <NDArrayFactory.h>
+#include <cpu/NDArrayFactory.cpp>
 
 namespace nd4j {
     namespace ops {
@@ -101,16 +102,16 @@ namespace nd4j {
 
             if (x->isMatrix() && y->isVector()) {
                 // gemv
-                z = NDArrayFactory::mmulHelper(x, y);
+                //z = NDArrayFactory::mmulHelper(x, y);
             } else if (x->isVector() && y->isMatrix()) {
                 // gemm
-                z = NDArrayFactory::mmulHelper(x, y);
+                //z = NDArrayFactory::mmulHelper(x, y);
             }  else if (x->isVector() && y->isVector()) {
                 // dot
-                z = NDArrayFactory::mmulHelper(x, y);
+                //z = NDArrayFactory::mmulHelper(x, y);
             } else if (x->isMatrix() && y->isMatrix()) {
                 // gemm
-                z = NDArrayFactory::mmulHelper(x, y);
+                //z = NDArrayFactory::mmulHelper(x, y);
             } else if (x->isVector() && y->isScalar()) {
                 // elementwise mul
                 z = this->getZ(block);
@@ -341,7 +342,8 @@ namespace nd4j {
             bT->permutei(newAxesB);
             bT->reshape('f', newShapeB);
 
-            auto c = NDArrayFactory::mmulHelper(aT, bT);
+            //auto c = NDArrayFactory::mmulHelper(aT, bT);
+            NDArray<T>* c = nullptr;
 
             std::vector<int> aPlusB(oldShapeA);
             for (auto v: oldShapeB)
