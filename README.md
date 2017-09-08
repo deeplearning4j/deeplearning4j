@@ -56,6 +56,18 @@ Doom is not ready yet but you can make it work if you feel adventurous with some
 * export MAVEN_OPTS=-Djava.library.path=THEFOLDEROFTHELIB
 * mvn compile exec:java -Dexec.mainClass="YOURMAINCLASS"
 
+# Malmo (Minecraft)
+
+![Malmo](malmo.gif)
+
+* Download and unzip Malmo from [here](https://github.com/Microsoft/malmo/releases)
+* export MALMO_HOME=YOURMALMO_FOLDER
+* export MALMO_XSD_PATH=$MALMO_HOME/Schemas
+* launch malmo per [instructions](https://github.com/Microsoft/malmo#launching-minecraft-with-our-mod)
+* run with this [main](https://github.com/deeplearning4j/dl4j-examples/blob/master/rl4j-examples/src/main/java/org/deeplearning4j/examples/rl4j/MalmoPixels.java)
+
+
+
 # WIP
 
 * Documentation

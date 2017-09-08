@@ -11,6 +11,7 @@
         <module>rl4j-gym</module>
         <module>rl4j-doom</module>
         <module>rl4j-ale</module>
+        <module>rl4j-malmo</module>
     </modules>
     <packaging>pom</packaging>
 
@@ -200,6 +201,7 @@
                   <directory>rl4j-gym</directory>
                   <directory>rl4j-doom</directory>
                   <directory>rl4j-ale</directory>
+                  <directory>rl4j-malmo</directory>
                 </directories>
               </configuration>
             </plugin>
