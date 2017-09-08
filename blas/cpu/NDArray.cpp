@@ -175,7 +175,6 @@ template <typename T> NDArray<T>::NDArray(const char order, const std::initializ
 
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
-    /*
 template<typename T> NDArray<T>& NDArray<T>::operator=(const NDArray<T>& other) {
 	if (this == &other) return *this;
 
@@ -202,7 +201,6 @@ template<typename T> NDArray<T>& NDArray<T>::operator=(const NDArray<T>& other) 
 
     return *this;
 }
-    */
 
 template <typename T>
 void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting ) {
@@ -692,7 +690,6 @@ template <typename T> void NDArray<T>::transposei() {
 //////////////////////////////////////////////////////////////////////////
 // accessing operator for 2D matrix, i - row, j - column
 // be careful this method doesn't check the rank of array
-    /*
 template<typename T>
 T NDArray<T>::operator()(const int i, const int j) const {
 
@@ -711,8 +708,6 @@ T& NDArray<T>::operator()(const int i, const int j) {
     Nd4jIndex xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
     return _buffer[xOffset];
 }
-
-    */
 
 
 // This method adds given row to all rows in this NDArray, that is this array becomes affected
@@ -1267,7 +1262,6 @@ decomposition, *this = U.W.VT.  The matrix U replaces *this on output.  The diag
 matrix of singular values W is output as a vector w[n].  The matrix vt is output as vt[n][n]
 *******************************************************************************/
 // compute (a2 + b2)^1/2 without destructive underflow or overflow
-/*
     template<typename T>
     T pythag (T a, T b) {
         T absa, absb;
@@ -1506,7 +1500,6 @@ matrix of singular values W is output as a vector w[n].  The matrix vt is output
 
         delete []rv1;
     }
-*/
 
     // default destructor
     template<typename T>
