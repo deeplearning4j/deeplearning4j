@@ -506,6 +506,18 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
+        DECLARE_CONFIGURABLE_OP(clipbyvalue, 1, 1, true, 2, 0) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));
+
+            NDArray<T>* input = block.getVariables().at(0)->getNDArray();
+            NDArray<T>* output = this->getZ(block);
+
+            input->template applyTransform<simdOps::ClipByValue<T>>(output, block.getTArguments()->data());
+
+            STORE_RESULT(*output);
+        }
+        DECLARE_SYN(ClipByValue, clipbyvalue);
+
         /**
          * Upsampling implementation, based on pytorch
          *
