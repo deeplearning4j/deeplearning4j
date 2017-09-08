@@ -101,16 +101,16 @@ namespace nd4j {
 
             if (x->isMatrix() && y->isVector()) {
                 // gemv
-                z = NDArray<T>::mmulHelper(x, y);
+                z = NDArrayFactory::mmulHelper(x, y);
             } else if (x->isVector() && y->isMatrix()) {
                 // gemm
-                z = NDArray<T>::mmulHelper(x, y);
+                z = NDArrayFactory::mmulHelper(x, y);
             }  else if (x->isVector() && y->isVector()) {
                 // dot
-                z = NDArray<T>::mmulHelper(x, y);
+                z = NDArrayFactory::mmulHelper(x, y);
             } else if (x->isMatrix() && y->isMatrix()) {
                 // gemm
-                z = NDArray<T>::mmulHelper(x, y);
+                z = NDArrayFactory::mmulHelper(x, y);
             } else if (x->isVector() && y->isScalar()) {
                 // elementwise mul
                 z = this->getZ(block);
@@ -341,7 +341,7 @@ namespace nd4j {
             bT->permutei(newAxesB);
             bT->reshape('f', newShapeB);
 
-            auto c = NDArray<T>::mmulHelper(aT, bT);
+            auto c = NDArrayFactory::mmulHelper(aT, bT);
 
             std::vector<int> aPlusB(oldShapeA);
             for (auto v: oldShapeB)
