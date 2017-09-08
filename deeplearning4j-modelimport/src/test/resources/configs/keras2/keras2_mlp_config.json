@@ -19,7 +19,7 @@
         "bias_regularizer": null,
         "bias_constraint": null,
         "dtype": "float32",
-        "activation": "linear",
+        "activation": "elu",
         "trainable": true,
         "kernel_regularizer": null,
         "bias_initializer": {
@@ -100,7 +100,7 @@
         "bias_regularizer": null,
         "bias_constraint": null,
         "dtype": "float32",
-        "activation": "tanh",
+        "activation": "selu",
         "trainable": true,
         "kernel_regularizer": null,
         "bias_initializer": {
