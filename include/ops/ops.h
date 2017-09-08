@@ -708,6 +708,22 @@ namespace simdOps {
 		}
 	};
 
+
+	template<typename T>
+	class ClipByValue {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			if (d1 > params[1])
+				return params[1];
+			else if (d1 < params[0])
+				return params[0];
+			else return d1;
+		}
+	};
+
 	
 	template<typename T>
 	class Sigmoid {
