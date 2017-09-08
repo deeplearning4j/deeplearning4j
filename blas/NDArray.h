@@ -284,6 +284,9 @@ namespace nd4j {
         
 		// return array which is broadcasted from this and argument array  
 		NDArray<T>*  broadcast(const NDArray<T>& other);
+
+		// Singular value decomposition of 2D matrix
+		void svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt);
 	
 		// default destructor
         ~NDArray();

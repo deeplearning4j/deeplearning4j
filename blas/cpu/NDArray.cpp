@@ -1393,260 +1393,250 @@ NDArray<T>* NDArray<T>::mmulHelper(NDArray<T>* A, NDArray<T>* B, NDArray<T>* C ,
 
 
 //////////////////////////////////////////////////////////////////////////
-// Singular value decomposition program, svdcmp, from "Numerical Recipes in C"
+// Singular value decomposition program, slightly modificated routine svdcmp, from "Numerical Recipes in C"
 // (Cambridge Univ. Press) by W.H. Press, S.A. Teukolsky, W.T. Vetterling, and B.P. Flannery
-// #define NR_END 1
-// #define FREE_ARG char*
-// #define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
-// static double dmaxarg1,dmaxarg2;
-// #define DMAX(a,b) (dmaxarg1=(a),dmaxarg2=(b),(dmaxarg1) > (dmaxarg2) ?\
-// (dmaxarg1) : (dmaxarg2))
-// static int iminarg1,iminarg2;
-// #define IMIN(a,b) (iminarg1=(a),iminarg2=(b),(iminarg1) < (iminarg2) ?\
-// (iminarg1) : (iminarg2))
+/*******************************************************************************
+Given a matrix a[m][n], this routine computes its singular value
+decomposition, *this = U.W.VT.  The matrix U replaces *this on output.  The diagonal
+matrix of singular values W is output as a vector w[n].  The matrix vt is output as vt[n][n]
+*******************************************************************************/
+template<typename T>
+void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
+{
+if(rankOf() !=2 || w->rankOf() !=2 || vt->rankOf() !=2)
+	throw "SVD operation: rank of some of input matrices is not equal 2 !";
 
-// double **dmatrix(int nrl, int nrh, int ncl, int nch)
-// /* allocate a double matrix with subscript range m[nrl..nrh][ncl..nch] */
-// {
-	// int i,nrow=nrh-nrl+1,ncol=nch-ncl+1;
-	// double **m;
-	// /* allocate pointers to rows */
-	// m=(double **) malloc((size_t)((nrow+NR_END)*sizeof(double*)));
-	// m += NR_END;
-	// m -= nrl;
-	// /* allocate rows and set pointers to them */
-	// m[nrl]=(double *) malloc((size_t)((nrow*ncol+NR_END)*sizeof(double)));
-	// m[nrl] += NR_END;
-	// m[nrl] -= ncl;
-	// for(i=nrl+1;i<=nrh;i++) m[i]=m[i-1]+ncol;
-	// /* return pointer to array of pointers to rows */
-	// return m;
-// }
+int m = rows();
+int n = columns();
 
-// double *dvector(int nl, int nh)
-// /* allocate a double vector with subscript range v[nl..nh] */
-// {
-	// double *v;
-	// v=(double *)malloc((size_t) ((nh-nl+1+NR_END)*sizeof(double)));
-	// return v-nl+NR_END;
-// }
+if(w->rows() !=1 || w->columns() !=n || vt->rows() !=n || vt->columns() !=n)
+	throw "SVD operation: shape of some of input matrices is wrong !";
+/************************************************************/
+auto pythag = [] (T a, T b) -> T			// compute (a2 + b2)^1/2 without destructive underflow or overflow 
+{
+	T absa, absb;
+	absa = fabs(a);
+	absb = fabs(b);
+	if (absa > absb) return absa*sqrt(1.f + (absb/absa)*(absb/absa));
+	else return (absb == 0.f ? 0.f : absb*sqrt(1.f + (absa/absb)*(absa/absb)));
+};
+/************************************************************/
+u = *this;
+int flag,i,its,j,jj,k,l,nm;
+T anorm,c,f,g,h,s,scale,x,y,z;
+T* rv1 = new T[n*sizeOfT()];
 
-// void free_dvector(double *v, int nl, int nh)
-// /* free a double vector allocated with dvector() */
-// {
-	// free((FREE_ARG) (v+nl-NR_END));
-// }
+// Householder reduction to bidiagonal form 
+g=scale=anorm=0.f; 
+for (i=0; i<n; i++) {
+	// left-hand reduction
+	l = i + 1;
+	rv1[i] = scale*g;
+	g = s = scale = 0.f;
+	if (i < m) {
+		for (k=i; k<m; k++) 
+			scale += fabs(u(k,i));
+		if (scale) {
+			for (k=i; k<m; k++) {
+				u(k,i) /= scale;
+				s += u(k,i)*u(k,i);
+			}
+			f = u(i,i);
+			g = -std::copysign(sqrt(s),f);
+			h = f*g - s;
+			u(i,i) = f - g;
+			 if (i != n - 1) {
+				for (j=l; j<n; j++) {
+					for (s=0.f, k=i; k<m; k++) 
+						s += u(k,i)*u(k,j);
+					f = s/h;
+					for (k=i; k<m; k++) 
+						u(k,j) += f*u(k,i);
+				}				
+			}
+			for (k=i; k<m; k++) 
+				u(k,i) *= scale;
+		}
+	}
+	w(1,i) = scale*g;
+	// right-hand reduction 
+	g=s=scale=0.f;
+	if (i < m && i != n-1) {
+		for (k=l; k<n; k++) 
+			scale += fabs(u(i,k));
+		if (scale) {
+			for (k=l; k<n; k++) {
+				u(i,k) /= scale;
+				s += u(i,k)*u(i,k);
+			}
+			f = u(i,l);
+			g = -std::copysign(sqrt(s),f);
+			h = f*g - s;
+			u(i,l) = f - g;
+			for (k=l; k<n; k++) 
+				rv1[k] = u(i,k)/h;
+			if (i != m - 1) {
+				for (j=l; j<m; j++) {
+					for (s=0.f, k=l; k<n; k++) 
+						s += u(j,k)*u(i,k);
+					for (k=l; k<n; k++) 
+						u(j,k) += s*rv1[k];
+				}
+			}
+			for (k=l; k<n; k++) 
+				u(i,k) *= scale;
+		}
+	}
+	anorm = std::max(anorm,(fabs(w[i])+fabs(rv1[i])));
+}
+// accumulation of right-hand transformations
+for (i=n-1; i>=0; i--) { 
+	if (i < n-1) {
+		if (g) {
+			for (j=l; j<=n; j++) // double division to avoid possible underflow.
+				vt(j,i) = (u(i,j)/u(i,l))/g;
+			for (j=l; j<n; j++) {
+				for (s=0.f, k=l; k<n; k++) 
+					s += u(i,k)*vt(k,j);
+				for (k=l; k<n; k++) 
+					vt(k,j) += s*vt(k,i);
+			}
+		}
+		for (j=l; j<n; j++) 
+			vt(i,j) = vt(j,i) = 0.f;
+	}
+	vt(i,i) = 1.f;
+	g = rv1[i];
+	l = i;
+}
+// accumulation of left-hand transformations
+for (i=n-1; i>=0; i--) { 
+	l = i + 1;
+	g = w(1,i);
+	if (i < n - 1) 
+		for (j=l ; j<n; j++) 
+			u(i,j) = 0.f;
+	if (g) {
+		g = 1.f/g;
+		if (i != n - 1) {
+			for (j=l; j<n; j++) {
+				for (s=0.f, k=l; k<m; k++) 
+					s += u(k,i)*u(k,j);
+				f = (s/u(i,i))*g;
+				for (k=i; k<m; k++) 
+					u(k,j) += f*u(k,i);
+			}
+		}
+		for (j=i; j<m; j++) 
+			u(j,i) *= g;
+	} 
+	else 
+		for (j=i; j<m; j++) 
+			u(j,i) = 0.f;
+	++u(i,i);
+}
+// diagonalization of the bidiagonal form
+for (k=n-1; k>=0; k--) { 				// loop over singular values
+	for (its=1; its<30; its++) {		// loop over allowed iterations
+		flag = 1;
+		for (l=k; l>=0; l--) { 			// test for splitting
+			nm = l - 1; 				// note that rv1[1] is always zero
+			if ((fabs(rv1[l]) + anorm) == anorm) {
+				flag = 0;
+				break;
+			}
+			if ((fabs(w[nm]) + anorm) == anorm) 
+				break;
+		}
+		if (flag) {
+			c = 0.f; 					// Cancellation of rv1[l], if l > 1. 
+			s = 1.f;
+			for (i=l; i<=k; i++) {
+				f = s*rv1[i];
+				rv1[i] = c*rv1[i];
+				if ((fabs(f) + anorm) == anorm) 
+					break;
+				g = w(1,i);
+				h = pythag(f,g);
+				w(i,1) = h;
+				h = 1.f/h;
+				c = g*h;
+				s = -f*h;
+				for (j=0; j<m; j++) {
+					y = u(j,nm);
+					z = u(j,i);
+					u(j,nm) = y*c + z*s;
+					u(j,i)  = z*c - y*s;
+				}
+			}
+		}
+		z = w(1,k);
+		if (l == k) { 						// convergence
+			if (z < 0.f) { 					// singular value is made nonnegative
+				w(1,k) = -z;
+				for (j=0; j<n; j++) 
+					vt(j,k) = -vt(j,k);
+			}
+			break;
+		}
+		if (its == 30) printf("no convergence in 30 svd iterations \n");
+		// shift from bottom 2-by-2 minor
+		x = w(1,l);
+		nm = k-1;
+		y = w(1,nm);
+		g = rv1[nm];
+		h = rv1[k];
+		f = ((y - z)*(y + z) + (g - h)*(g + h))/(2.f*h*y);
+		g = pythag(f,1.f);
+		f = ((x - z)*(x + z) + h*((y/(f + std::copysign(g,f))) - h))/x;
+		// next QR transformation
+		c = s = 1.f;
+		for (j=l; j<=nm; j++) {
+			i = j + 1;
+			g = rv1[i];
+			y = w(1,i);
+			h = s*g;
+			g = c*g;
+			z = pythag(f,h);
+			rv1[j] = z;
+			c = f/z;
+			s = h/z;
+			f = x*c + g*s;
+			g = g*c - x*s;
+			h = y*s;
+			y *= c;
+			for (jj=0; jj<n; jj++) {
+				x = vt(jj,j);
+				z = vt(jj,i);
+				vt(jj,j) = x*c + z*s;
+				vt(jj,i) = z*c - x*s;
+			}
+			z = pythag(f,h);
+			w(1,j) = z; 		// rotation can be arbitrary if z = 0
+			if (z) {
+				z = 1.f/z;
+				c = f*z;
+				s = h*z;
+			}
+			f = c*g + s*y;
+			x = c*y - s*g;
+			for (jj=0; jj<m; jj++) {
+				y = u(jj,j);
+				z = u(jj,i);
+				u(jj,j) = y*c + z*s;
+				u(jj,i) = z*c - y*s;
+			}
+		}
+		rv1[l] = 0.f;
+		rv1[k] = f;
+		w(1,k) = x;
+	}
+}
+// transpose vt
+vt.transposei();
 
-
-
-// /******************************************************************************/
-// void svd(double **a, int m, int n, double w[], double **v)
-// /*******************************************************************************
-// Given a matrix a[1..m][1..n], this routine computes its singular value
-// decomposition, A = U.W.VT.  The matrix U replaces a on output.  The diagonal
-// matrix of singular values W is output as a vector w[1..n].  The matrix V (not
-// the transpose VT) is output as v[1..n][1..n].
-// *******************************************************************************/
-// template<typename T>
-// void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& v)
-// {
-// if(rankOf() !=2 || w->rankOf() !=2 || v->rankOf() !=2)
-	// throw "SVD operation: rank of some of input matrices is not equal 2 !";
-
-// int m = rows();
-// int n = columns();
-
-// if(w->rows() !=1 || w->columns() !=n || v->rows() !=n || v->columns() !=n)
-	// throw "SVD operation: shape of some of input matrices is wrong !";
-// /************************************************************/
-// auto pythag = [] (T a, T b) -> T			// compute (a2 + b2)^1/2 without destructive underflow or overflow 
-// {
-	// T absa, absb;
-	// absa = fabs(a);
-	// absb = fabs(b);
-	// if (absa > absb) return absa*sqrt(1.f + (absb/absa)*(absb/absa));
-	// else return (absb == 0.f ? 0.f : absb*sqrt(1.f + (absa/absb)*(absa/absb)));
-// };
-// /************************************************************/
-// u = *this;
-// int flag,i,its,j,jj,k,l,nm;
-// T anorm,c,f,g,h,s,scale,x,y,z;
-// T* rv1 = new T[n*sizeOfT()];
-
-// // Householder reduction to bidiagonal form 
-// g=scale=anorm=0.f; 
-// for (i=0; i<n; i++) {
-	// // left-hand reduction
-	// l = i + 1;
-	// rv1[i] = scale*g;
-	// g = s = scale = 0.f;
-	// if (i < m) {
-		// for (k=i; k<m; k++) 
-			// scale += fabs(u(k,i));
-		// if (scale) {
-			// for (k=i; k<m; k++) {
-				// u(k,i) /= scale;
-				// s += u(k,i)*u(k,i);
-			// }
-			// f=u(i,i);
-			// g = -SIGN(sqrt(s),f);
-			// h=f*g-s;
-			// u[i][i]=f-g;
-			// for (j=l;j<=n;j++) {
-				// for (s=0.f,k=i;k<=m;k++) s += u[k][i]*u[k][j];
-				// f=s/h;
-				// for (k=i;k<=m;k++) u[k][j] += f*u[k][i];
-			// }
-			// for (k=i;k<=m;k++) u[k][i] *= scale;
-		// }
-	// }
-	// w[i]=scale *g;
-	// g=s=scale=0.f;
-	// if (i <= m && i != n) {
-		// for (k=l;k<=n;k++) scale += fabs(u[i][k]);
-		// if (scale) {
-			// for (k=l;k<=n;k++) {
-				// u[i][k] /= scale;
-				// s += u[i][k]*u[i][k];
-			// }
-			// f=u[i][l];
-			// g = -SIGN(sqrt(s),f);
-			// h=f*g-s;
-			// u[i][l]=f-g;
-			// for (k=l;k<=n;k++) rv1[k]=u[i][k]/h;
-			// for (j=l;j<=m;j++) {
-				// for (s=0.f,k=l;k<=n;k++) s += u[j][k]*u[i][k];
-				// for (k=l;k<=n;k++) u[j][k] += s*rv1[k];
-			// }
-			// for (k=l;k<=n;k++) u[i][k] *= scale;
-		// }
-	// }
-	// anorm = DMAX(anorm,(fabs(w[i])+fabs(rv1[i])));
-// }
-// for (i=n;i>=1;i--) { /* Accumulation of right-hand transformations. */
-	// if (i < n) {
-		// if (g) {
-			// for (j=l;j<=n;j++) /* Double division to avoid possible underflow. */
-				// v[j][i]=(u[i][j]/u[i][l])/g;
-			// for (j=l;j<=n;j++) {
-				// for (s=0.f,k=l;k<=n;k++) s += u[i][k]*v[k][j];
-				// for (k=l;k<=n;k++) v[k][j] += s*v[k][i];
-			// }
-		// }
-		// for (j=l;j<=n;j++) v[i][j]=v[j][i]=0.f;
-	// }
-	// v[i][i]=1.0;
-	// g=rv1[i];
-	// l=i;
-// }
-// for (i=IMIN(m,n);i>=1;i--) { /* Accumulation of left-hand transformations. */
-	// l=i+1;
-	// g=w[i];
-	// for (j=l;j<=n;j++) u[i][j]=0.f;
-	// if (g) {
-		// g=1.f/g;
-		// for (j=l;j<=n;j++) {
-			// for (s=0.f,k=l;k<=m;k++) s += u[k][i]*u[k][j];
-			// f=(s/u[i][i])*g;
-			// for (k=i;k<=m;k++) u[k][j] += f*u[k][i];
-		// }
-		// for (j=i;j<=m;j++) u[j][i] *= g;
-	// } else for (j=i;j<=m;j++) u[j][i]=0.f;
-	// ++u[i][i];
-// }
-// for (k=n;k>=1;k--) { /* Diagonalization of the bidiagonal form. */
-	// for (its=1;its<=30;its++) {
-		// flag=1;
-		// for (l=k;l>=1;l--) { /* Test for splitting. */
-			// nm=l-1; /* Note that rv1[1] is always zero. */
-			// if ((double)(fabs(rv1[l])+anorm) == anorm) {
-				// flag=0;
-				// break;
-			// }
-			// if ((double)(fabs(w[nm])+anorm) == anorm) break;
-		// }
-		// if (flag) {
-			// c=0.f; /* Cancellation of rv1[l], if l > 1. */
-			// s=1.f;
-			// for (i=l;i<=k;i++) {
-				// f=s*rv1[i];
-				// rv1[i]=c*rv1[i];
-				// if ((double)(fabs(f)+anorm) == anorm) break;
-				// g=w[i];
-				// h=pythag(f,g);
-				// w[i]=h;
-				// h=1.f/h;
-				// c=g*h;
-				// s = -f*h;
-				// for (j=1;j<=m;j++) {
-					// y=u[j][nm];
-					// z=u[j][i];
-					// u[j][nm]=y*c+z*s;
-					// u[j][i]=z*c-y*s;
-				// }
-			// }
-		// }
-		// z=w[k];
-		// if (l == k) { /* Convergence. */
-			// if (z < 0.f) { /* Singular value is made nonnegative. */
-				// w[k] = -z;
-				// for (j=1;j<=n;j++) v[j][k] = -v[j][k];
-			// }
-			// break;
-		// }
-		// if (its == 30) printf("no convergence in 30 svdcmp iterations");
-		// x=w[l]; /* Shift from bottom 2-by-2 minor. */
-		// nm=k-1;
-		// y=w[nm];
-		// g=rv1[nm];
-		// h=rv1[k];
-		// f=((y-z)*(y+z)+(g-h)*(g+h))/(2.f*h*y);
-		// g=pythag(f,1.f);
-		// f=((x-z)*(x+z)+h*((y/(f+SIGN(g,f)))-h))/x;
-		// c=s=1.f; /* Next QR transformation: */
-		// for (j=l;j<=nm;j++) {
-			// i=j+1;
-			// g=rv1[i];
-			// y=w[i];
-			// h=s*g;
-			// g=c*g;
-			// z=pythag(f,h);
-			// rv1[j]=z;
-			// c=f/z;
-			// s=h/z;
-			// f=x*c+g*s;
-			// g = g*c-x*s;
-			// h=y*s;
-			// y *= c;
-			// for (jj=1;jj<=n;jj++) {
-				// x=v[jj][j];
-				// z=v[jj][i];
-				// v[jj][j]=x*c+z*s;
-				// v[jj][i]=z*c-x*s;
-			// }
-			// z=pythag(f,h);
-			// w[j]=z; /* Rotation can be arbitrary if z = 0. */
-			// if (z) {
-				// z=1.f/z;
-				// c=f*z;
-				// s=h*z;
-			// }
-			// f=c*g+s*y;
-			// x=c*y-s*g;
-			// for (jj=1;jj<=m;jj++) {
-				// y=u[jj][j];
-				// z=u[jj][i];
-				// u[jj][j]=y*c+z*s;
-				// u[jj][i]=z*c-y*s;
-			// }
-		// }
-		// rv1[l]=0.f;
-		// rv1[k]=f;
-		// w[k]=x;
-	// }
-// }
-// delete []rv1;
-// }
+delete []rv1;
+}
 
 
 // default destructor
