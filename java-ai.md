@@ -5,14 +5,6 @@ layout: default
 
 # Artificial Intelligence (AI) for Java
 
-## Expert Systems
-
-An expert system is also called a rules-based system. The rules are typically if-then statements; i.e. if this condition is met, then perform this action. An expert system usually comprises hundreds or thousands of nested if-then statements. Expert systems were a popular form of AI in the 1980s. They are good at modeling static and deterministic relationships; e.g. the tax code. However, they are also brittle and they require manual modification, which can be slow and expensive. Unlike, machine-learning algorithms, they do not adapt as they are exposed to more data. They can be a useful complement to a machine-learning algorithm, codifying the things that should always happen a certain way. 
-
-### Drools
-
-[Drools](https://www.drools.org/) is a business rules management system backed by Red Hat. 
-
 ## Deep Learning & Neural Networks
 
 Deep learning usually refers to deep artificial neural networks. [Neural networks](https://deeplearning4j.org/neuralnet-overview) are a type of machine learning algorithm loosely modeled on the neurons in the human brain. Deep neural nets involve stacking several neural nets on top of each other to enable a feature hierarchy for more accurate classification and prediction. Deep learning is the state of the art in most tasks or machine perception, involved classification, clustering and prediction applied to raw sensory data. 
@@ -24,6 +16,14 @@ Deep learning usually refers to deep artificial neural networks. [Neural network
 ### Neuroph
 
 [Neuroph](http://neuroph.sourceforge.net/) is an open-source Java framework for neural networks. Developers can create neural nets with the Neuroph GUI. The Neuroph API documentation also explains how neural networks work.
+
+## Expert Systems
+
+An expert system is also called a rules-based system. The rules are typically if-then statements; i.e. if this condition is met, then perform this action. An expert system usually comprises hundreds or thousands of nested if-then statements. Expert systems were a popular form of AI in the 1980s. They are good at modeling static and deterministic relationships; e.g. the tax code. However, they are also brittle and they require manual modification, which can be slow and expensive. Unlike, machine-learning algorithms, they do not adapt as they are exposed to more data. They can be a useful complement to a machine-learning algorithm, codifying the things that should always happen a certain way. 
+
+### Drools
+
+[Drools](https://www.drools.org/) is a business rules management system backed by Red Hat. 
 
 ## Natural-Language Processing
 
