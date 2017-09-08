@@ -167,7 +167,7 @@ public class LSTMGradientCheckTests {
                         double l1 = l1vals[k];
 
                         NeuralNetConfiguration.Builder conf =
-                                        new NeuralNetConfiguration.Builder().regularization(l1 > 0.0 || l2 > 0.0)
+                                        new NeuralNetConfiguration.Builder()
                                                         .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                                                         .dist(new NormalDistribution(0, 1)).updater(new NoOp());
 
@@ -322,7 +322,7 @@ public class LSTMGradientCheckTests {
                     double l1 = l1vals[k];
 
                     NeuralNetConfiguration.Builder conf =
-                                    new NeuralNetConfiguration.Builder().regularization(l1 > 0.0 || l2 > 0.0);
+                                    new NeuralNetConfiguration.Builder();
                     if (l1 > 0.0)
                         conf.l1(l1);
                     if (l2 > 0.0)

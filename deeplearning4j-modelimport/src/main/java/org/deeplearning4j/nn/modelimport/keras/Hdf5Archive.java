@@ -30,12 +30,11 @@ import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.lang.Exception;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.bytedeco.javacpp.hdf5.*;
-
-import java.lang.Exception;
 
 /**
  * Class for reading ND4J arrays and JSON strings from HDF5

@@ -3,16 +3,13 @@ package org.deeplearning4j.nn.updater;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.GradientUpdater;
-import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.schedule.ISchedule;
 
 import java.util.ArrayList;
 import java.util.List;

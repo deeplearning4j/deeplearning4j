@@ -1,8 +1,8 @@
 package org.deeplearning4j.datasets.iterator;
 
 import lombok.NonNull;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * @author raver119@gmail.com

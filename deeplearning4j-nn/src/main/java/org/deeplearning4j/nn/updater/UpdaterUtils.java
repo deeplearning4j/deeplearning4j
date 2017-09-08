@@ -1,11 +1,7 @@
 package org.deeplearning4j.nn.updater;
 
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.conf.LearningRatePolicy;
-import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.nd4j.linalg.learning.config.IUpdater;
-
-import java.util.Objects;
 
 /**
  * Created by Alex on 14/04/2017.

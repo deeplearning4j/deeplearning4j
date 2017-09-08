@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.transferlearning;
 
-import org.deeplearning4j.nn.conf.Updater;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.AdaGrad;

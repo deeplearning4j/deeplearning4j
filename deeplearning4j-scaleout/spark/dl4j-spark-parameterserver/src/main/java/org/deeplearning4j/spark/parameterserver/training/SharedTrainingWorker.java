@@ -2,7 +2,6 @@ package org.deeplearning4j.spark.parameterserver.training;
 
 import lombok.Getter;
 import org.apache.spark.broadcast.Broadcast;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -16,6 +15,7 @@ import org.deeplearning4j.spark.impl.paramavg.BaseTrainingWorker;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * @author raver119@gmail.com

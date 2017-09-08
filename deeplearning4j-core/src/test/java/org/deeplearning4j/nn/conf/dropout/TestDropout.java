@@ -95,8 +95,8 @@ public class TestDropout {
                 new Triple<>(4, 1, false),
                 new Triple<>(5, 1, false));
 
-//        assertEquals(expList, d1.getAllCalls());
-//        assertEquals(expList, d2.getAllCalls());
+        assertEquals(expList, d1.getAllCalls());
+        assertEquals(expList, d2.getAllCalls());
 
 
         d1 = new CustomDropout();

@@ -2,7 +2,6 @@ package org.deeplearning4j.spark.impl.misc;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;

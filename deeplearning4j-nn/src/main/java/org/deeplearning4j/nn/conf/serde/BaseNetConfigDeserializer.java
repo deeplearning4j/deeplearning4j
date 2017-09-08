@@ -4,9 +4,6 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.linalg.learning.config.*;
-import org.nd4j.linalg.schedule.ISchedule;
-import org.nd4j.linalg.schedule.MapSchedule;
-import org.nd4j.linalg.schedule.ScheduleType;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
@@ -17,7 +14,6 @@ import org.nd4j.shade.jackson.databind.deser.std.StdDeserializer;
 import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
-import java.util.Map;
 
 /**
  * A custom (abstract) deserializer that handles backward compatibility (currently only for updater refactoring that

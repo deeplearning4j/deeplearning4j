@@ -29,10 +29,9 @@ import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.learning.config.*;
+import org.nd4j.linalg.learning.config.IUpdater;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 
 /**

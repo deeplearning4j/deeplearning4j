@@ -1,7 +1,6 @@
 package org.deeplearning4j.nn.conf.layers.objdetect;
 
 import lombok.Data;
-import lombok.Getter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -18,7 +17,6 @@ import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 import org.nd4j.shade.serde.jackson.VectorDeSerializer;
 import org.nd4j.shade.serde.jackson.VectorSerializer;
-import org.nd4j.shade.serde.jackson.shaded.NDArraySerializer;
 
 import java.util.Arrays;
 import java.util.Collection;

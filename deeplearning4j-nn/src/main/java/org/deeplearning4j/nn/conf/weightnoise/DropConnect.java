@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.conf.weightnoise;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;

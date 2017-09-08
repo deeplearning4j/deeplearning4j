@@ -19,9 +19,9 @@
 package org.deeplearning4j.text.corpora.treeparser;
 
 import org.apache.commons.lang3.StringUtils;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.Tree;
 import org.deeplearning4j.text.corpora.treeparser.transformer.TreeTransformer;
+import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

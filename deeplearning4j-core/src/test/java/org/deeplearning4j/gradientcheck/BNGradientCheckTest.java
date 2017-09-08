@@ -5,7 +5,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -158,7 +157,7 @@ public class BNGradientCheckTest {
                         Activation outputActivation = outputActivations[i];
 
                         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(12345)
-                                        .regularization(l1vals[j] > 0 || l2vals[j] > 0).l1(l1vals[j]).l2(l2vals[j])
+                                        .l2(l2vals[j])
                                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                                         .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new UniformDistribution(-2, 2)).seed(12345L).list()
@@ -257,7 +256,6 @@ public class BNGradientCheckTest {
 
                         MultiLayerConfiguration.Builder builder =
                                         new NeuralNetConfiguration.Builder()
-                                                        .regularization(l1vals[j] > 0 || l2vals[j] > 0).l1(l1vals[j])
                                                         .l2(l2vals[j])
                                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                                         .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
@@ -466,7 +464,6 @@ public class BNGradientCheckTest {
                         Activation outputActivation = outputActivations[i];
 
                         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                                        .regularization(l1vals[j] > 0 || l2vals[j] > 0).l1(l1vals[j]).l2(l2vals[j])
                                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                                         .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new UniformDistribution(-2, 2)).seed(12345L).graphBuilder()

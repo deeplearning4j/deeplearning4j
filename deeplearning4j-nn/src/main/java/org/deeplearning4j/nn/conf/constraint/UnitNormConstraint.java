@@ -6,7 +6,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Broadcast;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 /**

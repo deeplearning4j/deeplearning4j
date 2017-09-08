@@ -27,7 +27,6 @@ import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.nd4j.linalg.util.ArrayUtil;
 
-
 import java.util.List;
 import java.util.Map;
 

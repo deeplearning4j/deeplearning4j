@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.rl;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -43,7 +42,7 @@ public class TestMultiModelGradientApplication {
                 MultiLayerConfiguration conf =
                                 new NeuralNetConfiguration.Builder().seed(12345).activation(Activation.TANH)
                                                 .weightInit(WeightInit.XAVIER).updater(u)
-                                                .regularization(regularization).l1(regularization ? 0.2 : 0.0)
+                                                .l1(regularization ? 0.2 : 0.0)
                                                 .l2(regularization ? 0.3 : 0.0).list()
                                                 .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(10).build())
                                                 .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(2,
@@ -135,7 +134,7 @@ public class TestMultiModelGradientApplication {
                 ComputationGraphConfiguration conf =
                                 new NeuralNetConfiguration.Builder().seed(12345).activation(Activation.TANH)
                                                 .weightInit(WeightInit.XAVIER).updater(u)
-                                                .regularization(regularization).l1(regularization ? 0.2 : 0.0)
+                                                .l1(regularization ? 0.2 : 0.0)
                                                 .l2(regularization ? 0.3 : 0.0).graphBuilder().addInputs("in")
                                                 .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(10).build(), "in")
                                                 .addLayer("1", new DenseLayer.Builder().nIn(10).nOut(10).build(), "0")
