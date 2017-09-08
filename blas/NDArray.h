@@ -19,7 +19,7 @@ namespace nd4j {
         int  *_shapeInfo;                       // contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
         bool  _isShapeAlloc;                    // indicates whether user allocates memory for _shapeInfo by himself, in opposite case the memory must be allocated from outside       
 		bool _isBuffAlloc; 						// indicates whether user allocates memory for _buffer by himself, in opposite case the memory must be allocated from outside       
-
+/*
 		// forbid assignment operator
 		NDArray<T>& operator=(const NDArray<T>& other);
         // accessing operator for 2D matrix, i - row, j - column
@@ -29,7 +29,7 @@ namespace nd4j {
         // modifying operator for 2D matrix, i - row, j - column
         // be careful this method doesn't check the rank of array
         T& operator()(const int i, const int j);
-
+*/
         // default constructor, do not allocate memory, memory for array is passed from outside 
         NDArray(T *buffer = nullptr, int *shapeInfo = nullptr);
 

@@ -175,6 +175,7 @@ template <typename T> NDArray<T>::NDArray(const char order, const std::initializ
 
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
+    /*
 template<typename T> NDArray<T>& NDArray<T>::operator=(const NDArray<T>& other) {
 	if (this == &other) return *this;
 
@@ -201,6 +202,7 @@ template<typename T> NDArray<T>& NDArray<T>::operator=(const NDArray<T>& other) 
 
     return *this;
 }
+    */
 
 template <typename T>
 void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting ) {
@@ -690,6 +692,7 @@ template <typename T> void NDArray<T>::transposei() {
 //////////////////////////////////////////////////////////////////////////
 // accessing operator for 2D matrix, i - row, j - column
 // be careful this method doesn't check the rank of array
+    /*
 template<typename T>
 T NDArray<T>::operator()(const int i, const int j) const {
 
@@ -708,6 +711,8 @@ T& NDArray<T>::operator()(const int i, const int j) {
     Nd4jIndex xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
     return _buffer[xOffset];
 }
+
+    */
 
 
 // This method adds given row to all rows in this NDArray, that is this array becomes affected
@@ -1261,27 +1266,30 @@ Given a matrix a[m][n], this routine computes its singular value
 decomposition, *this = U.W.VT.  The matrix U replaces *this on output.  The diagonal
 matrix of singular values W is output as a vector w[n].  The matrix vt is output as vt[n][n]
 *******************************************************************************/
+// compute (a2 + b2)^1/2 without destructive underflow or overflow
+/*
+    template<typename T>
+    T pythag (T a, T b) {
+        T absa, absb;
+        absa = fabs(a);
+        absb = fabs(b);
+        if (absa > absb) return absa*sqrt(1.f + (absb/absa)*(absb/absa));
+        else return (absb == 0.f ? 0.f : absb*sqrt(1.f + (absa/absb)*(absa/absb)));
+    };
+
+
     template<typename T>
     void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
     {
-        if(rankOf() !=2 || w->rankOf() !=2 || vt->rankOf() !=2)
+        if(rankOf() !=2 || w.rankOf() !=2 || vt.rankOf() !=2)
             throw "SVD operation: rank of some of input matrices is not equal 2 !";
 
         int m = rows();
         int n = columns();
 
-        if(w->rows() !=1 || w->columns() !=n || vt->rows() !=n || vt->columns() !=n)
+        if(w.rows() !=1 || w.columns() !=n || vt.rows() !=n || vt.columns() !=n)
             throw "SVD operation: shape of some of input matrices is wrong !";
-/************************************************************/
-        auto pythag = [] (T a, T b) -> T			// compute (a2 + b2)^1/2 without destructive underflow or overflow
-        {
-            T absa, absb;
-            absa = fabs(a);
-            absb = fabs(b);
-            if (absa > absb) return absa*sqrt(1.f + (absb/absa)*(absb/absa));
-            else return (absb == 0.f ? 0.f : absb*sqrt(1.f + (absa/absb)*(absa/absb)));
-        };
-/************************************************************/
+
         u = *this;
         int flag,i,its,j,jj,k,l,nm;
         T anorm,c,f,g,h,s,scale,x,y,z;
@@ -1348,7 +1356,7 @@ matrix of singular values W is output as a vector w[n].  The matrix vt is output
                         u(i,k) *= scale;
                 }
             }
-            anorm = std::max(anorm,(fabs(w[i])+fabs(rv1[i])));
+            anorm = std::max(anorm,(fabs(w(1,i))+fabs(rv1[i])));
         }
 // accumulation of right-hand transformations
         for (i=n-1; i>=0; i--) {
@@ -1406,7 +1414,7 @@ matrix of singular values W is output as a vector w[n].  The matrix vt is output
                         flag = 0;
                         break;
                     }
-                    if ((fabs(w[nm]) + anorm) == anorm)
+                    if ((fabs(w(1,nm)) + anorm) == anorm)
                         break;
                 }
                 if (flag) {
@@ -1418,7 +1426,7 @@ matrix of singular values W is output as a vector w[n].  The matrix vt is output
                         if ((fabs(f) + anorm) == anorm)
                             break;
                         g = w(1,i);
-                        h = pythag(f,g);
+                        h = pythag<T>(f,g);
                         w(i,1) = h;
                         h = 1.f/h;
                         c = g*h;
@@ -1448,7 +1456,7 @@ matrix of singular values W is output as a vector w[n].  The matrix vt is output
                 g = rv1[nm];
                 h = rv1[k];
                 f = ((y - z)*(y + z) + (g - h)*(g + h))/(2.f*h*y);
-                g = pythag(f,1.f);
+                g = pythag<T>(f,1.f);
                 f = ((x - z)*(x + z) + h*((y/(f + std::copysign(g,f))) - h))/x;
                 // next QR transformation
                 c = s = 1.f;
@@ -1458,7 +1466,7 @@ matrix of singular values W is output as a vector w[n].  The matrix vt is output
                     y = w(1,i);
                     h = s*g;
                     g = c*g;
-                    z = pythag(f,h);
+                    z = pythag<T>(f,h);
                     rv1[j] = z;
                     c = f/z;
                     s = h/z;
@@ -1472,7 +1480,7 @@ matrix of singular values W is output as a vector w[n].  The matrix vt is output
                         vt(jj,j) = x*c + z*s;
                         vt(jj,i) = z*c - x*s;
                     }
-                    z = pythag(f,h);
+                    z = pythag<T>(f,h);
                     w(1,j) = z; 		// rotation can be arbitrary if z = 0
                     if (z) {
                         z = 1.f/z;
@@ -1498,7 +1506,7 @@ matrix of singular values W is output as a vector w[n].  The matrix vt is output
 
         delete []rv1;
     }
-
+*/
 
     // default destructor
     template<typename T>
