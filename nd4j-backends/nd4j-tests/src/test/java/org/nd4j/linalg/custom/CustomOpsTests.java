@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
+import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -233,5 +234,10 @@ public class CustomOpsTests {
         val exp1 = Nd4j.create(1, 5).assign(1);
 
         ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
+    }
+
+    @Test
+    public void testOpStatus1() throws Exception {
+        log.info("{}", OpStatus.ND4J_STATUS_BAD_ARGUMENTS.ordinal());
     }
 }

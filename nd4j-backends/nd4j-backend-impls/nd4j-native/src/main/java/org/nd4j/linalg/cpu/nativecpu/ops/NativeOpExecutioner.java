@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.primitives.ImmutablePair;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
@@ -1534,7 +1535,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val i: op.getIArguments())
                 iArgs.put(cnt++, i.intValue());
 
-            loop.execCustomOpFloat(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall());
+            val status = OpStatus.byNumber(loop.execCustomOpFloat(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall()));
+            if (status != OpStatus.ND4J_STATUS_OK)
+                throw new ND4JIllegalStateException("Op execution failed: " + status);
         }  else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             val tArgs = op.getTArguments().size() > 0 ? new DoublePointer(op.getTArguments().size()) : null;
             val iArgs = op.getIArguments().size() > 0 ? new IntPointer(op.getIArguments().size()) : null;
@@ -1547,7 +1550,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val i: op.getIArguments())
                 iArgs.put(cnt++, i.intValue());
 
-            loop.execCustomOpDouble(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall());
+            val status = OpStatus.byNumber(loop.execCustomOpDouble(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall()));
+            if (status != OpStatus.ND4J_STATUS_OK)
+                throw new ND4JIllegalStateException("Op execution failed: " + status);
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
             val tArgs = op.getTArguments().size() > 0 ? new ShortPointer(op.getTArguments().size()) : null;
             val iArgs = op.getIArguments().size() > 0 ? new IntPointer(op.getIArguments().size()) : null;
@@ -1560,7 +1565,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val i: op.getIArguments())
                 iArgs.put(cnt++, i.intValue());
 
-            loop.execCustomOpHalf(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall());
+            val status = OpStatus.byNumber(loop.execCustomOpHalf(null, hash, inputBuffers, inputShapes, op.getInputArguments().size(), outputBuffers, outputShapes, op.getOutputArguments().size(), tArgs, op.getTArguments().size(), iArgs, op.getIArguments().size(), op.isInplaceCall()));
+            if (status != OpStatus.ND4J_STATUS_OK)
+                throw new ND4JIllegalStateException("Op execution failed: " + status);
         }
     }
 }
