@@ -17,14 +17,18 @@
 package org.datavec.image.recordreader;
 
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
+import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.util.ClassPathResource;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,8 +38,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 27/09/2016.
@@ -66,7 +69,7 @@ public class TestImageRecordReader {
             assertEquals(2, l.size());
         }
 
-        assertEquals(7, out.size());
+        assertEquals(6, out.size());
 
         rr.reset();
         List<List<Writable>> out2 = new ArrayList<>();
@@ -135,8 +138,8 @@ public class TestImageRecordReader {
             out1.add(rr.next());
             order1.add(rr.getCurrentFile());
         }
-        assertEquals(7, out1.size());
-        assertEquals(7, order1.size());
+        assertEquals(6, out1.size());
+        assertEquals(6, order1.size());
 
         rr.reset();
         List<List<Writable>> out2 = new ArrayList<>();
@@ -145,8 +148,8 @@ public class TestImageRecordReader {
             out2.add(rr.next());
             order2.add(rr.getCurrentFile());
         }
-        assertEquals(7, out2.size());
-        assertEquals(7, order2.size());
+        assertEquals(6, out2.size());
+        assertEquals(6, order2.size());
 
         assertNotEquals(out1, out2);
         assertNotEquals(order1, order2);
@@ -163,8 +166,84 @@ public class TestImageRecordReader {
             rr2.next();
             order3.add(rr2.getCurrentFile());
         }
-        assertEquals(7, order3.size());
+        assertEquals(6, order3.size());
 
         assertNotEquals(order1, order3);
+    }
+
+
+    @Test
+    public void testImageRecordReaderRegression() throws Exception {
+
+        PathLabelGenerator regressionLabelGen = new TestRegressionLabelGen();
+
+        ImageRecordReader rr = new ImageRecordReader(28, 28, 3, regressionLabelGen);
+
+        File rootDir = new ClassPathResource("/testimages/").getFile();
+        rr.initialize(new FileSplit(rootDir));
+
+        assertTrue(rr.getLabels() == null || rr.getLabels().isEmpty());
+
+        List<Writable> expLabels = Arrays.<Writable>asList(new DoubleWritable(0.0), new DoubleWritable(1.0),
+                new DoubleWritable(2.0), new DoubleWritable(10), new DoubleWritable(11), new DoubleWritable(12));
+
+        int count = 0;
+        while(rr.hasNext()){
+            List<Writable> l = rr.next();
+
+            assertEquals(2, l.size());
+            assertEquals(expLabels.get(count), l.get(1));
+
+            count++;
+        }
+        assertEquals(6, count);
+
+        //Test batch ops:
+        rr.reset();
+        List<Writable> b1 = rr.next(3);
+        List<Writable> b2 = rr.next(3);
+        assertFalse(rr.hasNext());
+        assertEquals(2, b1.size());
+        assertEquals(2, b2.size());
+
+        NDArrayWritable l1 = new NDArrayWritable(Nd4j.create(new double[]{0,1,2}, new int[]{3,1}));
+        NDArrayWritable l2 = new NDArrayWritable(Nd4j.create(new double[]{10,11,12}, new int[]{3,1}));
+
+        assertEquals(l1, b1.get(1));
+        assertEquals(l2, b2.get(1));
+    }
+
+    private static class TestRegressionLabelGen implements PathLabelGenerator {
+
+        @Override
+        public Writable getLabelForPath(String path) {
+            String filename = path.substring(path.length()-5, path.length());
+            switch(filename){
+                case "0.jpg":
+                    return new DoubleWritable(0.0);
+                case "1.png":
+                    return new DoubleWritable(1.0);
+                case "2.jpg":
+                    return new DoubleWritable(2.0);
+                case "A.jpg":
+                    return new DoubleWritable(10);
+                case "B.png":
+                    return new DoubleWritable(11);
+                case "C.jpg":
+                    return new DoubleWritable(12);
+                default:
+                    throw new RuntimeException(path);
+            }
+        }
+
+        @Override
+        public Writable getLabelForPath(URI uri) {
+            return getLabelForPath(uri.toString());
+        }
+
+        @Override
+        public boolean inferLabelClasses() {
+            return false;
+        }
     }
 }

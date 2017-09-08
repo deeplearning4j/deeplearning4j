@@ -104,25 +104,22 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         inputSplit = split;
         URI[] locations = split.locations();
         if (locations != null && locations.length >= 1) {
-            if (appendLabel) {
+            if (appendLabel && labelGenerator != null && labelGenerator.inferLabelClasses()) {
+                Set<String> labelsSet = new HashSet<>();
                 for (URI location : locations) {
                     File imgFile = new File(location);
                     File parentDir = imgFile.getParentFile();
-                    String name = parentDir.getName();
-                    if (labelGenerator != null) {
-                        name = labelGenerator.getLabelForPath(location).toString();
-                    }
-                    if (!labels.contains(name)) {
-                        labels.add(name);
-                    }
+                    String name = labelGenerator.getLabelForPath(location).toString();
+                    labelsSet.add(name);
                     if (pattern != null) {
                         String label = name.split(pattern)[patternPosition];
                         fileNameMap.put(imgFile.toString(), label);
                     }
                 }
+                labels.clear();
+                labels.addAll(labelsSet);
             }
             iter = new FileFromPathIterator(inputSplit.locationsPathIterator()); //This handles randomization internally if necessary
-            //            iter = new FileFromPathIterator(allPaths.iterator()); //This handles randomization internally if necessary
         } else
             throw new IllegalArgumentException("No path locations found in the split.");
 
@@ -199,8 +196,15 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 INDArray row = imageLoader.asMatrix(image);
                 Nd4j.getAffinityManager().ensureLocation(row, AffinityManager.Location.DEVICE);
                 ret = RecordConverter.toRecord(row);
-                if (appendLabel || writeLabel)
-                    ret.add(new IntWritable(labels.indexOf(getLabel(image.getPath()))));
+                if (appendLabel || writeLabel){
+                    if( labelGenerator.inferLabelClasses()){
+                        //Standard classification use case (i.e., handle String -> integer conversion
+                        ret.add(new IntWritable(labels.indexOf(getLabel(image.getPath()))));
+                    } else {
+                        //Regression use cases, and PathLabelGenerator instances that already map to integers
+                        ret.add(labelGenerator.getLabelForPath(image.getPath()));
+                    }
+                }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -239,12 +243,22 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         int cnt = 0;
 
         int numCategories = (appendLabel || writeLabel) ? labels.size() : 0;
-        List<Integer> currLabels = new ArrayList<>();
+        List<Integer> currLabels = null;
+        List<Writable> currLabelsWritable = null;
         while (cnt < num && iter.hasNext()) {
             File currFile = iter.next();
             currBatch.add(currFile);
-            if (appendLabel || writeLabel)
-                currLabels.add(labels.indexOf(getLabel(currFile.getPath())));
+            if (appendLabel || writeLabel) {
+                if(labelGenerator.inferLabelClasses()){
+                    if(currLabels == null)
+                        currLabels = new ArrayList<>();
+                    currLabels.add(labels.indexOf(getLabel(currFile.getPath())));
+                } else {
+                    if(currLabelsWritable == null)
+                        currLabelsWritable = new ArrayList<>();
+                    currLabelsWritable.add(labelGenerator.getLabelForPath(currFile.getPath()));
+                }
+            }
             cnt++;
         }
 
@@ -264,11 +278,30 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
         List<Writable> ret = (RecordConverter.toRecord(features));
         if (appendLabel || writeLabel) {
-            INDArray labels = Nd4j.create(cnt, numCategories, 'c');
-            Nd4j.getAffinityManager().tagLocation(labels, AffinityManager.Location.HOST);
-            for (int i = 0; i < currLabels.size(); i++) {
-                labels.putScalar(i, currLabels.get(i), 1.0f);
+            INDArray labels;
+            if( labelGenerator.inferLabelClasses()){
+                //Standard classification use case (i.e., handle String -> integer conversion)
+                labels = Nd4j.create(cnt, numCategories, 'c');
+                Nd4j.getAffinityManager().tagLocation(labels, AffinityManager.Location.HOST);
+                for (int i = 0; i < currLabels.size(); i++) {
+                    labels.putScalar(i, currLabels.get(i), 1.0f);
+                }
+            } else {
+                //Regression use cases, and PathLabelGenerator instances that already map to integers
+                if(currLabelsWritable.get(0) instanceof NDArrayWritable){
+                    List<INDArray> arr = new ArrayList<>();
+                    for(Writable w : currLabelsWritable){
+                        arr.add(((NDArrayWritable)w).get());
+                    }
+                    labels = Nd4j.concat(0, arr.toArray(new INDArray[arr.size()]));
+                } else {
+                    labels = Nd4j.create(cnt, 1);
+                    for (int i = 0; i < cnt; i++) {
+                        labels.putScalar(i, 0, currLabelsWritable.get(i).toDouble());
+                    }
+                }
             }
+
             ret.add(new NDArrayWritable(labels));
         }
 
