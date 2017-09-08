@@ -1,6 +1,7 @@
 package org.nd4j.linalg.rng;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 import org.junit.After;
@@ -21,6 +22,7 @@ import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.impl.NormalDistribution;
+import org.nd4j.linalg.api.rng.distribution.impl.OrthogonalDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -1336,6 +1338,16 @@ public class RandomTests extends BaseNd4jTest {
 
         assertEquals(exp, res);
 
+    }
+
+
+    @Test
+    public void testOrthogonalDistribution1() {
+        val dist = new OrthogonalDistribution(1.0);
+
+        val array = dist.sample(new int[] {6, 9});
+
+        log.info("Array: {}", array);
     }
 
     @Override

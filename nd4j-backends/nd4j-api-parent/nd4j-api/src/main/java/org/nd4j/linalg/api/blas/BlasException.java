@@ -23,7 +23,7 @@ public class BlasException extends Error {
      * @param errorCode the library error number
      */
     public BlasException(String message, int errorCode) {
-        super(message);
+        super(message + ": " + errorCode);
         this.errorCode = errorCode;
     }
 
