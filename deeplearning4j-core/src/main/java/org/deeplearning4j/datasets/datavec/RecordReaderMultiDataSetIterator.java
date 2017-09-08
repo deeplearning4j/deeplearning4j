@@ -56,6 +56,7 @@ import java.util.*;
  *
  * @author Alex Black
  */
+@Getter
 public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
 
     /**
@@ -177,7 +178,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         return nextMultiDataSet(nextRRVals, nextRRValsBatched, nextSeqRRVals, nextMetas);
     }
 
-    private MultiDataSet nextMultiDataSet(Map<String, List<List<Writable>>> nextRRVals,
+    public MultiDataSet nextMultiDataSet(Map<String, List<List<Writable>>> nextRRVals,
                     Map<String, List<Writable>> nextRRValsBatched,
                     Map<String, List<List<List<Writable>>>> nextSeqRRVals,
                     List<RecordMetaDataComposableMap> nextMetas) {
