@@ -173,6 +173,34 @@ template <typename T> NDArray<T>::NDArray(const char order, const std::initializ
     delete[] shapeOf;
 }
 
+////////////////////////////////////////////////////////////////////////
+// assignment operator
+template<typename T> NDArray<T>& NDArray<T>::operator=(const NDArray<T>& other) {
+	if (this == &other) return *this;
+
+    if (shape::equalsStrict(_shapeInfo, other._shapeInfo))
+        memcpy(_buffer, other._buffer, lengthOf()*sizeOfT());
+    else {
+        if(_isBuffAlloc)
+            delete []_buffer;
+        if(_isShapeAlloc)
+            delete []_shapeInfo;
+
+        int arrLength = shape::length(other._shapeInfo);
+        int shapeLength = shape::rank(other._shapeInfo)*2 + 4;
+
+        _buffer = new T[arrLength];
+        memcpy(_buffer, other._buffer, lengthOf()*sizeOfT());               // copy elements of other current array
+
+        _shapeInfo = new int[shapeLength];
+        memcpy(_shapeInfo, other._shapeInfo, shapeLength*sizeof(int));     // copy shape information into new array
+
+        _isBuffAlloc = true;
+        _isShapeAlloc = true;
+    }
+
+    return *this;
+}
 
 template <typename T>
 void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting ) {
@@ -659,6 +687,27 @@ template <typename T> void NDArray<T>::transposei() {
         putScalar(xOffset, value);
     }
 
+//////////////////////////////////////////////////////////////////////////
+// accessing operator for 2D matrix, i - row, j - column
+// be careful this method doesn't check the rank of array
+template<typename T>
+T NDArray<T>::operator()(const int i, const int j) const {
+
+    int coords[2] = {i, j};
+    Nd4jIndex xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    return _buffer[xOffset];
+}
+
+//////////////////////////////////////////////////////////////////////////
+// modifying operator for 2D matrix, i - row, j - column
+// be careful this method doesn't check the rank of array
+template<typename T>
+T& NDArray<T>::operator()(const int i, const int j) {
+
+	int coords[2] = {i, j};
+    Nd4jIndex xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    return _buffer[xOffset];
+}
 
 // This method adds given row to all rows in this NDArray, that is this array becomes affected
     template<typename T>

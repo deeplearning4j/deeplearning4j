@@ -19,9 +19,6 @@ namespace nd4j {
         int  *_shapeInfo;                       // contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
         bool  _isShapeAlloc;                    // indicates whether user allocates memory for _shapeInfo by himself, in opposite case the memory must be allocated from outside       
 		bool _isBuffAlloc; 						// indicates whether user allocates memory for _buffer by himself, in opposite case the memory must be allocated from outside       
-
-		// forbid assignment operator
-		NDArray<T>& operator=(const NDArray<T>& other) = delete;
 		
         // default constructor, do not allocate memory, memory for array is passed from outside 
         NDArray(T *buffer = nullptr, int *shapeInfo = nullptr);
@@ -44,6 +41,9 @@ namespace nd4j {
         // this constructor creates new array using shape information contained in initializer_list/vector argument
         NDArray(const char order, const std::initializer_list<int> &shape);	
         NDArray(const char order, const std::vector<int> &shape);
+
+		// assignment operator
+		NDArray<T>& operator=(const NDArray<T>& other);
 
         // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
         void replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting = true);
@@ -221,7 +221,15 @@ namespace nd4j {
         // This method sets value in 3D matrix to position i,j,k
         void putScalar(const int i, const int k, const int j, const T value);
 
-        // This method adds given row to all rows in this NDArray, that is this array becomes affected
+   		// accessing operator for 2D matrix, i - row, j - column
+		// be careful this method doesn't check the rank of array
+		T operator()(const int i, const int j) const;
+		
+		// modifying operator for 2D matrix, i - row, j - column   
+		// be careful this method doesn't check the rank of array
+		T& operator()(const int i, const int j);
+
+		// This method adds given row to all rows in this NDArray, that is this array becomes affected
         void addiRowVector(const NDArray<T> *row);
 
         // this method returns number of bytes used by buffer & shapeInfo
@@ -274,6 +282,9 @@ namespace nd4j {
         
 		// return array which is broadcasted from this and argument array  
 		NDArray<T>*  broadcast(const NDArray<T>& other);
+
+		// Singular value decomposition of 2D matrix
+		void svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt);
 	
 		// default destructor
         ~NDArray();
