@@ -21,8 +21,15 @@ namespace nd4j {
 		bool _isBuffAlloc; 						// indicates whether user allocates memory for _buffer by himself, in opposite case the memory must be allocated from outside       
 
 		// forbid assignment operator
-		NDArray<T>& operator=(const NDArray<T>& other) = delete;
-		
+		NDArray<T>& operator=(const NDArray<T>& other);
+        // accessing operator for 2D matrix, i - row, j - column
+        // be careful this method doesn't check the rank of array
+        T operator()(const int i, const int j) const;
+
+        // modifying operator for 2D matrix, i - row, j - column
+        // be careful this method doesn't check the rank of array
+        T& operator()(const int i, const int j);
+
         // default constructor, do not allocate memory, memory for array is passed from outside 
         NDArray(T *buffer = nullptr, int *shapeInfo = nullptr);
 
@@ -80,6 +87,8 @@ namespace nd4j {
         Nd4jIndex lengthOf() const {
             return shape::length(_shapeInfo);
         }
+
+        void svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt);
 
         bool permutei(const std::initializer_list<int>& dimensions);
         bool permutei(const std::vector<int>& dimensions);
