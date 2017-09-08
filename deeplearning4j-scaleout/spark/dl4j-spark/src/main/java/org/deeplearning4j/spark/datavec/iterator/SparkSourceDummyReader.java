@@ -1,6 +1,5 @@
 package org.deeplearning4j.spark.datavec.iterator;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
@@ -18,11 +17,24 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-@AllArgsConstructor
+/**
+ * Dummy reader for use in {@link IteratorUtils}
+ *
+ * @author Alex Black
+ */
 @Data
 public class SparkSourceDummyReader implements RecordReader, Serializable {
-
     private int readerIdx;
+
+    /**
+     * @param readerIdx Index of the reader, in terms of the RDD that matches it. For a single RDD as input, this
+     *                  is always 0; for 2 RDDs used as input, this would be 0 or 1, depending on whether it should pull
+     *                  values from the first or second RDD. Note that the indexing for RDDs doesn't depend on the
+     *                  presence of sequence RDDs - they are indexed separately.
+     */
+    public SparkSourceDummyReader(int readerIdx) {
+        this.readerIdx = readerIdx;
+    }
 
 
     @Override

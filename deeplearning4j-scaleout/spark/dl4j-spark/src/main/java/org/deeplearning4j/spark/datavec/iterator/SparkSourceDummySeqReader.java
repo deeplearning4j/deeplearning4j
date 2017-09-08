@@ -13,6 +13,13 @@ import java.util.List;
 
 @Data
 public class SparkSourceDummySeqReader extends SparkSourceDummyReader implements SequenceRecordReader {
+
+    /**
+     * @param readerIdx Index of the reader, in terms of the sequence RDD that it should use. For a single sequence RDD
+     *                  as input, this is always 0; for 2 sequence RDDs used as input, this would be 0 or 1, depending
+     *                  on whether it should pull values from the first or second sequence RDD. Note that the indexing
+     *                  for sequence RDDs doesn't depend on the presence of non-sequence RDDs - they are indexed separately.
+     */
     public SparkSourceDummySeqReader(int readerIdx) {
         super(readerIdx);
     }

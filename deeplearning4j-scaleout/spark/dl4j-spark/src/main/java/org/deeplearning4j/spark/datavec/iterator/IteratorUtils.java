@@ -12,13 +12,25 @@ import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import scala.Tuple2;
 
-import java.lang.reflect.Array;
 import java.util.*;
 
+/**
+ * Utilities for working with RDDs and {@link RecordReaderMultiDataSetIterator}
+ *
+ * @author Alex Black
+ */
 public class IteratorUtils {
 
-
+    /**
+     * Apply a single reader {@link RecordReaderMultiDataSetIterator} to a {@code JavaRDD<List<Writable>>}.
+     * <b>NOTE</b>: The RecordReaderMultiDataSetIterator <it>must</it> use {@link SparkSourceDummyReader} in place of
+     * "real" RecordReader instances
+     *
+     * @param rdd      RDD with writables
+     * @param iterator RecordReaderMultiDataSetIterator with {@link SparkSourceDummyReader} readers
+     */
     public static JavaRDD<MultiDataSet> mapRRMDSI(JavaRDD<List<Writable>> rdd, RecordReaderMultiDataSetIterator iterator){
+        checkIterator(iterator, 1, 0);
         return mapRRMDSIRecords(rdd.map(new Function<List<Writable>,DataVecRecords>(){
             @Override
             public DataVecRecords call(List<Writable> v1) throws Exception {
@@ -27,7 +39,17 @@ public class IteratorUtils {
         }), iterator);
     }
 
+    /**
+     * Apply a single sequence reader {@link RecordReaderMultiDataSetIterator} to sequence data, in the form of
+     * {@code JavaRDD<List<List<Writable>>>}.
+     * <b>NOTE</b>: The RecordReaderMultiDataSetIterator <it>must</it> use {@link SparkSourceDummySeqReader} in place of
+     * "real" SequenceRecordReader instances
+     *
+     * @param rdd      RDD with writables
+     * @param iterator RecordReaderMultiDataSetIterator with {@link SparkSourceDummySeqReader} sequence readers
+     */
     public static JavaRDD<MultiDataSet> mapRRMDSISeq(JavaRDD<List<List<Writable>>> rdd, RecordReaderMultiDataSetIterator iterator){
+        checkIterator(iterator, 0, 1);
         return mapRRMDSIRecords(rdd.map(new Function<List<List<Writable>>,DataVecRecords>(){
             @Override
             public DataVecRecords call(List<List<Writable>> v1) throws Exception {
@@ -36,6 +58,21 @@ public class IteratorUtils {
         }), iterator);
     }
 
+    /**
+     * Apply to an arbitrary mix of non-sequence and sequence data, in the form of {@code JavaRDD<List<Writable>>}
+     * and {@code JavaRDD<List<List<Writable>>>}.<br>
+     * Note: this method performs a join by key. To perform this, we require that each record (and every step of
+     * sequence records) contain the same key value (could be any Writable).<br>
+     * <b>NOTE</b>: The RecordReaderMultiDataSetIterator <it>must</it> use {@link SparkSourceDummyReader} and
+     * {@link SparkSourceDummySeqReader} instances in place of "real" RecordReader and SequenceRecordReader instances
+     *
+     * @param rdds      RDD with non-sequence data. May be null.
+     * @param seqRdds   RDDs with sequence data. May be null.
+     * @param rddsKeyColumns Column indices for the keys in the (non-sequence) RDDs data
+     * @param seqRddsKeyColumns Column indices for the keys in the sequence RDDs data
+     * @param filterMissing If true: filter out any records that don't have matching keys in all RDDs
+     * @param iterator RecordReaderMultiDataSetIterator with {@link SparkSourceDummyReader} and {@link SparkSourceDummySeqReader}readers
+     */
     public static JavaRDD<MultiDataSet> mapRRMDSI(List<JavaRDD<List<Writable>>> rdds, List<JavaRDD<List<List<Writable>>>> seqRdds,
                                                   int[] rddsKeyColumns, int[] seqRddsKeyColumns, boolean filterMissing,
                                                   RecordReaderMultiDataSetIterator iterator){
@@ -217,7 +254,6 @@ public class IteratorUtils {
 
 
     public static JavaRDD<MultiDataSet> mapRRMDSIRecords(JavaRDD<DataVecRecords> rdd, RecordReaderMultiDataSetIterator iterator){
-        checkIterator(iterator, 1, 0);
         return rdd.map(new RRMDSIFunction(iterator));
     }
 
