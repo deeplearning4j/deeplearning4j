@@ -111,6 +111,38 @@ public class MultiLayerNeuralNetConfigurationTest {
     }
 
     @Test
+    public void testUpsamplingConvnetJson() {
+        final int numRows = 76;
+        final int numColumns = 76;
+        int nChannels = 3;
+        int outputNum = 6;
+        int iterations = 10;
+        int seed = 123;
+
+        //setup the network
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+                .regularization(true).l1(1e-1).l2(2e-4).useDropConnect(true).dropOut(0.5).miniBatch(true)
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
+                .layer(new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
+                        .activation(Activation.RELU).build())
+                .layer(new Upsampling2D.Builder().size(2).build())
+                .layer(2, new ConvolutionLayer.Builder(3, 3).nOut(10).dropOut(0.5).weightInit(WeightInit.XAVIER)
+                        .activation(Activation.RELU).build())
+                .layer(new Upsampling2D.Builder().size(2).build())
+                .layer(4, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())
+                .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
+                        .build())
+                .backprop(true).pretrain(false)
+                .setInputType(InputType.convolutional(numRows, numColumns, nChannels));
+
+        MultiLayerConfiguration conf = builder.build();
+        String json = conf.toJson();
+        MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(json);
+        assertEquals(conf, conf2);
+    }
+
+    @Test
     public void testGlobalPoolingJson() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false).updater(Updater.NONE)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
