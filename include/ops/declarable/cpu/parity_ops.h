@@ -14,6 +14,7 @@
 #include <loops/random.h>
 #include <NDArray.h>
 #include <ops/declarable/declarable_ops.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
     namespace ops {
@@ -100,16 +101,16 @@ namespace nd4j {
 
             if (x->isMatrix() && y->isVector()) {
                 // gemv
-                z = NDArray<T>::mmulHelper(x, y);
+                z = NDArrayFactory::mmulHelper(x, y);
             } else if (x->isVector() && y->isMatrix()) {
                 // gemm
-                z = NDArray<T>::mmulHelper(x, y);
+                z = NDArrayFactory::mmulHelper(x, y);
             }  else if (x->isVector() && y->isVector()) {
                 // dot
-                z = NDArray<T>::mmulHelper(x, y);
+                z = NDArrayFactory::mmulHelper(x, y);
             } else if (x->isMatrix() && y->isMatrix()) {
                 // gemm
-                z = NDArray<T>::mmulHelper(x, y);
+                z = NDArrayFactory::mmulHelper(x, y);
             } else if (x->isVector() && y->isScalar()) {
                 // elementwise mul
                 z = this->getZ(block);
@@ -340,7 +341,7 @@ namespace nd4j {
             bT->permutei(newAxesB);
             bT->reshape('f', newShapeB);
 
-            auto c = NDArray<T>::mmulHelper(aT, bT);
+            auto c = NDArrayFactory::mmulHelper(aT, bT);
 
             std::vector<int> aPlusB(oldShapeA);
             for (auto v: oldShapeB)
@@ -504,6 +505,18 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+
+        DECLARE_CONFIGURABLE_OP(clipbyvalue, 1, 1, true, 2, 0) {
+            REQUIRE_OK(this->validateNonEmptyInput(block));
+
+            NDArray<T>* input = block.getVariables().at(0)->getNDArray();
+            NDArray<T>* output = this->getZ(block);
+
+            input->template applyTransform<simdOps::ClipByValue<T>>(output, block.getTArguments()->data());
+
+            STORE_RESULT(*output);
+        }
+        DECLARE_SYN(ClipByValue, clipbyvalue);
 
         /**
          * Upsampling implementation, based on pytorch
@@ -690,12 +703,19 @@ namespace nd4j {
 
             int numIndices = block.getIArguments()->at(e++);
             std::vector<int> indices;
-            for (; e< block.getIArguments()->size(); e++)
+            std::vector<int> indicesU;
+            int cnt = 0;
+            for (; e< block.getIArguments()->size(); e++) {
                 indices.push_back((int) block.getIArguments()->at(e));
+                indicesU.push_back(cnt++);
+            }
+
+            std::unique_ptr<ArrayList<T>> tadsOperand(nd4j::NDArrayFactory::multipleTensorsAlongDimension(operand, indices, tadDimension));
+            std::unique_ptr<ArrayList<T>> tadsUpdate(nd4j::NDArrayFactory::multipleTensorsAlongDimension(updates, indicesU, tadDimension));
 
             for (unsigned long x = 0; x < indices.size(); x++) {
-                NDArray<T> *tad = operand->tensorAlongDimension(indices.at(x), tadDimension);
-                NDArray<T> *tadUpdates = updates->tensorAlongDimension(x, tadDimension);
+                NDArray<T> *tad = tadsOperand->at(x);
+                NDArray<T> *tadUpdates = tadsUpdate->at(x);
 
                 if (tad->lengthOf() != tadUpdates->lengthOf())
                     return ND4J_STATUS_BAD_DIMENSIONS;
@@ -725,9 +745,6 @@ namespace nd4j {
                     default:
                         return ND4J_STATUS_BAD_PARAMS;
                 }
-
-                delete tad;
-                delete tadUpdates;
             }
 
             STORE_RESULT(*z);

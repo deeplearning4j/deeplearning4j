@@ -31,6 +31,7 @@
 #include <layers/layers_factory.h>
 #include "NDArray.cpp"
 #include "GraphExecutioner.cpp"
+#include "NDArrayFactory.cpp"
 #include <ops/declarable/declarable_ops.h>
 #include <ops/declarable/cpu/parity_ops.h>
 

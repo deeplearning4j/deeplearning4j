@@ -497,6 +497,36 @@ TEST_F(DeclarableOpsTests, MergeSumTest1) {
 
 }
 
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests, ClipByValue1) {
+
+    NDArray<float> x(5, 5, 'c');
+    NDArray<float> exp(5, 5, 'c');
+    x.assign(4);
+    x.putScalar(0, -1);
+    x.putScalar(1, 2);
+    exp.assign(3);
+    exp.putScalar(0, 0);
+    exp.putScalar(1, 2);
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(1, new Variable<float>());
+    Block<float>* block = new Block<float>(1, variableSpace, true);
+    block->getTArguments()->push_back(0.0f);
+    block->getTArguments()->push_back(3.0f);
+    block->fillInputs({-1});
+
+    nd4j::ops::clipbyvalue<float> clip;
+
+    clip.execute(block);
+
+    x.printBuffer("Result");
+    ASSERT_TRUE(x.equalsTo(&exp));
+
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests, MergeMaxTest1) {
 
