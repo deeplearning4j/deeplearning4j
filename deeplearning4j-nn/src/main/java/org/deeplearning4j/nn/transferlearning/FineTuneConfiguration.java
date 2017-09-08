@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
@@ -42,7 +43,7 @@ public class FineTuneConfiguration {
     protected Double l2;
     protected Double l1Bias;
     protected Double l2Bias;
-    protected IDropout iDropout;
+    protected IDropout dropout;
     protected IWeightNoise weightNoise;
     protected IUpdater iUpdater;
     protected IUpdater biasUpdater;
@@ -83,17 +84,13 @@ public class FineTuneConfiguration {
             return this;
         }
 
-        /**
-         * @deprecated No longer used
-         */
-        @Deprecated
-        public Builder regularization(boolean regularization) {
-            return this;
-        }
-
         public Builder iterations(int iterations) {
             this.numIterations = iterations;
             return this;
+        }
+
+        public Builder dropOut(double dropout){
+            return dropout(new Dropout(dropout));
         }
 
         public Builder activation(Activation activation) {
@@ -125,8 +122,8 @@ public class FineTuneConfiguration {
         WeightInit origWeightInit = null;
 
         if (l != null) {
-            if (iDropout != null)
-                l.setIDropout(iDropout);
+            if (dropout != null)
+                l.setIDropout(dropout);
         }
 
         if (l != null && l instanceof BaseLayer) {
@@ -192,7 +189,7 @@ public class FineTuneConfiguration {
 
         //Perform validation. This also sets the defaults for updaters. For example, Updater.RMSProp -> set rmsDecay
         if (l != null) {
-            LayerValidation.generalValidation(l.getLayerName(), l, iDropout, l2, l2Bias, l1, l1Bias, dist, constraints, null, null);
+            LayerValidation.generalValidation(l.getLayerName(), l, dropout, l2, l2Bias, l1, l1Bias, dist, constraints, null, null);
         }
 
         //Also: update the LR, L1 and L2 maps, based on current config (which might be different to original config)
@@ -247,8 +244,8 @@ public class FineTuneConfiguration {
             confBuilder.setL1Bias(l1Bias);
         if (l2Bias != null)
             confBuilder.setL2Bias(l2Bias);
-        if (iDropout != null)
-            confBuilder.setIdropOut(iDropout);
+        if (dropout != null)
+            confBuilder.setIdropOut(dropout);
         if (iUpdater != null)
             confBuilder.updater(iUpdater);
         if(biasUpdater != null)
