@@ -9,7 +9,8 @@ import java.util.List;
 
 @AllArgsConstructor
 @Data
-public class DataVecRecords implements Serializable {
-    private List<List<Writable>> records;
-    private List<List<List<Writable>>> seqRecords;
+public class DataVecRecord implements Serializable {
+    private int readerIdx;
+    private List<Writable> record;
+    private List<List<Writable>> seqRecord;
 }
