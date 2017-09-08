@@ -173,6 +173,34 @@ template <typename T> NDArray<T>::NDArray(const char order, const std::initializ
     delete[] shapeOf;
 }
 
+////////////////////////////////////////////////////////////////////////
+// assignment operator
+template<typename T> NDArray<T>& NDArray<T>::operator=(const NDArray<T>& other) {
+	if (this == &other) return *this;
+
+    if (shape::equalsStrict(_shapeInfo, other._shapeInfo))
+        memcpy(_buffer, other._buffer, lengthOf()*sizeOfT());
+    else {
+        if(_isBuffAlloc)
+            delete []_buffer;
+        if(_isShapeAlloc)
+            delete []_shapeInfo;
+
+        int arrLength = shape::length(other._shapeInfo);
+        int shapeLength = shape::rank(other._shapeInfo)*2 + 4;
+
+        _buffer = new T[arrLength];
+        memcpy(_buffer, other._buffer, lengthOf()*sizeOfT());               // copy elements of other current array
+
+        _shapeInfo = new int[shapeLength];
+        memcpy(_shapeInfo, other._shapeInfo, shapeLength*sizeof(int));     // copy shape information into new array
+
+        _isBuffAlloc = true;
+        _isShapeAlloc = true;
+    }
+
+    return *this;
+}
 
 template <typename T>
 void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting ) {
@@ -658,6 +686,28 @@ template <typename T> void NDArray<T>::transposei() {
 
         putScalar(xOffset, value);
     }
+
+//////////////////////////////////////////////////////////////////////////
+// accessing operator for 2D matrix, i - row, j - column
+// be careful this method doesn't check the rank of array
+template<typename T>
+T NDArray<T>::operator()(const int i, const int j) const {
+
+    int coords[2] = {i, j};
+    Nd4jIndex xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    return _buffer[xOffset];
+}
+
+//////////////////////////////////////////////////////////////////////////
+// modifying operator for 2D matrix, i - row, j - column
+// be careful this method doesn't check the rank of array
+template<typename T>
+T& NDArray<T>::operator()(const int i, const int j) {
+
+	int coords[2] = {i, j};
+    Nd4jIndex xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    return _buffer[xOffset];
+}
 
 
 // This method adds given row to all rows in this NDArray, that is this array becomes affected
@@ -1202,7 +1252,255 @@ NDArray<T>* NDArray<T>::broadcast(const NDArray<T>& other) {
 	return ret;
 }
 
-// default destructor
+
+//////////////////////////////////////////////////////////////////////////
+// Singular value decomposition program, slightly modificated routine svdcmp, from "Numerical Recipes in C"
+// (Cambridge Univ. Press) by W.H. Press, S.A. Teukolsky, W.T. Vetterling, and B.P. Flannery
+/*******************************************************************************
+Given a matrix a[m][n], this routine computes its singular value
+decomposition, *this = U.W.VT.  The matrix U replaces *this on output.  The diagonal
+matrix of singular values W is output as a vector w[n].  The matrix vt is output as vt[n][n]
+*******************************************************************************/
+    template<typename T>
+    void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
+    {
+        if(rankOf() !=2 || w->rankOf() !=2 || vt->rankOf() !=2)
+            throw "SVD operation: rank of some of input matrices is not equal 2 !";
+
+        int m = rows();
+        int n = columns();
+
+        if(w->rows() !=1 || w->columns() !=n || vt->rows() !=n || vt->columns() !=n)
+            throw "SVD operation: shape of some of input matrices is wrong !";
+/************************************************************/
+        auto pythag = [] (T a, T b) -> T			// compute (a2 + b2)^1/2 without destructive underflow or overflow
+        {
+            T absa, absb;
+            absa = fabs(a);
+            absb = fabs(b);
+            if (absa > absb) return absa*sqrt(1.f + (absb/absa)*(absb/absa));
+            else return (absb == 0.f ? 0.f : absb*sqrt(1.f + (absa/absb)*(absa/absb)));
+        };
+/************************************************************/
+        u = *this;
+        int flag,i,its,j,jj,k,l,nm;
+        T anorm,c,f,g,h,s,scale,x,y,z;
+        T* rv1 = new T[n*sizeOfT()];
+
+// Householder reduction to bidiagonal form
+        g=scale=anorm=0.f;
+        for (i=0; i<n; i++) {
+            // left-hand reduction
+            l = i + 1;
+            rv1[i] = scale*g;
+            g = s = scale = 0.f;
+            if (i < m) {
+                for (k=i; k<m; k++)
+                    scale += fabs(u(k,i));
+                if (scale) {
+                    for (k=i; k<m; k++) {
+                        u(k,i) /= scale;
+                        s += u(k,i)*u(k,i);
+                    }
+                    f = u(i,i);
+                    g = -std::copysign(sqrt(s),f);
+                    h = f*g - s;
+                    u(i,i) = f - g;
+                    if (i != n - 1) {
+                        for (j=l; j<n; j++) {
+                            for (s=0.f, k=i; k<m; k++)
+                                s += u(k,i)*u(k,j);
+                            f = s/h;
+                            for (k=i; k<m; k++)
+                                u(k,j) += f*u(k,i);
+                        }
+                    }
+                    for (k=i; k<m; k++)
+                        u(k,i) *= scale;
+                }
+            }
+            w(1,i) = scale*g;
+            // right-hand reduction
+            g=s=scale=0.f;
+            if (i < m && i != n-1) {
+                for (k=l; k<n; k++)
+                    scale += fabs(u(i,k));
+                if (scale) {
+                    for (k=l; k<n; k++) {
+                        u(i,k) /= scale;
+                        s += u(i,k)*u(i,k);
+                    }
+                    f = u(i,l);
+                    g = -std::copysign(sqrt(s),f);
+                    h = f*g - s;
+                    u(i,l) = f - g;
+                    for (k=l; k<n; k++)
+                        rv1[k] = u(i,k)/h;
+                    if (i != m - 1) {
+                        for (j=l; j<m; j++) {
+                            for (s=0.f, k=l; k<n; k++)
+                                s += u(j,k)*u(i,k);
+                            for (k=l; k<n; k++)
+                                u(j,k) += s*rv1[k];
+                        }
+                    }
+                    for (k=l; k<n; k++)
+                        u(i,k) *= scale;
+                }
+            }
+            anorm = std::max(anorm,(fabs(w[i])+fabs(rv1[i])));
+        }
+// accumulation of right-hand transformations
+        for (i=n-1; i>=0; i--) {
+            if (i < n-1) {
+                if (g) {
+                    for (j=l; j<=n; j++) // double division to avoid possible underflow.
+                        vt(j,i) = (u(i,j)/u(i,l))/g;
+                    for (j=l; j<n; j++) {
+                        for (s=0.f, k=l; k<n; k++)
+                            s += u(i,k)*vt(k,j);
+                        for (k=l; k<n; k++)
+                            vt(k,j) += s*vt(k,i);
+                    }
+                }
+                for (j=l; j<n; j++)
+                    vt(i,j) = vt(j,i) = 0.f;
+            }
+            vt(i,i) = 1.f;
+            g = rv1[i];
+            l = i;
+        }
+// accumulation of left-hand transformations
+        for (i=n-1; i>=0; i--) {
+            l = i + 1;
+            g = w(1,i);
+            if (i < n - 1)
+                for (j=l ; j<n; j++)
+                    u(i,j) = 0.f;
+            if (g) {
+                g = 1.f/g;
+                if (i != n - 1) {
+                    for (j=l; j<n; j++) {
+                        for (s=0.f, k=l; k<m; k++)
+                            s += u(k,i)*u(k,j);
+                        f = (s/u(i,i))*g;
+                        for (k=i; k<m; k++)
+                            u(k,j) += f*u(k,i);
+                    }
+                }
+                for (j=i; j<m; j++)
+                    u(j,i) *= g;
+            }
+            else
+                for (j=i; j<m; j++)
+                    u(j,i) = 0.f;
+            ++u(i,i);
+        }
+// diagonalization of the bidiagonal form
+        for (k=n-1; k>=0; k--) { 				// loop over singular values
+            for (its=1; its<30; its++) {		// loop over allowed iterations
+                flag = 1;
+                for (l=k; l>=0; l--) { 			// test for splitting
+                    nm = l - 1; 				// note that rv1[1] is always zero
+                    if ((fabs(rv1[l]) + anorm) == anorm) {
+                        flag = 0;
+                        break;
+                    }
+                    if ((fabs(w[nm]) + anorm) == anorm)
+                        break;
+                }
+                if (flag) {
+                    c = 0.f; 					// Cancellation of rv1[l], if l > 1.
+                    s = 1.f;
+                    for (i=l; i<=k; i++) {
+                        f = s*rv1[i];
+                        rv1[i] = c*rv1[i];
+                        if ((fabs(f) + anorm) == anorm)
+                            break;
+                        g = w(1,i);
+                        h = pythag(f,g);
+                        w(i,1) = h;
+                        h = 1.f/h;
+                        c = g*h;
+                        s = -f*h;
+                        for (j=0; j<m; j++) {
+                            y = u(j,nm);
+                            z = u(j,i);
+                            u(j,nm) = y*c + z*s;
+                            u(j,i)  = z*c - y*s;
+                        }
+                    }
+                }
+                z = w(1,k);
+                if (l == k) { 						// convergence
+                    if (z < 0.f) { 					// singular value is made nonnegative
+                        w(1,k) = -z;
+                        for (j=0; j<n; j++)
+                            vt(j,k) = -vt(j,k);
+                    }
+                    break;
+                }
+                if (its == 30) printf("no convergence in 30 svd iterations \n");
+                // shift from bottom 2-by-2 minor
+                x = w(1,l);
+                nm = k-1;
+                y = w(1,nm);
+                g = rv1[nm];
+                h = rv1[k];
+                f = ((y - z)*(y + z) + (g - h)*(g + h))/(2.f*h*y);
+                g = pythag(f,1.f);
+                f = ((x - z)*(x + z) + h*((y/(f + std::copysign(g,f))) - h))/x;
+                // next QR transformation
+                c = s = 1.f;
+                for (j=l; j<=nm; j++) {
+                    i = j + 1;
+                    g = rv1[i];
+                    y = w(1,i);
+                    h = s*g;
+                    g = c*g;
+                    z = pythag(f,h);
+                    rv1[j] = z;
+                    c = f/z;
+                    s = h/z;
+                    f = x*c + g*s;
+                    g = g*c - x*s;
+                    h = y*s;
+                    y *= c;
+                    for (jj=0; jj<n; jj++) {
+                        x = vt(jj,j);
+                        z = vt(jj,i);
+                        vt(jj,j) = x*c + z*s;
+                        vt(jj,i) = z*c - x*s;
+                    }
+                    z = pythag(f,h);
+                    w(1,j) = z; 		// rotation can be arbitrary if z = 0
+                    if (z) {
+                        z = 1.f/z;
+                        c = f*z;
+                        s = h*z;
+                    }
+                    f = c*g + s*y;
+                    x = c*y - s*g;
+                    for (jj=0; jj<m; jj++) {
+                        y = u(jj,j);
+                        z = u(jj,i);
+                        u(jj,j) = y*c + z*s;
+                        u(jj,i) = z*c - y*s;
+                    }
+                }
+                rv1[l] = 0.f;
+                rv1[k] = f;
+                w(1,k) = x;
+            }
+        }
+// transpose vt
+        vt.transposei();
+
+        delete []rv1;
+    }
+
+
+    // default destructor
     template<typename T>
     NDArray<T>::~NDArray() {
 
