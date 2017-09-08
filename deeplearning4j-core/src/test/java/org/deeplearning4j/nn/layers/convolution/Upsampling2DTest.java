@@ -48,8 +48,6 @@ public class Upsampling2DTest {
         double[] outArray = new double[] {1., 1., 2., 2., 1., 1., 2., 2., 3., 3., 4., 4., 3., 3., 4., 4.};
         INDArray containedExpectedOut = Nd4j.create(outArray, new int[] {1, 1, 4, 4});
         INDArray containedInput = getContainedData();
-        System.out.println(containedInput);
-        System.out.println(containedExpectedOut);
         INDArray input = getData();
         Layer layer = getUpsamplingLayer();
 
@@ -70,7 +68,7 @@ public class Upsampling2DTest {
                         Nd4j.create(new double[] {1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.},
                                 new int[] {1, 1, 4, 4});
 
-        INDArray expectedContainedEpsilonResult = Nd4j.create(new double[] {1., 1., 1., 1.},
+        INDArray expectedContainedEpsilonResult = Nd4j.create(new double[] {4., 4., 4., 4.},
                         new int[] {1, 1, 2, 2});
 
         INDArray input = getContainedData();
@@ -79,6 +77,7 @@ public class Upsampling2DTest {
         layer.activate(input);
 
         Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
+
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);

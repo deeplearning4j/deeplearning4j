@@ -86,6 +86,8 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int size = layerConf().getSize();
 
         INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * inH * inW);
+        INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
+
         INDArray forwardOutput  = preOutput(true, true);
 
         Gradient gradient = new DefaultGradient();
@@ -93,12 +95,11 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         CustomOp op = DynamicCustomOp.builder("upsampling_bp")
                 .setIntegerArguments(size)
                 .setInputs(forwardOutput, epsilon)
-                .setOutputs(outEpsilon)
+                .setOutputs(reshapedEpsilon)
                 .callInplace(false)
                 .build();
         Nd4j.getExecutioner().exec(op);
 
-        INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
 
         return new Pair<>(gradient, reshapedEpsilon);
     }
@@ -135,17 +136,18 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int outW = inW * size;
 
         INDArray output = Nd4j.createUninitialized(miniBatch * inDepth * outH * outW);
+        INDArray reshapedOutput = output.reshape('c', miniBatch, inDepth, outH, outW);
 
         CustomOp op = DynamicCustomOp.builder("upsampling")
                 .setIntegerArguments(size)
                 .setInputs(input)
-                .setOutputs(output)
+                .setOutputs(reshapedOutput)
                 .callInplace(false)
                 .build();
 
         Nd4j.getExecutioner().exec(op);
 
-        return output.reshape('c', miniBatch, inDepth, outH, outW);
+        return reshapedOutput;
     }
 
     @Override
