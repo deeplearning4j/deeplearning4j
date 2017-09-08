@@ -2,7 +2,6 @@ package org.deeplearning4j.spark.ml.impl
 
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.Identifiable
-import org.apache.spark.ml.linalg.{Vector, Vectors}
 import org.apache.spark.sql.functions.{col, udf}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Dataset, Row}
@@ -10,7 +9,6 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.spark.ml.utils._
 import org.nd4j.linalg.factory.Nd4j
-import org.apache.spark.ml.linalg.SQLDataTypes.VectorType
 
 
 class AutoEncoder(uid: String) extends AutoEncoderWrapper[AutoEncoder, AutoEncoderModel](uid){

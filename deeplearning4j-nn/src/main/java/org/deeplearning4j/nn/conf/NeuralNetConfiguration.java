@@ -47,7 +47,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.databind.*;
 import org.nd4j.shade.jackson.databind.deser.BeanDeserializerModifier;
 import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
@@ -591,8 +590,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected boolean minimize = true;
         protected GradientNormalization gradientNormalization = GradientNormalization.None;
         protected double gradientNormalizationThreshold = 1.0;
-        protected ISchedule learningRateSchedule;
-        protected ISchedule biasLearningRateSchedule;
         protected boolean pretrain = false;
         protected List<LayerConstraint> allParamConstraints;
         protected List<LayerConstraint> weightConstraints;
@@ -721,9 +718,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * Usage:<br>
          * <pre>
          * {@code .list()
-         * .layer(0,new DenseLayer.Builder()...build())
+         * .layer(new DenseLayer.Builder()...build())
          * ...
-         * .layer(n,new OutputLayer.Builder()...build())
+         * .layer(new OutputLayer.Builder()...build())
          * }
          * </pre>
          */
@@ -765,19 +762,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Number of optimization iterations.
+         * Number of optimization iterations. Should be set to 1 for >99% of use cases (possible exception:
+         * very tiny full batch dataset training)
          */
         public Builder iterations(int numIterations) {
             this.numIterations = numIterations;
-            return this;
-        }
-
-        /**
-         * Random number generator seed. Used for reproducability between runs
-         */
-        public Builder seed(int seed) {
-            this.seed = (long) seed;
-            Nd4j.getRandom().setSeed(seed);
             return this;
         }
 
@@ -814,20 +803,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             } catch (CloneNotSupportedException e) {
                 throw new RuntimeException(e);
             }
-        }
-
-        /**
-         * Activation function / neuron non-linearity
-         * Typical values include:<br>
-         * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
-         * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
-         *
-         * @deprecated Use {@link #activation(Activation)} or
-         * {@link @activation(IActivation)}
-         */
-        @Deprecated
-        public Builder activation(String activationFunction) {
-            return activation(Activation.fromString(activationFunction).getActivationFunction());
         }
 
         /**
@@ -873,11 +848,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public Builder dist(Distribution dist) {
             this.dist = dist;
-            return this;
-        }
-
-        public Builder learningRateSchedule(ISchedule learningRateSchedule){
-            this.learningRateSchedule = learningRateSchedule;
             return this;
         }
 
@@ -932,16 +902,30 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * </p>
          *
          * @param inputRetainProbability Dropout probability (probability of retaining each input activation value for a layer)
+         * @see #dropOut(IDropout)
          */
         public Builder dropOut(double inputRetainProbability) {
             return dropOut(new Dropout(inputRetainProbability));
         }
 
+        /**
+         * Set the dropout for all layers in this network
+         *
+         * @param dropout Dropout, such as {@link Dropout}, {@link org.deeplearning4j.nn.conf.dropout.GaussianDropout},
+         *                {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise} etc
+         * @return
+         */
         public Builder dropOut(IDropout dropout){
             this.idropOut = dropout;
             return this;
         }
 
+        /**
+         * Set the weight noise (such as {@link org.deeplearning4j.nn.conf.weightnoise.DropConnect} and
+         * {@link org.deeplearning4j.nn.conf.weightnoise.WeightNoise}) for the layers in this network.
+         *
+         * @param weightNoise Weight noise instance to use
+         */
         public Builder weightNoise(IWeightNoise weightNoise){
             this.weightNoise = weightNoise;
             return this;
@@ -957,7 +941,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Gradient updater. For example, {@link org.nd4j.linalg.learning.config.Adam}
+         * Gradient updater configuration. For example, {@link org.nd4j.linalg.learning.config.Adam}
          * or {@link org.nd4j.linalg.learning.config.Nesterovs}
          *
          * @param updater Updater to use
@@ -967,6 +951,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /**
+         * Gradient updater configuration, for the biases only. If not set, biases will use the updater as
+         * set by {@link #updater(IUpdater)}
+         *
+         * @param updater Updater to use for bias parameters
+         */
         public Builder biasUpdater(IUpdater updater){
             this.biasUpdater = updater;
             return this;
@@ -974,6 +964,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /**
          * Gradient normalization strategy. Used to specify gradient renormalization, gradient clipping etc.
+         * See {@link GradientNormalization} for details
          *
          * @param gradientNormalization Type of normalization to use. Defaults to None.
          * @see GradientNormalization

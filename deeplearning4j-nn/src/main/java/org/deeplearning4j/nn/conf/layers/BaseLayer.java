@@ -122,20 +122,14 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         protected WeightInit weightInit = null;
         protected double biasInit = Double.NaN;
         protected Distribution dist = null;
-        @Deprecated
-        protected Map<Integer, Double> learningRateSchedule = null;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
         protected double l1Bias = Double.NaN;
         protected double l2Bias = Double.NaN;
-        @Deprecated
-        protected Updater updater = null;
         protected IUpdater iupdater = null;
         protected IUpdater biasUpdater = null;
         protected GradientNormalization gradientNormalization = null;
         protected double gradientNormalizationThreshold = Double.NaN;
-        @Deprecated
-        protected LearningRatePolicy learningRatePolicy = null;
         protected IWeightNoise weightNoise;
 
         /**
@@ -242,6 +236,12 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
             return (T) this;
         }
 
+        /**
+         * Gradient updater configuration, for the biases only. If not set, biases will use the updater as
+         * set by {@link #updater(IUpdater)}
+         *
+         * @param biasUpdater Updater to use for bias parameters
+         */
         public T biasUpdater(IUpdater biasUpdater){
             this.biasUpdater = biasUpdater;
             return (T) this;
@@ -270,18 +270,11 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         }
 
         /**
-         * Learning rate decay policy. Used to adapt learning rate based on policy.
+         * Set the weight noise (such as {@link org.deeplearning4j.nn.conf.weightnoise.DropConnect} and
+         * {@link org.deeplearning4j.nn.conf.weightnoise.WeightNoise}) for this layer
          *
-         * @param policy Type of policy to use. Defaults to None.
-         * @see GradientNormalization
+         * @param weightNoise Weight noise instance to use
          */
-        @Deprecated
-        public T learningRateDecayPolicy(LearningRatePolicy policy) {
-            this.learningRatePolicy = policy;
-            return (T) this;
-        }
-
-
         public T weightNoise(IWeightNoise weightNoise){
             this.weightNoise = weightNoise;
             return (T)this;

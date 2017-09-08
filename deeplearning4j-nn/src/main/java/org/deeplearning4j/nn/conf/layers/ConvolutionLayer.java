@@ -444,18 +444,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         /**
-         * Learning rate decay policy. Used to adapt learning rate based on policy.
-         *
-         * @param policy Type of policy to use. Defaults to None.
-         * @see GradientNormalization
-         */
-        @Override
-        public Builder learningRateDecayPolicy(LearningRatePolicy policy) {
-            super.learningRateDecayPolicy(policy);
-            return this;
-        }
-
-        /**
          * Size of the convolution
          * rows/columns
          * @param kernelSize the height and width of the

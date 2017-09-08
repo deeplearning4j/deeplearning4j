@@ -278,6 +278,16 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return params;
     }
 
+    /**
+     * Get the parameter, after applying any weight noise (such as DropConnect) if necessary.
+     * Note that during training, this will store the post-noise parameters, as these should be used
+     * for both forward pass and backprop, for a single iteration.
+     * Consequently, the parameters (post noise) should be cleared after each training iteration
+     *
+     * @param param    Parameter key
+     * @param training If true: during training
+     * @return The parameter, after applying any noise
+     */
     protected INDArray getParamWithNoise(String param, boolean training){
         INDArray p;
         if(layerConf().getWeightNoise() != null){

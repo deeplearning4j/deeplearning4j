@@ -171,6 +171,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      *
      * @return the transposed layer
      */
+    @Deprecated
     Layer transpose();
 
     /**
@@ -206,12 +207,24 @@ public interface Layer extends Serializable, Cloneable, Model {
      */
     int getIndex();
 
+    /**
+     * @return The current iteration count (number of parameter updates) for the layer/network
+     */
     int getIterationCount();
 
+    /**
+     * @return The current epoch count (number of training epochs passed) for the layer/network
+     */
     int getEpochCount();
 
+    /**
+     * Set the current iteration count (number of parameter updates) for the layer/network
+     */
     void setIterationCount(int iterationCount);
 
+    /**
+     * Set the current epoch count (number of epochs passed ) for the layer/network
+     */
     void setEpochCount(int epochCount);
 
     /**
@@ -247,6 +260,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @return true if the layer can be pretrained (using fit(INDArray), false otherwise
      */
     boolean isPretrainLayer();
+
 
     void clearNoiseWeightParams();
 

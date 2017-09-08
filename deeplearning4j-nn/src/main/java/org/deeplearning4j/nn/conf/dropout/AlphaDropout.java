@@ -51,10 +51,17 @@ public class AlphaDropout implements IDropout {
     private double a;
     private double b;
 
+    /**
+     * @param activationRetainProbability Probability of retaining an activation. See {@link AlphaDropout} javadoc
+     */
     public AlphaDropout(double activationRetainProbability){
         this(activationRetainProbability, null, DEFAULT_ALPHA, DEFAULT_LAMBDA);
     }
 
+    /**
+     * @param activationRetainProbabilitySchedule Schedule for the probability of retaining an activation. See
+     *  {@link AlphaDropout} javadoc
+     */
     public AlphaDropout(@NonNull ISchedule activationRetainProbabilitySchedule){
         this(Double.NaN, activationRetainProbabilitySchedule, DEFAULT_ALPHA, DEFAULT_LAMBDA);
     }

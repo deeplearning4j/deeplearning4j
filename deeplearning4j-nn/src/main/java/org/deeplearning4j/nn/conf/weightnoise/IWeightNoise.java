@@ -19,6 +19,16 @@ import java.io.Serializable;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface IWeightNoise extends Serializable, Cloneable{
 
+    /**
+     * Get the parameter, after applying weight noise
+     *
+     * @param layer     Layer to get the parameter for
+     * @param paramKey  Parameter key
+     * @param iteration Iteration number
+     * @param epoch     Epoch number
+     * @param train     If true: training. False: at test time
+     * @return          Parameter, after applying weight noise
+     */
     INDArray getParameter(Layer layer, String paramKey, int iteration, int epoch, boolean train);
 
     IWeightNoise clone();

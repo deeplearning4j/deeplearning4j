@@ -11,6 +11,15 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+/**
+ * Apply noise of the specified distribution to the weights at training time.
+ * Note that both additive and multiplicative modes are supported - when additive, noise should be mean 0,
+ * when multiplicative, noise should be mean 1.
+ * That is, additive noise: x = x + noise<br>
+ * multiplicative noise: x = x * noise
+ *
+ * @author Alex Black
+ */
 @Data
 public class WeightNoise implements IWeightNoise {
 
@@ -18,14 +27,26 @@ public class WeightNoise implements IWeightNoise {
     private boolean applyToBias;
     private boolean additive;
 
+    /**
+     * @param distribution Distribution for additive noise
+     */
     public WeightNoise(Distribution distribution) {
         this(distribution, false, true);
     }
 
+    /**
+     * @param distribution Distribution for noise
+     * @param additive     If true: noise is added to weights. If false: noise is multiplied by weights
+     */
     public WeightNoise(Distribution distribution, boolean additive) {
         this(distribution, false, additive);
     }
 
+    /**
+     * @param distribution Distribution for noise
+     * @param applyToBias  If true: apply to biases also. If false (default): apply only to weights
+     * @param additive     If true: noise is added to weights. If false: noise is multiplied by weights
+     */
     public WeightNoise(@JsonProperty("distribution") Distribution distribution,
                        @JsonProperty("applyToBias") boolean applyToBias,
                        @JsonProperty("additive") boolean additive) {

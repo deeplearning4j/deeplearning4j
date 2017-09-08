@@ -9,7 +9,12 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-
+/**
+ * DropConnect, based on Wan et. al 2013 - "Regularization of Neural Networks using DropConnect"<br>
+ * Sets weights randomly to 0 with some probability, or leaves them unchanged.
+ *
+ * @author Alex Black
+ */
 @Data
 public class DropConnect implements IWeightNoise {
 
@@ -17,18 +22,32 @@ public class DropConnect implements IWeightNoise {
     private ISchedule weightRetainProbSchedule;
     private boolean applyToBiases;
 
+    /**
+     * @param weightRetainProbability Probability of retaining a weight
+     */
     public DropConnect(double weightRetainProbability) {
         this(weightRetainProbability, false);
     }
 
+    /**
+     * @param weightRetainProbability Probability of retaining a weight
+     * @param applyToBiases If true: apply to biases (default: weights only)
+     */
     public DropConnect(double weightRetainProbability, boolean applyToBiases) {
         this(weightRetainProbability, null, applyToBiases);
     }
 
+    /**
+     * @param weightRetainProbSchedule Probability (schedule) of retaining a weight
+     */
     public DropConnect(ISchedule weightRetainProbSchedule){
         this(Double.NaN, weightRetainProbSchedule, false);
     }
 
+    /**
+     * @param weightRetainProbSchedule Probability (schedule) of retaining a weight
+     * @param applyToBiases If true: apply to biases (default: weights only)
+     */
     public DropConnect(ISchedule weightRetainProbSchedule, boolean applyToBiases){
         this(Double.NaN, weightRetainProbSchedule, applyToBiases);
     }

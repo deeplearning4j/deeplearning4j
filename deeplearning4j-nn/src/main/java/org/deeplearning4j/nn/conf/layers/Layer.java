@@ -84,6 +84,9 @@ public abstract class Layer implements Serializable, Cloneable {
         this.iDropout = builder.iDropout;
     }
 
+    /**
+     * Initialize the weight constraints. Should be called last, in the outer-most constructor
+     */
     protected void initializeConstraints(Builder<?> builder){
         //Note: this has to be done AFTER all constructors have finished - otherwise the required
         // fields may not yet be set yet
@@ -139,6 +142,9 @@ public abstract class Layer implements Serializable, Cloneable {
                     Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
                     boolean initializeParams);
 
+    /**
+     * @return The parameter initializer for this model
+     */
     public abstract ParamInitializer initializer();
 
     /**
@@ -262,11 +268,18 @@ public abstract class Layer implements Serializable, Cloneable {
          * </p>
          *
          * @param inputRetainProbability Dropout probability (probability of retaining each input activation value for a layer)
+         * @see #dropOut(IDropout)
          */
         public T dropOut(double inputRetainProbability) {
             return dropOut(new Dropout(inputRetainProbability));
         }
 
+        /**
+         * Set the dropout for all layers in this network
+         *
+         * @param dropout Dropout, such as {@link Dropout}, {@link org.deeplearning4j.nn.conf.dropout.GaussianDropout},
+         *                {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise} etc
+         */
         public T dropOut(IDropout dropout){
             this.iDropout = dropout;
             return (T)this;
