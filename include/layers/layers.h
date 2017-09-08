@@ -188,7 +188,9 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
     int M, N, K, lda, ldb, ldc;
     char transA, transB;
 
-    NDArray<T> *_A, *_B, *_C;
+    NDArray<T>* _A;
+    NDArray<T>* _B;
+    NDArray<T>* _C;
 
     //_C = new NDArray<T>(C, cShapeInfo);
 
