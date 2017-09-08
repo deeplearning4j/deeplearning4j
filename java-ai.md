@@ -37,7 +37,7 @@ An expert system is also called a rules-based system. The rules are typically if
 
 ### SMILE
 
-[SMILE](https://github.com/haifengl/smile) is the statistical and machine intelligence learning engine. 
+[SMILE](https://github.com/haifengl/smile) stands for Statistical and Machine Intelligence Learning Engine. SMILE was create by Haifeng Lee of ADP, and provides fast, scalable machine learning for Java. 
 
 ### SINGA
 
