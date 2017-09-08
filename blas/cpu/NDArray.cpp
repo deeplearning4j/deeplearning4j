@@ -709,6 +709,7 @@ T& NDArray<T>::operator()(const int i, const int j) {
     return _buffer[xOffset];
 }
 
+
 // This method adds given row to all rows in this NDArray, that is this array becomes affected
     template<typename T>
     void NDArray<T>::addiRowVector(const NDArray<T> *row) {
@@ -1250,7 +1251,6 @@ NDArray<T>* NDArray<T>::broadcast(const NDArray<T>& other) {
 
 	return ret;
 }
-
 
 
 //////////////////////////////////////////////////////////////////////////
