@@ -2,6 +2,7 @@ package org.nd4j.linalg.lossfunctions.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.primitives.Pair;
@@ -31,7 +32,7 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
  */
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Getter
+@Getter @Setter
 public class LossBinaryXENT implements ILossFunction {
     public static final double DEFAULT_CLIPPING_EPSILON = 1e-10;
 
