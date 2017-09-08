@@ -7,6 +7,7 @@ import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,15 +24,15 @@ public class RRMDSIFunction implements Function<DataVecRecords, MultiDataSet> {
 
 
 
-        Map<String, List<List<Writable>>> nextRRVals = null;
-        Map<String, List<List<List<Writable>>>> nextSeqRRVals = null;
+        Map<String, List<List<Writable>>> nextRRVals = Collections.emptyMap();
+        Map<String, List<List<List<Writable>>>> nextSeqRRVals = Collections.emptyMap();
 
         if(records.getRecords() != null && records.getRecords().size() > 0){
             nextRRVals = new HashMap<>();
 
             Map<String, RecordReader> m = iterator.getRecordReaders();
             for(Map.Entry<String,RecordReader> e : m.entrySet()){
-                SparkSourceDummyReader dr = (SparkSourceDummyReader)e;
+                SparkSourceDummyReader dr = (SparkSourceDummyReader)e.getValue();
                 int idx = dr.getReaderIdx();
                 nextRRVals.put(e.getKey(), Collections.singletonList(records.getRecords().get(idx)));
             }
@@ -42,12 +43,16 @@ public class RRMDSIFunction implements Function<DataVecRecords, MultiDataSet> {
 
             Map<String, SequenceRecordReader> m = iterator.getSequenceRecordReaders();
             for(Map.Entry<String,SequenceRecordReader> e : m.entrySet()){
-                SparkSourceDummySeqReader dr = (SparkSourceDummySeqReader)e;
+                SparkSourceDummySeqReader dr = (SparkSourceDummySeqReader)e.getValue();
                 int idx = dr.getReaderIdx();
                 nextSeqRRVals.put(e.getKey(), Collections.singletonList(records.getSeqRecords().get(idx)));
             }
         }
 
-        return iterator.nextMultiDataSet(nextRRVals, null, nextSeqRRVals, null);
+
+        MultiDataSet mds = iterator.nextMultiDataSet(nextRRVals, null, nextSeqRRVals, null);
+        Nd4j.getExecutioner().commit();
+
+        return mds;
     }
 }

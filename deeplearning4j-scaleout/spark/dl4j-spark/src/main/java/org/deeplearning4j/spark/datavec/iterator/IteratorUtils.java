@@ -15,8 +15,8 @@ import java.util.Map;
 public class IteratorUtils {
 
 
-    public JavaRDD<MultiDataSet> mapRRMDSI(JavaRDD<List<Writable>> rdd, RecordReaderMultiDataSetIterator iterator){
-        return mapRRMDIRecords(rdd.map(new Function<List<Writable>,DataVecRecords>(){
+    public static JavaRDD<MultiDataSet> mapRRMDSI(JavaRDD<List<Writable>> rdd, RecordReaderMultiDataSetIterator iterator){
+        return mapRRMDSIRecords(rdd.map(new Function<List<Writable>,DataVecRecords>(){
             @Override
             public DataVecRecords call(List<Writable> v1) throws Exception {
                 return new DataVecRecords(null, Collections.singletonList(v1), null);
@@ -25,7 +25,7 @@ public class IteratorUtils {
     }
 
 
-    public JavaRDD<MultiDataSet> mapRRMDIRecords(JavaRDD<DataVecRecords> rdd, RecordReaderMultiDataSetIterator iterator){
+    public static JavaRDD<MultiDataSet> mapRRMDSIRecords(JavaRDD<DataVecRecords> rdd, RecordReaderMultiDataSetIterator iterator){
         checkIterator(iterator, 1, 0);
         return rdd.map(new RRMDSIFunction(iterator));
     }
@@ -46,7 +46,7 @@ public class IteratorUtils {
 
         if(rrs != null && rrs.size() > 0){
             for(Map.Entry<String,RecordReader> e : rrs.entrySet()){
-                if(!(e instanceof SparkSourceDummyReader)){
+                if(!(e.getValue() instanceof SparkSourceDummyReader)){
                     throw new IllegalStateException(e.getKey());
                 }
             }
@@ -54,7 +54,7 @@ public class IteratorUtils {
 
         if(seqRRs != null && seqRRs.size() > 0){
             for(Map.Entry<String,SequenceRecordReader> e : seqRRs.entrySet()){
-                if(!(e instanceof SparkSourceDummySeqReader)){
+                if(!(e.getValue() instanceof SparkSourceDummySeqReader)){
                     throw new IllegalStateException(e.getKey());
                 }
             }
