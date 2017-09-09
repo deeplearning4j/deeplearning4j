@@ -25,15 +25,12 @@ namespace nd4j {
             Nd4jIndex _length;
             int _dimension = 0;
 
-            // basic checks are happening here
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
             // we want to ensure that all
             NDArray<T> *first = block.getVariables().at(0)->getNDArray();
 
             std::unique_ptr<int> shapePtr(new int[first->_shapeInfo[0] * 2 + 4]);
 
-            std::memcpy(shapePtr.get(), first->_shapeInfo, (first->_shapeInfo[0] * 2 + 4) * sizeof(int));
+            std::memcpy(shapePtr.get(), first->_shapeInfo, shape::shapeInfoByteLength(first->_shapeInfo));
             _length = shape::length(shapePtr.get());
 
             std::unique_ptr<Nd4jPointer> buffers(new Nd4jPointer[block.getVariables().size()]);
@@ -69,7 +66,6 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_OP(biasAdd, 2, 1, true) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
             REQUIRE_OK(this->validateInput2D(block));
 
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -89,8 +85,6 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_OP(matMul, 2, 1, false) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
             // FIXME: we might want to have gemv/dot fallback here
             REQUIRE_OK(this->validateInput2D(block));
 
@@ -177,8 +171,6 @@ namespace nd4j {
          * TArgs[1] - max for rng
          */
         DECLARE_CONFIGURABLE_OP(randomuniform, 1, 1, true, 2, 0) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
             // uniform distribution
             auto rng = block.getRNG();
 
@@ -202,8 +194,6 @@ namespace nd4j {
 
 
         DECLARE_OP(floor, 1, 1, true) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
             NDArray<T> *first = block.getVariables().at(0)->getNDArray();
             auto z = this->getZ(block);
 
@@ -252,8 +242,6 @@ namespace nd4j {
          * IArgs[1]... axes values for second array
          */
         DECLARE_CONFIGURABLE_OP(tensormmul, 2, 1, false, 0, -1) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
             NDArray<T> *a = block.getVariables().at(0)->getNDArray();
             NDArray<T> *b = block.getVariables().at(1)->getNDArray();
 
@@ -365,8 +353,6 @@ namespace nd4j {
 
         // test op, non-divergent
         DECLARE_OP(testop2i2o, 2, 2, true) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
 
@@ -382,7 +368,6 @@ namespace nd4j {
 
 
         DECLARE_OP(assign, 2, 1, false) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
             REQUIRE_OK(this->validateInputLengthMatch(block));
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
@@ -400,7 +385,6 @@ namespace nd4j {
 
 
         DECLARE_OP(mergemax, -1, 1, false) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
             Nd4jIndex numArgs = block.getVariables().size();
@@ -427,7 +411,6 @@ namespace nd4j {
         DECLARE_SYN(MergeMax, mergemax);
 
         DECLARE_OP(mergemaxindex, -1, 1, false) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
             Nd4jIndex numArgs = block.getVariables().size();
@@ -457,7 +440,6 @@ namespace nd4j {
         DECLARE_SYN(MergeMaxIndex, mergemaxindex);
 
         DECLARE_OP(mergeadd, -1, 1, false) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
             Nd4jIndex numArgs = block.getVariables().size();
@@ -483,7 +465,6 @@ namespace nd4j {
         DECLARE_SYN(mergesum, mergeadd);
 
         DECLARE_OP(mergeavg, -1, 1, false) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
             Nd4jIndex numArgs = block.getVariables().size();
@@ -508,8 +489,6 @@ namespace nd4j {
         }
 
         DECLARE_CONFIGURABLE_OP(clipbyvalue, 1, 1, true, 2, 0) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
             NDArray<T>* input = block.getVariables().at(0)->getNDArray();
             NDArray<T>* output = this->getZ(block);
 
@@ -526,8 +505,6 @@ namespace nd4j {
          * IArgs[0] - scale factor
          */
         DECLARE_CONFIGURABLE_OP(upsampling, 1, 1, false, 0, 1) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
             NDArray<T>* input = block.getVariables().at(0)->getNDArray();
             NDArray<T>* output = this->getZ(block);
             int scale_factor = block.getIArguments()->at(0);
@@ -599,8 +576,6 @@ namespace nd4j {
          * IArgs[0] - scale factor
          */
         DECLARE_CONFIGURABLE_OP(upsampling_bp, 2, 1, false, 0, 1) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
             NDArray<T>* input = block.getVariables().at(0)->getNDArray();
             NDArray<T>* gradientNext = block.getVariables().at(1)->getNDArray();
             NDArray<T>* output = this->getZ(block);
@@ -689,8 +664,6 @@ namespace nd4j {
          * @tparam T
          */
         DECLARE_CONFIGURABLE_OP(scatter_update, 2, 1, true, 0, -1) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
             NDArray<T> *operand = block.getVariables().at(0)->getNDArray();
             NDArray<T> *updates = block.getVariables().at(1)->getNDArray();
             NDArray<T> *z = this->getZ(block);
@@ -757,8 +730,6 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_CONFIGURABLE_OP(relu, 1, 1, true, 1, 0) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
             NDArray<T> *first = block.getVariables().at(0)->getNDArray();
             auto z = this->getZ(block);
 
@@ -772,8 +743,6 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_OP(identity, 1, 1, true) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
             NDArray<T> *first = block.getVariables().at(0)->getNDArray();
             auto z = this->getZ(block);
 
@@ -786,8 +755,6 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////		
 		DECLARE_OP(add, 2, 1, true) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));            
-
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
             NDArray<T> *z = this->getZ(block);
@@ -814,8 +781,6 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
 		DECLARE_OP(subtract, 2, 1, true) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));            
-
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
             NDArray<T> *z = this->getZ(block);
@@ -844,8 +809,6 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////		
 		DECLARE_OP(reverseSubtract, 2, 1, true) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));            
-
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
             NDArray<T> *z = this->getZ(block);
@@ -873,8 +836,6 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////		
 		DECLARE_OP(multiply, 2, 1, true) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));            
-
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
             NDArray<T> *z = this->getZ(block);
@@ -903,8 +864,6 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////		
 		DECLARE_OP(divide, 2, 1, true) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));            
-
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
             NDArray<T> *z = this->getZ(block);
@@ -932,8 +891,6 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////				
 		DECLARE_OP(reverseDivide, 2, 1, true) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));            
-
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
             NDArray<T> *z = this->getZ(block);
@@ -962,8 +919,6 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
 		DECLARE_OP(reshapeas, 2, 1, true) {
-            REQUIRE_OK(this->validateNonEmptyInput(block));
-
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();	
 			
@@ -982,7 +937,6 @@ namespace nd4j {
 		//////////////////////////////////////////////////////////////////////////
 		// here iArgs is vector with shape dimensions at the beginning and last element in iArgs is order
 		DECLARE_CONFIGURABLE_OP(reshape, 1, 1, true, 0, -1) {
-			REQUIRE_OK(this->validateNonEmptyInput(block));			
 			std::vector<int>* argumets = block.getIArguments();
 			int argsSize = argumets->size();
 			char order = (*argumets)[argsSize-1];
@@ -1009,8 +963,6 @@ namespace nd4j {
 		//////////////////////////////////////////////////////////////////////////
 		// here iArgs is int vector of repeats at the beginning and last element in iArgs is dimension
 		DECLARE_CONFIGURABLE_OP(repeat, 1, 1, true, 0, -1) {
-			REQUIRE_OK(this->validateNonEmptyInput(block));			
-			
 			std::vector<int>* argumets = block.getIArguments();
 			int argsSize = argumets->size();
 			int dimension = (*argumets)[argsSize-1];
@@ -1025,9 +977,7 @@ namespace nd4j {
         }
 		
 		//////////////////////////////////////////////////////////////////////////
-		DECLARE_CONFIGURABLE_OP(transpose, 1, 1, true, 0, -1) {
-			REQUIRE_OK(this->validateNonEmptyInput(block));			
-
+		DECLARE_OP(transpose, 1, 1, true) {
 			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
 			
 			if(block.isInplace()) {
@@ -1044,8 +994,6 @@ namespace nd4j {
 		//////////////////////////////////////////////////////////////////////////
 		// here iArgs is int vector of ordered set of dimensions to be permuted
 		DECLARE_CONFIGURABLE_OP(permute, 1, 1, true, 0, -1) {
-			REQUIRE_OK(this->validateNonEmptyInput(block));						
-			
 			std::vector<int>* argumets = block.getIArguments();								
 			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
 			

@@ -207,6 +207,18 @@ namespace nd4j {
     NDArray<T>* NDArrayFactory::repeat(NDArray<T> *original, std::vector<int> &repeats) {
         return nullptr;
     }
+
+    template<typename T>
+    NDArray<T>* NDArrayFactory::linspace(T from, T to, Nd4jIndex numElements) {
+        auto result = new NDArray<T>(numElements, 'c');
+
+        for (Nd4jIndex e = 0; e < numElements; e++) {
+            T step = (T) e / ((T) numElements - (T) 1.0f);
+            result->_buffer[e] = (from * ((T) 1.0f - step) + step * to);
+        }
+
+        return result;
+    }
 }
 
 #endif

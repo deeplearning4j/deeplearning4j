@@ -21,14 +21,16 @@ namespace nd4j {
     namespace ops {
 
         template<typename T>
-        void resultHelper(T status, const char *func, const char *file, int line) {
+        Nd4jStatus resultHelper(T status, const char *func, const char *file, int line) {
             if (status) {
                 //  TODO: fill out error codes here
                 fprintf(stderr, "Validation error at %s:%d code=%d(%s) \"%s\" \n", file, line,
                         static_cast<unsigned int>(status), "", func);
 
-                throw "Validation failed";
+                return ND4J_STATUS_BAD_INPUT;
             }
+
+            return ND4J_STATUS_OK;
         }
 
         template <typename T>
@@ -41,6 +43,7 @@ namespace nd4j {
              * This method executes this Op
              */
             virtual Nd4jStatus validateAndExecute(Block<T>& block) = 0;
+
 
             /**
              * This method ensures that target variable has enough space for op execution
@@ -113,6 +116,8 @@ namespace nd4j {
             Nd4jStatus validateInput3D(Block<T>& block);
             Nd4jStatus validateInput4D(Block<T>& block);
             Nd4jStatus validateInputDimensions(Block<T>& block, int rank);
+
+            Nd4jStatus validateArguments(Block<T>& block);
         };
 
 
@@ -451,7 +456,36 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(Block<T>* block) {
     else
         throw std::invalid_argument("Block is NULL");
 
+    REQUIRE_OK(this->validateNonEmptyInput(*block));
+    REQUIRE_OK(this->validateArguments(*block));
+
     return this->validateAndExecute(*block);
+}
+
+template <typename T>
+Nd4jStatus nd4j::ops::DeclarableOp<T>::validateArguments(Block<T>& block) {
+    /*
+     * We're checking number of T and I arguments. If number of args is finite number - we check strict equality
+     * If number of args is variable (-1), but variables MUST be present - we check for non-zero number of arguments
+     */
+    if (_descriptor->getNumberOfTArgs() > 0) {
+        if (block.getTArguments()->size() != _descriptor->getNumberOfTArgs())
+            return ND4J_STATUS_BAD_PARAMS;
+    } else
+        if (_descriptor->getNumberOfTArgs() == -1)
+            if (block.getTArguments()->size() == 0)
+                return ND4J_STATUS_BAD_PARAMS;
+
+    if (_descriptor->getNumberOfIArgs() > 0) {
+        if (block.getIArguments()->size() != _descriptor->getNumberOfIArgs())
+            return ND4J_STATUS_BAD_PARAMS;
+    } else
+        if (_descriptor->getNumberOfIArgs() == -1)
+            if (block.getIArguments()->size() == 0)
+                return ND4J_STATUS_BAD_PARAMS;
+
+
+    return ND4J_STATUS_OK;
 }
 
 template <typename T>
@@ -527,7 +561,7 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInputDimensionsMatch(Block<T>& bl
     NDArray<T> *a0 = block.getVariables().at(0)->getNDArray();
     for (auto v: block.getVariables()) {
         NDArray<T> *aV = v->getNDArray();
-        if (!shape::equalsSoft(a0->shapeOf(), aV->shapeOf()))
+        if (!shape::equalsSoft(a0->_shapeInfo, aV->_shapeInfo))
             return ND4J_STATUS_BAD_DIMENSIONS;
     }
 
