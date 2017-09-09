@@ -3,6 +3,7 @@ package org.nd4j.linalg.custom;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
@@ -10,7 +11,7 @@ import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * This class holds various CustomOps tests
@@ -186,6 +187,28 @@ public class CustomOpsTests {
         Nd4j.getExecutioner().exec(op);
 
         assertEquals(exp, z);
+    }
+
+    @Test
+    public void testMergeMax2() throws Exception {
+        INDArray array0 = Nd4j.linspace(1,10,10).reshape('f',5,2);
+        INDArray array1 = array0.dup().add(5);
+        array1.put(0,0,0);
+        //INDArray exp = Nd4j.ones(array0.shape());
+        INDArray exp = array0.dup();
+        exp.put(0,0,0);
+        INDArray z = Nd4j.zeros(array0.shape());
+
+        CustomOp op = DynamicCustomOp.builder("mergemax")
+                .setInputs(array0, array1)
+                .setOutputs(z)
+                .callInplace(false)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(exp, z);
+
     }
 
 
