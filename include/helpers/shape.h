@@ -4250,7 +4250,7 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         // we compare only shapes, and ignoring stride & ews
         int length = shapeA[0];
 
-        for (int e = 1; e < length; e++)
+        for (int e = 1; e <= length; e++)
             if (shapeA[e] != shapeB[e])
                 return false;
 
