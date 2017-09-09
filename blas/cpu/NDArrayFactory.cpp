@@ -101,9 +101,9 @@ namespace nd4j {
             int M, N, K, lda, ldb, ldc;
             char transA, transB;
 
-            NDArray<T>* _A;
-            NDArray<T>* _B;
-            NDArray<T>* _C;
+            NDArray<T>* _A = nullptr;
+            NDArray<T>* _B = nullptr;
+            NDArray<T>* _C = nullptr;;
 
             //_C = new NDArray<T>(C, cShapeInfo);
 
