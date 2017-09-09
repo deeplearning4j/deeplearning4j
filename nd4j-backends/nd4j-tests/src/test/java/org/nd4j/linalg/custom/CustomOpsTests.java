@@ -191,33 +191,42 @@ public class CustomOpsTests {
     @Test
     public void testMergeMaxF() throws Exception {
 
-        val array0 = Nd4j.rand('f',5,2).add(1); //some random array with +ve numbers
+        val array0 = Nd4j.rand('f', 5, 2).add(1); //some random array with +ve numbers
         val array1 = array0.dup().add(5);
-        array1.put(0,0,0); //array1 is always bigger than array0 except at 0,0
+        array1.put(0, 0, 0); //array1 is always bigger than array0 except at 0,0
 
         //expected value of maxmerge
         val exp = array1.dup();
-        exp.putScalar(0,0,array0.getDouble(0,0));
+        exp.putScalar(0, 0, array0.getDouble(0, 0));
 
-        val zC = Nd4j.zeros(array0.shape());
-        val zF = Nd4j.zeros(array0.shape(),'f');
-
-        CustomOp op;
-        op = DynamicCustomOp.builder("mergemax")
+        val zF = Nd4j.zeros(array0.shape(), 'f');
+        CustomOp op = DynamicCustomOp.builder("mergemax")
                 .setInputs(array0, array1)
                 .setOutputs(zF)
                 .callInplace(false)
                 .build();
         Nd4j.getExecutioner().exec(op);
         assertEquals(exp, zF);
+    }
 
-        op = DynamicCustomOp.builder("mergemax")
+    @Test
+    public void testMergeMaxMixedOrder() {
+        val array0 = Nd4j.rand(5, 2).add(1); //some random array with +ve numbers
+        val array1 = array0.dup().add(5);
+        array1.put(0, 0, 0); //array1 is always bigger than array0 except at 0,0
+
+        //expected value of maxmerge
+        val exp = array1.dup();
+        exp.putScalar(0, 0, array0.getDouble(0, 0));
+
+        val zF = Nd4j.zeros(array0.shape() ,'f');
+        CustomOp op = DynamicCustomOp.builder("mergemax")
                 .setInputs(array0, array1)
-                .setOutputs(zC)
+                .setOutputs(zF)
                 .callInplace(false)
                 .build();
         Nd4j.getExecutioner().exec(op);
-        assertEquals(exp, zC);
+        assertEquals(exp, zF);
 
     }
 
