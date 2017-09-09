@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -26,19 +25,24 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.Or;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.primitives.Pair;
 
 /** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
- * For example, the activations may be combined by addition, subtraction or multiplication.
- * Addition may use an arbitrary number of input arrays. Note that in the case of subtraction, only two inputs may be used.
+ * For example, the activations may be combined by addition, subtraction or multiplication or by selecting the maximum.
+ * Addition, Average, Product and Max may use an arbitrary number of input arrays. Note that in the case of subtraction, only two inputs may be used.
  * In all cases, the shape of the input arrays must be identical.
  * @author Alex Black
  */
 public class ElementWiseVertex extends BaseGraphVertex {
 
     public enum Op {
-        Add, Subtract, Product, Average
+        Add, Subtract, Product, Average, Max
     }
 
     private Op op;
@@ -96,8 +100,17 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     product.muli(inputs[i]);
                 }
                 return product;
+            case Max:
+                INDArray max = inputs[0].dup();
+                CustomOp op = DynamicCustomOp.builder("mergemax")
+                        .setInputs(inputs)
+                        .setOutputs(max)
+                        .callInplace(false)
+                        .build();
+                Nd4j.getExecutioner().exec(op);
+                return max;
             default:
-                throw new UnsupportedOperationException("Unknown op: " + op);
+                throw new UnsupportedOperationException("Unknown op: " + this.op);
         }
     }
 
@@ -136,8 +149,27 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     }
                 }
                 return new Pair<>(null, out_product);
+            case Max:
+                INDArray[] outMax = new INDArray[nInForwardPass];
+                INDArray maxIndices = inputs[0].dup();
+                CustomOp op = DynamicCustomOp.builder("mergemaxindex")
+                        .setInputs(inputs)
+                        .setOutputs(maxIndices)
+                        .callInplace(false)
+                        .build();
+                Nd4j.getExecutioner().exec(op);
+                for (int i = 0; i < nInForwardPass; i++) {
+                    //gradient is epsilon where the max index is the same as i and zero elsewhere
+                    outMax[i] = maxIndices.dup();
+                    //generate a mask with 1s and 0s in the right places
+                    Nd4j.getExecutioner().exec(new CompareAndSet(outMax[i], -1 , Conditions.notEquals(i)));
+                    Nd4j.getExecutioner().exec(new CompareAndSet(outMax[i], 1 , Conditions.notEquals(-1)));
+                    Nd4j.getExecutioner().exec(new CompareAndSet(outMax[i], 0 , Conditions.equals(-1)));
+                    outMax[i].muli(epsilon);
+                }
+                return new Pair<>(null, outMax);
             default:
-                throw new UnsupportedOperationException("Unknown op: " + op);
+                throw new UnsupportedOperationException("Unknown op: " + this.op);
         }
     }
 
