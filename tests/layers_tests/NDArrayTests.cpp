@@ -4,6 +4,7 @@
 
 #include "testlayers.h"
 #include <NDArrayFactory.h>
+#include <cpu/NDArrayFactory.cpp>
 
 //////////////////////////////////////////////////////////////////////
 class NDArrayTest : public testing::Test {
@@ -679,4 +680,25 @@ TEST_F(NDArrayTest, Broadcast1) {
 	NDArray<float>* result = arr1.broadcast(arr2);		
 	ASSERT_TRUE(result->isSameShapeStrict(&arr3));
 	delete result;
+}
+
+TEST_F(NDArrayTest, BroadcastOpsTest1) {
+
+    NDArray<float> x(5, 5, 'c');
+    auto row = nd4j::NDArrayFactory::linspace(1.0f, 5.0f, 5);
+    float *brow = new float[5]{1,2,3,4,5};
+    int *bshape = new int[8]{2, 1, 5, 1, 1, 0, 1, 99};
+    float *ebuf = new float[25] {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};
+    int *eshape = new int[8] {2, 5, 5, 5, 1, 0, 1, 99};
+    NDArray<float> expRow(brow, bshape);
+    NDArray<float> exp(ebuf, eshape);
+
+    ASSERT_TRUE(row->equalsTo(&expRow));
+
+
+    x.applyBroadcast<simdOps::Add<float>>({1}, row);
+
+    x.printBuffer("Result");
+
+    ASSERT_TRUE(x.equalsTo(&exp));
 }

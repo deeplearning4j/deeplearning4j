@@ -25,6 +25,9 @@ namespace nd4j {
 
         template<typename T>
         static NDArray<T>* mmulHelper(NDArray<T>* A, NDArray<T>* B, NDArray<T>* C = nullptr, T alpha = 1.0f, T beta = 0.0f);
+
+        template<typename T>
+        static NDArray<T>* linspace(T from, T to, Nd4jIndex numElements);
     };
 }
 

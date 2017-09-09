@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <memory>
 #include <helpers/logger.h>
-
+#include <loops/broadcasting.h>
 
 namespace nd4j {
 
@@ -1208,6 +1208,40 @@ template<typename T> NDArray<T>* NDArray<T>::tile(const std::vector<int>& reps) 
 
     return result;
 }
+
+
+    template<typename T>
+    template<typename OpName>
+    void NDArray<T>::applyBroadcast(std::initializer_list<int> dimensions, NDArray<T>* tadArray, NDArray<T>* target, T* extraArgs) {
+        std::vector<int> vec(dimensions);
+        applyBroadcast<OpName>(vec, tadArray, target, extraArgs);
+    }
+
+
+    template<typename T>
+    template<typename OpName>
+    void NDArray<T>::applyBroadcast(std::vector<int>& dimensions, NDArray<T>* tadArray, NDArray<T>* target, T* extraArgs) {
+        if (dimensions.size() == 0)
+            return;
+
+        std::vector<int> copy(dimensions);
+
+        if (dimensions.size() > 1)
+            std::sort(copy.begin(), copy.end());
+
+        Nd4jIndex tadLength = shape::tadLength(this->_shapeInfo, copy.data(), (int) copy.size());
+        if (tadLength != tadArray->lengthOf())
+            throw "Tad length mismatch";
+
+        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
+        tad.createTadOnlyShapeInfo();
+        tad.createOffsets();
+
+        NDArray<T>* result = target == nullptr ? this : target;
+
+        // TODO: eventually we want separate tads here
+        functions::broadcast::Broadcast<T>::template exec<OpName>(this->_buffer, this->_shapeInfo, tadArray->_buffer, tadArray->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int) copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
+    }
 
 //////////////////////////////////////////////////////////////////////////
 // return array which is broadcasted from this and argument array  

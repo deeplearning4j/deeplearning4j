@@ -180,6 +180,12 @@ namespace nd4j {
         void applyPairwiseTransform(NDArray<T> *other, NDArray<T> *target, T *extraParams);
 
         template<typename OpName>
+        void applyBroadcast(std::initializer_list<int> dimensions, NDArray<T>* tad, NDArray<T>* target = nullptr, T* extraArgs = nullptr);
+
+        template<typename OpName>
+        void applyBroadcast(std::vector<int>& dimensions, NDArray<T>* tad, NDArray<T>* target = nullptr, T* extraArgs = nullptr);
+
+        template<typename OpName>
         void applyScalar(T scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr);
 
         template<typename OpName>
