@@ -10,7 +10,7 @@ layout: cn-default
     <li><a href="#mnist-dataset">MNIST数据集</a></li>
     <li><a href="#configuring">配置MNIST示例</a></li>
     <li><a href="#building">搭建神经网络</a></li>
-    <li><a href="#training">模型定型</a></li>
+    <li><a href="#training">模型训练</a></li>
     <li><a href="#evaluating">结果评估</a></li>
     <li><a href="#conclusion">总结</a></li>
   </ol>
@@ -20,19 +20,19 @@ layout: cn-default
 <p><h2><a name="introduction">序言</a></h2></p>
 <br /><img class="img-responsive center-block" src="../img/mnist_render.png" alt="deeplearning4j"><br />
 <p>MNIST是一个手写数字图像的数据集，每幅图像都由一个整数标记。它主要用于机器学习算法的性能对标。深度学习算法处理MNIST的效果相当好，准确率可达到99.7%以上。</p>
-<p>我们将用MNIST来定型一个神经网络，使之能读取每幅图像并预测其中的数字。首先需要安装Deeplearning4j。</p>
+<p>我们将用MNIST来训练一个神经网络，使之能读取每幅图像并预测其中的数字。首先需要安装Deeplearning4j。</p>
 <br>
 
 <p><h2><a name="mnist-dataset">MNIST数据集</a></h2></p>
-<p>MNIST数据集包含一个有6万个样例的<strong>定型集</strong>和一个有1万个样例的<strong>测试集</strong>。定型集用于让算法学习如何准确地预测出图像的整数标签，而测试集则用于检查已定型网络的预测有多准确。</p>
-<p>这在机器学习领域中被称为<a href="https://en.wikipedia.org/wiki/Supervised_learning" target="_blank">有监督学习</a>，因为我们已经知道图像预测所应该得出的正确答案。定型集能起到监督和指导的作用，在神经网络预测错误时予以纠正。</p>
+<p>MNIST数据集包含一个有6万个样例的<strong>训练集</strong>和一个有1万个样例的<strong>测试集</strong>。训练集用于让算法学习如何准确地预测出图像的整数标签，而测试集则用于检查已训练网络的预测有多准确。</p>
+<p>这在机器学习领域中被称为<a href="https://en.wikipedia.org/wiki/Supervised_learning" target="_blank">有监督学习</a>，因为我们已经知道图像预测所应该得出的正确答案。训练集能起到监督和指导的作用，在神经网络预测错误时予以纠正。</p>
 <br>
 
 <p><h2><a name="configuring">配置MNIST示例</a></h2></p>
 <p>MNIST教程已经打包到Maven当中，所以无需再编写代码。请打开IntelliJ进行准备。（IntelliJ的下载方法请参见<a href="quickstart">快速入门指南</a>）</p>
 <p>打开名为<code>dl4j-examples</code>的文件夹。依次进入以下目录<kbd>src</kbd> → <kbd>main</kbd> → <kbd>java</kbd> → <kbd>feedforward</kbd> → <kbd>mnist</kbd>，打开名为<code>MLPMnistSingleLayerExample.java</code>的文件。</p>
 <br /><img class="img-responsive center-block" src="../img/mlp_mnist_single_layer_example_setup.png" alt="deeplearning4j"><br />
-<p>我们将在这个文件中配置神经网络，定型模型，评估结果。建议您结合其中的代码来学习本教程。</p>
+<p>我们将在这个文件中配置神经网络，训练模型，评估结果。建议您结合其中的代码来学习本教程。</p>
 <br>
 
 
@@ -42,12 +42,12 @@ final int numRows = 28; // 矩阵的行数。
     final int numColumns = 28; // 矩阵的列数。
     int outputNum = 10; // 潜在结果（比如0到9的整数标签）的数量。
     int batchSize = 128; // 每一步抓取的样例数量。
-    int rngSeed = 123; // 这个随机数生成器用一个随机种子来确保定型时使用的初始权重维持一致。下文将会说明这一点的重要性。
+    int rngSeed = 123; // 这个随机数生成器用一个随机种子来确保训练时使用的初始权重维持一致。下文将会说明这一点的重要性。
     int numEpochs = 15; // 一个epoch指将给定数据集全部处理一遍的周期。
 </code></pre>
 <p>在我们的示例中，每一幅MNIST图像的大小是28x28像素，这意味着输入数据是2 8 <b>numRows</b> x 28 <b>numColumns </b>的矩阵（矩阵是深度学习的基本数据结构）。其次，MNIST包含10种可能出现的结果（0到9的数字标签），即<b>o utputNum</b>。</p>
-<p><b>batchSize </b>和 <b>numEpochs</b>必须根据经验选择，而经验则需要通过实验来积累。每批次处理的数据越多，定型速度越快；epoch的数量越多，遍历数据集的次数越多，准确率就越高。</p>
-<p>但是，epoch的数量达到一定的大小之后，增益会开始减少，所以要在准确率与定型速度之间进行权衡。总的来说，需要进行实验才能发现最优的数值。本示例中设定了合理的默认值。</p>
+<p><b>batchSize </b>和 <b>numEpochs</b>必须根据经验选择，而经验则需要通过实验来积累。每批次处理的数据越多，训练速度越快；epoch的数量越多，遍历数据集的次数越多，准确率就越高。</p>
+<p>但是，epoch的数量达到一定的大小之后，增益会开始减少，所以要在准确率与训练速度之间进行权衡。总的来说，需要进行实验才能发现最优的数值。本示例中设定了合理的默认值。</p>
 <br>
 
 
@@ -56,7 +56,7 @@ final int numRows = 28; // 矩阵的行数。
 DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, rngSeed);
     DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, rngSeed);
 </code></pre>
-<p>我们用名为<code>DataSetIterator</code>的类来抓取MNIST中的数据，创建一个用于<b>模型定型</b>的数据集<code>mnistTrain</code>，和另一个用于在定型后<b>评估模型准确率</b>的数据集<code>mnistTest</code>。顺便一提，此处的模型是指神经网络的各种参数。这些参数是用来处理输入数据的系数，神经网络在学习过程中不断调整参数，直至能准确预测出每一幅图像的标签――此时就得到了一个比较准确的模型。</p>
+<p>我们用名为<code>DataSetIterator</code>的类来抓取MNIST中的数据，创建一个用于<b>模型训练</b>的数据集<code>mnistTrain</code>，和另一个用于在训练后<b>评估模型准确率</b>的数据集<code>mnistTest</code>。顺便一提，此处的模型是指神经网络的各种参数。这些参数是用来处理输入数据的系数，神经网络在学习过程中不断调整参数，直至能准确预测出每一幅图像的标签――此时就得到了一个比较准确的模型。</p>
 <br>
 
 <p><h2><a name="building">搭建神经网络</a></h2></p>
@@ -102,7 +102,7 @@ MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 <p>动量（momentum）是另一项决定优化算法向最优值收敛的速度的因素。动量影响权重调整的方向，所以在代码中，我们将其视为一种权重的更新器（<code>updater</code>）。</p>
 <br>
 <p><h4>.regularization(true).l2(1e-4)</h4></p>
-<p>正则化（regularization）是用来防止<strong>过拟合</strong>的一种方法。过拟合是指模型对定型数据的拟合非常好，然而一旦在实际应用中遇到从未出现过的数据，运行效果就变得很不理想。</p>
+<p>正则化（regularization）是用来防止<strong>过拟合</strong>的一种方法。过拟合是指模型对训练数据的拟合非常好，然而一旦在实际应用中遇到从未出现过的数据，运行效果就变得很不理想。</p>
 <p>我们用L2正则化来防止个别权重对总体结果产生过大的影响。</p>
 <br>
 <p><h4>.list()</h4></p>
@@ -134,8 +134,8 @@ MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 <p>之所以将中间的层称为&ldquo;隐藏&rdquo;层，是因为人们可以看到数据输入神经网络、判定结果输出，但网络内部的数据处理方式和原理并非一目了然。神经网络模型的参数其实就是包含许多数字、计算机可以读取的长向量。</p>
 <br>
 
-<p><h2><a name="training">模型定型</a></h2></p>
-<p>模型已经建立完毕，可以开始定型了。点击IntelliJ界面右上方的绿色箭头，运行上文给出的代码</p>
+<p><h2><a name="training">模型训练</a></h2></p>
+<p>模型已经建立完毕，可以开始训练了。点击IntelliJ界面右上方的绿色箭头，运行上文给出的代码</p>
 <br /><img class="img-responsive center-block" src="../img/mlp_mnist_single_layer_example_training.png" alt="deeplearning4j"><br />
 <p>运行过程需要几分钟时间，具体时长取决于您的硬件情况。</p>
 <br>

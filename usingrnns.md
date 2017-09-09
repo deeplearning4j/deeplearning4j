@@ -43,7 +43,7 @@ RnnOutputLayer is a type of layer used as the final layer with many recurrent ne
 
 Configuration for the RnnOutputLayer follows the same design other layers: for example, to set the third layer in a MultiLayerNetwork to a RnnOutputLayer for classification:
 
-    .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax")
+    .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX)
     .weightInit(WeightInit.XAVIER).nIn(prevLayerSize).nOut(nOut).build())
 
 Use of RnnOutputLayer in practice can be seen in the examples, linked at the end of this document.

@@ -16,11 +16,11 @@ Contents
 * [Code Sample & Comments](#code)
 * [Resources](#resources)
 
-The purpose of this post is to give students of neural networks an intuition about the functioning of recurrent networks and purpose and structure of a prominent variation, LSTMs.
+The purpose of this post is to give students of neural networks an intuition about the functioning of recurrent neural networks and purpose and structure of a prominent RNN variation, LSTMs.
 
 Recurrent nets are a type of artificial neural network designed to recognize patterns in sequences of data, such as text, genomes, handwriting, the spoken word, or numerical times series data emanating from sensors, stock markets and government agencies.
 
-They are arguably the most powerful type of neural network, applicable even to images, which can be decomposed into a series of patches and treated as a sequence. 
+They are arguably the most powerful and useful type of neural network, applicable even to images, which can be decomposed into a series of patches and treated as a sequence. 
 
 Since recurrent networks possess a certain type of memory, and memory is also part of the human condition, we'll make repeated analogies to memory in the brain.<sup>[1](#one)</sup>
 
@@ -30,27 +30,27 @@ Since recurrent networks possess a certain type of memory, and memory is also pa
 
 ## <a name="feedforward">Review of Feedforward Networks</a>
 
-To understand recurrent nets, first you have to understand the basics of [feedforward nets](./restrictedboltzmannmachine.html). Both of these networks are named after the way they channel information through a series of mathematical operations performed at the nodes of the network. One feeds information straight through (never touching a given node twice), the other cycles it through a loop.
+To understand recurrent nets, first you have to understand the basics of [feedforward nets](./restrictedboltzmannmachine.html). Both of these networks are named after the way they channel information through a series of mathematical operations performed at the nodes of the network. One feeds information straight straight through (never touching a given node twice), while the other cycles it through a loop, and the latter are called recurrent.
 
-In the case of feedforward networks, input examples are fed to the network and transformed into an output; with supervised learning, the output would be a label. That is, they map raw data to categories, recognizing patterns that signal, for example, that an input image should be labeled "cat" or "elephant." 
+In the case of feedforward networks, input examples are fed to the network and transformed into an output; with supervised learning, the output would be a label, a name applied to the input. That is, they map raw data to categories, recognizing patterns that signal, for example, that an input image should be labeled "cat" or "elephant." 
 
 ![Alt text](./img/feedforward_rumelhart.png)
 
-A feedforward network is trained on labeled images until it minimizes the error it makes when guessing their categories. With the trained set of parameters, or weights, the network sallies forth to categorize data is has never seen. A trained feedforward network can be exposed to any random collection of photographs, and the first photograph it is exposed to will not necessarily alter how it classifies the second. Seeing photograph of a cat will not lead the net to perceive an elephant next. 
+A feedforward network is trained on labeled images until it minimizes the error it makes when guessing their categories. With the trained set of parameters (or weights, collectively known as a model), the network sallies forth to categorize data it has never seen. A trained feedforward network can be exposed to any random collection of photographs, and the first photograph it is exposed to will not necessarily alter how it classifies the second. Seeing photograph of a cat will not lead the net to perceive an elephant next. 
 
-That is, it has no notion of order in time, and the only input it considers is the current example it has been exposed to. Feedforward networks are amnesiacs regarding their recent past; they remember nostalgically only the formative moments of training. 
+That is, a feedforward network has no notion of order in time, and the only input it considers is the current example it has been exposed to. Feedforward networks are amnesiacs regarding their recent past; they remember nostalgically only the formative moments of training. 
 
 ## <a name="recurrent">Recurrent Networks</a>
 
-Recurrent networks, on the other hand, take as their input not just the current input example they see, but also what they perceived one step back in time. Here's a diagram of an early, [simple recurrent net proposed by Elman](https://web.stanford.edu/group/pdplab/pdphandbook/handbookch8.html), where the *BTSXPE* at the bottom of the drawing represents the input example in the current moment, and *CONTEXT UNIT* represents the output of the previous moment. 
+Recurrent networks, on the other hand, take as their input not just the current input example they see, but also what they have perceived previously in time. Here's a diagram of an early, [simple recurrent net proposed by Elman](https://web.stanford.edu/group/pdplab/pdphandbook/handbookch8.html), where the *BTSXPE* at the bottom of the drawing represents the input example in the current moment, and *CONTEXT UNIT* represents the output of the previous moment. 
 
 ![Alt text](./img/srn_elman.png)
 
 The decision a recurrent net reached at time step `t-1` affects the decision it will reach one moment later at time step `t`. So recurrent networks have two sources of input, the present and the recent past, which combine to determine how they respond to new data, much as we do in life. 
 
-Recurrent networks are distinguished from feedforward networks by that feedback loop, ingesting their own outputs moment after moment as input. It is often said that recurrent networks have memory.<sup>[2](#two)</sup> Adding memory to neural networks has a purpose: There is information in the sequence itself, and recurrent nets use it to perform tasks that feedforward networks can't. 
+Recurrent networks are distinguished from feedforward networks by that feedback loop connected to their past decisions, ingesting their own outputs moment after moment as input. It is often said that recurrent networks have memory.<sup>[2](#two)</sup> Adding memory to neural networks has a purpose: There is information in the sequence itself, and recurrent nets use it to perform tasks that feedforward networks can't. 
 
-That sequential information is preserved in the recurrent network's hidden state, which manages to span many time steps as it cascades forward to affect the processing of each new example. 
+That sequential information is preserved in the recurrent network's hidden state, which manages to span many time steps as it cascades forward to affect the processing of each new example. It is finding correlations between events separated by many moments, and these correlations are called "long-term dependencies", because an event downstream in time depends upon, and is a function of, one or more events that came before.
 
 Just as human memory circulates invisibly within a body, affecting our behavior without revealing its full shape, information circulates in the hidden states of recurrent nets. The English language is full of words that describe the feedback loops of memory. When we say a person is haunted by their deeds, for example, we are simply talking about the consequences that past outputs wreak on present time. The French call this "*Le passé qui ne passe pas*," or "The past that does not pass away."
 

@@ -4,7 +4,7 @@ layout: cn-default
 redirect_from: /zh-compare-dl4j-torch7-pylearn
 ---
 <p><h1>DL4J与Torch、Theano、TensorFlow、Caffe、Paddle、MxNet、Keras 和 CNTK的比较</h1></p>
-<p>Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他项目相比，DL4J在编程语言和宗旨两方面都独具特色。DL4J是基于JVM、聚焦行业应用且提供商业支持的<strong>分布式深度学习框架</strong>，其宗旨是在合理的时间内解决各类涉及大量数据的问题。它与Hadoop和<a href="spark.html">Spark</a>集成，可使用任意数量的[GPU](./gpu)或[CPU](./native)运行，而且发生任何问题都可以[联系服务热线](http://www.skymind.io/contact)。DL4J是一种适用于各类平台的便携式学习库，并未同AWS、Azure或谷歌云等任何云端服务相捆绑。论速度，DL4J用多GPU运行非平凡图像处理任务时的[性能可媲美Caffe](https://github.com/deeplearning4j/dl4j-benchmark)，优于TensorFlow和Torch。如需对Deeplearning4j运行对标，请参阅[此页](https://deeplearning4j.org/benchmark)的指南，通过调整JVM的堆空间、垃圾回收算法、内存管理以及DL4J的ETL数据加工管道来优化DL4J的性能。 
+<p>Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他项目相比，DL4J在编程语言和宗旨两方面都独具特色。DL4J是基于JVM、聚焦行业应用且提供商业支持的<strong>分布式深度学习框架</strong>，其宗旨是在合理的时间内解决各类涉及大量数据的问题。它与Hadoop和<a href="spark.html">Spark</a>集成，可使用任意数量的[GPU](./gpu)或[CPU](./native)运行，而且发生任何问题都可以[联系服务热线](http://www.skymind.io/contact)。DL4J是一种适用于各类平台的便携式学习库，并未同AWS、Azure或谷歌云等任何云端服务相捆绑。论速度，DL4J用多GPU运行非平凡图像处理任务时的[性能可媲美Caffe](https://github.com/deeplearning4j/dl4j-benchmark)，优于TensorFlow和Torch。如需对Deeplearning4j运行基准测试，请参阅[此页](https://deeplearning4j.org/benchmark)的指南，通过调整JVM的堆空间、垃圾回收算法、内存管理以及DL4J的ETL数据加工管道来优化DL4J的性能。 
 </p>
 <br />
 <p><h2>目录</h2></p>
@@ -38,7 +38,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 
 <p><h2><a name="lua">Lua</a></h2></p>
 <p><h3><a name="torch">Torch 和 Pytorch</a></h3></p>
-<p><a href="http://torch.ch/" target="_blank"><strong>Torch</strong></a> 是用Lua编写的带API的计算框架，支持机器学习算法。Facebook和Twitter等大型科技公司使用Torch的某些版本，由内部团队专门负责定制自己的深度学习平台。Lua是上世纪九十年代早期在巴西开发的多范例脚本语言。</p>
+<p><a href="http://torch.ch/" target="_blank"><strong>Torch</strong></a> 是用Lua编写的带API的计算框架，支持机器学习算法。Facebook和Twitter等大型科技公司使用Torch的某些版本，由内部团队专门负责定制自己的深度学习平台。Lua是上世纪九十年代早期在巴西开发的多范式脚本语言。</p>
 <p>Torch7虽然功能强大，<a href="https://news.ycombinator.com/item?id=7929216" target="_blank">但其设计并不适合在两个群体中大范围普及</a>，即主要依赖Python的学术界，以及普遍使用Java的企业软件工程师。Deeplearning4j用Java编写，反映了我们对行业应用和使用便利的重视。我们认为可用性是阻碍深度学习实施工具广泛普及的限制因素。我们认为可扩展性应当通过 Hadoop 和 Spark 这样的开源分布式运行时系统来实现自动化。我们还认为，从确保工具正常运作和构建社区两方面来看，提供商业支持的开源框架是最恰当的解决方案。</p>
 <p>Facebook于2017年1月开放了Torch的Python API ― <a href="https://github.com/pytorch/pytorch" target="_blank">PyTorch</a>的源代码。PyTorch 支持动态计算图，让您能处理长度可变的输入和输出，而这在RNN应用和其他一些情形中很有帮助。CMU 的 DyNet 和 PFN 的 Chainer 框架也支持动态计算图。</p>
 <br>
@@ -47,10 +47,10 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <span class="label label-success">+</span> 大量模块化组件，容易组合 <br />
 <span class="label label-success">+</span> 很容易编写自己的层类型并在GPU上运行 <br />
 <span class="label label-success">+</span> Lua - 大多数学习库的代码是Lua，比较易读 <br />
-<span class="label label-success">+</span> 有很多已预定型的模型！ <br />
+<span class="label label-success">+</span> 有很多已预训练的模型！ <br />
 <span class="label label-success">+</span> PyTorch <br />
 <span class="label label-danger">-</span> Lua <br />
-<span class="label label-danger">-</span> 通常需要自己编写定型代码（即插即用相对较少） <br />
+<span class="label label-danger">-</span> 通常需要自己编写训练代码（即插即用相对较少） <br />
 <span class="label label-danger">-</span> 不提供商业支持 <br />
 <span class="label label-danger">-</span> 文档质量参差不齐 <br />
 <br />
@@ -70,7 +70,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <span class="label label-danger">-</span> 错误信息可能没有帮助 <br />
 <span class="label label-danger">-</span> 大型模型的编译时间可能较长 <br />
 <span class="label label-danger">-</span> 比Torch笨重许多 <br />
-<span class="label label-danger">-</span> 对已预定型模型的支持不够完善 <br />
+<span class="label label-danger">-</span> 对已预训练模型的支持不够完善 <br />
 <span class="label label-danger">-</span> 在AWS上容易出现bug <br />
 <span class="label label-danger">-</span> 只支持单个GPU <br />
 <br />
@@ -98,20 +98,20 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <span class="label label-danger">-</span> 速度比其他框架慢 <br />
 <span class="label label-danger">-</span> 比Torch笨重许多；更难理解 <br />
 <span class="label label-danger">-</span> 不提供商业支持 <br />
-<span class="label label-danger">-</span> 已预定型的模型不多 <br />
-<span class="label label-danger">-</span> 加载每个新的定型批次时都要跳至Python <br />
+<span class="label label-danger">-</span> 已预训练的模型不多 <br />
+<span class="label label-danger">-</span> 加载每个新的训练批次时都要跳至Python <br />
 <span class="label label-danger">-</span> 不太易于工具化 <br />
 <span class="label label-danger">-</span> 动态类型在大型软件项目中容易出错 <br />
 <br />
 
 <p><h3><a name="caffe">Caffe</a></h3></p>
 <p><a href="http://caffe.berkeleyvision.org/" target="_blank"><strong>Caffe</strong></a> 是一个广为人知、广泛应用的机器视觉库，将Matlab实现的快速卷积网络移植到了C和C++平台上（<a href="https://sites.google.com/site/steveyegge2/google-at-delphi" target="_blank">参见Steve Yegge关于一个芯片一个芯片地移植C++代码的博客，可以帮助你思考如何在速度和这种特定的技术债务之间进行权衡</a>）。Caffe不适用于文本、声音或时间序列数据等其他类型的深度学习应用。与本文提到的其他一些框架相同，Caffe选择了Python作为其API。</p>
-<p>Deeplearning4j和Caffe都可以用卷积网络进行图像分类，这是最先进的技术。与Caffe不同，Deeplearning4j<em>支持</em>任意芯片数的GPU并行运行，并且提供许多看似微不足道，却能使深度学习在多个并行GPU集群上运行得更流畅的功能。虽然在论文中被广泛引述，但Caffe主要用于为其Model Zoo网站提供已预定型的模型。Deeplearning4j正在开发将Caffe模型导入Spark的<a href="https://github.com/deeplearning4j/deeplearning4j/pull/480" target="_blank">开发解析器</a>。 </p>
+<p>Deeplearning4j和Caffe都可以用卷积网络进行图像分类，这是最先进的技术。与Caffe不同，Deeplearning4j<em>支持</em>任意芯片数的GPU并行运行，并且提供许多看似微不足道，却能使深度学习在多个并行GPU集群上运行得更流畅的功能。虽然在论文中被广泛引述，但Caffe主要用于为其Model Zoo网站提供已预训练的模型。Deeplearning4j正在开发将Caffe模型导入Spark的<a href="https://github.com/deeplearning4j/deeplearning4j/pull/480" target="_blank">开发解析器</a>。 </p>
 <br />
 <p><h4>利与弊:</h4></p>
 <span class="label label-success">+</span> 适合前馈网络和图像处理 <br />
 <span class="label label-success">+</span> 适合微调已有的网络 <br />
-<span class="label label-success">+</span> 定型模型而无需编写任何代码 <br />
+<span class="label label-success">+</span> 无需编写任何代码即可训练模型 <br />
 <span class="label label-success">+</span> Python接口相当有用 <br />
 <span class="label label-danger">-</span> 需要用C++ / CUDA编写新的GPU层 <br />
 <span class="label label-danger">-</span> 不适合循环网络 <br />
@@ -122,11 +122,11 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <br />
 
 <p><h3><a name="cntk">CNTK</a></h3></p>
-<p><a href="https://github.com/Microsoft/CNTK" target="_blank"><strong>CNTK</strong></a>是微软的开源深度学习框架。CNTK的全称是&ldquo;计算网络工具包。&rdquo;此学习库包括前馈DNN、卷积网络和循环网络。CNTK提供基于C++代码的Python API。虽然CNTK遵循一个<a href="https://github.com/Microsoft/CNTK/blob/master/LICENSE.md" target="_blank">比较宽松的许可协议</a>，却并未采用ASF 2.0、BSD或MIT等一些较为传统的许可协议。这一许可协议不适用于CNTK旨在简化分布式定型的1-Bit随机梯度下降（SGD）方法，该组件不得用作商业用途。</p>
+<p><a href="https://github.com/Microsoft/CNTK" target="_blank"><strong>CNTK</strong></a>是微软的开源深度学习框架。CNTK的全称是&ldquo;计算网络工具包。&rdquo;此学习库包括前馈DNN、卷积网络和循环网络。CNTK提供基于C++代码的Python API。虽然CNTK遵循一个<a href="https://github.com/Microsoft/CNTK/blob/master/LICENSE.md" target="_blank">比较宽松的许可协议</a>，却并未采用ASF 2.0、BSD或MIT等一些较为传统的许可协议。这一许可协议不适用于CNTK旨在简化分布式训练的1-Bit随机梯度下降（SGD）方法，该组件不得用作商业用途。</p>
 <br />
 
 <p><h3><a name="chainer">Chainer</a></h3></p>
-<p>Chainer是一个带有Python API的开源神经网络框架，其核心开发团队隶属于东京一家名叫<a href="https://www.crunchbase.com/organization/preferred-networks#/entity" target="_blank">Preferred Networks</a>的机器学习创业公司，团队工程师主要来自东京大学。在CMU的DyNet和Facebook的PyTorch问世以前，Chainer是最领先的动态计算图神经网络框架。动态计算图能处理可变长度的输入，很适合进行自然语言分析任务。Chainer自己的<a href="http://chainer.org/general/2017/02/08/Performance-of-Distributed-Deep-Learning-Using-ChainerMN.html" target="_blank">对标研究</a>发现，该框架的速度明显快于包括MxNet和CNTK在内的其他面向Python的学习框架，而TensorFlow的速度最慢。 </p>
+<p>Chainer是一个带有Python API的开源神经网络框架，其核心开发团队隶属于东京一家名叫<a href="https://www.crunchbase.com/organization/preferred-networks#/entity" target="_blank">Preferred Networks</a>的机器学习创业公司，团队工程师主要来自东京大学。在CMU的DyNet和Facebook的PyTorch问世以前，Chainer是最领先的动态计算图神经网络框架。动态计算图能处理可变长度的输入，很适合进行自然语言分析任务。Chainer自己的<a href="http://chainer.org/general/2017/02/08/Performance-of-Distributed-Deep-Learning-Using-ChainerMN.html" target="_blank">基准测试</a>发现，该框架的速度明显快于包括MxNet和CNTK在内的其他面向Python的学习框架，而TensorFlow的速度最慢。 </p>
 <br />
 
 <p><h3><a name="dsstne">DSSTNE</a></h3></p>
@@ -179,7 +179,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <p>经常有人问，既然有如此之多的深度学习用户都专注于Python，为什么我们要开发一个面向JVM的开源深度学习项目。的确，Python有着优越的语法要素，可以直接将矩阵相加，而无需像Java那样先创建显式类。Python还有由Theano、NumPy等原生扩展组成的广泛的科学计算环境。</p>
 <p>但JVM及其主要语言Java和Scala仍然具备几项优势。</p>
 <p>首先，多数大型企业和政府机构高度依赖Java或基于JVM的系统。他们已经进行了巨大的投资，而基于JVM的人工智能可以帮助他们充分实现这些投资的价值。在企业界，Java依然是应用范围最广的语言。Java是Hadoop、ElasticSearch、Hive、Lucene和Pig的语言，而它们恰好都是解决机器学习问题的有用工具。Spark和Kafka则是用另一种JVM语言Scala编写的。也就是说，深度学习本可以帮助许多需要解决现实问题的程序员，但他们却被语言屏障阻碍。我们希望提高深度学习对于这一广大群体的可用性，这些新的用户可以将深度学习直接付诸实用。Java是世界上用户规模最大的编程语言，共有1000万名开发者使用Java。</p>
-<p>其次，与Python相比，Java和Scala在速度上具有先天优势。如不考虑依赖用Cython加速的情况，任何用Python写成的代码在根本上速度都相对较慢。不可否认，运算量最大的运算都是用C或C++语言编写的。（此处所说的运算也包括高级机器学习流程中涉及的字符和其他任务。）大多数最初用Python编写的深度学习项目在用于生产时都必须重新编写。Deeplearning4j依靠<a href="https://github.com/bytedeco/javacpp" target="_blank">JavaCPP</a>从Java中调用预编译的原生C++代码，大幅提升定型速度。许多Python程序员选择用Scala实现深度学习，因为他们在进行共享基本代码的合作时更青睐静态类型和函数式编程。</p>
+<p>其次，与Python相比，Java和Scala在速度上具有先天优势。如不考虑依赖用Cython加速的情况，任何用Python写成的代码在根本上速度都相对较慢。不可否认，运算量最大的运算都是用C或C++语言编写的。（此处所说的运算也包括高级机器学习流程中涉及的字符和其他任务。）大多数最初用Python编写的深度学习项目在用于生产时都必须重新编写。Deeplearning4j依靠<a href="https://github.com/bytedeco/javacpp" target="_blank">JavaCPP</a>从Java中调用预编译的本机C++代码，大幅提升训练速度。许多Python程序员选择用Scala实现深度学习，因为他们在进行共享基本代码的合作时更青睐静态类型和函数式编程。</p>
 <p>第三，为了解决Java缺少强大的科学计算库的问题，我们编写了<a href="http://nd4j.org/cn" target="_blank">ND4J</a>。ND4J在分布式CPU或GPU上运行，可以通过Java或Scala的API进行对接。</p>
 <p>最后，Java是一种安全的网络语言，本质上具有跨平台的特点，可在Linux服务器、Windows和OSX桌面、安卓手机上运行，还可通过嵌入式Java在物联网的低内存传感器上运行。Torch和Pylearn2通过C++进行优化，优化和维护因而存在困难，而Java则是&ldquo;一次编写，随处运行&rdquo;的语言，适合需要在多个平台上使用深度学习系统的企业。</p>
 <br />

@@ -9,9 +9,12 @@ Deep learning is computationally intensive, so on very large datasets, speed mat
 
 Data parallelism shards large datasets and hands those pieces to separate neural networks, say, each on its own core. Deeplearning4j relies on Spark for this, training models in parallel and [iteratively averages](./iterativereduce.html) the parameters they produce in a central model. (Model parallelism, [discussed here by Jeff Dean et al](https://static.googleusercontent.com/media/research.google.com/en//archive/large_deep_networks_nips2012.pdf), allows models to specialize on separate patches of a large dataset without averaging.)
 
+Note that if you want a parameter server based approach (requires more setup!), please look at our new [distributed page](http://deeplearning4j.org/distributed])
+
 **Contents**
 
 * [Overview](#overview)
+* [Pre requisites](#prerequisites)
 * [How Distributed Network Training Occurs with DL4J on Spark](#how)
 * [A Minimal Example](#minimal)
 * [Configuring the TrainingMaster](#configuring)
@@ -30,6 +33,29 @@ Data parallelism shards large datasets and hands those pieces to separate neural
 * [Caching/Persisting RDD&lt;DataSets&gt; and RDD&lt;INDArrays&gt;](#caching)
 * [Using Kryo Serialization with Deeplearning4j](#kryo)
 * [Using Intel MKL on Amazon Elastic MapReduce with Deeplearning4j](#mklemr)
+
+
+## <a name="prerequisites">Pre requisites</a>
+
+This page assumes a working knowledge of spark. If you are not familiar with how to both: setup spark clusters and run
+spark jobs, this page will not teach you that. Please consider understanding spark basics first. The [spark quick start](https://spark.apache.org/docs/latest/quick-start.html) is a great place to start with running spark jobs.
+
+If you are just looking for a way to run multiple models on the same server, consider using [parallelwrapper instead](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-cuda-specific-examples/src/main/java/org/deeplearning4j/examples/multigpu/MultiGpuLenetMnistExample.java).
+
+Parallelwrapper implements the same concepts (parameter averaging and gradient sharing) optimized for a single server.
+You should use parallelwrapper when you have a big box (64 cores or more) or multiple gpus.
+
+Note that you can use multiple gpus AND cudnn with spark. The most difficult part of this will be cluster setup though. It is *not* dl4j's responsibility beyond being a spark job.
+
+If you have not run JVM based spark jobs before, we recommend [building an uber jar using the maven shade plugin](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/pom.xml#L140) . 
+
+The rest of this page covers the details for running a spark job including how to customize the spark job
+and how to use the spark interface for dl4j.
+
+If you would like a managed spark cluster with someone to do it for you. [Please contact us](https://skymind.ai/)
+
+Various cloud services such as elastic map reduce are another way of running and managing a spark cluster.
+
 
 ## <a name="overview">Overview</a>
 

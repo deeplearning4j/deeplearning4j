@@ -117,3 +117,7 @@ A `Recordreaderdatasetiterator` talks to Datavec and outputs datasets for DL4J.
 Here’s how you [load a pre-saved dataset](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/presave/LoadPreSavedLenetMnistExample.java).
 
 Line 90 is where you see the asynchronous ETL. In this case, it's wrapping the pre-saved iterator, so you're taking advantage of both methods, with the asynch loading the pre-saved data in the background as the net trains. 
+
+## MKL and Inference on CPUs
+
+If you are running inference benchmarks on CPUs, make sure you are using Deeplearning4j with Intel's MKL library, which is available via a clickwrap; i.e. Deeplearning4j does not bundle MKL like Anaconda, which is used by libraries like PyTorch. 

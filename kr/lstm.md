@@ -180,7 +180,7 @@ LSTM의 하이퍼파라미터를 정하는 팁을 몇 가지 적어놓았으니 
 * 데이터는 많으면 많을수록 좋습니다.
 * 같은 데이터로 여러 번 학습을 시켜야합니다.
 * 조기 종료(early stopping)을 활용하십시오. 검증 데이터(validation set)를 대상으로 얼마나 성능이 나오는지 확인하면서 언제 학습을 끝낼 것인지를 정하십시오.
-* 학습 속도(running rate)를 잘 설정하는 것은 정말 너무너무 중요합니다. [DL4J의 ui](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-ui)를 써서 학습 속도를 조절해보십시오. [이 그래프](http://cs231n.github.io/neural-networks-3/#baby)를 참고하십시오.
+* 학습 속도(learning rate)를 잘 설정하는 것은 중요합니다. [DL4J의 ui](https://deeplearning4j.org/visualization)를 써서 학습 속도를 조절해보십시오. [이 그래프](http://cs231n.github.io/neural-networks-3/#baby)를 참고하십시오.
 * 다른 문제가 없다면 레이어는 많을수록 좋습니다.
 * LSTM에서는 하이퍼탄젠트보다 softsign함수를 사용해보십시오. 속도도 더 빠르고 그라디언트가 평평해지는 문제(그라디언트 소실)도 덜 발생합니다.
 * RMSProp, AdaGrad, Nesterove's momentum을 적용해보십시오. Nesterove's momentum에서 시작해서 다른 방법을 적용해보십시오.

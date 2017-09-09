@@ -12,6 +12,7 @@ Here you'll find an organized list of interesting, high-quality datasets for mac
 * [Open Source Biometric Recognition Data](http://openbiometrics.org/)
 * [Google Audioset](https://research.google.com/audioset/): An expanding ontology of 632 audio event classes and a collection of 2,084,320 human-labeled 10-second sound clips drawn from YouTube videos.
 * [Uber 2B trip data](https://movement.uber.com/cities): Slow rollout of access to ride data for 2Bn trips.
+* [Yelp Open Dataset](https://www.yelp.com/dataset): The Yelp dataset is a subset of Yelp businesses, reviews, and user data for use in NLP.
 
 ## Natural-Image Datasets
 
@@ -82,6 +83,7 @@ Here you'll find an organized list of interesting, high-quality datasets for mac
 * [Billion Words dataset](http://www.statmt.org/lm-benchmark/): A large general-purpose language modeling dataset. Often used to train distributed word representations such as word2vec.
 * [Common Crawl](http://commoncrawl.org/the-data/):  Petabyte-scale crawl of the web — most frequently used for learning word embeddings. Available for free from Amazon S3. Can also be useful as a network dataset for it’s a crawl of the WWW.
 * [Google Books Ngrams](https://aws.amazon.com/datasets/google-books-ngrams/): Successive words from Google books. Offers a simple method to explore when a word first entered wide usage.
+* [Yelp Open Dataset](https://www.yelp.com/dataset): The Yelp dataset is a subset of Yelp businesses, reviews, and user data for use in NLP.
 
 ### Question answering
 

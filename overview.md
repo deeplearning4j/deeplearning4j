@@ -6,18 +6,18 @@ DeepLearning4J is a java based toolkit for building, training and deploying Neur
  
 DeepLearning4J has the following sub-projects. 
 
-* **DataVec** performs data ingestion, normalization and transformation into feature vectors
-* **DeepLearning4j** provides tools to configure neural networks and build computation graphs
-* **Keras Model Import** helps import trained models from Python and Keras to DeepLearning4J and Java. 
-* **ND4J** allows Java to access Native Libraries to quickly process Matrix Data on CPUs or GPUs. 
-* **DL4J-Examples** contains working examples for classification and clustering of images, time series and text.
-* **ScalNet** is a Scala wrapper for Deeplearning4j inspired by Keras. Runs on multi-GPUs with Spark.
-* **RL4J** implements Deep Q Learning, A3C and other reinforcement learning algorithms for the JVM.
-* **Arbiter** helps search the hyperparameter space to find the best neural net configuration.
+* **[DataVec](#datavec)** performs data ingestion, normalization and transformation into feature vectors
+* **[DeepLearning4j](#dl4j)** provides tools to configure neural networks and build computation graphs
+* **[DL4J-Examples](#dl4jexamples)** contains working examples for classification and clustering of images, time series and text.
+* **[Keras Model Import](#keras)** helps import trained models from Python and Keras to DeepLearning4J and Java. 
+* **[ND4J](#nd4j)** allows Java to access Native Libraries to quickly process Matrix Data on CPUs or GPUs. 
+* **[ScalNet](#scalnet)** is a Scala wrapper for Deeplearning4j inspired by Keras. Runs on multi-GPUs with Spark.
+* **[RL4J](#rl4j)** implements Deep Q Learning, A3C and other reinforcement learning algorithms for the JVM.
+* **[Arbiter](#arbiter)** helps search the hyperparameter space to find the best neural net configuration.
 
 ---------------------------
 
-## DataVec
+## <a name="datavec">DataVec</a>
 
 Ingesting, cleaning, joining, scaling, normalizing and transforming data are jobs that must be done in any sort of analysis. This work may not be exciting, but it's a precondition of deep learning. DataVec is our toolkit for that process. We give data scientists and developers tools to turn raw data such as images, video, audio, text and time series into feature vectors for neural nets. 
 
@@ -98,7 +98,7 @@ DataNormalization
 
 -------------------------
 
-# DeepLearning4J
+## <a name="dl4j">DeepLearning4J</a>
 
 DeepLearning4J is where you design your Neural Networks
 
@@ -120,7 +120,7 @@ The DeepLearning4J Github repo is [here](http://github.com/deeplearning4j/deeple
 
 The DeepLearning4J JavaDoc is available [here](http://deeplearning4j.org/doc/).
 
-### DeepLearning4J Examples
+### <a name="dl4jexamples">DeepLearning4J Examples</a>
 
 There are DeepLearning4J examples in the Github repository [here](https://github.com/deeplearning4j/dl4j-examples). 
 
@@ -136,7 +136,7 @@ A descriptive summary of many of the examples is [here](examples-tour).
 * **ComputationGraphConfiguration.GraphBuilder** Builder interface for Computation Graph configuration
 * **UiServer** Adds a web based Gui to view training parameter progress and configuration of Network
 
-## Model Import
+## <a name="keras">Model Import</a>
 
 If you have worked with Keras the Python Library for Deeplearning and would like to import a trained model, or a model configuration into DeepLearning4J see our Model Import feature. 
 
@@ -160,7 +160,7 @@ Here's a video showing how to import of a Keras model to DL4J:
 
 -----------
 
-## ND4J
+## <a name="nd4j">ND4J</a>
 
 ND4J is the numerical processing library for DeepLearning4J, a tensor library, the JVM's answer to Numpy.  
 
@@ -189,7 +189,7 @@ You may not use some of these classes directly, but when you configure a Neural 
 
 -------------------------
 
-## ScalNet
+## <a name="scalnet">ScalNet</a>
 
 ScalNet is Keras for Scala. It's a Scala wrapper for Deeplearning4j that can run Spark on multi-GPUs.
 
@@ -197,7 +197,7 @@ ScalNet is Keras for Scala. It's a Scala wrapper for Deeplearning4j that can run
 
 * [ScalNet on Github](https://github.com/deeplearning4j/ScalNet)
 
-## RL4J 
+## <a name="rl4j">RL4J</a>
 
 RL4J is a library and environment for for Deep Q learning, A3C and other algorithms implemented in Java and integrated with DL4J and ND4J. 
 
@@ -207,7 +207,7 @@ RL4J is a library and environment for for Deep Q learning, A3C and other algorit
 * [Gym integration](https://github.com/deeplearning4j/rl4j/tree/master/rl4j-gym)
 * [Doom with RL4J](https://github.com/deeplearning4j/rl4j/tree/master/rl4j-doom)
 
-## Arbiter
+## <a name="arbiter">Arbiter</a>
 
 Arbiter helps you search the hyperparameter space to find the best tuning and architecture for a neural net. This is important because finding the right architecture and hyperparamters is a very large combinatorial problem. The winning ImageNet teams at corporate labs like Microsoft are searching through hyperparameters to surface 150-layer networks like ResNet.
 

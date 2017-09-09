@@ -10,7 +10,7 @@ Deeplearning4j's examples run on benchmark datasets that don't present any obsta
 *DataVec* is our machine-learning vectorization library, and it is useful for customizing how you prepare data that a neural net can learn. (The [DataVec Javadoc is here](http://deeplearning4j.org/datavecdoc/).)
 
 This tutorial will walk through how to load an image dataset and carry out transforms on them. For the sake of simplicity this tutorial uses only 10 images from 3 of the classes in the *Oxford flower dataset*. Please do not copy paste the code below as they are only snippets for reference. 
-[Use the code from the full example here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/ImagePipelineExample.java)
+[Use the code from the full example here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataexamples/ImagePipelineExample.java)
 
 ## Setting up your images in the correct directory structure
 In short, images in your dataset have to be organized in directories by class/label and these label/class directories live together in the parent directory.
@@ -93,29 +93,60 @@ You can chain transformations as shown below, write your own classes that will a
 ImageTransform transform = new MultiImageTransform(randNumGen, new CropImageTransform(10), new FlipImageTransform(),new ScaleImageTransform(10), new WarpImageTransform(10));
 ~~~
 
+* Advanced: Pipeline image transform
+
+If you want to create a more sophisticated pipeline, you can use `PipelineImageTransform`.
+You can create image transform pipelines, either sequentially or randomly.
+
+In order to employ this complex pipeline, you can create a list,`List<Pair<ImageTransform, Double>>`, 
+then add ImageTransforms which you want to apply to the raw images with double values which is a probability.
+Note : the probability represents particular element in the pipeline will be executed. 
+This is helpful for creating complex pipelines. 
+
+Here is the code snippet of PipelineImageTransform.
+```java
+boolean shuffle = false;
+ImageTransform randCrop = new RandomCropTransform(160,160);
+ImageTransform flip = new FlipImageTransform();
+
+List<Pair<ImageTransform, Double>> pipeline = new LinkedList<>();
+pipeline.add(new Pair<>(randCrop, 1.0));
+pipeline.add(new Pair<>(flip, 0.5));
+
+ImageTransform transform = new PipelineImageTransform(pipeline, shuffle);
+```
+The pipeline can also be randomly shuffled with each transform in order to increase the available dataset.  
+If you set `shuffle` to true, you can get an image pipeline that executes each transformation at random. 
+
 * Initialize the record reader with the train data and the transform chain
 
 ~~~java
 recordReader.initialize(trainData,transform);
 ~~~
 
-## JavaCV , OpenCV and ffmpeg Filters
 
-ffmpeg and OpenCV provide open source libraries for filtering and transforming images and video. Access to ffmpeg filters in versions 7.2 and above is available by adding the following to your pom.xml file, replacing the version with the current version. 
+
+## JavaCV, OpenCV and FFmpeg Filters
+
+FFmpeg and OpenCV provide open source libraries for filtering and transforming images and video. Access to FFmpeg filters in versions 7.2 and above is available by adding the following to your pom.xml file, replacing the version with the current version. 
 
 ```
-<dependency> <groupId>org.bytedeco</groupId> <artifactId>javacv-platform</artifactId> <version>1.3</version> </dependency>
+<dependency> 
+    <groupId>org.bytedeco</groupId> 
+    <artifactId>javacv-platform</artifactId>
+    <version>1.3</version> 
+</dependency>
 ```
 
 Documentation
 * [JavaCV](https://github.com/bytedeco/javacv)
 * [OpenCV](http://opencv.org/)
-* [ffmpeg](http://ffmpeg.org/)
+* [FFmpeg](http://ffmpeg.org/)
 
 
 
 ## Handing off to fit
-dl4j's neural net's take either a dataset or a dataset iterator to fit too. These are fundamental concepts for our framework. Please refer to other examples for how to use an iterator. Here is how you contruct a dataset iterator from an image record reader.
+Deeplearning4j's neural nets take either a dataset or a dataset iterator to fit too. These are fundamental concepts for our framework. Please refer to other examples for how to use an iterator. Here is how you contruct a dataset iterator from an image record reader.
 
 ~~~java
 DataSetIterator dataIter = new RecordReaderDataSetIterator(recordReader, 10, 1, outputNum);

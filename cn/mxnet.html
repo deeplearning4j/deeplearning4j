@@ -170,7 +170,7 @@ LIMIT
 <p>很遗憾，这唯一一条能算是批评（而我在这里也只是进行合理的猜测）的过时观点影响到了其他的评论。如果真的发现任何算法上的问题，DL4J社区欢迎人们提出相关的意见或bug报告。原本可以明确指出问题来推动共同进步，却偏偏要用FUD手段来抹黑，这一点也不好笑。</p><br>
 
 <p><h2><a name="notebook">交互性与记事本</a></h2></p>
-<p>Scala是一种<a href="http://www.artima.com/pins1ed/combining-scala-and-java.html" target="_blank">在源代码层面上原生支持与Java互操作</a>的语言。这就意味着在Scala中可以直接调用Java例程，使用相同的参数、相同的类型，两种语言之间不需要任何转译，因为两者使用同样的运行时字节码。因此，基于Java的Deeplearning4J框架完全可以与现有的Scala交互式REPL和Scala记事本配合使用。我们完全可以在启动Scala REPL时将DeepLearning4J的JAR文件添加至类路径（classpath），然后直接使用DL4J定型模型。记事本也可以进行同样的操作。</p>
+<p>Scala是一种<a href="http://www.artima.com/pins1ed/combining-scala-and-java.html" target="_blank">在源代码层面上原生支持与Java互操作</a>的语言。这就意味着在Scala中可以直接调用Java例程，使用相同的参数、相同的类型，两种语言之间不需要任何转译，因为两者使用同样的运行时字节码。因此，基于Java的Deeplearning4J框架完全可以与现有的Scala交互式REPL和Scala记事本配合使用。我们完全可以在启动Scala REPL时将DeepLearning4J的JAR文件添加至类路径（classpath），然后直接使用DL4J训练模型。记事本也可以进行同样的操作。</p>
 <p>事实上，今年ScalaDays大会的一场演讲已经展示了具体过程：</p>
 <div style="position: relative; padding-bottom: 56.25%; padding-top: 35px; width: 100%; height: 0; overflow: hidden;"><iframe frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://v.qq.com/iframe/player.html?vid=z0375kwf0lb&tiny=0&auto=0" allowfullscreen width="510px" height="498px"></iframe></div>
 <br>
@@ -182,18 +182,18 @@ LIMIT
   <li>Skymind从2017年2月起聘用了一位曾与Martin  Odersky一同开发Scala类型系统、现任Spark记事本核心项目成员的Scala专家。</li>
   <li>Scala前端的进一步开发已提上路线图。</li>
 </ol>
-<p>简而言之，在解读DeepLearning4J对编程语言的选择时，不应将DeepLearning4J视为局限于Java的框架。DeepLearning4J框架将Scala和Java视为深度学习开发的&ldquo;同等公民&rdquo;，很注重满足数据科学家以交互模式开展实验的需求。与此同时，企业界为数众多的Java程序设计人才有望从事生产级的深度学习开发，在多租户、分布式情境下长期开展反复的定型，以期建立经济效益可观的模型——DeepLearning4J也绝不会忽视这类用户的需求。</p>
+<p>简而言之，在解读DeepLearning4J对编程语言的选择时，不应将DeepLearning4J视为局限于Java的框架。DeepLearning4J框架将Scala和Java视为深度学习开发的&ldquo;同等公民&rdquo;，很注重满足数据科学家以交互模式开展实验的需求。与此同时，企业界为数众多的Java程序设计人才有望从事生产级的深度学习开发，在多租户、分布式情境下长期开展反复的训练，以期建立经济效益可观的模型——DeepLearning4J也绝不会忽视这类用户的需求。</p>
 <br>
 
 <p><h2><a name="computation">计算性能与潜力</a></h2></p>
 <p>目前来看，人们在选择深度学习框架时，性能的确不是最主要的考量因素，而且只要备选的框架彼此之间差距仍不明显，性能就不会成为最主要的因素。</p>
-<p> 但是，在考虑相对较小且较新的框架时，或许应当关注其发展潜力，而非仅仅着眼于当前的状态。考虑深度学习框架的发展潜力时，结合企业环境中的限制因素来看，主要有三大问题需要思考：如何适应多租户用例？容错方面的潜力如何？如何才能让内部部署的定型实现大规模增效？</p><br>
+<p> 但是，在考虑相对较小且较新的框架时，或许应当关注其发展潜力，而非仅仅着眼于当前的状态。考虑深度学习框架的发展潜力时，结合企业环境中的限制因素来看，主要有三大问题需要思考：如何适应多租户用例？容错方面的潜力如何？如何才能让内部部署的训练实现大规模增效？</p><br>
 
 <p><h3><a name="enterprise">适应企业环境中多租户用例的潜力</a></h3></p>
-<p>多租户是许多企业在开展大规模本地定型时都需要应对的一个问题：因为计算机成本昂贵，而配备GPU又会进一步增加成本，所以这些设备需要在多个团队之间共享。</p>
+<p>多租户是许多企业在开展大规模本地训练时都需要应对的一个问题：因为计算机成本昂贵，而配备GPU又会进一步增加成本，所以这些设备需要在多个团队之间共享。</p>
 <p>这方面的目标并不仅仅是在集群上进行工作任务排序（旧式的科学计算网格管理器就足以达成这个目的），而是要在同一台硬件设备上运行多项工作任务，实现硬件利用率最大化。多项工作任务的综合管理涉及更为复杂的资源核算，而目前的Python/C++体系中尚不具备这种资源核算能力。</p>
-<p>确实有<a href="https://github.com/dmlc/dmlc-core/blob/master/tracker/dmlc_tracker/yarn.py" target="_blank">一些脚本</a>能让mxnet作为YARN任务运行，但其部署模式与DL4J完全不同。一项显著区别是，这些脚本要求所有计算机上都预先具备在这一脆弱环境中进行加速定型的所有必要条件（BLAS、CUDA、……），与此同时也没有DevOps支持。DL4J没有这样的要求，基于Spark的部署对DL4J来说是一种头等操作模式，DL4J会借助现有的集群管理器来设置所有必要的组件。</p>
-<p>更深入来看，YARN本身在核算高性能计算（HPC）设备，亦即GPU（或者协处理器）的使用情况方面就存在局限性。它只支持用标记来管理GPU使用情况，指明一台计算机确实有一个（或多个）设备，规定HPC任务的工作节点只能从已标记的计算机中选择。这种不成熟的机制是不够的（我们要如何管理需要GPU和不需要GPU的任务的优先顺序？两种任务都可以预留已标记的计算机），对于多GPU设置的未来发展来说也不是好兆头（然而mxnet目前甚至连标记都不用：您最好确保所有的计算机都装有GPU）。</p>
+<p>确实有<a href="https://github.com/dmlc/dmlc-core/blob/master/tracker/dmlc_tracker/yarn.py" target="_blank">一些脚本</a>能让mxnet作为YARN任务运行，但其部署模式与DL4J完全不同。一项显著区别是，这些脚本要求所有计算机上都预先具备在这一脆弱环境中进行加速训练的所有必要条件（BLAS、CUDA、……），与此同时也没有DevOps支持。DL4J没有这样的要求，基于Spark的部署对DL4J来说是一种头等操作模式，DL4J会借助现有的集群管理器来设置所有必要的组件。</p>
+<p>更深入来看，YARN本身在核算高性能计算（HPC）设备，亦即GPU（或者协处理器）的使用情况方面就存在局限性。它只支持用标记来管理GPU使用情况，指明一台计算机确实有一个（或多个）设备，规定HPC任务的工作器只能从已标记的计算机中选择。这种不成熟的机制是不够的（我们要如何管理需要GPU和不需要GPU的任务的优先顺序？两种任务都可以预留已标记的计算机），对于多GPU设置的未来发展来说也不是好兆头（然而mxnet目前甚至连标记都不用：您最好确保所有的计算机都装有GPU）。</p>
 <p>另一方面，基于容器的架构有着条理清晰的HPC设备使用管控机制，即<a href="http://www.slideshare.net/jpetazzo/cgroups-namespaces-and-beyond-what-are-containers-made-from-dockercon-europe-2015" target="_blank">设备cgroup</a>。容器架构正在大数据领域<a href="https://v.qq.com/x/page/p03758sikje.html" target="_blank">飞速推广</a>——采用这种方法来预配和运行应用程序的JVM用户也在<a href="http://www.zdnet.com/article/containers-likely-to-disrupt-java-virtual-machine-usage-survey-says/" target="_blank">迅速增加</a>。因此，容器编排在集群中的应用理当成为下一波新浪潮，而Kubernetes、Docker Swarm和Mesos的推出也表明大数据业界正在快马加鞭地回应这方面的需求。以Mesos为例，它是一种支持GPU核算的调度器，通过<a href="https://people.eecs.berkeley.edu/~alig/papers/mesos.pdf" target="_blank">主导资源公平算法</a>来明确为哪些优先工作预留配备了GPU的计算机；对Mesos而言，在任务中要求GPU已经是<a href="https://github.com/apache/spark/pull/14644" target="_blank">Spark  2.0所支持的</a>一项标准功能。实现这一点靠的是容器感知能力，且不需要太多代码，所以我们可以预计，其他容器调度器（Kubernetes、Swarm）很快也会开始仿效Mesos1。</p>
 <p>总而言之，Deeplearning4J借助Spark及其三种集群模式（YARN、Mesos、<em>独立模式</em>）实现在企业集群中的部署，既不影响现有的工作任务，也不会增加DevOps工作量。Deeplearning4J不过是与其他工作任务相平等的一部分工作量，它的GPU要求可能会带来些许影响，但这种要求是以受调节、有核算且清晰透明的方式提出的。mxnet或许可以在集成上达到同样的水平，但其代价是需要增加大量代码，还要花大量时间维护这种集成体系，而与此同时，大数据集群运行的最佳实践可是在快速演化的。 </p>
 <p><strong>注：</strong>如果试用一下从未在企业中就职的学术界人士开发的软件，就会发现这些系统完全不适合在企业中运行。我们没有什么理由支持一种无法顺利融入企业环境的系统。如果有人以为美国东岸的大型银行会花钱购买一套一体化的深度学习系统，那他们一定是疯了。多租户模式大有前途（即便考虑Spark性能方面的利弊），Hadoop + Spark的发展惯性 + 现有投资很大。
@@ -201,27 +201,27 @@ LIMIT
 <br>
 
 <p><h3><a name="potential">容错潜力</a></h3></p>
-<p>投资开展大规模定型项目时，每天都需要处理现代化大规模集群中的计算机故障。对深度学习而言，定型时间可能长达数周，这一问题就显得尤为棘手。</p>
-<p>常有人主张说，深度学习框架能应对偶尔发生的工作节点故障，因为它们运行的是随机性算法，如果偶尔有承担部分计算的设备随机发生问题，算法的收敛过程能承受这种损失的负面影响。理论上确实如此。</p>
+<p>投资开展大规模训练项目时，每天都需要处理现代化大规模集群中的计算机故障。对深度学习而言，训练时间可能长达数周，这一问题就显得尤为棘手。</p>
+<p>常有人主张说，深度学习框架能应对偶尔发生的工作器故障，因为它们运行的是随机性算法，如果偶尔有承担部分计算的设备随机发生问题，算法的收敛过程能承受这种损失的负面影响。理论上确实如此。</p>
 <p>但这种观点完全忽略了一件事：故障处理不只包括维护算法的数学收敛属性。它还包括：</p>
 <ol>
   <li>重启不响应的执行器（看门狗），</li>
   <li>将其重新整合到执行器池中，</li>
-  <li>根据epoch周期的完成速度来调整工作节点数量（动态分配），</li>
+  <li>根据epoch周期的完成速度来调整工作器数量（动态分配），</li>
   <li>在某一节点速度明显特别慢时启动一项推测任务，以求绕开慢节点所在的计算机上的本地问题（推测执行）</li>
   <li>处理架构中的单点故障（可热插拔的参数服务器）</li>
   <li>减少有可能导致多机故障的系统性故障模式（例如：<a href="https://issues.apache.org/jira/browse/HDFS-7489" target="_blank">HDFS-7489</a>）</li>
 </ol>
 <p>Spark以及与之关系较紧密的生态系统项目都能以完全标准化的方式来处理上述每种问题。</p>
-<p>此外，DL4J也已在路线图里提出，要探索如何将保存在其参数服务器中的模型按固定节奏备份到Spark的内存中，从而提供一种容错能力达到全新高度的混合式异步－同步模型，确保基于商业集群的长期定型取得成功。</p>
+<p>此外，DL4J也已在路线图里提出，要探索如何将保存在其参数服务器中的模型按固定节奏备份到Spark的内存中，从而提供一种容错能力达到全新高度的混合式异步－同步模型，确保基于商业集群的长期训练取得成功。</p>
 <p><h3><a name="distribution">让分布式学习大规模增效的潜力</a></h3></p>
 <p>深度学习领域的五大巨头<em>各自力挺一种深度学习框架</em>：<br>
 谷歌有TensorFlow，Facebook有Torch，百度有Paddle Paddle，微软有CNTK，而AWS则有mxnet²。预计每家公司都会控股其开源软件项目的项目管理委员会，而且有四家公司（Facebook除外）都在支持云计算业务³。</p>
 <p>他们之间的相似点如此之多，其中的巧合之处令人不禁要思考：研究者在这些开源学习框架中进行的模型开发工作会不会是这些公司推出的云计算业务的<a href="https://en.wikipedia.org/wiki/Complementary_good" target="_blank">互补品</a>（经济学概念）？</p>
-<p>这样一来，各大公司就有必要确保研究者的模型在用于商业目的时都到各家公司自己的商业云上来定型。不过，这些学习框架的用户是否仍然有可能用自己的计算机来运行大规模分布式学习呢？</p>
-<p>答案是：确实有可能用分布式框架开展定型，但实际性能会让人对这些框架的成熟度感到失望。<a href="https://github.com/tensorflow/tensorflow/issues/2397" target="_blank">Tensorflow的分布式学习性能问题</a>就从一个侧面体现了这一点。尽管如此，有三件事是清楚的：</p>
+<p>这样一来，各大公司就有必要确保研究者的模型在用于商业目的时都到各家公司自己的商业云上来训练。不过，这些学习框架的用户是否仍然有可能用自己的计算机来运行大规模分布式学习呢？</p>
+<p>答案是：确实有可能用分布式框架开展训练，但实际性能会让人对这些框架的成熟度感到失望。<a href="https://github.com/tensorflow/tensorflow/issues/2397" target="_blank">Tensorflow的分布式学习性能问题</a>就从一个侧面体现了这一点。尽管如此，有三件事是清楚的：</p>
 <ol>
-  <li>在工程方面好好下点功夫，分布式定型的速度还是有可能大幅提高的。上述所有框架都有某种类型的<a href="https://www.cs.cmu.edu/~muli/file/ps.pdf" target="_blank">参数服务器</a>（DL4J和mxnet也不例外，mxnet用的是<a href="https://github.com/dmlc/ps-lite" target="_blank">ps-lite</a>）。这基本上就是在运行分布式的随机梯度下降（SGD），而这种上世纪六十年代问世的算法（当时被称作ADALINE）在分布式系统中会变得效率低下，因为它的AllReduce⁴通信模式明显很浪费。介绍改善方法的参考资料<a href="https://people.eecs.berkeley.edu/~jfc/papers/14/Kylix.pdf" target="_blank">有许多</a>，实务工作者们也早已<a href="https://github.com/NervanaSystems/neon/wiki/Parallelism-with-neon-on-Nervana-Cloud" target="_blank">了解这些方法</a>。</li>
+  <li>在工程方面好好下点功夫，分布式训练的速度还是有可能大幅提高的。上述所有框架都有某种类型的<a href="https://www.cs.cmu.edu/~muli/file/ps.pdf" target="_blank">参数服务器</a>（DL4J和mxnet也不例外，mxnet用的是<a href="https://github.com/dmlc/ps-lite" target="_blank">ps-lite</a>）。这基本上就是在运行分布式的随机梯度下降（SGD），而这种上世纪六十年代问世的算法（当时被称作ADALINE）在分布式系统中会变得效率低下，因为它的AllReduce⁴通信模式明显很浪费。介绍改善方法的参考资料<a href="https://people.eecs.berkeley.edu/~jfc/papers/14/Kylix.pdf" target="_blank">有许多</a>，实务工作者们也早已<a href="https://github.com/NervanaSystems/neon/wiki/Parallelism-with-neon-on-Nervana-Cloud" target="_blank">了解这些方法</a>。</li>
   <li>让开源分布式学习在大规模商业应用中变得效率低下正符合云计算服务商的既得利益。这样做可以推动商业用户去使用这些公司（更好的）基础设施（以专用硬件建成）。一个迹象是：几家公司中只有微软在<a href="https://blogs.microsoft.com/next/2016/10/25/microsoft-releases-beta-microsoft-cognitive-toolkit-deep-learning-advances/" target="_blank">CNTK 2.0 beta</a>里推出了优化版的SGD，而这种<a href="https://github.com/microsoft/cntk/wiki/CNTK-1bit-SGD-License" target="_blank">优化后的算法是以非商用许可发布的</a>。</li>
   <li>在所有学习框架中，惟有Deeplearning4J在努力加快分布式学习速度的同时让分布式模式保持开源<em>和免费</em>。为此，<a href="http://engineering.skymind.io/interview-with-adam-gibson-creator-of-dl4j-why-aeron-matters" target="_blank">DL4J用速度快得惊人的Aeron库重写其参数服务器</a>。在这方面，Skymind的出发点与其他公司恰好相反：Skymind没有云计算业务，支持企业内部部署反而对其有利。</li>
 </ol><br>

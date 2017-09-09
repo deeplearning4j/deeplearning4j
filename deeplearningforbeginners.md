@@ -76,9 +76,7 @@ Once you get those up and running, and you've understood the API, you're ready f
 
 ## Other Resources
 
-Most of what we know about deep learning is contained in academic papers.
-
-We've linked to a number of them [here](./deeplearningpapers). 
+Most of what we know about deep learning is contained in academic papers. We've linked to a number of them [here](./deeplearningpapers). 
 
 While individual courses have limits on what they can teach, the Internet does not. Most math and programming questions can be answered by Googling and searching sites like [Stackoverflow](http://stackoverflow.com) and [Math Stackexchange](https://math.stackexchange.com/).
 
@@ -93,3 +91,4 @@ While individual courses have limits on what they can teach, the Internet does n
 * [Artificial Intelligence vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning)
 * [Comparing Open-Source Deep Learning Frameworks](./compare-dl4j-torch7-pylearn)
 * [Eigenvectors, PCA, Covariance and Entropy](/eigenvector)
+* [The AI Hierarchy of Needs](https://hackernoon.com/the-ai-hierarchy-of-needs-18f111fcc007)

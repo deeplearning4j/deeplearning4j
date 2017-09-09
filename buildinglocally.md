@@ -41,7 +41,7 @@ CPU options:
 GPU options:
 
 - CUDA
-- JOCL (coming soon)
+
 
 IDE-specific requirements:
 
@@ -79,8 +79,11 @@ Finally, install prerequisite tools:
 
 ```
 brew update
-brew install maven clang-omp
+brew install maven gcc5
 ```
+Note: You can *not* use clang. You also can *not* use a new version of gcc. If you have a newer version of gcc, please
+switch versions with [this link](https://apple.stackexchange.com/questions/190684/homebrew-how-to-switch-between-gcc-versions-gcc49-and-gcc)
+
 
 #### Windows
 
@@ -137,7 +140,8 @@ For more complete instructions, [go here](http://www.cyberciti.biz/faq/centos-li
 
 ##### OS X
 
-You can install OpenBLAS on OS X with Homebrew Science:
+You can install OpenBLAS on OS X with Home
+Science:
 
 ```
 brew install homebrew/science/openblas
@@ -280,6 +284,9 @@ Use the build script below for CPU architectures:
 ```
 ./build-dl4j-stack.sh
 ```
+Make sure to read this if you are on OS X (ensure gcc 5.x is setup and you aren't using clang):
+https://github.com/deeplearning4j/deeplearning4j/issues/2668
+
 
 If you are using a GPU backend, use this instead:
 

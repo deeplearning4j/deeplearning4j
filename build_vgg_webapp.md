@@ -39,20 +39,17 @@ Loading the pre-trained models for further training is a process we will describ
 
 ## <a name="Loading Pre-Trained Models">Load the Pre-Trained Model </a>
 
-Deeplearning4J lets you import models from the Python-based deep-learning framework [Keras](https://keras.io/), which itself provides an intuitive, higher-level API over Theano and TensorFlow. DL4J's model import functionality is described [here](model-import-keras). Keras, for its part, is able to import models from Caffe, TensorFlow, Torch and Theano, so it serves as a bridge to import models created in any of those frameworks, which allows developers and researchers to preserve their work when they switch to Deeplearning4j for production-grade tasks and JVM environments. 
+As of 0.9.0 (0.8.1-SNAPSHOT) Deeplearning4j has a new native model zoo. Read about the [deeplearning4j-zoo](/model-zoo) module for more information on using pretrained models. Here, we load a pretrained VGG-16 model initialized with weights trained on ImageNet:
 
-There are two options for loading the pretrained model:
+```
+ZooModel zooModel = new VGG16();
+ComputationGraph vgg16 = zooModel.initPretrained(PretrainedType.IMAGENET);
+```
 
-1. Load into Keras, save and Load into DeepLearning4J
-2. Load directly into DeepLearning4J using helper fundctions to retrieve model from internet
+### Alternative Using Keras
 
-### Option 1
+Deeplearning4j also comes with a model import tool for [Keras](http://keras.io/). Our [model importer](/model-import-keras) will convert your Keras configuration and weights into the Deeplearning4j format. DL4J supports importation of both Sequential and standard functional Model classes. Code to import a model may look like:
 
-Load a model into Keras, then save and load into DeepLearning4J.
-
-`ModelImport` can be used directly. You can start Keras, load VGG16, save the model and weights locally, and then load that model into DeepLearning4J. 
-
-### Code to load the model would look something like this
 
 ```
 ComputationGraph model = KerasModelImport.importKerasModelAndWeights(modelJsonFilename, weightsHdf5Filename, enforceTrainingConfig);
@@ -60,20 +57,6 @@ ComputationGraph model = KerasModelImport.importKerasModelAndWeights(modelJsonFi
 ```
 
 If you want to import a pre-trained model *for inference only*, then you should set `enforceTrainingConfig=false`. Unsupported training-only configurations generate warnings, but model import will proceed.
-
-### Option 2
-
-Import VGG-16 directly from online sources using helper functions.
-
-For important and widely used neural net models, DeepLearning4J provides helper functions. In the case of VGG-16, we can ask the helper function `TrainedModelHelper` to download the model configuration and the weights for us, and then build a DeepLearning4J version of the model. 
-
-### Code to Load VGG-16 with Helper Functions
-
-```
-TrainedModelHelper helper = new TrainedModelHelper(TrainedModels.VGG16);
-ComputationGraph vgg16 = helper.loadModel();
-
-```
 
 ## <a name=">Configure Data Pipelines for Testing">Configure a Data Pipeline for Testing</a>
 
@@ -345,12 +328,12 @@ public class VGG16SparkJavaWebApp {
 
 Here are the results given on a photo of one of the Skymind cats, which VGG-16 has probably never seen before. (He's very shy is why.)
 
-![Alt text](./../img/cat.jpeg)
+![a cat for inference](./../img/cat.jpeg)
 
 	16.694832%, tabby 7.550286%, tiger_cat 0.065847%, cleaver 0.000000%, cleaver 0.000000%, cleaver
 
 For this dog found on the internet, which VGG-16 may have seen during training, the results are quite precise.
 
-![Alt text](./../img/dog_320x240.png)
+![a dog for inference](./../img/dog_320x240.png)
 
 	53.441956%, bluetick 17.103373%, English_setter 5.808368%, kelpie 3.517581%, Greater_Swiss_Mountain_dog 2.263778%, German_short-haired_pointer'

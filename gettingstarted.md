@@ -60,6 +60,42 @@ If you use Eclipse, you will need to install the Maven plugin for Eclipse: [ecli
 
 Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](https://depiesml.wordpress.com/2015/08/26/dl4j-gettingstarted/).
 
+## <a name="eclipse_mvn_scm_checkout">Using DL4J Examples in Eclipse with direct checkout from GIT via the Maven plugin</a> 
+
+If you just want to get the examples running within Eclipse and without using command line at all you can also directly checkout the project from Eclipse's built-in Source Control Management (SCM):
+
+* In an empty workspace, import via "Check out Maven Project from SCM" and click on "Next"
+![Alt text](./img/dl4j_mvn_scm_checkout1.png)
+* Paste the git repo url: https://github.com/deeplearning4j/dl4j-examples.git (In case you don't see "git" in the dropdown click on the "Find more SCM connectors in the m2e Marketplace" link on the bottom, right of the dialog
+![Alt text](./img/dl4j_mvn_scm_checkout2.png)
+* Click on Finish (..and wait, it will take some time)
+
+You might get some errors in the pom.xml validator, ignore those for now.
+
+Test it!
+
+Find the file called XorExample.java in the org.deeplearning4j.examples.feedforward.xor packege in the src/main/java folder of the dl4j-examples project. Right-click and "Run as Java-Application":
+![Alt text](./img/dl4j_mvn_scm_checkout3.png)
+
+You should see an output like this:
+![Alt text](./img/dl4j_mvn_scm_checkout4.png)
+
+Congratulations, you can start coding!
+
+
+## Model Zoo
+
+As of 0.9.0 (or 0.8.1-SNAPSHOT), Deeplearning4j has a new native model zoo that can be accessed and instantiated directly from DL4J. Gone are the days of copying model configs from Github. The model zoo also includes pretrained weights for different datasets that are downloaded automatically and checked for integrity. 🚀
+
+Setting up a pretrained model with weights trained on ImageNet are as easy as:
+
+```
+ZooModel zooModel = new VGG16();
+ComputationGraph pretrainedNet = zooModel.initPretrained(PretrainedType.IMAGENET);
+```
+
+Learn more about the new zoo [here](/model-zoo).
+
 
 ## <a name="trouble">Troubleshooting</a>
 

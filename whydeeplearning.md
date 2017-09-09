@@ -53,4 +53,16 @@ In machine learning, the features are manually created by engineers who know exa
 
 Deep learning lacks feature introspection. This is important if you are trying to classify events as fraudulent or non-fraudulent, and have to document and justify how you reached your conclusions. If you reject a client's order as fraudulent and your boss asks you why, she may not like the answer "I don't know."
 
+### Advantages of Neural Nets
 
+* Neural nets are state-of-the-art for text: current parts data are heavy on text, and neural nets dominate in natural language processing. They also provide a flexible set of modeling options while minimizing feature engineering. The main alternatives are equally or more complex to train, e.g., conditional random fields or generative models, or have serious limitations for text, e.g., Random Forests.
+
+* Neural nets are state-of-the-art for images: Modern deep learning frameworks, e.g., convolutional networks, will be by far the best (maybe only feasible) choice to deal for such data. 
+
+* Neural nets can scale up to big data more naturally than alternative approaches, e.g., RFs or graphical models.
+
+* Neural nets can exploit unlabeled data: deep learning provides a variety of methods that allow us to better utilize unlabeled data. Other approaches, e.g., RFs, cannot naturally use unlabeled data.
+
+* Neural nets can be used for multitask learning: it is straightforward to train a neural net to predict multiple targets simultaneously. This can often improve performance. Multitask learning in other paradigms is much more limited (e.g., linear models), or difficult (e.g., random forests).
+
+* Neural nets learn transformed representations of data that can be used for other tasks: neural nets explicitly learn transformations of raw data (in hidden layers) that can be repurposed for other tasks.

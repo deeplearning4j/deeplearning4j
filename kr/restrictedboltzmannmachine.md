@@ -4,7 +4,7 @@ layout: kr-default
 redirect_from: kr/kr-restrictedboltzmannmachine
 ---
 
-# 초보자용 RBM(Restricted Boltzmann Machines) 튜토리알
+# 초보자용 RBM(Restricted Boltzmann Machines) 튜토리얼
 
 내용
 
@@ -12,7 +12,7 @@ redirect_from: kr/kr-restrictedboltzmannmachine
 * <a href="#reconstruct">재구성</a>
 * <a href="#probability">확률 분포</a>
 * <a href="#code">코드 예제: Iris 데이터셋으로 RBM 시작하기</a>
-* <a href="#params">매개변수와 k ??</a>
+* <a href="#params">파라미터 & k</a>
 * <a href="#CRBM">연속 RBMs</a>
 * <a href="#next">결론 및 다음 단계</a>
 * <a href="#resource">학습 자료</a>
@@ -210,7 +210,7 @@ RBM은 구조적으로 [directional, acyclic graph (DAG)](https://en.wikipedia.o
 
 이 코드는 RBM processing the Iris flower dataset의 일부입니다. 자세한 설명은 해당 링크를 참고하시기 바랍니다.
 
-## <a name="params">파라미터들 & k</a>
+## <a name="params">파라미터터 & k</a>
 
 RBM 학습 변수 중 k는 [contrastive divergence](../glossary.html#contrastivedivergence)를 실행하는 횟수입니다. Contrastive divergence는 학습에서 사용하는 기울기(네트워크의 가중치와 오차의 그라디언트)를 구하는 알고리즘입니다.
 

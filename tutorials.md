@@ -101,6 +101,14 @@ An overview of loading VGG-16, testing and deploying as a web application
 
 [View the tutorial](Build_VGG_Webapp)
 
+### IBM: Using Deeplearning4j for anomaly detection
+
+[View the tutorial](https://www.ibm.com/developerworks/analytics/library/iot-deep-learning-anomaly-detection-3/index.html)
+
+### Deeplearning4j integrated with MyRobotLab real time object recognition
+
+[View YouTube Video](https://www.youtube.com/watch?v=mjD63BWdJTs)
+
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
 
 * [Introduction to Neural Networks](./neuralnet-overview)

@@ -23,6 +23,16 @@ Perhaps you have a dual Intel® Xeon® Processor E5-2683 v4 system. It’s two p
 
 That’s an acronym for *Single Instructions Multiple Data*, a kind of parallelism that is supposed to apply some specific instruction to the different array/vector elements in parallel. We use SIMD parallelism mostly for inner loops, or for loops that are too small to exploit OpenMP.
 
+## JVM vs Native parallelism
+
+By design ND4j uses 1 JVM thread that handles execution, but when any given operation gets to the native part of codebase, operation might use more then 1 native thread, to speed up execution. So, unless you have very specific hardware setup, it might be bad idea to combine both JVM and Native parallelism at the same time. 
+Reasons are simple:
+- Your CPU/GPU has limited amount of computational power: number of cores, Floating Point Units in case of CPU, or number MultiProcessors, amount of resident blocks, shared memory & device memory bandwidth for CUDA.
+- CPU cache coherency: depending on patterns in your workflow, CPU cache may bring way more performance benefits, then few more additional threads thrown to the problem.
+- PCIe bandwidth: one of limiting factors for CUDA performance might become HOST -> GPU RAM transfers, since PCIe bandwidth isn't unlimited resource as well.
+
+So, for different tasks best performance can be achieved by using different approaches, and best approach always depends on your task.
+
 ## Parallelism vs. Performance
 
 It’s quite possible to have a system so powerful that it impedes itself if you don’t limit parallelism. Imagine that you have a 20-core CPU, but your task is just a linear operation over a 256-element array. In this case, launching even one parallel thread isn’t worth it. The reason being that the same operation will be applied faster with a single thread + SIMD lanes of your CPU, without any overhead produced by launching & operating a new thread. 

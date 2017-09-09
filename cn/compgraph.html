@@ -4,7 +4,7 @@ layout: cn-default
 ---
 <p><h1>用计算图构建复杂的网络架构</h1></p>
 <p>本页主要介绍如何用DL4J的计算图（Computation Graph）功能来构建更加复杂的网络。</p>
-<p><strong><em>重要提示：DL4J 0.4-rc3.8及之前的版本不包含ComputationGraph模型。0.4-rc3.9及之后的版本提供该模型。</em></strong></p>
+<p><strong><em>新功能：截至7.3，在执行三元组损失（triplet loss）时，计算图将支持无参数LossLayer和顶点</em></strong></p>
 <p><strong>目录</strong></p>
 <ul>
   <li><a href="#overview">计算图概述</a></li>
@@ -18,7 +18,7 @@ layout: cn-default
       <li><a href="#preprocessors">自动添加PreProcessor并计算nIn</a></li>
     </ul>
   </li>
-  <li><a href="#data">ComputationGraph的定型数据</a>
+  <li><a href="#data">ComputationGraph的训练数据</a>
     <ul>
 	  <li><a href="#DataSet和DataSetIterator">DataSet和DataSetIterator</a></li>
 		<li><a href="#MultiDataSet和MultiDataSetIterator">MultiDataSet和MultiDataSetIterator</a></li>
@@ -139,11 +139,11 @@ ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
 </ol>
 <p>举例而言，假设网络有两项输入，其中之一是卷积输入，另一个是前馈输入，那么您可以采用<code>.setInputTypes(InputType.convolutional(depth,width,height), InputType.feedForward(feedForwardInputSize))</code></p><br>
 
-<p><h2><a name="data">ComputationGraph的定型数据</a></h2></p>
+<p><h2><a name="data">ComputationGraph的训练数据</a></h2></p>
 <p>ComputationGraph可以使用两种类型的数据。</p><br>
 <p><h3><a name="DataSet和DataSetIterator">DataSet和DataSetIterator</a></h3></p>
 <p>DataSet类最初的设计目的是用于MultiLayerNetwork，但它也能用于ComputationGraph，不过仅适用于只有单一输入和输出数组的计算图。有多个输入或输出数组的计算图架构无法使用DataSet和DataSetIterator（应换用MultiDataSet/MultiDataSetIterator）。</p>
-<p>DataSet对象实际上就是一对含有定型数据的INDArray数组。在RNN网络中，它也有可能包括掩膜数组（更多详情参见<a href="usingrnns">此页</a>）。DataSetIterator就是DataSet对象的迭代器。</p><br>
+<p>DataSet对象实际上就是一对含有训练数据的INDArray数组。在RNN网络中，它也有可能包括掩膜数组（更多详情参见<a href="usingrnns">此页</a>）。DataSetIterator就是DataSet对象的迭代器。</p><br>
 <p><h3><a name="MultiDataSet和MultiDataSetIterator">MultiDataSet和MultiDataSetIterator</a></h3></p>
 <p>MultiDataSet是DataSet的多项输入和/或多项输出版本。在循环神经网络中，它也有可能包括多个掩膜数组（与每个输入/输出数组对应）。一般而言，您应当使用DataSet/DataSetIterator，除非需要处理多项输入和/或多项输出。</p>
 <p>目前有两种使用MultiDataSetIterator的方法：</p>

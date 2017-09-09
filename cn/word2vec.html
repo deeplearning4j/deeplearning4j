@@ -112,30 +112,7 @@ building:architect::software:[programmer, SecurityCenter, WinPcap]
 
 <p><h3><a name="setup">Word2Vec设置</a></h3></p>
 <p>用Maven在IntelliJ中创建新项目。如果你不知道这一步如何操作，请查看<a href="quickstart.html">快速入门页</a>。随后在项目根目录下的POM.xml文件中指定以下属性和依赖关系（可以<a href="https://search.maven.org/#search%7Cga%7C1%7Cnd4j" target="_blank">在Maven上查看</a>最新版本－请使用那些版本…）。</p>
-<pre class="line-numbers"><code class="language-java">
-&lt;properties>
-  &lt;nd4j.version>0.4.1-SNAPSHOT&lt;/nd4j.version> // 请到Maven中央仓库查看最新版本！
-  &lt;dl4j.version>0.4.1-SNAPSHOT&lt;/dl4j.version>
-&lt;/properties>
-
-&lt;dependencies>
-  &lt;dependency>
-     &lt;groupId>org.deeplearning4j&lt;/groupId>
-     &lt;artifactId>deeplearning4j-ui&lt;/artifactId>
-     &lt;version>${dl4j.version}&lt;/version>
-   &lt;/dependency>
-   &lt;dependency>
-     &lt;groupId>org.deeplearning4j&lt;/groupId>
-     &lt;artifactId>deeplearning4j-nlp&lt;/artifactId>
-     &lt;version>${dl4j.version}&lt;/version>
-   &lt;/dependency>
-   &lt;dependency>
-     &lt;groupId>org.nd4j&lt;/groupId>
-     &lt;artifactId>nd4j-native&lt;/artifactId> 
-     &lt;version>${nd4j.version}&lt;/version>
-   &lt;/dependency>
-&lt;/dependencies>
-</code></pre>
+<br>
 <br>
 
 <p><h3>加载数据</h3></p>
@@ -343,7 +320,7 @@ JAVACopyWord2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
 <p>目前最受欢迎的常用模型是谷歌新闻模型。该模型有3M的词，向量大小为300。这样的话，仅加载模型就需要3.6GB。另外还要加上3M的字符串，而字符串在Java中没有恒定的大小。所以，加载模型所需的内存通常为4～6GB左右，具体取决于JVM版本/供应商、垃圾回收状态、月相……</p>
 <br>
 <p><strong>问：</strong>我完全按照你们的方法操作，但结果看起来还是不对。</p>
-<p><strong>答：</strong>如果你在使用Ubuntu，序列化的数据有可能不能正常加载。这是Ubuntu的问题。我们建议在其他版本的Linux下测试这一版本的Word2vec。</p>
+<p><strong>答：</strong>首先要确保这不是标准化（Normalization）问题。一些任务，比如wordsNearest()，就是默认使用使用标准化权重（Normalized Weights），而其他的就是用非标准化权重。必须注意这个差异。</p>
 <br>
 <p><h2><a name="use">应用案例</a></h2></p>
 <p>谷歌学术记录了所有引用<a href="https://scholar.google.com/scholar?hl=en&q=deeplearning4j+word2vec&btnG=&as_sdt=1%2C5&as_sdtp=" target="_blank">通过Deeplearning4j实现的Word2vec</a>的论文。</p>

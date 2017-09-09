@@ -56,7 +56,7 @@ var PAGES = [{
 "url": "https://deeplearning4j.org/cn/compare-dl4j-torch7-pylearn",
 "title": "DL4J与Torch、Theano、Caffe、TensorFlow的比较",
 "description": "Deeplearning4j不是第一个开源的深度学习项目，但与此前的其他项目相比，DL4J在编程语言和宗旨两方面都独具特色。",
-"tags": ["tensor flow", "torch", "python", "caffe", "cntk", "比较", "bigdl", "keras", "mxnet", "tensorflow", "paddle", "dsstne"]
+"tags": ["tensor flow", "torch", "python", "caffe", "caffe2", "cntk", "比较", "bigdl", "keras", "mxnet", "tensorflow", "paddle", "dsstne"]
 },
 {
 "url": "https://deeplearning4j.org/cn/convolutionalnets",
@@ -489,4 +489,82 @@ var PAGES = [{
 "title": "在Linux上进行安装",
 "description": "示范如何在 Linux 上设置 Deeplearning4j。",
 "tags": ["linux", "入门", "新手", "如何", "开始", "怎样", "java", "intellij", "设置","maven"]
+},
+{
+"url": "https://deeplearning4j.org/cn/scala",
+"title": "Scala、Spark与Deeplearning4j",
+"description": "希望构建深度学习解决方案的Scala程序员可以使用Deeplearning4j的Scala API ScalNet，或者借助Builder模式来使用该Java框架。Skymind的数值运算库ND4J（面向JVM的N维数组）自带名为ND4S的Scala API。",
+"tags": ["scala", "spark", "deeplearning4j", "函数", "scalnet", "scala api", "nd4j", "nd4s", "python","强类型"]
+},
+{
+"url": "https://deeplearning4j.org/cn/etl-userguide",
+"title": "DL4J：ETL用户指南",
+"description": "用红帽软件包管理器（RPM）安装Deeplearning4J",
+"tags": ["rpm", "deeplearning4j", "redhat", "红帽", "软件包管理器", "nd4j", "jblas", "scala", "spark","dl4j","repo"]
+},
+{
+"url": "https://deeplearning4j.org/cn/rpm",
+"title": "Deeplearning4J与RPM",
+"description": "神经网络需要处理的数据有许多种不同的来源和类型，例如日志文件、文本文档、表格数据、图像、视频等。神经网络数据加工的目标是将各类数据转换为一系列存放于多维数组（Multi-Dimensional Array）中的值",
+"tags": ["记录读取器", "标准化器", "转换", "etl", "datavec", "recordreader", "ImageRecordReader", "channels", "NativeImageLoader","NativeImageLoader","INDarray","javacv","opencv","ffmpeg","CSVSequenceReader","UCISequenceClassificationExample","NumberedFileInputFormat","NativeImageLoader"]
+},
+{
+"url": "https://deeplearning4j.org/cn/singlelayernetwork",
+"title": "单层神经网络",
+"description": "深度学习中的单层神经网络是一种由一个可见的输入层和一个隐藏的输出层组成的网络。",
+"tags": ["单层网络", "定型", "学习速率", "动量", "dropout", "l2", "learning", "rate", "momentum","神经网络","regulatization","single","weight","precise","entropy","bias","noise","噪音"]
+},
+{
+"url": "https://deeplearning4j.org/cn/android",
+"title": "如何在Android应用程序中使用Deeplearning4J	",
+"description": "在本教程中，我将向您介绍如何用Deeplearning4J这一热门的Java深度学习库来在Android设备上创建和训练神经网络。",
+"tags": ["android", "安卓", "gpu", "android studio", "build.gradle", "android-x86", "defaultConfig", "AsyncTask", "移动","神经网络","NeuralNetConfiguration","INDArray","putScalar","Ashraff","Progur"]
+},
+{
+"url": "https://deeplearning4j.org/cn/reinforcementlearning",
+"title": "强化学习基础教程",
+"description": "神经网络由于近期在计算机视觉、机器翻译和时间序列预测等多个领域中取得的进展而声名远扬，但强化学习或许才是神经网络真正的“杀手级”应用。",
+"tags": ["强化学习", "reinforcelearning", "神经网络", "rl4j", "doom", "agent", "state", "action", "reward","convolution","q函数","convolutional","卷积","游戏"]
+},
+{
+"url": "https://deeplearning4j.org/cn/source",
+"title": "用源代码工作",
+"description": "如果您不打算以提交者（committer）的身份为Deeplearning4j做贡献，或者您不需要最新的Alpha版本，那么我们建议您从Maven中央仓库下载Deeplearning4j最新的稳定发布版本。具体操作与在IntelliJ中将依赖项添加至您的POM.xml一样简单。",
+"tags": ["源代码", "source", "github", "deeplearning4j", "maven", "mac", "window", "贡献", "lombok","dl4j","nd4j","datavec","mvn","git"]
+},
+{
+"url": "https://deeplearning4j.org/cn/skynet",
+"title": "天网问题：如何管控人工智能？",
+"description": "从本质上看，人工智能是很难监管的，因为它其实只是在一些芯片上运行的数学算法和程序代码，任何程序员都可以在自家车库里随意使用这些算法和代码工作，推动人工智能不断进步。",
+"tags": ["cpu", "skynet", "terminator", "天网", "终结者", "人工智能"]
+},
+{
+"url": "https://deeplearning4j.org/cn/native",
+"title": "Deeplearning4j的本机CPU优化",
+"description": "本页指南将介绍在DL4J和ND4J上调试或提升CPU系统性能的几种方法",
+"tags": ["优化", "github", "openm", "内核", "超线程", "simd", "jvm", "本机", "gpu","并行","pcie","ram","内存","性能","调试","并行计算","omp","OMP_NUM_THREADS","NativeOpsHolder","intel","mkl","spark","源码","故障排除","后端","回退模式","INDArray","ND4J_FALLBACK","nd4j","fallback","native"]
+},
+{
+"url": "https://deeplearning4j.org/cn/build_vgg_webapp",	
+"title": "如何用VGG-16构建识别图像的网页应用",
+"description": "神经网络不断刷新着图像识别的准确率纪录。本页主要介绍如何构建一个基于网页的应用程序，用著名的VGG-16网络实现推断，对用户上传的图像进行分类。",
+"tags": ["vgg", "图像", "例子", "用例", "猫", "狗", "imagenet", "预测", "加载", "测试","模型","ModelSerializer","代码","配置","训练","模型","model","照片","识别","ImageRecordReader","ModelSerializer"]
+},
+{
+"url": "https://deeplearning4j.org/cn/toyproblems",	
+"title": "玩具问题",
+"description": "人们经常向我们提及教科书中出现的样例数量很少的玩具示例。",
+"tags": ["玩具", "示例", "例子", "用例", "Deeplearning4j", "minibatch", "双精度", "sgd", "优化"]
+},
+{
+"url": "https://deeplearning4j.org/cn/gpu",	
+"title": "用GPU运行Deeplearning4j",
+"description": "Deeplearning4j同时支持分布式和本机GPU。用户可以用NVIDIA Tesla、Titan、GeForce GTX等单个本地GPU运行DL4J，也可以使用云端的NVIDIA GRID GPU来运行。",
+"tags": ["gpu", "显示卡", "cuda", "cudnn", "ParallelWrapper"]
+},
+{
+"url": "https://deeplearning4j.org/cn/thoughtvectors",	
+"title": "思维向量、深度学习与人工智能的未来",
+"description": "思维向量”是一个由现在谷歌任职的著名深度学习研究者Geoffrey Hinton发扬光大的术语，目前谷歌正在使用基于自然语言的向量来改善其搜索结果。",
+"tags": ["思维向量", "thoughtvectors", "Hinton", "doc2vec", "nlp", "自然语言", "词向量", "循环神经网络"]
 }];

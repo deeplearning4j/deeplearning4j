@@ -5,7 +5,7 @@ layout: default
 
 # Deeplearning4j Model Zoo
 
-As of 0.9.0 (or 0.8.1-SNAPSHOT), Deeplearning4j has a new native model zoo that can be accessed and instantiated directly from DL4J. Gone are the days of copying model configs from Github. The model zoo also includes pretrained models for different datasets that are downloaded automatically and checked for integrity. 🚀
+As of 0.9.0 (or 0.8.1-SNAPSHOT), Deeplearning4j has a new native model zoo that can be accessed and instantiated directly from DL4J. Gone are the days of copying model configs from Github. The model zoo also includes pretrained weights for different datasets that are downloaded automatically and checked for integrity. 🚀
 
 If you want to use the new model zoo, you will need to add it as a dependency. A Maven POM would add the following:
 
@@ -139,7 +139,7 @@ zooModel.setInputShape(new int[]{3,28,28});
 
 ### Transfer Learning
 
-Pretrained models are perfect for transfer learning! You can read more about transfer learning using DL4J [here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/transferlearning/vgg16/TransferLearning.md).
+Pretrained models are perfect for transfer learning! You can read more about transfer learning using DL4J [here](https://deeplearning4j.org/transfer-learning).
 
 ### Workspaces
 

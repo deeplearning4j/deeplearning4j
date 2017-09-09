@@ -15,14 +15,14 @@ layout: cn-default
 <p><h2>迭代式MapReduce</h2></p>
 <p>虽然MapReduce在许多用例中只需单次遍历即可，但这对于机器学习和深度学习来说是不够的，因为模型&ldquo;学习&rdquo;的本质就是一项优化算法通过许多次的迭代步骤来达到最小误差。</p>
 <p>迭代式MapReduce同样也是<a href="https://static.googleusercontent.com/media/research.google.com/en/us/people/jeff/CIKM-keynote-Nov2014.pdf" target="_blank">受Jeff Dean启发</a>而提出的，可以将其视为一种多次而非单次遍历数据的YARN框架。虽然迭代式归纳的架构与MapReduce有所区别，但总体上而言，可以把它理解为一个MapReduce操作序列，其中MapReduce1的输出成为MapReduce2的输入，以此类推。</p>
-<p>假设现在有一个深度置信网络，而您想用一个非常大的数据集来定型，生成能够将输入准确分类的模型。深度置信网络由三个函数组成：一个将输入映射到分类的计分函数、一个衡量模型预测结果与正确答案的差距的误差函数、一个调整模型参数直至预测误差达到最小的优化算法。</p>
-<p><em>Map</em>将以上所有操作置于分布式系统的每个处理器核中。然后它会把规模庞大的输入数据集分批分发给许多处理器核。每个核都用得到的输入定型一个模型。<em>Reduce</em>对所有模型的参数进行平均化，然后将聚合后的新模型发送回每一个核。迭代式归纳将这样的操作重复多次，直至学习结果趋于稳定，误差不再缩小。</p>
+<p>假设现在有一个深度置信网络，而您想用一个非常大的数据集来训练，生成能够将输入准确分类的模型。深度置信网络由三个函数组成：一个将输入映射到分类的计分函数、一个衡量模型预测结果与正确答案的差距的误差函数、一个调整模型参数直至预测误差达到最小的优化算法。</p>
+<p><em>Map</em>将以上所有操作置于分布式系统的每个处理器核中。然后它会把规模庞大的输入数据集分批分发给许多处理器核。每个核都用得到的输入训练一个模型。<em>Reduce</em>对所有模型的参数进行平均化，然后将聚合后的新模型发送回每一个核。迭代式归纳将这样的操作重复多次，直至学习结果趋于稳定，误差不再缩小。</p>
 <p>以下这幅<a href="http://www.slideshare.net/cloudera/strata-hadoop-world-2012-knitting-boar" target="_blank">由Josh Patterson绘制的</a>示意图比较了这两种流程。左侧是MapReduce的流程详情；右边则是迭代式归纳。每个&ldquo;处理器（Processor）&rdquo;都是一个用大型数据集中的多批数据进行学习的深度置信网络；每个&ldquo;超步（Superstep）&rdquo;是一次参数平均化，所得的中央模型会被重新分发给整个集群。</p>
 <img class="img-responsive center-block" src="../img/mapreduce_v_iterative.png" alt="deeplearning4j"><br>
 
 <p><h2>Hadoop和Spark</h2></p>
 <p>Hadoop和Spark都是能够进行MapReduce和迭代式归纳的分布式运行时。Deeplearning4j作为Hadoop/YARN或Spark中的一项任务运行，比如可以将其作为一项YARN应用来调用、运行和预配。</p>
-<p>在Hadoop中，迭代式归纳的工作节点负责各自的数据分片，亦即HDFS块，以同步方式并行处理数据，再把变换后的参数发回主节点，主节点将参数平均化，然后用其更新每个工作节点的处理器核上的模型。MapReduce的映射路径不会持续保留，而迭代式归纳的工作节点则是&ldquo;常驻&rdquo;的。Spark的架构与此大致相似。</p>
+<p>在Hadoop中，迭代式归纳的工作器负责各自的数据分片，亦即HDFS块，以同步方式并行处理数据，再把变换后的参数发回主节点，主节点将参数平均化，然后用其更新每个工作器的处理器核上的模型。MapReduce的映射路径不会持续保留，而迭代式归纳的工作器则是&ldquo;常驻&rdquo;的。Spark的架构与此大致相似。</p>
 <p>稍微介绍一下这方面技术的最新进展。谷歌和雅虎都运营着存储了海量参数的参数服务器，这些数以亿计的参数会被分发到集群中进行处理。谷歌的系统称为Google Brain，由Andrew Ng创建，现在由他的学生Quoc Le负责领导。以下是2015年前后谷歌生产栈的总体示意图，其中可见MapReduce的定位。</p><br>
 
 <img class="img-responsive center-block" src="../img/google_production_stack.png" alt="deeplearning4j"><br>

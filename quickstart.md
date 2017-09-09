@@ -13,14 +13,13 @@ setTimeout(ldinsp, 500); document.readyState != "complete" ? (window.attachEvent
 </script>
 <!-- End Inspectlet Embed Code -->
 
-Quick Start Guide
-=================
+# Quick Start Guide
 
 This is everything you need to run DL4J examples and begin your own projects.
 
-We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). Gitter is where you can request help and give feedback, but please do use this guide before asking questions we've answered below. If you are new to deep learning, we've included [a road map for beginners](./deeplearningforbeginners.html) with links to courses, readings and other resources. 
+We recommend that you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). Gitter is where you can request help and give feedback, but please do use this guide before asking questions we've answered below. If you are new to deep learning, we've included [a road map for beginners](./deeplearningforbeginners.html) with links to courses, readings and other resources. If you need an end to end tutorial to get started (including setup), then please go to our [getting started](http://deeplearning4j.org/gettingstarted).
 
-#### A Taste of Code
+### A Taste of Code
 
 Deeplearning4j is a domain-specific language to configure deep neural networks, which are made of multiple layers. Everything starts with a `MultiLayerConfiguration`, which organizes those layers and their hyperparameters.
 
@@ -34,6 +33,7 @@ Hyperparameters are variables that determine how a neural network learns. They i
         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
         .learningRate(0.05)
         // ... other hyperparameters
+        .list()
         .backprop(true)
         .build();
 ```
@@ -201,3 +201,34 @@ In this case replace with "Nd4jCpu".
 ### Eclipse setup without Maven
 
 We recommend and use Maven and Intellij. If you prefer Eclipse and dislike Maven here is a nice [blog post](http://electronsfree.blogspot.com/2016/10/how-to-setup-dl4j-project-with-eclipse.html) to walk you through an Eclipse configuration.
+
+## DL4J Overview
+
+Deeplearning4j is a framework that lets you pick and choose with everything available from the beginning. We're not Tensorflow (a low-level numerical computing library with automatic differentiation) or Pytorch. For more details, please see [our deep learning library compsheet](https://deeplearning4j.org/compare-dl4j-torch7-pylearn). Deeplearning4j has several subprojects that make it easy-ish to build end-to-end applications. 
+
+If you'd like to deploy models to production, you might like our [model import from Keras](https://deeplearning4j.org/model-import-keras).
+
+Deeplearning4j has several submodules. These range from a visualization UI to distributed training on Spark. For an overview of these modules, please look at the [**Deeplearning4j examples on Github**](https://github.com/deeplearning4j/dl4j-examples).
+
+To get started with a simple desktop app, you need two things: An [nd4j backend](http://nd4j.org/backend.html) and `deeplearning4j-core`. For more code, see the [simpler examples submodule](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/pom.xml#L64).
+
+If you want a flexible deep-learning API, there are two ways to go.  You can use nd4j standalone See our [nd4j examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/nd4j-examples) or the [computation graph API](http://deeplearning4j.org/compgraph).
+
+If you want distributed training on Spark, you can see our [Spark page](http://deeplearning4j.org/spark)
+Keep in mind that we cannot setup Spark for you. If you want to set up distributed Spark and GPUs, that is largely up to you. Deeplearning4j simply deploys as a JAR file on an existing Spark cluster.
+
+If you want Spark with GPUs, we recommend [Spark with Mesos](https://spark.apache.org/docs/latest/running-on-mesos.html).
+
+If you want to deploy on mobile, you can see our [Android page](http://deeplearning4j.org/android).
+
+We deploy optimized code for various hardware architectures natively. We use C++ based for loops just like everybody else.
+For that, please see our [C++ framework libnd4j](https://github.com/deeplearning4j/libnd4j).
+
+Deeplearning4j has two other notable components: 
+
+* [Arbiter: hyperparameter optimization and model evaluation](https://github.com/deeplearning4j/Arbiter)
+* [DataVec: built-in ETL for machine-learning data pipelines](https://github.com/deeplearning4j/DataVec)
+
+Overall, Deeplearning4j is meant to be an end-to-end platform for building real applications. Not just a tensor library with automatic differentiation. If you want that, that's in ND4J and it's called [samediff](https://github.com/deeplearning4j/nd4j/tree/master/samediff). Samediff is still in alpha, but if you want to take a crack at contributing, please come in to our [live chat on Gitter](https://gitter.im/deeplearning4j/deeplearning4j).
+
+Lastly, if you are benchmarking Deeplearnin4j, please consider coming in to our live chat and asking for tips. Deeplearning4j has [all the knobs](http://deeplearning4j.org/native) but some may not work as the Python frameworks to do. You have to build Deeplearning4j from source for some applications.

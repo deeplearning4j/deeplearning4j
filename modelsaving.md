@@ -1,9 +1,9 @@
 ---
-title: Deeplearning4j model saving
+title: Deeplearning4j Model Saving
 layout: default
 ---
 
-# Model saving
+# Model Saving
 
 ## This page is out of date Please see [this page](http://deeplearning4j.org/modelpersistence)
 
