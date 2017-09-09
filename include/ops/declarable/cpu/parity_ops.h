@@ -30,7 +30,7 @@ namespace nd4j {
 
             std::unique_ptr<int> shapePtr(new int[first->_shapeInfo[0] * 2 + 4]);
 
-            std::memcpy(shapePtr.get(), first->_shapeInfo, (first->_shapeInfo[0] * 2 + 4) * sizeof(int));
+            std::memcpy(shapePtr.get(), first->_shapeInfo, shape::shapeInfoByteLength(first->_shapeInfo));
             _length = shape::length(shapePtr.get());
 
             std::unique_ptr<Nd4jPointer> buffers(new Nd4jPointer[block.getVariables().size()]);
