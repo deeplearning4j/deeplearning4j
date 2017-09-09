@@ -3,7 +3,6 @@ package org.nd4j.linalg.custom;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
@@ -190,24 +189,35 @@ public class CustomOpsTests {
     }
 
     @Test
-    public void testMergeMax2() throws Exception {
-        INDArray array0 = Nd4j.linspace(1,10,10).reshape('f',5,2);
-        INDArray array1 = array0.dup().add(5);
-        array1.put(0,0,0);
-        //INDArray exp = Nd4j.ones(array0.shape());
-        INDArray exp = array0.dup();
-        exp.put(0,0,0);
-        INDArray z = Nd4j.zeros(array0.shape());
+    public void testMergeMaxF() throws Exception {
 
-        CustomOp op = DynamicCustomOp.builder("mergemax")
+        val array0 = Nd4j.rand('f',5,2).add(1); //some random array with +ve numbers
+        val array1 = array0.dup().add(5);
+        array1.put(0,0,0); //array1 is always bigger than array0 except at 0,0
+
+        //expected value of maxmerge
+        val exp = array1.dup();
+        exp.putScalar(0,0,array0.getDouble(0,0));
+
+        val zC = Nd4j.zeros(array0.shape());
+        val zF = Nd4j.zeros(array0.shape(),'f');
+
+        CustomOp op;
+        op = DynamicCustomOp.builder("mergemax")
                 .setInputs(array0, array1)
-                .setOutputs(z)
+                .setOutputs(zF)
                 .callInplace(false)
                 .build();
-
         Nd4j.getExecutioner().exec(op);
+        assertEquals(exp, zF);
 
-        assertEquals(exp, z);
+        op = DynamicCustomOp.builder("mergemax")
+                .setInputs(array0, array1)
+                .setOutputs(zC)
+                .callInplace(false)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+        assertEquals(exp, zC);
 
     }
 
