@@ -28,6 +28,21 @@ public class VoidConfigurationTest {
         assertEquals("192.168.1.0/24", configuration.getNetworkMask());
     }
 
+    @Test
+    public void testNetworkMask5() throws Exception {
+        VoidConfiguration configuration = new VoidConfiguration();
+        configuration.setNetworkMask("192.168.0.0/16");
+
+        assertEquals("192.168.0.0/16", configuration.getNetworkMask());
+    }
+
+    @Test
+    public void testNetworkMask6() throws Exception {
+        VoidConfiguration configuration = new VoidConfiguration();
+        configuration.setNetworkMask("192.168.0.0/8");
+
+        assertEquals("192.168.0.0/8", configuration.getNetworkMask());
+    }
 
     @Test(expected = ND4JIllegalStateException.class)
     public void testNetworkMask3() throws Exception {
