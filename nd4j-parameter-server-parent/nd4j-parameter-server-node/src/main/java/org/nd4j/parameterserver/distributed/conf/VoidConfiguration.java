@@ -182,7 +182,7 @@ public class VoidConfiguration implements Serializable {
             throw new ND4JIllegalStateException("First network mask octet should be non-zero. I.e. 10.0.0.0/8");
 
         // we enforce last octet to be 0/24 always
-        if (!networkMask.contains("/") || !chunks[3].startsWith("\\0\\/")) {
+        if (!networkMask.contains("/") || !chunks[3].startsWith("0")) {
             chunks[3] = "0/24";
         }
 
