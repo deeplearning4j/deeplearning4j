@@ -238,6 +238,6 @@ public class CustomOpsTests {
 
     @Test
     public void testOpStatus1() throws Exception {
-        log.info("{}", OpStatus.ND4J_STATUS_BAD_ARGUMENTS.ordinal());
+        assertEquals(OpStatus.ND4J_STATUS_OK, OpStatus.byNumber(0));
     }
 }
