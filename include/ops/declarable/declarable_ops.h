@@ -116,6 +116,8 @@ namespace nd4j {
             Nd4jStatus validateInput3D(Block<T>& block);
             Nd4jStatus validateInput4D(Block<T>& block);
             Nd4jStatus validateInputDimensions(Block<T>& block, int rank);
+
+            Nd4jStatus validateArguments(Block<T>& block);
         };
 
 
@@ -455,8 +457,35 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(Block<T>* block) {
         throw std::invalid_argument("Block is NULL");
 
     REQUIRE_OK(this->validateNonEmptyInput(*block));
+    REQUIRE_OK(this->validateArguments(*block));
 
     return this->validateAndExecute(*block);
+}
+
+template <typename T>
+Nd4jStatus nd4j::ops::DeclarableOp<T>::validateArguments(Block<T>& block) {
+    /*
+     * We're checking number of T and I arguments. If number of args is finite number - we check strict equality
+     * If number of args is variable (-1), but variables MUST be present - we check for non-zero number of arguments
+     */
+    if (_descriptor->getNumberOfTArgs() > 0) {
+        if (block.getTArguments()->size() != _descriptor->getNumberOfTArgs())
+            return ND4J_STATUS_BAD_PARAMS;
+    } else
+        if (_descriptor->getNumberOfTArgs() == -1)
+            if (block.getTArguments()->size() == 0)
+                return ND4J_STATUS_BAD_PARAMS;
+
+    if (_descriptor->getNumberOfIArgs() > 0) {
+        if (block.getIArguments()->size() != _descriptor->getNumberOfIArgs())
+            return ND4J_STATUS_BAD_PARAMS;
+    } else
+        if (_descriptor->getNumberOfIArgs() == -1)
+            if (block.getIArguments()->size() == 0)
+                return ND4J_STATUS_BAD_PARAMS;
+
+
+    return ND4J_STATUS_OK;
 }
 
 template <typename T>

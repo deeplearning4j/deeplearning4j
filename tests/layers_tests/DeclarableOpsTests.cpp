@@ -1352,7 +1352,8 @@ TEST_F(DeclarableOpsTests, Transpose1) {
     block->fillInputs({-1});
 	nd4j::ops::transpose<float> transpose;
 
-	transpose.execute(block);
+	Nd4jStatus status = transpose.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
 	// ASSERT_TRUE(x.isSameShapeStrict(&exp));
 
 	for (int e = 0; e < x.rankOf() * 2 + 2; e++) {
@@ -1376,7 +1377,9 @@ TEST_F(DeclarableOpsTests, Transpose2) {
     block->fillInputs({-1});
 	nd4j::ops::transpose<float> transpose;
 
-	transpose.execute(block);
+	Nd4jStatus  status = transpose.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
 	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
 	// ASSERT_TRUE(result->isSameShapeStrict(&exp));
 	for (int e = 0; e < result->rankOf() * 2 + 2; e++) {
@@ -1438,4 +1441,27 @@ TEST_F(DeclarableOpsTests, Permute2) {
 	ASSERT_EQ(ND4J_STATUS_OK, status);	
 	ASSERT_TRUE(result->isSameShapeStrict(&exp));	
 }
+
+
+TEST_F(DeclarableOpsTests, TestArgumentsValidation1) {
+    const int shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
+    const int shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
+    const std::vector<int> perm = {2, 0, 1};
+    NDArray<float> x(shapeX);
+    NDArray<float> exp(shapeExp);
+
+    VariableSpace<float>* variableSpace = new VariableSpace<float>();
+    variableSpace->putVariable(-1, &x);
+    variableSpace->putVariable(1, new Variable<float>());
+
+    Block<float>* block = new Block<float>(1, variableSpace, false);  // not-in-place
+    block->fillInputs({-1});
+
+    nd4j::ops::permute<float> permute;
+    Nd4jStatus status = permute.execute(block);
+
+    ASSERT_TRUE(status != 0);
+
+}
+
 

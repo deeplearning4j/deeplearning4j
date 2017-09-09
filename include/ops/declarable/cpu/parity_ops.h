@@ -977,7 +977,7 @@ namespace nd4j {
         }
 		
 		//////////////////////////////////////////////////////////////////////////
-		DECLARE_CONFIGURABLE_OP(transpose, 1, 1, true, 0, -1) {
+		DECLARE_OP(transpose, 1, 1, true) {
 			NDArray<T> *x = block.getVariables().at(0)->getNDArray();            			
 			
 			if(block.isInplace()) {
