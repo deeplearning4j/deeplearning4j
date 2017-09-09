@@ -1,6 +1,7 @@
 package org.deeplearning4j.rl4j.policy;
 
 import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
@@ -24,7 +25,11 @@ public abstract class Policy<O extends Encodable, A> {
     public abstract A nextAction(INDArray input);
 
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp) {
-        return play(mdp, null);
+        return play(mdp, (IHistoryProcessor)null);
+    }
+
+    public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, HistoryProcessor.Configuration conf) {
+        return play(mdp, new HistoryProcessor(conf));
     }
 
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
