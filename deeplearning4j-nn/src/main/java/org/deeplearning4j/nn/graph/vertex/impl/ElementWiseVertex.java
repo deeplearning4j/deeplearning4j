@@ -151,7 +151,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 return new Pair<>(null, out_product);
             case Max:
                 INDArray[] outMax = new INDArray[nInForwardPass];
-                INDArray maxIndices = inputs[0].dup();
+                INDArray maxIndices = epsilon.dup();
                 CustomOp op = DynamicCustomOp.builder("mergemaxindex")
                         .setInputs(inputs)
                         .setOutputs(maxIndices)
