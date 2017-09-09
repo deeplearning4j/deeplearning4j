@@ -21,14 +21,16 @@ namespace nd4j {
     namespace ops {
 
         template<typename T>
-        void resultHelper(T status, const char *func, const char *file, int line) {
+        Nd4jStatus resultHelper(T status, const char *func, const char *file, int line) {
             if (status) {
                 //  TODO: fill out error codes here
                 fprintf(stderr, "Validation error at %s:%d code=%d(%s) \"%s\" \n", file, line,
                         static_cast<unsigned int>(status), "", func);
 
-                throw "Validation failed";
+                return ND4J_STATUS_BAD_INPUT;
             }
+
+            return ND4J_STATUS_OK;
         }
 
         template <typename T>
@@ -41,6 +43,7 @@ namespace nd4j {
              * This method executes this Op
              */
             virtual Nd4jStatus validateAndExecute(Block<T>& block) = 0;
+
 
             /**
              * This method ensures that target variable has enough space for op execution
@@ -450,6 +453,8 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(Block<T>* block) {
         _block = block;
     else
         throw std::invalid_argument("Block is NULL");
+
+    REQUIRE_OK(this->validateNonEmptyInput(*block));
 
     return this->validateAndExecute(*block);
 }
