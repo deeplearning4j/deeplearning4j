@@ -4224,7 +4224,7 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
             return false;
 
         // we do full comparison here
-        int length = shapeA[0] * 2 + 4;
+        int length = shape::shapeInfoLength(shapeA[0]);
 
         for (int e = 1; e < length; e++)
             if (shapeA[e] != shapeB[e])

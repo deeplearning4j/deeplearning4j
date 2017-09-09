@@ -578,19 +578,9 @@ template <typename T> void NDArray<T>::transposei() {
         // throw something right here
         if (i >= shape::length(_shapeInfo))
             throw std::invalid_argument("Requested index above limit");
-/*
-        if (isRowVector()) {
-            return this->getScalar(0, i);
-        } else if (isColumnVector()) {
-            return this->getScalar(i, 0);
-        }
-*/
+
         int idx[MAX_RANK];
-        if (this->ordering() == 'f') {
-            shape::ind2sub(this->rankOf(), this->shapeOf(), i, idx);
-        } else {
-            shape::ind2subC(this->rankOf(), this->shapeOf(), i, idx);
-        }
+        shape::ind2subC(this->rankOf(), this->shapeOf(), i, idx);
 
         Nd4jIndex offset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), idx, this->rankOf());
 
@@ -602,19 +592,9 @@ template <typename T> void NDArray<T>::transposei() {
         // throw something right here
         if (i >= shape::length(_shapeInfo))
             throw std::invalid_argument("Requested index above limit");
-/*
-        if (isRowVector()) {
-            return this->putScalar(0, i, value);
-        } else if (isColumnVector()) {
-            return this->putScalar(i, 0, value);
-        }
-*/
+
         int idx[MAX_RANK];
-        if (this->ordering() == 'f') {
-            shape::ind2sub(this->rankOf(), this->shapeOf(), i, idx);
-        } else {
-            shape::ind2subC(this->rankOf(), this->shapeOf(), i, idx);
-        }
+        shape::ind2subC(this->rankOf(), this->shapeOf(), i, idx);
 
         Nd4jIndex offset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), idx, this->rankOf());
         _buffer[offset] = value;

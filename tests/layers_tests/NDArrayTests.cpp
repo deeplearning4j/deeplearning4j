@@ -702,3 +702,20 @@ TEST_F(NDArrayTest, BroadcastOpsTest1) {
 
     ASSERT_TRUE(x.equalsTo(&exp));
 }
+
+TEST_F(NDArrayTest, TestIndexedPut2) {
+    NDArray<float> x(2, 2, 'f');
+    x.printShapeInfo("x shape");
+    x.putIndexedScalar(1, 1.0f);
+
+    x.printBuffer("after");
+    ASSERT_NEAR(x._buffer[2], 1.0, 1e-5);
+}
+
+TEST_F(NDArrayTest, TestIndexedPut3) {
+    NDArray<float> x(2, 2, 'c');
+    x.putIndexedScalar(1, 1.0f);
+
+    x.printBuffer("after");
+    ASSERT_NEAR(x._buffer[1], 1.0, 1e-5);
+}

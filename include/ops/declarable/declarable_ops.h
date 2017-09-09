@@ -561,7 +561,7 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInputDimensionsMatch(Block<T>& bl
     NDArray<T> *a0 = block.getVariables().at(0)->getNDArray();
     for (auto v: block.getVariables()) {
         NDArray<T> *aV = v->getNDArray();
-        if (!shape::equalsSoft(a0->shapeOf(), aV->shapeOf()))
+        if (!shape::equalsSoft(a0->_shapeInfo, aV->_shapeInfo))
             return ND4J_STATUS_BAD_DIMENSIONS;
     }
 
