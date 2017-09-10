@@ -20,8 +20,6 @@ public:
 
     // default destructor
     ~ArrayList() {
-        nd4j_printf("Destructing ArrayList\n","");
-
         for(auto v: _content)
             delete v;
     }
