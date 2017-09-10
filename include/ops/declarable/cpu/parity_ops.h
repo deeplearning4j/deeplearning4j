@@ -1026,7 +1026,7 @@ namespace nd4j {
 
             int cnt = 0;
             for (auto v: indices) {
-                std::pair<int, int> pair(cnt++, v);
+                std::pair<int, int> pair(v, cnt++);
                 sparse2dense.insert(pair);
             }
 
