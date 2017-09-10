@@ -1048,10 +1048,10 @@ namespace nd4j {
                         denseIdx = sparse2dense.at(idx);
                     }
 
-                    T current = z->getScalar(r, idx);
+                    T current = z->getScalar(r, denseIdx);
                     T value = row->getIndexedScalar(e + 1);
 
-                    z->putScalar(r, idx, value);
+                    z->putScalar(r, denseIdx, value);
                 }
             }
 
