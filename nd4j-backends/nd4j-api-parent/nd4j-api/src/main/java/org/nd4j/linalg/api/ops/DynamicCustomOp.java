@@ -154,10 +154,33 @@ public class DynamicCustomOp implements CustomOp {
          *
          * PLEASE NOTE: this method does NOT validate values.
          *
-         * @param outputs
+         * @param iargs
          * @return
          */
         public Builder setIntegerArguments(Integer... iargs) {
+            if (numIArguments >= 0) {
+                if (iargs == null)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments. Null was passed instead.");
+
+                if (numOutputs != iargs.length)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments, but " + iargs.length + " was passed to constructor");
+            }
+
+            for (val in: iargs)
+                iArguments.add(in);
+
+            return this;
+        }
+
+        /**
+         * This methos takes arbitrary number of Integer arguments for op,
+         *
+         * PLEASE NOTE: this method does NOT validate values.
+         *
+         * @param iargs
+         * @return
+         */
+        public Builder setIntegerArguments(int... iargs) {
             if (numIArguments >= 0) {
                 if (iargs == null)
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments. Null was passed instead.");
