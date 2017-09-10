@@ -719,3 +719,12 @@ TEST_F(NDArrayTest, TestIndexedPut3) {
     x.printBuffer("after");
     ASSERT_NEAR(x._buffer[1], 1.0, 1e-5);
 }
+
+
+TEST_F(NDArrayTest, TestAllTensors1) {
+    NDArray<float> matrix(3, 5, 'c');
+
+    std::unique_ptr<ArrayList<float>> rows(NDArrayFactory::allTensorsAlongDimension<float>(&matrix, {1}));
+
+    ASSERT_EQ(3, rows->size());
+}
