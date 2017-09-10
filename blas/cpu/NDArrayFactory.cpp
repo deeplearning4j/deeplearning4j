@@ -2,8 +2,8 @@
 // Created by raver119 on 07.09.17.
 //
 
-#ifndef LIBND4J_NDARRAYFACTORY_CPP
-#define LIBND4J_NDARRAYFACTORY_CPP
+#ifndef LIBND4J_NDARRAYFACTORYpCPP
+#define LIBND4J_NDARRAYFACTORYpCPP
 
 #include "../NDArrayFactory.h"
 #include "../NDArray.h"
@@ -98,8 +98,8 @@ namespace nd4j {
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    NDArray<T>* NDArrayFactory::mmulHelper(NDArray<T>* A, NDArray<T>* B, NDArray<T>* C , T alpha, T beta) {
-        NDArray<T>* result = C;
+    nd4j::NDArray<T>* NDArrayFactory::mmulHelper(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C , T alpha, T beta) {
+        nd4j::NDArray<T>* result = C;
 
         // dot
         if (A->isVector() && B->isVector()) {
@@ -142,20 +142,20 @@ namespace nd4j {
             int M, N, K, lda, ldb, ldc;
             char transA, transB;
 
-            NDArray<T>* _A = nullptr;
-            NDArray<T>* _B = nullptr;
-            NDArray<T>* _C = nullptr;;
+            nd4j::NDArray<T>* pA = nullptr;
+            nd4j::NDArray<T>* pB = nullptr;
+            nd4j::NDArray<T>* pC = nullptr;;
 
-            //_C = new NDArray<T>(C, cShapeInfo);
+            //pC = new NDArray<T>(C, cShapeInfo);
 
-            auto tA = new NDArray<T>(A->_buffer, A->_shapeInfo);
-            auto tB = new NDArray<T>(B->_buffer, B->_shapeInfo);
-            auto tC = new NDArray<T>(result->_buffer, result->_shapeInfo);
+            auto tA = new nd4j::NDArray<T>(A->_buffer, A->_shapeInfo);
+            auto tB = new nd4j::NDArray<T>(B->_buffer, B->_shapeInfo);
+            auto tC = new nd4j::NDArray<T>(result->_buffer, result->_shapeInfo);
 
             if (cOrder != 'f') {
-                _C = tC->dup('f');
+                pC = tC->dup('f');
             } else {
-                _C = tC;
+                pC = tC;
             }
 
             if (aOrder == bOrder) {
@@ -164,11 +164,11 @@ namespace nd4j {
                 if (aOrder == 'c') {
                     // we might need to transpose matrices,
                     // todo: we need dup(c/f) helper here
-                    _A = tA->dup('f');
-                    _B = tB->dup('f');
+                    pA = tA->dup('f');
+                    pB = tB->dup('f');
                 } else {
-                    _A = tA;
-                    _B = tB;
+                    pA = tA;
+                    pB = tB;
                 }
 
                 rOrder = 'f';
@@ -187,15 +187,15 @@ namespace nd4j {
                 //printf("Going tRoute here\n");
                 if (aOrder == 'c') {
                     // dup(F) A here
-                    _A = tA->dup('f');
-                    _B = tB;
+                    pA = tA->dup('f');
+                    pB = tB;
                 } else {
                     // dup(F) B here
-                    _A = tA;
-                    _B = tB->dup('f');
+                    pA = tA;
+                    pB = tB->dup('f');
                 }
 
-                // _C = tC->dup('f');
+                // pC = tC->dup('f');
 
                 M = cShape[0];
                 N = cShape[1];
@@ -213,20 +213,20 @@ namespace nd4j {
 
             // we'll use platform-specific gemm here eventually. maybe tomorrow.
             // TODO: put proper _gemm here
-            nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, _A->_buffer, lda, _B->_buffer, ldb, beta, _C->_buffer, ldc);
+            nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->_buffer, lda, pB->_buffer, ldb, beta, pC->_buffer, ldc);
 
             if (cOrder != 'f') {
-                tC->assign(_C);
+                tC->assign(pC);
             }
 
-            if (tA != _A)
-                delete _A;
+            if (tA != pA)
+                delete pA;
 
-            if (tB != _B)
-                delete _B;
+            if (tB != pB)
+                delete pB;
 
-            if (tC != _C)
-                delete _C;
+            if (tC != pC)
+                delete pC;
 
 
             delete tA;

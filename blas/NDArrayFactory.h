@@ -29,7 +29,7 @@ namespace nd4j {
         static NDArray<T>* repeat(NDArray<T> *original, std::vector<int>& repeats);
 
         template<typename T>
-        static NDArray<T>* mmulHelper(NDArray<T>* A, NDArray<T>* B, NDArray<T>* C = nullptr, T alpha = 1.0f, T beta = 0.0f);
+        static nd4j::NDArray<T>* mmulHelper(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C = nullptr, T alpha = 1.0f, T beta = 0.0f);
 
         template<typename T>
         static NDArray<T>* linspace(T from, T to, Nd4jIndex numElements);
