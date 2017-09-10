@@ -1011,6 +1011,13 @@ namespace nd4j {
         }
 
 
+        /**
+         * This op is special one, and suited only for ProjectionLayer by @firasdib
+         *
+         * TODO: should be moved to separate file
+         *
+         * @tparam T
+         */
         DECLARE_CONFIGURABLE_OP(firas_sparse, 1, 1, false, 0, -1) {
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *z = this->getZ(block);
