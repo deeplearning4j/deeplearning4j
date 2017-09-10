@@ -1009,6 +1009,57 @@ namespace nd4j {
 			}
 			return ND4J_STATUS_OK;
         }
+
+
+        DECLARE_CONFIGURABLE_OP(firas_sparse, 1, 1, false, 0, -1) {
+            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
+            NDArray<T> *z = this->getZ(block);
+
+            int batchSize = x->sizeAt(0);
+            int numColumns = x->sizeAt(1);
+
+            int numIndices = block.getIArguments()->size();
+
+            std::vector<int> indices(*block.getIArguments());
+            std::map<int, int> sparse2dense;
+            std::unique_ptr<ArrayList<T>> rows(NDArrayFactory::allTensorsAlongDimension<T>(x, {1}));
+
+//#pragma omp parallel for schedule(dynamic) proc_bind(close)
+            for (int r = 0; r < batchSize; r++) {
+                auto row = rows->at(r);
+                for (int e = 0; e < numColumns; e += 2) {
+                    int idx = row->getIndexedScalar(e);
+                    if (idx < 0)
+                        break;
+
+                    int denseIdx = 0;
+                    if (sparse2dense.count(idx) == 0) {
+                        auto d = std::find(indices.begin(), indices.end(), idx);
+                        if (d != indices.end()) {
+                            denseIdx = d - indices.begin();
+                        } else {
+                            nd4j_printf("Index wasn't found: %i\n", idx);
+                            throw "Bad idx";
+                        }
+
+                        std::pair<int, int> pair(idx, denseIdx);
+                        sparse2dense.insert(pair);
+                    } else {
+                        denseIdx = sparse2dense.at(idx);
+                    }
+
+                    T current = z->getScalar(r, idx);
+                    T value = row->getIndexedScalar(e + 1);
+
+                    z->putScalar(r, idx, value);
+                }
+            }
+
+
+            STORE_RESULT(*z);
+
+            return ND4J_STATUS_OK;
+        }
     }
 }
 

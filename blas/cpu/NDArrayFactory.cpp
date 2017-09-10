@@ -55,6 +55,47 @@ namespace nd4j {
         return result;
     }
 
+    template<typename T>
+    ArrayList<T>* NDArrayFactory::allTensorsAlongDimension(NDArray<T>* ndArray, std::initializer_list<int> dimensions) {
+        std::vector<int> vec(dimensions);
+        return allTensorsAlongDimension<T>(ndArray, vec);
+    }
+
+    template<typename T>
+    ArrayList<T>* NDArrayFactory::allTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &dimensions) {
+        auto result = new ArrayList<T>();
+
+        std::vector<int> copy(dimensions);
+
+        // we need to sort dimensions (?)
+        if (dimensions.size() > 1)
+            std::sort (copy.begin(), copy.end());
+
+        Nd4jIndex tadLength = shape::tadLength(ndArray->_shapeInfo, copy.data(), copy.size());
+        Nd4jIndex numTads = ndArray->lengthOf() / tadLength;
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(ndArray->_shapeInfo, copy.data(), copy.size()));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+
+        int* shapeInfo = new int[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
+        std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
+
+        for (int idx = 0; idx < numTads; idx++ ) {
+            T* buffer = ndArray->_buffer + tad->tadOffsets[idx];
+            auto array = new NDArray<T>(buffer, shapeInfo);
+            result->push_back(array);
+        }
+
+        // if we have no indices - just delete shapeInfo
+        if (result->size() > 0)
+            result->at(0)->_isShapeAlloc = true;
+        else
+            delete[] shapeInfo;
+
+        return result;
+    }
+
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
     NDArray<T>* NDArrayFactory::mmulHelper(NDArray<T>* A, NDArray<T>* B, NDArray<T>* C , T alpha, T beta) {
