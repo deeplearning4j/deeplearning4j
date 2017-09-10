@@ -1319,7 +1319,7 @@ matrix of singular values W is output as a vector w[n].  The matrix vt is output
                         s += u(k,i)*u(k,i);
                     }
                     f = u(i,i);
-                    g = -std::copysign(sqrt(s),f);
+                    g = - nd4j::math::nd4j_copysign<T>(sqrt(s),f);
                     h = f*g - s;
                     u(i,i) = f - g;
                     if (i != n - 1) {
@@ -1347,7 +1347,7 @@ matrix of singular values W is output as a vector w[n].  The matrix vt is output
                         s += u(i,k)*u(i,k);
                     }
                     f = u(i,l);
-                    g = -std::copysign(sqrt(s),f);
+                    g = -nd4j::math::nd4j_copysign<T>(sqrt(s),f);
                     h = f*g - s;
                     u(i,l) = f - g;
                     for (k=l; k<n; k++)
@@ -1465,7 +1465,7 @@ matrix of singular values W is output as a vector w[n].  The matrix vt is output
                 h = rv1[k];
                 f = ((y - z)*(y + z) + (g - h)*(g + h))/(2.f*h*y);
                 g = pythag<T>(f,1.f);
-                f = ((x - z)*(x + z) + h*((y/(f + std::copysign(g,f))) - h))/x;
+                f = ((x - z)*(x + z) + h*((y/(f + nd4j::math::nd4j_copysign<T>((double) g,f))) - h))/x;
                 // next QR transformation
                 c = s = 1.f;
                 for (j=l; j<=nm; j++) {
