@@ -79,13 +79,13 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
         switch (op) {
             case Add:
-                INDArray sum = inputs[0].dup();
+                INDArray sum = inputs[0].dup(inputs[0].ordering());
                 for (int i = 1; i < inputs.length; i++) {
                     sum.addi(inputs[i]);
                 }
                 return sum;
             case Average:
-                INDArray average = inputs[0].dup();
+                INDArray average = inputs[0].dup(inputs[0].ordering());
                 for (int i = 1; i < inputs.length; i++) {
                     average.addi(inputs[i]);
                 }
@@ -95,13 +95,13 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
                 return inputs[0].sub(inputs[1]);
             case Product:
-                INDArray product = inputs[0].dup();
+                INDArray product = inputs[0].dup(inputs[0].ordering());
                 for (int i = 1; i < inputs.length; i++) {
                     product.muli(inputs[i]);
                 }
                 return product;
             case Max:
-                INDArray max = inputs[0].dup();
+                INDArray max =  Nd4j.createUninitialized(inputs[0].shape(), inputs[0].ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemax")
                         .setInputs(inputs)
                         .setOutputs(max)
@@ -132,7 +132,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
             case Average:
                 INDArray[] outAverage = new INDArray[nInForwardPass];
                 for (int i = 0; i < nInForwardPass; i++)
-                    outAverage[i] = epsilon.dup().divi(nInForwardPass);
+                    outAverage[i] = epsilon.div(nInForwardPass);
                 return new Pair<>(null, outAverage);
             case Subtract:
                 INDArray[] out2 = new INDArray[2];
