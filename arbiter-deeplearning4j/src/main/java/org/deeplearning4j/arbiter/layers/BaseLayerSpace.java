@@ -111,30 +111,16 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
     protected void setLayerOptionsBuilder(BaseLayer.Builder builder, double[] values) {
         if (activationFunction != null)
             builder.activation(activationFunction.getValue(values));
-        if (weightInit != null)
-            builder.weightInit(weightInit.getValue(values));
         if (biasInit != null)
             builder.biasInit(biasInit.getValue(values));
+        if (weightInit != null)
+            builder.weightInit(weightInit.getValue(values));
         if (dist != null)
             builder.dist(dist.getValue(values));
-        if (learningRate != null)
-            builder.learningRate(learningRate.getValue(values));
-        if (biasLearningRate != null)
-            builder.biasLearningRate(biasLearningRate.getValue(values));
-        if (learningRateAfter != null)
-            builder.learningRateSchedule(learningRateAfter.getValue(values));
-        if (lrScoreBasedDecay != null)
-            builder.learningRate(lrScoreBasedDecay.getValue(values));
         if (l1 != null)
             builder.l1(l1.getValue(values));
         if (l2 != null)
             builder.l2(l2.getValue(values));
-        if (dropOut != null)
-            builder.dropOut(dropOut.getValue(values));
-        if (momentum != null)
-            builder.momentum(momentum.getValue(values));
-        if (momentumAfter != null)
-            builder.momentumAfter(momentumAfter.getValue(values));
         if (updater != null)
             builder.updater(updater.getValue(values));
         if (epsilon != null)

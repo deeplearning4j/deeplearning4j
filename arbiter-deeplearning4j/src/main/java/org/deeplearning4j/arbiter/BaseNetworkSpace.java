@@ -32,9 +32,11 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
+import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 
@@ -55,43 +57,25 @@ import java.util.Map;
 @Data
 public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
 
-    protected ParameterSpace<Boolean> useDropConnect;
     protected ParameterSpace<Integer> iterations;
     protected Long seed;
     protected ParameterSpace<OptimizationAlgorithm> optimizationAlgo;
-    protected ParameterSpace<Boolean> regularization;
-    protected ParameterSpace<Boolean> schedules;
     protected ParameterSpace<IActivation> activationFunction;
     protected ParameterSpace<Double> biasInit;
     protected ParameterSpace<WeightInit> weightInit;
     protected ParameterSpace<Distribution> dist;
-    protected ParameterSpace<Double> learningRate;
-    protected ParameterSpace<Double> biasLearningRate;
-    protected ParameterSpace<Map<Integer, Double>> learningRateAfter;
-    protected ParameterSpace<Double> lrScoreBasedDecay;
-    protected ParameterSpace<LearningRatePolicy> learningRateDecayPolicy;
-    protected ParameterSpace<Map<Integer, Double>> learningRateSchedule;
-    protected ParameterSpace<Double> lrPolicyDecayRate;
-    protected ParameterSpace<Double> lrPolicyPower;
-    protected ParameterSpace<Double> lrPolicySteps;
     protected ParameterSpace<Integer> maxNumLineSearchIterations;
     protected ParameterSpace<Boolean> miniBatch;
     protected ParameterSpace<Boolean> minimize;
     protected ParameterSpace<StepFunction> stepFunction;
     protected ParameterSpace<Double> l1;
     protected ParameterSpace<Double> l2;
-    protected ParameterSpace<Double> dropOut;
-    protected ParameterSpace<Double> momentum;
-    protected ParameterSpace<Map<Integer, Double>> momentumAfter;
-    protected ParameterSpace<Updater> updater;
-    protected ParameterSpace<Double> epsilon;
-    protected ParameterSpace<Double> rho;
-    protected ParameterSpace<Double> rmsDecay;
-    protected ParameterSpace<Double> adamMeanDecay;
-    protected ParameterSpace<Double> adamVarDecay;
+    protected ParameterSpace<IUpdater> updater;
+    protected ParameterSpace<IUpdater> biasUpdater;
+    protected ParameterSpace<IWeightNoise> weightNoise;
     protected ParameterSpace<GradientNormalization> gradientNormalization;
     protected ParameterSpace<Double> gradientNormalizationThreshold;
-
+    protected ParameterSpace<ConvolutionMode> convolutionMode;
 
     protected List<LayerConf> layerSpaces = new ArrayList<>();
 
@@ -101,7 +85,6 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
     protected ParameterSpace<BackpropType> backpropType;
     protected ParameterSpace<Integer> tbpttFwdLength;
     protected ParameterSpace<Integer> tbpttBwdLength;
-    protected ParameterSpace<ConvolutionMode> convolutionMode;
 
     protected int numEpochs = 1;
 
@@ -113,42 +96,24 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
 
     @SuppressWarnings("unchecked")
     protected BaseNetworkSpace(Builder builder) {
-        this.useDropConnect = builder.useDropConnect;
         this.iterations = builder.iterations;
         this.seed = builder.seed;
         this.optimizationAlgo = builder.optimizationAlgo;
-        this.regularization = builder.regularization;
-        this.schedules = builder.schedules;
         this.activationFunction = builder.activationFunction;
         this.biasInit = builder.biasInit;
         this.weightInit = builder.weightInit;
         this.dist = builder.dist;
-        this.learningRate = builder.learningRate;
-        this.biasLearningRate = builder.biasLearningRate;
-        this.learningRateAfter = builder.learningRateAfter;
-        this.lrScoreBasedDecay = builder.lrScoreBasedDecay;
-        this.learningRateDecayPolicy = builder.learningRateDecayPolicy;
-        this.learningRateSchedule = builder.learningRateSchedule;
-        this.lrPolicyDecayRate = builder.lrPolicyDecayRate;
-        this.lrPolicyPower = builder.lrPolicyPower;
-        this.lrPolicySteps = builder.lrPolicySteps;
         this.maxNumLineSearchIterations = builder.maxNumLineSearchIterations;
         this.miniBatch = builder.miniBatch;
         this.minimize = builder.minimize;
         this.stepFunction = builder.stepFunction;
         this.l1 = builder.l1;
         this.l2 = builder.l2;
-        this.dropOut = builder.dropOut;
-        this.momentum = builder.momentum;
-        this.momentumAfter = builder.momentumAfter;
         this.updater = builder.updater;
-        this.epsilon = builder.epsilon;
-        this.rho = builder.rho;
-        this.rmsDecay = builder.rmsDecay;
+        this.biasUpdater = builder.biasUpdater;
+        this.weightNoise = builder.weightNoise;
         this.gradientNormalization = builder.gradientNormalization;
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
-        this.adamMeanDecay = builder.adamMeanDecay;
-        this.adamVarDecay = builder.adamVarDecay;
         this.convolutionMode = builder.convolutionMode;
 
 
@@ -169,17 +134,12 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
     protected NeuralNetConfiguration.Builder randomGlobalConf(double[] values) {
         //Create MultiLayerConfiguration...
         NeuralNetConfiguration.Builder builder = new NeuralNetConfiguration.Builder();
-        if (useDropConnect != null)
-            builder.useDropConnect(useDropConnect.getValue(values));
         if (iterations != null)
             builder.iterations(iterations.getValue(values));
         if (seed != null)
             builder.seed(seed);
         if (optimizationAlgo != null)
             builder.optimizationAlgo(optimizationAlgo.getValue(values));
-        if (regularization != null)
-            builder.regularization(regularization.getValue(values));
-        // if(schedules != null) builder.learningRateSchedule(schedules.getValue(values));
         if (activationFunction != null)
             builder.activation(activationFunction.getValue(values));
         if (biasInit != null)
@@ -188,24 +148,6 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
             builder.weightInit(weightInit.getValue(values));
         if (dist != null)
             builder.dist(dist.getValue(values));
-        if (learningRate != null)
-            builder.learningRate(learningRate.getValue(values));
-        if (biasLearningRate != null)
-            builder.biasLearningRate(biasLearningRate.getValue(values));
-        if (learningRateAfter != null)
-            builder.learningRateSchedule(learningRateAfter.getValue(values));
-        if (lrScoreBasedDecay != null)
-            builder.learningRateScoreBasedDecayRate(lrScoreBasedDecay.getValue(values));
-        if (learningRateDecayPolicy != null)
-            builder.learningRateDecayPolicy(learningRateDecayPolicy.getValue(values));
-        if (learningRateSchedule != null)
-            builder.learningRateSchedule(learningRateSchedule.getValue(values));
-        if (lrPolicyDecayRate != null)
-            builder.lrPolicyDecayRate(lrPolicyDecayRate.getValue(values));
-        if (lrPolicyPower != null)
-            builder.lrPolicyPower(lrPolicyPower.getValue(values));
-        if (lrPolicySteps != null)
-            builder.lrPolicySteps(lrPolicySteps.getValue(values));
         if (maxNumLineSearchIterations != null)
             builder.maxNumLineSearchIterations(maxNumLineSearchIterations.getValue(values));
         if (miniBatch != null)
@@ -218,28 +160,16 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
             builder.l1(l1.getValue(values));
         if (l2 != null)
             builder.l2(l2.getValue(values));
-        if (dropOut != null)
-            builder.dropOut(dropOut.getValue(values));
-        if (momentum != null)
-            builder.momentum(momentum.getValue(values));
-        if (momentumAfter != null)
-            builder.momentumAfter(momentumAfter.getValue(values));
         if (updater != null)
             builder.updater(updater.getValue(values));
-        if (epsilon != null)
-            builder.epsilon(epsilon.getValue(values));
-        if (rho != null)
-            builder.rho(rho.getValue(values));
-        if (rmsDecay != null)
-            builder.rmsDecay(rmsDecay.getValue(values));
+        if (biasUpdater != null)
+            builder.biasUpdater(biasUpdater.getValue(values));
+        if (weightNoise != null)
+            builder.weightNoise(weightNoise.getValue(values));
         if (gradientNormalization != null)
             builder.gradientNormalization(gradientNormalization.getValue(values));
         if (gradientNormalizationThreshold != null)
             builder.gradientNormalizationThreshold(gradientNormalizationThreshold.getValue(values));
-        if (adamMeanDecay != null)
-            builder.adamMeanDecay(adamMeanDecay.getValue(values));
-        if (adamVarDecay != null)
-            builder.adamVarDecay(adamVarDecay.getValue(values));
         if (convolutionMode != null)
             builder.convolutionMode(convolutionMode.getValue(values));
 
@@ -309,42 +239,25 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
     @SuppressWarnings("unchecked")
     protected abstract static class Builder<T extends Builder<T>> {
 
-        private ParameterSpace<IActivation> activationFunction;
-        private ParameterSpace<WeightInit> weightInit;
-        private ParameterSpace<Double> biasInit;
-        private ParameterSpace<Boolean> useDropConnect;
         private ParameterSpace<Integer> iterations;
         private Long seed;
         private ParameterSpace<OptimizationAlgorithm> optimizationAlgo;
-        private ParameterSpace<Boolean> regularization;
-        private ParameterSpace<Boolean> schedules;
+        private ParameterSpace<IActivation> activationFunction;
+        private ParameterSpace<Double> biasInit;
+        private ParameterSpace<WeightInit> weightInit;
         private ParameterSpace<Distribution> dist;
-        private ParameterSpace<Double> learningRate;
-        private ParameterSpace<Double> biasLearningRate;
-        private ParameterSpace<Map<Integer, Double>> learningRateAfter;
-        private ParameterSpace<Double> lrScoreBasedDecay;
-        private ParameterSpace<LearningRatePolicy> learningRateDecayPolicy;
-        private ParameterSpace<Map<Integer, Double>> learningRateSchedule;
-        private ParameterSpace<Double> lrPolicyDecayRate;
-        private ParameterSpace<Double> lrPolicyPower;
-        private ParameterSpace<Double> lrPolicySteps;
         private ParameterSpace<Integer> maxNumLineSearchIterations;
         private ParameterSpace<Boolean> miniBatch;
         private ParameterSpace<Boolean> minimize;
         private ParameterSpace<StepFunction> stepFunction;
         private ParameterSpace<Double> l1;
         private ParameterSpace<Double> l2;
-        private ParameterSpace<Double> dropOut;
-        private ParameterSpace<Double> momentum;
-        private ParameterSpace<Map<Integer, Double>> momentumAfter;
-        private ParameterSpace<Updater> updater;
-        private ParameterSpace<Double> epsilon;
-        private ParameterSpace<Double> rho;
-        private ParameterSpace<Double> rmsDecay;
+        private ParameterSpace<IUpdater> updater;
+        private ParameterSpace<IUpdater> biasUpdater;
+        private ParameterSpace<IWeightNoise> weightNoise;
         private ParameterSpace<GradientNormalization> gradientNormalization;
         private ParameterSpace<Double> gradientNormalizationThreshold;
-        private ParameterSpace<Double> adamMeanDecay;
-        private ParameterSpace<Double> adamVarDecay;
+        private ParameterSpace<ConvolutionMode> convolutionMode;
 
         //NeuralNetConfiguration.ListBuilder/MultiLayerConfiguration.Builder<T> options:
         private ParameterSpace<Boolean> backprop;
@@ -352,21 +265,10 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         private ParameterSpace<BackpropType> backpropType;
         private ParameterSpace<Integer> tbpttFwdLength;
         private ParameterSpace<Integer> tbpttBwdLength;
-        private ParameterSpace<ConvolutionMode> convolutionMode;
 
         //Early stopping configuration / (fixed) number of epochs:
         private EarlyStoppingConfiguration earlyStoppingConfiguration;
         private int numEpochs = 1;
-
-
-        public T useDropConnect(boolean useDropConnect) {
-            return useDropConnect(new FixedValue<>(useDropConnect));
-        }
-
-        public T useDropConnect(ParameterSpace<Boolean> parameterSpace) {
-            this.useDropConnect = parameterSpace;
-            return (T) this;
-        }
 
         public T iterations(int iterations) {
             return iterations(new FixedValue<>(iterations));
@@ -391,29 +293,10 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
             return (T) this;
         }
 
-        public T regularization(boolean useRegularization) {
-            return regularization(new FixedValue<>(useRegularization));
-        }
 
-        public T regularization(ParameterSpace<Boolean> parameterSpace) {
-            this.regularization = parameterSpace;
-            return (T) this;
+        public T activation(Activation activationFunction) {
+            return activation(new FixedValue<>(activationFunction));
         }
-
-        public T schedules(boolean schedules) {
-            return schedules(new FixedValue<>(schedules));
-        }
-
-        public T schedules(ParameterSpace<Boolean> schedules) {
-            this.schedules = schedules;
-            return (T) this;
-        }
-
-        @Deprecated
-        public T activation(String activationFunction) {
-            return activation(new FixedValue<>(Activation.fromString(activationFunction)));
-        }
-
 
         public T activation(ParameterSpace<Activation> activationFunction) {
             return activationFn(new ActivationParameterSpaceAdapter(activationFunction));
@@ -421,6 +304,15 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
 
         public T activationFn(ParameterSpace<IActivation> activationFunction) {
             this.activationFunction = activationFunction;
+            return (T) this;
+        }
+
+        public T biasInit(double biasInit){
+            return biasInit(new FixedValue<>(biasInit));
+        }
+
+        public T biasInit(ParameterSpace<Double> biasInit){
+            this.biasInit = biasInit;
             return (T) this;
         }
 
@@ -439,87 +331,6 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
 
         public T dist(ParameterSpace<Distribution> dist) {
             this.dist = dist;
-            return (T) this;
-        }
-
-        public T learningRate(double learningRate) {
-            return learningRate(new FixedValue<>(learningRate));
-        }
-
-        public T learningRate(ParameterSpace<Double> learningRate) {
-            this.learningRate = learningRate;
-            return (T) this;
-        }
-
-        public T biasLearningRate(double learningRate) {
-            return biasLearningRate(new FixedValue<>(learningRate));
-        }
-
-        public T biasLearningRate(ParameterSpace<Double> biasLearningRate) {
-            this.biasLearningRate = biasLearningRate;
-            return (T) this;
-        }
-
-        public T learningRateAfter(Map<Integer, Double> learningRateAfter) {
-            return learningRateAfter(new FixedValue<>(learningRateAfter));
-        }
-
-        public T learningRateAfter(ParameterSpace<Map<Integer, Double>> learningRateAfter) {
-            this.learningRateAfter = learningRateAfter;
-            return (T) this;
-        }
-
-        public T learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
-            return learningRateScoreBasedDecayRate(new FixedValue<>(lrScoreBasedDecay));
-        }
-
-        public T learningRateScoreBasedDecayRate(ParameterSpace<Double> lrScoreBasedDecay) {
-            this.lrScoreBasedDecay = lrScoreBasedDecay;
-            return (T) this;
-        }
-
-        public T learningRateDecayPolicy(LearningRatePolicy learningRatePolicy) {
-            return learningRateDecayPolicy(new FixedValue<>(learningRatePolicy));
-        }
-
-        public T learningRateDecayPolicy(ParameterSpace<LearningRatePolicy> learningRateDecayPolicy) {
-            this.learningRateDecayPolicy = learningRateDecayPolicy;
-            return (T) this;
-        }
-
-        public T learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
-            return learningRateSchedule(new FixedValue<>(learningRateSchedule));
-        }
-
-        public T learningRateSchedule(ParameterSpace<Map<Integer, Double>> learningRateSchedule) {
-            this.learningRateSchedule = learningRateSchedule;
-            return (T) this;
-        }
-
-        public T lrPolicyDecayRate(double lrPolicyDecayRate) {
-            return lrPolicyDecayRate(new FixedValue<>(lrPolicyDecayRate));
-        }
-
-        public T lrPolicyDecayRate(ParameterSpace<Double> lrPolicyDecayRate) {
-            this.lrPolicyDecayRate = lrPolicyDecayRate;
-            return (T) this;
-        }
-
-        public T lrPolicyPower(double lrPolicyPower) {
-            return lrPolicyPower(new FixedValue<>(lrPolicyPower));
-        }
-
-        public T lrPolicyPower(ParameterSpace<Double> lrPolicyPower) {
-            this.lrPolicyPower = lrPolicyPower;
-            return (T) this;
-        }
-
-        public T lrPolicySteps(double lrPolicySteps) {
-            return lrPolicySteps(new FixedValue<>(lrPolicySteps));
-        }
-
-        public T lrPolicySteps(ParameterSpace<Double> lrPolicySteps) {
-            this.lrPolicySteps = lrPolicySteps;
             return (T) this;
         }
 
@@ -577,66 +388,30 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
             return (T) this;
         }
 
-        public T dropOut(double dropOut) {
-            return dropOut(new FixedValue<>(dropOut));
-        }
-
-        public T dropOut(ParameterSpace<Double> dropOut) {
-            this.dropOut = dropOut;
-            return (T) this;
-        }
-
-        public T momentum(double momentum) {
-            return momentum(new FixedValue<>(momentum));
-        }
-
-        public T momentum(ParameterSpace<Double> momentum) {
-            this.momentum = momentum;
-            return (T) this;
-        }
-
-        public T momentumAfter(Map<Integer, Double> momentumAfter) {
-            return momentumAfter(new FixedValue<>(momentumAfter));
-        }
-
-        public T momentumAfter(ParameterSpace<Map<Integer, Double>> momentumAfter) {
-            this.momentumAfter = momentumAfter;
-            return (T) this;
-        }
-
-        public T updater(Updater updater) {
+        public T updater(IUpdater updater){
             return updater(new FixedValue<>(updater));
         }
 
-        public T updater(ParameterSpace<Updater> updater) {
+        public T updater(ParameterSpace<IUpdater> updater) {
             this.updater = updater;
             return (T) this;
         }
 
-        public T epsilon(double epsilon) {
-            return epsilon(new FixedValue<>(epsilon));
+        public T biasUpdater(IUpdater biasUpdater){
+            return biasUpdater(new FixedValue<>(biasUpdater));
         }
 
-        public T epsilon(ParameterSpace<Double> epsilon) {
-            this.epsilon = epsilon;
-            return (T) this;
+        public T biasUpdater(ParameterSpace<IUpdater> biasUpdater){
+            this.biasUpdater = biasUpdater;
+            return (T)this;
         }
 
-        public T rho(double rho) {
-            return rho(new FixedValue<>(rho));
+        public T weightNoise(IWeightNoise weightNoise){
+            return weightNoise(new FixedValue<>(weightNoise));
         }
 
-        public T rho(ParameterSpace<Double> rho) {
-            this.rho = rho;
-            return (T) this;
-        }
-
-        public T rmsDecay(double rmsDecay) {
-            return rmsDecay(new FixedValue<>(rmsDecay));
-        }
-
-        public T rmsDecay(ParameterSpace<Double> rmsDecay) {
-            this.rmsDecay = rmsDecay;
+        public T weightNoise(ParameterSpace<IWeightNoise> weightNoise){
+            this.weightNoise = weightNoise;
             return (T) this;
         }
 
@@ -655,6 +430,15 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
 
         public T gradientNormalizationThreshold(ParameterSpace<Double> gradientNormalizationThreshold) {
             this.gradientNormalizationThreshold = gradientNormalizationThreshold;
+            return (T) this;
+        }
+
+        public T convolutionMode(ConvolutionMode convolutionMode) {
+            return convolutionMode(new FixedValue<ConvolutionMode>(convolutionMode));
+        }
+
+        public T convolutionMode(ParameterSpace<ConvolutionMode> convolutionMode) {
+            this.convolutionMode = convolutionMode;
             return (T) this;
         }
 
@@ -703,48 +487,12 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
             return (T) this;
         }
 
-        public T convolutionMode(ConvolutionMode convolutionMode) {
-            return convolutionMode(new FixedValue<ConvolutionMode>(convolutionMode));
-        }
-
-        public T convolutionMode(ParameterSpace<ConvolutionMode> convolutionMode) {
-            this.convolutionMode = convolutionMode;
-            return (T) this;
-        }
-
         /**
          * Fixed number of training epochs. Default: 1
          * Note if both EarlyStoppingConfiguration and number of epochs is present, early stopping will be used in preference.
          */
         public T numEpochs(int numEpochs) {
             this.numEpochs = numEpochs;
-            return (T) this;
-        }
-
-        public T biasInit(double biasInit) {
-            return biasInit(new FixedValue<>(biasInit));
-        }
-
-        public T biasInit(ParameterSpace<Double> biasInit) {
-            this.biasInit = biasInit;
-            return (T) this;
-        }
-
-        public T adamMeanDecay(double adamMeanDecay) {
-            return adamMeanDecay(new FixedValue<>(adamMeanDecay));
-        }
-
-        public T adamMeanDecay(ParameterSpace<Double> adamMeanDecay) {
-            this.adamMeanDecay = adamMeanDecay;
-            return (T) this;
-        }
-
-        public T adamVarDecay(double adamVarDecay) {
-            return adamVarDecay(new FixedValue<>(adamVarDecay));
-        }
-
-        public T adamVarDecay(ParameterSpace<Double> adamVarDecay) {
-            this.adamVarDecay = adamVarDecay;
             return (T) this;
         }
 
