@@ -28,9 +28,11 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.util.Map;
@@ -50,20 +52,13 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
     protected ParameterSpace<WeightInit> weightInit;
     protected ParameterSpace<Double> biasInit;
     protected ParameterSpace<Distribution> dist;
-    protected ParameterSpace<Double> learningRate;
-    protected ParameterSpace<Double> biasLearningRate;
-    protected ParameterSpace<Map<Integer, Double>> learningRateAfter;
-    protected ParameterSpace<Double> lrScoreBasedDecay;
     protected ParameterSpace<Double> l1;
     protected ParameterSpace<Double> l2;
-    protected ParameterSpace<Double> momentum;
-    protected ParameterSpace<Map<Integer, Double>> momentumAfter;
-    protected ParameterSpace<Updater> updater;
-    protected ParameterSpace<Double> epsilon;
-    protected ParameterSpace<Double> rho;
-    protected ParameterSpace<Double> rmsDecay;
-    protected ParameterSpace<Double> adamMeanDecay;
-    protected ParameterSpace<Double> adamVarDecay;
+    protected ParameterSpace<Double> l1Bias;
+    protected ParameterSpace<Double> l2Bias;
+    protected ParameterSpace<IUpdater> updater;
+    protected ParameterSpace<IUpdater> biasUpdater;
+    protected ParameterSpace<IWeightNoise> weightNoise;
     protected ParameterSpace<GradientNormalization> gradientNormalization;
     protected ParameterSpace<Double> gradientNormalizationThreshold;
     protected int numParameters;
@@ -74,20 +69,13 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
         this.weightInit = builder.weightInit;
         this.biasInit = builder.biasInit;
         this.dist = builder.dist;
-        this.learningRate = builder.learningRate;
-        this.biasLearningRate = builder.biasLearningRate;
-        this.learningRateAfter = builder.learningRateAfter;
-        this.lrScoreBasedDecay = builder.lrScoreBasedDecay;
         this.l1 = builder.l1;
         this.l2 = builder.l2;
-        this.momentum = builder.momentum;
-        this.momentumAfter = builder.momentumAfter;
+        this.l1Bias = builder.l1Bias;
+        this.l2Bias = builder.l2Bias;
         this.updater = builder.updater;
-        this.epsilon = builder.epsilon;
-        this.rho = builder.rho;
-        this.rmsDecay = builder.rmsDecay;
-        this.adamMeanDecay = builder.adamMeanDecay;
-        this.adamVarDecay = builder.adamVarDecay;
+        this.biasUpdater = builder.biasUpdater;
+        this.weightNoise = builder.weightNoise;
         this.gradientNormalization = builder.gradientNormalization;
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
     }
@@ -121,18 +109,16 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
             builder.l1(l1.getValue(values));
         if (l2 != null)
             builder.l2(l2.getValue(values));
+        if (l1Bias != null)
+            builder.l1Bias(l1Bias.getValue(values));
+        if (l2Bias != null)
+            builder.l2Bias(l2Bias.getValue(values));
         if (updater != null)
             builder.updater(updater.getValue(values));
-        if (epsilon != null)
-            builder.epsilon(epsilon.getValue(values));
-        if (rho != null)
-            builder.rho(rho.getValue(values));
-        if (rmsDecay != null)
-            builder.rmsDecay(rmsDecay.getValue(values));
-        if (adamMeanDecay != null)
-            builder.adamMeanDecay(adamMeanDecay.getValue(values));
-        if (adamVarDecay != null)
-            builder.adamVarDecay(adamVarDecay.getValue(values));
+        if (biasUpdater != null)
+            builder.biasUpdater(biasUpdater.getValue(values));
+        if (weightNoise != null)
+            builder.weightNoise(weightNoise.getValue(values));
         if (gradientNormalization != null)
             builder.gradientNormalization(gradientNormalization.getValue(values));
         if (gradientNormalizationThreshold != null)
@@ -147,54 +133,11 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
 
     protected String toString(String delim) {
         StringBuilder sb = new StringBuilder();
-        if (activationFunction != null)
-            sb.append("activationFunction: ").append(activationFunction).append(delim);
-        if (weightInit != null)
-            sb.append("weightInit: ").append(weightInit).append(delim);
-        if (biasInit != null)
-            sb.append("biasInit: ").append(biasInit).append(delim);
-        if (dist != null)
-            sb.append("dist: ").append(dist).append(delim);
-        if (learningRate != null)
-            sb.append("learningRate: ").append(learningRate).append(delim);
-        if (biasLearningRate != null)
-            sb.append("biasLearningRate: ").append(biasLearningRate).append(delim);
-        if (learningRateAfter != null)
-            sb.append("learningRateAfter: ").append(learningRateAfter).append(delim);
-        if (lrScoreBasedDecay != null)
-            sb.append("lrScoreBasedDecay: ").append(lrScoreBasedDecay).append(delim);
-        if (l1 != null)
-            sb.append("l1: ").append(l1).append(delim);
-        if (l2 != null)
-            sb.append("l2: ").append(l2).append(delim);
-        if (momentum != null)
-            sb.append("momentum: ").append(momentum).append(delim);
-        if (momentumAfter != null)
-            sb.append("momentumAfter: ").append(momentumAfter).append(delim);
-        if (updater != null)
-            sb.append("updater: ").append(updater).append(delim);
-        if (epsilon != null)
-            sb.append("epsilon: ").append(epsilon).append(delim);
-        if (rho != null)
-            sb.append("rho: ").append(rho).append(delim);
-        if (rmsDecay != null)
-            sb.append("rmsDecay: ").append(rmsDecay).append(delim);
-        if (adamMeanDecay != null)
-            sb.append("adamMeanDecay: ").append(adamMeanDecay).append(delim);
-        if (adamVarDecay != null)
-            sb.append("adamVarDecay: ").append(adamVarDecay).append(delim);
-        if (gradientNormalization != null)
-            sb.append("gradientNormalization: ").append(gradientNormalization).append(delim);
-        if (gradientNormalizationThreshold != null)
-            sb.append("gradientNormalizationThreshold").append(gradientNormalizationThreshold);
-        String s = sb.toString();
 
-        if (s.endsWith(delim)) {
-            //Remove final delimiter
-            int last = s.lastIndexOf(delim);
-            return s.substring(0, last);
-        } else
-            return s;
+        for (Map.Entry<String, ParameterSpace> e : getNestedSpaces().entrySet()) {
+            sb.append(e.getKey()).append(": ").append(e.getValue()).append("\n");
+        }
+        return sb.toString();
     }
 
     @SuppressWarnings("unchecked")
@@ -203,29 +146,16 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
         protected ParameterSpace<WeightInit> weightInit;
         protected ParameterSpace<Double> biasInit;
         protected ParameterSpace<Distribution> dist;
-        protected ParameterSpace<Double> learningRate;
-        protected ParameterSpace<Double> biasLearningRate;
-        protected ParameterSpace<Map<Integer, Double>> learningRateAfter;
-        protected ParameterSpace<Double> lrScoreBasedDecay;
         protected ParameterSpace<Double> l1;
         protected ParameterSpace<Double> l2;
-        protected ParameterSpace<Double> dropOut;
-        protected ParameterSpace<Updater> updater;
-        protected ParameterSpace<Double> momentum;
-        protected ParameterSpace<Map<Integer, Double>> momentumAfter;
-        protected ParameterSpace<Double> epsilon;
-        protected ParameterSpace<Double> rho;
-        protected ParameterSpace<Double> rmsDecay;
-        protected ParameterSpace<Double> adamMeanDecay;
-        protected ParameterSpace<Double> adamVarDecay;
+        protected ParameterSpace<Double> l1Bias;
+        protected ParameterSpace<Double> l2Bias;
+        protected ParameterSpace<IUpdater> updater;
+        protected ParameterSpace<IUpdater> biasUpdater;
+        protected ParameterSpace<IWeightNoise> weightNoise;
         protected ParameterSpace<GradientNormalization> gradientNormalization;
         protected ParameterSpace<Double> gradientNormalizationThreshold;
 
-
-        @Deprecated
-        public T activation(String activationFunction) {
-            return activation(Activation.fromString(activationFunction));
-        }
 
         public T activation(Activation activation) {
             return activation(new FixedValue<>(activation));
@@ -253,49 +183,21 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
             return (T) this;
         }
 
+        public T biasInit(double biasInit){
+            return biasInit(new FixedValue<>(biasInit));
+        }
+
+        public T biasInit(ParameterSpace<Double> biasInit){
+            this.biasInit = biasInit;
+            return (T) this;
+        }
+
         public T dist(Distribution dist) {
             return dist(new FixedValue<>(dist));
         }
 
         public T dist(ParameterSpace<Distribution> dist) {
             this.dist = dist;
-            return (T) this;
-        }
-
-        public T learningRate(double learningRate) {
-            return learningRate(new FixedValue<Double>(learningRate));
-        }
-
-        public T learningRate(ParameterSpace<Double> learningRate) {
-            this.learningRate = learningRate;
-            return (T) this;
-        }
-
-        public T biasLearningRate(double biasLearningRate) {
-            return biasLearningRate(new FixedValue<Double>(biasLearningRate));
-        }
-
-        public T biasLearningRate(ParameterSpace<Double> biasLearningRate) {
-            this.biasLearningRate = biasLearningRate;
-            return (T) this;
-        }
-
-
-        public T learningRateAfter(Map<Integer, Double> learningRateAfter) {
-            return learningRateAfter(new FixedValue<Map<Integer, Double>>(learningRateAfter));
-        }
-
-        public T learningRateAfter(ParameterSpace<Map<Integer, Double>> learningRateAfter) {
-            this.learningRateAfter = learningRateAfter;
-            return (T) this;
-        }
-
-        public T learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
-            return learningRateScoreBasedDecayRate(new FixedValue<Double>(lrScoreBasedDecay));
-        }
-
-        public T learningRateScoreBasedDecayRate(ParameterSpace<Double> lrScoreBasedDecay) {
-            this.lrScoreBasedDecay = lrScoreBasedDecay;
             return (T) this;
         }
 
@@ -317,75 +219,39 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
             return (T) this;
         }
 
-        public T momentum(double momentum) {
-            return momentum(new FixedValue<Double>(momentum));
+        public T l1Bias(double l1Bias) {
+            return l1Bias(new FixedValue<Double>(l1Bias));
         }
 
-        public T momentum(ParameterSpace<Double> momentum) {
-            this.momentum = momentum;
+        public T l1Bias(ParameterSpace<Double> l1Bias) {
+            this.l1Bias = l1Bias;
             return (T) this;
         }
 
-        public T momentumAfter(Map<Integer, Double> momentumAfter) {
-            return momentumAfter(new FixedValue<Map<Integer, Double>>(momentumAfter));
+        public T l2Bias(double l2Bias) {
+            return l2Bias(new FixedValue<>(l2Bias));
         }
 
-        public T momentumAfter(ParameterSpace<Map<Integer, Double>> momentumAfter) {
-            this.momentumAfter = momentumAfter;
+        public T l2Bias(ParameterSpace<Double> l2Bias) {
+            this.l2Bias = l2Bias;
             return (T) this;
         }
 
-        public T updater(Updater updater) {
-            return updater(new FixedValue<Updater>(updater));
+        public T updater(IUpdater updater) {
+            return updater(new FixedValue<>(updater));
         }
 
-        public T updater(ParameterSpace<Updater> updater) {
+        public T updater(ParameterSpace<IUpdater> updater) {
             this.updater = updater;
             return (T) this;
         }
 
-        public T epsilon(double epsilon) {
-            return epsilon(new FixedValue<Double>(epsilon));
+        public T biasUpdater(IUpdater updater) {
+            return biasUpdater(new FixedValue<>(updater));
         }
 
-        public T epsilon(ParameterSpace<Double> epsilon) {
-            this.epsilon = epsilon;
-            return (T) this;
-        }
-
-        public T rho(double rho) {
-            return rho(new FixedValue<Double>(rho));
-        }
-
-        public T rho(ParameterSpace<Double> rho) {
-            this.rho = rho;
-            return (T) this;
-        }
-
-        public T rmsDecay(double rmsDecay) {
-            return rmsDecay(new FixedValue<Double>(rmsDecay));
-        }
-
-        public T rmsDecay(ParameterSpace<Double> rmsDecay) {
-            this.rmsDecay = rmsDecay;
-            return (T) this;
-        }
-
-        public T adamMeanDecay(double adamMeanDecay) {
-            return adamMeanDecay(new FixedValue<Double>(adamMeanDecay));
-        }
-
-        public T adamMeanDecay(ParameterSpace<Double> adamMeanDecay) {
-            this.adamMeanDecay = adamMeanDecay;
-            return (T) this;
-        }
-
-        public T adamVarDecay(double adamVarDecay) {
-            return adamVarDecay(new FixedValue<Double>(adamVarDecay));
-        }
-
-        public T adamVarDecay(ParameterSpace<Double> adamVarDecay) {
-            this.adamVarDecay = adamVarDecay;
+        public T biasUpdater(ParameterSpace<IUpdater> updater) {
+            this.biasUpdater = biasUpdater;
             return (T) this;
         }
 
