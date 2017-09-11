@@ -34,7 +34,7 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter @Setter
 public class LossBinaryXENT implements ILossFunction {
-    public static final double DEFAULT_CLIPPING_EPSILON = 1e-10;
+    public static final double DEFAULT_CLIPPING_EPSILON = 1e-5;
 
     @JsonSerialize(using = RowVectorSerializer.class)
     @JsonDeserialize(using = RowVectorDeserializer.class)
