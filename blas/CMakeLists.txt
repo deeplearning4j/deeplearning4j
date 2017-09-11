@@ -130,10 +130,10 @@ elseif(CPU_BLAS)
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
 if(IOS)
-    add_library(nd4jcpu STATIC cpu/NativeOps.cpp ../include/cnpy/cnpy.cpp ../include/nd4jmemset.h ../include/nd4jmalloc.h)
+    add_library(nd4jcpu STATIC cpu/NativeOps.cpp ../include/cnpy/cnpy.cpp ../include/nd4jmemset.h ../include/nd4jmalloc.h ../include/memory/cpu/Workspace.cpp)
 else()
 
-    add_library(nd4jcpu SHARED cpu/NativeOps.cpp ../include/cnpy/cnpy.cpp ../include/nd4jmemset.h ../include/nd4jmalloc.h)
+    add_library(nd4jcpu SHARED cpu/NativeOps.cpp ../include/cnpy/cnpy.cpp ../include/nd4jmemset.h ../include/nd4jmalloc.h ../include/memory/cpu/Workspace.cpp)
 endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
