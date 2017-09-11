@@ -101,7 +101,8 @@
         (67,simdOps::SELU) ,\
         (68,simdOps::SELUDerivative) ,\
         (70,simdOps::Reverse) ,\
-        (71,simdOps::Pooling2D)
+        (71,simdOps::Pooling2D) ,\
+        (72,simdOps::MatchCondition)
 
 
 
