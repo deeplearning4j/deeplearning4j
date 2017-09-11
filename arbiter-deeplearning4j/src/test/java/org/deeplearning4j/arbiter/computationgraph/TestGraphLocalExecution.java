@@ -18,6 +18,8 @@
 package org.deeplearning4j.arbiter.computationgraph;
 
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
+import org.deeplearning4j.arbiter.conf.updater.AdamSpace;
+import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.evaluator.multilayer.ClassificationEvaluator;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
@@ -67,7 +69,7 @@ public class TestGraphLocalExecution {
         //Define: network config (hyperparameter space)
         ComputationGraphSpace mls = new ComputationGraphSpace.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(new ContinuousParameterSpace(0.0001, 0.1)).regularization(true)
+                        .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.01)).iterations(100).addInputs("in")
                         .setInputTypes(InputType.feedForward(4))
                         .addLayer("layer0",
@@ -122,7 +124,7 @@ public class TestGraphLocalExecution {
         //Define: network config (hyperparameter space)
         ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(new ContinuousParameterSpace(0.0001, 0.1)).regularization(true)
+                        .updater(new AdamSpace(new ContinuousParameterSpace(0.0001, 0.1)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.01)).iterations(1).addInputs("in")
                         .setInputTypes(InputType.feedForward(4))
                         .addLayer("first",

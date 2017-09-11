@@ -2,6 +2,7 @@ package org.deeplearning4j.arbiter.server;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
+import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
@@ -19,6 +20,7 @@ import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -42,8 +44,7 @@ public class ArbiterCLIRunnerTest {
         //Define: network config (hyperparameter space)
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(new ContinuousParameterSpace(0.0001, 0.1))
-                .regularization(true)
+                .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
                 .l2(new ContinuousParameterSpace(0.0001, 0.01))
                 .iterations(100)
                 .addLayer(new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2,10))

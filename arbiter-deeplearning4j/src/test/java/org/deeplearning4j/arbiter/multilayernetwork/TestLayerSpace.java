@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.multilayernetwork;
 
+import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.*;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
@@ -26,6 +27,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.learning.config.Sgd;
 
 import java.util.List;
 import java.util.Random;
@@ -60,7 +62,8 @@ public class TestLayerSpace {
             new DenseLayer.Builder().build();
 
             DenseLayerSpace ls =
-                            new DenseLayerSpace.Builder().nOut(20).learningRate(new ContinuousParameterSpace(0.3, 0.4))
+                            new DenseLayerSpace.Builder().nOut(20)
+                                    .updater(new SgdSpace(new ContinuousParameterSpace(0.3, 0.4)))
                                             .l2(new ContinuousParameterSpace(0.01, 0.1))
                                             .activation(new DiscreteParameterSpace<>(actFns)).build();
 
@@ -84,7 +87,7 @@ public class TestLayerSpace {
             DenseLayer l = ls.getValue(d);
 
             assertEquals(20, l.getNOut());
-            double lr = l.getLearningRate();
+            double lr = ((Sgd)l.getIUpdater()).getLearningRate();
             double l2 = l.getL2();
             IActivation activation = l.getActivationFn();
 

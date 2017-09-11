@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
+import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.data.MnistDataProvider;
 import org.deeplearning4j.arbiter.layers.*;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
@@ -55,9 +56,12 @@ import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
@@ -75,7 +79,8 @@ public class TestMultiLayerSpace {
     public void testBasic() {
 
         MultiLayerConfiguration expected =
-                        new NeuralNetConfiguration.Builder().learningRate(0.005).seed(12345).list()
+                        new NeuralNetConfiguration.Builder()
+                                        .updater(new Sgd(0.005)).seed(12345).list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                                         .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(2,
                                                         new OutputLayer.Builder().lossFunction(LossFunction.MCXENT)
@@ -83,7 +88,8 @@ public class TestMultiLayerSpace {
                                         .backprop(true).pretrain(false).build();
 
         MultiLayerSpace mls =
-                        new MultiLayerSpace.Builder().learningRate(0.005).seed(12345)
+                        new MultiLayerSpace.Builder()
+                                        .updater(new Sgd(0.005)).seed(12345)
                                         .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(),
                                                         new FixedValue<>(2), true) //2 identical layers
                                         .addLayer(new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT)
@@ -103,14 +109,14 @@ public class TestMultiLayerSpace {
         ILossFunction lossFunction = new LossMCXENT(Nd4j.create(new float[] {1f, 2f}));
 
         MultiLayerConfiguration expected =
-                        new NeuralNetConfiguration.Builder().learningRate(0.005).seed(12345).list()
+                        new NeuralNetConfiguration.Builder().updater(new Sgd(0.005)).seed(12345).list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                                         .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(2,
                                                         new OutputLayer.Builder().lossFunction(lossFunction).nIn(10)
                                                                         .nOut(5).build())
                                         .backprop(true).pretrain(false).build();
 
-        MultiLayerSpace mls = new MultiLayerSpace.Builder().learningRate(0.005).seed(12345)
+        MultiLayerSpace mls = new MultiLayerSpace.Builder().updater(new Sgd(0.005)).seed(12345)
                         .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), new FixedValue<>(2), true) //2 identical layers
                         .addLayer(new OutputLayerSpace.Builder().iLossFunction(lossFunction).nIn(10).nOut(5).build())
                         .backprop(true).pretrain(false).build();
@@ -127,8 +133,8 @@ public class TestMultiLayerSpace {
     public void testBasic2() {
 
         MultiLayerSpace mls =
-                        new MultiLayerSpace.Builder().learningRate(new ContinuousParameterSpace(0.0001, 0.1))
-                                        .regularization(true).l2(new ContinuousParameterSpace(0.2, 0.5))
+                        new MultiLayerSpace.Builder().updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
+                                        .l2(new ContinuousParameterSpace(0.2, 0.5))
                                         .convolutionMode(ConvolutionMode.Same)
                                         .addLayer(new ConvolutionLayerSpace.Builder().nIn(3).nOut(3).kernelSize(2, 2)
                                                         .stride(1, 1).build())
@@ -187,13 +193,13 @@ public class TestMultiLayerSpace {
             for (int j = 0; j < nLayers; j++) {
                 NeuralNetConfiguration layerConf = conf.getConf(j);
 
-                double lr = ((BaseLayer) layerConf.getLayer()).getLearningRate();
+                double lr = ((Sgd)((BaseLayer) layerConf.getLayer()).getIUpdater()).getLearningRate();
                 assertTrue(lr >= 0.0001 && lr <= 0.1);
                 double l2 = ((BaseLayer) layerConf.getLayer()).getL2();
                 assertTrue(l2 >= 0.2 && l2 <= 0.5);
 
                 if (j == nLayers - 1) { //Output layer
-                    assertEquals("softmax", ((BaseLayer) layerConf.getLayer()).getActivationFn().toString());
+                    assertEquals(Activation.SOFTMAX.getActivationFunction(), ((BaseLayer) layerConf.getLayer()).getActivationFn());
                 } else if (j == 0) {
                     //Conv layer
                     ConvolutionLayer cl = (ConvolutionLayer) layerConf.getLayer();
@@ -201,9 +207,10 @@ public class TestMultiLayerSpace {
                     assertEquals(3, cl.getNOut());
                     assertEquals(ConvolutionMode.Same, cl.getConvolutionMode());
                 } else {
-                    String actFn = ((BaseLayer) layerConf.getLayer()).getActivationFn().toString();
-                    assertTrue("relu".equals(actFn) || "tanh".equals(actFn));
-                    if ("relu".equals(actFn))
+                    IActivation actFn = ((BaseLayer) layerConf.getLayer()).getActivationFn();
+                    assertTrue(Activation.RELU.getActivationFunction().equals(actFn) ||
+                            Activation.TANH.getActivationFunction().equals(actFn));
+                    if (Activation.RELU.getActivationFunction().equals(actFn))
                         reluCount++;
                     else
                         tanhCount++;
@@ -223,14 +230,14 @@ public class TestMultiLayerSpace {
     @Test
     public void testGlobalPoolingBasic() {
 
-        MultiLayerConfiguration expected = new NeuralNetConfiguration.Builder().learningRate(0.005).seed(12345).list()
+        MultiLayerConfiguration expected = new NeuralNetConfiguration.Builder().updater(new Sgd(0.005)).seed(12345).list()
                         .layer(0, new GravesLSTM.Builder().nIn(10).nOut(10).build())
                         .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.SUM).pnorm(7).build())
                         .layer(2, new OutputLayer.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build())
                         .backprop(true).pretrain(false).build();
 
         MultiLayerSpace mls =
-                        new MultiLayerSpace.Builder().learningRate(0.005).seed(12345)
+                        new MultiLayerSpace.Builder().updater(new Sgd(0.005)).seed(12345)
                                         .addLayer(new GravesLSTMLayerSpace.Builder().nIn(10).nOut(10).build())
                                         .addLayer(new GlobalPoolingLayerSpace.Builder().poolingType(PoolingType.SUM)
                                                         .pNorm(7).build())
@@ -251,7 +258,7 @@ public class TestMultiLayerSpace {
     public void testVariationalAutoencoderLayerSpaceBasic() {
         MultiLayerSpace mls =
                         new MultiLayerSpace.Builder()
-                                        .learningRate(0.005).seed(
+                                        .updater(new Sgd(0.005)).seed(
                                                         12345)
                                         .addLayer(new VariationalAutoencoderLayerSpace.Builder()
                                                         .nIn(new IntegerParameterSpace(50, 75)).nOut(200)
@@ -328,8 +335,8 @@ public class TestMultiLayerSpace {
 
         ParameterSpace<Integer> layerSizeHyperparam = new IntegerParameterSpace(20, 60);
 
-        MultiLayerSpace hyperparameterSpace = new MultiLayerSpace.Builder().regularization(true).l2(0.0001)
-                        .weightInit(WeightInit.XAVIER).updater(Updater.NESTEROVS).momentum(0.9)
+        MultiLayerSpace hyperparameterSpace = new MultiLayerSpace.Builder().l2(0.0001)
+                        .weightInit(WeightInit.XAVIER).updater(new Nesterovs())
                         .addLayer(new ConvolutionLayerSpace.Builder().kernelSize(5, 5).nIn(1).stride(1, 1)
                                         .nOut(layerSizeHyperparam).activation(Activation.IDENTITY).build())
                         .addLayer(new SubsamplingLayerSpace.Builder().poolingType(SubsamplingLayer.PoolingType.MAX)
@@ -393,7 +400,7 @@ public class TestMultiLayerSpace {
     public void testWeightedLossFunction() {
 
         MultiLayerConfiguration expected =
-                        new NeuralNetConfiguration.Builder().learningRate(0.005).seed(12345).list()
+                        new NeuralNetConfiguration.Builder().updater(new Sgd(0.005)).seed(12345).list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                                         .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(2,
                                                         new OutputLayer.Builder()
@@ -403,7 +410,7 @@ public class TestMultiLayerSpace {
                                         .backprop(true).pretrain(false).build();
 
         MultiLayerSpace mls =
-                        new MultiLayerSpace.Builder().learningRate(0.005).seed(12345)
+                        new MultiLayerSpace.Builder().updater(new Sgd(0.005)).seed(12345)
                                         .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(),
                                                         new FixedValue<>(2), true) //2 identical layers
                                         .addLayer(new OutputLayerSpace.Builder()

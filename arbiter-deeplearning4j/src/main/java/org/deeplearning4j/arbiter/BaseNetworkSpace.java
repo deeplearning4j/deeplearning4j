@@ -21,6 +21,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.adapter.ActivationParameterSpaceAdapter;
+import org.deeplearning4j.arbiter.conf.dropout.DropoutSpace;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.AbstractParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -31,6 +32,8 @@ import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -73,6 +76,7 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
     protected ParameterSpace<IUpdater> updater;
     protected ParameterSpace<IUpdater> biasUpdater;
     protected ParameterSpace<IWeightNoise> weightNoise;
+    private ParameterSpace<IDropout> dropout;
     protected ParameterSpace<GradientNormalization> gradientNormalization;
     protected ParameterSpace<Double> gradientNormalizationThreshold;
     protected ParameterSpace<ConvolutionMode> convolutionMode;
@@ -112,6 +116,7 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         this.updater = builder.updater;
         this.biasUpdater = builder.biasUpdater;
         this.weightNoise = builder.weightNoise;
+        this.dropout = builder.dropout;
         this.gradientNormalization = builder.gradientNormalization;
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
         this.convolutionMode = builder.convolutionMode;
@@ -166,6 +171,8 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
             builder.biasUpdater(biasUpdater.getValue(values));
         if (weightNoise != null)
             builder.weightNoise(weightNoise.getValue(values));
+        if (dropout != null)
+            builder.dropOut(dropout.getValue(values));
         if (gradientNormalization != null)
             builder.gradientNormalization(gradientNormalization.getValue(values));
         if (gradientNormalizationThreshold != null)
@@ -255,6 +262,7 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         private ParameterSpace<IUpdater> updater;
         private ParameterSpace<IUpdater> biasUpdater;
         private ParameterSpace<IWeightNoise> weightNoise;
+        private ParameterSpace<IDropout> dropout;
         private ParameterSpace<GradientNormalization> gradientNormalization;
         private ParameterSpace<Double> gradientNormalizationThreshold;
         private ParameterSpace<ConvolutionMode> convolutionMode;
@@ -412,6 +420,23 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
 
         public T weightNoise(ParameterSpace<IWeightNoise> weightNoise){
             this.weightNoise = weightNoise;
+            return (T) this;
+        }
+
+        public T dropOut(double dropout){
+            return idropOut(new Dropout(dropout));
+        }
+
+        public T dropOut(ParameterSpace<Double> dropOut){
+            return idropOut(new DropoutSpace(dropOut));
+        }
+
+        public T idropOut(IDropout idropOut){
+            return idropOut(new FixedValue<>(idropOut));
+        }
+
+        public T idropOut(ParameterSpace<IDropout> idropOut){
+            this.dropout = idropOut;
             return (T) this;
         }
 
