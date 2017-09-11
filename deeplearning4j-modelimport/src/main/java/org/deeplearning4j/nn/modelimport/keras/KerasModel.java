@@ -153,7 +153,7 @@ public class KerasModel {
         prepareLayers((List<Object>) layerLists.get((config.getModelFieldLayers())));
 
         /* Import training configuration. */
-        if (trainingJson != null)
+        if (trainingJson != null && enforceTrainingConfig)
             importTrainingConfiguration(trainingJson);
 
         /* Infer output types for each layer. */

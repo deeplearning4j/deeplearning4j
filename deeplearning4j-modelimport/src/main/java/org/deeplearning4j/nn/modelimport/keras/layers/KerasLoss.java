@@ -69,10 +69,6 @@ public class KerasLoss extends KerasLayer {
         this.layer = new LossLayer.Builder(loss).name(layerName).build();
     }
 
-//    private KerasLoss(Map<String, Object> layerConfig) {}
-//
-//    private KerasLoss(Map<String, Object> layerConfig, boolean enforceTrainingConfig) {}
-
     /**
      * Get DL4J LossLayer.
      *

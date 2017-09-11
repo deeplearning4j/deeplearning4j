@@ -195,6 +195,30 @@ public class KerasModelEndToEndTest {
         importEndModelTest(modelPath, inputsOutputPath, true, false);
     }
 
+    /**
+     * DCGAN import test
+     */
+    @Test
+    public void importDcganDiscriminator() throws Exception {
+        importModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_discriminator_epoch_50.h5");
+    }
+    @Test
+    public void importDcganGenerator() throws Exception {
+        importModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_generator_epoch_50.h5");
+    }
+
+
+    void importModelH5Test(String modelPath) throws Exception {
+        ClassPathResource modelResource =
+                new ClassPathResource(modelPath,
+                        KerasModelEndToEndTest.class.getClassLoader());
+        File modelFile = File.createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
+        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        MultiLayerNetwork model = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+                .enforceTrainingConfig(false).buildSequential().getMultiLayerNetwork();
+    }
+
+
     void importEndModelTest(String modelPath, String inputsOutputsPath, boolean tfOrdering, boolean checkPredictions) throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
