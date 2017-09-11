@@ -140,7 +140,9 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_POOL_STRIDES = "strides";
     private final String LAYER_FIELD_POOL_1D_SIZE = ""; // 1: pool_length, 2: pool_size
     private final String LAYER_FIELD_POOL_1D_STRIDES = ""; // 1: stride, 2: strides
-    private final String LAYER_FIELD_UPSAMPLING_SIZE = ""; // 1: length, 2: size
+    private final String LAYER_FIELD_UPSAMPLING_1D_SIZE = ""; // 1: length, 2: size
+    private final String LAYER_FIELD_UPSAMPLING_2D_SIZE = "size";
+
 
     /* Keras convolution border modes. */
     private final String LAYER_FIELD_BORDER_MODE = ""; // 1: border_mode, 2: padding
