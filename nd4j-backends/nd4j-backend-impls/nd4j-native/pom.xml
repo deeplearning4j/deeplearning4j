@@ -11,7 +11,7 @@
 
     <properties>
         <openblas.version>0.2.19</openblas.version>
-        <mkl.version>2017.2-1.3.3-SNAPSHOT</mkl.version>
+        <mkl.version>2017.3</mkl.version>
         <env.LIBND4J_HOME>${basedir}/../../../../libnd4j/</env.LIBND4J_HOME>
     </properties>
 
@@ -42,13 +42,13 @@
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>mkl</artifactId>
-            <version>${mkl.version}</version>
-            <classifier>linux-x86_64</classifier>
+            <version>${mkl.version}-${javacpp-presets.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>mkl</artifactId>
-            <version>${mkl.version}</version>
+            <version>${mkl.version}-${javacpp-presets.version}</version>
+            <classifier>${dependency.platform}</classifier>
         </dependency>
 
         <dependency>
