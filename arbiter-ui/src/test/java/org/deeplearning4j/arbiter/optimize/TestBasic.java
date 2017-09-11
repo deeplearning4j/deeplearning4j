@@ -197,7 +197,7 @@ public class TestBasic {
                 .dropOut(new ContinuousParameterSpace(0.2, 0.7))
                 .addLayer(
                         new ConvolutionLayerSpace.Builder().nIn(1)
-                                .nOut(new IntegerParameterSpace(5, 5)).dropOut()
+                                .nOut(new IntegerParameterSpace(5, 5))
                                 .kernelSize(new DiscreteParameterSpace<>(new int[] {14, 14}, new int[] {30, 30}))
                                 .stride(2, 2)
                                 .activation(new DiscreteParameterSpace<>(Activation.RELU,Activation.SOFTPLUS, Activation.LEAKYRELU))
@@ -324,7 +324,7 @@ public class TestBasic {
         //This exception should be visible in UI, but training should continue otherwise
 
         ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
-                .learningRate(new ContinuousParameterSpace(0.0001, 0.2))
+                .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
                 .l2(new ContinuousParameterSpace(0.0001, 0.05))
                 .dropOut(new ContinuousParameterSpace(0.2, 0.7))
                 .addInputs("in")
@@ -390,7 +390,7 @@ public class TestBasic {
     public void testBasicMnistMultipleSessions() throws Exception {
 
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
-                .learningRate(new ContinuousParameterSpace(0.0001, 0.2))
+                .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
                 .l2(new ContinuousParameterSpace(0.0001, 0.05))
                 .dropOut(new ContinuousParameterSpace(0.2, 0.7))
                 .addLayer(

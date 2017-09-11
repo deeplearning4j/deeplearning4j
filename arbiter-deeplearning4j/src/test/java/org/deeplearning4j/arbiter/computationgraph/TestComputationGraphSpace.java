@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
@@ -143,11 +144,13 @@ public class TestComputationGraphSpace {
                 assertTrue(l2 >= 0.2 && l2 <= 0.5);
 
                 if (j == nLayers - 1) { //Output layer
-                    assertEquals(Activation.SOFTMAX, ((BaseLayer) layerConf.getLayer()).getActivationFn().toString());
+                    assertEquals(Activation.SOFTMAX.getActivationFunction(),
+                            ((BaseLayer) layerConf.getLayer()).getActivationFn());
                 } else {
-                    String actFn = ((BaseLayer) layerConf.getLayer()).getActivationFn().toString();
-                    assertTrue(Activation.RELU.equals(actFn) || Activation.TANH.equals(actFn));
-                    if (Activation.RELU.equals(actFn))
+                    IActivation actFn = ((BaseLayer) layerConf.getLayer()).getActivationFn();
+                    assertTrue(Activation.RELU.getActivationFunction().equals(actFn) ||
+                            Activation.TANH.getActivationFunction().equals(actFn));
+                    if (Activation.RELU.getActivationFunction().equals(actFn))
                         reluCount++;
                     else
                         tanhCount++;

@@ -232,7 +232,7 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
 
 
         if (result.getCandidateInfo().getCandidateStatus() == CandidateStatus.Failed) {
-            log.info("Task {} failed during execution", result.getIndex());
+            log.info("Task {} failed during execution: {}", result.getIndex(), result.getCandidateInfo().getExceptionStackTrace());
             numCandidatesFailed.getAndIncrement();
         } else {
 

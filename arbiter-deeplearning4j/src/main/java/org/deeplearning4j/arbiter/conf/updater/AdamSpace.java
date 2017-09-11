@@ -1,20 +1,13 @@
 package org.deeplearning4j.arbiter.conf.updater;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import org.deeplearning4j.arbiter.optimize.api.AbstractParameterSpace;
+import lombok.Data;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
-import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
+@Data
 public class AdamSpace extends BaseUpdaterSpace {
 
     private ParameterSpace<Double> learningRate;
@@ -32,8 +25,11 @@ public class AdamSpace extends BaseUpdaterSpace {
         this(learningRate, null, beta1, beta2, epsilon);
     }
 
-    public AdamSpace(ParameterSpace<Double> learningRate, ParameterSpace<ISchedule> learningRateSchedule,
-                      ParameterSpace<Double> beta1, ParameterSpace<Double> beta2, ParameterSpace<Double> epsilon){
+    public AdamSpace(@JsonProperty("learningRate") ParameterSpace<Double> learningRate,
+                     @JsonProperty("learningRateSchedule") ParameterSpace<ISchedule> learningRateSchedule,
+                     @JsonProperty("beta1") ParameterSpace<Double> beta1,
+                     @JsonProperty("beta2") ParameterSpace<Double> beta2,
+                     @JsonProperty("epsilon") ParameterSpace<Double> epsilon){
         this.learningRate = learningRate;
         this.learningRateSchedule = learningRateSchedule;
         this.beta1 = beta1;

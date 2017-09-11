@@ -1,10 +1,13 @@
 package org.deeplearning4j.arbiter.conf.updater;
 
+import lombok.Data;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+@Data
 public class SgdSpace extends BaseUpdaterSpace {
 
     protected ParameterSpace<Double> learningRate;
@@ -14,7 +17,8 @@ public class SgdSpace extends BaseUpdaterSpace {
         this(learningRate, null);
     }
 
-    public SgdSpace(ParameterSpace<Double> learningRate, ParameterSpace<ISchedule> learningRateSchedule){
+    public SgdSpace(@JsonProperty("learningRate") ParameterSpace<Double> learningRate,
+                    @JsonProperty("learningRateSchedule") ParameterSpace<ISchedule> learningRateSchedule){
         this.learningRate = learningRate;
         this.learningRateSchedule = learningRateSchedule;
     }

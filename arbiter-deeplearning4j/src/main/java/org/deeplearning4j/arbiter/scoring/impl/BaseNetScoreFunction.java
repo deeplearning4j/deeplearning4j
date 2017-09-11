@@ -5,6 +5,7 @@ import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.Arrays;
@@ -29,6 +30,8 @@ public abstract class BaseNetScoreFunction implements ScoreFunction {
         } else {
             if (testData instanceof DataSetIterator) {
                 return score((ComputationGraph) model, (DataSetIterator) testData);
+            } else if(testData instanceof DataSetIteratorFactory){
+                return score((ComputationGraph) model, ((DataSetIteratorFactory)testData).create());
             } else {
                 return score((ComputationGraph) model, (MultiDataSetIterator) testData);
             }

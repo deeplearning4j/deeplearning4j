@@ -1,5 +1,6 @@
 package org.deeplearning4j.arbiter.conf.updater;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.arbiter.optimize.api.AbstractParameterSpace;
@@ -11,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+@Data
 public abstract class BaseUpdaterSpace extends AbstractParameterSpace<IUpdater> {
 
     @Override
