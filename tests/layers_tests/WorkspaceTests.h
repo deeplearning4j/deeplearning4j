@@ -39,4 +39,20 @@ TEST_F(WorkspaceTests, BasicInitialization2) {
 }
 
 
+TEST_F(WorkspaceTests, BasicInitialization3) {
+    Workspace workspace(0);
+
+    ASSERT_EQ(0, workspace.getCurrentOffset());
+
+    NDArray<float> array(5, 5, 'c', &workspace);
+
+    array.putScalar(0, 1.0f);
+    array.putScalar(5, 1.0f);
+
+    ASSERT_NEAR(2.0f, array.reduceNumber<simdOps::Sum<float>>(), 1e-5);
+
+    ASSERT_TRUE(workspace.getCurrentOffset() == 0);
+}
+
+
 #endif //LIBND4J_WORKSPACETESTS_H

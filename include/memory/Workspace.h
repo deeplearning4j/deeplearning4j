@@ -8,6 +8,8 @@
 #ifndef LIBND4J_WORKSPACE_H
 #define LIBND4J_WORKSPACE_H
 
+#include <atomic>
+#include <vector>
 #include <mutex>
 #include <pointercast.h>
 #include <types/float16.h>
@@ -27,13 +29,17 @@ namespace nd4j {
             void* _ptrHost;
             void* _ptrDevice;
 
-            Nd4jIndex _offset;
+            std::atomic<Nd4jIndex> _offset;
 
             Nd4jIndex _initialSize;
             Nd4jIndex _currentSize;
 
             std::mutex _mutexAllocation;
+            std::mutex _mutexSpills;
 
+            std::vector<void*> _spills;
+
+            std::atomic<Nd4jIndex> _spillsSize;
         public:
             Workspace();
             Workspace(Nd4jIndex initialSize);

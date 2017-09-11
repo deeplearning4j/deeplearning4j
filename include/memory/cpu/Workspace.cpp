@@ -5,6 +5,7 @@
 //
 
 
+#include <atomic>
 #include <stdio.h>
 #include <stdlib.h>
 #include "../Workspace.h"
@@ -34,6 +35,9 @@ namespace nd4j {
         Workspace::~Workspace() {
             if (this->_ptrHost != nullptr)
                 free(this->_ptrHost);
+
+            for (auto v:_spills)
+                free(v);
         }
 
 
@@ -42,7 +46,7 @@ namespace nd4j {
         }
 
         Nd4jIndex Workspace::getCurrentOffset() {
-            return _offset;
+            return _offset.load();
         }
 
 
@@ -50,13 +54,22 @@ namespace nd4j {
             void* result = nullptr;
             this->_mutexAllocation.lock();
 
-            if (_offset + numBytes >= _currentSize) {
+            if (_offset.load() + numBytes >= _currentSize) {
                 this->_mutexAllocation.unlock();
-                return nullptr;
+
+                void *p = malloc(numBytes);
+
+                _mutexSpills.lock();
+                _spills.push_back(p);
+                _mutexSpills.unlock();
+
+                _spillsSize += numBytes;
+
+                return p;
             }
 
             _offset += numBytes;
-            result = _ptrHost + _offset;
+            result = _ptrHost + _offset.load();
 
             this->_mutexAllocation.unlock();
 
