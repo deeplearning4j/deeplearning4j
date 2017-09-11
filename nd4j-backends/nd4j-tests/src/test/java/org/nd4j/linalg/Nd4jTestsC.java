@@ -5362,6 +5362,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, res);
     }
 
+    @Test
+    public void testEqualOrder1() throws Exception {
+        val array = Nd4j.linspace(1, 6, 6).reshape(2, 3);
+        val arrayC = array.dup('c');
+        val arrayF = array.dup('f');
+
+        assertEquals(array, arrayC);
+        assertEquals(array, arrayF);
+        assertEquals(arrayC, arrayF);
+    }
+
 
     @Override
     public char ordering() {

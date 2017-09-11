@@ -5,10 +5,14 @@ import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
+import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.*;
+import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * This class holds various CustomOps tests
@@ -184,5 +188,99 @@ public class CustomOpsTests {
         Nd4j.getExecutioner().exec(op);
 
         assertEquals(exp, z);
+    }
+
+    @Test
+    public void testMergeMaxF() throws Exception {
+
+        val array0 = Nd4j.rand('f', 5, 2).add(1); //some random array with +ve numbers
+        val array1 = array0.dup('f').add(5);
+        array1.put(0, 0, 0); //array1 is always bigger than array0 except at 0,0
+
+        //expected value of maxmerge
+        val exp = array1.dup('f');
+        exp.putScalar(0, 0, array0.getDouble(0, 0));
+
+        val zF = Nd4j.zeros(array0.shape(), 'f');
+        CustomOp op = DynamicCustomOp.builder("mergemax")
+                .setInputs(array0, array1)
+                .setOutputs(zF)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(exp, zF);
+    }
+
+    @Test
+    public void testMergeMaxMixedOrder() {
+        val array0 = Nd4j.rand('f', 5, 2).addi(1); //some random array with +ve numbers
+        val array1 = array0.dup().addi(5);
+        array1.put(0, 0, 0); //array1 is always bigger than array0 except at 0,0
+
+        //expected value of maxmerge
+        val exp = array1.dup();
+        exp.putScalar(0, 0, array0.getDouble(0, 0));
+
+        val zF = Nd4j.zeros(array0.shape() ,'f');
+        CustomOp op = DynamicCustomOp.builder("mergemax")
+                .setInputs(array0, array1)
+                .setOutputs(zF)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(exp, zF);
+    }
+
+
+    @Test
+    public void testScatterUpdate1() throws Exception {
+        val matrix = Nd4j.create(5, 5);
+        val updates = Nd4j.create(2, 5).assign(1.0);
+        int[] dims = new int[]{1};
+        int[] indices = new int[]{1, 3};
+
+        val exp0 = Nd4j.create(1, 5).assign(0);
+        val exp1 = Nd4j.create(1, 5).assign(1);
+
+        ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
+        Nd4j.getExecutioner().exec(op);
+
+        log.info("Matrix: {}", matrix);
+        assertEquals(exp0, matrix.getRow(0));
+        assertEquals(exp1, matrix.getRow(1));
+        assertEquals(exp0, matrix.getRow(2));
+        assertEquals(exp1, matrix.getRow(3));
+        assertEquals(exp0, matrix.getRow(4));
+    }
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testScatterUpdate2() throws Exception {
+        val matrix = Nd4j.create(5, 5);
+        val updates = Nd4j.create(2, 5).assign(1.0);
+        int[] dims = new int[]{0};
+        int[] indices = new int[]{0, 1};
+
+        val exp0 = Nd4j.create(1, 5).assign(0);
+        val exp1 = Nd4j.create(1, 5).assign(1);
+
+        ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
+    }
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testScatterUpdate3() throws Exception {
+        val matrix = Nd4j.create(5, 5);
+        val updates = Nd4j.create(2, 5).assign(1.0);
+        int[] dims = new int[]{1};
+        int[] indices = new int[]{0, 6};
+
+        val exp0 = Nd4j.create(1, 5).assign(0);
+        val exp1 = Nd4j.create(1, 5).assign(1);
+
+        ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
+    }
+
+    @Test
+    public void testOpStatus1() throws Exception {
+        assertEquals(OpStatus.ND4J_STATUS_OK, OpStatus.byNumber(0));
     }
 }

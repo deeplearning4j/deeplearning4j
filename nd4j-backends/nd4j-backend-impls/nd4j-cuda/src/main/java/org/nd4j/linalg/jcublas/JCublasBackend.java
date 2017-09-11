@@ -19,11 +19,13 @@
 
 package org.nd4j.linalg.jcublas;
 
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.javacpp.cublas;
+import org.bytedeco.javacpp.cuda;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.io.Resource;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
-import org.nd4j.linalg.util.Paths;
 
 /**
  *
@@ -40,6 +42,9 @@ public class JCublasBackend extends Nd4jBackend {
             if (!canRun())
                 return false;
         } catch (Throwable e) {
+            while (e.getCause() != null) {
+                e = e.getCause();
+            }
             throw new RuntimeException(e);
         }
         return true;
@@ -47,13 +52,12 @@ public class JCublasBackend extends Nd4jBackend {
 
     @Override
     public boolean canRun() {
-        // legacy check
-        /*
-        boolean res = Paths.nameExistsInPath("nvcc") || Paths.nameExistsInPath("nvcc.exe");
-        if (!res)
-            throw new RuntimeException("CUDA backend can't find NVCC within PATH environment variable");
-
-        */
+        int[] count = { 0 };
+        cuda.cudaGetDeviceCount(count);
+        if (count[0] <= 0) {
+            throw new RuntimeException("No CUDA devices were found in system");
+        }
+        Loader.load(cublas.class);
         return true;
     }
 
