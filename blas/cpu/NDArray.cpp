@@ -1544,10 +1544,10 @@ matrix of singular values W is output as a vector w[n].  The matrix vt is output
     template<typename T>
     NDArray<T>::~NDArray() {
 
-        if (_isBuffAlloc)
+        if (_isBuffAlloc && _workspace == nullptr)
             delete[] _buffer;
 
-        if (_isShapeAlloc)
+        if (_isShapeAlloc  && _workspace == nullptr)
             delete[] _shapeInfo;
     }
 }

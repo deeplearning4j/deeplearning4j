@@ -28,11 +28,21 @@ namespace nd4j {
 
             this->_initialSize = initialSize;
             this->_currentSize = initialSize;
+            this->_offset = 0;
         }
 
         Workspace::~Workspace() {
             if (this->_ptrHost != nullptr)
                 free(this->_ptrHost);
+        }
+
+
+        Nd4jIndex Workspace::getCurrentSize() {
+            return _currentSize;
+        }
+
+        Nd4jIndex Workspace::getCurrentOffset() {
+            return _offset;
         }
 
 

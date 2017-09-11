@@ -120,7 +120,7 @@ if(CUDA_BLAS)
                 endif()
             endif()
         endif()
-        CUDA_ADD_LIBRARY(nd4jcuda SHARED cuda/NativeOps.cu ../include/cnpy/cnpy.cpp)
+        CUDA_ADD_LIBRARY(nd4jcuda SHARED cuda/NativeOps.cu ../include/cnpy/cnpy.cpp ../include/memory/cpu/Workspace.cpp)
         target_link_libraries(nd4jcuda ${CUDA_LIBRARIES})
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)
 

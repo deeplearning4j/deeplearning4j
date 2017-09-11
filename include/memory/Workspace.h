@@ -39,6 +39,9 @@ namespace nd4j {
             Workspace(Nd4jIndex initialSize);
             ~Workspace();
 
+            Nd4jIndex getCurrentSize();
+            Nd4jIndex getCurrentOffset();
+
             bool resizeSupported();
 
             void* allocateBytes(Nd4jIndex numBytes);
