@@ -2,8 +2,8 @@
 // Created by raver119 on 07.09.17.
 //
 
-#ifndef LIBND4J_NDARRAYFACTORYpCPP
-#define LIBND4J_NDARRAYFACTORYpCPP
+#ifndef LIBND4J_NDARRAYFACTORY_CPP
+#define LIBND4J_NDARRAYFACTORY_CPP
 
 #include "../NDArrayFactory.h"
 #include "../NDArray.h"
@@ -24,10 +24,10 @@ namespace nd4j {
         if (dimensions.size() > 1)
             std::sort (copy.begin(), copy.end());
 
-        Nd4jIndex tadLength = shape::tadLength(ndArray->_shapeInfo, copy.data(), copy.size());
+        Nd4jIndex tadLength = shape::tadLength(ndArray->getShapeInfo(), copy.data(), copy.size());
         Nd4jIndex numTads = ndArray->lengthOf() / tadLength;
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(ndArray->_shapeInfo, copy.data(), copy.size()));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(ndArray->getShapeInfo(), copy.data(), copy.size()));
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -41,14 +41,14 @@ namespace nd4j {
             }
 
 
-            T* buffer = ndArray->_buffer + tad->tadOffsets[idx];
+            T* buffer = ndArray->getBuffer() + tad->tadOffsets[idx];
             auto array = new NDArray<T>(buffer, shapeInfo);
             result->push_back(array);
         }
 
         // if we have no indices - just delete shapeInfo
         if (result->size() > 0)
-            result->at(0)->_isShapeAlloc = true;
+            result->at(0)->triggerAllocationFlag(false, true);
         else
             delete[] shapeInfo;
 
@@ -71,10 +71,10 @@ namespace nd4j {
         if (dimensions.size() > 1)
             std::sort (copy.begin(), copy.end());
 
-        Nd4jIndex tadLength = shape::tadLength(ndArray->_shapeInfo, copy.data(), copy.size());
+        Nd4jIndex tadLength = shape::tadLength(ndArray->getShapeInfo(), copy.data(), copy.size());
         Nd4jIndex numTads = ndArray->lengthOf() / tadLength;
 
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(ndArray->_shapeInfo, copy.data(), copy.size()));
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(ndArray->getShapeInfo(), copy.data(), copy.size()));
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
@@ -82,14 +82,14 @@ namespace nd4j {
         std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
 
         for (int idx = 0; idx < numTads; idx++ ) {
-            T* buffer = ndArray->_buffer + tad->tadOffsets[idx];
+            T* buffer = ndArray->getBuffer() + tad->tadOffsets[idx];
             auto array = new NDArray<T>(buffer, shapeInfo);
             result->push_back(array);
         }
 
         // if we have no indices - just delete shapeInfo
         if (result->size() > 0)
-            result->at(0)->_isShapeAlloc = true;
+            result->at(0)->triggerAllocationFlag(false, true);
         else
             delete[] shapeInfo;
 
@@ -109,7 +109,7 @@ namespace nd4j {
             if (result == nullptr)
                 result = new NDArray<T>(1,1, 'c');
 
-            result->putScalar(0, nd4j::math::nd4j_dot(A->_buffer, B->_buffer, A->lengthOf()));
+            result->putScalar(0, nd4j::math::nd4j_dot(A->getBuffer(), B->getBuffer(), A->lengthOf()));
         } if (A->isMatrix() && B->isVector()) {
             // gemv
             if (A->columns() != B->rows())
@@ -119,7 +119,7 @@ namespace nd4j {
                 result = new NDArray<T>(A->rows(), 1, 'f');
 
             // TODO: strides!!!
-            nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0,  A->rows(), A->columns(), alpha, A->_buffer, B->rows(), B->_buffer, 1, beta, C->_buffer, 1);
+            nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0,  A->rows(), A->columns(), alpha, A->getBuffer(), B->rows(), B->getBuffer(), 1, beta, C->getBuffer(), 1);
         } else if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix())) {
             // gemm
             // int[] shape = {rows(), other.columns()};
@@ -146,11 +146,11 @@ namespace nd4j {
             nd4j::NDArray<T>* pB = nullptr;
             nd4j::NDArray<T>* pC = nullptr;;
 
-            //pC = new NDArray<T>(C, cShapeInfo);
+            //_C = new NDArray<T>(C, cShapeInfo);
 
-            auto tA = new nd4j::NDArray<T>(A->_buffer, A->_shapeInfo);
-            auto tB = new nd4j::NDArray<T>(B->_buffer, B->_shapeInfo);
-            auto tC = new nd4j::NDArray<T>(result->_buffer, result->_shapeInfo);
+            auto tA = new nd4j::NDArray<T>(A->getBuffer(), A->getShapeInfo());
+            auto tB = new nd4j::NDArray<T>(B->getBuffer(), B->getShapeInfo());
+            auto tC = new nd4j::NDArray<T>(result->getBuffer(), result->getShapeInfo());
 
             if (cOrder != 'f') {
                 pC = tC->dup('f');
@@ -213,7 +213,7 @@ namespace nd4j {
 
             // we'll use platform-specific gemm here eventually. maybe tomorrow.
             // TODO: put proper _gemm here
-            nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->_buffer, lda, pB->_buffer, ldb, beta, pC->_buffer, ldc);
+            nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc);
 
             if (cOrder != 'f') {
                 tC->assign(pC);
@@ -255,7 +255,7 @@ namespace nd4j {
 
         for (Nd4jIndex e = 0; e < numElements; e++) {
             T step = (T) e / ((T) numElements - (T) 1.0f);
-            result->_buffer[e] = (from * ((T) 1.0f - step) + step * to);
+            result->getBuffer()[e] = (from * ((T) 1.0f - step) + step * to);
         }
 
         return result;

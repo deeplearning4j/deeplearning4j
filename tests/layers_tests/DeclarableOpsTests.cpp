@@ -7,7 +7,8 @@
 #include <Variable.h>
 #include <VariableSpace.h>
 #include <ops/declarable/declarable_ops.h>
-#include <ops/declarable/cpu/parity_ops.h>
+#include <ops/declarable/generic/parity_ops.h>
+#include <ops/declarable/generic/third_party.h>
 #include <helpers/helper_hash.h>
 #include <NativeOps.h>
 #include <ops/gemm.h>
@@ -1145,17 +1146,17 @@ TEST_F(DeclarableOpsTests, TestLegacyExecution1) {
     auto inputBuffers = new Nd4jPointer[2];
     auto inputShapes = new Nd4jPointer[2];
 
-    inputBuffers[0] = (Nd4jPointer) x->_buffer;
-    inputBuffers[1] = (Nd4jPointer) y->_buffer;
+    inputBuffers[0] = (Nd4jPointer) x->getBuffer();
+    inputBuffers[1] = (Nd4jPointer) y->getBuffer();
 
-    inputShapes[0] = (Nd4jPointer) x->_shapeInfo;
-    inputShapes[1] = (Nd4jPointer) y->_shapeInfo;
+    inputShapes[0] = (Nd4jPointer) x->getShapeInfo();
+    inputShapes[1] = (Nd4jPointer) y->getShapeInfo();
 
     auto outputBuffers = new Nd4jPointer[1];
     auto outputShapes = new Nd4jPointer[1];
 
-    outputBuffers[0] = (Nd4jPointer) z->_buffer;
-    outputShapes[0] = (Nd4jPointer) z->_shapeInfo;
+    outputBuffers[0] = (Nd4jPointer) z->getBuffer();
+    outputShapes[0] = (Nd4jPointer) z->getShapeInfo();
 
 
     nativeOps.execCustomOpFloat(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, false);
@@ -1187,11 +1188,11 @@ TEST_F(DeclarableOpsTests, TestLegacyExecution2) {
     auto inputBuffers = new Nd4jPointer[2];
     auto inputShapes = new Nd4jPointer[2];
 
-    inputBuffers[0] = (Nd4jPointer) x->_buffer;
-    inputBuffers[1] = (Nd4jPointer) y->_buffer;
+    inputBuffers[0] = (Nd4jPointer) x->getBuffer();
+    inputBuffers[1] = (Nd4jPointer) y->getBuffer();
 
-    inputShapes[0] = (Nd4jPointer) x->_shapeInfo;
-    inputShapes[1] = (Nd4jPointer) y->_shapeInfo;
+    inputShapes[0] = (Nd4jPointer) x->getShapeInfo();
+    inputShapes[1] = (Nd4jPointer) y->getShapeInfo();
 
     auto outputBuffers = new Nd4jPointer[1];
     auto outputShapes = new Nd4jPointer[1];
@@ -1215,9 +1216,9 @@ TEST_F(DeclarableOpsTests, TestGemv1) {
 	auto z = new NDArray<float>(5, 1, 'f');
 
 	auto expBuffer = new float[5]{28.00,  64.00,  100.00,  136.00,  172.00};
-	auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+	auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-	nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->_buffer, y->rows(), y->_buffer, 1, 0.0, z->_buffer, 1);
+	nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
 
 	z->printBuffer();
 
@@ -1357,10 +1358,10 @@ TEST_F(DeclarableOpsTests, Transpose1) {
 	// ASSERT_TRUE(x.isSameShapeStrict(&exp));
 
 	for (int e = 0; e < x.rankOf() * 2 + 2; e++) {
-        ASSERT_EQ(x._shapeInfo[e], exp._shapeInfo[e]);
+        ASSERT_EQ(x.getShapeInfo()[e], exp.getShapeInfo()[e]);
     }
-	ASSERT_EQ(x._shapeInfo[x.rankOf() * 2 + 2],-exp._shapeInfo[x.rankOf() * 2 + 2]);
-	ASSERT_EQ(x._shapeInfo[x.rankOf() * 2 + 3], exp._shapeInfo[x.rankOf() * 2 + 3]);
+	ASSERT_EQ(x.getShapeInfo()[x.rankOf() * 2 + 2],-exp.getShapeInfo()[x.rankOf() * 2 + 2]);
+	ASSERT_EQ(x.getShapeInfo()[x.rankOf() * 2 + 3], exp.getShapeInfo()[x.rankOf() * 2 + 3]);
 
 }
 
@@ -1383,10 +1384,10 @@ TEST_F(DeclarableOpsTests, Transpose2) {
 	NDArray<float>* result = block->getVariableSpace()->getVariable(block->getNodeId())->getNDArray();
 	// ASSERT_TRUE(result->isSameShapeStrict(&exp));
 	for (int e = 0; e < result->rankOf() * 2 + 2; e++) {
-        ASSERT_EQ(result->_shapeInfo[e], exp._shapeInfo[e]);
+        ASSERT_EQ(result->getShapeInfo()[e], exp.getShapeInfo()[e]);
     }
-	ASSERT_EQ(result->_shapeInfo[x.rankOf() * 2 + 2],-exp._shapeInfo[x.rankOf() * 2 + 2]);
-	ASSERT_EQ(result->_shapeInfo[x.rankOf() * 2 + 3], exp._shapeInfo[x.rankOf() * 2 + 3]);
+	ASSERT_EQ(result->getShapeInfo()[x.rankOf() * 2 + 2],-exp.getShapeInfo()[x.rankOf() * 2 + 2]);
+	ASSERT_EQ(result->getShapeInfo()[x.rankOf() * 2 + 3], exp.getShapeInfo()[x.rankOf() * 2 + 3]);
 }
 
 

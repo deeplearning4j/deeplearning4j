@@ -33,7 +33,8 @@
 #include "GraphExecutioner.cpp"
 #include "NDArrayFactory.cpp"
 #include <ops/declarable/declarable_ops.h>
-#include <ops/declarable/cpu/parity_ops.h>
+#include <ops/declarable/generic/parity_ops.h>
+#include <ops/declarable/generic/third_party.h>
 
 char *name;
 bool nameSet = false;

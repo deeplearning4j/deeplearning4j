@@ -127,8 +127,7 @@ nd4j::graph::Variable<T>::Variable(const nd4j::graph::FlatVariable *flatVariable
     }
 
     _ndarray = new NDArray<T>(buffer, shape);
-    _ndarray->_isBuffAlloc = true;
-    _ndarray->_isShapeAlloc = true;
+    _ndarray->triggerAllocationFlag(true, true);
 }
 
 template <typename T>

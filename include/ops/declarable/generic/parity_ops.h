@@ -28,16 +28,16 @@ namespace nd4j {
             // we want to ensure that all
             NDArray<T> *first = block.getVariables().at(0)->getNDArray();
 
-            std::unique_ptr<int> shapePtr(new int[first->_shapeInfo[0] * 2 + 4]);
+            std::unique_ptr<int> shapePtr(new int[shape::shapeInfoLength(first->rankOf())]);
 
-            std::memcpy(shapePtr.get(), first->_shapeInfo, shape::shapeInfoByteLength(first->_shapeInfo));
+            std::memcpy(shapePtr.get(), first->getShapeInfo(), shape::shapeInfoByteLength(first->getShapeInfo()));
             _length = shape::length(shapePtr.get());
 
             std::unique_ptr<Nd4jPointer> buffers(new Nd4jPointer[block.getVariables().size()]);
             std::unique_ptr<Nd4jPointer> shapes(new Nd4jPointer[block.getVariables().size()]);
 
-            buffers.get()[0] = (Nd4jPointer) first->_buffer;
-            shapes.get()[0] = (Nd4jPointer) first->_shapeInfo;
+            buffers.get()[0] = (Nd4jPointer) first->getBuffer();
+            shapes.get()[0] = (Nd4jPointer) first->getShapeInfo();
 
             for (int e = 1; e < block.getVariables().size(); e++) {
                 Variable<T> *var = block.getVariables().at(e);
@@ -45,8 +45,8 @@ namespace nd4j {
 
                 shapePtr.get()[_dimension + 1] += var->getNDArray()->shapeOf()[_dimension];
 
-                buffers.get()[e] = (Nd4jPointer) var->getNDArray()->_buffer;
-                shapes.get()[e] = (Nd4jPointer) var->getNDArray()->_shapeInfo;
+                buffers.get()[e] = (Nd4jPointer) var->getNDArray()->getBuffer();
+                shapes.get()[e] = (Nd4jPointer) var->getNDArray()->getShapeInfo();
             }
 
             if (!block.getVariableSpace()->hasVariable(block.getNodeId()))
@@ -59,7 +59,7 @@ namespace nd4j {
 
             auto variable = block.getVariableSpace()->getVariable(block.getNodeId());
 
-            concatCpuGeneric(_dimension, block.getVariables().size(), buffers.get(), shapes.get(), variable->getNDArray()->_buffer, variable->getNDArray()->_shapeInfo);
+            concatCpuGeneric(_dimension, block.getVariables().size(), buffers.get(), shapes.get(), variable->getNDArray()->getBuffer(), variable->getNDArray()->getShapeInfo());
 
             return ND4J_STATUS_OK;
         }
@@ -141,24 +141,27 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(maxPool, 2, 1, true) {
+        DECLARE_OP(maxpool, 2, 1, true) {
             // MaxPooling
             return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(MaxPool2D, maxPool);
+        DECLARE_SYN(MaxPool2D, maxpool);
+        DECLARE_SYN(MaxPool, maxpool);
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(avgPool, 2, 1, true) {
+        DECLARE_OP(avgpool, 2, 1, true) {
             // AvgPooling
             return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(AvgPool2D, avgPool);
+        DECLARE_SYN(AvgPool2D, avgpool);
+        DECLARE_SYN(AvgPool, avgpool);
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_OP(lrn, 2, 1, true) {
             // LocalResponseNormalization
             return ND4J_STATUS_OK;
         }
+        DECLARE_SYN(LRN, lrn);
 
 
 ///////////////////////
@@ -185,7 +188,7 @@ namespace nd4j {
             if (!block.isInplace())
                 z = new NDArray<T>(x);
 
-            functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(block.getRNG(), z->_buffer, z->_shapeInfo, block.getTArguments()->data());
+            functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
 
             STORE_RESULT(*z);
 
@@ -204,7 +207,7 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_OP(realDiv, 2, 1, true) {
+        DECLARE_OP(realdiv, 2, 1, true) {
             // ?
             return ND4J_STATUS_OK;
         }
@@ -353,6 +356,7 @@ namespace nd4j {
 
         // test op, non-divergent
         DECLARE_OP(testop2i2o, 2, 2, true) {
+            nd4j_printf("CPU op used!","");
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
 
@@ -553,7 +557,7 @@ namespace nd4j {
                             isrc += iin[3]* input->stridesOf()[3];
 
 
-                            output->_buffer[idst] = input->_buffer[isrc];
+                            output->getBuffer()[idst] = input->getBuffer()[isrc];
                         }
                     }
                 }
@@ -631,7 +635,7 @@ namespace nd4j {
                                     if (idim > 3) {
                                         isrc += iout[3] * gradientNext->stridesOf()[3];
                                     }
-                                    output->_buffer[idst] += gradientNext->_buffer[isrc];
+                                    output->getBuffer()[idst] += gradientNext->getBuffer()[isrc];
                                 }
                             }
                         }
@@ -1008,59 +1012,6 @@ namespace nd4j {
 				STORE_RESULT(*ret);
 			}
 			return ND4J_STATUS_OK;
-        }
-
-
-        /**
-         * This op is special one, and suited only for ProjectionLayer by @firasdib
-         *
-         * TODO: should be moved to separate file
-         *
-         * @tparam T
-         */
-        DECLARE_CONFIGURABLE_OP(firas_sparse, 1, 1, false, 0, -1) {
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *z = this->getZ(block);
-
-            int batchSize = x->sizeAt(0);
-            int numColumns = x->sizeAt(1);
-
-            int numIndices = block.getIArguments()->size();
-
-            std::vector<int> indices(*block.getIArguments());
-            std::map<int, int> sparse2dense;
-
-
-            int cnt = 0;
-            for (auto v: indices) {
-                std::pair<int, int> pair(v, cnt++);
-                sparse2dense.insert(pair);
-            }
-
-            std::unique_ptr<ArrayList<T>> rows(NDArrayFactory::allTensorsAlongDimension<T>(x, {1}));
-
-#pragma omp parallel for schedule(dynamic) proc_bind(close)
-            for (int r = 0; r < batchSize; r++) {
-                auto row = rows->at(r);
-
-                for (int e = 0; e < numColumns; e += 2) {
-                    int idx = row->getIndexedScalar(e);
-                    if (idx < 0)
-                        break;
-
-                    int denseIdx = sparse2dense.at(idx);
-
-                    T current = z->getScalar(r, denseIdx);
-                    T value = row->getIndexedScalar(e + 1);
-
-                    z->putScalar(r, denseIdx, value);
-                }
-            }
-
-
-            STORE_RESULT(*z);
-
-            return ND4J_STATUS_OK;
         }
     }
 }

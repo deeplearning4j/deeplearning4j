@@ -27,5 +27,8 @@ typedef int Nd4jStatus;
 #define ND4J_STATUS_BAD_ARGUMENTS      34
 
 
+#define ND4J_STATUS_KERNEL_FAILURE      50
+
+
 
 #endif //NATIVEOPERATIONS_POINTERCAST_H

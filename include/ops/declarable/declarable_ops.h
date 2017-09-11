@@ -416,15 +416,13 @@ bool nd4j::ops::DeclarableOp<T>::allocateResult(Block<T>& block, int* shape) {
     if (var->getNDArray() == nullptr) {
         T* buffer = new T[len];
         var ->setNDArray(new NDArray<T>(buffer, __shape));
-        var->getNDArray()->_isShapeAlloc = true;
-        var->getNDArray()->_isBuffAlloc = true;
+        var->getNDArray()->triggerAllocationFlag(true, true);
     } else if(var->getNDArray()->lengthOf() != len) {
         // if length not match - lets reallocate array
         delete var->getNDArray();
         T* buffer = new T[len];
         var ->setNDArray(new NDArray<T>(buffer, __shape));
-        var->getNDArray()->_isShapeAlloc = true;
-        var->getNDArray()->_isBuffAlloc = true;
+        var->getNDArray()->triggerAllocationFlag(true, true);
     }
 
     return true;
@@ -561,7 +559,7 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::validateInputDimensionsMatch(Block<T>& bl
     NDArray<T> *a0 = block.getVariables().at(0)->getNDArray();
     for (auto v: block.getVariables()) {
         NDArray<T> *aV = v->getNDArray();
-        if (!shape::equalsSoft(a0->_shapeInfo, aV->_shapeInfo))
+        if (!shape::equalsSoft(a0->getShapeInfo(), aV->getShapeInfo()))
             return ND4J_STATUS_BAD_DIMENSIONS;
     }
 

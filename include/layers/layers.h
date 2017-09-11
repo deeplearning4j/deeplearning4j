@@ -121,9 +121,9 @@ template <typename T> class INativeLayer {
         // gemv should be used here
         void gemvHelper(const T *A, int *aShapeInfo, const T *B, int *bShapeInfo, T *C, int *cShapeInfo, const T alpha, const T beta);
 
-        void gemmHelper(const NDArray<T> *A, const NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta);
+        void gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta);
 
-        void gemmHelper(const NDArray<T> *A, const NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta, bool transA, bool transB);
+        void gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta, bool transA, bool transB);
         // extracts shapes info and perform gemm 
         void gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, const T alpha, const T beta);
 
@@ -166,8 +166,8 @@ template <typename T> INativeLayer<T>::~INativeLayer() {
     delete _epsilon;
 }
 
-template <typename T> void INativeLayer<T>::gemmHelper(const NDArray<T> *A, const NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta) {
-    gemmHelper(A->_buffer, A->_shapeInfo, B->_buffer, B->_shapeInfo, C->_buffer, C->_shapeInfo, alpha, beta);
+template <typename T> void INativeLayer<T>::gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta) {
+    gemmHelper(A->getBuffer(), A->getShapeInfo(), B->getBuffer(), B->getShapeInfo(), C->getBuffer(), C->getShapeInfo(), alpha, beta);
 }
 
 // perform C = alpha*A*B + beta*C
@@ -259,7 +259,7 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
     // we'll use platform-specific gemm here eventually. maybe tomorrow.
     // TODO: put proper _gemm here
-    nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->_buffer, lda, pB->_buffer, ldb, beta, pC->_buffer, ldc);
+    nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc);
 
     if (cOrder != 'f') {
         tC->assign(pC);
@@ -327,7 +327,7 @@ int INativeLayer<T>::configureLayerFF(T *input, int *inputShapeInfo, T *output, 
         return ND4J_STATUS_BAD_OUTPUT;
 
     /*
-     * TODO: define ERRORpCODES here, and return them instead of bool
+     * TODO: define ERROR_CODES here, and return them instead of bool
      */
 
     return ND4J_STATUS_OK;

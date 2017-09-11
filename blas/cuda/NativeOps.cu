@@ -41,7 +41,7 @@
 #include "../cpu/NDArrayFactory.cpp"
 #include "../cpu/GraphExecutioner.cpp"
 #include <ops/declarable/declarable_ops.h>
-#include <ops/declarable/cpu/parity_ops.h>
+#include <ops/declarable/generic/parity_ops.h>
 
 //#include <sys/time.h>
 
