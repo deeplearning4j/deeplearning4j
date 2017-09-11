@@ -162,12 +162,29 @@ public class DynamicCustomOp implements CustomOp {
                 if (iargs == null)
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments. Null was passed instead.");
 
-                if (numOutputs != iargs.length)
+                if (numIArguments != iargs.length)
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments, but " + iargs.length + " was passed to constructor");
             }
 
             for (val in: iargs)
                 iArguments.add(in);
+
+            return this;
+        }
+
+        /**
+         * This methos takes arbitrary number of Integer arguments for op,
+         *
+         * PLEASE NOTE: this method does NOT validate values.
+         *
+         * @param arg
+         * @return
+         */
+        public Builder setIntegerArguments(int arg) {
+            if (numIArguments != 1 && numIArguments > 0)
+                throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments. One arg was passed instead.");
+
+            iArguments.add(arg);
 
             return this;
         }
@@ -185,7 +202,7 @@ public class DynamicCustomOp implements CustomOp {
                 if (iargs == null)
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments. Null was passed instead.");
 
-                if (numOutputs != iargs.length)
+                if (numIArguments != iargs.length)
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments, but " + iargs.length + " was passed to constructor");
             }
 
@@ -200,15 +217,14 @@ public class DynamicCustomOp implements CustomOp {
          *
          * PLEASE NOTE: this method does NOT validate values.
          *
-         * @param outputs
          * @return
          */
         public Builder setFloatingPointArguments(Double... targs) {
-            if (numIArguments >= 0) {
+            if (numTArguments >= 0) {
                 if (targs == null)
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numTArguments + " integer arguments. Null was passed instead.");
 
-                if (numOutputs != targs.length)
+                if (numTArguments != targs.length)
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numTArguments + " integer arguments, but " + targs.length + " was passed to constructor");
             }
 
