@@ -15,6 +15,7 @@
 #include <NDArray.h>
 #include <ops/declarable/declarable_ops.h>
 #include <NDArrayFactory.h>
+#include <ops/declarable/generic/third_party.h>
 
 namespace nd4j {
     namespace ops {

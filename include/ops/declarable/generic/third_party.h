@@ -62,7 +62,7 @@ namespace nd4j {
                     T current = z->getScalar(r, denseIdx);
                     T value = row->getIndexedScalar(e + 1);
 
-                    z->putScalar(r, denseIdx, value);
+                    z->putScalar(r, denseIdx, value + current);
                 }
             }
 
