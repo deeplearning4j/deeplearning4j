@@ -6,6 +6,7 @@
 #include "NativeOps.h"
 #include <shape.h>
 #include "NativeOpExcutioner.h"
+#include <memory/Workspace.h>
 
 namespace nd4j {
 
@@ -16,6 +17,8 @@ namespace nd4j {
 
         T    *_buffer;                          // pointer on flattened data array in memory
         int  *_shapeInfo;                       // contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
+
+        nd4j::memory::Workspace* _workspace;
 
 #ifdef __CUDACC__
         T* _bufferD;
@@ -38,26 +41,26 @@ namespace nd4j {
         T& operator()(const int i, const int j);
 
         // default constructor, do not allocate memory, memory for array is passed from outside 
-        NDArray(T *buffer = nullptr, int *shapeInfo = nullptr);
+        NDArray(T *buffer = nullptr, int *shapeInfo = nullptr, nd4j::memory::Workspace* workspace = nullptr);
 
         // this constructor creates 2D NDArray, memory for array is allocated in constructor 
-        NDArray(const int rows, const int columns, const char order);
+        NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace = nullptr);
 
         // this constructor creates NDArray as single row (dimension is 1xlength), memory for array is allocated in constructor 
-        NDArray(const Nd4jIndex length, const char order);
+        NDArray(const Nd4jIndex length, const char order, nd4j::memory::Workspace* workspace = nullptr);
 
         // this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
-        NDArray(const NDArray<T> *other);
+        NDArray(const NDArray<T> *other, nd4j::memory::Workspace* workspace = nullptr);
 		
 		// copy constructor
-        NDArray(const NDArray<T>& other);
+        NDArray(const NDArray<T>& other, nd4j::memory::Workspace* workspace = nullptr);
 
 		// constructor new NDArray using shape information from "shape" array, set all elements in new array to be zeros
-		NDArray(const int* shapeInfo);
+		NDArray(const int* shapeInfo, nd4j::memory::Workspace* workspace = nullptr);
 
         // this constructor creates new array using shape information contained in initializer_list/vector argument
-        NDArray(const char order, const std::initializer_list<int> &shape);	
-        NDArray(const char order, const std::vector<int> &shape);
+        NDArray(const char order, const std::initializer_list<int> &shape, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(const char order, const std::vector<int> &shape , nd4j::memory::Workspace* workspace = nullptr);
 
         // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
         void replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting = true);
