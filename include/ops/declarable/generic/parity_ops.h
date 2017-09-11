@@ -28,16 +28,16 @@ namespace nd4j {
             // we want to ensure that all
             NDArray<T> *first = block.getVariables().at(0)->getNDArray();
 
-            std::unique_ptr<int> shapePtr(new int[first->_shapeInfo[0] * 2 + 4]);
+            std::unique_ptr<int> shapePtr(new int[shape::shapeInfoLength(first->rankOf())]);
 
-            std::memcpy(shapePtr.get(), first->_shapeInfo, shape::shapeInfoByteLength(first->_shapeInfo));
+            std::memcpy(shapePtr.get(), first->getShapeInfo(), shape::shapeInfoByteLength(first->getShapeInfo()));
             _length = shape::length(shapePtr.get());
 
             std::unique_ptr<Nd4jPointer> buffers(new Nd4jPointer[block.getVariables().size()]);
             std::unique_ptr<Nd4jPointer> shapes(new Nd4jPointer[block.getVariables().size()]);
 
-            buffers.get()[0] = (Nd4jPointer) first->_buffer;
-            shapes.get()[0] = (Nd4jPointer) first->_shapeInfo;
+            buffers.get()[0] = (Nd4jPointer) first->getBuffer();
+            shapes.get()[0] = (Nd4jPointer) first->getShapeInfo();
 
             for (int e = 1; e < block.getVariables().size(); e++) {
                 Variable<T> *var = block.getVariables().at(e);
@@ -45,8 +45,8 @@ namespace nd4j {
 
                 shapePtr.get()[_dimension + 1] += var->getNDArray()->shapeOf()[_dimension];
 
-                buffers.get()[e] = (Nd4jPointer) var->getNDArray()->_buffer;
-                shapes.get()[e] = (Nd4jPointer) var->getNDArray()->_shapeInfo;
+                buffers.get()[e] = (Nd4jPointer) var->getNDArray()->getBuffer();
+                shapes.get()[e] = (Nd4jPointer) var->getNDArray()->getShapeInfo();
             }
 
             if (!block.getVariableSpace()->hasVariable(block.getNodeId()))
@@ -59,7 +59,7 @@ namespace nd4j {
 
             auto variable = block.getVariableSpace()->getVariable(block.getNodeId());
 
-            concatCpuGeneric(_dimension, block.getVariables().size(), buffers.get(), shapes.get(), variable->getNDArray()->_buffer, variable->getNDArray()->_shapeInfo);
+            concatCpuGeneric(_dimension, block.getVariables().size(), buffers.get(), shapes.get(), variable->getNDArray()->getBuffer(), variable->getNDArray()->getShapeInfo());
 
             return ND4J_STATUS_OK;
         }
@@ -188,7 +188,7 @@ namespace nd4j {
             if (!block.isInplace())
                 z = new NDArray<T>(x);
 
-            functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(block.getRNG(), z->_buffer, z->_shapeInfo, block.getTArguments()->data());
+            functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
 
             STORE_RESULT(*z);
 
@@ -557,7 +557,7 @@ namespace nd4j {
                             isrc += iin[3]* input->stridesOf()[3];
 
 
-                            output->_buffer[idst] = input->_buffer[isrc];
+                            output->getBuffer()[idst] = input->getBuffer()[isrc];
                         }
                     }
                 }
@@ -635,7 +635,7 @@ namespace nd4j {
                                     if (idim > 3) {
                                         isrc += iout[3] * gradientNext->stridesOf()[3];
                                     }
-                                    output->_buffer[idst] += gradientNext->_buffer[isrc];
+                                    output->getBuffer()[idst] += gradientNext->getBuffer()[isrc];
                                 }
                             }
                         }

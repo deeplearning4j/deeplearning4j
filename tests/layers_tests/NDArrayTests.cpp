@@ -67,19 +67,19 @@ TEST_F(NDArrayTest, NDArrayOrder1) {
     ASSERT_EQ('c', arrayC2->ordering());
 
     for (int i = 0; i < 4; i++) {
-        ASSERT_EQ(f[i], arrayF->_buffer[i]);
+        ASSERT_EQ(f[i], arrayF->getBuffer()[i]);
     }
 
     for (int i = 0; i < 8; i++) {
-        ASSERT_EQ(fShape[i], arrayF->_shapeInfo[i]);
+        ASSERT_EQ(fShape[i], arrayF->getShapeInfo()[i]);
     }
 
     for (int i = 0; i < 4; i++) {
-        ASSERT_EQ(c[i], arrayC2->_buffer[i]);
+        ASSERT_EQ(c[i], arrayC2->getBuffer()[i]);
     }
 
     for (int i = 0; i < 8; i++) {
-        ASSERT_EQ(cShape[i], arrayC2->_shapeInfo[i]);
+        ASSERT_EQ(cShape[i], arrayC2->getShapeInfo()[i]);
     }
 }
 
@@ -270,8 +270,8 @@ TEST_F(NDArrayTest, TestTranspose1) {
 
 
     for (int e = 0; e < arrayC->rankOf() * 2 + 4; e++) {
-        ASSERT_EQ(expC[e], arrayC->_shapeInfo[e]);
-        ASSERT_EQ(expT[e], arrayT->_shapeInfo[e]);
+        ASSERT_EQ(expC[e], arrayC->getShapeInfo()[e]);
+        ASSERT_EQ(expT[e], arrayT->getShapeInfo()[e]);
     }
 
 }
@@ -287,7 +287,7 @@ TEST_F(NDArrayTest, TestTranspose2) {
 
 
     for (int e = 0; e < arrayC->rankOf() * 2 + 4; e++) {
-        ASSERT_EQ(expT[e], arrayC->_shapeInfo[e]);
+        ASSERT_EQ(expT[e], arrayC->getShapeInfo()[e]);
     }
 
 }
@@ -521,9 +521,9 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
     auto z = new NDArray<float>(5, 1, 'f');
 
     auto expBuffer = new float[5]{28.00,  64.00,  100.00,  136.00,  172.00};
-    auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+    auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->_buffer, y->rows(), y->_buffer, 1, 0.0, z->_buffer, 1);
+    //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
 
     NDArrayFactory::mmulHelper(x, y, z);
 
@@ -545,9 +545,9 @@ TEST_F(NDArrayTest, TestMmulHelper3) {
     auto z = new NDArray<float>(5, 1, 'f');
 
     auto expBuffer = new float[5]{92.00,  104.00,  116.00,  128.00,  140.00};
-    auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+    auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
-    //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->_buffer, y->rows(), y->_buffer, 1, 0.0, z->_buffer, 1);
+    //nd4j::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
 
     NDArrayFactory::mmulHelper(x, y, z);
 
@@ -569,7 +569,7 @@ TEST_F(NDArrayTest, TestMmulHelper4) {
     auto z = new NDArray<float>(3, 3, 'f');
 
     auto expBuffer = new float[9]{7.0, 21.0, 35.0, 10.0, 28.0, 46.0, 13.0, 35.0, 57.0};
-    auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+    auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
     NDArrayFactory::mmulHelper(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
@@ -588,7 +588,7 @@ TEST_F(NDArrayTest, TestMmulHelper5) {
     auto z = new NDArray<float>(3, 3, 'f');
 
     auto expBuffer = new float[9]{7.0, 14.0, 21.0, 12.0, 21.0, 30.0, 17.0, 28.0, 39.0};
-    auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+    auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
     NDArrayFactory::mmulHelper(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
@@ -607,7 +607,7 @@ TEST_F(NDArrayTest, TestMmulHelper6) {
     auto z = new NDArray<float>(3, 3, 'f');
 
     auto expBuffer = new float[9]{39.0, 54.0, 69.0, 9.0, 18.0, 27.0, 9.0, 12.0, 15.0};
-    auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+    auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
     NDArrayFactory::mmulHelper(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
@@ -626,7 +626,7 @@ TEST_F(NDArrayTest, TestMmulHelper7) {
     auto z = new NDArray<float>(1, 3, 'f');
 
     auto expBuffer = new float[9]{110.00,  260.00,  410.00};
-    auto exp = new NDArray<float>(expBuffer, z->_shapeInfo);
+    auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
 
     NDArrayFactory::mmulHelper(y, x, z);
 
@@ -709,7 +709,7 @@ TEST_F(NDArrayTest, TestIndexedPut2) {
     x.putIndexedScalar(1, 1.0f);
 
     x.printBuffer("after");
-    ASSERT_NEAR(x._buffer[2], 1.0, 1e-5);
+    ASSERT_NEAR(x.getBuffer()[2], 1.0, 1e-5);
 }
 
 TEST_F(NDArrayTest, TestIndexedPut3) {
@@ -717,7 +717,7 @@ TEST_F(NDArrayTest, TestIndexedPut3) {
     x.putIndexedScalar(1, 1.0f);
 
     x.printBuffer("after");
-    ASSERT_NEAR(x._buffer[1], 1.0, 1e-5);
+    ASSERT_NEAR(x.getBuffer()[1], 1.0, 1e-5);
 }
 
 

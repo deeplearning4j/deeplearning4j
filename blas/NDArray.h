@@ -14,12 +14,19 @@ namespace nd4j {
     protected:
         bool _isView;
 
-    public:
         T    *_buffer;                          // pointer on flattened data array in memory
         int  *_shapeInfo;                       // contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
-        bool  _isShapeAlloc;                    // indicates whether user allocates memory for _shapeInfo by himself, in opposite case the memory must be allocated from outside       
-		bool _isBuffAlloc; 						// indicates whether user allocates memory for _buffer by himself, in opposite case the memory must be allocated from outside       
 
+#ifdef __CUDACC__
+        T* _bufferD;
+        int* _shapeInfoD;
+#endif
+
+        bool  _isShapeAlloc;                    // indicates whether user allocates memory for _shapeInfo by himself, in opposite case the memory must be allocated from outside
+        bool _isBuffAlloc; 						// indicates whether user allocates memory for _buffer by himself, in opposite case the memory must be allocated from outside
+
+
+    public:
 		// forbid assignment operator
 		NDArray<T>& operator=(const NDArray<T>& other);
         // accessing operator for 2D matrix, i - row, j - column
@@ -56,6 +63,15 @@ namespace nd4j {
         void replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting = true);
  
         NDArray<T>* repeat(int dimension, const std::vector<int>& reps);
+
+        T* getBuffer();
+
+        int* getShapeInfo();
+
+        void triggerAllocationFlag(bool bufferAllocated, bool shapeAllocated) {
+            _isBuffAlloc = bufferAllocated;
+            _isShapeAlloc = shapeAllocated;
+        }
 
         int sizeAt(int dim);
 

@@ -121,9 +121,9 @@ template <typename T> class INativeLayer {
         // gemv should be used here
         void gemvHelper(const T *A, int *aShapeInfo, const T *B, int *bShapeInfo, T *C, int *cShapeInfo, const T alpha, const T beta);
 
-        void gemmHelper(const NDArray<T> *A, const NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta);
+        void gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta);
 
-        void gemmHelper(const NDArray<T> *A, const NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta, bool transA, bool transB);
+        void gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta, bool transA, bool transB);
         // extracts shapes info and perform gemm 
         void gemmHelper(T *A, int *aShapeInfo, T *B, int *bShapeInfo, T *C, int *cShapeInfo, const T alpha, const T beta);
 
@@ -166,8 +166,8 @@ template <typename T> INativeLayer<T>::~INativeLayer() {
     delete _epsilon;
 }
 
-template <typename T> void INativeLayer<T>::gemmHelper(const NDArray<T> *A, const NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta) {
-    gemmHelper(A->_buffer, A->_shapeInfo, B->_buffer, B->_shapeInfo, C->_buffer, C->_shapeInfo, alpha, beta);
+template <typename T> void INativeLayer<T>::gemmHelper(NDArray<T> *A, NDArray<T> *B, NDArray<T> *C, const T alpha, const T beta) {
+    gemmHelper(A->getBuffer(), A->getShapeInfo(), B->getBuffer(), B->getShapeInfo(), C->getBuffer(), C->getShapeInfo(), alpha, beta);
 }
 
 // perform C = alpha*A*B + beta*C
@@ -259,7 +259,7 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
     // we'll use platform-specific gemm here eventually. maybe tomorrow.
     // TODO: put proper _gemm here
-    nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, _A->_buffer, lda, _B->_buffer, ldb, beta, _C->_buffer, ldc);
+    nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, _A->getBuffer(), lda, _B->getBuffer(), ldb, beta, _C->getBuffer(), ldc);
 
     if (cOrder != 'f') {
         tC->assign(_C);

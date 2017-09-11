@@ -78,10 +78,10 @@ namespace nd4j{
                         z->setNDArray(x->getNDArray());
 
 
-                    functions::transform::Transform<T>::template exec(opNum, x->getNDArray()->_buffer,
-                                                                      x->getNDArray()->_shapeInfo,
-                                                                      z->getNDArray()->_buffer,
-                                                                      z->getNDArray()->_shapeInfo, node->extraParams(),
+                    functions::transform::Transform<T>::template exec(opNum, x->getNDArray()->getBuffer(),
+                                                                      x->getNDArray()->getShapeInfo(),
+                                                                      z->getNDArray()->getBuffer(),
+                                                                      z->getNDArray()->getShapeInfo(), node->extraParams(),
                             // FIXME: for some cases we NEED these vars
                                                                       nullptr, nullptr);
 
@@ -101,8 +101,8 @@ namespace nd4j{
                     if (z->getNDArray() == nullptr)
                         z->setNDArray(x->getNDArray());
 
-                    functions::pairwise_transforms::PairWiseTransform<T>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
-                                                                                        z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo, node->extraParams());
+                    functions::pairwise_transforms::PairWiseTransform<T>::template exec(opNum, x->getNDArray()->getBuffer(), x->getNDArray()->getShapeInfo(), y->getNDArray()->getBuffer(), y->getNDArray()->getShapeInfo(),
+                                                                                        z->getNDArray()->getBuffer(), z->getNDArray()->getShapeInfo(), node->extraParams());
                 }
 
                 variableSpace->putVariable(node->id(), z);
@@ -143,10 +143,10 @@ namespace nd4j{
                 nd4j_verbose("xLength: %i\n", x->getNDArray()->lengthOf());
                 nd4j_verbose("SCALAR BEFORE: X[0]: %f; X[1]: %f; scalar: %f\n", x->getNDArray()->getScalar(0), x->getNDArray()->getScalar(1), node->scalar());
 
-                functions::scalar::ScalarTransform<T>::transform(opNum, x->getNDArray()->_buffer,
-                                                                      x->getNDArray()->_shapeInfo,
-                                                                      z->getNDArray()->_buffer,
-                                                                      z->getNDArray()->_shapeInfo,
+                functions::scalar::ScalarTransform<T>::transform(opNum, x->getNDArray()->getBuffer(),
+                                                                      x->getNDArray()->getShapeInfo(),
+                                                                      z->getNDArray()->getBuffer(),
+                                                                      z->getNDArray()->getShapeInfo(),
                                                                       node->scalar(),
                                                                       node->extraParams());
 
@@ -181,11 +181,11 @@ namespace nd4j{
                         //z->setName(node->getName());
                         z->setNDArray(new NDArray<T>(1,1,'c'));
                     }
-                    z->getNDArray()->_buffer[0] = functions::summarystats::SummaryStatsReduce<T>::template execScalar(opNum, node->scalar() != 0.0, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
+                    z->getNDArray()->getBuffer()[0] = functions::summarystats::SummaryStatsReduce<T>::template execScalar(opNum, node->scalar() != 0.0, x->getNDArray()->getBuffer(), x->getNDArray()->getShapeInfo(), node->extraParams());
 
                 } else {
                     // dimensional reduction
-                    shape::TAD *tad = new shape::TAD(x->getNDArray()->_shapeInfo, node->getDimensionsPtr(), node->getDimensions()->size());
+                    shape::TAD *tad = new shape::TAD(x->getNDArray()->getShapeInfo(), node->getDimensionsPtr(), node->getDimensions()->size());
                     tad->createTadOnlyShapeInfo();
                     tad->createOffsets();
 
@@ -198,7 +198,7 @@ namespace nd4j{
                         z->setNDArray(new NDArray<T>(1, resultLength, 'c'));
                     }
 
-                    functions::summarystats::SummaryStatsReduce<T>::template exec(opNum, node->scalar() != 0.0, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
+                    functions::summarystats::SummaryStatsReduce<T>::template exec(opNum, node->scalar() != 0.0, x->getNDArray()->getBuffer(), x->getNDArray()->getShapeInfo(), node->extraParams(), z->getNDArray()->getBuffer(), z->getNDArray()->getShapeInfo(),
                                                                             node->getDimensionsPtr() , node->getDimensions()->size());
 
                     delete tad;
@@ -239,16 +239,16 @@ namespace nd4j{
                             z->setNDArray(new NDArray<T>(1, 1, 'c'));
                         }
 
-                        z->getNDArray()->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar(opNum,
-                                                                                                                x->getNDArray()->_buffer,
-                                                                                                                x->getNDArray()->_shapeInfo,
+                        z->getNDArray()->getBuffer()[0] = functions::reduce::ReduceFunction<T>::template execScalar(opNum,
+                                                                                                                x->getNDArray()->getBuffer(),
+                                                                                                                x->getNDArray()->getShapeInfo(),
                                                                                                                 node->extraParams());
 
                         nd4j_verbose("ACCUM SCALAR  AFTER: Z[0]: %f; xLength: %i;\n", z->getNDArray()->getScalar(0),
                                      x->getNDArray()->lengthOf());
                     } else {
                         // dimensional reduction
-                        shape::TAD *tad = new shape::TAD(x->getNDArray()->_shapeInfo, node->getDimensionsPtr(),
+                        shape::TAD *tad = new shape::TAD(x->getNDArray()->getShapeInfo(), node->getDimensionsPtr(),
                                                          node->getDimensions()->size());
                         tad->createTadOnlyShapeInfo();
                         tad->createOffsets();
@@ -263,11 +263,11 @@ namespace nd4j{
                             z->setNDArray(new NDArray<T>(1, resultLength, 'c'));
                         }
 
-                        functions::reduce::ReduceFunction<T>::template exec(opNum, x->getNDArray()->_buffer,
-                                                                            x->getNDArray()->_shapeInfo,
+                        functions::reduce::ReduceFunction<T>::template exec(opNum, x->getNDArray()->getBuffer(),
+                                                                            x->getNDArray()->getShapeInfo(),
                                                                             node->extraParams(),
-                                                                            z->getNDArray()->_buffer,
-                                                                            z->getNDArray()->_shapeInfo,
+                                                                            z->getNDArray()->getBuffer(),
+                                                                            z->getNDArray()->getShapeInfo(),
                                                                             node->getDimensionsPtr(),
                                                                             node->getDimensions()->size(),
                                                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
@@ -290,18 +290,18 @@ namespace nd4j{
                             z->setNDArray(new NDArray<T>(1, 1, 'c'));
                         }
 
-                        z->getNDArray()->_buffer[0] = functions::reduce3::Reduce3<T>::template execScalar(opNum,
-                                                                                                                x->getNDArray()->_buffer,
-                                                                                                                x->getNDArray()->_shapeInfo,
+                        z->getNDArray()->getBuffer()[0] = functions::reduce3::Reduce3<T>::template execScalar(opNum,
+                                                                                                                x->getNDArray()->getBuffer(),
+                                                                                                                x->getNDArray()->getShapeInfo(),
                                                                                                                 node->extraParams(),
-                                                                                                                y->getNDArray()->_buffer,
-                                                                                                                y->getNDArray()->_shapeInfo);
+                                                                                                                y->getNDArray()->getBuffer(),
+                                                                                                                y->getNDArray()->getShapeInfo());
 
                         nd4j_verbose("ACCUM3 SCALAR  AFTER: Z[0]: %f; xLength: %i;\n", z->getNDArray()->getScalar(0),
                                      x->getNDArray()->lengthOf());
                     } else {
                         // dimensional reduction
-                        shape::TAD *tad = new shape::TAD(x->getNDArray()->_shapeInfo, node->getDimensionsPtr(),
+                        shape::TAD *tad = new shape::TAD(x->getNDArray()->getShapeInfo(), node->getDimensionsPtr(),
                                                          node->getDimensions()->size());
                         tad->createTadOnlyShapeInfo();
                         tad->createOffsets();
@@ -316,13 +316,13 @@ namespace nd4j{
                             z->setNDArray(new NDArray<T>(1, resultLength, 'c'));
                         }
 
-                        functions::reduce3::Reduce3<T>::template exec(opNum, x->getNDArray()->_buffer,
-                                                                            x->getNDArray()->_shapeInfo,
+                        functions::reduce3::Reduce3<T>::template exec(opNum, x->getNDArray()->getBuffer(),
+                                                                            x->getNDArray()->getShapeInfo(),
                                                                             node->extraParams(),
-                                                                            y->getNDArray()->_buffer,
-                                                                            y->getNDArray()->_shapeInfo,
-                                                                            z->getNDArray()->_buffer,
-                                                                            z->getNDArray()->_shapeInfo,
+                                                                            y->getNDArray()->getBuffer(),
+                                                                            y->getNDArray()->getShapeInfo(),
+                                                                            z->getNDArray()->getBuffer(),
+                                                                            z->getNDArray()->getShapeInfo(),
                                                                             node->getDimensionsPtr(),
                                                                             node->getDimensions()->size(),
                                                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
@@ -358,11 +358,11 @@ namespace nd4j{
                 if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
                     z = new Variable<T>(new NDArray<T>(1,1, 'c'));
                     z->setName(node->getName());
-                    z->getNDArray()->_buffer[0] = (T) functions::indexreduce::IndexReduce<T>::template execScalar(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams());
+                    z->getNDArray()->getBuffer()[0] = (T) functions::indexreduce::IndexReduce<T>::template execScalar(opNum, x->getNDArray()->getBuffer(), x->getNDArray()->getShapeInfo(), node->extraParams());
 
                 } else {
                     // dimensional reduction
-                    shape::TAD *tad = new shape::TAD(x->getNDArray()->_shapeInfo, node->getDimensionsPtr(), node->getDimensions()->size());
+                    shape::TAD *tad = new shape::TAD(x->getNDArray()->getShapeInfo(), node->getDimensionsPtr(), node->getDimensions()->size());
                     tad->createTadOnlyShapeInfo();
                     tad->createOffsets();
 
@@ -370,7 +370,7 @@ namespace nd4j{
 
                     z = new Variable<T>(new NDArray<T>(1, resultLength, 'c'));
                     z->setName(node->getName());
-                    functions::indexreduce::IndexReduce<T>::template exec(opNum, x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo, node->extraParams(), z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
+                    functions::indexreduce::IndexReduce<T>::template exec(opNum, x->getNDArray()->getBuffer(), x->getNDArray()->getShapeInfo(), node->extraParams(), z->getNDArray()->getBuffer(), z->getNDArray()->getShapeInfo(),
                                                                             node->getDimensionsPtr() , node->getDimensions()->size(),
                                                                             tad->tadOnlyShapeInfo, tad->tadOffsets);
 
@@ -402,14 +402,14 @@ namespace nd4j{
 
                 auto z = x;
 
-                auto tad = new shape::TAD(x->getNDArray()->_shapeInfo, node->getDimensionsPtr(), node->getDimensions()->size());
+                auto tad = new shape::TAD(x->getNDArray()->getShapeInfo(), node->getDimensionsPtr(), node->getDimensions()->size());
                 tad->createTadOnlyShapeInfo();
                 tad->createOffsets();
 
                 functions::broadcast::Broadcast<T>::exec(opNum,
-                                                             x->getNDArray()->_buffer, x->getNDArray()->_shapeInfo,
-                                                             y->getNDArray()->_buffer, y->getNDArray()->_shapeInfo,
-                                                             z->getNDArray()->_buffer, z->getNDArray()->_shapeInfo,
+                                                             x->getNDArray()->getBuffer(), x->getNDArray()->getShapeInfo(),
+                                                             y->getNDArray()->getBuffer(), y->getNDArray()->getShapeInfo(),
+                                                             z->getNDArray()->getBuffer(), z->getNDArray()->getShapeInfo(),
                                                              node->getDimensionsPtr(), node->getDimensions()->size(),
                                                              tad->tadOnlyShapeInfo, tad->tadOffsets,
 

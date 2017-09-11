@@ -173,6 +173,16 @@ template <typename T> NDArray<T>::NDArray(const char order, const std::initializ
     delete[] shapeOf;
 }
 
+    template<typename T>
+    T* NDArray<T>::getBuffer() {
+        return _buffer;
+    }
+
+    template<typename T>
+    int* NDArray<T>::getShapeInfo() {
+        return _shapeInfo;
+    }
+
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
 template<typename T> NDArray<T>& NDArray<T>::operator=(const NDArray<T>& other) {
