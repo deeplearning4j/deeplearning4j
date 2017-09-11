@@ -51,9 +51,8 @@ public class MomentumUpdater implements GradientUpdater<Momentum> {
         final double learningRate = config.getLearningRate();
 
         // Standard momentum: v = mu * v_prev - learning_rate * gradient(x)
-        final INDArray vPrev = v.dup(gradientReshapeOrder);
-        vPrev.muli(momentum).subi(gradient.dup(gradientReshapeOrder).muli(learningRate));
+        v.muli(momentum).addi(gradient.dup(gradientReshapeOrder).muli(learningRate));
 
-        gradient.addi(vPrev);
+        gradient.assign(vPrev);
     }
 }
