@@ -32,6 +32,7 @@
 #include "NDArray.cpp"
 #include "GraphExecutioner.cpp"
 #include "NDArrayFactory.cpp"
+#include <memory/Workspace.h>
 #include <ops/declarable/declarable_ops.h>
 #include <ops/declarable/generic/parity_ops.h>
 #include <ops/declarable/generic/third_party.h>
