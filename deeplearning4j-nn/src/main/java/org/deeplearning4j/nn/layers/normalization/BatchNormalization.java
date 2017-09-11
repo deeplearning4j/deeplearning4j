@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Batch normalization layer.
@@ -61,6 +62,12 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
                 log.warn("Could not initialize CudnnBatchNormalizationHelper", t);
+            } else {
+                Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
+                if (p.getProperty("backend").equals("CUDA")) {
+                    log.info("Consider using cuDNN by including the deeplearning4j-cuda module. "
+                            + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
+                }
             }
         }
     }

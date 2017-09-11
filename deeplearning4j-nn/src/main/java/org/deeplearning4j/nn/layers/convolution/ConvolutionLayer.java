@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Properties;
 
 
 /**
@@ -80,6 +81,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
                 log.warn("Could not initialize CudnnConvolutionHelper", t);
+            } else {
+                Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
+                if (p.getProperty("backend").equals("CUDA")) {
+                    log.info("Consider using cuDNN by including the deeplearning4j-cuda module. "
+                            + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
+                }
             }
         }
     }

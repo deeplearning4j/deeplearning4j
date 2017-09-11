@@ -39,6 +39,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
+import java.util.Properties;
 
 
 /**
@@ -77,6 +78,12 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
                 log.warn("Could not initialize CudnnSubsamplingHelper", t);
+            } else {
+                Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
+                if (p.getProperty("backend").equals("CUDA")) {
+                    log.info("Consider using cuDNN by including the deeplearning4j-cuda module. "
+                            + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
+                }
             }
         }
     }
