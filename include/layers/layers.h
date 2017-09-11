@@ -188,20 +188,20 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
     int M, N, K, lda, ldb, ldc;
     char transA, transB;
 
-    NDArray<T>* _A;
-    NDArray<T>* _B;
-    NDArray<T>* _C;
+    NDArray<T>* pA;
+    NDArray<T>* pB;
+    NDArray<T>* pC;
 
-    //_C = new NDArray<T>(C, cShapeInfo);
+    //pC = new NDArray<T>(C, cShapeInfo);
 
     auto *tA = new NDArray<T>(A, aShapeInfo);
     auto *tB = new NDArray<T>(B, bShapeInfo);
     auto *tC = new NDArray<T>(C, cShapeInfo);
 
     if (cOrder != 'f') {
-        _C = tC->dup('f');
+        pC = tC->dup('f');
     } else {
-        _C = tC;
+        pC = tC;
     }
 
     if (aOrder == bOrder) {
@@ -210,11 +210,11 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
         if (aOrder == 'c') {
             // we might need to transpose matrices,     
             // todo: we need dup(c/f) helper here
-            _A = tA->dup('f');
-            _B = tB->dup('f');
+            pA = tA->dup('f');
+            pB = tB->dup('f');
         } else {
-            _A = tA;
-            _B = tB;
+            pA = tA;
+            pB = tB;
         }
 
         rOrder = 'f';
@@ -233,15 +233,15 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
         //printf("Going tRoute here\n");
         if (aOrder == 'c') {
             // dup(F) A here
-            _A = tA->dup('f');
-            _B = tB;
+            pA = tA->dup('f');
+            pB = tB;
         } else {
             // dup(F) B here
-            _A = tA;
-            _B = tB->dup('f');
+            pA = tA;
+            pB = tB->dup('f');
         }
 
-       // _C = tC->dup('f');
+       // pC = tC->dup('f');
 
         M = cShape[0];
         N = cShape[1];
@@ -259,20 +259,20 @@ template <typename T> void INativeLayer<T>::gemmHelper(T *A, int *aShapeInfo, T 
 
     // we'll use platform-specific gemm here eventually. maybe tomorrow.
     // TODO: put proper _gemm here
-    nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, _A->getBuffer(), lda, _B->getBuffer(), ldb, beta, _C->getBuffer(), ldc);
+    nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc);
 
     if (cOrder != 'f') {
-        tC->assign(_C);
+        tC->assign(pC);
     }
 
-    if (tA != _A)
-        delete _A;
+    if (tA != pA)
+        delete pA;
 
-    if (tB != _B)
-        delete _B;
+    if (tB != pB)
+        delete pB;
 
-    if (tC != _C)
-        delete _C;
+    if (tC != pC)
+        delete pC;
 
 
     delete tA;

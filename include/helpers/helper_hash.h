@@ -38,7 +38,7 @@ namespace nd4j {
                 if (!_isInit) {
                     nd4j_verbose("Building HashUtil table\n","");
 
-                    long h = 0x544B2FBACAAF1684L;
+                    Nd4jIndex h = 0x544B2FBACAAF1684L;
                     for (int i = 0; i < 256; i++) {
                         for (int j = 0; j < 31; j++) {
                             h = (((unsigned long long) h) >> 7) ^ h;

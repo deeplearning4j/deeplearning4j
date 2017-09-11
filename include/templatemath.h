@@ -45,6 +45,9 @@ template<typename T>
 		template<typename T>
         math_def inline T nd4j_min(T val1, T val2);
 
+		template<typename T>
+		math_def inline T nd4j_copysign(T val1, T val2);
+
 //#ifndef __CUDACC__
         template<typename T>
         math_def inline T nd4j_dot(T *x, T *y, int length);
@@ -256,6 +259,37 @@ template<typename T>
 			return value < 0 ? -value : value;
 		}
 
+		template<>
+		math_def inline Nd4jIndex nd4j_abs<Nd4jIndex>(Nd4jIndex value) {
+			return value < 0 ? -value : value;
+		}
+
+		template<>
+		math_def inline float16 nd4j_copysign<float16>(float16 val1, float16 val2) {
+			return (float16) copysignf((float) val1, (float) val2);
+		}
+
+		template<>
+		math_def inline float nd4j_copysign<float>(float val1, float val2) {
+			return copysignf(val1, val2);
+		}
+
+		template<>
+		math_def inline double nd4j_copysign<double>(double val1, double val2) {
+			return copysign(val1, val2);
+		}
+
+		template<>
+		math_def inline int nd4j_copysign<int>(int val1, int val2) {
+			if (val2 < 0) return -(nd4j_abs<int>(val1));
+			else return nd4j_abs<int>(val1);
+		}
+
+		template<>
+		math_def inline Nd4jIndex nd4j_copysign<Nd4jIndex>(Nd4jIndex val1, Nd4jIndex val2) {
+			if (val2 < 0) return -(nd4j_abs<Nd4jIndex>(val1));
+			else return nd4j_abs<Nd4jIndex>(val1);
+		}
 
 		template<>
         math_def inline float16 nd4j_max<float16>(float16 val1, float16 val2) {
