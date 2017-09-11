@@ -10,9 +10,12 @@
 
 #include <mutex>
 #include <pointercast.h>
+#include <types/float16.h>
 
 namespace nd4j {
     namespace memory {
+
+        void ping();
 
         enum MemoryType {
             HOST,
@@ -38,17 +41,8 @@ namespace nd4j {
 
             bool resizeSupported();
 
-            template <typename T>
-            T* allocateBytes(Nd4jIndex numBytes);
-
-            template <typename T>
-            T* allocateBytes(MemoryType type, Nd4jIndex numBytes);
-
-            template <typename T>
-            T* allocateElements(Nd4jIndex numElements);
-
-            template <typename T>
-            T* allocateElements(MemoryType type, Nd4jIndex numBytes);
+            void* allocateBytes(Nd4jIndex numBytes);
+            void* allocateBytes(MemoryType type, Nd4jIndex numBytes);
 
             void reset();
         };

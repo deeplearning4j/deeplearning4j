@@ -34,7 +34,7 @@ template <typename T> NDArray<T>::NDArray(const Nd4jIndex length, const char ord
     if (workspace == nullptr) {
         _buffer =  new T[length];
     } else {
-        _buffer = _workspace->allocateElements<T>(length);
+        _buffer = (T*) _workspace->allocateBytes(length * sizeOfT());
     }
 
     // todo make this optional
@@ -60,13 +60,15 @@ template <typename T> NDArray<T>::NDArray(const Nd4jIndex length, const char ord
 template <typename T> NDArray<T>::NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace) {
     _workspace = workspace;
 
+    Nd4jIndex length = rows * columns;
+
     if (workspace == nullptr) {
-        _buffer =  new T[rows * columns];
+        _buffer =  new T[length];
     } else {
-        _buffer = _workspace->allocateElements<T>(rows * columns);
+        _buffer = (T*) _workspace->allocateBytes(length * sizeOfT());
     }
 
-    memset(_buffer, 0, rows * columns * sizeOfT());              // set all elements in new array to be zeros
+    memset(_buffer, 0, length * sizeOfT());              // set all elements in new array to be zeros
 
     std::unique_ptr<int> shape(new int[2] {rows, columns});
 

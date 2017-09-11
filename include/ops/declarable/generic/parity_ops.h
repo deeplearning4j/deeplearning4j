@@ -682,6 +682,8 @@ namespace nd4j {
             for (e = 2; e < limg; e++)
                 tadDimension.push_back((int) block.getIArguments()->at(e));
 
+            // increasing counter to skip numIndices
+            e++;
             std::vector<int> indices;
             std::vector<int> indicesU;
             int cnt = 0;

@@ -5,7 +5,10 @@
 //
 
 
-#include <memory/Workspace.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "../Workspace.h"
+
 
 namespace nd4j {
     namespace memory {
@@ -32,8 +35,8 @@ namespace nd4j {
                 free(this->_ptrHost);
         }
 
-        template <typename T>
-        T* Workspace::allocateBytes(Nd4jIndex numBytes) {
+
+        void* Workspace::allocateBytes(Nd4jIndex numBytes) {
             void* result = nullptr;
             this->_mutexAllocation.lock();
 
@@ -47,26 +50,17 @@ namespace nd4j {
 
             this->_mutexAllocation.unlock();
 
-            return (T*) result;
+            return result;
         }
 
 
-        template <typename T>
-        T* Workspace::allocateBytes(MemoryType type, Nd4jIndex numBytes) {
+
+        void* Workspace::allocateBytes(nd4j::memory::MemoryType type, Nd4jIndex numBytes) {
             if (type == DEVICE)
                 throw "CPU backend doesn't have device memory";
 
-            return this->allocateBytes<T>(numBytes);
-        }
-
-        template <typename T>
-        T* Workspace::allocateElements(Nd4jIndex numElements) {
-            return this->allocateBytes<T>(numElements * sizeof(T));
-        }
-
-        template <typename T>
-        T* Workspace::allocateElements(MemoryType type, Nd4jIndex numElements) {
-            return this->allocateBytes<T>(type, numElements * sizeof(T));
+            return this->allocateBytes(numBytes);
         }
     }
 }
+
