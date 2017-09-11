@@ -16,11 +16,11 @@ layout: cn-default
 <p><strong>动作</strong>（action）的含义不难领会，但应当注意的是，主体需要在一系列潜在动作中进行选择。在电子游戏中，这一系列动作可包括向左或向右跑、不同高度的跳跃、蹲下和站着不动。在股票市场中，这一系列动作可包括购买、出售或持有一组证券及其衍生品中的任意一种。无人飞行器的动作选项则包括三维空间中的许多不同的速度和加速度。</p>
 <p><strong>奖励</strong>（reward）是用于衡量主体的动作成功与否的反馈。例如，在电子游戏中，如果马里奥接触一枚金币，他就能赢得分数。主体向环境发出以动作为形式的输出，而环境则返回主体的新状态及奖励。</p>
 <img class="img-responsive center-block" src="../img/simple_RL_schema.png" alt="deeplearning4j"><br>
-<p>在上述反馈循环中，下标t和t+1表示时间步，区分不同的状态：第t个时刻的状态、第t+1个时刻的状态等。强化学习与有监督学习、无监督学习等其他形式的机器学习不同，我们只能将其视为一系列依次发生的状态－动作对的序列。</p>
+<p>在上述反馈循环中，下标<code>t</code>和<code>t+1</code>表示时间步，区分不同的状态：第<code>t</code>个时刻的状态、第<code>t+1</code>个时刻的状态等。强化学习与有监督学习、无监督学习等其他形式的机器学习不同，我们只能将其视为一系列依次发生的状态－动作对的序列。</p>
 <p>强化学习根据动作产生的结果来评判动作。强化学习是目标导向的，这类算法最终要学会一套能帮助其实现目标的动作序列。在电子游戏中，目标是以最高得分完成游戏，所以在整个游戏过程中，得分每增加一分都会影响主体的后续行为；也就是说，主体可学会通过摧毁战舰、触碰金币或者躲避陨石来达到分数最大化。</p>
 <p>在现实世界中，学习目标可能是让机器人从A点移动至B点，而机器人每接近B点一英寸，就相当于获得了分数。</p>
 <p>强化学习解析输入的方式和有监督及无监督学习不同。具体的区别可以通过它们认识一样&ldquo;东西&rdquo;的方式来说明。</p>
-<p>无监督学习：这样东西像另外那样东西。（相似性，无名称） 有监督学习：这样东西是一个&ldquo;双层培根芝士汉堡&rdquo;。（标签） 强化学习把这样东西吃掉，因为它味道很好，而且可以让你继续活下去。（基于短期和长期奖励的动作。）</p>
+<p>无监督学习：这样东西像另外那样东西。（相似性，无名称和逆异常检测） 有监督学习：这样东西是一个&ldquo;双层培根芝士汉堡&rdquo;。（标签，把名字放在人脸上） 强化学习把这样东西吃掉，因为它味道很好，而且可以让你继续活下去。（基于短期和长期奖励的动作。）</p>
 <div style="position: relative; padding-bottom: 56.25%; padding-top: 35px; width: 100%; height: 0; overflow: hidden;"><iframe frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://v.qq.com/iframe/player.html?vid=n0530kxms8z&tiny=0&auto=0" allowfullscreen width="510px" height="498px"></iframe></div>
 <br>
 <p>我们可以把一个自主的强化学习主体想象成一位尝试用耳朵和手杖帮助自己行走的盲人。主体借以认知环境的窗口很小，而这些窗口甚至有可能不是认知其周遭环境的最合理方式。</p>
@@ -59,4 +59,6 @@ layout: cn-default
   <li><a href="http://burlap.cs.brown.edu/" target="_blank">布朗大学－UMBC强化学习和规划库（BURLAP）</a>（截至2016年6月时采用的是Apache 2.0许可协议）</li>
   <li><a href="http://www-anw.cs.umass.edu/rlr/terms.html" target="_blank">强化学习术语表</a></li>
   <li><a href="https://rubenfiszel.github.io/posts/rl4j/2016-08-24-Reinforcement-Learning-and-DQN.html" target="_blank">强化学习和深度Q网络：基于像素的游戏学习</a></li>
+	<li><a href="http://v.youku.com/v_show/id_XMzAxODY5ODM3Mg==.html" target="_blank">Richard Sutton 的时序差分学习</a></li>
+	<li><a href="https://arxiv.org/pdf/1708.05866.pdf" target="_blank">深度强化学习概述</a></li>
 </ul>
