@@ -421,7 +421,7 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
 
     template <typename T>
     Nd4jIndex NDArray<T>::tensorsAlongDimension(std::vector<int>& dimensions) {
-        if (dimensions.size() > this->rankOf())
+        if ((int) dimensions.size() > this->rankOf())
             throw "TAD can't have dimensions higher then original array";
 
         std::vector<int> copy(dimensions);
@@ -461,7 +461,7 @@ template <typename T> NDArray<T>* NDArray<T>::dup(const char newOrder) {
 
     template <typename T>
     NDArray<T>* NDArray<T>::tensorAlongDimension(int index, std::vector<int>& dimensions) {
-        if (dimensions.size() > this->rankOf())
+        if ((int) dimensions.size() > this->rankOf())
             throw "TAD can't have dimensions higher then original array";
 
         std::vector<int> copy(dimensions);
@@ -828,7 +828,7 @@ template <typename T> bool NDArray<T>::reshape(const char order, const std::vect
     int numberNegativesOnes = 0;
 
     int* shape_ = shape.data();
-    for (int i = 0; i < shape.size(); i++) {
+    for (int i = 0; i < (int) shape.size(); i++) {
         if (shape[i] < 0) {
             if (numberNegativesOnes >= 1)
                 throw "Only one dimension can be negative ones";
@@ -836,14 +836,14 @@ template <typename T> bool NDArray<T>::reshape(const char order, const std::vect
             numberNegativesOnes++;
 
             int shapeLength = 1;
-            for (int j = 0; j < shape.size(); j++)
+            for (int j = 0; j < (int) shape.size(); j++)
                 if (shape_[j] >= 1)
                     shapeLength *= shape_[j];
 
             int realShape = nd4j::math::nd4j_abs<int>(lengthOf() / shapeLength);
             int* thisNewShape = new int[shape.size()];
 
-            for (int j = 0; j < shape.size(); j++) {
+            for (int j = 0; j < (int) shape.size(); j++) {
                 if (i != j) {
                     thisNewShape[j] = shape_[j];
                 } else
@@ -855,7 +855,7 @@ template <typename T> bool NDArray<T>::reshape(const char order, const std::vect
         }
     }
 
-    for (int e = 0; e < shape.size(); e++) {
+    for (int e = 0; e < (int) shape.size(); e++) {
         shape[e] = shape_[e];
     }
 
@@ -875,7 +875,7 @@ template <typename T> bool NDArray<T>::reshape(const char order, const std::vect
     int shapeLength = shape::shapeInfoLength(rank);
     // remember old values
 
-    int elemWiseStride = _shapeInfo[rankOf()*2 + 2];
+    //int elemWiseStride = _shapeInfo[rankOf()*2 + 2];
     // if rank is different then delete and resize _shapeInfo appropriately
     // also check if current object is _shapeInfo owner
     if(rank != rankOf() || !_isShapeAlloc) {
@@ -1002,9 +1002,9 @@ template<typename T> NDArray<T>* NDArray<T>::repeat(int dimension, const std::ve
 
     std::vector<int> reps;
 
-    if (reps.size() < this->rankOf()) {
+    if ((int) reps.size() < this->rankOf()) {
         if (dimension > 0) {
-            for (int e = 0; e < this->rankOf() - repeats.size(); e++)
+            for (int e = 0; e < this->rankOf() - (int) repeats.size(); e++)
                 reps.push_back(1);
 
             for (auto r: repeats)
@@ -1013,7 +1013,7 @@ template<typename T> NDArray<T>* NDArray<T>::repeat(int dimension, const std::ve
             for (auto r: repeats)
                 reps.push_back(r);
 
-            for (int e = 0; e < this->rankOf() - repeats.size(); e++)
+            for (int e = 0; e < this->rankOf() - (int) repeats.size(); e++)
                 reps.push_back(1);
         }
     }/* else {

@@ -22,18 +22,6 @@
 
 #include <fcntl.h>
 
-typedef struct FT  {
-    int alpha;
-    int beta;
-
-    FT() {
-        printf("Struct initialized\n");
-        fflush(stdout);
-    }
-};
-
-static FT ft;
-
 namespace nd4j{
     namespace graph {
 
@@ -459,7 +447,7 @@ namespace nd4j{
             // basically if at some point code diverges, code branch might be _DISABLED_, and all nodes within that branch will be disabled as well
 
             // we loop through op layers here
-            for (int l = 0; l < graph->getOnion()->size(); l++) {
+            for (int l = 0; l < (int) graph->getOnion()->size(); l++) {
                 int layerSize = graph->getOnion()->count(l) == 1 ? graph->getOnion()->at(l)->size() : 0;
 
 #pragma omp parallel for if (layerSize > 1 && pe) schedule(dynamic) proc_bind(spread)
@@ -500,7 +488,7 @@ namespace nd4j{
             auto outputs = nativeGraph->fetchOutputs();
             std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
 
-            for (int e = 0; e < outputs->size(); e++) {
+            for (int e = 0; e < (int) outputs->size(); e++) {
                 auto var = outputs->at(e);
 
                 auto fShape = builder.CreateVector(var->getNDArray()->getShapeAsVector());

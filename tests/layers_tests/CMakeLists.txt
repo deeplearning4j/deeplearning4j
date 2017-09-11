@@ -69,5 +69,5 @@ elseif(MSYS)
 endif()
 
 
-add_executable(runtests ../../include/memory/cpu/Workspace.cpp AllTests.cpp )
+add_executable(runtests AllTests.cpp )
 target_link_libraries(runtests nd4jcpu  gtest gtest_main)
