@@ -32,12 +32,21 @@ namespace nd4j {
             this->_offset = 0;
         }
 
+        void Workspace::freeSpills() {
+            _spillsSize = 0;
+
+            if (_spills.size() < 1)
+                return;
+
+            for (auto v:_spills)
+                free(v);
+        }
+
         Workspace::~Workspace() {
             if (this->_ptrHost != nullptr)
                 free(this->_ptrHost);
 
-            for (auto v:_spills)
-                free(v);
+            freeSpills();
         }
 
 
@@ -76,7 +85,17 @@ namespace nd4j {
             return result;
         }
 
+        void Workspace::scopeIn() {
+            freeSpills();
+        }
 
+        void Workspace::scopeOut() {
+            _offset = 0;
+        }
+
+        Nd4jIndex Workspace::getSpilledSize() {
+            return _spillsSize.load();
+        }
 
         void* Workspace::allocateBytes(nd4j::memory::MemoryType type, Nd4jIndex numBytes) {
             if (type == DEVICE)

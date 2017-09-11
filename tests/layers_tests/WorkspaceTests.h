@@ -55,4 +55,30 @@ TEST_F(WorkspaceTests, BasicInitialization3) {
 }
 
 
+TEST_F(WorkspaceTests, ResetTest1) {
+    Workspace workspace(65536);
+
+    NDArray<float> array(5, 5, 'c', &workspace);
+    array.putScalar(0, 1.0f);
+    array.putScalar(5, 1.0f);
+
+    workspace.scopeOut();
+    for (int e = 0; e < 5; e++) {
+        workspace.scopeIn();
+
+        NDArray<float> array2(5, 5, 'c', &workspace);
+        array.putScalar(0, 1.0f);
+        array.putScalar(5, 1.0f);
+
+        ASSERT_NEAR(2.0f, array2.reduceNumber<simdOps::Sum<float>>(), 1e-5);
+
+        workspace.scopeOut();
+    }
+
+    ASSERT_EQ(65536, workspace.getCurrentSize());
+    ASSERT_EQ(0, workspace.getCurrentOffset());
+    ASSERT_EQ(0, workspace.getSpilledSize());
+}
+
+
 #endif //LIBND4J_WORKSPACETESTS_H

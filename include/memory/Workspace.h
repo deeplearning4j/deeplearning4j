@@ -40,6 +40,8 @@ namespace nd4j {
             std::vector<void*> _spills;
 
             std::atomic<Nd4jIndex> _spillsSize;
+
+            void freeSpills();
         public:
             Workspace();
             Workspace(Nd4jIndex initialSize);
@@ -47,13 +49,15 @@ namespace nd4j {
 
             Nd4jIndex getCurrentSize();
             Nd4jIndex getCurrentOffset();
+            Nd4jIndex getSpilledSize();
 
             bool resizeSupported();
 
             void* allocateBytes(Nd4jIndex numBytes);
             void* allocateBytes(MemoryType type, Nd4jIndex numBytes);
 
-            void reset();
+            void scopeIn();
+            void scopeOut();
         };
     }
 }
