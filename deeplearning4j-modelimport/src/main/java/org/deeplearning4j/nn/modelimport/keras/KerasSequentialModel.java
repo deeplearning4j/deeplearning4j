@@ -118,7 +118,7 @@ public class KerasSequentialModel extends KerasModel {
         }
 
         /* Import training configuration. */
-        if (trainingJson != null)
+        if (trainingJson != null && enforceTrainingConfig)
             importTrainingConfiguration(trainingJson);
 
         /* Infer output types for each layer. */

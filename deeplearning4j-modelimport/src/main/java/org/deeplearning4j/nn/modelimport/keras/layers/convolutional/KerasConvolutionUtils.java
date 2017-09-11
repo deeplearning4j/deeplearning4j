@@ -106,6 +106,33 @@ public class KerasConvolutionUtils {
 
     }
 
+    /**
+     * Get upsampling size from Keras layer configuration.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return
+     * @throws InvalidKerasConfigurationException
+     */
+    public static int[] getUpsamplingSizeFromConfig(Map<String, Object> layerConfig, int dimension,
+                                                KerasLayerConfiguration conf)
+            throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        int[] size;
+            if (innerConfig.containsKey(conf.getLAYER_FIELD_UPSAMPLING_2D_SIZE()) && dimension == 2) {
+                List<Integer> sizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_UPSAMPLING_2D_SIZE());
+                size = ArrayUtil.toArray(sizeList);
+            } else if (innerConfig.containsKey(conf.getLAYER_FIELD_UPSAMPLING_1D_SIZE()) && dimension == 1) {
+                int upsamplingSize1D = (int) innerConfig.get(conf.getLAYER_FIELD_UPSAMPLING_1D_SIZE());
+                size = new int[]{ upsamplingSize1D };
+            } else {
+                throw new InvalidKerasConfigurationException("Could not determine kernel size: no "
+                        + conf.getLAYER_FIELD_UPSAMPLING_1D_SIZE() + ", "
+                        + conf.getLAYER_FIELD_UPSAMPLING_2D_SIZE());
+            }
+        return size;
+    }
+
+
 
     /**
      * Get (convolution) kernel size from Keras layer configuration.

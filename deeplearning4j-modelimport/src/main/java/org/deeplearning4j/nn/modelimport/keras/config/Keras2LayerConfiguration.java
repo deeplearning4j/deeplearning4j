@@ -74,7 +74,7 @@ public class Keras2LayerConfiguration extends KerasLayerConfiguration {
     /* Pooling / Upsampling layer properties */
     private final String LAYER_FIELD_POOL_1D_SIZE = "pool_size";
     private final String LAYER_FIELD_POOL_1D_STRIDES = "strides";
-    private final String LAYER_FIELD_UPSAMPLING_SIZE = "size";
+    private final String LAYER_FIELD_UPSAMPLING_1D_SIZE = "size";
 
     /* Keras convolution border modes. */
     private final String LAYER_FIELD_BORDER_MODE = "padding";
