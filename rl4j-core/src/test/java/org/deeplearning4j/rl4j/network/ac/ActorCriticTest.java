@@ -39,18 +39,16 @@ public class ActorCriticTest {
             new ActorCriticFactorySeparateStdDense.Configuration(
                     4,         //number of layers
                     32,        //number of hidden nodes
-                    0.0005,    //learning rate
                     0.001,     //l2 regularization
-                    new RmsProp(), null, false
+                    new RmsProp(0.0005), null, false
             );
 
     public static ActorCriticFactoryCompGraphStdDense.Configuration NET_CONF_CG =
             new ActorCriticFactoryCompGraphStdDense.Configuration(
                     2,         //number of layers
                     128,       //number of hidden nodes
-                    0.005,     //learning rate
                     0.00001,   //l2 regularization
-                    new RmsProp(), null, true
+                    new RmsProp(0.005), null, true
             );
 
     @Test

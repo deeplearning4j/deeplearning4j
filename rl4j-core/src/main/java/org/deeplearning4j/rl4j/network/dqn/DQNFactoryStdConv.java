@@ -37,13 +37,9 @@ public class DQNFactoryStdConv implements DQNFactory {
 
         NeuralNetConfiguration.ListBuilder confB = new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
                         .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(conf.getLearningRate())
-                        .regularization(conf.getL2() > 0)
                         .l2(conf.getL2())
-                        //.updater(Updater.NESTEROVS).momentum(0.9)
-                        //.updater(Updater.RMSPROP).rmsDecay(conf.getRmsDecay())
                         .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
-                        .weightInit(WeightInit.XAVIER).regularization(true).l2(conf.getL2()).list()
+                        .weightInit(WeightInit.XAVIER).l2(conf.getL2()).list()
                         .layer(0, new ConvolutionLayer.Builder(8, 8).nIn(shapeInputs[0]).nOut(16).stride(4, 4)
                                         .activation(Activation.RELU).build());
 

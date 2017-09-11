@@ -105,8 +105,9 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
 
     public void applyGradient(Gradient[] gradient, int batchSize) {
         MultiLayerConfiguration valueConf = valueNet.getLayerWiseConfigurations();
-        int valueIterationCount = valueConf.getIterationCount();
-        valueNet.getUpdater().update(valueNet, gradient[0], valueIterationCount, batchSize);
+        int valueIterationCount = valueNet.getIterationCount();
+        int valueEpochCount = valueNet.getEpochCount();
+        valueNet.getUpdater().update(valueNet, gradient[0], valueIterationCount, valueEpochCount, batchSize);
         valueNet.params().subi(gradient[0].gradient());
         Collection<IterationListener> valueIterationListeners = valueNet.getListeners();
         if (valueIterationListeners != null && valueIterationListeners.size() > 0) {
@@ -117,8 +118,9 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
         valueConf.setIterationCount(valueIterationCount + 1);
 
         MultiLayerConfiguration policyConf = policyNet.getLayerWiseConfigurations();
-        int policyIterationCount = policyConf.getIterationCount();
-        policyNet.getUpdater().update(policyNet, gradient[1], policyIterationCount, batchSize);
+        int policyIterationCount = policyNet.getIterationCount();
+        int policyEpochCount = policyNet.getEpochCount();
+        policyNet.getUpdater().update(policyNet, gradient[1], policyIterationCount, policyEpochCount, batchSize);
         policyNet.params().subi(gradient[1].gradient());
         Collection<IterationListener> policyIterationListeners = policyNet.getListeners();
         if (policyIterationListeners != null && policyIterationListeners.size() > 0) {

@@ -6,6 +6,7 @@ import lombok.Value;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -43,12 +44,8 @@ public class ActorCriticFactoryCompGraphStdConv implements ActorCriticFactoryCom
         ComputationGraphConfiguration.GraphBuilder confB =
                         new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED).iterations(1)
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .learningRate(conf.getLearningRate())
-                                        //.updater(Updater.NESTEROVS).momentum(0.9)
-                                        //.updater(Updater.RMSPROP).rmsDecay(conf.getRmsDecay())
                                         .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
                                         .weightInit(WeightInit.XAVIER)
-                                        .regularization(conf.getL2() > 0)
                                         .l2(conf.getL2()).graphBuilder()
                                         .addInputs("input").addLayer("0",
                                                         new ConvolutionLayer.Builder(8, 8).nIn(shapeInputs[0]).nOut(16)
@@ -103,7 +100,6 @@ public class ActorCriticFactoryCompGraphStdConv implements ActorCriticFactoryCom
     @Value
     public static class Configuration {
 
-        double learningRate;
         double l2;
         IUpdater updater;
         IterationListener[] listeners;

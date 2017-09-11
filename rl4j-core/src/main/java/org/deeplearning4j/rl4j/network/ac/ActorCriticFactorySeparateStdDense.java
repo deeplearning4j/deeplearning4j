@@ -36,12 +36,8 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
 
         NeuralNetConfiguration.ListBuilder confB = new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
                         .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(conf.getLearningRate())
-                        //.updater(Updater.NESTEROVS).momentum(0.9)
-                        //.updater(Updater.RMSPROP).rho(conf.getRmsDecay())//.rmsDecay(conf.getRmsDecay())
                         .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
                         .weightInit(WeightInit.XAVIER)
-                        .regularization(conf.getL2() > 0)
                         .l2(conf.getL2())
                         .list().layer(0, new DenseLayer.Builder().nIn(numInputs[0]).nOut(conf.getNumHiddenNodes())
                                         .activation(Activation.RELU).build());
@@ -74,9 +70,6 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
 
         NeuralNetConfiguration.ListBuilder confB2 = new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
                         .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(conf.getLearningRate())
-                        //.updater(Updater.NESTEROVS).momentum(0.9)
-                        //.updater(Updater.RMSPROP).rho(conf.getRmsDecay())//.rmsDecay(conf.getRmsDecay())
                         .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
                         .weightInit(WeightInit.XAVIER)
                         //.regularization(true)
@@ -121,7 +114,6 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
 
         int numLayer;
         int numHiddenNodes;
-        double learningRate;
         double l2;
         IUpdater updater;
         IterationListener[] listeners;
