@@ -56,7 +56,7 @@ DL4Jの依存関係のテスト:
 #### Linux
 
 **Ubuntu**
-LinuxのフレーバーとしてUbutuを使用している非ルートユーザーの方は必要なソフトウェアを以下の手順でインストールしてください。
+LinuxのフレーバーとしてUbuntuを使用している非ルートユーザーの方は必要なソフトウェアを以下の手順でインストールしてください。
 
 ```
 sudo apt-get purge maven maven2 maven3
@@ -251,7 +251,7 @@ export MKL_THREADING_LAYER=GNU
 export LD_PRELOAD=/lib64/libgomp.so.1
 ```
 
-libnd4jを再構築できない場合は、factsの後にMKLライブラリを使用してOpenBLASの代わりにそれらをロードすることができますが、より複雑な方法です。また、以下の手順にも従ってください。
+libnd4jを再構築できない場合は、事後にMKLライブラリを使用してOpenBLASの代わりにそれらをロードすることができますが、より複雑な方法です。また、以下の手順にも従ってください。
 
 1. 必ずファイルの`/lib64/libopenblas.so.0`や`/lib64/libblas.so.3`などが利用可能でない（Windowsの場合は`PATH`に後で出現しない）ことを確認してください。あるいは、それらのファイルがそれらの絶対パスにより何より先にlibnd4jを使ってロードされるようにしてください。
 2. `/path/to/intel64/lib/`の内部にシンボリックリンクか`libmkl_rt.so`（Windowsの場合は`mkl_rt.dll`）のコピーをlibnd4jがロードする名前に作成してください。以下はその例です。
@@ -289,7 +289,7 @@ GPUバックエンドを使用している方は、以下を使用してくだ�
 
 [libndj4 README](https://github.com/deeplearning4j/libnd4j)の説明に従って`cc`フラグを使用すると、CUDAの構築を早めることができます。
 
-Scalaユーザーの方は、Sparと互換性を持たすためにバイナリバージョンを渡します。
+Scalaユーザーの方は、Sparkと互換性を持たすためにバイナリバージョンを渡します。
 
 ```
 ./build-dl4j-stack.sh -c cuda --scalav 2.11
@@ -319,7 +319,7 @@ git clone https://github.com/deeplearning4j/libnd4j.git
 cd libnd4j
 ./buildnativeoperations.sh
 # そして/あるいはGPUを使用する場合
-# ./buildnativeoperations.sh -c cuda -cc ここに_使用する_機器の_アーキテクチャー_を入力 
+# ./buildnativeoperations.sh -c cuda -cc ここに使用する機器のアーキテクチャーを入力 
 # つまり、GTX 1070を使用している場合、-cc 61を使用する場合
 export LIBND4J_HOME=`pwd`
 cd ..
