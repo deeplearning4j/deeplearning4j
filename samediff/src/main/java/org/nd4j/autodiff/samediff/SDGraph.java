@@ -124,13 +124,12 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         return this;
     }
 
-
     /**
      *
      * @return
      */
-    public OpExecOrder getOpOrder() {
-        int[] order = topologicalSort();
+    public OpExecOrder getOpOrder(boolean reverse) {
+        int[] order = topologicalSort(reverse);
         List<OpExecAction> ret = new ArrayList<>();
         //iterate over op execution order skipping
         // nodes that are only inputs
@@ -181,6 +180,15 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         return OpExecOrder.builder().actions(ret).build();
     }
 
+
+    /**
+     *
+     * @return
+     */
+    public OpExecOrder getOpOrder() {
+        return getOpOrder(false);
+    }
+
     /**
      * {@link NDArrayInformation}
      * accessor for a given vertex
@@ -199,73 +207,90 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
      * Topological sort over vertex ids
      * @return
      */
-    public int[] topologicalSort() {
+    public int[] topologicalSort(boolean reverse) {
         LinkedList<Integer> noIncoming = new LinkedList<>();
         Map<Integer, Set<Integer>> inputEdges = new TreeMap<>(); //key: vertex. Values: vertices that the key vertex receives input from
         Map<Integer, Set<Integer>> outputEdges = new TreeMap<>(); //key: vertex. Values: vertices that the key vertex outputs to
         int[] ret = new int[numVertices()];
         List<Integer> vertices = new ArrayList<>(getVertices().keySet());
         Collections.sort(vertices);
-        for (int i : vertices) {
-            if (getVertexInDegree(i) < 1) {
-                noIncoming.add(i);
-            }
 
-            List<Edge<OpState>> edges = getEdgesOut(i);
-            Set<Integer> outVertices = new TreeSet<>();
-            Set<Integer> currInputs = new TreeSet<>();
-            for (Edge<OpState> edge : edges) {
-                outVertices.add(edge.getTo());
-                Set<Integer> outputSetForInputIdx = outputEdges.get(i);
-                if (outputSetForInputIdx == null) {
-                    outputSetForInputIdx = new TreeSet<>();
-                    outputEdges.put(i, outputSetForInputIdx);
-                }
-
-                outputSetForInputIdx.add(edge.getTo()); //input vertex outputs to the current vertex
-            }
-
-            if( getIncomingEdges().get(i) != null) {
-                for (Edge<OpState> edge : getIncomingEdges().get(i)) {
-                    currInputs.add(edge.getFrom());
-
-                }
-
-                inputEdges.put(i, currInputs);
-            }
-            else
-                inputEdges.put(i, currInputs);
+        if(reverse) {
 
         }
+        else {
+            for (int i : vertices) {
+                if (getVertexInDegree(i) < 1) {
+                    noIncoming.add(i);
+                }
 
-        int outCounter = 0;
-        while (!noIncoming.isEmpty() && outCounter < ret.length) {
-            int next = noIncoming.removeFirst();
-            ret[outCounter++] = next;
-            Set<Integer> vertexOutputsTo = outputEdges.get(next);
-            //Remove edges next -> vertexOuputsTo[...] from graph;
-            if (vertexOutputsTo != null) {
-                for (Integer v : vertexOutputsTo) {
-                    Set<Integer> set = inputEdges.get(v);
-                    if (set != null)
-                        set.remove(next);
-                    if (set == null || set.isEmpty()) {
-                        noIncoming.add(v); //No remaining edges for vertex i -> add to list for processing
+                List<Edge<OpState>> edges = getEdgesOut(i);
+                Set<Integer> outVertices = new TreeSet<>();
+                Set<Integer> currInputs = new TreeSet<>();
+                for (Edge<OpState> edge : edges) {
+                    outVertices.add(edge.getTo());
+                    Set<Integer> outputSetForInputIdx = outputEdges.get(i);
+                    if (outputSetForInputIdx == null) {
+                        outputSetForInputIdx = new TreeSet<>();
+                        outputEdges.put(i, outputSetForInputIdx);
+                    }
+
+                    outputSetForInputIdx.add(edge.getTo()); //input vertex outputs to the current vertex
+                }
+
+                if( getIncomingEdges().get(i) != null) {
+                    for (Edge<OpState> edge : getIncomingEdges().get(i)) {
+                        currInputs.add(edge.getFrom());
+
+                    }
+
+                    inputEdges.put(i, currInputs);
+                }
+                else
+                    inputEdges.put(i, currInputs);
+
+            }
+
+            int outCounter = 0;
+            while (!noIncoming.isEmpty() && outCounter < ret.length) {
+                int next = noIncoming.removeFirst();
+                ret[outCounter++] = next;
+                List<Integer> vertexOutputsTo = outputEdges.containsKey(next) ? new ArrayList<>(outputEdges.get(next)) : null;
+
+                //Remove edges next -> vertexOuputsTo[...] from graph;
+                if (vertexOutputsTo != null) {
+                    Collections.sort(vertexOutputsTo);
+                    for (Integer v : vertexOutputsTo) {
+                        Set<Integer> set = inputEdges.get(v);
+                        if (set != null)
+                            set.remove(next);
+                        if (set == null || set.isEmpty()) {
+                            noIncoming.add(v); //No remaining edges for vertex i -> add to list for processing
+                        }
                     }
                 }
             }
-        }
 
-        //If any edges remain in the graph: graph has cycles:
-        for (Map.Entry<Integer, Set<Integer>> entry : inputEdges.entrySet()) {
-            Set<Integer> set = entry.getValue();
-            if (set == null)
-                continue;
-            if (!set.isEmpty())
-                throw new IllegalStateException("Graph has cycles");
+            //If any edges remain in the graph: graph has cycles:
+            for (Map.Entry<Integer, Set<Integer>> entry : inputEdges.entrySet()) {
+                Set<Integer> set = entry.getValue();
+                if (set == null)
+                    continue;
+                if (!set.isEmpty())
+                    throw new IllegalStateException("Graph has cycles");
+            }
+
         }
 
 
         return ret;
+    }
+
+    /**
+     * Topological sort over vertex ids
+     * @return
+     */
+    public int[] topologicalSort() {
+        return topologicalSort(false);
     }
 }

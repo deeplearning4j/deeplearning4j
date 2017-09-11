@@ -368,6 +368,20 @@ public class SameDiffTests {
         },vars);
 
 
+        /**
+         * Backwards hould be:
+         * neg score
+         * sum sum of log
+         * log (log probs)
+         * add
+         * mul
+         * mul
+         * rsub (predictions)
+         * sigmoid
+         * rsub
+         * matrix multiply
+         *
+         */
 
    /*     Pair<Map<SDVariable, Op>, List<Op>> opsForward = outside.getFunction("activate").exec();
         System.out.println(opsForward);

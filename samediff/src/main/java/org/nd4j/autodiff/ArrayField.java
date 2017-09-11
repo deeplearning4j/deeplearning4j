@@ -866,13 +866,15 @@ public class ArrayField implements Field {
         Preconditions.checkState(this.ops == i_v.ops, "If adding a field. Must be apart of the same graph.");
 
         NDArrayInformation ndArrayInformation =  NDArrayInformation.builder()
-                .id(name + "(" + input.getId() + ")").scalarValue(this.getInput().getScalarValue())
+                .id(name + "(" + input.getId() + ")")
+                .scalarValue(this.getInput().getScalarValue())
                 .arrId(UUID.randomUUID().toString())
                 .shape(getInput().getShape()).build();
         //result
         NDArrayVertex newVertex = new NDArrayVertex(
                 this.ops,
                 this.ops.getGraph().nextVertexId(),
+                this.vertex.depth() + 1,
                 ndArrayInformation);
 
         //add the result vertex to the graph
@@ -925,6 +927,7 @@ public class ArrayField implements Field {
         NDArrayVertex newVertex = new NDArrayVertex(
                 this.ops,
                 this.ops.getGraph().nextVertexId(),
+                this.vertex.depth() + 1,
                 result);
 
         //add the result vertex to the graph
@@ -977,7 +980,11 @@ public class ArrayField implements Field {
                 .arrId(UUID.randomUUID().toString())
                 .shape(resultShape).build();
 
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops,this.ops.getGraph().nextVertexId(), information);
+        NDArrayVertex newVertex = new NDArrayVertex(
+                this.ops,
+                this.ops.getGraph().nextVertexId(),
+                this.vertex.depth() + 1,
+                information);
 
         //add the result vertex to the graph
         this.ops.getGraph().addVertex(newVertex);
@@ -1030,7 +1037,11 @@ public class ArrayField implements Field {
         NDArrayInformation resultInfo =  NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
                 .shape(input.getShape()).build();
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops,this.ops.getGraph().nextVertexId(), resultInfo);
+        NDArrayVertex newVertex = new NDArrayVertex(
+                this.ops,
+                this.ops.getGraph().nextVertexId(),
+                this.vertex.depth() + 1,
+                resultInfo);
 
         Preconditions.checkArgument(Arrays.equals(input.getShape(),i_v.getInput().getShape()),"X and y not equal shapes.");
 
@@ -1116,7 +1127,9 @@ public class ArrayField implements Field {
 
     private NDArrayVertex getVertex(String name,int[] shape) {
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops,this.ops.getGraph().nextVertexId() ,
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops,
+                this.ops.getGraph().nextVertexId() ,
+                this.vertex.depth() + 1,
                 NDArrayInformation.builder().arrId(UUID.randomUUID().toString())
                         .scalarValue(getInput().getScalarValue())
                         .id(name + "(" + input.getId() + ")")

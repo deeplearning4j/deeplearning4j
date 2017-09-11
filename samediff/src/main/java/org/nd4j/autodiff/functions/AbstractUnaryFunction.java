@@ -105,7 +105,11 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction {
                         v1.getInput().getId() + ")")
                 .shape(shape).build();
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.graph().nextVertexId(),information);
+        NDArrayVertex newVertex = new NDArrayVertex(
+                sameDiff,
+                sameDiff.graph().nextVertexId(),
+                i_v1.getVertex().depth() + 1,
+                information);
         this.vertexId = newVertex.vertexID();
         sameDiff.graph().addVertex(newVertex);
         Preconditions.checkArgument(sameDiff == i_v1.sameDiff,"Illegal samediff instance");

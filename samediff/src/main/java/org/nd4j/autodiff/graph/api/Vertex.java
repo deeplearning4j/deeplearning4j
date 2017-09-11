@@ -12,7 +12,13 @@ import lombok.Data;
 public class Vertex<T> {
 
     protected  int idx;
+    protected int depth;
     protected  T value;
+
+
+    public int depth() {
+        return depth;
+    }
 
     public int vertexID() {
         return idx;

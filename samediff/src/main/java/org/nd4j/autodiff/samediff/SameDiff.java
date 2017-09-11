@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.samediff;
 
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Ints;
 import com.rits.cloning.Cloner;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -144,6 +145,7 @@ public class SameDiff {
             NDArrayVertex info = new NDArrayVertex(
                     sameDiff,
                     nextVertexId,
+                    graph.getVertex(i + 1).depth(),
                     clone);
             thisVertexIdToNew.put(graph.getVertex(i + 1).vertexID(),nextVertexId);
             sameDiff.graph().addVertex(info);
@@ -695,7 +697,7 @@ public class SameDiff {
         if(ArrayUtil.prod(arr.shape()) == 1)
             ndArrayInformation.setScalarValue(arr.getDouble(0));
 
-        NDArrayVertex ndArrayVertex = new NDArrayVertex(this,graph.nextVertexId(), ndArrayInformation);
+        NDArrayVertex ndArrayVertex = new NDArrayVertex(this,graph.nextVertexId(), 0,ndArrayInformation);
         graph.addVertex(ndArrayVertex);
         ArrayField arrayField = setupArrayField(new ArrayField(ndArrayVertex,this));
         SDVariable ret = SDVariable.builder()
@@ -3045,36 +3047,152 @@ public class SameDiff {
                     }
 
                     outer.invokeGraphOn(sameDiff);
-                    List<OpExecAction> opOrder = sameDiff.graph().getOpOrder().getActions();
-                    Collections.reverse(opOrder);
+                    List<OpExecAction> opOrder = sameDiff.graph().getOpOrder(true).getActions();
+                    //Collections.reverse(opOrder);
+
+                    List<OpExecAction> exec = new ArrayList<>();
+
                     //start with scalar backprop
                     List<DifferentialFunction> currentDiff = Arrays.asList(sameDiff.functionFactory.one(new int[]{1,1}));
+                    Map<DifferentialFunction,DifferentialFunction> gradCandidates = new IdentityHashMap<>();
+                    for(OpExecAction opExecAction : opOrder) {
+                        DifferentialFunction add = sameDiff.setupFunction(opExecAction.getOpState().getDifferentialFunction());
+                        gradCandidates.put(add,add);
+                    }
+
+                    PriorityQueue<OpExecAction> functions = new PriorityQueue<>(10, new Comparator<OpExecAction>() {
+                        @Override
+                        public int compare(OpExecAction o1, OpExecAction o2) {
+                            return -Ints.compare(Ints.min(o1.getOutputId()),Ints.min(o2.getOutputId()));
+                        }
+                    });
+
+                    functions.addAll(opOrder);
+
+                    while(!functions.isEmpty()) {
+                        OpExecAction action = functions.poll();
+                        DifferentialFunction currFunction = action.getOpState().getDifferentialFunction();
+                        currentDiff = currFunction.diff(currentDiff);
+
+                        //clear out all the variables
+                        List<SDVariable> functionVars = debugMode ? new ArrayList<>(2) : null;
+
+                        for(DifferentialFunction differentialFunction : currentDiff) {
+                            SDVariable add = SDVariable.builder()
+                                    .arr(null).differentialFunction(differentialFunction)
+                                    .vertexId(differentialFunction.resultVertexId())
+                                    .shape(differentialFunction.getResultShape())
+                                    .sameDiff(sameDiff)
+                                    .varName(sameDiff.generateVariableName(differentialFunction.functionName(),
+                                            true,
+                                            differentialFunction))
+                                    .build();
+                            sameDiff.addVariable(add);
+
+                            if (debugMode) {
+                                if(add.gradient() != null)
+                                    sameDiff.addVariable(add.gradient());
+                                functionVars.add(add);
+                            }
+                        }
+
+                        if(isDebugMode()) {
+                            exec.add(action);
+                        }
+
+                    }
+
+
 
                     /**
-                     * TODO: Add metadata to differential function
-                     * indicating it is a gradient operation.
-                     * A simple boolean will allow us to separate the graph
-                     * from forward to backward.
+                     * Op order is wrong here.
+                     * There is an edge case with logistic regression where
+                     * it executes sigmoid in the wrong order
+                     * when it encounters 1- activation.
                      *
-                     * We also need to add a reference to the "backwards" function(s)
-                     * to the forward differential function.
-                     * This will allow us to build a more coherent
-                     * op execution action that will build 2 graphs:
-                     * 1 forward op execution setup and 1 backward.
+                     * What it *should* do is when it sees sigmoid
+                     * to activate that operation first
+                     * before the 1- activation
+                     * to ensure the proper gradient exists.
                      *
-                     * We also need to add a reference to the inputs
-                     * for debugging purposes.
+                     * The other frameworks dynamically find
+                     * the right dependencies
+                     * and add them as necessary.
+                     * We need to ensure our sort mechanism does the same.
                      *
-                     * From that, we should ensure that the
-                     * SDVariable's understand this forward/backward
-                     * state as well.
+                     * The debugging situation to watch is
+                     * the:
+                     * cand_funcs
                      *
-                     * Another problem is the debuggability of the
-                     * "lazy execution" in the context of the
-                     * actual ops executed. Need to strive for more metadata
-                     * alongside an op execution occurring.
+                     * which contains the function execution order.
+                     * The function execution order for our case should be:
+                     * 1 - output -> sigmoid -> 1- predictions
+                     *
+                     * Right now, it is 1 - predictions -> sigmoid.
+                     *
+                     * Another thing to look in to is whether output_grad
+                     * propagates properly as well.
+                     *
+                     * The goal here should be to build a minm aal test
+                     * that reproduces this wrong behavior
+                     * for transitive dependencies.
                      */
-                    for(int i = 0; i < opOrder.size(); i++) {
+
+
+            /*        PriorityQueue<DifferentialFunction> functions = new PriorityQueue<>(10, new Comparator<DifferentialFunction>() {
+                        @Override
+                        public int compare(DifferentialFunction o1, DifferentialFunction o2) {
+                            return Ints.compare(o1.resultVertexId(),o2.resultVertexId());
+                        }
+                    });
+
+                    functions.add(opOrder.get(0).getOpState().getDifferentialFunction());
+
+                    Map<DifferentialFunction,DifferentialFunction> seen = new IdentityHashMap<>();
+                    List<DifferentialFunction> exec = new ArrayList<>();
+                    while(!functions.isEmpty()) {
+                        DifferentialFunction currFunction = functions.poll();
+                        currentDiff = currFunction.diff(currentDiff);
+
+                        //clear out all the variables
+                        List<SDVariable> functionVars = debugMode ? new ArrayList<>(2) : null;
+
+                        for(DifferentialFunction differentialFunction : currentDiff) {
+                            SDVariable add = SDVariable.builder()
+                                    .arr(null).differentialFunction(differentialFunction)
+                                    .vertexId(differentialFunction.resultVertexId())
+                                    .shape(differentialFunction.getResultShape())
+                                    .sameDiff(sameDiff)
+                                    .varName(sameDiff.generateVariableName(differentialFunction.functionName(),
+                                            true,
+                                            differentialFunction))
+                                    .build();
+                            sameDiff.addVariable(add);
+
+                            if (debugMode) {
+                                if(add.gradient() != null)
+                                    sameDiff.addVariable(add.gradient());
+                                functionVars.add(add);
+                            }
+                        }
+
+                        if(isDebugMode()) {
+                            exec.add(currFunction);
+                        }
+
+                        for(DifferentialFunction arg : currFunction.args()) {
+                            arg = sameDiff.setupFunction(arg);
+                            if(!seen.containsKey(arg) && gradCandidates.containsKey(arg)) {
+                                seen.put(arg,arg);
+                                functions.add(arg);
+                            }
+                            else {
+                                System.out.println(arg);
+                            }
+                        }
+                    }*/
+
+/*                    for(int i = 0; i < opOrder.size(); i++) {
                         OpExecAction action = opOrder.get(i);
                         OpState opState = action.getOpState();
                         if(opState != null) {
@@ -3082,7 +3200,6 @@ public class SameDiff {
                                     sameDiff.setupFunction(opState.getDifferentialFunction()) : null;
                             if(func != null) {
                                 List<DifferentialFunction> diffOutput = func.diff(currentDiff);
-                                currentDiff = func.diff(currentDiff);
                                 //clear out all the variables
                                 List<SDVariable> functionVars = debugMode ? new ArrayList<>(2) : null;
 
@@ -3117,12 +3234,14 @@ public class SameDiff {
                                     sameDiff.forwardBackwardStates.put(action, forwardBackwardState);
                                 }
 
+                                currentDiff = diffOutput;
+
                             }
                             else if(action.getOpState().getArrayField() != null) {
                                 log.trace("Array field occurred for " + action.getOutputId());
                             }
                         }
-                    }
+                    }*/
 
                     if(sameDiff.isDebugMode()) {
                         //ensure all gradients are present for all variables

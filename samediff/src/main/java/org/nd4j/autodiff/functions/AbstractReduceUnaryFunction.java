@@ -68,7 +68,10 @@ public abstract class AbstractReduceUnaryFunction extends DifferentialFunction {
                 .arrId(UUID.randomUUID().toString())
                 .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
                 .shape(resultShape).build();
-        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), information);
+        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,
+                sameDiff.getGraph().nextVertexId(),
+                i_v1.getVertex().depth() + 1,
+                information);
         this.vertexId = newVertex.vertexID();
         sameDiff.getGraph().addVertex(newVertex);
         OpState opState =   OpState.builder()

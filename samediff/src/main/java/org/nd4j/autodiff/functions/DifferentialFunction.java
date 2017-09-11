@@ -1,22 +1,18 @@
 package org.nd4j.autodiff.functions;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-
 import com.google.common.base.Preconditions;
 import lombok.*;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.functions.impl.binary.transform.Add;
-import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.List;
+import java.util.UUID;
 
 
 @AllArgsConstructor
@@ -32,6 +28,8 @@ public abstract class DifferentialFunction implements Differential {
     @Getter
     @Setter
     protected int vertexId;
+    @Setter
+    protected NDArrayVertex vertex;
     @Getter
     @Setter
     protected DifferentialFunction gradient;
@@ -44,6 +42,11 @@ public abstract class DifferentialFunction implements Differential {
 
     protected Object[] extraArgs;
 
+    public NDArrayVertex getVertex() {
+        if(vertex == null)
+            return (NDArrayVertex) sameDiff.graph().getVertex(vertexId);
+        return vertex;
+    }
 
     /**
      *
@@ -256,7 +259,14 @@ public abstract class DifferentialFunction implements Differential {
                 .id(opName +"(" + v1.getInput().getId() + "," + v2.getInput().getId() + ")")
                 .shape(shape).build();
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(), arrInfo);
+        if(vertex == null)
+            vertex = (NDArrayVertex) sameDiff.graph().getVertex(vertexId);
+
+        NDArrayVertex newVertex = new NDArrayVertex(
+                sameDiff,
+                sameDiff.getGraph().nextVertexId(),
+                vertex.depth() + 1,
+                arrInfo);
         if(newVertex.vertexID() == v2VertexId || newVertex.vertexID() == v1VertexId)
             throw new ND4JIllegalStateException("Illegal vertex id specified in new vertex." +
                     " Perhaps a mismatched graph call? Another likely cause is applyGraph");
@@ -269,6 +279,7 @@ public abstract class DifferentialFunction implements Differential {
         //ensure there's 2 vertices for when the 2 inputs are the same
         if(i_v1.equals(i_v2)) {
             NDArrayVertex dupVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(),
+                    vertex.depth() + 1,
                     NDArrayInformation.builder().arrId(v1.getInput().getArrId())
                             .shape(v1.getInput().getShape())
                             .id(v1.getInput().getId()).build());
@@ -431,7 +442,7 @@ public abstract class DifferentialFunction implements Differential {
 
         if (vertexId != that.vertexId) return false;
         if (opState != null ? !opState.equals(that.opState) : that.opState != null) return false;
-        if (gradient != null ? !gradient.equals(that.gradient) : that.gradient != null) return false;
+        //if (gradient != null ? !gradient.equals(that.gradient) : that.gradient != null) return false;
         return true;
     }
 

@@ -54,7 +54,11 @@ public abstract class AbstractScalarFunction extends AbstractUnaryFunction {
                 .shape(i_v1.getResultShape()).build();
 
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(sameDiff,sameDiff.graph().nextVertexId(),information);
+        NDArrayVertex newVertex = new NDArrayVertex(
+                sameDiff,
+                sameDiff.graph().nextVertexId(),
+                i_v1.getVertex().depth() + 1,
+                information);
         this.vertexId = newVertex.vertexID();
         sameDiff.graph().addVertex(newVertex);
 
