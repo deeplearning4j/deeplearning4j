@@ -151,7 +151,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 return new Pair<>(null, out_product);
             case Max:
                 INDArray[] outMax = new INDArray[nInForwardPass];
-                INDArray maxIndices = epsilon.dup();
+                INDArray maxIndices = Nd4j.createUninitialized(epsilon.shape(), epsilon.ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemaxindex")
                         .setInputs(inputs)
                         .setOutputs(maxIndices)
