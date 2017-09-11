@@ -19,6 +19,7 @@
             <exclusions>
               <exclusion>
                 <groupId>com.google.code.findbugs</groupId>
+                <artifactId>*</artifactId>
               </exclusion>
             </exclusions>
         </dependency>
