@@ -9,6 +9,17 @@
 #include "Variable.h"
 #include "VariableSpace.h"
 
+
+// CUDA-specific includes
+#ifdef __CUDACC__
+
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+#include <cuda_runtime.h>
+#include <cuda_device_runtime_api.h>
+
+#endif
+
 namespace nd4j {
     namespace graph {
         /**
@@ -30,6 +41,12 @@ namespace nd4j {
 			bool _isInplace;
 
         public:
+
+            // CUDA-specific fields
+#ifdef __CUDACC__
+            cudaStream_t* _stream;
+#endif
+
             Block(int nodeId, VariableSpace<T> *variableSpace) {
                 _nodeId = nodeId;
                 _variableSpace = variableSpace;
@@ -43,6 +60,7 @@ namespace nd4j {
             ~Block() {
                 //
             }
+
 
             nd4j::random::RandomBuffer* getRNG() {
                 return _rng;

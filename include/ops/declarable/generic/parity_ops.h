@@ -141,24 +141,27 @@ namespace nd4j {
         }
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(maxPool, 2, 1, true) {
+        DECLARE_OP(maxpool, 2, 1, true) {
             // MaxPooling
             return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(MaxPool2D, maxPool);
+        DECLARE_SYN(MaxPool2D, maxpool);
+        DECLARE_SYN(MaxPool, maxpool);
 
 //////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(avgPool, 2, 1, true) {
+        DECLARE_OP(avgpool, 2, 1, true) {
             // AvgPooling
             return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(AvgPool2D, avgPool);
+        DECLARE_SYN(AvgPool2D, avgpool);
+        DECLARE_SYN(AvgPool, avgpool);
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_OP(lrn, 2, 1, true) {
             // LocalResponseNormalization
             return ND4J_STATUS_OK;
         }
+        DECLARE_SYN(LRN, lrn);
 
 
 ///////////////////////
@@ -204,7 +207,7 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_OP(realDiv, 2, 1, true) {
+        DECLARE_OP(realdiv, 2, 1, true) {
             // ?
             return ND4J_STATUS_OK;
         }
@@ -353,6 +356,7 @@ namespace nd4j {
 
         // test op, non-divergent
         DECLARE_OP(testop2i2o, 2, 2, true) {
+            nd4j_printf("CPU op used!","");
             NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             NDArray<T> *y = block.getVariables().at(1)->getNDArray();
 
@@ -1008,59 +1012,6 @@ namespace nd4j {
 				STORE_RESULT(*ret);
 			}
 			return ND4J_STATUS_OK;
-        }
-
-
-        /**
-         * This op is special one, and suited only for ProjectionLayer by @firasdib
-         *
-         * TODO: should be moved to separate file
-         *
-         * @tparam T
-         */
-        DECLARE_CONFIGURABLE_OP(firas_sparse, 1, 1, false, 0, -1) {
-            NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-            NDArray<T> *z = this->getZ(block);
-
-            int batchSize = x->sizeAt(0);
-            int numColumns = x->sizeAt(1);
-
-            int numIndices = block.getIArguments()->size();
-
-            std::vector<int> indices(*block.getIArguments());
-            std::map<int, int> sparse2dense;
-
-
-            int cnt = 0;
-            for (auto v: indices) {
-                std::pair<int, int> pair(v, cnt++);
-                sparse2dense.insert(pair);
-            }
-
-            std::unique_ptr<ArrayList<T>> rows(NDArrayFactory::allTensorsAlongDimension<T>(x, {1}));
-
-#pragma omp parallel for schedule(dynamic) proc_bind(close)
-            for (int r = 0; r < batchSize; r++) {
-                auto row = rows->at(r);
-
-                for (int e = 0; e < numColumns; e += 2) {
-                    int idx = row->getIndexedScalar(e);
-                    if (idx < 0)
-                        break;
-
-                    int denseIdx = sparse2dense.at(idx);
-
-                    T current = z->getScalar(r, denseIdx);
-                    T value = row->getIndexedScalar(e + 1);
-
-                    z->putScalar(r, denseIdx, value);
-                }
-            }
-
-
-            STORE_RESULT(*z);
-
-            return ND4J_STATUS_OK;
         }
     }
 }

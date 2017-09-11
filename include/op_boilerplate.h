@@ -867,6 +867,8 @@
                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
 
 
+#define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
+
 #define STORE_RESULT(A) this->storeResult(block, 0, A)
 #define STORE_2_RESULTS(A, B) this->storeResult(block, 0, A); this->storeResult(block, 1, B)
 #define STORE_3_RESULTS(A, B, C) this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
