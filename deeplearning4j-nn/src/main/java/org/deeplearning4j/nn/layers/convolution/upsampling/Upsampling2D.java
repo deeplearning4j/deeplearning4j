@@ -210,11 +210,6 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         return 0;
     }
 
-    @Override
-    public void accumulateScore(double accum) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
 
     @Override
     public void update(INDArray gradient, String paramType) {

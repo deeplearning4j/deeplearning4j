@@ -59,7 +59,7 @@ public class ScaleVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set (ScaleVertex " + vertexName
                             + " idx " + vertexIndex + ")");
@@ -93,7 +93,7 @@ public class ScaleVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "ScaleVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",scaleFactor="
+        return "ScaleVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\",scaleFactor="
                         + scaleFactor + ")";
     }
 

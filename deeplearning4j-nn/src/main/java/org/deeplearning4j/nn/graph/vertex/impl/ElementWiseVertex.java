@@ -69,7 +69,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
@@ -213,7 +213,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "ElementWiseVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",op=" + op
+        return "ElementWiseVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\",op=" + op
                         + ")";
     }
 }

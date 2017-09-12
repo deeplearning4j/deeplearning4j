@@ -57,7 +57,7 @@ public class PreprocessorVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
         return preProcessor.preProcess(inputs[0], graph.batchSize());
     }
 
@@ -68,7 +68,7 @@ public class PreprocessorVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "PreprocessorVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",preProcessor="
+        return "PreprocessorVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\",preProcessor="
                         + preProcessor.toString() + ")";
     }
 

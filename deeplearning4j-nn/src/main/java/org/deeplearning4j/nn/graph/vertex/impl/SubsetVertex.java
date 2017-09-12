@@ -67,7 +67,7 @@ public class SubsetVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
@@ -113,7 +113,7 @@ public class SubsetVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "SubsetVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from
+        return "SubsetVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from
                         + ",toIdx=" + to + ")";
     }
 

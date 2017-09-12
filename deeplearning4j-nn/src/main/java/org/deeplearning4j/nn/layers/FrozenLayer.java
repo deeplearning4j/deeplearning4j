@@ -178,11 +178,6 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void accumulateScore(double accum) {
-        insideLayer.accumulateScore(accum);
-    }
-
-    @Override
     public INDArray params() {
         return insideLayer.params();
     }

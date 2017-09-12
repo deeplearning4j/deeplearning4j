@@ -38,13 +38,13 @@ public abstract class BaseGraphVertex implements GraphVertex {
     protected int vertexIndex;
 
     /**A representation of the vertices that are inputs to this vertex (inputs during forward pass)
-     * Specifically, if inputVertices[X].getVertexIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
+     * Specifically, if inputVertices[X].getIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
      * then the Zth output of vertex Y is the Xth input to this vertex
      */
     protected VertexIndices[] inputVertices;
 
     /**A representation of the vertices that this vertex is connected to (outputs duing forward pass)
-     * Specifically, if outputVertices[X].getVertexIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
+     * Specifically, if outputVertices[X].getIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
      * then the output of this vertex (there is only one output) is connected to the Zth input of vertex Y
      */
     protected VertexIndices[] outputVertices;
@@ -75,12 +75,12 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     @Override
-    public int getVertexIndex() {
+    public int getIndex() {
         return vertexIndex;
     }
 
     @Override
-    public int getNumInputArrays() {
+    public int numInputs() {
         return (inputVertices == null ? 0 : inputVertices.length);
     }
 
@@ -90,7 +90,7 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     /**A representation of the vertices that are inputs to this vertex (inputs duing forward pass)<br>
-     * Specifically, if inputVertices[X].getVertexIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
+     * Specifically, if inputVertices[X].getIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
      * then the Zth output of vertex Y is the Xth input to this vertex
      */
     @Override
@@ -105,7 +105,7 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     /**A representation of the vertices that this vertex is connected to (outputs duing forward pass)
-     * Specifically, if outputVertices[X].getVertexIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
+     * Specifically, if outputVertices[X].getIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
      * then the Xth output of this vertex is connected to the Zth input of vertex Y
      */
     @Override
@@ -125,7 +125,7 @@ public abstract class BaseGraphVertex implements GraphVertex {
 
     @Override
     public void setInput(int inputNumber, INDArray input) {
-        if (inputNumber >= getNumInputArrays()) {
+        if (inputNumber >= numInputs()) {
             throw new IllegalArgumentException("Invalid input number");
         }
         inputs[inputNumber] = input;

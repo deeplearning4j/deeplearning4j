@@ -111,34 +111,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return new Pair<>(ret, epsilonNext);
     }
 
-    public void fit() {
-        fit(this.input);
-    }
-
-    @Override
-    public void computeGradientAndScore() {
-        if (this.input == null)
-            return;
-
-        INDArray output = activate(true);
-        setScoreWithZ(output);
-
-    }
-
-
-    @Deprecated
-    protected void setScoreWithZ(INDArray z) {}
-
-    /**
-     * Objective function:  the specified objective
-     * @return the score for the objective
-     */
-
-    @Override
-    public double score() {
-        return score;
-    }
-
     @Override
     public Gradient gradient() {
         return gradient;
@@ -154,16 +126,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void update(INDArray gradient, String paramType) {
         setParam(paramType, getParam(paramType).addi(gradient));
-    }
-
-
-    @Override
-    public ConvexOptimizer getOptimizer() {
-        if (optimizer == null) {
-            Solver solver = new Solver.Builder().model(this).configure(conf()).build();
-            this.optimizer = solver.getOptimizer();
-        }
-        return optimizer;
     }
 
     /**Returns the parameters of the neural network as a flattened row vector
@@ -392,28 +354,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return ret;
     }
 
-    @Override
-    public void fit(INDArray input) {
-        if (input != null) {
-            setInput(input);
-            applyDropOutIfNecessary(true);
-        }
-        if (solver == null) {
-            solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
-        }
-        this.optimizer = solver.getOptimizer();
-        solver.optimize();
-    }
+
 
     @Override
     public String toString() {
         return getClass().getName() + "{" + "conf=" + conf + ", dropoutMask=" + dropoutMask + ", score=" + score
-                        + ", optimizer=" + optimizer + ", listeners=" + iterationListeners + '}';
-    }
-
-    @Override
-    public void accumulateScore(double accum) {
-        score += accum;
+                        + ", optimizer=" + optimizer + '}';
     }
 
     @Override

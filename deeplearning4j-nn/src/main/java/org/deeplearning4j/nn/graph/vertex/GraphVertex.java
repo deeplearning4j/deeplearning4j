@@ -34,19 +34,19 @@ import java.io.Serializable;
  * 3. To allow forward pass and backward pass to be conducted, once the intermediate results are set
  * @author Alex Black
  */
-public interface GraphVertex extends Serializable {
+public interface GraphVertex extends Serializable, Layer {
 
     /** Get the name/label of the GraphVertex
      */
     String getVertexName();
 
     /** Get the index of the GraphVertex */
-    int getVertexIndex();
+    int getIndex();
 
     /** Get the number of input arrays. For example, a Layer may have only one input array, but in general a GraphVertex
      * may have an arbtrary (>=1) number of input arrays (for example, from multiple other layers)
      */
-    int getNumInputArrays();
+    int numInputs();
 
     /** Get the number of outgoing connections from this GraphVertex. A GraphVertex may only have a single output (for
      * example, the activations out of a layer), but this output may be used as the input to an arbitrary number of other
@@ -55,7 +55,7 @@ public interface GraphVertex extends Serializable {
     int getNumOutputConnections();
 
     /** A representation of the vertices that are inputs to this vertex (inputs duing forward pass)<br>
-     * Specifically, if inputVertices[X].getVertexIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
+     * Specifically, if inputVertices[X].getIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
      * then the Zth output connection (see {@link #getNumOutputConnections()} of vertex Y is the Xth input to this vertex
      */
     VertexIndices[] getInputVertices();
@@ -66,7 +66,7 @@ public interface GraphVertex extends Serializable {
     void setInputVertices(VertexIndices[] inputVertices);
 
     /** A representation of the vertices that this vertex is connected to (outputs duing forward pass)
-     * Specifically, if outputVertices[X].getVertexIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
+     * Specifically, if outputVertices[X].getIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
      * then the Xth output of this vertex is connected to the Zth input of vertex Y
      */
     VertexIndices[] getOutputVertices();
@@ -91,12 +91,12 @@ public interface GraphVertex extends Serializable {
     /** Get the Layer (if any). Returns null if {@link #hasLayer()} == false */
     Layer getLayer();
 
-    /** Set the input activations.
-     *
-     * @param inputNumber Must be in range 0 to {@link #getNumInputArrays()}-1
-     * @param input The input array
-     */
-    void setInput(int inputNumber, INDArray input);
+//    /** Set the input activations.
+//     *
+//     * @param inputNumber Must be in range 0 to {@link #numInputs()}-1
+//     * @param input The input array
+//     */
+//    void setInput(int inputNumber, INDArray input);
 
     /** Set the errors (epsilon - aka dL/dActivation) for this GraphVertex */
     void setEpsilon(INDArray epsilon);
@@ -110,11 +110,11 @@ public interface GraphVertex extends Serializable {
     /** Whether the GraphVertex can do backward pass. Typically, this is just whether all errors/epsilons are set */
     boolean canDoBackward();
 
-    /** Do forward pass using the stored inputs
-     * @param training if true: forward pass at training time. If false: forward pass at test time
-     * @return The output (for example, activations) of the GraphVertex
-     */
-    INDArray doForward(boolean training);
+//    /** Do forward pass using the stored inputs
+//     * @param training if true: forward pass at training time. If false: forward pass at test time
+//     * @return The output (for example, activations) of the GraphVertex
+//     */
+//    INDArray activate(boolean training);
 
     /** Do backward pass
      * @param tbptt If true: do backprop using truncated BPTT

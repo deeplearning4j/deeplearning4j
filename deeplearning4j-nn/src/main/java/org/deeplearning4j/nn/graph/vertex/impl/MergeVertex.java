@@ -57,7 +57,7 @@ public class MergeVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "MergeVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\")";
+        return "MergeVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\")";
     }
 
     @Override
@@ -71,7 +71,7 @@ public class MergeVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 

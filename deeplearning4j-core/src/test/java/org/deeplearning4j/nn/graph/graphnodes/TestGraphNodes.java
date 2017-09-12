@@ -47,7 +47,7 @@ public class TestGraphNodes {
         INDArray second = Nd4j.linspace(0, 17, 18).reshape(3, 6).addi(100);
 
         mergeNode.setInputs(first, second);
-        INDArray out = mergeNode.doForward(false);
+        INDArray out = mergeNode.activate(false);
         assertArrayEquals(new int[] {3, 10}, out.shape());
 
         assertEquals(first, out.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4)));
@@ -69,7 +69,7 @@ public class TestGraphNodes {
         INDArray second = Nd4j.linspace(0, 89, 90).reshape(3, 6, 5).addi(100);
 
         mergeNode.setInputs(first, second);
-        INDArray out = mergeNode.doForward(false);
+        INDArray out = mergeNode.activate(false);
         assertArrayEquals(new int[] {3, 10, 5}, out.shape());
 
         assertEquals(first, out.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4), NDArrayIndex.all()));
@@ -90,7 +90,7 @@ public class TestGraphNodes {
         INDArray second = Nd4j.linspace(0, 3, 4).reshape(1, 1, 2, 2).addi(10);
 
         mergeNode.setInputs(first, second);
-        INDArray out = mergeNode.doForward(false);
+        INDArray out = mergeNode.activate(false);
         assertArrayEquals(new int[] {1, 2, 2, 2}, out.shape());
 
         for (int i = 0; i < 2; i++) {
@@ -111,7 +111,7 @@ public class TestGraphNodes {
         second = Nd4j.linspace(0, 17, 18).reshape(1, 2, 3, 3).addi(100);
 
         mergeNode.setInputs(first, second);
-        out = mergeNode.doForward(false);
+        out = mergeNode.activate(false);
         assertArrayEquals(new int[] {1, 4, 3, 3}, out.shape());
 
         for (int i = 0; i < 3; i++) {
@@ -137,7 +137,7 @@ public class TestGraphNodes {
 
         INDArray in = Nd4j.rand(5, 10);
         subset.setInputs(in);
-        INDArray out = subset.doForward(false);
+        INDArray out = subset.activate(false);
         assertEquals(in.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true)), out);
 
         subset.setEpsilon(out);
@@ -149,7 +149,7 @@ public class TestGraphNodes {
         //Test same for CNNs:
         in = Nd4j.rand(new int[] {5, 10, 3, 3});
         subset.setInputs(in);
-        out = subset.doForward(false);
+        out = subset.activate(false);
         assertEquals(in.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true), NDArrayIndex.all(),
                         NDArrayIndex.all()), out);
 
@@ -183,7 +183,7 @@ public class TestGraphNodes {
         GraphVertex gv = graph.getVertex("lastTS");
         gv.setInputs(in);
         //Forward pass:
-        INDArray outFwd = gv.doForward(true);
+        INDArray outFwd = gv.activate(true);
         assertEquals(expOut, outFwd);
         //Backward pass:
         gv.setEpsilon(expOut);
@@ -207,7 +207,7 @@ public class TestGraphNodes {
         expOut.putRow(2, in.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.point(4)));
 
         gv.setInputs(in);
-        outFwd = gv.doForward(true);
+        outFwd = gv.activate(true);
         assertEquals(expOut, outFwd);
 
         String json = conf.toJson();
@@ -239,7 +239,7 @@ public class TestGraphNodes {
 
         GraphVertex gv = graph.getVertex("duplicateTS");
         gv.setInputs(in2d);
-        INDArray outFwd = gv.doForward(true);
+        INDArray outFwd = gv.activate(true);
         assertEquals(expOut, outFwd);
 
         INDArray expOutBackward = expOut.sum(2);
@@ -261,7 +261,7 @@ public class TestGraphNodes {
         INDArray in2 = Nd4j.rand(5, 2);
         INDArray in3 = Nd4j.rand(5, 2);
         unstack.setInputs(in1, in2, in3);
-        INDArray out = unstack.doForward(false);
+        INDArray out = unstack.activate(false);
         assertEquals(in1, out.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
         assertEquals(in2, out.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
         assertEquals(in3, out.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all()));
@@ -331,7 +331,7 @@ public class TestGraphNodes {
         assertArrayEquals(new int[] {15, 7}, p.getFirst().shape());
         assertEquals(MaskState.Active, p.getSecond());
 
-        INDArray out = stack.doForward(false);
+        INDArray out = stack.activate(false);
         assertEquals(in0, out.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.interval(0, 5)));
         assertEquals(in1, out.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(), NDArrayIndex.interval(0, 6)));
         assertEquals(in2, out.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(), NDArrayIndex.interval(0, 7)));
@@ -353,9 +353,9 @@ public class TestGraphNodes {
         unstack0.setInputs(out);
         unstack1.setInputs(out);
         unstack2.setInputs(out);
-        INDArray f0 = unstack0.doForward(true);
-        INDArray f1 = unstack1.doForward(true);
-        INDArray f2 = unstack2.doForward(true);
+        INDArray f0 = unstack0.activate(true);
+        INDArray f1 = unstack1.activate(true);
+        INDArray f2 = unstack2.activate(true);
 
         assertEquals(in0, f0.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 5)));
         assertEquals(in1, f1.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 6)));
@@ -384,9 +384,9 @@ public class TestGraphNodes {
         unstack0.setInputs(in);
         unstack1.setInputs(in);
         unstack2.setInputs(in);
-        INDArray out0 = unstack0.doForward(false);
-        INDArray out1 = unstack1.doForward(false);
-        INDArray out2 = unstack2.doForward(false);
+        INDArray out0 = unstack0.activate(false);
+        INDArray out1 = unstack1.activate(false);
+        INDArray out2 = unstack2.activate(false);
         assertEquals(in.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()), out0);
         assertEquals(in.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()), out1);
         assertEquals(in.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all()), out2);
@@ -416,9 +416,9 @@ public class TestGraphNodes {
         unstack0.setInputs(in);
         unstack1.setInputs(in);
         unstack2.setInputs(in);
-        out0 = unstack0.doForward(false);
-        out1 = unstack1.doForward(false);
-        out2 = unstack2.doForward(false);
+        out0 = unstack0.activate(false);
+        out1 = unstack1.activate(false);
+        out2 = unstack2.activate(false);
 
         assertEquals(in.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()),
                         out0);
@@ -463,7 +463,7 @@ public class TestGraphNodes {
         INDArray in2 = Nd4j.rand(5, 2);
 
         l2.setInputs(in1, in2);
-        INDArray out = l2.doForward(false);
+        INDArray out = l2.activate(false);
 
         INDArray expOut = Nd4j.create(5, 1);
         for (int i = 0; i < 5; i++) {
@@ -505,7 +505,7 @@ public class TestGraphNodes {
         INDArray input = Nd4j.create(inputShape);
 
         reshapeVertex.setInputs(input);
-        INDArray out = reshapeVertex.doForward(false);
+        INDArray out = reshapeVertex.activate(false);
 
         assertArrayEquals(new int[] {1, 736}, out.shape());
 

@@ -75,7 +75,7 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
 
         //First: work out the time series length
         int tsLength = graph.getInput(inputVertexIndex).size(2);

@@ -63,7 +63,7 @@ public class StackVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
         // stacking along dimension 0
         // inputs[] is an array of INDArray (e.g.: shape of 3 x [nExamples, nSize])
         // what we want to do is make a stacked output (e.g.: [3 x nExamples, nSize])
@@ -112,7 +112,7 @@ public class StackVertex extends BaseGraphVertex {
 
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        // this is basically doForward on UnstackVertex
+        // this is basically activate on UnstackVertex
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
@@ -196,6 +196,6 @@ public class StackVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "StackVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ")";
+        return "StackVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + ")";
     }
 }

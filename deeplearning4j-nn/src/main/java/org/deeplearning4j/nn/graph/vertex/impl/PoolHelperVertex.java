@@ -58,7 +58,7 @@ public class PoolHelperVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
@@ -119,6 +119,6 @@ public class PoolHelperVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "PoolHelperVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\")";
+        return "PoolHelperVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\")";
     }
 }

@@ -63,7 +63,7 @@ public class L2Vertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
@@ -85,7 +85,7 @@ public class L2Vertex extends BaseGraphVertex {
 
         INDArray a = inputs[0];
         INDArray b = inputs[1];
-        INDArray out = doForward(tbptt);
+        INDArray out = activate(tbptt);
         Transforms.max(out, eps, false); // in case of 0
 
         INDArray dLdlambda = epsilon; //dL/dlambda aka 'epsilon' - from layer above
@@ -119,7 +119,7 @@ public class L2Vertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "L2Vertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + ")";
+        return "L2Vertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + ")";
     }
 
     @Override

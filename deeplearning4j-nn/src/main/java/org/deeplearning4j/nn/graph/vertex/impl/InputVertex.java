@@ -58,7 +58,7 @@ public class InputVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
         throw new UnsupportedOperationException("Cannot do forward pass for InputVertex");
     }
 

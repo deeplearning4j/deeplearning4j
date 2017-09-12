@@ -466,11 +466,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public void accumulateScore(double accum) {
-
-    }
-
-    @Override
     public INDArray params() {
         return paramsFlattened;
     }

@@ -881,11 +881,6 @@ public class TestOptimizers {
         }
 
         @Override
-        public void accumulateScore(double accum) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public INDArray params() {
             return parameters;
         }

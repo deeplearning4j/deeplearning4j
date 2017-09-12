@@ -70,7 +70,7 @@ public class UnstackVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
@@ -154,7 +154,7 @@ public class UnstackVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "UnstackVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from
+        return "UnstackVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from
                         + ",forwardShape=" + forwardShape + ")";
     }
 }

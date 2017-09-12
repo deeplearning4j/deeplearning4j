@@ -528,7 +528,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         for (GraphVertex gv : vertices) {
             String vertexName = gv.getVertexName();
-            int vertexIndex = gv.getVertexIndex();
+            int vertexIndex = gv.getIndex();
             List<String> vertexInputNames;
             vertexInputNames = vertexInputs.get(vertexName);
 
@@ -716,7 +716,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return;
         }
 
-        int layerIndex = verticesMap.get(layerName).getVertexIndex();
+        int layerIndex = verticesMap.get(layerName).getIndex();
 
         //Need to do partial forward pass. Simply folowing the topological ordering won't be efficient, as we might
         // end up doing forward pass on layers we don't need to.
@@ -792,7 +792,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                 GraphVertex current = vertices[fwdPassOrder[j]];
                                 if (current.isInputVertex()) {
                                     VertexIndices[] inputsTo = current.getOutputVertices();
-                                    INDArray input = inputs[current.getVertexIndex()];
+                                    INDArray input = inputs[current.getIndex()];
 
                                     for (VertexIndices v : inputsTo) {
                                         int vIdx = v.getVertexIndex();
@@ -804,7 +804,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                                 } else {
                                     //Do forward pass:
-                                    INDArray out = current.doForward(true);
+                                    INDArray out = current.activate(true);
 
                                     //Now, set the inputs for the next vertices:
                                     VertexIndices[] outputsTo = current.getOutputVertices();
@@ -1444,7 +1444,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 if (current.isInputVertex()) {
                     VertexIndices[] inputsTo = current.getOutputVertices();
                     // pushing out copy to parent workspace
-                    INDArray input = inputs[current.getVertexIndex()].leverageTo(workspaceExternal);
+                    INDArray input = inputs[current.getIndex()].leverageTo(workspaceExternal);
 
 
                     layerActivations.put(current.getVertexName(), input);
@@ -1480,9 +1480,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     // once again, pushing stuff out of this workspace
                     INDArray out;
                     if (publicApi) {
-                        out = current.doForward(train).detach();
+                        out = current.activate(train).detach();
                     } else {
-                        out = current.doForward(train).leverageTo(workspaceExternal);
+                        out = current.activate(train).leverageTo(workspaceExternal);
                     }
 
                     if (includeNonLayerVertexActivations || current.hasLayer() || current.isOutputVertex()) {
@@ -1701,7 +1701,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     int j = 0;
                     for (VertexIndices v : inputVertices) {
                         GraphVertex gv = vertices[v.getVertexIndex()];
-                        if (setVertexEpsilon[gv.getVertexIndex()]) {
+                        if (setVertexEpsilon[gv.getIndex()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
                             INDArray currentEps = gv.getEpsilon().leverageTo(workspaceExternal);
                             if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
@@ -1717,7 +1717,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         } else {
                             gv.setEpsilon(epsilons[j++]);
                         }
-                        setVertexEpsilon[gv.getVertexIndex()] = true;
+                        setVertexEpsilon[gv.getIndex()] = true;
 
                     }
                 }
@@ -2138,11 +2138,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public void accumulateScore(double accum) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    @Override
     public INDArray params() {
         return params(true);
     }
@@ -2362,7 +2357,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             GraphVertex current = vertices[currVertexIdx];
             if (current.isInputVertex()) {
                 VertexIndices[] inputsTo = current.getOutputVertices();
-                INDArray input = inputs[current.getVertexIndex()];
+                INDArray input = inputs[current.getIndex()];
 
                 for (VertexIndices v : inputsTo) {
                     int vIdx = v.getVertexIndex();
@@ -2382,11 +2377,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         out = ((MultiLayerNetwork) l).rnnTimeStep(current.getInputs()[0]);
                     } else {
                         //non-recurrent layer
-                        out = current.doForward(false);
+                        out = current.activate(false);
                     }
                 } else {
                     //GraphNode
-                    out = current.doForward(false);
+                    out = current.activate(false);
                 }
 
                 if (current.isOutputVertex()) {
@@ -2664,7 +2659,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             GraphVertex current = vertices[currVertexIdx];
             if (current.isInputVertex()) {
                 VertexIndices[] inputsTo = current.getOutputVertices();
-                INDArray input = inputs[current.getVertexIndex()];
+                INDArray input = inputs[current.getIndex()];
 
                 layerActivations.put(current.getVertexName(), input);
 
@@ -2688,11 +2683,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         out = temp.get(temp.size() - 1);
                     } else {
                         //non-recurrent layer
-                        out = current.doForward(training);
+                        out = current.activate(training);
                     }
                     layerActivations.put(current.getVertexName(), out);
                 } else {
-                    out = current.doForward(training);
+                    out = current.activate(training);
                 }
 
                 //Now, set the inputs for the next vertices:
@@ -2750,8 +2745,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 GraphVertex current = vertices[topologicalOrder[i]];
 
                 if (current.isInputVertex()) {
-                    INDArray fMask = featureMaskArrays[current.getVertexIndex()];
-                    map.put(current.getVertexIndex(), new Pair<>(fMask, MaskState.Active));
+                    INDArray fMask = featureMaskArrays[current.getIndex()];
+                    map.put(current.getIndex(), new Pair<>(fMask, MaskState.Active));
                 } else {
                     VertexIndices[] inputVertices = current.getInputVertices();
 

@@ -68,7 +68,7 @@ public class ShiftVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set (ShiftVertex " + vertexName
                             + " idx " + vertexIndex + ")");
@@ -102,7 +102,7 @@ public class ShiftVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "ShiftVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",shiftFactor="
+        return "ShiftVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\",shiftFactor="
                         + shiftFactor + ")";
     }
 

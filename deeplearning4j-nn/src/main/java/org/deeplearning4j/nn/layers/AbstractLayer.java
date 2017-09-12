@@ -47,7 +47,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     protected NeuralNetConfiguration conf;
     protected INDArray dropoutMask;
     protected boolean dropoutApplied = false;
-    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected int index = 0;
     protected INDArray maskArray;
     protected MaskState maskState;
@@ -97,14 +96,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         return input;
     }
 
-    /**
-     * Init the model
-     */
-    @Override
-    public void init() {
-
-    }
-
     @Override
     public abstract Layer clone();
 
@@ -112,6 +103,12 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     public void setInput(INDArray input) {
         this.input = input;
         dropoutApplied = false;
+    }
+
+    @Override
+    public void setInput(int inputNumber, INDArray input){
+        if(inputNumber != 0) throw new UnsupportedOperationException();
+        setInput(input);
     }
 
     @Override
@@ -124,43 +121,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         this.index = index;
     }
 
-
-    @Override
-    public Collection<IterationListener> getListeners() {
-        return iterationListeners;
-    }
-
-    @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
-    }
-
-    /**
-     * This method ADDS additional IterationListener to existing listeners
-     *
-     * @param listeners
-     */
-    @Override
-    public void addListeners(IterationListener... listeners) {
-        if (this.iterationListeners == null) {
-            setListeners(listeners);
-            return;
-        }
-
-        for (IterationListener listener : listeners)
-            iterationListeners.add(listener);
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        setListeners(Arrays.asList(listeners));
-    }
-
-    @Override
-    public void computeGradientAndScore() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
     @Override
     public void update(Gradient gradient) {
         throw new UnsupportedOperationException();
@@ -169,12 +129,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     @Override
     public void update(INDArray gradient, String paramType) {
         throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public ConvexOptimizer getOptimizer() {
-        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
@@ -337,17 +291,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void fit(INDArray input) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), score());
-    }
-
-    @Override
     public INDArray input() {
         return input;
     }
@@ -385,24 +328,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public Gradient gradient() {
-        throw new UnsupportedOperationException(
-                        "Not supported for this layer, or should be overridden for layers requiring it");
-    }
-
-    @Override
-    public void fit() {
-        throw new UnsupportedOperationException(
-                        "Not supported for this layer, or should be overridden for layers requiring it");
-    }
-
-    @Override
-    public double score() {
-        throw new UnsupportedOperationException(
-                        "Not supported for this layer, or should be overridden for layers requiring it");
-    }
-
-    @Override
-    public void accumulateScore(double accum) {
         throw new UnsupportedOperationException(
                         "Not supported for this layer, or should be overridden for layers requiring it");
     }

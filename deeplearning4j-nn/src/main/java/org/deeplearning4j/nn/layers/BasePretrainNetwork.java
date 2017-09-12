@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers;
 
 
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -40,7 +41,7 @@ import java.util.*;
  *
  */
 public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.nn.conf.layers.BasePretrainNetwork>
-                extends BaseLayer<LayerConfT> {
+                extends BaseLayer<LayerConfT> implements Model {
 
     protected Collection<TrainingListener> trainingListeners = null;
 

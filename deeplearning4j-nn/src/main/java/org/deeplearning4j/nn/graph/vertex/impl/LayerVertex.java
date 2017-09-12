@@ -96,7 +96,7 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: all inputs not set");
 
@@ -107,7 +107,7 @@ public class LayerVertex extends BaseGraphVertex {
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         if (!canDoBackward()) {
             throw new IllegalStateException("Cannot do backward pass: all epsilons not set. Layer " + vertexName
-                            + " (idx " + vertexIndex + ") numInputs " + getNumInputArrays() + "; numOutputs "
+                            + " (idx " + vertexIndex + ") numInputs " + numInputs() + "; numOutputs "
                             + getNumOutputConnections());
         }
 

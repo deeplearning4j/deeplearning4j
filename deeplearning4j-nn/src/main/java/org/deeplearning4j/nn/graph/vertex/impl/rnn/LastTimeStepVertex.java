@@ -74,7 +74,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray activate(boolean training) {
         //First: get the mask arrays for the given input, if any
         INDArray[] inputMaskArrays = graph.getInputMaskArrays();
         INDArray mask = (inputMaskArrays != null ? inputMaskArrays[inputIdx] : null);
