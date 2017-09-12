@@ -54,6 +54,21 @@ public class Upsampling1D extends Upsampling2D {
     }
 
     @Override
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                                                       Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams) {
+        org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D ret =
+                new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D(conf);
+        ret.setListeners(iterationListeners);
+        ret.setIndex(layerIndex);
+        ret.setParamsViewArray(layerParamsView);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(paramTable);
+        ret.setConf(conf);
+        return ret;
+    }
+
+    @Override
     public Upsampling1D clone() {
         Upsampling1D clone = (Upsampling1D) super.clone();
         return clone;

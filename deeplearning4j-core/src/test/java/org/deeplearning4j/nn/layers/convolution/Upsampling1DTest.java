@@ -38,28 +38,28 @@ public class Upsampling1DTest {
         double[] outArray = new double[] {1., 1., 2., 2., 3., 3., 4., 4.};
         INDArray containedExpectedOut = Nd4j.create(outArray, new int[] {1, 1, 8});
         INDArray containedInput = getContainedData();
-//        INDArray input = getData();
+        INDArray input = getData();
         Layer layer =  getUpsampling1DLayer();
 
         INDArray containedOutput = layer.activate(containedInput);
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
         assertEquals(containedExpectedOut, containedOutput);
 
-//        INDArray output = layer.activate(input);
-//        assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, outputLength},
-//                        output.shape()));
-//        assertEquals(nChannelsIn, output.size(1), 1e-4);
+        INDArray output = layer.activate(input);
+        assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, outputLength},
+                        output.shape()));
+        assertEquals(nChannelsIn, output.size(1), 1e-4);
     }
 
 
     @Test
     public void testUpsampling1DBackprop() throws Exception {
         INDArray expectedContainedEpsilonInput =
-                        Nd4j.create(new double[] {1., 1., 1., 1.},
-                                new int[] {1, 1, 4});
+                        Nd4j.create(new double[] {1., 3., 2., 6., 7., 2., 5., 5.},
+                                new int[] {1, 1, 8});
 
-        INDArray expectedContainedEpsilonResult = Nd4j.create(new double[] {4., 4.},
-                        new int[] {1, 1, 2});
+        INDArray expectedContainedEpsilonResult = Nd4j.create(new double[] {4., 8., 9., 10.},
+                        new int[] {1, 1, 4});
 
         INDArray input = getContainedData();
 
@@ -96,7 +96,8 @@ public class Upsampling1DTest {
         DataSetIterator data = new MnistDataSetIterator(5, 5);
         DataSet mnist = data.next();
         nExamples = mnist.numExamples();
-        return mnist.getFeatureMatrix().reshape(nExamples, nChannelsIn, inputLength);
+        INDArray features = mnist.getFeatureMatrix().reshape(nExamples, nChannelsIn, inputLength, inputLength);
+        return features.slice(0, 3);
     }
 
     private INDArray getContainedData() {

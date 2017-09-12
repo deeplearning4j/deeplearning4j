@@ -63,7 +63,12 @@ public class Upsampling1D extends Upsampling2D {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+
+        int size = layerConf().getSize();
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
+        // we replicate the error term times "size" so that backprop works properly on it
+        epsilon = epsilon.repeat(3, size);
+
         INDArray originalInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
@@ -71,10 +76,11 @@ public class Upsampling1D extends Upsampling2D {
         INDArray epsNext = gradientEpsNext.getSecond();
         Gradient gradient = gradientEpsNext.getFirst();
 
-        epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
+        epsNext = epsNext.slice(0, 3);
         input = originalInput;
 
-        return new Pair<>(gradient, epsNext);
+        // Since we aggregate the gradient across "size" slices, we need to normalize afterwards.
+        return new Pair<>(gradient, epsNext.divi(size));
     }
 
     @Override
@@ -89,7 +95,7 @@ public class Upsampling1D extends Upsampling2D {
         INDArray preOutput = super.preOutput(training, forBackprop);
 
         input = originalInput;
-        preOutput = preOutput.reshape(preOutput.size(0), preOutput.size(1), preOutput.size(2));
+        preOutput = preOutput.slice(0, 3);
 
         return preOutput;
     }

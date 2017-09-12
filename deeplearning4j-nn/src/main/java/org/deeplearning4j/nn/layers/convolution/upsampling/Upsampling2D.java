@@ -100,7 +100,6 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
                 .build();
         Nd4j.getExecutioner().exec(op);
 
-
         return new Pair<>(gradient, reshapedEpsilon);
     }
 
