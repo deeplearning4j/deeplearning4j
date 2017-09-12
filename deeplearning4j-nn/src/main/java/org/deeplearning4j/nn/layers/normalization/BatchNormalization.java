@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
@@ -65,8 +66,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             } else {
                 Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
                 if (p.getProperty("backend").equals("CUDA")) {
-                    log.info("Consider using cuDNN by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
+                    OneTimeLogger.info(log, "cuDNN not found: "
+                                    + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
+                                    + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
                 }
             }
         }
