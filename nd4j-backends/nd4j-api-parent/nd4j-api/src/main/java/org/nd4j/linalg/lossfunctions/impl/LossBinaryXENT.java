@@ -3,6 +3,8 @@ package org.nd4j.linalg.lossfunctions.impl;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.primitives.Pair;
@@ -66,6 +68,20 @@ public class LossBinaryXENT implements ILossFunction {
      * the labels/output dimension 1 size.
      * A weight vector of 1s should give identical results to no weight vector.
      *
+     * @param clipEps Epsilon value for clipping. Probabilities are clipped in range of [eps, 1-eps]. Default eps: 1e-5
+     */
+    public LossBinaryXENT(double clipEps){
+        this(clipEps, null);
+    }
+
+    /**
+     * Binary cross entropy where each the output is
+     * (optionally) weighted/scaled by a fixed scalar value.
+     * Note that the weights array must be a row vector, of length equal to
+     * the labels/output dimension 1 size.
+     * A weight vector of 1s should give identical results to no weight vector.
+     *
+     * @param clipEps Epsilon value for clipping. Probabilities are clipped in range of [eps, 1-eps]. Default eps: 1e-5
      * @param weights Weights array (row vector). May be null.
      */
     public LossBinaryXENT(@JsonProperty("clipEps") double clipEps, @JsonProperty("weights") INDArray weights){
@@ -99,8 +115,12 @@ public class LossBinaryXENT implements ILossFunction {
             //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
             INDArray output = activationFn.getActivation(preOutput.dup(), true);
             if (clipEps > 0.0) {
-                BooleanIndexing.replaceWhere(output, clipEps, Conditions.lessThan(clipEps));
-                BooleanIndexing.replaceWhere(output, 1.0 - clipEps, Conditions.greaterThan(1.0 - clipEps));
+                CustomOp op = DynamicCustomOp.builder("clipbyvalue")
+                        .setInputs(output)
+                        .callInplace(true)
+                        .setFloatingPointArguments(clipEps, 1.0-clipEps)
+                        .build();
+                Nd4j.getExecutioner().exec(op);
             }
             scoreArr = Transforms.log(output, true).muli(labels);
             INDArray secondTerm = output.rsubi(1);
@@ -158,8 +178,12 @@ public class LossBinaryXENT implements ILossFunction {
 
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
         if (clipEps > 0.0) {
-            BooleanIndexing.replaceWhere(output, clipEps, Conditions.lessThan(clipEps));
-            BooleanIndexing.replaceWhere(output, 1.0 - clipEps, Conditions.greaterThan(1.0 - clipEps));
+            CustomOp op = DynamicCustomOp.builder("clipbyvalue")
+                    .setInputs(output)
+                    .callInplace(true)
+                    .setFloatingPointArguments(clipEps, 1.0-clipEps)
+                    .build();
+            Nd4j.getExecutioner().exec(op);
         }
 
         INDArray numerator = output.sub(labels);
