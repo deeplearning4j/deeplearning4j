@@ -12,7 +12,7 @@ import static org.junit.Assert.assertEquals;
 
 public class TestUtils {
 
-    public static void testModelSerialization(MultiLayerNetwork net){
+    public static MultiLayerNetwork testModelSerialization(MultiLayerNetwork net){
 
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -24,13 +24,15 @@ public class TestUtils {
 
             assertEquals(net.getLayerWiseConfigurations(), restored.getLayerWiseConfigurations());
             assertEquals(net.params(), restored.params());
+
+            return restored;
         } catch (IOException e){
             //Should never happen
             throw new RuntimeException(e);
         }
     }
 
-    public static void testModelSerialization(ComputationGraph net){
+    public static ComputationGraph testModelSerialization(ComputationGraph net){
 
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -42,6 +44,8 @@ public class TestUtils {
 
             assertEquals(net.getConfiguration(), restored.getConfiguration());
             assertEquals(net.params(), restored.params());
+
+            return restored;
         } catch (IOException e){
             //Should never happen
             throw new RuntimeException(e);

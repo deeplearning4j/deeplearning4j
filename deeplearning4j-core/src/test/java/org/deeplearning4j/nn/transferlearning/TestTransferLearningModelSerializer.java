@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.transferlearning;
 
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -10,7 +11,6 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -18,8 +18,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -60,15 +58,7 @@ public class TestTransferLearningModelSerializer {
         assertTrue(withFrozen.getLayerWiseConfigurations().getConf(1)
                         .getLayer() instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
 
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ModelSerializer.writeModel(withFrozen, baos, false);
-        baos.close();
-
-        byte[] asBytes = baos.toByteArray();
-
-        ByteArrayInputStream bais = new ByteArrayInputStream(asBytes);
-        MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais);
+        MultiLayerNetwork restored = TestUtils.testModelSerialization(withFrozen);
 
         assertTrue(restored.getLayer(0) instanceof FrozenLayer);
         assertTrue(restored.getLayer(1) instanceof FrozenLayer);
@@ -118,15 +108,7 @@ public class TestTransferLearningModelSerializer {
         assertTrue(l0 instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
         assertTrue(l1 instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
 
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ModelSerializer.writeModel(withFrozen, baos, false);
-        baos.close();
-
-        byte[] asBytes = baos.toByteArray();
-
-        ByteArrayInputStream bais = new ByteArrayInputStream(asBytes);
-        ComputationGraph restored = ModelSerializer.restoreComputationGraph(bais);
+        ComputationGraph restored = TestUtils.testModelSerialization(withFrozen);
 
         assertTrue(restored.getLayer(0) instanceof FrozenLayer);
         assertTrue(restored.getLayer(1) instanceof FrozenLayer);

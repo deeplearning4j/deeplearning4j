@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -1182,14 +1183,7 @@ public class MultiLayerTest {
 
         assertEquals(4, net.getLayerWiseConfigurations().getEpochCount());
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        ModelSerializer.writeModel(net, baos, true);
-        byte[] bytes = baos.toByteArray();
-
-        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-
-        MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
+        MultiLayerNetwork restored = TestUtils.testModelSerialization(net);
         assertEquals(4, restored.getLayerWiseConfigurations().getEpochCount());
     }
 }
