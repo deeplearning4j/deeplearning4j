@@ -127,6 +127,8 @@ namespace nd4j {
             OpRegistrator() {};
             ~OpRegistrator() {};
 
+            std::map<Nd4jIndex, std::string> _msvc;
+
             std::map<Nd4jIndex, nd4j::ops::DeclarableOp<float> *> _declarablesLF;
             std::map<std::string, nd4j::ops::DeclarableOp<float> *> _declarablesF;
 
@@ -147,6 +149,11 @@ namespace nd4j {
                 return _INSTANCE;
             }
 
+            void updateMSVC(Nd4jIndex newHash, std::string& oldName) {
+                std::pair<Nd4jIndex, std::string> pair(newHash, oldName);
+                _msvc.insert(pair);
+            }
+
             template <typename T>
             std::string local_to_string(T value)
             {
@@ -161,10 +168,19 @@ namespace nd4j {
             }
 
             const char * getAllCustomOperations() {
+                nd4j_printf("Started for real...\n", "");
                 _locker.lock();
 
+                nd4j_printf("Lock'n'Load\n", "");
+
                 if (!isInit) {
+                    nd4j_printf("Initialization started\n", "");
                     for (std::map<std::string, nd4j::ops::DeclarableOp<float>*>::iterator it=_declarablesF.begin(); it!=_declarablesF.end(); ++it) {
+                        nd4j_printf("Adding op: %s\n", it->first.c_str());
+                        nd4j_printf("Op is null: %i;\n", it->second == nullptr);
+                        nd4j_printf("Descriptor is null: %i;\n", it->second->getOpDescriptor() == nullptr);
+                        nd4j_printf("HashLong: %lld\n", it->second->getOpDescriptor()->getHash());
+                        nd4j_printf("Hash: %s\n", local_to_string(it->second->getOpDescriptor()->getHash()).c_str());
                          std::string op = it->first + ":"
                                     + local_to_string(it->second->getOpDescriptor()->getHash()) + ":"
                                     + local_to_string(it->second->getOpDescriptor()->getNumberOfInputs()) + ":"
@@ -173,7 +189,11 @@ namespace nd4j {
                                     + local_to_string(it->second->getOpDescriptor()->getNumberOfTArgs())  + ":"
                                     + local_to_string(it->second->getOpDescriptor()->getNumberOfIArgs())  + ":"
                                     + ";" ;
-                        _opsList += op;
+
+                        nd4j_printf("Concat incoming\n", "");
+                        std::string tmp(_opsList + op);
+                        nd4j_printf("Assign incoming\n", "");
+                        _opsList = tmp;
                     }
 
                     isInit = true;
@@ -197,6 +217,8 @@ namespace nd4j {
                 auto str = new std::string(name);
                 std::pair<std::string, nd4j::ops::DeclarableOp<float>*> pair(*str, op);
                 _declarablesF.insert(pair);
+
+                nd4j_printf("Registering Float operation: [%s]\n", name);
 
                 auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(*str);
                 std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<float>*> pair2(hash, op);
@@ -247,7 +269,7 @@ namespace nd4j {
              */
              nd4j::ops::DeclarableOp<float> *getOperationFloat(std::string& name) {
                 if (!_declarablesF.count(name)) {
-                    nd4j_verbose("Unknown operation requested: [%s]\n", name.c_str())
+                    nd4j_printf("Unknown operation requested: [%s]\n", name.c_str());
                     return nullptr;
                 }
 
@@ -257,8 +279,21 @@ namespace nd4j {
 
             nd4j::ops::DeclarableOp<float> *getOperationFloat(Nd4jIndex hash) {
                 if (!_declarablesLF.count(hash)) {
-                    nd4j_verbose("Unknown operation requested by hash: [%lld]\n", hash);
-                    return nullptr;
+                    if (!_msvc.count(hash)) {
+                        nd4j_printf("Unknown operation requested by hash: [%lld]\n", hash);
+                        return nullptr;
+                    } else {
+                        _locker.lock();
+
+                        auto str = _msvc.at(hash);
+                        auto op = _declarablesF.at(str);
+                        auto oHash = op->getOpDescriptor()->getHash();
+
+                        std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<T>*> pair(oHash, op);
+                        _declarablesLF.insert(pair);
+
+                        _locker.unlock();
+                    }
                 }
 
                 return _declarablesLF.at(hash);
@@ -267,7 +302,7 @@ namespace nd4j {
 
             nd4j::ops::DeclarableOp<float16> *getOperationHalf(Nd4jIndex hash) {
                 if (!_declarablesLH.count(hash)) {
-                    nd4j_verbose("Unknown operation requested by hash: [%lld]\n", hash);
+                    nd4j_printf("Unknown operation requested by hash: [%lld]\n", hash);
                     return nullptr;
                 }
 
@@ -283,7 +318,7 @@ namespace nd4j {
 
             nd4j::ops::DeclarableOp<float16> *getOperationHalf(std::string& name) {
                 if (!_declarablesH.count(name)) {
-                    nd4j_verbose("Unknown operation requested: [%s]\n", name.c_str())
+                    nd4j_printf("Unknown operation requested: [%s]\n", name.c_str());
                     return nullptr;
                 }
 
@@ -299,7 +334,7 @@ namespace nd4j {
 
             nd4j::ops::DeclarableOp<double> *getOperationDouble(Nd4jIndex hash) {
                 if (!_declarablesLD.count(hash)) {
-                    nd4j_verbose("Unknown operation requested by hash: [%lld]\n", hash);
+                    nd4j_printf("Unknown operation requested by hash: [%lld]\n", hash);
                     return nullptr;
                 }
 
@@ -308,7 +343,7 @@ namespace nd4j {
 
             nd4j::ops::DeclarableOp<double> *getOperationDouble(std::string& name) {
                 if (!_declarablesD.count(name)) {
-                    nd4j_verbose("Unknown operation requested: [%s]\n", name.c_str())
+                    nd4j_printf("Unknown operation requested: [%s]\n", name.c_str());
                     return nullptr;
                 }
 
@@ -320,6 +355,15 @@ namespace nd4j {
         struct __registratorSynonymFloat {
             __registratorSynonymFloat(const char *name, const char *oname) {
                 OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationFloat(oname);
+                if (ptr == nullptr) {
+                    nd4j_printf("OpName lookup failed: %s => %s\n", name, oname);
+
+                    std::string newName(name);
+                    std::string oldName(oname);
+
+                    OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
+                    return;
+                }
                 OpRegistrator::getInstance()->registerOperationFloat(name, ptr);
             }
         };
@@ -328,6 +372,15 @@ namespace nd4j {
         struct __registratorSynonymHalf {
             __registratorSynonymHalf(const char *name, const char *oname) {
                 OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationHalf(oname);
+                if (ptr == nullptr) {
+                    nd4j_printf("OpName lookup failed: %s => %s\n", name, oname);
+
+                    std::string newName(name);
+                    std::string oldName(oname);
+
+                    OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
+                    return;
+                }
                 OpRegistrator::getInstance()->registerOperationHalf(name, ptr);
             }
         };
@@ -336,6 +389,15 @@ namespace nd4j {
         struct __registratorSynonymDouble {
             __registratorSynonymDouble(const char *name, const char *oname) {
                 OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationDouble(oname);
+                if (ptr == nullptr) {
+                    nd4j_printf("OpName lookup failed: %s => %s\n", name, oname);
+
+                    std::string newName(name);
+                    std::string oldName(oname);
+
+                    OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
+                    return;
+                }
                 OpRegistrator::getInstance()->registerOperationDouble(name, ptr);
             }
         };
