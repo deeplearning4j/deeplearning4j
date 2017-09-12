@@ -52,7 +52,6 @@ public class CustomLayer extends FeedForwardLayer {
                     Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
                     boolean initializeParams) {
         CustomLayerImpl ret = new CustomLayerImpl(conf);
-        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

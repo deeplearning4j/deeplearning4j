@@ -73,11 +73,6 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         return input;
     }
 
-    @Override
-    public Layer.Type type() {
-        return Layer.Type.RECURRENT;
-    }
-
 //    @Override
 //    protected INDArray preOutput2d(boolean training) {
 //        if (input.rank() == 3) {

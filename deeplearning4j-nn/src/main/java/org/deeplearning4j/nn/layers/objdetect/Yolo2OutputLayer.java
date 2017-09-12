@@ -573,11 +573,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray preOutput(boolean training) {
-        return input;
-    }
-
-    @Override
     public Pair<Gradient, Double> gradientAndScore() {
         return new Pair<>(gradient(), score());
     }

@@ -653,11 +653,12 @@ public class TestComputationGraphNetwork {
         INDArray olEpsilon = olPairStd.getSecond();
 
         e.feedForward(inData, true);
-        Gradient extErrorGrad = e.backpropGradient(olEpsilon);
+        Pair<Gradient,INDArray> extErrorGrad = e.backpropGradient(olEpsilon);
+
 
         int nParamsDense = 10 * 10 + 10;
         assertEquals(sGrad.gradient().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsDense)),
-                extErrorGrad.gradient());
+                extErrorGrad.getFirst().gradient());
 
     }
 

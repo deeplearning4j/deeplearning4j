@@ -24,9 +24,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.params.PretrainParamInitializer;
-import org.deeplearning4j.optimize.Solver;
-import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -116,13 +113,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void update(Gradient gradient) {
         for (String paramType : gradient.gradientForVariable().keySet()) {
-            update(gradient.getGradientFor(paramType), paramType);
+            getParam(paramType).subi(gradient.getGradientFor(paramType));
         }
-    }
-
-    @Override
-    public void update(INDArray gradient, String paramType) {
-        setParam(paramType, getParam(paramType).addi(gradient));
     }
 
     /**Returns the parameters of the neural network as a flattened row vector
@@ -292,51 +284,35 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-        //L2 norm: sqrt( sum_i x_i^2 ) -> want sum squared weights, so l2 norm squared
-        double l2Sum = 0.0;
-        if (conf.getL2ByParam(DefaultParamInitializer.WEIGHT_KEY) > 0.0) {
-            double l2Norm = getParam(DefaultParamInitializer.WEIGHT_KEY).norm2Number().doubleValue();
-            l2Sum += 0.5 * conf.getL2ByParam(DefaultParamInitializer.WEIGHT_KEY) * l2Norm * l2Norm;
-        }
-        if (hasBias() && conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
-            double l2Norm = getParam(DefaultParamInitializer.BIAS_KEY).norm2Number().doubleValue();
-            l2Sum += 0.5 * conf.getL2ByParam(DefaultParamInitializer.BIAS_KEY) * l2Norm * l2Norm;
-        }
-        return l2Sum;
+        return l1l2(false, backpropParamsOnly);
     }
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        double l1Sum = 0.0;
-        if (conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY) > 0.0) {
-            l1Sum += conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY)
-                            * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
-        }
-        if (hasBias() && conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
-            l1Sum += conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY)
-                            * getParam(DefaultParamInitializer.BIAS_KEY).norm1Number().doubleValue();
-        }
-        return l1Sum;
+        return l1l2(true, backpropParamsOnly);
     }
 
-    @Override
-    public Layer clone() {
-        Layer layer = null;
-        try {
-            Constructor c = getClass().getConstructor(NeuralNetConfiguration.class);
-            layer = (Layer) c.newInstance(conf);
-            Map<String, INDArray> linkedTable = new LinkedHashMap<>();
-            for (Map.Entry<String, INDArray> entry : params.entrySet()) {
-                linkedTable.put(entry.getKey(), entry.getValue().dup());
+    private double l1l2(boolean l1, boolean backpropParamsOnly){
+        if(paramsFlattened == null) return 0.0;
+        double l1l2 = 0.0;
+        for(Map.Entry<String,INDArray> e : paramTable(backpropParamsOnly).entrySet()){
+            if(l1){
+                double l1Coeff = conf().getL1ByParam(e.getKey());
+                if(l1Coeff > 0.0){
+                    l1l2 += l1Coeff * e.getValue().norm1Number().doubleValue();
+                }
+            } else {
+                double l2Coeff = conf().getL2ByParam(e.getKey());
+                if(l2Coeff > 0.0){
+                    //L2 norm: sqrt( sum_i x_i^2 ) -> want sum squared weights, so l2 norm squared
+                    double norm2 = e.getValue().norm1Number().doubleValue();
+                    l1l2 += l2Coeff * norm2 * norm2;
+                }
             }
-            layer.setParamTable(linkedTable);
-        } catch (Exception e) {
-            e.printStackTrace();
         }
-
-        return layer;
-
+        return l1l2;
     }
+
 
     /**
      * The number of parameters for the model

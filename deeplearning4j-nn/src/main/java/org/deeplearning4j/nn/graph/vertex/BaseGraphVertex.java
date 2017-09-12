@@ -21,14 +21,17 @@ package org.deeplearning4j.nn.graph.vertex;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
+import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 /** BaseGraphVertex defines a set of common functionality for GraphVertex instances.
  */
 @Data
-public abstract class BaseGraphVertex implements GraphVertex {
+public abstract class BaseGraphVertex extends AbstractLayer implements GraphVertex {
 
     protected ComputationGraph graph;
 
@@ -182,5 +185,23 @@ public abstract class BaseGraphVertex implements GraphVertex {
     public void clearVertex() {
         clear();
         epsilon = null;
+    }
+
+
+
+
+    @Override
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+        return null;
+    }
+
+    @Override
+    public boolean isPretrainLayer() {
+        return false;
+    }
+
+    @Override
+    public void clearNoiseWeightParams() {
+
     }
 }

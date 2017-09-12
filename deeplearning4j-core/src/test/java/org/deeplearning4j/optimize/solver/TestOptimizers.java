@@ -333,6 +333,21 @@ public class TestOptimizers {
         }
 
         @Override
+        public void fit(DataSetIterator iter) {
+
+        }
+
+        @Override
+        public void fit(INDArray examples, INDArray labels) {
+
+        }
+
+        @Override
+        public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
+
+        }
+
+        @Override
         public int numParams(boolean backwards) {
             return 0;
         }
@@ -364,6 +379,11 @@ public class TestOptimizers {
 
         @Override
         public void setInput(INDArray input) {
+
+        }
+
+        @Override
+        public void setInput(int inputNumber, INDArray input) {
 
         }
 
@@ -521,6 +541,21 @@ public class TestOptimizers {
         }
 
         @Override
+        public void fit(DataSetIterator iter) {
+
+        }
+
+        @Override
+        public void fit(INDArray examples, INDArray labels) {
+
+        }
+
+        @Override
+        public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
+
+        }
+
+        @Override
         public int numParams(boolean backwards) {
             return 0;
         }
@@ -553,6 +588,11 @@ public class TestOptimizers {
 
         @Override
         public void setInput(INDArray input) {
+
+        }
+
+        @Override
+        public void setInput(int inputNumber, INDArray input) {
 
         }
 
@@ -719,6 +759,21 @@ public class TestOptimizers {
         }
 
         @Override
+        public void fit(DataSetIterator iter) {
+
+        }
+
+        @Override
+        public void fit(INDArray examples, INDArray labels) {
+
+        }
+
+        @Override
+        public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
+
+        }
+
+        @Override
         public int numParams(boolean backwards) {
             return 0;
         }
@@ -750,6 +805,11 @@ public class TestOptimizers {
 
         @Override
         public void setInput(INDArray input) {
+
+        }
+
+        @Override
+        public void setInput(int inputNumber, INDArray input) {
 
         }
 
@@ -821,13 +881,6 @@ public class TestOptimizers {
         @Override
         public void fit() {
             throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void update(INDArray gradient, String paramType) {
-            if (!"W".equals(paramType))
-                throw new UnsupportedOperationException();
-            parameters.subi(gradient);
         }
 
         @Override
@@ -960,11 +1013,6 @@ public class TestOptimizers {
 
         @Override
         public void clear() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Type type() {
             throw new UnsupportedOperationException();
         }
 

@@ -27,11 +27,6 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray preOutput(boolean training) {
-        return activate(training);
-    }
-
-    @Override
     public boolean isPretrainLayer() {
         return false;
     }
@@ -39,11 +34,6 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     @Override
     public void clearNoiseWeightParams() {
         //No op
-    }
-
-    @Override
-    public Type type() {
-        return Type.CONVOLUTIONAL;
     }
 
     @Override
@@ -72,20 +62,5 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                         NDArrayIndex.interval(padding[2], padding[2] + inShape[3])}, input);
 
         return out;
-    }
-
-    @Override
-    public Layer clone() {
-        return new ZeroPaddingLayer(conf.clone());
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
     }
 }

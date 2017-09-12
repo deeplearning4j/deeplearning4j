@@ -69,11 +69,6 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         return 0;
     }
 
-    @Override
-    public Type type() {
-        return Type.SUBSAMPLING;
-    }
-
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
@@ -101,11 +96,6 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         Nd4j.getExecutioner().exec(op);
 
         return new Pair<>(gradient, reshapedEpsilon);
-    }
-
-    @Override
-    public INDArray preOutput(boolean training) {
-        return preOutput(training, false);
     }
 
     public INDArray preOutput(boolean training, boolean forBackprop) {
@@ -153,7 +143,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
 
-        INDArray z = preOutput(training);
+        INDArray z = preOutput(training, false);
 
         // we do cache only if cache workspace exists. Skip otherwise
         if (training && cacheMode != CacheMode.NONE
@@ -189,12 +179,6 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public int numParams() {
         return 0;
-    }
-
-
-    @Override
-    public void update(INDArray gradient, String paramType) {
-
     }
 
     @Override

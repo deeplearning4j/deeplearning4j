@@ -234,29 +234,6 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     }
 
 
-    @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        double l2Sum = super.calcL2(true);
-        if (backpropParamsOnly)
-            return l2Sum;
-        if (conf.getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0) {
-            double l2Norm = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).norm2Number().doubleValue();
-            l2Sum += 0.5 * conf.getL2ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) * l2Norm * l2Norm;
-        }
-        return l2Sum;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        double l1Sum = super.calcL1(true);
-        if (conf.getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0) {
-            l1Sum += conf.getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY)
-                            * getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).norm1Number().doubleValue();
-        }
-        return l1Sum;
-    }
-
-
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {

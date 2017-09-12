@@ -215,11 +215,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public Type type() {
-        return Type.FEED_FORWARD;
-    }
-
-    @Override
     public void fit(INDArray input) {
         // no-op
     }

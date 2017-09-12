@@ -213,11 +213,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
     }
 
-    @Override
-    public Type type() {
-        return null;
-    }
-
     /**
      * This method returns configuration of this ComputationGraph
      *
@@ -2191,11 +2186,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public void update(INDArray gradient, String paramType) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    @Override
     public void update(Gradient gradient) {
         if (gradient.gradient().length() != numParams(true))
             throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true));
@@ -2210,7 +2200,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             // Update graph gradient
             this.gradient.gradientForVariable().put(key, val);
             // Update layer params
-            getLayer(layerName).update(val, paramType);
+//            getLayer(layerName).update(val, paramType);
+            throw new UnsupportedOperationException("Not yet implemented");
         }
         // Update layerwise gradient view
         setBackpropGradientsViewArray(gradient.gradient());
@@ -2218,11 +2209,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     private void update(Task task) {
         if (!initDone) {
-            initDone = true;
-            Heartbeat heartbeat = Heartbeat.getInstance();
-            task = ModelSerializer.taskByModel(this);
-            Environment env = EnvironmentUtils.buildEnvironment();
-            heartbeat.reportEvent(Event.STANDALONE, env, task);
+//            initDone = true;
+//            Heartbeat heartbeat = Heartbeat.getInstance();
+//            task = ModelSerializer.taskByModel(this);
+//            Environment env = EnvironmentUtils.buildEnvironment();
+//            heartbeat.reportEvent(Event.STANDALONE, env, task);
+            throw new UnsupportedOperationException("Not yet implemented");
         }
     }
 

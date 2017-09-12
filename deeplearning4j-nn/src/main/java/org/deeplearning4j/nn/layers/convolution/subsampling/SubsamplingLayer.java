@@ -90,21 +90,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         }
     }
 
-    @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public Type type() {
-        return Type.SUBSAMPLING;
-    }
-
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
@@ -370,12 +355,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         return 0;
     }
 
-
-    @Override
-    public void update(INDArray gradient, String paramType) {
-
-    }
-
     @Override
     public INDArray params() {
         return null;
@@ -390,11 +369,5 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     public void setParams(INDArray params) {
 
     }
-
-    @Override
-    public INDArray preOutput(boolean training) {
-        return activate(training);
-    }
-
 
 }

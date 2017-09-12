@@ -18,8 +18,7 @@
 
 package org.deeplearning4j.nn.layers;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
@@ -43,7 +42,9 @@ import java.util.*;
 @NoArgsConstructor
 public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer> implements Layer {
 
-    protected INDArray input, preOutput;
+    protected INDArray input;
+    @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
+    protected INDArray preOutput;
     protected NeuralNetConfiguration conf;
     protected boolean dropoutApplied = false;
     protected int index = 0;
@@ -96,9 +97,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public abstract Layer clone();
-
-    @Override
     public void setInput(INDArray input) {
         this.input = input;
         dropoutApplied = false;
@@ -122,11 +120,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public void update(Gradient gradient) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void update(INDArray gradient, String paramType) {
         throw new UnsupportedOperationException();
     }
 
@@ -200,18 +193,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         return Collections.emptyMap();
     }
 
-//    @Override
-//    public INDArray preOutput(INDArray x, boolean training) {
-//        if (x == null) {
-//            throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
-//        }
-//        setInput(x);
-//        return preOutput(training);
-//    }
-
-
-    public abstract INDArray preOutput(boolean training);
-
     protected void applyMask(INDArray to) {
         to.muliColumnVector(maskArray);
     }
@@ -267,11 +248,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
             }
             dropoutApplied = true;
         }
-    }
-
-    @Override
-    public Type type() {
-        return Type.FEED_FORWARD;
     }
 
     /**

@@ -641,32 +641,6 @@ public class MultiLayerTest {
     }
 
     @Test
-    public void testPredict() throws Exception {
-
-        Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .weightInit(WeightInit.XAVIER).seed(12345L).list()
-                        .layer(0, new DenseLayer.Builder().nIn(784).nOut(50).activation(Activation.RELU).build())
-                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                        .activation(Activation.SOFTMAX).nIn(50).nOut(10).build())
-                        .pretrain(false).backprop(true).setInputType(InputType.convolutional(28, 28, 1)).build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-        DataSetIterator ds = new MnistDataSetIterator(10, 10);
-        net.fit(ds);
-
-        DataSetIterator testDs = new MnistDataSetIterator(1, 1);
-        DataSet testData = testDs.next();
-        testData.setLabelNames(Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"));
-        String actualLables = testData.getLabelName(0);
-        List<String> prediction = net.predict(testData);
-        assertTrue(actualLables != null);
-        assertTrue(prediction.get(0) != null);
-    }
-
-    @Test
     @Ignore
     public void testCid() throws Exception {
         System.out.println(EnvironmentUtils.buildCId());

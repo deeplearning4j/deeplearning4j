@@ -117,9 +117,7 @@ public class GravesLSTMTest {
         assertArrayEquals(nextEpsilon.shape(), new int[] {miniBatchSize, nIn, timeSeriesLength});
 
         //Check update:
-        for (String s : outGradient.gradientForVariable().keySet()) {
-            lstm.update(outGradient.getGradientFor(s), s);
-        }
+        lstm.update(outGradient);
     }
 
     @Test

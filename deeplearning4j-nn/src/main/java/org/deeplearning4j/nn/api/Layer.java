@@ -22,12 +22,9 @@ package org.deeplearning4j.nn.api;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.io.Serializable;
-import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -37,11 +34,7 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
-public interface Layer extends Serializable, Cloneable {
-
-    enum Type {
-        FEED_FORWARD, RECURRENT, CONVOLUTIONAL, SUBSAMPLING, RECURSIVE, MULTILAYER, NORMALIZATION
-    }
+public interface Layer {
 
     // ----- Input Related Methods -----
 
@@ -262,12 +255,6 @@ public interface Layer extends Serializable, Cloneable {
      */
     void update(Gradient gradient);
 
-    /**
-     * Perform one update  applying the gradient
-     * @param gradient the gradient to apply
-     */
-    void update(INDArray gradient, String paramType);
-
 
     // ----- General Methods -----
 
@@ -300,18 +287,6 @@ public interface Layer extends Serializable, Cloneable {
      * @param mode
      */
     void setCacheMode(CacheMode mode);
-
-    /**
-     * Returns the layer type
-     * @return
-     */
-    Type type();
-
-    /**
-     * Clone the layer
-     * @return
-     */
-    Layer clone();
 
     /**
      * Set the layer index.

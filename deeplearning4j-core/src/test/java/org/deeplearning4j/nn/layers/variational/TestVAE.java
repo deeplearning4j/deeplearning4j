@@ -216,7 +216,7 @@ public class TestVAE {
                         (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) net.getLayer(0);
 
         INDArray input = Nd4j.rand(3, 10);
-        net.pretrain(input);
+        net.fit(input);
 
         //Get a snapshot of the pretrain params after fitting:
         Map<String, INDArray> layerParams = layer.paramTable();

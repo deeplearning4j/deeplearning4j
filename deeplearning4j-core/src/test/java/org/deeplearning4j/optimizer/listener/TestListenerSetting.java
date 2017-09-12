@@ -44,7 +44,7 @@ public class TestListenerSetting {
         net.setListeners(new ScoreIterationListener(), new TestRoutingListener());
 
         for (Layer l : net.getLayers()) {
-            Collection<IterationListener> layerListeners = l.getListeners();
+            Collection<IterationListener> layerListeners = ((Model)l).getListeners();
             assertEquals(l.getClass().toString(), 2, layerListeners.size());
             IterationListener[] lArr = layerListeners.toArray(new IterationListener[2]);
             assertTrue(lArr[0] instanceof ScoreIterationListener);
@@ -69,7 +69,7 @@ public class TestListenerSetting {
         cg.setListeners(new ScoreIterationListener(), new TestRoutingListener());
 
         for (Layer l : cg.getLayers()) {
-            Collection<IterationListener> layerListeners = l.getListeners();
+            Collection<IterationListener> layerListeners = ((Model)l).getListeners();
             assertEquals(2, layerListeners.size());
             lArr = layerListeners.toArray(new IterationListener[2]);
             assertTrue(lArr[0] instanceof ScoreIterationListener);

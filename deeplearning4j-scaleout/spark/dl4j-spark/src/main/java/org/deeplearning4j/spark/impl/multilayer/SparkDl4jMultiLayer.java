@@ -545,8 +545,9 @@ public class SparkDl4jMultiLayer extends SparkListenable {
         Environment env = EnvironmentUtils.buildEnvironment();
         env.setNumCores(mr);
         env.setAvailableMemory(mg);
-        Task task = ModelSerializer.taskByModel(network);
-        Heartbeat.getInstance().reportEvent(Event.SPARK, env, task);
+//        Task task = ModelSerializer.taskByModel(network);
+//        Heartbeat.getInstance().reportEvent(Event.SPARK, env, task);
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**

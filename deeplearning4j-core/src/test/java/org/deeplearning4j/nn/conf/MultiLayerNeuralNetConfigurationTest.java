@@ -229,25 +229,6 @@ public class MultiLayerNeuralNetConfigurationTest {
         org.junit.Assert.assertArrayEquals(p1, p2, 0.0f);
     }
 
-    @Test
-    public void testIterationListener() {
-        MultiLayerNetwork model1 = new MultiLayerNetwork(getConf());
-        model1.init();
-        model1.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(1)));
-
-        MultiLayerNetwork model2 = new MultiLayerNetwork(getConf());
-        model2.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(1)));
-        model2.init();
-
-        Layer[] l1 = model1.getLayers();
-        for (int i = 0; i < l1.length; i++)
-            assertTrue(l1[i].getListeners() != null && l1[i].getListeners().size() == 1);
-
-        Layer[] l2 = model2.getLayers();
-        for (int i = 0; i < l2.length; i++)
-            assertTrue(l2[i].getListeners() != null && l2[i].getListeners().size() == 1);
-    }
-
 
     private static MultiLayerConfiguration getConf() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345l).list()

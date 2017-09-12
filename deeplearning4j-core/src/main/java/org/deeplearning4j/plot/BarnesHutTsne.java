@@ -27,6 +27,7 @@ import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.SpTree;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.OldModel;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -62,7 +63,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sign;
  * @author Adam Gibson
  */
 @Slf4j
-public class BarnesHutTsne implements Model {
+public class BarnesHutTsne implements OldModel {
     protected int maxIter = 1000;
     protected double realMin = Nd4j.EPS_THRESHOLD;
     protected double initialMomentum = 0.5;
@@ -473,7 +474,8 @@ public class BarnesHutTsne implements Model {
 
 
                 if (iterationListener != null) {
-                    iterationListener.iterationDone(this, i, 0);
+//                    iterationListener.iterationDone(this, i, 0);
+                    throw new UnsupportedOperationException("Not yet reimplemented");   //TODO
                 }
                 log.info("Error at iteration " + i + " is " + score());
             }

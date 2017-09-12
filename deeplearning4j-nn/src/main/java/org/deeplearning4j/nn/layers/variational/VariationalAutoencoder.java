@@ -136,11 +136,6 @@ public class VariationalAutoencoder implements Model {
     }
 
     @Override
-    public void update(INDArray gradient, String paramType) {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
     public double score() {
         return score;
     }
@@ -655,11 +650,6 @@ public class VariationalAutoencoder implements Model {
             l1Sum += l1 * e.getValue().norm1Number().doubleValue();
         }
         return l1Sum;
-    }
-
-    @Override
-    public Type type() {
-        return Type.FEED_FORWARD;
     }
 
     @Override

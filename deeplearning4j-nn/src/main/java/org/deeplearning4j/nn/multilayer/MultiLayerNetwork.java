@@ -1759,42 +1759,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         log.info(sb.toString());
     }
 
-
-    /**
-     * Assigns the parameters of this model to the ones specified by this
-     * network. This is used in loading from input streams, factory methods, etc
-     *
-     * @param network the network to getFromOrigin parameters from
-     */
-    public void update(MultiLayerNetwork network) {
-        this.defaultConfiguration =
-                        (network.defaultConfiguration != null ? network.defaultConfiguration.clone() : null);
-        if (network.input != null)
-            setInput(network.input.dup()); //Dup in case of dropout etc
-        this.labels = network.labels;
-        if (network.layers != null) {
-            layers = new Layer[network.layers.length];
-            for (int i = 0; i < layers.length; i++) {
-                layers[i] = network.layers[i].clone();
-            }
-        } else {
-            this.layers = null;
-        }
-        if (network.solver != null) {
-            //Network updater state: should be cloned over also
-            INDArray updaterView = network.getUpdater().getStateViewArray();
-            if (updaterView != null) {
-                //                Updater newUpdater = new MultiLayerUpdater(this, updaterView.dup());
-                Updater newUpdater = new MultiLayerUpdater(this);
-                newUpdater.setStateViewArray(this, updaterView.dup(), false);
-                this.setUpdater(newUpdater);
-            }
-        } else {
-            this.solver = null;
-        }
-    }
-
-
     /**Sets the input and labels and returns a score for the prediction with respect to the true labels<br>
      * This is equivalent to {@link #score(DataSet, boolean)} with training==true.
      * @param data the data to score
@@ -1892,11 +1856,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     @Override
     public void fit() {
         fit(input, labels);
-    }
-
-    @Override
-    public void update(INDArray gradient, String paramType) {
-        throw new UnsupportedOperationException("Not implemented");
     }
 
 
@@ -2159,11 +2118,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     //Layer methods
 
     @Override
-    public Type type() {
-        return Type.MULTILAYER;
-    }
-
-    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         if (getOutputLayer() instanceof IOutputLayer)
             throw new UnsupportedOperationException("Cannot calculate gradients based on epsilon with OutputLayer");
@@ -2234,7 +2188,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             // Update MLN gradient
             this.gradient.gradientForVariable().put(key, val);
             // Update layer params
-            layers[layerId].update(val, paramType);
+//            layers[layerId].update(val, paramType);
+            throw new UnsupportedOperationException("Not yet implemented");
         }
         // Update layerwise gradient view
         setBackpropGradientsViewArray(gradient.gradient());
@@ -2306,7 +2261,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                 input = layers[i].activate(input, false);
             }
         }
-        if (inputIs2d && input.rank() == 3 && layers[layers.length - 1].type() == Type.RECURRENT) {
+        if (inputIs2d && input.rank() == 3 ) {
             //Return 2d output with shape [miniBatchSize,nOut]
             // instead of 3d output with shape [miniBatchSize,nOut,1]
             return input.tensorAlongDimension(0, 1, 0);
@@ -2637,9 +2592,10 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         if (!initDone) {
             initDone = true;
             Heartbeat heartbeat = Heartbeat.getInstance();
-            task = ModelSerializer.taskByModel(this);
-            Environment env = EnvironmentUtils.buildEnvironment();
-            heartbeat.reportEvent(Event.STANDALONE, env, task);
+//            task = ModelSerializer.taskByModel(this);
+//            Environment env = EnvironmentUtils.buildEnvironment();
+//            heartbeat.reportEvent(Event.STANDALONE, env, task);
+            throw new UnsupportedOperationException("Not yet implemented");
         }
     }
 

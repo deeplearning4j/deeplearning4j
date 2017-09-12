@@ -80,11 +80,6 @@ public class FrozenLayer implements Layer {
         return 0;
     }
 
-    @Override
-    public Type type() {
-        return insideLayer.type();
-    }
-
     //FIXME
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
@@ -109,22 +104,7 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public Layer clone() {
-        OneTimeLogger.info(log, "Frozen layers are cloned as their original versions.");
-        return new FrozenLayer(insideLayer.clone());
-    }
-
-    @Override
     public void update(Gradient gradient) {
-        if (!logUpdate) {
-            OneTimeLogger.info(log, "Frozen layers will not be updated. Warning will be issued only once per instance");
-            logUpdate = true;
-        }
-        //no op
-    }
-
-    @Override
-    public void update(INDArray gradient, String paramType) {
         if (!logUpdate) {
             OneTimeLogger.info(log, "Frozen layers will not be updated. Warning will be issued only once per instance");
             logUpdate = true;
