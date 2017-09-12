@@ -35,7 +35,7 @@ public class TestKryo extends BaseSparkKryoTest {
 
     private <T> void testSerialization(T in, SerializerInstance si) {
         ByteBuffer bb = si.serialize(in, null);
-        T deserialized = si.deserialize(bb, null);
+        T deserialized = (T)si.deserialize(bb, null);
 
         assertEquals(in, deserialized);
     }

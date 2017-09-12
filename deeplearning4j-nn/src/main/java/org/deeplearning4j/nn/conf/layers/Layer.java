@@ -69,6 +69,7 @@ import java.util.*;
                 @JsonSubTypes.Type(value = ZeroPaddingLayer.class, name = "zeroPadding"),
                 @JsonSubTypes.Type(value = ZeroPadding1DLayer.class, name = "zeroPadding1d"),
                 @JsonSubTypes.Type(value = FrozenLayer.class, name = "FrozenLayer"),
+                @JsonSubTypes.Type(value = Upsampling2D.class, name = "Upsampling2D"),
                 @JsonSubTypes.Type(value = Yolo2OutputLayer.class, name = "Yolo2OutputLayer")
 })
 @Data
@@ -114,7 +115,11 @@ public abstract class Layer implements Serializable, Cloneable {
                 allConstraints.add(c2);
             }
         }
-        this.constraints = allConstraints;
+        if(allConstraints.size() > 0) {
+            this.constraints = allConstraints;
+        } else {
+            this.constraints = null;
+        }
         this.iDropout = builder.iDropout;
     }
 

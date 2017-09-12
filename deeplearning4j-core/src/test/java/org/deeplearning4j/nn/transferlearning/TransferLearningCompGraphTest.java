@@ -19,6 +19,8 @@ import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Collections;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -414,6 +416,7 @@ public class TransferLearningCompGraphTest {
 
         ComputationGraph modelExpected = new ComputationGraph(confExpected);
         modelExpected.init();
+
 
 //        assertEquals(confExpected, graph.getConfiguration());
         assertEquals(confExpected.toJson(), graph.getConfiguration().toJson());

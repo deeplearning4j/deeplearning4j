@@ -90,7 +90,11 @@ public class LayerValidation {
                     }
                 }
 
-                layer.setConstraints(allConstraints);
+                if(allConstraints.size() > 0){
+                    layer.setConstraints(allConstraints);
+                } else {
+                    layer.setConstraints(null);
+                }
             }
         }
     }

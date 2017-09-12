@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.layers.misc;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -125,6 +126,12 @@ public class FrozenLayer extends Layer {
     public void setLayerName(String layerName) {
         super.setLayerName(layerName);
         layer.setLayerName(layerName);
+    }
+
+    @Override
+    public void setConstraints(List<LayerConstraint> constraints){
+        this.constraints = constraints;
+        this.layer.setConstraints(constraints);
     }
 
     public static class Builder extends Layer.Builder<Builder> {

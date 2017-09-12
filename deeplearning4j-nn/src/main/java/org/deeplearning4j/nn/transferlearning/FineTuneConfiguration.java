@@ -268,7 +268,6 @@ public class FineTuneConfiguration {
             confBuilder.setGradientNormalization(gradientNormalization);
         if (gradientNormalizationThreshold != null)
             confBuilder.setGradientNormalizationThreshold(gradientNormalizationThreshold);
-
         return confBuilder;
     }
 
