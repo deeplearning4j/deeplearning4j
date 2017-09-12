@@ -5646,7 +5646,7 @@ void NativeOps::execMetaPredicateStridedFloat(Nd4jPointer *extras, const int opT
 
 	if (opTypeA == 2) {
 		if (opTypeB == 0) {
-            //DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+            DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
 		}
 	}
 
@@ -5661,7 +5661,7 @@ void NativeOps::execMetaPredicateStridedDouble(Nd4jPointer *extras, const int op
 
     if (opTypeA == 2) {
         if (opTypeB == 0) {
-            //DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB), double, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+            DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB), double, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
         }
     }
 
@@ -5679,7 +5679,7 @@ void NativeOps::execMetaPredicateStridedHalf(Nd4jPointer *extras, const int opTy
 
     if (opTypeA == 2) {
         if (opTypeB == 0) {
-            //DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalA, scalB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+            DISPATCH_METAOP(invertedMetaPairwiseStrided_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalA, scalB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
         }
     }
 
@@ -5713,7 +5713,7 @@ void NativeOps::execMetaPredicateShapeDouble(Nd4jPointer *extras, const int opTy
 
     if (opTypeA == 2) {
         if (opTypeB == 0) {
-            //DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB), double, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+            DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB), double, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
         }
     }
 
@@ -5732,7 +5732,7 @@ void NativeOps::execMetaPredicateShapeHalf(Nd4jPointer *extras, const int opType
 
 	if (opTypeA == 2) {
 		if (opTypeB == 0) {
-			//DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalA, scalB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+			DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalA, scalB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
 		}
 	}
     if (debug)
@@ -5746,7 +5746,7 @@ void NativeOps::execMetaPredicateShapeFloat(Nd4jPointer *extras, const int opTyp
 
     if (opTypeA == 2) {
         if (opTypeB == 0) {
-            //DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
+            DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
         }
     }
 
@@ -6898,7 +6898,6 @@ return nullptr;
 
 
 const char* NativeOps::getAllCustomOps() {
-    nd4j_printf("Starting...\n", "");
 	return nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
 }
 
