@@ -34,7 +34,7 @@ import org.datavec.spark.storage.functions.RecordSavePrepPairFunction;
 import org.datavec.spark.storage.functions.SequenceRecordLoadPairFunction;
 import org.datavec.spark.storage.functions.SequenceRecordSavePrepPairFunction;
 
-import javax.annotation.Nullable;
+import  edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
