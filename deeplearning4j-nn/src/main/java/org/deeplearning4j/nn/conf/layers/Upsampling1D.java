@@ -44,11 +44,11 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class Upsampling1D extends Upsampling2D {
+public class Upsampling1D extends BaseUpsamplingLayer {
 
     protected int size;
 
-    protected Upsampling1D(Builder builder) {
+    protected Upsampling1D(UpsamplingBuilder builder) {
         super(builder);
         this.size = builder.size;
     }
@@ -74,8 +74,46 @@ public class Upsampling1D extends Upsampling2D {
         return clone;
     }
 
+    @Override
+    public InputType getOutputType(int layerIndex, InputType inputType) {
+        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+            throw new IllegalStateException("Invalid input for 1D Upsampling layer (layer index = " + layerIndex
+                    + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
+                    + inputType);
+        }
+        InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+        return InputType.recurrent(recurrent.getSize(), recurrent.getTimeSeriesLength());
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        if (inputType == null) {
+            throw new IllegalStateException("Invalid input for Upsampling layer (layer name=\"" + getLayerName()
+                    + "\"): input is null");
+        }
+        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+        InputType.InputTypeRecurrent outputType = (InputType.InputTypeRecurrent) getOutputType(-1, inputType);
+
+        int im2colSizePerEx = recurrent.getSize() * outputType.getTimeSeriesLength() * size;
+        int trainingWorkingSizePerEx = im2colSizePerEx;
+        if (getDropOut() > 0) {
+            trainingWorkingSizePerEx += inputType.arrayElementsPerExample();
+        }
+
+        return new LayerMemoryReport.Builder(layerName, Upsampling1D.class, inputType, outputType)
+                .standardMemory(0, 0) //No params
+                .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
+    }
+
     @NoArgsConstructor
-    public static class Builder extends Upsampling2D.Upsampling2DBuilder {
+    public static class Builder extends UpsamplingBuilder<Builder> {
 
         public Builder(int size) {
             super(size);
