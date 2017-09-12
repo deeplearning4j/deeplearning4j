@@ -35,10 +35,12 @@
     "recurrent_activation": "hard_sigmoid", 
     "trainable": true, 
     "recurrent_initializer": {
-     "class_name": "Orthogonal", 
+     "class_name": "VarianceScaling",
      "config": {
-      "seed": null, 
-      "gain": 1.0
+      "distribution": "uniform",
+      "scale": 1.0,
+      "seed": null,
+      "mode": "fan_avg"
      }
     }, 
     "use_bias": true, 
@@ -53,7 +55,7 @@
     "units": 128, 
     "unit_forget_bias": true, 
     "activity_regularizer": null, 
-    "recurrent_dropout": 0.2, 
+    "recurrent_dropout": 0.0,
     "kernel_initializer": {
      "class_name": "VarianceScaling", 
      "config": {

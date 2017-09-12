@@ -3,11 +3,16 @@ package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.TensorFlowCnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
@@ -163,7 +168,11 @@ public class KerasLstm extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                             "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
-        return this.getLSTMLayer().getOutputType(-1, inputType[0]);
+        InputPreProcessor preProcessor = getInputPreprocessor(inputType);
+        if (preProcessor != null)
+            return  preProcessor.getOutputType(inputType[0]);
+        else
+            return this.getLSTMLayer().getOutputType(-1, inputType[0]);
     }
 
     /**
@@ -175,6 +184,28 @@ public class KerasLstm extends KerasLayer {
     public int getNumParams() {
         return kerasMajorVersion == 2 ? NUM_TRAINABLE_PARAMS_KERAS_2 : NUM_TRAINABLE_PARAMS;
     }
+
+    /**
+     * Gets appropriate DL4J InputPreProcessor for given InputTypes.
+     *
+     * @param  inputType    Array of InputTypes
+     * @return              DL4J InputPreProcessor
+     * @throws InvalidKerasConfigurationException Invalid Keras configuration exception
+     * @see org.deeplearning4j.nn.conf.InputPreProcessor
+     */
+    @Override
+    public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
+        if (inputType.length > 1)
+            throw new InvalidKerasConfigurationException(
+                    "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
+        InputPreProcessor preprocessor = null;
+        if (inputType[0] instanceof InputType.InputTypeFeedForward) {
+            preprocessor = new FeedForwardToRnnPreProcessor();
+        }
+        return preprocessor;
+    }
+
+
 
     /**
      * Set weights for layer.
