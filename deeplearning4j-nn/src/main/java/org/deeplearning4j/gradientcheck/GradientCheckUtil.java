@@ -1,6 +1,7 @@
 package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
@@ -68,7 +69,7 @@ public class GradientCheckUtil {
     private GradientCheckUtil() {}
 
 
-    private static void configureSoftmaxClippingIfPresent(IOutputLayer outputLayer){
+    private static void configureLossFnClippingIfPresent(IOutputLayer outputLayer){
 
         ILossFunction lfn = null;
         IActivation afn = null;
@@ -86,6 +87,10 @@ public class GradientCheckUtil {
             log.info("Setting softmax clipping epsilon to 0.0 for " + lfn.getClass()
                     + " loss function to avoid spurious gradient check failures");
             ((LossMCXENT) lfn).setSoftmaxClipEps(0.0);
+        } else if(lfn instanceof LossBinaryXENT && ((LossBinaryXENT) lfn).getClipEps() != 0) {
+            log.info("Setting clipping epsilon to 0.0 for " + lfn.getClass()
+                    + " loss function to avoid spurious gradient check failures");
+            ((LossBinaryXENT) lfn).setClipEps(0.0);
         }
     }
 
@@ -160,7 +165,7 @@ public class GradientCheckUtil {
         //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
         for(Layer l : mln.getLayers()){
             if(l instanceof IOutputLayer){
-                configureSoftmaxClippingIfPresent((IOutputLayer) l);
+                configureLossFnClippingIfPresent((IOutputLayer) l);
             }
         }
 
@@ -340,7 +345,7 @@ public class GradientCheckUtil {
         //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
         for(Layer l : graph.getLayers()){
             if(l instanceof IOutputLayer){
-                configureSoftmaxClippingIfPresent((IOutputLayer) l);
+                configureLossFnClippingIfPresent((IOutputLayer) l);
             }
         }
 
