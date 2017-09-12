@@ -23,7 +23,7 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 import java.io.*;
 import java.util.Arrays;
 
@@ -153,7 +153,7 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
     }
 
     @Override
-    public int compareTo(@Nonnull Object o) {
+    public int compareTo(@NotNull Object o) {
         NDArrayWritable other = (NDArrayWritable) o;
 
         //Conventions used here for ordering NDArrays: x.compareTo(y): -ve if x < y, 0 if x == y, +ve if x > y
