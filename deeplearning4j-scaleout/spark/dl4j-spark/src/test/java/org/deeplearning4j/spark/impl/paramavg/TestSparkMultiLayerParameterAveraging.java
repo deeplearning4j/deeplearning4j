@@ -220,7 +220,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
         Evaluation evalExpected = new Evaluation();
-        INDArray outLocal = netCopy.output(input, Layer.TrainingMode.TEST);
+        INDArray outLocal = netCopy.output(input, false);
         evalExpected.eval(labels, outLocal);
 
         Evaluation evalActual = sparkNet.evaluate(sparkData);

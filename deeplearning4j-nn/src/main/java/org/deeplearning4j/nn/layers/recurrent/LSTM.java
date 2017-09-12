@@ -129,18 +129,6 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         return p;
     }
 
-
-
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return activate(x, true);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return activate(x, training);
-    }
-
     @Override
     public INDArray activate(INDArray input, boolean training) {
         setInput(input);
@@ -148,20 +136,8 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     }
 
     @Override
-    public INDArray activate(INDArray input) {
-        setInput(input);
-        return activateHelper(true, null, null, false).fwdPassOutput;
-    }
-
-    @Override
     public INDArray activate(boolean training) {
         return activateHelper(training, null, null, false).fwdPassOutput;
-    }
-
-    @Override
-    public INDArray activate() {
-
-        return activateHelper(false, null, null, false).fwdPassOutput;
     }
 
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
@@ -196,11 +172,6 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     @Override
     public Type type() {
         return Type.RECURRENT;
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override

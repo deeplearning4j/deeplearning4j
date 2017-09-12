@@ -41,10 +41,9 @@ public interface Layer extends Serializable, Cloneable, Model {
         FEED_FORWARD, RECURRENT, CONVOLUTIONAL, SUBSAMPLING, RECURSIVE, MULTILAYER, NORMALIZATION
     }
 
-    enum TrainingMode {
-        TRAIN, TEST
-    }
+    int numInputs();
 
+    int numOutputs();
 
     /**
      * This method sets given CacheMode for current layer
@@ -87,50 +86,50 @@ public interface Layer extends Serializable, Cloneable, Model {
      */
     Pair<Gradient, INDArray> backpropGradient(INDArray epsilon);
 
-    /**
-     * Raw activations
-     * @param x the input to transform
-     * @return the raw activation
-     * for this layer
-     */
-    INDArray preOutput(INDArray x);
+//    /**
+//     * Raw activations
+//     * @param x the input to transform
+//     * @return the raw activation
+//     * for this layer
+//     */
+//    INDArray preOutput(INDArray x);
 
 
 
-    /**
-     * Raw activations
-     * @param x the input to transform
-     * @return the raw activation
-     * for this layer
-     */
-    INDArray preOutput(INDArray x, TrainingMode training);
+//    /**
+//     * Raw activations
+//     * @param x the input to transform
+//     * @return the raw activation
+//     * for this layer
+//     */
+//    INDArray preOutput(INDArray x, TrainingMode training);
+//
+//
+//    /**
+//     * Trigger an activation with the last specified input
+//     * @param training  training or test mode
+//     * @return the activation of the last specified input
+//     */
+//    INDArray activate(TrainingMode training);
+
+//    /**
+//     * Initialize the layer with the given input
+//     * and return the activation for this layer
+//     * given this input
+//     * @param input the input to use
+//     * @param training  train or test mode
+//     * @return
+//     */
+//    INDArray activate(INDArray input, TrainingMode training);
 
 
-    /**
-     * Trigger an activation with the last specified input
-     * @param training  training or test mode
-     * @return the activation of the last specified input
-     */
-    INDArray activate(TrainingMode training);
-
-    /**
-     * Initialize the layer with the given input
-     * and return the activation for this layer
-     * given this input
-     * @param input the input to use
-     * @param training  train or test mode
-     * @return
-     */
-    INDArray activate(INDArray input, TrainingMode training);
-
-
-    /**
-     * Raw activations
-     * @param x the input to transform
-     * @return the raw activation
-     * for this layer
-     */
-    INDArray preOutput(INDArray x, boolean training);
+//    /**
+//     * Raw activations
+//     * @param x the input to transform
+//     * @return the raw activation
+//     * for this layer
+//     */
+//    INDArray preOutput(INDArray x, boolean training);
 
 
     /**
@@ -151,12 +150,6 @@ public interface Layer extends Serializable, Cloneable, Model {
     INDArray activate(INDArray input, boolean training);
 
     /**
-     * Trigger an activation with the last specified input
-     * @return the activation of the last specified input
-     */
-    INDArray activate();
-
-    /**
      * Initialize the layer with the given input
      * and return the activation for this layer
      * given this input
@@ -164,15 +157,6 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @return
      */
     INDArray activate(INDArray input);
-
-    /**
-     * Return a transposed copy of the weights/bias
-     * (this means reverse the number of inputs and outputs on the weights)
-     *
-     * @return the transposed layer
-     */
-    @Deprecated
-    Layer transpose();
 
     /**
      * Clone the layer

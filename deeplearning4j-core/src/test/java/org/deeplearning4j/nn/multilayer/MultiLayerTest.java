@@ -530,27 +530,10 @@ public class MultiLayerTest {
         Layer layer = net.getLayer(0);
         int nParamsBackprop = layer.numParams(true);
         int nParamsBoth = layer.numParams(false);
-        Layer transposed = layer.transpose();
 
         assertArrayEquals(new int[] {4, 3}, layer.getParam(DefaultParamInitializer.WEIGHT_KEY).shape());
         assertArrayEquals(new int[] {1, 3}, layer.getParam(DefaultParamInitializer.BIAS_KEY).shape());
         assertArrayEquals(new int[] {1, 4}, layer.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).shape());
-
-        assertArrayEquals(new int[] {3, 4}, transposed.getParam(DefaultParamInitializer.WEIGHT_KEY).shape());
-        assertArrayEquals(new int[] {1, 4}, transposed.getParam(DefaultParamInitializer.BIAS_KEY).shape());
-        assertArrayEquals(new int[] {1, 3}, transposed.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).shape());
-
-
-        INDArray origWeights = layer.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray transposedWeights = transposed.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        assertEquals(origWeights.transpose(), transposedWeights);
-        assertEquals(layer.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY),
-                        transposed.getParam(DefaultParamInitializer.BIAS_KEY));
-        assertEquals(layer.getParam(DefaultParamInitializer.BIAS_KEY),
-                        transposed.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY));
-
-        assertEquals(3, ((FeedForwardLayer) transposed.conf().getLayer()).getNIn());
-        assertEquals(4, ((FeedForwardLayer) transposed.conf().getLayer()).getNOut());
     }
 
 
@@ -1041,32 +1024,6 @@ public class MultiLayerTest {
         System.out.println(modelExpectedArch.summary());
         System.out.println(modelMow.summary());
         System.out.println(modelMow.summary(InputType.recurrent(V_HEIGHT*V_WIDTH*3)));
-    }
-
-
-    @Test
-    public void testComputeZ() {
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
-                        .activation(Activation.TANH).list().layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-        INDArray in = Nd4j.rand(10, 10);
-        List<INDArray> preOuts = net.computeZ(in, false);
-
-        assertEquals(3, preOuts.size()); //Includes original input
-        assertEquals(in, preOuts.get(0));
-
-        INDArray preOut0 = net.getLayer(0).preOutput(in);
-        INDArray out0 = net.getLayer(0).activate(in);
-        assertEquals(preOut0, preOuts.get(1));
-
-        INDArray preOut1 = net.getLayer(1).preOutput(out0);
-        INDArray out1 = net.getLayer(1).activate(out0);
-        assertEquals(preOut1, preOuts.get(2));
     }
 
     @Test(expected = DL4JException.class)

@@ -105,6 +105,16 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
+    public int numInputs() {
+        return 1;
+    }
+
+    @Override
+    public int numOutputs() {
+        return 1;
+    }
+
+    @Override
     public void setCacheMode(CacheMode mode) {
         if (mode == null)
             mode = CacheMode.NONE;
@@ -522,11 +532,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public void iterate(INDArray input) {
-        fit(input);
-    }
-
-    @Override
     public Gradient gradient() {
         return gradient;
     }
@@ -557,11 +562,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public void validateInput() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return optimizer;
     }
@@ -569,11 +569,6 @@ public class VariationalAutoencoder implements Layer {
     @Override
     public INDArray getParam(String param) {
         return params.get(param);
-    }
-
-    @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Deprecated " + layerId());
     }
 
     @Override
@@ -723,22 +718,6 @@ public class VariationalAutoencoder implements Layer {
         return new Pair<>(gradient, epsilon);
     }
 
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return preOutput(x, TrainingMode.TEST);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return preOutput(x, training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        setInput(x);
-        return preOutput(training);
-    }
-
     public INDArray preOutput(boolean training) {
         VAEFwdHelper f = doForward(training, false);
         return f.pzxMeanPreOut;
@@ -791,16 +770,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public INDArray activate(TrainingMode training) {
-        return activate(training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return null;
-    }
-
-    @Override
     public INDArray activate(boolean training) {
         INDArray output = preOutput(training); //Mean values for p(z|x)
         pzxActivationFn.getActivation(output, training);
@@ -815,19 +784,8 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public INDArray activate() {
-        return activate(false);
-    }
-
-    @Override
     public INDArray activate(INDArray input) {
-        setInput(input);
-        return activate();
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
+        return activate(input, false);
     }
 
     @Override

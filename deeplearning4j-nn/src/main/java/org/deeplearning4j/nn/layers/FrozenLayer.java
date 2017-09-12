@@ -51,6 +51,16 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
+    public int numInputs() {
+        return 1;
+    }
+
+    @Override
+    public int numOutputs() {
+        return 1;
+    }
+
+    @Override
     public void setCacheMode(CacheMode mode) {
         // no-op
     }
@@ -82,35 +92,6 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public INDArray preOutput(INDArray x) {
-        return insideLayer.preOutput(x);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        logTestMode(training);
-        return insideLayer.preOutput(x, TrainingMode.TEST);
-    }
-
-    @Override
-    public INDArray activate(TrainingMode training) {
-        logTestMode(training);
-        return insideLayer.activate(TrainingMode.TEST);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        logTestMode(training);
-        return insideLayer.activate(input, TrainingMode.TEST);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        logTestMode(training);
-        return preOutput(x, TrainingMode.TEST);
-    }
-
-    @Override
     public INDArray activate(boolean training) {
         logTestMode(training);
         return insideLayer.activate(false);
@@ -123,18 +104,8 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public INDArray activate() {
-        return insideLayer.activate();
-    }
-
-    @Override
     public INDArray activate(INDArray input) {
-        return insideLayer.activate(input);
-    }
-
-    @Override
-    public Layer transpose() {
-        return new FrozenLayer(insideLayer.transpose());
+        return activate(input, false);
     }
 
     @Override
@@ -259,12 +230,6 @@ public class FrozenLayer implements Layer {
         }
     }
 
-    //FIXME - what is iterate
-    @Override
-    public void iterate(INDArray input) {
-        insideLayer.iterate(input);
-    }
-
     @Override
     public Gradient gradient() {
         return zeroGradient;
@@ -302,11 +267,6 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void validateInput() {
-        insideLayer.validateInput();
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return insideLayer.getOptimizer();
     }
@@ -314,11 +274,6 @@ public class FrozenLayer implements Layer {
     @Override
     public INDArray getParam(String param) {
         return insideLayer.getParam(param);
-    }
-
-    @Override
-    public void initParams() {
-        insideLayer.initParams();
     }
 
     @Override
@@ -437,18 +392,6 @@ public class FrozenLayer implements Layer {
 
     public void logTestMode(boolean training) {
         if (!training)
-            return;
-        if (logTestMode) {
-            return;
-        } else {
-            OneTimeLogger.info(log,
-                            "Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
-            logTestMode = true;
-        }
-    }
-
-    public void logTestMode(TrainingMode training) {
-        if (training.equals(TrainingMode.TEST))
             return;
         if (logTestMode) {
             return;

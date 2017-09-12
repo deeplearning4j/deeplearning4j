@@ -118,7 +118,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                 MultiLayerNetwork l = (MultiLayerNetwork) model;
                 for (Layer layer : l.getLayers()) {
                     if (!(layer instanceof FrozenLayer) && layer.type() == Layer.Type.CONVOLUTIONAL) {
-                        INDArray output = layer.activate();
+                        INDArray output = layer.activate(layer.input());
                         int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
                             INDArray inputs = ((ConvolutionLayer) layer).input();
@@ -143,7 +143,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                 ComputationGraph l = (ComputationGraph) model;
                 for (Layer layer : l.getLayers()) {
                     if (!(layer instanceof FrozenLayer) && layer.type() == Layer.Type.CONVOLUTIONAL) {
-                        INDArray output = layer.activate();
+                        INDArray output = layer.activate(layer.input());
                         int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
                             INDArray inputs = ((ConvolutionLayer) layer).input();

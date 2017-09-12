@@ -733,7 +733,6 @@ public class TestOptimizers {
             throw new UnsupportedOperationException();
         }
 
-
         @Override
         public void setCacheMode(CacheMode mode) {
             throw new UnsupportedOperationException();
@@ -787,6 +786,16 @@ public class TestOptimizers {
         }
 
         @Override
+        public int numInputs() {
+            return 1;
+        }
+
+        @Override
+        public int numOutputs() {
+            return 1;
+        }
+
+        @Override
         public void addListeners(IterationListener... listener) {
             // no-op
         }
@@ -797,21 +806,6 @@ public class TestOptimizers {
         @Override
         public void init() {
 
-        }
-
-        @Override
-        public INDArray preOutput(INDArray x, TrainingMode training) {
-            return null;
-        }
-
-        @Override
-        public INDArray activate(TrainingMode training) {
-            return null;
-        }
-
-        @Override
-        public INDArray activate(INDArray input, TrainingMode training) {
-            return null;
         }
 
         @Override
@@ -847,17 +841,17 @@ public class TestOptimizers {
         }
 
         @Override
-        public INDArray preOutput(INDArray x, boolean training) {
-            return null;
-        }
-
-        @Override
         public INDArray activate(boolean training) {
             return null;
         }
 
         @Override
         public INDArray activate(INDArray input, boolean training) {
+            return null;
+        }
+
+        @Override
+        public INDArray activate(INDArray input){
             return null;
         }
 
@@ -912,11 +906,6 @@ public class TestOptimizers {
         }
 
         @Override
-        public void iterate(INDArray input) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public Pair<Gradient, Double> gradientAndScore() {
             computeGradientAndScore();
             return new Pair<>(gradient(), score());
@@ -945,9 +934,6 @@ public class TestOptimizers {
         }
 
         @Override
-        public void validateInput() {}
-
-        @Override
         public ConvexOptimizer getOptimizer() {
             throw new UnsupportedOperationException();
         }
@@ -955,11 +941,6 @@ public class TestOptimizers {
         @Override
         public INDArray getParam(String param) {
             return parameters;
-        }
-
-        @Override
-        public void initParams() {
-            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -994,26 +975,6 @@ public class TestOptimizers {
 
         @Override
         public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray preOutput(INDArray x) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray activate() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray activate(INDArray input) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Layer transpose() {
             throw new UnsupportedOperationException();
         }
 

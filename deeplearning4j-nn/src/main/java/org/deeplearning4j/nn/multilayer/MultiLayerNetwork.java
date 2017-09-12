@@ -147,6 +147,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         this.defaultConfiguration = conf.getConf(0).clone();
     }
 
+    @Override
+    public int numInputs() {
+        return 1;
+    }
+
+    @Override
+    public int numOutputs() {
+        return 1;
+    }
+
     /**
      * This method sets specified CacheMode for all layers within network
      *
@@ -425,11 +435,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     @Override
-    public void validateInput() {
-
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return solver.getOptimizer();
     }
@@ -445,11 +450,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         String newKey = param.substring(idx + 1);
 
         return layers[layerIdx].getParam(newKey);
-    }
-
-    @Override
-    public void initParams() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -700,31 +700,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
-
-    /**
-     * Triggers the activation of the last hidden layer ie: not logistic regression
-     *
-     * @return the activation of the last hidden layer given the last input to the network
-     */
-    public INDArray activate() {
-        return getLayers()[getLayers().length - 1].activate();
-    }
-
-    /**
-     * Triggers the activation for a given layer
-     *
-     * @param layer the layer to activate on
-     * @return the activation for a given layer
-     */
-    public INDArray activate(int layer) {
-        return getLayer(layer).activate();
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * Triggers the activation of the given layer
      *
@@ -732,8 +707,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param input the input to the hidden layer
      * @return the activation of the layer based on the input
      */
-    public INDArray activate(int layer, INDArray input) {
-        return getLayer(layer).activate(input);
+    public INDArray activate(int layer, INDArray input, boolean training) {
+        return getLayer(layer).activate(input, training);
     }
 
     /**
@@ -749,24 +724,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             IOutputLayer ol = (IOutputLayer) getOutputLayer();
             ol.setLabels(labels);
         }
-    }
-
-
-    /**
-     * Compute input linear transformation (z) from previous layer
-     * Apply pre processing transformation where necessary
-     *
-     * @param curr  the current layer
-     * @param input the input
-     * @param training training or test mode
-     * @return the activation from the previous layer
-     */
-    public INDArray zFromPrevLayer(int curr, INDArray input, boolean training) {
-        if (getLayerWiseConfigurations().getInputPreProcess(curr) != null)
-            input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input, input.size(0));
-
-        INDArray ret = layers[curr].preOutput(input, training);
-        return ret;
     }
 
     /**
@@ -805,43 +762,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             res = this.activationFromPrevLayer(l, res, false);
         }
         return res;
-    }
-
-    /**
-     * * Compute input linear transformation (z) of the output layer
-     *
-     * @return the list of activations for each layer
-     */
-    public List<INDArray> computeZ(boolean training) {
-        INDArray currentInput = this.input;
-        INDArray currentZ;
-
-        List<INDArray> activations = new ArrayList<>();
-        activations.add(currentInput);
-
-        for (int i = 0; i < layers.length; i++) {
-            //It's inefficient, but we do need to do forward pass twice, as some layers (like LSTMs)
-            // don't decompose into out = activationFn(preOut)
-            currentZ = zFromPrevLayer(i, currentInput, training);
-            currentInput = activationFromPrevLayer(i, currentInput, training);
-            activations.add(currentZ);
-        }
-        return activations;
-    }
-
-    /**
-     * Compute activations from input to output of the output layer
-     *
-     * @return the list of activations for each layer
-     */
-    public List<INDArray> computeZ(INDArray input, boolean training) {
-        if (input == null)
-            throw new IllegalStateException("Unable to perform feed forward; no input found");
-        else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input, getInputMiniBatchSize()));
-        else
-            setInput(input);
-        return computeZ(training);
     }
 
     /**
@@ -1671,7 +1591,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     @Override
     public int[] predict(INDArray d) {
-        INDArray output = output(d, Layer.TrainingMode.TEST);
+        INDArray output = output(d, false);
         int[] ret = new int[d.size(0)];
         if (d.isRowVector())
             ret[0] = Nd4j.getBlasWrapper().iamax(output);
@@ -1802,11 +1722,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         pretrain(data);
     }
 
-    @Override
-    public void iterate(INDArray input) {
-        pretrain(input);
-    }
-
 
     /**
      * Fit the model
@@ -1845,26 +1760,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         org.deeplearning4j.nn.conf.layers.OutputLayer layerConf =
                         (org.deeplearning4j.nn.conf.layers.OutputLayer) getOutputLayer().conf().getLayer();
         fit(examples, FeatureUtil.toOutcomeMatrix(labels, layerConf.getNOut()));
-    }
-
-
-    /**
-     * Label the probabilities of the input
-     *
-     * @param input    the input to label
-     * @param train whether the output
-     *             is test or train. This mainly
-     *             affect hyper parameters such as
-     *             drop out where certain things should
-     *             be applied with activations
-     * @return a vector of probabilities
-     * given each label.
-     * <p>
-     * This is typically of the form:
-     * [0.5, 0.5] or some other probability distribution summing to one
-     */
-    public INDArray output(INDArray input, TrainingMode train) {
-        return output(input, train == TrainingMode.TRAIN);
     }
 
     /**
@@ -1945,7 +1840,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input) {
-        return output(input, TrainingMode.TEST);
+        return output(input, false);
     }
 
     /**
@@ -2449,41 +2344,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     @Override
-    public INDArray preOutput(INDArray x) {
-        INDArray lastLayerActivation = x;
-        for (int i = 0; i < layers.length - 1; i++) {
-            if (getLayerWiseConfigurations().getInputPreProcess(i) != null)
-                lastLayerActivation = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(lastLayerActivation,
-                                getInputMiniBatchSize());
-            lastLayerActivation = layers[i].activate(lastLayerActivation);
-        }
-        if (getLayerWiseConfigurations().getInputPreProcess(layers.length - 1) != null)
-            lastLayerActivation = getLayerWiseConfigurations().getInputPreProcess(layers.length - 1)
-                            .preProcess(lastLayerActivation, getInputMiniBatchSize());
-        return layers[layers.length - 1].preOutput(lastLayerActivation);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return preOutput(x, training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray activate(TrainingMode training) {
-        return activate(training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return activate(input, training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         if (getOutputLayer() instanceof IOutputLayer)
             throw new UnsupportedOperationException("Cannot calculate gradients based on epsilon with OutputLayer");
@@ -2562,12 +2422,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
     public INDArray activate(boolean training) {
         throw new UnsupportedOperationException();
     }
@@ -2575,6 +2429,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Override
     public INDArray activate(INDArray input, boolean training) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray activate(INDArray input) {
+        return activate(input, false);
     }
 
     @Override

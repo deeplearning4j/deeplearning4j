@@ -67,6 +67,16 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
+    public int numInputs() {
+        return 1;
+    }
+
+    @Override
+    public int numOutputs() {
+        return 1;
+    }
+
+    @Override
     public void setCacheMode(CacheMode mode) {
         if (mode == null)
             mode = CacheMode.NONE;
@@ -151,32 +161,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         throw new UnsupportedOperationException("Not supported");
     }
 
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return preOutput(x, training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray activate(TrainingMode training) {
-        return activate(training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return activate(input, training == TrainingMode.TRAIN);
-    }
-
-    /**
-     * iterate one iteration of the network
-     *
-     * @param input  the input to iterate on
-     */
-    @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException();
-    }
-
     @Override
     public void update(Gradient gradient) {
         throw new UnsupportedOperationException();
@@ -254,11 +238,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Deprecated - no longer used - " + layerId());
-    }
-
-    @Override
     public Map<String, INDArray> paramTable() {
         return paramTable(false);
     }
@@ -268,14 +247,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         return Collections.emptyMap();
     }
 
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        if (x == null) {
-            throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
-        }
-        setInput(x);
-        return preOutput(training);
-    }
+//    @Override
+//    public INDArray preOutput(INDArray x, boolean training) {
+//        if (x == null) {
+//            throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
+//        }
+//        setInput(x);
+//        return preOutput(training);
+//    }
 
 
     public abstract INDArray preOutput(boolean training);
@@ -285,34 +264,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public INDArray activate(INDArray input) {
-        setInput(input);
-        return activate(true);
-    }
-
-    @Override
     public INDArray activate(INDArray input, boolean training) {
         setInput(input);
         return activate(training);
     }
 
     @Override
-    public INDArray activate() {
-        return activate(false);
-    }
-
-
-    /**
-     * Classify input
-     * @param x the input (can either be a matrix or vector)
-     * If it's a matrix, each row is considered an example
-     * and associated rows are classified accordingly.
-     * Each row will be the likelihood of a label given that example
-     * @return a probability distribution for each row
-     */
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return preOutput(x, true);
+    public INDArray activate(INDArray input){
+        return activate(input, false);
     }
 
     @Override
@@ -391,16 +350,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     @Override
     public INDArray input() {
         return input;
-    }
-
-    @Override
-    public void validateInput() {
-
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override

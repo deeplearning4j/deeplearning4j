@@ -351,7 +351,7 @@ public class BatchNormalizationTest {
         network.init();
 
         network.setInput(next.getFeatureMatrix());
-        INDArray activationsActual = network.preOutput(next.getFeatureMatrix());
+        INDArray activationsActual = network.activate(next.getFeatureMatrix());
         assertEquals(10, activationsActual.shape()[1], 1e-2);
 
         network.fit(next);

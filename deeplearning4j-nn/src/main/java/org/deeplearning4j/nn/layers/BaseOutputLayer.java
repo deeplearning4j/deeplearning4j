@@ -194,17 +194,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         return output(training);
     }
 
-    @Override
-    public INDArray activate(INDArray input) {
-        setInput(input);
-        return output(true);
-    }
-
-    @Override
-    public INDArray activate() {
-        return output(false);
-    }
-
     public INDArray output(INDArray input, boolean training) {
         setInput(input);
         return output(training);
@@ -386,11 +375,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public void fit(INDArray data) {
         //no-op
 
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException(layerId());
     }
 
     @Override

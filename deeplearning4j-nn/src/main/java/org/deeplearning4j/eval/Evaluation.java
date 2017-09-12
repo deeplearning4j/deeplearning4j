@@ -268,7 +268,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param network the network to use for output
      */
     public void eval(INDArray trueLabels, INDArray input, MultiLayerNetwork network) {
-        eval(trueLabels, network.output(input, Layer.TrainingMode.TEST));
+        eval(trueLabels, network.output(input, false));
     }
 
 

@@ -95,11 +95,6 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported - " + layerId());
-    }
-
-    @Override
     public Layer clone() {
         return new ActivationLayer(conf.clone());
     }

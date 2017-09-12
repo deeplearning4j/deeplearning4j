@@ -79,7 +79,7 @@ public class TestYolo2OutputLayer {
 
         INDArray input = Nd4j.rand(new int[]{mb, depth, h, w});
 
-        INDArray out = y2impl.activate(input);
+        INDArray out = y2impl.activate(input, true);
         assertNotNull(out);
         assertArrayEquals(input.shape(), out.shape());
 

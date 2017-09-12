@@ -252,11 +252,6 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
-    public void validateInput() {
-
-    }
-
-    @Override
     public ConvexOptimizer getOptimizer() {
         return null;
     }
@@ -264,11 +259,6 @@ public class BarnesHutTsne implements Model {
     @Override
     public INDArray getParam(String param) {
         return null;
-    }
-
-    @Override
-    public void initParams() {
-
     }
 
     @Override
@@ -687,11 +677,6 @@ public class BarnesHutTsne implements Model {
         this.x = data;
         this.numDimensions = nDims;
         fit();
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-
     }
 
     @Override

@@ -89,27 +89,21 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         return Layer.Type.RECURRENT;
     }
 
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        setInput(x);
-        return TimeSeriesUtils.reshape2dTo3d(preOutput2d(training), input.size(0));
-    }
-
-    @Override
-    protected INDArray preOutput2d(boolean training) {
-        if (input.rank() == 3) {
-            //Case when called from RnnOutputLayer
-            INDArray inputTemp = input;
-            input = TimeSeriesUtils.reshape3dTo2d(input);
-            INDArray out = super.preOutput(input, training);
-            this.input = inputTemp;
-            return out;
-        } else {
-            //Case when called from BaseOutputLayer
-            INDArray out = super.preOutput(input, training);
-            return out;
-        }
-    }
+//    @Override
+//    protected INDArray preOutput2d(boolean training) {
+//        if (input.rank() == 3) {
+//            //Case when called from RnnOutputLayer
+//            INDArray inputTemp = input;
+//            input = TimeSeriesUtils.reshape3dTo2d(input);
+//            INDArray out = super.preOutput(input, training);
+//            this.input = inputTemp;
+//            return out;
+//        } else {
+//            //Case when called from BaseOutputLayer
+//            INDArray out = super.preOutput(input, training);
+//            return out;
+//        }
+//    }
 
     @Override
     protected INDArray getLabels2d() {

@@ -147,18 +147,6 @@ public class GravesBidirectionalLSTM
 
     }
 
-
-
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return activate(x, true);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return activate(x, training);
-    }
-
     @Override
     public INDArray activate(INDArray input, boolean training) {
         setInput(input);
@@ -166,20 +154,8 @@ public class GravesBidirectionalLSTM
     }
 
     @Override
-    public INDArray activate(INDArray input) {
-        setInput(input);
-        return activateOutput(true, false);
-    }
-
-    @Override
     public INDArray activate(boolean training) {
         return activateOutput(training, false);
-    }
-
-    @Override
-    public INDArray activate() {
-
-        return activateOutput(false, false);
     }
 
     private INDArray activateOutput(final boolean training, boolean forBackprop) {
@@ -263,11 +239,6 @@ public class GravesBidirectionalLSTM
     @Override
     public Type type() {
         return Type.RECURRENT;
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override

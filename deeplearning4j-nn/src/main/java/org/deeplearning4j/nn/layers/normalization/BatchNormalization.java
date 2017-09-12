@@ -223,7 +223,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray activate(boolean training) {
-        return preOutput(input, training ? TrainingMode.TRAIN : TrainingMode.TEST);
+        return preOutput(input, training );
     }
 
     @Override
@@ -231,12 +231,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         return gradient;
     }
 
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return preOutput(x, TrainingMode.TRAIN);
-    }
 
-    public INDArray preOutput(INDArray x, TrainingMode training) {
+    public INDArray preOutput(INDArray x, boolean training) {
         INDArray activations;
         // TODO add this directly in layer or get the layer prior...
         // batchnorm true but need to clarify if activation before or after
@@ -252,7 +248,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         //  different elements of the same feature map, at different locations, are normalized in the same way. To achieve
         //  this, we jointly normalize all the activations in a minibatch, over all locations."
         INDArray mean, var;
-        if (training == TrainingMode.TRAIN) {
+        if (training) {
             switch (x.rank()) {
                 case 2:
                     // mean and variance over samples in batch
@@ -297,7 +293,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         if (helper != null && input.rank() == 4) {
             //Note that cudnn does not support dense (2d) batch norm case as of v5.1
             double decay = layerConf.getDecay();
-            INDArray ret = helper.preOutput(x, training == TrainingMode.TRAIN, shape, gamma, beta, globalMeanView,
+            INDArray ret = helper.preOutput(x, training, shape, gamma, beta, globalMeanView,
                             globalVarView, decay, layerConf.getEps());
             if (ret != null) {
                 return ret;
@@ -363,7 +359,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         // store mean and var if using batch mean while training
         double decay;
-        if (training == TrainingMode.TRAIN) {
+        if (training) {
             // TODO track finetune phase here to update decay for finetune
             //          layerConf.setN(layerConf.getN() + 1);
             //          decay =  1. / layerConf.getN();
@@ -395,30 +391,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public INDArray activate(TrainingMode training) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return preOutput(input, training);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return preOutput(x, training ? TrainingMode.TRAIN : TrainingMode.TEST);
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException(layerId());
-
-    }
-
-    @Override
     public Layer clone() {
         throw new UnsupportedOperationException(layerId());
-
     }
 
     @Override

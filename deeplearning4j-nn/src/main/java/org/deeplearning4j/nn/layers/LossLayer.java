@@ -201,17 +201,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         return output(training);
     }
 
-    @Override
-    public INDArray activate(INDArray input) {
-        setInput(input);
-        return output(true);
-    }
-
-    @Override
-    public INDArray activate() {
-        return output(false);
-    }
-
     public INDArray output(INDArray input, boolean training) {
         setInput(input);
         return output(training);
@@ -236,11 +225,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
         return activate(training);
-    }
-
-    @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException("Not applicable " + layerId());
     }
 
     @Override
@@ -383,11 +367,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             labels = null;
         }
         solver = null;
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override

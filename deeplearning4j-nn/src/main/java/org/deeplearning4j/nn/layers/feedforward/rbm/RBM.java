@@ -454,46 +454,6 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
         return new Pair<>(ret, epsilonNext);
     }
 
-
-    /**
-     * @deprecated No longer used
-     */
-    @Deprecated
-    @Override
-    public void iterate(INDArray input) {
-        if (layerConf().getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-            this.sigma = input.var(0).divi(input.rows());
-
-        this.input = input.dup();
-        applyDropOutIfNecessary(true);
-        contrastiveDivergence();
-    }
-
-    @Deprecated
-    @Override
-    public Layer transpose() {
-        RBM r = (RBM) super.transpose();
-        org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit h = RBMUtil.inverse(layerConf().getVisibleUnit());
-        org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit v = RBMUtil.inverse(layerConf().getHiddenUnit());
-        if (h == null)
-            h = layerConf().getHiddenUnit();
-        if (v == null)
-            v = layerConf().getVisibleUnit();
-
-        r.layerConf().setHiddenUnit(h);
-        r.layerConf().setVisibleUnit(v);
-
-        //biases:
-        INDArray vb = getParam(DefaultParamInitializer.BIAS_KEY).dup();
-        INDArray b = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY).dup();
-        r.setParam(PretrainParamInitializer.VISIBLE_BIAS_KEY, vb);
-        r.setParam(DefaultParamInitializer.BIAS_KEY, b);
-
-        r.sigma = sigma;
-        r.hiddenSigma = hiddenSigma;
-        return r;
-    }
-
     @Override
     public boolean isPretrainLayer() {
         return true;

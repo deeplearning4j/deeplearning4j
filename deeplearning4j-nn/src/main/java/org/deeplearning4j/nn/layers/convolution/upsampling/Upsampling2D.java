@@ -167,11 +167,6 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public Layer transpose() {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
     public Layer clone() {
         return new Upsampling2D(conf.clone());
     }
@@ -184,11 +179,6 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public void clearNoiseWeightParams() {
         //No op
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException(layerId());
     }
 
     @Override

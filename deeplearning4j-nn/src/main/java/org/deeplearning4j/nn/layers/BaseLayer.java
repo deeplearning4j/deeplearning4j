@@ -68,6 +68,16 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
+    public int numInputs(){
+        return 1;
+    }
+
+    @Override
+    public int numOutputs(){
+        return 1;
+    }
+
+    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(true); //Note: using preOutput(INDArray) can't be used as this does a setInput(input) and resets the 'appliedDropout' flag
@@ -116,23 +126,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
 
+    @Deprecated
     protected void setScoreWithZ(INDArray z) {}
-
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return preOutput(x, training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray activate(TrainingMode training) {
-        return activate(training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return activate(input, training == TrainingMode.TRAIN);
-    }
 
     /**
      * Objective function:  the specified objective
@@ -147,20 +142,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public Gradient gradient() {
         return gradient;
-    }
-
-    /**
-     * iterate one iteration of the network
-     *
-     * @param input  the input to iterate on
-     */
-    @Override
-    public void iterate(INDArray input) {
-        applyDropOutIfNecessary(true);
-        Gradient gradient = gradient();
-        for (String paramType : gradient.gradientForVariable().keySet()) {
-            update(gradient.getGradientFor(paramType), paramType);
-        }
     }
 
     @Override
@@ -261,11 +242,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
         this.params = paramTable;
-    }
-
-    @Override
-    public void initParams() {
-        throw new UnsupportedOperationException("Deprecated - no longer used - " + layerId());
     }
 
     @Override
@@ -433,54 +409,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public String toString() {
         return getClass().getName() + "{" + "conf=" + conf + ", dropoutMask=" + dropoutMask + ", score=" + score
                         + ", optimizer=" + optimizer + ", listeners=" + iterationListeners + '}';
-    }
-
-    @Override
-    public Layer transpose() {
-        if (!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
-            throw new UnsupportedOperationException(
-                            "Unsupported layer type: " + conf.getLayer().getClass().getName() + " - " + layerId());
-
-        INDArray w = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-        INDArray vb = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
-        Layer layer;
-        try {
-            NeuralNetConfiguration clone = conf.clone(); // assume a deep clone here
-
-            org.deeplearning4j.nn.conf.layers.FeedForwardLayer clonedLayerConf =
-                            (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) clone.getLayer();
-            int nIn = clonedLayerConf.getNOut();
-            int nOut = clonedLayerConf.getNIn();
-            clonedLayerConf.setNIn(nIn);
-            clonedLayerConf.setNOut(nOut);
-
-            //Need to swap the hidden and visible biases for pretrain layers
-            INDArray newB;
-            INDArray newVB = null;
-
-            int totalParams = w.length();
-            if (vb != null) {
-                newB = vb.dup();
-                newVB = b.dup();
-                totalParams += newB.length() + newVB.length();
-            } else {
-                newB = Nd4j.create(1, nOut);
-                totalParams += newB.length();
-            }
-
-            INDArray paramsView = Nd4j.create(1, totalParams);
-            layer = clone.getLayer().instantiate(clone, iterationListeners, this.index, paramsView, true);
-
-            layer.setParam(DefaultParamInitializer.WEIGHT_KEY, w.transpose().dup());
-            layer.setParam(DefaultParamInitializer.BIAS_KEY, newB);
-            if (vb != null)
-                layer.setParam(PretrainParamInitializer.VISIBLE_BIAS_KEY, newVB);
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to construct transposed layer: " + layerId(), e);
-        }
-
-        return layer;
     }
 
     @Override
