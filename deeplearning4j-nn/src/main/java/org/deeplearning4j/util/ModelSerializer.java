@@ -475,20 +475,20 @@ public class ModelSerializer {
                             + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdaterState + "]");
     }
 
-//    /**
-//     *
-//     * @param model
-//     * @return
-//     */
-//    public static Task taskByModel(Model model) {
-//        Task task = new Task();
-//        try {
-//            task.setArchitectureType(Task.ArchitectureType.RECURRENT);
-//            if (model instanceof ComputationGraph) {
-//                task.setNetworkType(Task.NetworkType.ComputationalGraph);
-//                ComputationGraph network = (ComputationGraph) model;
-//                try {
-//                    if (network.getLayers() != null && network.getLayers().length > 0) {
+    /**
+     *
+     * @param model
+     * @return
+     */
+    public static Task taskByModel(Model model) {
+        Task task = new Task();
+        try {
+            task.setArchitectureType(Task.ArchitectureType.RECURRENT);
+            if (model instanceof ComputationGraph) {
+                task.setNetworkType(Task.NetworkType.ComputationalGraph);
+                ComputationGraph network = (ComputationGraph) model;
+                try {
+                    if (false){ //network.getLayers() != null && network.getLayers().length > 0) {
 //                        for (Layer layer : network.getLayers()) {
 //                            if (layer instanceof RBM
 //                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
@@ -504,16 +504,16 @@ public class ModelSerializer {
 //                                break;
 //                            }
 //                        }
-//                    } else
-//                        task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
-//                } catch (Exception e) {
-//                    // do nothing here
-//                }
-//            } else if (model instanceof MultiLayerNetwork) {
-//                task.setNetworkType(Task.NetworkType.MultilayerNetwork);
-//                MultiLayerNetwork network = (MultiLayerNetwork) model;
-//                try {
-//                    if (network.getLayers() != null && network.getLayers().length > 0) {
+                    } else
+                        task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
+                } catch (Exception e) {
+                    // do nothing here
+                }
+            } else if (model instanceof MultiLayerNetwork) {
+                task.setNetworkType(Task.NetworkType.MultilayerNetwork);
+                MultiLayerNetwork network = (MultiLayerNetwork) model;
+                try {
+                    if (false) {//network.getLayers() != null && network.getLayers().length > 0) {
 //                        for (Layer layer : network.getLayers()) {
 //                            if (layer instanceof RBM
 //                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
@@ -529,19 +529,19 @@ public class ModelSerializer {
 //                                break;
 //                            }
 //                        }
-//                    } else
-//                        task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
-//                } catch (Exception e) {
-//                    // do nothing here
-//                }
-//            }
-//            return task;
-//        } catch (Exception e) {
-//            task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
-//            task.setNetworkType(Task.NetworkType.DenseNetwork);
-//            return task;
-//        }
-//    }
+                    } else
+                        task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
+                } catch (Exception e) {
+                    // do nothing here
+                }
+            }
+            return task;
+        } catch (Exception e) {
+            task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
+            task.setNetworkType(Task.NetworkType.DenseNetwork);
+            return task;
+        }
+    }
 
     /**
      * This method appends normalizer to a given persisted model.

@@ -2198,12 +2198,12 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
     @Override
     public INDArray activate(boolean training) {
-        throw new UnsupportedOperationException();
+        return output(input, training);
     }
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-        throw new UnsupportedOperationException();
+        return output(input, training);
     }
 
     @Override
@@ -2592,10 +2592,9 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         if (!initDone) {
             initDone = true;
             Heartbeat heartbeat = Heartbeat.getInstance();
-//            task = ModelSerializer.taskByModel(this);
-//            Environment env = EnvironmentUtils.buildEnvironment();
-//            heartbeat.reportEvent(Event.STANDALONE, env, task);
-            throw new UnsupportedOperationException("Not yet implemented");
+            task = ModelSerializer.taskByModel(this);
+            Environment env = EnvironmentUtils.buildEnvironment();
+            heartbeat.reportEvent(Event.STANDALONE, env, task);
         }
     }
 

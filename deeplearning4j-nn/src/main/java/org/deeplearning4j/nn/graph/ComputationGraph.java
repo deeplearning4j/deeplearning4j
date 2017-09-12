@@ -317,7 +317,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        return null;
+        return new Pair<>(backpropGradient(new INDArray[]{epsilon}), null);
     }
 
     /**
@@ -2209,12 +2209,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     private void update(Task task) {
         if (!initDone) {
-//            initDone = true;
-//            Heartbeat heartbeat = Heartbeat.getInstance();
-//            task = ModelSerializer.taskByModel(this);
-//            Environment env = EnvironmentUtils.buildEnvironment();
-//            heartbeat.reportEvent(Event.STANDALONE, env, task);
-            throw new UnsupportedOperationException("Not yet implemented");
+            initDone = true;
+            Heartbeat heartbeat = Heartbeat.getInstance();
+            task = ModelSerializer.taskByModel(this);
+            Environment env = EnvironmentUtils.buildEnvironment();
+            heartbeat.reportEvent(Event.STANDALONE, env, task);
         }
     }
 
