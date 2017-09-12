@@ -230,8 +230,8 @@ public class CNNGradientCheckTest {
                     }
 
                     MultiLayerConfiguration conf =
-                            new NeuralNetConfiguration.Builder().regularization(false).learningRate(1.0)
-                                    .updater(Updater.SGD).weightInit(WeightInit.DISTRIBUTION)
+                            new NeuralNetConfiguration.Builder()
+                                    .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                     .dist(new NormalDistribution(0, 1))
                                     .list().layer(new ConvolutionLayer.Builder(kernel,
                                             stride, padding).nIn(inputDepth)
