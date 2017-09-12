@@ -21,7 +21,7 @@ namespace nd4j {
 
         Workspace::Workspace(Nd4jIndex initialSize) {
             if (initialSize > 0) {
-                this->_ptrHost = malloc(initialSize);
+                this->_ptrHost = (char *)malloc(initialSize);
 
                 if (this->_ptrHost == nullptr)
                     throw "Workspace allocation failed";
@@ -38,9 +38,9 @@ namespace nd4j {
         void Workspace::init(Nd4jIndex bytes) {
             if (_currentSize < bytes) {
                 if (this->_ptrHost != nullptr)
-                    free(this->_ptrHost);
+                    free((void *)this->_ptrHost);
 
-                this->_ptrHost = malloc(bytes);
+                this->_ptrHost =(char *) malloc(bytes);
                 this->_currentSize = bytes;
             }
         }
@@ -59,7 +59,7 @@ namespace nd4j {
 
         Workspace::~Workspace() {
             if (this->_ptrHost != nullptr)
-                free(this->_ptrHost);
+                free((void *)this->_ptrHost);
 
             freeSpills();
         }
@@ -94,7 +94,7 @@ namespace nd4j {
             }
 
             _offset += numBytes;
-            result = _ptrHost + _offset.load();
+            result = (void *)(_ptrHost + _offset.load());
 
             this->_mutexAllocation.unlock();
 
