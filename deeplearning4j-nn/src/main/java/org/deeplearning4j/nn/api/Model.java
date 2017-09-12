@@ -90,13 +90,6 @@ public interface Model {
      */
     void computeGradientAndScore();
 
-    /**
-     * Sets a rolling tally for the score. This is useful for mini batch learning when
-     * you are accumulating error across a dataset.
-     * @param accum the amount to accum
-     */
-    void accumulateScore(double accum);
-
 
     /**
      * Parameters of the model (if any)
@@ -128,7 +121,7 @@ public interface Model {
     void setParams(INDArray params);
 
     /**
-     * Set the initial parameters array as a view of the full (backprop) network parameters
+     * Set the initial parameters array as a view of the full network parameters
      * NOTE: this is intended to be used internally in MultiLayerNetwork and ComputationGraph, not by users.
      * @param params a 1 x nParams row vector that is a view of the larger (MLN/CG) parameters array
      */
@@ -160,13 +153,6 @@ public interface Model {
 
 
     /**
-     * Run one iteration
-     * @param input the input to iterate on
-     */
-    void iterate(INDArray input);
-
-
-    /**
      * Calculate a gradient
      * @return the gradient for this model
      */
@@ -179,25 +165,6 @@ public interface Model {
     Pair<Gradient, Double> gradientAndScore();
 
     /**
-     * The current inputs batch size
-     * @return the current inputs batch size
-     */
-    int batchSize();
-
-
-    /**
-     * The configuration for the neural network
-     * @return the configuration for the neural network
-     */
-    NeuralNetConfiguration conf();
-
-    /**
-     * Setter for the configuration
-     * @param conf
-     */
-    void setConf(NeuralNetConfiguration conf);
-
-    /**
      * The input/feature matrix for the model
      * @return the input/feature matrix for the model
      */
@@ -205,32 +172,11 @@ public interface Model {
 
 
     /**
-     * Validate the input
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used, most implementations are unsupported or no-op.
-     */
-    @Deprecated
-    void validateInput();
-
-    /**
-     * Returns this models optimizer
-     * @return this models optimizer
-     */
-    ConvexOptimizer getOptimizer();
-
-    /**
      * Get the parameter
      * @param param the key of the parameter
      * @return the parameter vector/matrix with that particular key
      */
     INDArray getParam(String param);
-
-    /**
-     * Initialize the parameters
-     * @deprecated As of 0.7.3 - Feb 2017. Not used; neural network params are initialized by the parameter initializaters.
-     *  Furthermore, most implementations are unsupported or no-op.
-     */
-    @Deprecated
-    void initParams();
 
     /**
      * The param table
