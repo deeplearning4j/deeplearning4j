@@ -1645,7 +1645,6 @@ matrix of singular values W is output as a vector w[n].  The matrix vt is output
     // default destructor
     template<typename T>
     NDArray<T>::~NDArray() {
-
         if (_isBuffAlloc && _workspace == nullptr)
             delete[] _buffer;
 

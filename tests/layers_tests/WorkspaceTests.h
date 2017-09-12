@@ -126,4 +126,20 @@ TEST_F(WorkspaceTests, NewInWorkspaceTest1) {
 }
 
 
+TEST_F(WorkspaceTests, NewInWorkspaceTest2) {
+    Workspace ws(65536);
+
+    ASSERT_EQ(65536, ws.getCurrentSize());
+    ASSERT_EQ(0, ws.getCurrentOffset());
+
+    MemoryRegistrator::getInstance()->attachWorkspace(&ws);
+
+    auto ast = new NDArray<float>(5, 5, 'c', &ws);
+
+    ASSERT_TRUE(ws.getCurrentOffset() > 0);
+
+    delete ast;
+}
+
+
 #endif //LIBND4J_WORKSPACETESTS_H
