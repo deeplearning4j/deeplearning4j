@@ -467,7 +467,7 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::validateArguments(Block<T>& block) {
      * If number of args is variable (-1), but variables MUST be present - we check for non-zero number of arguments
      */
     if (_descriptor->getNumberOfTArgs() > 0) {
-        if (block.getTArguments()->size() != _descriptor->getNumberOfTArgs())
+        if ((int) block.getTArguments()->size() != _descriptor->getNumberOfTArgs())
             return ND4J_STATUS_BAD_PARAMS;
     } else
         if (_descriptor->getNumberOfTArgs() == -1)
@@ -475,7 +475,7 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::validateArguments(Block<T>& block) {
                 return ND4J_STATUS_BAD_PARAMS;
 
     if (_descriptor->getNumberOfIArgs() > 0) {
-        if (block.getIArguments()->size() != _descriptor->getNumberOfIArgs())
+        if ((int) block.getIArguments()->size() != _descriptor->getNumberOfIArgs())
             return ND4J_STATUS_BAD_PARAMS;
     } else
         if (_descriptor->getNumberOfIArgs() == -1)

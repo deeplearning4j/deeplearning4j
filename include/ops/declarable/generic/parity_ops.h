@@ -40,7 +40,7 @@ namespace nd4j {
             buffers.get()[0] = (Nd4jPointer) first->getBuffer();
             shapes.get()[0] = (Nd4jPointer) first->getShapeInfo();
 
-            for (int e = 1; e < block.getVariables().size(); e++) {
+            for (int e = 1; e < (int) block.getVariables().size(); e++) {
                 Variable<T> *var = block.getVariables().at(e);
                 _length += var->getNDArray()->lengthOf();
 
@@ -304,7 +304,7 @@ namespace nd4j {
                 for (auto v: list_A)
                     oldShapeA.push_back(v);
 
-                for (int i = 0; i < oldShapeA.size(); i++)
+                for (int i = 0; i < (int) oldShapeA.size(); i++)
                     oldShapeA[i] = a->sizeAt(oldShapeA[i]);
             }
 
@@ -320,7 +320,7 @@ namespace nd4j {
             } else {
                 for (auto v: list_B)
                     oldShapeB.push_back(v);
-                for (int i = 0; i < oldShapeB.size(); i++)
+                for (int i = 0; i < (int) oldShapeB.size(); i++)
                     oldShapeB[i] = b->sizeAt(oldShapeB[i]);
             }
 
@@ -500,6 +500,8 @@ namespace nd4j {
             input->template applyTransform<simdOps::ClipByValue<T>>(output, block.getTArguments()->data());
 
             STORE_RESULT(*output);
+
+            return ND4J_STATUS_OK;
         }
         DECLARE_SYN(ClipByValue, clipbyvalue);
 
@@ -514,20 +516,20 @@ namespace nd4j {
             NDArray<T>* output = this->getZ(block);
             int scale_factor = block.getIArguments()->at(0);
 
-            int inputHeight = input->sizeAt(2);
-            int inputWidth  = input->sizeAt(3);
+//            int inputHeight = input->sizeAt(2);
+//            int inputWidth  = input->sizeAt(3);
 
             int dW = scale_factor;
             int dH = scale_factor;
-            int outputHeight = inputHeight * scale_factor;
-            int outputWidth = inputWidth * scale_factor;
+//            int outputHeight = inputHeight * scale_factor;
+//            int outputWidth = inputWidth * scale_factor;
             int xDim = input->rankOf() - 2;
             int yDim = input->rankOf() - 1;
 
             int osz0 = output->sizeAt(0);
             int osz1 = output->sizeAt(1);
             int osz2 = output->sizeAt(2);
-            int osz3 = osz3 = output->sizeAt(3);
+            int osz3 = output->sizeAt(3);
 
             int i0, i1, i2, i3, isrc, idst;
             int iout[4];  // Output indices
@@ -581,7 +583,7 @@ namespace nd4j {
          * IArgs[0] - scale factor
          */
         DECLARE_CONFIGURABLE_OP(upsampling_bp, 2, 1, false, 0, 1) {
-            NDArray<T>* input = block.getVariables().at(0)->getNDArray();
+            //NDArray<T>* input = block.getVariables().at(0)->getNDArray();
             NDArray<T>* gradientNext = block.getVariables().at(1)->getNDArray();
             NDArray<T>* output = this->getZ(block);
             int scale_factor = block.getIArguments()->at(0);
@@ -677,10 +679,12 @@ namespace nd4j {
             int dimSize = block.getIArguments()->at(1);
             std::vector<int> tadDimension;
             unsigned long e;
-            for (e = 2; e < 2 + dimSize; e++)
+            unsigned long limg = 2 + dimSize;
+            for (e = 2; e < limg; e++)
                 tadDimension.push_back((int) block.getIArguments()->at(e));
 
-            int numIndices = block.getIArguments()->at(e++);
+            // increasing counter to skip numIndices
+            e++;
             std::vector<int> indices;
             std::vector<int> indicesU;
             int cnt = 0;

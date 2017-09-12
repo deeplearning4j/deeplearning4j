@@ -135,7 +135,7 @@ template <typename T>
 std::vector<nd4j::graph::Variable<T> *> * nd4j::graph::Graph<T>::fetchOutputs() {
     auto res = new std::vector<nd4j::graph::Variable<T> *>();
 
-    for (int e = 0; e < _output.size(); e++) {
+    for (int e = 0; e < (int) _output.size(); e++) {
         res->push_back(_variableSpace->getVariable(_output.at(e)));
     }
 
@@ -239,7 +239,7 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
 
         // we're pushing this node to output only
         if ((!node->hasInternalOutputs() && (_configuration->_outputMode == OutputMode_IMPLICIT || _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT)) ) {
-            for (int e = 0; e < node->output()->size(); e++) {
+            for (int e = 0;  e < (int) node->output()->size(); e++) {
                 if (node->output()->at(e) < 0)
                     pushToOutputOnce(node->output()->at(e));
             }
@@ -420,14 +420,10 @@ nd4j::graph::Graph<T>::Graph(const FlatGraph *flatGraph) {
     // rolling through nodes
     if (flatGraph != nullptr && flatGraph->nodes() != nullptr && flatGraph->nodes()->size() > 0) {
 
-        // flag to be raised if there's nodes without output being set
-        bool outputPassNeeded = false;
-
         for (unsigned int e = 0; e < flatGraph->nodes()->size(); e++) {
             auto node = flatGraph->nodes()->Get(e);
 
             if (node->output() == nullptr || node->output()->size() == 0) {
-                outputPassNeeded = true;
                 nd4j_printf("Orphan node detected: %i; AutoOutput to be considered\n", node->id());
             }
 
@@ -477,6 +473,7 @@ Nd4jStatus nd4j::graph::Graph<T>::validate() {
 template <typename T>
 Nd4jStatus nd4j::graph::Graph<T>::validateNode(nd4j::graph::Node<T> *node) {
     // TODO: to be implemented
+    return ND4J_STATUS_OK;
 }
 
 #endif //LIBND4J_GRAPH_H

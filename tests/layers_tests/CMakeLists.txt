@@ -1,5 +1,5 @@
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
-include_directories(../../include ../../layers ../../include/helpers ../../include/loops ../../include/graph ../../include/ops ../../include/types ../../include/cnpy ../../blas)
+include_directories(../../include ../../layers ../../include/helpers ../../include/memory ../../include/loops ../../include/graph ../../include/ops ../../include/types ../../include/cnpy ../../blas)
 if(LINUX)
     link_directories(/usr/local/lib)
     link_directories(/usr/lib)
@@ -46,7 +46,7 @@ ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 message("CPU BLAS")
 add_definitions(-D__CPUBLAS__=true)
-add_library(nd4jcpu SHARED ../../blas/cpu/NativeOps.cpp ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h ../../include/ops/declarable/generic/parity_ops.h ../../include/helpers/helper_hash.h)
+add_library(nd4jcpu SHARED ../../blas/cpu/NativeOps.cpp ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h ../../include/ops/declarable/generic/parity_ops.h ../../include/ops/declarable/generic/third_party.h ../../include/helpers/helper_hash.h ../../include/memory/cpu/Workspace.cpp )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
     message(FATAL_ERROR "You need at least GCC 4.9")
@@ -69,5 +69,5 @@ elseif(MSYS)
 endif()
 
 
-add_executable(runtests AllTests.cpp)
+add_executable(runtests AllTests.cpp )
 target_link_libraries(runtests nd4jcpu  gtest gtest_main)

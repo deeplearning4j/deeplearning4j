@@ -34,8 +34,6 @@ namespace nd4j {
             int batchSize = x->sizeAt(0);
             int numColumns = x->sizeAt(1);
 
-            int numIndices = block.getIArguments()->size();
-
             std::vector<int> indices(*block.getIArguments());
             std::map<int, int> sparse2dense;
 
@@ -59,9 +57,9 @@ namespace nd4j {
 
                     int denseIdx = sparse2dense.at(idx);
 
-                    T current = z->getScalar(r, denseIdx);
-                    T value = row->getIndexedScalar(e + 1);
 
+                    T value = row->getIndexedScalar(e + 1);
+                    T current = z->getScalar(r, denseIdx);
                     z->putScalar(r, denseIdx, value + current);
                 }
             }
