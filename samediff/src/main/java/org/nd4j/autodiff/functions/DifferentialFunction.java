@@ -259,13 +259,13 @@ public abstract class DifferentialFunction implements Differential {
                 .id(opName +"(" + v1.getInput().getId() + "," + v2.getInput().getId() + ")")
                 .shape(shape).build();
         //result
-        if(vertex == null)
+        if(vertex == null) {
             vertex = (NDArrayVertex) sameDiff.graph().getVertex(vertexId);
-
+        }
         NDArrayVertex newVertex = new NDArrayVertex(
                 sameDiff,
                 sameDiff.getGraph().nextVertexId(),
-                vertex.depth() + 1,
+                Math.max(i_v1.getVertex().depth(),i_v2.getVertex().getDepth()) + 1,
                 arrInfo);
         if(newVertex.vertexID() == v2VertexId || newVertex.vertexID() == v1VertexId)
             throw new ND4JIllegalStateException("Illegal vertex id specified in new vertex." +
@@ -279,7 +279,7 @@ public abstract class DifferentialFunction implements Differential {
         //ensure there's 2 vertices for when the 2 inputs are the same
         if(i_v1.equals(i_v2)) {
             NDArrayVertex dupVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(),
-                    vertex.depth() + 1,
+                    Math.max(i_v1.getVertex().depth(),i_v2.getVertex().getDepth()) + 1,
                     NDArrayInformation.builder().arrId(v1.getInput().getArrId())
                             .shape(v1.getInput().getShape())
                             .id(v1.getInput().getId()).build());

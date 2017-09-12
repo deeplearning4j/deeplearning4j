@@ -17,7 +17,9 @@ public class NDArrayVertex extends Vertex<NDArrayInformation>  {
     private OpState opState;
     private SameDiff sameDiff;
 
-    public NDArrayVertex(SameDiff sameDiff,int idx, int depth,int[] shape) {
+
+
+    public NDArrayVertex(SameDiff sameDiff, int idx, int depth, int[] shape) {
         this(sameDiff,idx,depth,
                 NDArrayInformation.builder().shape(shape)
                         .id(String.valueOf(idx))
@@ -70,6 +72,7 @@ public class NDArrayVertex extends Vertex<NDArrayInformation>  {
     public String toString() {
         return "NDArrayVertex{" +
                 "idx=" + idx +
+                ", depth=" + depth +
                 ", value=" + value +
                 '}';
     }

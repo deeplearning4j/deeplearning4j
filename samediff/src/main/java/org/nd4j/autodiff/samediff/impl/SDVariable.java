@@ -39,6 +39,7 @@ public class SDVariable  implements Serializable {
     private int[] shape;
     private SDVariable gradient;
     private int vertexId;
+    private int depth;
     protected DifferentialFunction differentialFunction;
 
     @Builder
@@ -56,10 +57,16 @@ public class SDVariable  implements Serializable {
         this.vertexId = vertexId;
         this.arrayField = arrayField;
         this.sameDiff = sameDiff;
-        if(differentialFunction != null)
+        if(differentialFunction != null) {
             this.vertexId = differentialFunction.getVertexId();
-        else if(arrayField != null)
+            this.depth = differentialFunction.getVertex().depth();
+        }
+        else if(arrayField != null) {
             this.vertexId = arrayField.getVertexId();
+            this.depth = arrayField.getVertex().depth();
+        }
+
+
 
     }
 

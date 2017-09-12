@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.samediff;
 
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Ints;
 import com.rits.cloning.Cloner;
 import lombok.Builder;
 import lombok.Data;
@@ -8,10 +9,7 @@ import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
-import org.nd4j.autodiff.opstate.OpExecAction;
-import org.nd4j.autodiff.opstate.OpExecOrder;
-import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.opstate.*;
 
 import java.util.*;
 
@@ -114,15 +112,6 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
     }
 
 
-    public SDGraph optimize() {
-        OpExecOrder opOrder = getOpOrder();
-
-        for (OpExecAction opExecAction : opOrder.getActions()) {
-
-        }
-
-        return this;
-    }
 
     /**
      *
@@ -216,7 +205,21 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         Collections.sort(vertices);
 
         if(reverse) {
+          PriorityQueue<NDArrayVertex> depthQueue = new PriorityQueue<>(numVertices(), new Comparator<NDArrayVertex>() {
+              @Override
+              public int compare(NDArrayVertex o1, NDArrayVertex o2) {
+                  return Ints.compare(o1.depth(),o2.depth());
+              }
+          });
 
+          for(int i : vertices) {
+              NDArrayVertex vertex = (NDArrayVertex) getVertex(i);
+              depthQueue.add(vertex);
+          }
+
+          for(int i = 0; i < ret.length; i++) {
+              ret[i] = depthQueue.poll().vertexID();
+          }
         }
         else {
             for (int i : vertices) {
