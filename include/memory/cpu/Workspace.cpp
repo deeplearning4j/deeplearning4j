@@ -32,6 +32,7 @@ namespace nd4j {
             this->_currentSize = initialSize;
             this->_offset = 0;
             this->_cycleAllocations = 0;
+            this->_spillsSize = 0;
         }
 
         void Workspace::init(Nd4jIndex bytes) {
@@ -78,7 +79,7 @@ namespace nd4j {
             this->_cycleAllocations += numBytes;
             this->_mutexAllocation.lock();
 
-            if (_offset.load() + numBytes >= _currentSize) {
+            if (_offset.load() + numBytes > _currentSize) {
                 this->_mutexAllocation.unlock();
 
                 void *p = malloc(numBytes);

@@ -85,21 +85,30 @@ TEST_F(WorkspaceTests, StretchTest1) {
     Workspace workspace(128);
     void* ptr = workspace.allocateBytes(8);
     workspace.scopeOut();
+    ASSERT_EQ(0, workspace.getSpilledSize());
+    ASSERT_EQ(0, workspace.getCurrentOffset());
 
 
     workspace.scopeIn();
     for (int e = 0; e < 10; e++) {
 
-
         workspace.allocateBytes(128);
 
-
     }
+    ASSERT_EQ(128 * 9, workspace.getSpilledSize());
     workspace.scopeOut();
     workspace.scopeIn();
 
     ASSERT_EQ(0, workspace.getCurrentOffset());
+
+    // we should have absolutely different pointer here, due to reallocation
+    void* ptr2 = workspace.allocateBytes(8);
+
+    ASSERT_FALSE(ptr == ptr2);
+
+
     ASSERT_EQ(1280, workspace.getCurrentSize());
+    ASSERT_EQ(0, workspace.getSpilledSize());
 }
 
 
