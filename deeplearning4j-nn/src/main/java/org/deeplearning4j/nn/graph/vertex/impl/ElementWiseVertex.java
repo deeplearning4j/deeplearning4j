@@ -27,8 +27,8 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.impl.transforms.Or;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.primitives.Pair;
@@ -161,10 +161,9 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 for (int i = 0; i < nInForwardPass; i++) {
                     //gradient is epsilon where the max index is the same as i and zero elsewhere
                     outMax[i] = maxIndices.dup();
-                    //generate a mask with 1s and 0s in the right places
-                    Nd4j.getExecutioner().exec(new CompareAndSet(outMax[i], -1 , Conditions.notEquals(i)));
-                    Nd4j.getExecutioner().exec(new CompareAndSet(outMax[i], 1 , Conditions.notEquals(-1)));
-                    Nd4j.getExecutioner().exec(new CompareAndSet(outMax[i], 0 , Conditions.equals(-1)));
+                    //generate a mask with 1s and 0s in the right places and muli with epsilon
+                    MatchConditionTransform nd4jop = new MatchConditionTransform(outMax[i], outMax[i], Conditions.equals(i));
+                    Nd4j.getExecutioner().exec(nd4jop);
                     outMax[i].muli(epsilon);
                 }
                 return new Pair<>(null, outMax);
