@@ -85,6 +85,10 @@ public class WeightInitUtil {
                 double a = 1.0 / Math.sqrt(fanIn);
                 ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-a, a));
                 break;
+            case LECUN_UNIFORM:
+                double b = 3.0 / Math.sqrt(fanIn);
+                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-b, b));
+                break;
             case XAVIER:
                 ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / (fanIn + fanOut)));
                 break;
@@ -94,7 +98,8 @@ public class WeightInitUtil {
                 double s = Math.sqrt(6.0) / Math.sqrt(fanIn + fanOut);
                 ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-s, s));
                 break;
-            case NORMAL:            //Fall through: these 2 are equivalent
+            case LECUN_NORMAL:  //Fall through: these 3 are equivalent
+            case NORMAL:
             case XAVIER_FAN_IN:
                 ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(fanIn));
                 break;
