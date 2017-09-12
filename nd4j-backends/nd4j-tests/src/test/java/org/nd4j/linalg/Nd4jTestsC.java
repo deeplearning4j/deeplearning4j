@@ -5374,6 +5374,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testMatchTransform() throws Exception {
+        val array = Nd4j.create(new double[] {1, 1, 1, 0, 1, 1},'c');
+        val exp = Nd4j.create(new double[] {0, 0, 0, 1, 0, 0},'c');
+        Op op = new MatchConditionTransform(array, array, 1e-5, Conditions.epsEquals(0.0));
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(exp, array);
+    }
+
     @Override
     public char ordering() {
         return 'c';
