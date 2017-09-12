@@ -109,7 +109,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
      * @return             IUpdater for the parameter
      */
     @Override
-    public IUpdater getIUpdaterByParam(String paramName) {
+    public IUpdater getUpdaterByParam(String paramName) {
         if(biasUpdater != null && initializer().isBiasParam(paramName)){
             return biasUpdater;
         }

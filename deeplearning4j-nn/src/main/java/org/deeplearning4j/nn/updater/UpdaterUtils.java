@@ -12,8 +12,8 @@ public class UpdaterUtils {
     public static boolean updaterConfigurationsEquals(Layer layer1, String param1, Layer layer2, String param2) {
         org.deeplearning4j.nn.conf.layers.Layer l1 = layer1.conf().getLayer();
         org.deeplearning4j.nn.conf.layers.Layer l2 = layer2.conf().getLayer();
-        IUpdater u1 = l1.getIUpdaterByParam(param1);
-        IUpdater u2 = l2.getIUpdaterByParam(param2);
+        IUpdater u1 = l1.getUpdaterByParam(param1);
+        IUpdater u2 = l2.getUpdaterByParam(param2);
 
         //For updaters to be equal (and hence combinable), we require that:
         //(a) The updater-specific configurations are equal (inc. LR, LR/momentum schedules etc)

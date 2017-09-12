@@ -15,9 +15,7 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,7 +76,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 for (int j = 0; j < variables.size(); j++) {
                     String var = variables.get(j);
                     int paramSizeThisVariable = layerParamTable.get(var).length();
-                    int updaterStateSizeThisVariable = (int) layers[i].conf().getLayer().getIUpdaterByParam(var)
+                    int updaterStateSizeThisVariable = (int) layers[i].conf().getLayer().getUpdaterByParam(var)
                                     .stateSize(paramSizeThisVariable);
 
                     INDArray gradientViewSubset = null;

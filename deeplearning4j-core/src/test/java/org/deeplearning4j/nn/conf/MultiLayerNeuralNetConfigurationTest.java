@@ -381,17 +381,17 @@ public class MultiLayerNeuralNetConfigurationTest {
         org.deeplearning4j.nn.conf.layers.BaseLayer l2 = (BaseLayer) conf.getConf(2).getLayer();
         org.deeplearning4j.nn.conf.layers.BaseLayer l3 = (BaseLayer) conf.getConf(3).getLayer();
 
-        assertEquals(0.5, ((Adam)l0.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
-        assertEquals(1e-2, ((Adam)l0.getIUpdaterByParam("W")).getLearningRate(), 1e-6);
+        assertEquals(0.5, ((Adam)l0.getUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l0.getUpdaterByParam("W")).getLearningRate(), 1e-6);
 
-        assertEquals(0.5, ((Adam)l1.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
-        assertEquals(1e-2, ((Adam)l1.getIUpdaterByParam("W")).getLearningRate(), 1e-6);
+        assertEquals(0.5, ((Adam)l1.getUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l1.getUpdaterByParam("W")).getLearningRate(), 1e-6);
 
-        assertEquals(0.5, ((Adam)l2.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
-        assertEquals(1e-2, ((Adam)l2.getIUpdaterByParam("W")).getLearningRate(), 1e-6);
+        assertEquals(0.5, ((Adam)l2.getUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l2.getUpdaterByParam("W")).getLearningRate(), 1e-6);
 
-        assertEquals(0.5, ((Adam)l3.getIUpdaterByParam("b")).getLearningRate(), 1e-6);
-        assertEquals(1e-2, ((Adam)l3.getIUpdaterByParam("W")).getLearningRate(), 1e-6);
+        assertEquals(0.5, ((Adam)l3.getUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l3.getUpdaterByParam("W")).getLearningRate(), 1e-6);
     }
 
 }

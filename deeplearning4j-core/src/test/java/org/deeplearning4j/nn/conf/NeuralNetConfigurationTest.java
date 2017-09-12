@@ -242,11 +242,11 @@ public class NeuralNetConfigurationTest {
         ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(),
                         new NegativeDefaultStepFunction(), null, net);
         opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
-        assertEquals(lr, ((Sgd)net.getLayer(0).conf().getLayer().getIUpdaterByParam("W")).getLearningRate(), 1e-4);
-        assertEquals(biasLr, ((Sgd)net.getLayer(0).conf().getLayer().getIUpdaterByParam("b")).getLearningRate(), 1e-4);
-        assertEquals(0.7, ((Sgd)net.getLayer(1).conf().getLayer().getIUpdaterByParam("gamma")).getLearningRate(), 1e-4);
-        assertEquals(0.3, ((Sgd)net.getLayer(2).conf().getLayer().getIUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
-        assertEquals(0.3, ((Sgd)net.getLayer(2).conf().getLayer().getIUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
+        assertEquals(lr, ((Sgd)net.getLayer(0).conf().getLayer().getUpdaterByParam("W")).getLearningRate(), 1e-4);
+        assertEquals(biasLr, ((Sgd)net.getLayer(0).conf().getLayer().getUpdaterByParam("b")).getLearningRate(), 1e-4);
+        assertEquals(0.7, ((Sgd)net.getLayer(1).conf().getLayer().getUpdaterByParam("gamma")).getLearningRate(), 1e-4);
+        assertEquals(0.3, ((Sgd)net.getLayer(2).conf().getLayer().getUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
+        assertEquals(0.3, ((Sgd)net.getLayer(2).conf().getLayer().getUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
     }
 
     @Test

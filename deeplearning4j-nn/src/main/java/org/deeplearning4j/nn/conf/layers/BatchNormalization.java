@@ -141,7 +141,7 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     @Override
-    public IUpdater getIUpdaterByParam(String paramName) {
+    public IUpdater getUpdaterByParam(String paramName) {
         switch (paramName) {
             case BatchNormalizationParamInitializer.BETA:
             case BatchNormalizationParamInitializer.GAMMA:
@@ -164,7 +164,7 @@ public class BatchNormalization extends FeedForwardLayer {
         int updaterStateSize = 0;
 
         for (String s : BatchNormalizationParamInitializer.keys()) {
-            updaterStateSize += getIUpdaterByParam(s).stateSize(nOut);
+            updaterStateSize += getUpdaterByParam(s).stateSize(nOut);
         }
 
         //During forward pass: working memory size approx. equal to 2x input size (copy ops, etc)

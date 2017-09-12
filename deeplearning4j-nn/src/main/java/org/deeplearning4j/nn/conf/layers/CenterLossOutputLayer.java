@@ -89,7 +89,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    public IUpdater getIUpdaterByParam(String paramName) {
+    public IUpdater getUpdaterByParam(String paramName) {
         // center loss utilizes alpha directly for this so any updater can be used for other layers
         switch (paramName) {
             case CenterLossParamInitializer.CENTER_KEY:
@@ -149,9 +149,9 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         int nParamsCenter = nIn * nOut;
         int numParams = nParamsW + nParamsB + nParamsCenter;
 
-        int updaterStateSize = (int) (getIUpdaterByParam(CenterLossParamInitializer.WEIGHT_KEY).stateSize(nParamsW)
-                        + getIUpdaterByParam(CenterLossParamInitializer.BIAS_KEY).stateSize(nParamsB)
-                        + getIUpdaterByParam(CenterLossParamInitializer.CENTER_KEY).stateSize(nParamsCenter));
+        int updaterStateSize = (int) (getUpdaterByParam(CenterLossParamInitializer.WEIGHT_KEY).stateSize(nParamsW)
+                        + getUpdaterByParam(CenterLossParamInitializer.BIAS_KEY).stateSize(nParamsB)
+                        + getUpdaterByParam(CenterLossParamInitializer.CENTER_KEY).stateSize(nParamsCenter));
 
         int trainSizeFixed = 0;
         int trainSizeVariable = 0;

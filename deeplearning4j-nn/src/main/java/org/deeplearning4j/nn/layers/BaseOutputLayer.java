@@ -337,7 +337,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             int updaterStateSize = 0;
             Map<String, INDArray> paramTable = paramTable();
             for (Map.Entry<String, INDArray> entry : paramTable.entrySet()) {
-                updaterStateSize += (int) conf().getLayer().getIUpdaterByParam(entry.getKey())
+                updaterStateSize += (int) conf().getLayer().getUpdaterByParam(entry.getKey())
                                 .stateSize(entry.getValue().length());
             }
             if (updaterStateSize > 0)

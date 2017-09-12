@@ -113,7 +113,7 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public IUpdater getIUpdaterByParam(String paramName) {
+    public IUpdater getUpdaterByParam(String paramName) {
         return null;
     }
 

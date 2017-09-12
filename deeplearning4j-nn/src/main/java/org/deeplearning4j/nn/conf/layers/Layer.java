@@ -222,7 +222,7 @@ public abstract class Layer implements Serializable, Cloneable {
      * @param paramName    Parameter name
      * @return             IUpdater for the parameter
      */
-    public IUpdater getIUpdaterByParam(String paramName) {
+    public IUpdater getUpdaterByParam(String paramName) {
         throw new UnsupportedOperationException(
                         "Not supported: all layers with parameters should override this method");
     }
