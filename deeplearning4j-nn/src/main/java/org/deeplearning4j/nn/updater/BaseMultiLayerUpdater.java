@@ -11,6 +11,8 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -345,8 +347,12 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 break;
             case ClipElementWiseAbsoluteValue:
                 if (layerGradientView != null) {
-                    BooleanIndexing.replaceWhere(layerGradientView, threshold, Conditions.greaterThan(threshold));
-                    BooleanIndexing.replaceWhere(layerGradientView, -threshold, Conditions.lessThan(-threshold));
+                    CustomOp op = DynamicCustomOp.builder("clipbyvalue")
+                            .setInputs(layerGradientView)
+                            .callInplace(true)
+                            .setFloatingPointArguments(-threshold, threshold)
+                            .build();
+                    Nd4j.getExecutioner().exec(op);
                 }
                 break;
             case ClipL2PerLayer:
