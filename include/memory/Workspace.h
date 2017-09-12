@@ -26,8 +26,8 @@ namespace nd4j {
 
         class Workspace {
         protected:
-            void* _ptrHost;
-            void* _ptrDevice;
+            char* _ptrHost;
+            char* _ptrDevice;
 
             std::atomic<Nd4jIndex> _offset;
 
