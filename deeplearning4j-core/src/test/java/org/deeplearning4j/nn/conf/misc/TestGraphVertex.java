@@ -41,7 +41,7 @@ public class TestGraphVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
+    public Layer instantiate(ComputationGraph graph, String name, int idx,
                     INDArray paramsView, boolean initializeParams) {
         throw new UnsupportedOperationException("Not supported");
     }

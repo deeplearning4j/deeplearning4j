@@ -755,7 +755,7 @@ public class TransferLearning {
             newGraph.init();
 
             int[] topologicalOrder = newGraph.topologicalSortOrder();
-            org.deeplearning4j.nn.graph.vertex.GraphVertex[] vertices = newGraph.getVertices();
+            Layer[] vertices = newGraph.getVertices();
             if (!editedVertices.isEmpty()) {
                 //set params from orig graph as necessary to new graph
                 for (int i = 0; i < topologicalOrder.length; i++) {
@@ -789,7 +789,7 @@ public class TransferLearning {
                 Collections.addAll(allFrozen, frozenOutputAt);
 
                 for (int i = topologicalOrder.length - 1; i >= 0; i--) {
-                    org.deeplearning4j.nn.graph.vertex.GraphVertex gv = vertices[topologicalOrder[i]];
+                    Layer gv = vertices[topologicalOrder[i]];
                     if (allFrozen.contains(gv.getVertexName())) {
                         if (gv.hasLayer()) {
                             //Need to freeze this layer - both the layer implementation, and the layer configuration

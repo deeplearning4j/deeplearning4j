@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.conf.graph.rnn;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
@@ -91,8 +92,8 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                    INDArray paramsView, boolean initializeParams) {
+    public Layer instantiate(ComputationGraph graph, String name, int idx,
+                             INDArray paramsView, boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.rnn.DuplicateToTimeSeriesVertex(graph, name, idx, inputName);
     }
 

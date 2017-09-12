@@ -59,16 +59,6 @@ public class ElementWiseVertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
     public INDArray activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");

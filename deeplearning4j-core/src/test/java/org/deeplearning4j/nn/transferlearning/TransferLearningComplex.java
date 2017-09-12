@@ -51,10 +51,10 @@ public class TransferLearningComplex {
 
 
         int[] topologicalOrder = graph.topologicalSortOrder();
-        org.deeplearning4j.nn.graph.vertex.GraphVertex[] vertices = graph.getVertices();
+        Layer[] vertices = graph.getVertices();
 
         for (int i = 0; i < topologicalOrder.length; i++) {
-            org.deeplearning4j.nn.graph.vertex.GraphVertex v = vertices[topologicalOrder[i]];
+            Layer v = vertices[topologicalOrder[i]];
             log.info(i + "\t" + v.getVertexName());
         }
 

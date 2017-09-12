@@ -40,7 +40,6 @@ import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
-import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
@@ -133,18 +132,18 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     /**
      * All GraphVertex objects in the network.
      */
-    protected GraphVertex[] vertices;
+    protected Layer[] vertices;
     /**
      * Map of vertices by name
      */
-    protected Map<String, GraphVertex> verticesMap;
+    protected Map<String, Layer> verticesMap;
     /**
      * Indexes of graph vertices, in topological order. The topological order defines the order in which forward pass
      * (and hence also backward pass, which is the opposite to this) is conducted in the network.
      */
     protected int[] topologicalOrder;
     /**
-     * A list of layers. Each of these layers is present in a GraphVertex, but are here for easy reference.
+     * A list of layers. Each of these layers is present in a Layer, but are here for easy reference.
      * This array also defines the order in which the getLayer(int) method returns layers.
      */
     protected Layer[] layers;
@@ -231,7 +230,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     /**
      * Get the layer by the number of that layer, in range 0 to getNumLayers()-1
-     * NOTE: This is different from the internal GraphVertex index for the layer
+     * NOTE: This is different from the internal Layer index for the layer
      */
     public Layer getLayer(int idx) {
         return layers[idx];
@@ -252,16 +251,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Returns an array of all GraphVertex objects.
+     * Returns an array of all Layer objects.
      */
-    public GraphVertex[] getVertices() {
+    public Layer[] getVertices() {
         return vertices;
     }
 
     /**
-     * Return a given GraphVertex by name, or null if no vertex with that name exists
+     * Return a given Layer by name, or null if no vertex with that name exists
      */
-    public GraphVertex getVertex(String name) {
+    public Layer getVertex(String name) {
         return verticesMap.get(name);
     }
 
@@ -423,7 +422,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
         topologicalOrder = topologicalSortOrder();
 
-        //Initialization: create the GraphVertex objects, based on configuration structure
+        //Initialization: create the Layer objects, based on configuration structure
         Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
 
         //Names of all of the (data) inputs to the ComputationGraph
@@ -431,7 +430,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Inputs for each layer and GraphNode:
         Map<String, List<String>> vertexInputs = configuration.getVertexInputs();
-        this.vertices = new GraphVertex[networkInputNames.size() + configuration.getVertices().size()];
+        this.vertices = new Layer[networkInputNames.size() + configuration.getVertices().size()];
 
         //All names: inputs, layers and graph nodes (index to name map)
         Map<String, Integer> allNamesReverse = new HashMap<>();
@@ -439,7 +438,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Create network input vertices:
         int vertexNumber = 0;
         for (String name : networkInputNames) {
-            GraphVertex gv = new InputVertex(this, name, vertexNumber, null); //Output vertices: set later
+            Layer gv = new InputVertex(this, name, vertexNumber, null); //Output vertices: set later
             allNamesReverse.put(name, vertexNumber);
             vertices[vertexNumber++] = gv;
         }
@@ -505,7 +504,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
             org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
-            GraphVertex gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
+            Layer gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
                     initializeParams);
 
             if (gv.hasLayer()) {
@@ -528,7 +527,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Create the lookup table, so we can find vertices easily by name
         verticesMap = new HashMap<>();
-        for (GraphVertex gv : vertices) {
+        for (Layer gv : vertices) {
             verticesMap.put(gv.getVertexName(), gv);
         }
 
@@ -536,7 +535,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         // These indices are used during forward and backward passes
         //To get output indices: need to essentially build the graph in reverse...
         Map<String, List<String>> verticesOutputTo = new HashMap<>(); //Key: vertex. Values: vertices that this node is an input for
-        for (GraphVertex gv : vertices) {
+        for (Layer gv : vertices) {
             String vertexName = gv.getVertexName();
             List<String> vertexInputNames;
             vertexInputNames = vertexInputs.get(vertexName);
@@ -556,7 +555,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
 
-        for (GraphVertex gv : vertices) {
+        for (Layer gv : vertices) {
             String vertexName = gv.getVertexName();
             int vertexIndex = gv.getIndex();
             List<String> vertexInputNames;
@@ -572,7 +571,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                 //Output of vertex 'inputVertexIndex' is the jth input to the current vertex
                 //For input indices, we need to know which output connection of vertex 'inputVertexIndex' this represents
-                GraphVertex inputVertex = vertices[inputVertexIndex];
+                Layer inputVertex = vertices[inputVertexIndex];
                 //First: get the outputs of the input vertex...
                 List<String> inputVertexOutputsTo = verticesOutputTo.get(inName);
                 int outputNumberOfInput = inputVertexOutputsTo.indexOf(vertexName);
@@ -590,7 +589,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         //Handle the outputs for this vertex
-        for (GraphVertex gv : vertices) {
+        for (Layer gv : vertices) {
             String vertexName = gv.getVertexName();
 
             List<String> thisVertexOutputsTo = verticesOutputTo.get(vertexName);
@@ -614,7 +613,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Mark any output vertices as outputs:
         for (String s : configuration.getNetworkOutputs()) {
-            GraphVertex gv = verticesMap.get(s);
+            Layer gv = verticesMap.get(s);
             gv.setOutputVertex(true);
         }
 
@@ -778,7 +777,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (Integer g : partialTopoSort)
             fwdPassOrder[k++] = g;
 
-        GraphVertex gv = vertices[fwdPassOrder[fwdPassOrder.length - 1]];
+        Layer gv = vertices[fwdPassOrder[fwdPassOrder.length - 1]];
         Layer layer = gv.getLayer();
 
         if(!(layer instanceof Model)){
@@ -825,7 +824,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                         for (int j = 0; j < fwdPassOrder.length - 1; j++) {
                             try (MemoryWorkspace wF = wsFF.notifyScopeEntered()) {
-                                GraphVertex current = vertices[fwdPassOrder[j]];
+                                Layer current = vertices[fwdPassOrder[j]];
                                 if (current.isInputVertex()) {
                                     VertexIndices[] inputsTo = current.getOutputVertices();
                                     INDArray input = inputs[current.getIndex()];
@@ -1367,7 +1366,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         score = 0.0;
         for (String s : configuration.getNetworkOutputs()) {
-            GraphVertex gv = verticesMap.get(s);
+            Layer gv = verticesMap.get(s);
 
             score += ((IOutputLayer) gv.getLayer()).computeScore(l1, l2, true);
 
@@ -1479,7 +1478,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
-            GraphVertex current = vertices[topologicalOrder[i]];
+            Layer current = vertices[topologicalOrder[i]];
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                 if (current.isInputVertex()) {
@@ -1690,7 +1689,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
         for (int i = topologicalOrder.length - 1; i >= 0; i--) {
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                GraphVertex current = vertices[topologicalOrder[i]];
+                Layer current = vertices[topologicalOrder[i]];
 
                 if (current.isInputVertex())
                     continue; //No op
@@ -1741,7 +1740,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 if (inputVertices != null) {
                     int j = 0;
                     for (VertexIndices v : inputVertices) {
-                        GraphVertex gv = vertices[v.getVertexIndex()];
+                        Layer gv = vertices[v.getVertexIndex()];
                         if (setVertexEpsilon[gv.getIndex()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
                             INDArray currentEps = gv.getEpsilon().leverageTo(workspaceExternal);
@@ -2481,7 +2480,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Based on: feedForward()
         for (int currVertexIdx : topologicalOrder) {
-            GraphVertex current = vertices[currVertexIdx];
+            Layer current = vertices[currVertexIdx];
             if (current.isInputVertex()) {
                 VertexIndices[] inputsTo = current.getOutputVertices();
                 INDArray input = inputs[current.getIndex()];
@@ -2783,7 +2782,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Do forward pass according to the topological ordering of the network
         for (int currVertexIdx : topologicalOrder) {
-            GraphVertex current = vertices[currVertexIdx];
+            Layer current = vertices[currVertexIdx];
             if (current.isInputVertex()) {
                 VertexIndices[] inputsTo = current.getOutputVertices();
                 INDArray input = inputs[current.getIndex()];
@@ -2869,7 +2868,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
             Map<Integer, Pair<INDArray, MaskState>> map = new HashMap<>();
             for (int i = 0; i < topologicalOrder.length; i++) {
-                GraphVertex current = vertices[topologicalOrder[i]];
+                Layer current = vertices[topologicalOrder[i]];
 
                 if (current.isInputVertex()) {
                     INDArray fMask = featureMaskArrays[current.getIndex()];
@@ -2910,7 +2909,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     continue;
                 }
                 String outputName = configuration.getNetworkOutputs().get(i);
-                GraphVertex v = verticesMap.get(outputName);
+                Layer v = verticesMap.get(outputName);
                 Layer ol = v.getLayer();
                 ol.setMaskArray(labelMaskArrays[i]);
             }
@@ -3275,7 +3274,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         for (int currVertexIdx : topologicalOrder) {
 
-            GraphVertex currentVertex = vertices[currVertexIdx];
+            Layer currentVertex = vertices[currVertexIdx];
             String currentVertexName = currentVertex.getVertexName();
 
             //String vars for print
@@ -3336,7 +3335,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         VertexIndices[] inputVertices = currentVertex.getInputVertices();
                         if (inputVertices != null) {
                             for (int i = 0; i < inputVertices.length; i++) {
-                                GraphVertex thisInputVertex = vertices[inputVertices[i].getVertexIndex()];
+                                Layer thisInputVertex = vertices[inputVertices[i].getVertexIndex()];
                                 inputTypeList.add(vertexOutputs.get(thisInputVertex.getVertexName()));
                             }
                         }
@@ -3380,7 +3379,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         for (int f = 0; f < vertices.length; f++) {
-            vertices[f].clearVertex();
+            vertices[f].clear();
         }
     }
 

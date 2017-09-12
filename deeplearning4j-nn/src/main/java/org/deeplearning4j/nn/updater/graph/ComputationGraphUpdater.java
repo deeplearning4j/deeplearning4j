@@ -2,7 +2,6 @@ package org.deeplearning4j.nn.updater.graph;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -37,7 +36,7 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
         if (orderedLayers != null) {
             return orderedLayers;
         }
-        GraphVertex[] vertices = network.getVertices();
+        Layer[] vertices = network.getVertices();
 
         //In CompGraph: we need to know topological ordering, so we know how parameters are laid out in the 1d view arrays
         int[] topologicalOrdering = network.topologicalSortOrder();
@@ -46,7 +45,7 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
 
         int j = 0;
         for (int i = 0; i < topologicalOrdering.length; i++) {
-            GraphVertex currentVertex = vertices[topologicalOrdering[i]];
+            Layer currentVertex = vertices[topologicalOrdering[i]];
             if (!currentVertex.hasLayer()) {
                 continue;
             }

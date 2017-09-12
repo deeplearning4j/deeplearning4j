@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf.graph;
 
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -73,7 +74,7 @@ public abstract class GraphVertex implements Cloneable, Serializable {
     public abstract int maxVertexInputs();
 
     /**
-     * Create a {@link org.deeplearning4j.nn.graph.vertex.GraphVertex} instance, for the given computation graph,
+     * Create a {@link Layer} instance, for the given computation graph,
      * given the configuration instance.
      *
      * @param graph            The computation graph that this GraphVertex is to be part of
@@ -83,8 +84,8 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      * @param initializeParams If true: initialize the parameters. If false: make no change to the values in the paramsView array
      * @return The implementation GraphVertex object (i.e., implementation, no the configuration)
      */
-    public abstract org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name,
-                    int idx, INDArray paramsView, boolean initializeParams);
+    public abstract Layer instantiate(ComputationGraph graph, String name,
+                                      int idx, INDArray paramsView, boolean initializeParams);
 
     /**
      * Determine the type of output for this GraphVertex, given the specified inputs. Given that a GraphVertex may do arbitrary

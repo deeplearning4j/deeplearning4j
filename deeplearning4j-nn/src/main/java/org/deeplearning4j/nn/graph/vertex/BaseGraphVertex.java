@@ -31,7 +31,7 @@ import org.nd4j.linalg.primitives.Pair;
 /** BaseGraphVertex defines a set of common functionality for GraphVertex instances.
  */
 @Data
-public abstract class BaseGraphVertex extends AbstractLayer implements GraphVertex {
+public abstract class BaseGraphVertex extends AbstractLayer {
 
     protected ComputationGraph graph;
 
@@ -73,11 +73,6 @@ public abstract class BaseGraphVertex extends AbstractLayer implements GraphVert
     }
 
     @Override
-    public String getVertexName() {
-        return vertexName;
-    }
-
-    @Override
     public int getIndex() {
         return vertexIndex;
     }
@@ -87,44 +82,44 @@ public abstract class BaseGraphVertex extends AbstractLayer implements GraphVert
         return (inputVertices == null ? 0 : inputVertices.length);
     }
 
-    @Override
-    public int getNumOutputConnections() {
-        return (outputVertices == null ? 0 : outputVertices.length);
-    }
+//    @Override
+//    public int getNumOutputConnections() {
+//        return (outputVertices == null ? 0 : outputVertices.length);
+//    }
 
-    /**A representation of the vertices that are inputs to this vertex (inputs duing forward pass)<br>
-     * Specifically, if inputVertices[X].getIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
-     * then the Zth output of vertex Y is the Xth input to this vertex
-     */
-    @Override
-    public VertexIndices[] getInputVertices() {
-        return inputVertices;
-    }
+//    /**A representation of the vertices that are inputs to this vertex (inputs duing forward pass)<br>
+//     * Specifically, if inputVertices[X].getIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
+//     * then the Zth output of vertex Y is the Xth input to this vertex
+//     */
+//    @Override
+//    public VertexIndices[] getInputVertices() {
+//        return inputVertices;
+//    }
 
-    @Override
-    public void setInputVertices(VertexIndices[] inputVertices) {
-        this.inputVertices = inputVertices;
-        this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
-    }
+//    @Override
+//    public void setInputVertices(VertexIndices[] inputVertices) {
+//        this.inputVertices = inputVertices;
+//        this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
+//    }
 
-    /**A representation of the vertices that this vertex is connected to (outputs duing forward pass)
-     * Specifically, if outputVertices[X].getIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
-     * then the Xth output of this vertex is connected to the Zth input of vertex Y
-     */
-    @Override
-    public VertexIndices[] getOutputVertices() {
-        return outputVertices;
-    }
-
-    @Override
-    public void setOutputVertices(VertexIndices[] outputVertices) {
-        this.outputVertices = outputVertices;
-    }
-
-    @Override
-    public boolean isInputVertex() {
-        return false;
-    }
+//    /**A representation of the vertices that this vertex is connected to (outputs duing forward pass)
+//     * Specifically, if outputVertices[X].getIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
+//     * then the Xth output of this vertex is connected to the Zth input of vertex Y
+//     */
+//    @Override
+//    public VertexIndices[] getOutputVertices() {
+//        return outputVertices;
+//    }
+//
+//    @Override
+//    public void setOutputVertices(VertexIndices[] outputVertices) {
+//        this.outputVertices = outputVertices;
+//    }
+//
+//    @Override
+//    public boolean isInputVertex() {
+//        return false;
+//    }
 
     @Override
     public void setInput(int inputNumber, INDArray input) {
@@ -134,10 +129,10 @@ public abstract class BaseGraphVertex extends AbstractLayer implements GraphVert
         inputs[inputNumber] = input;
     }
 
-    @Override
-    public void setEpsilon(INDArray epsilon) {
-        this.epsilon = epsilon;
-    }
+//    @Override
+//    public void setEpsilon(INDArray epsilon) {
+//        this.epsilon = epsilon;
+//    }
 
     @Override
     public void clear() {
@@ -146,46 +141,40 @@ public abstract class BaseGraphVertex extends AbstractLayer implements GraphVert
         }
     }
 
-    @Override
-    public boolean canDoForward() {
-        for (INDArray input : inputs) {
-            if (input == null) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public boolean canDoBackward() {
-        for (INDArray input : inputs) {
-            if (input == null) {
-                return false;
-            }
-        }
-        return epsilon != null;
-    }
-
-    @Override
-    public INDArray getEpsilon() {
-        return epsilon;
-    }
+//    @Override
+//    public boolean canDoForward() {
+//        for (INDArray input : inputs) {
+//            if (input == null) {
+//                return false;
+//            }
+//        }
+//        return true;
+//    }
+//
+//    @Override
+//    public boolean canDoBackward() {
+//        for (INDArray input : inputs) {
+//            if (input == null) {
+//                return false;
+//            }
+//        }
+//        return epsilon != null;
+//    }
+//
+//    @Override
+//    public INDArray getEpsilon() {
+//        return epsilon;
+//    }
 
     @Override
     public abstract String toString();
 
-    @Override
-    public void setLayerAsFrozen() {
-        if (!(this instanceof LayerVertex)) {
-            throw new IllegalArgumentException("Cannot set non layer vertices as frozen");
-        }
-    }
-
-    @Override
-    public void clearVertex() {
-        clear();
-        epsilon = null;
-    }
+//    @Override
+//    public void setLayerAsFrozen() {
+//        if (!(this instanceof LayerVertex)) {
+//            throw new IllegalArgumentException("Cannot set non layer vertices as frozen");
+//        }
+//    }
 
 
 

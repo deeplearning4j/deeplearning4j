@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.conf.graph;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -99,8 +100,8 @@ public class LayerVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                    INDArray paramsView, boolean initializeParams) {
+    public Layer instantiate(ComputationGraph graph, String name, int idx,
+                             INDArray paramsView, boolean initializeParams) {
         //Now, we need to work out if this vertex is an output vertex or not...
         boolean isOutput = graph.getConfiguration().getNetworkOutputs().contains(name);
 
