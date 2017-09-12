@@ -35,7 +35,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Upsampling layer
+ * Upsampling 2D layer
  *
  * @author Max Pumperla
  */

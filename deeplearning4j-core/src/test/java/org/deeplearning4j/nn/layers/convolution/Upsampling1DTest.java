@@ -15,12 +15,13 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Max Pumperla
  */
-public class Upsampling2DTest {
+public class Upsampling1DTest {
 
     private int nExamples = 1;
     private int depth = 20;
