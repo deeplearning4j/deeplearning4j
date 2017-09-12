@@ -4,6 +4,7 @@
 #include "../NDArray.h"
 #include "../NativeOpExcutioner.h"
 #include <memory/Workspace.h>
+#include <memory/MemoryRegistrator.h>
 #include <ops/gemm.h>
 #include <pointercast.h>
 #include <stdexcept>
@@ -12,6 +13,24 @@
 #include <loops/broadcasting.h>
 
 namespace nd4j {
+
+    template<typename T>
+    void* NDArray<T>::operator new(size_t i) {
+        if (nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached()) {
+            nd4j::memory::Workspace* ws = nd4j::memory::MemoryRegistrator::getInstance()->getWorkspace();
+
+            return ws->allocateBytes((Nd4jIndex) i);
+        } else {
+            return malloc(i);
+        }
+    }
+
+    template<typename T>
+    void NDArray<T>::operator delete(void* p) {
+        if (!nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached()) {
+            free(p);
+        }
+    }
 
 ////////////////////////////////////////////////////////////////////////
 // default constructor, do not allocate memory, memory for array is passed from outside 

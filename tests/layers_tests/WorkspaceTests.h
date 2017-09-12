@@ -8,6 +8,7 @@
 #include "testlayers.h"
 #include <NDArray.h>
 #include <Workspace.h>
+#include <MemoryRegistrator.h>
 
 using namespace nd4j::memory;
 
@@ -109,6 +110,19 @@ TEST_F(WorkspaceTests, StretchTest1) {
 
     ASSERT_EQ(1280, workspace.getCurrentSize());
     ASSERT_EQ(0, workspace.getSpilledSize());
+}
+
+TEST_F(WorkspaceTests, NewInWorkspaceTest1) {
+    Workspace ws(65536);
+
+    ASSERT_EQ(65536, ws.getCurrentSize());
+    ASSERT_EQ(0, ws.getCurrentOffset());
+
+    MemoryRegistrator::getInstance()->attachWorkspace(&ws);
+
+    auto ast = new NDArray<float>(5, 5, 'c');
+
+    ASSERT_TRUE(ws.getCurrentOffset() > 0);
 }
 
 

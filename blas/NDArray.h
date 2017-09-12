@@ -30,6 +30,9 @@ namespace nd4j {
 
 
     public:
+        void* operator new(size_t i);
+        void operator delete(void* p);
+
 		// forbid assignment operator
 		NDArray<T>& operator=(const NDArray<T>& other);
         // accessing operator for 2D matrix, i - row, j - column
