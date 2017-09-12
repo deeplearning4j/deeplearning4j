@@ -67,8 +67,8 @@ TEST_F(WorkspaceTests, ResetTest1) {
         workspace.scopeIn();
 
         NDArray<float> array2(5, 5, 'c', &workspace);
-        array.putScalar(0, 1.0f);
-        array.putScalar(5, 1.0f);
+        array2.putScalar(0, 1.0f);
+        array2.putScalar(5, 1.0f);
 
         ASSERT_NEAR(2.0f, array2.reduceNumber<simdOps::Sum<float>>(), 1e-5);
 
@@ -78,6 +78,28 @@ TEST_F(WorkspaceTests, ResetTest1) {
     ASSERT_EQ(65536, workspace.getCurrentSize());
     ASSERT_EQ(0, workspace.getCurrentOffset());
     ASSERT_EQ(0, workspace.getSpilledSize());
+}
+
+
+TEST_F(WorkspaceTests, StretchTest1) {
+    Workspace workspace(128);
+    void* ptr = workspace.allocateBytes(8);
+    workspace.scopeOut();
+
+
+    workspace.scopeIn();
+    for (int e = 0; e < 10; e++) {
+
+
+        workspace.allocateBytes(128);
+
+
+    }
+    workspace.scopeOut();
+    workspace.scopeIn();
+
+    ASSERT_EQ(0, workspace.getCurrentOffset());
+    ASSERT_EQ(1280, workspace.getCurrentSize());
 }
 
 

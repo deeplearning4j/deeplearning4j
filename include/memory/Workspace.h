@@ -40,7 +40,9 @@ namespace nd4j {
             std::vector<void*> _spills;
 
             std::atomic<Nd4jIndex> _spillsSize;
+            std::atomic<Nd4jIndex> _cycleAllocations;
 
+            void init(Nd4jIndex bytes);
             void freeSpills();
         public:
             Workspace();

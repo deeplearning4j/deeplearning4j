@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../Workspace.h"
+#include <helpers/logger.h>
 
 
 namespace nd4j {
@@ -30,6 +31,17 @@ namespace nd4j {
             this->_initialSize = initialSize;
             this->_currentSize = initialSize;
             this->_offset = 0;
+            this->_cycleAllocations = 0;
+        }
+
+        void Workspace::init(Nd4jIndex bytes) {
+            if (_currentSize < bytes) {
+                if (this->_ptrHost != nullptr)
+                    free(this->_ptrHost);
+
+                this->_ptrHost = malloc(bytes);
+                this->_currentSize = bytes;
+            }
         }
 
         void Workspace::freeSpills() {
@@ -40,6 +52,8 @@ namespace nd4j {
 
             for (auto v:_spills)
                 free(v);
+
+            _spills.clear();
         }
 
         Workspace::~Workspace() {
@@ -61,6 +75,7 @@ namespace nd4j {
 
         void* Workspace::allocateBytes(Nd4jIndex numBytes) {
             void* result = nullptr;
+            this->_cycleAllocations += numBytes;
             this->_mutexAllocation.lock();
 
             if (_offset.load() + numBytes >= _currentSize) {
@@ -87,6 +102,8 @@ namespace nd4j {
 
         void Workspace::scopeIn() {
             freeSpills();
+            init(_cycleAllocations.load());
+            _cycleAllocations = 0;
         }
 
         void Workspace::scopeOut() {
