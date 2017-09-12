@@ -22,6 +22,8 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Collection;
@@ -88,6 +90,26 @@ public interface Model extends Layer {
      * @param data the data to fit the model to
      */
     void fit(INDArray data);
+
+    /**
+     * Train the model based on the datasetiterator
+     * @param iter the iterator to train on
+     */
+    void fit(DataSetIterator iter);
+
+
+    /**
+     * Fit the model
+     * @param examples the examples to classify (one example in each row)
+     * @param labels the example labels(a binary outcome matrix)
+     */
+    void fit(INDArray examples, INDArray labels);
+
+    /**
+     * Fit the model
+     * @param data the data to train on
+     */
+    void fit(DataSet data);
 
     /**
      * Get the gradient and score

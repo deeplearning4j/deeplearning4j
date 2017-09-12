@@ -1,6 +1,7 @@
 package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.Model;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
@@ -451,8 +452,8 @@ public class GradientCheckUtil {
      *
      * NOTE: gradient checking pretrain layers can be difficult...
      */
-    public static boolean checkGradientsPretrainLayer(Layer layer, double epsilon, double maxRelError,
-                    double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, int rngSeed) {
+    public static boolean checkGradientsPretrainLayer(Model layer, double epsilon, double maxRelError,
+                                                      double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, int rngSeed) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");

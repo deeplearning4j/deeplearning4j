@@ -149,11 +149,6 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     }
 
     @Override
-    protected void setScoreWithZ(INDArray z) {
-        throw new RuntimeException("Not supported " + layerId());
-    }
-
-    @Override
     public Pair<Gradient, Double> gradientAndScore() {
         return new Pair<>(gradient(), score());
     }

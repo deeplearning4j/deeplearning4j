@@ -36,9 +36,6 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
     }
 
     @Override
-    public void fit(INDArray input) {}
-
-    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         INDArray delta = epsilon.dup();
 

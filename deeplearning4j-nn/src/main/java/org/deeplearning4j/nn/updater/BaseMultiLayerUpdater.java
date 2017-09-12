@@ -35,7 +35,7 @@ import java.util.Map;
  * @author Alex Black
  */
 @Getter
-public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater {
+public abstract class BaseMultiLayerUpdater<T extends Layer> implements Updater {
 
     protected final T network;
     protected Map<String, Layer> layersByName;

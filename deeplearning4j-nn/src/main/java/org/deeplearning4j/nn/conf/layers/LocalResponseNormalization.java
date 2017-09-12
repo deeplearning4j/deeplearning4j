@@ -49,7 +49,6 @@ public class LocalResponseNormalization extends Layer {
                     boolean initializeParams) {
         org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization ret =
                         new org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization(conf);
-        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

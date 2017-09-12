@@ -187,26 +187,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public void fit() {
-
-    }
-
-    @Override
     public int numParams() {
-        return 0;
-    }
-
-    @Override
-    public void fit(INDArray input) {
-    }
-
-    @Override
-    public void computeGradientAndScore() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public double score() {
         return 0;
     }
 

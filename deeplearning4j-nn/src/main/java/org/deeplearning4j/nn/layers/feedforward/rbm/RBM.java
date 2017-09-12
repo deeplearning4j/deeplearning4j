@@ -27,6 +27,8 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -195,6 +197,23 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
                 tl.onBackwardPass(this);
             }
         }
+    }
+
+    @Override
+    public void fit(DataSetIterator iter) {
+        while(iter.hasNext()){
+            fit(iter.next());
+        }
+    }
+
+    @Override
+    public void fit(INDArray examples, INDArray labels) {
+        fit(examples);
+    }
+
+    @Override
+    public void fit(DataSet data) {
+        fit(data.getFeatures());
     }
 
     /**

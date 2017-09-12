@@ -58,7 +58,6 @@ public class ZeroPadding1DLayer extends Layer {
                                                        boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.ZeroPadding1DLayer ret =
                 new org.deeplearning4j.nn.layers.convolution.ZeroPadding1DLayer(conf);
-        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);

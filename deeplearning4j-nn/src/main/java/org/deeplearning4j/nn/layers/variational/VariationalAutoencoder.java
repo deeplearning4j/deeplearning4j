@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -24,6 +25,8 @@ import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -48,7 +51,7 @@ import static org.deeplearning4j.nn.params.VariationalAutoencoderParamInitialize
  *
  * @author Alex Black
  */
-public class VariationalAutoencoder implements Layer {
+public class VariationalAutoencoder implements Model {
 
     protected INDArray input;
     protected INDArray paramsFlattened;
@@ -125,14 +128,6 @@ public class VariationalAutoencoder implements Layer {
     protected String layerId() {
         String name = this.conf().getLayer().getLayerName();
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
-    }
-
-    /**
-     * Init the model
-     */
-    @Override
-    public void init() {
-
     }
 
     @Override
@@ -527,6 +522,23 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
+    public void fit(DataSetIterator iter) {
+        while(iter.hasNext()){
+            fit(iter.next());
+        }
+    }
+
+    @Override
+    public void fit(INDArray examples, INDArray labels) {
+        fit(examples);
+    }
+
+    @Override
+    public void fit(DataSet data) {
+        fit(data.getFeatures());
+    }
+
+    @Override
     public Gradient gradient() {
         return gradient;
     }
@@ -801,6 +813,11 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
+    public void init() {
+        //No op
+    }
+
+    @Override
     public void setListeners(Collection<IterationListener> listeners) {
         if (iterationListeners == null)
             iterationListeners = new ArrayList<>();
@@ -851,6 +868,13 @@ public class VariationalAutoencoder implements Layer {
     @Override
     public void setInput(INDArray input) {
         this.input = input;
+    }
+
+    @Override
+    public void setInput(int inputNumber, INDArray input) {
+        if(inputNumber != 0)
+            throw new IllegalArgumentException();
+        setInput(input);
     }
 
     @Override

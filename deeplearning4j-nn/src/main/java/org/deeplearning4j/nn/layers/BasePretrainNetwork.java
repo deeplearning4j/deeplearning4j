@@ -19,11 +19,14 @@
 package org.deeplearning4j.nn.layers;
 
 
+import lombok.Data;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.deeplearning4j.optimize.Solver;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,10 +43,16 @@ import java.util.*;
  * @author Adam Gibson
  *
  */
+@Data
 public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.nn.conf.layers.BasePretrainNetwork>
                 extends BaseLayer<LayerConfT> implements Model {
 
+    private List<IterationListener> listeners;
     protected Collection<TrainingListener> trainingListeners = null;
+    protected double score = 0.0;
+    protected ConvexOptimizer optimizer;
+    protected Solver solver;
+
 
     public BasePretrainNetwork(NeuralNetConfiguration conf) {
         super(conf);
@@ -55,18 +64,23 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
 
     @Override
+    public double score(){
+        return score;
+    }
+
+    @Override
     public void setListeners(Collection<IterationListener> listeners) {
-        if (iterationListeners == null)
-            iterationListeners = new ArrayList<>();
+        if (this.listeners == null)
+            this.listeners = new ArrayList<>();
         else
-            iterationListeners.clear();
+            this.listeners.clear();
         if (trainingListeners == null)
             trainingListeners = new ArrayList<>();
         else
             trainingListeners.clear();
 
         if (listeners != null && listeners.size() > 0) {
-            iterationListeners.addAll(listeners);
+            this.listeners.addAll(listeners);
             for (IterationListener il : listeners) {
                 if (il instanceof TrainingListener) {
                     trainingListeners.add((TrainingListener) il);
@@ -136,7 +150,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
      */
     public abstract Pair<INDArray, INDArray> sampleVisibleGivenHidden(INDArray h);
 
-    @Override
+
     protected void setScoreWithZ(INDArray z) {
         if (input == null || z == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
@@ -242,4 +256,58 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         return l1Sum;
     }
 
+
+
+    @Override
+    public Pair<Gradient, Double> gradientAndScore() {
+        return new Pair<>(gradient, score);
+    }
+
+    @Override
+    public void init() {
+
+    }
+
+    @Override
+    public void addListeners(IterationListener... listeners) {
+        if(this.listeners == null){
+            this.listeners = new ArrayList<>();
+        }
+        if(this.trainingListeners == null){
+            this.trainingListeners = new ArrayList<>();
+        }
+
+        Collections.addAll(this.listeners, listeners);
+
+        for(IterationListener i : listeners){
+            if(i instanceof TrainingListener){
+                this.trainingListeners.add((TrainingListener) i);
+            }
+        }
+    }
+
+    @Override
+    public void fit(INDArray input) {
+        setInput(input);
+        fit();
+    }
+
+    @Override
+    public  void fit(){
+        applyDropOutIfNecessary(true);
+        if (solver == null) {
+            solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
+        }
+        this.optimizer = solver.getOptimizer();
+        solver.optimize();
+    }
+
+    @Override
+    public ConvexOptimizer getOptimizer() {
+        if (optimizer == null) {
+            Solver solver = new Solver.Builder().model(this).configure(conf()).build();
+            this.optimizer = solver.getOptimizer();
+        }
+        return optimizer;
+    }
 }

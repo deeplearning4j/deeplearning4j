@@ -219,9 +219,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public void fit(INDArray data) {}
-
-    @Override
     public INDArray activate(boolean training) {
         return preOutput(input, training );
     }
@@ -393,16 +390,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public Layer clone() {
         throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public Collection<IterationListener> getListeners() {
-        return listeners;
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        this.listeners = new ArrayList<>(Arrays.asList(listeners));
     }
 
     @Override

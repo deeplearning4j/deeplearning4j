@@ -213,6 +213,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
     }
 
+    @Override
+    public Type type() {
+        return null;
+    }
+
     /**
      * This method returns configuration of this ComputationGraph
      *
@@ -288,6 +293,36 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             inputs = new INDArray[numInputArrays];
         }
         inputs[inputNum] = input;
+    }
+
+    @Override
+    public void setInputMiniBatchSize(int size) {
+
+    }
+
+    @Override
+    public int getInputMiniBatchSize() {
+        return 0;
+    }
+
+    @Override
+    public void setMaskArray(INDArray maskArray) {
+
+    }
+
+    @Override
+    public INDArray getMaskArray() {
+        return null;
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        return null;
+    }
+
+    @Override
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+        return null;
     }
 
     /**
@@ -751,6 +786,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         GraphVertex gv = vertices[fwdPassOrder[fwdPassOrder.length - 1]];
         Layer layer = gv.getLayer();
 
+        if(!(layer instanceof Model)){
+            log.warn("Layer {} is not pretrainable, returning", layer.conf().getLayer().getLayerName());
+        }
+
+        Model m = (Model)layer;
+
         if (!iter.hasNext() && iter.resetSupported()) {
             iter.reset();
         }
@@ -821,7 +862,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         }
                         //At this point: have done all of the required forward pass stuff. Can now pretrain layer on current input
 
-                        layer.fit(gv.getInputs()[0]);
+                        m.fit(gv.getInputs()[0]);
                         layer.conf().setPretrain(false);
                     }
                 }
@@ -970,6 +1011,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (destructable)
             ((AsyncDataSetIterator) dataSetIterator).shutdown();
         incrementEpochCount();
+    }
+
+    @Override
+    public void fit(INDArray examples, INDArray labels) {
+        fit(new INDArray[]{examples}, new INDArray[]{labels});
     }
 
     /**
@@ -1774,16 +1820,52 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         return cg;
     }
 
+    @Override
+    public void setIndex(int index) {
+
+    }
+
+    @Override
+    public int getIndex() {
+        return 0;
+    }
+
+    @Override
+    public int getIterationCount() {
+        return 0;
+    }
+
+    @Override
+    public int getEpochCount() {
+        return 0;
+    }
+
+    @Override
+    public void setIterationCount(int iterationCount) {
+
+    }
+
+    @Override
+    public void setEpochCount(int epochCount) {
+
+    }
+
+    @Override
+    public boolean isPretrainLayer() {
+        return false;
+    }
+
+    @Override
+    public void clearNoiseWeightParams() {
+
+    }
+
     /**
      * Calculate the L2 regularization term for all layers in the entire network. This is the sum of the L2 terms
      * for each layer individually
      */
     public double calcL2() {
-        double l2 = 0.0;
-        for (Layer l : layers) {
-            l2 += l.calcL2(true);
-        }
-        return l2;
+        return calcL2(true);
     }
 
     /**
@@ -1791,9 +1873,23 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * for each layer individually
      */
     public double calcL1() {
+        return calcL1(true);
+    }
+
+    @Override
+    public double calcL2(boolean backpropOnlyParams) {
+        double l2 = 0.0;
+        for (Layer l : layers) {
+            l2 += l.calcL2(backpropOnlyParams);
+        }
+        return l2;
+    }
+
+    @Override
+    public double calcL1(boolean backpropOnlyParams) {
         double l1 = 0.0;
         for (Layer l : layers) {
-            l1 += l.calcL1(true);
+            l1 += l.calcL1(backpropOnlyParams);
         }
         return l1;
     }
@@ -1807,7 +1903,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             init();
 
         for (Layer l : layers) {
-            l.setListeners(listeners);
+            if( l instanceof Model ){
+                ((Model)l).setListeners(listeners);
+            }
         }
 
         if (solver != null) {
@@ -2229,6 +2327,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
+    public int numInputs() {
+        return numInputArrays;
+    }
+
+    @Override
+    public int numOutputs() {
+        return numOutputArrays;
+    }
+
+    @Override
     public int batchSize() {
         return inputs[0].size(0);
     }
@@ -2301,6 +2409,34 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         String layerName = key.substring(0, idx);
         String paramType = key.substring(idx + 1);
         getLayer(layerName).setParam(paramType, val);
+    }
+
+    @Override
+    public INDArray activate(boolean training) {
+        if(numOutputArrays != 1)
+            throw new IllegalStateException("Cannot use  this method with > 1 output arrays");
+        return outputSingle(getInputs());
+    }
+
+    @Override
+    public INDArray activate(INDArray input, boolean training) {
+        if(numInputArrays != 1)
+            throw new IllegalStateException("Cannot use  this method with > 1 input arrays");
+        if(numOutputArrays != 1)
+            throw new IllegalStateException("Cannot use  this method with > 1 output arrays");
+        return outputSingle(training, input);
+    }
+
+    @Override
+    public INDArray activate(INDArray input) {
+        return activate(input, false);
+    }
+
+    @Override
+    public void setInput(INDArray input) {
+        if(numInputArrays != 1)
+            throw new IllegalStateException("Cannot use  this method with > 1 input arrays");
+        setInput(0, input);
     }
 
     @Override

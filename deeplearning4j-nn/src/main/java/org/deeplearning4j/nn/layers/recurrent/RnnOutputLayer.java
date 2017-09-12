@@ -69,17 +69,6 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         return new Pair<>(gradAndEpsilonNext.getFirst(), epsilon3d);
     }
 
-    /**{@inheritDoc}
-     */
-    @Override
-    public double f1Score(INDArray examples, INDArray labels) {
-        if (examples.rank() == 3)
-            examples = TimeSeriesUtils.reshape3dTo2d(examples);
-        if (labels.rank() == 3)
-            labels = TimeSeriesUtils.reshape3dTo2d(labels);
-        return super.f1Score(examples, labels);
-    }
-
     public INDArray getInput() {
         return input;
     }

@@ -26,6 +26,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.Solver;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -36,6 +38,8 @@ import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -56,12 +60,49 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     private double fullNetworkL1;
     private double fullNetworkL2;
 
+    private double score;
+
     public LossLayer(NeuralNetConfiguration conf) {
         super(conf);
     }
 
     public LossLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
+    }
+
+    @Override
+    public void init() {
+        //No op
+    }
+
+    @Override
+    public void setListeners(Collection<IterationListener> listeners) {
+        //No op
+    }
+
+    @Override
+    public void setListeners(IterationListener... listeners) {
+        //No op
+    }
+
+    @Override
+    public void addListeners(IterationListener... listener) {
+        //No op
+    }
+
+    @Override
+    public Collection<IterationListener> getListeners() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public void fit() {
+        //No op
+    }
+
+    @Override
+    public double score(){
+        return score;
     }
 
     /** Compute score after labels and input have been set.
@@ -127,13 +168,13 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    protected void setScoreWithZ(INDArray z) {
-        throw new RuntimeException("Not supported " + layerId());
+    public Pair<Gradient, Double> gradientAndScore() {
+        return new Pair<>(gradient(), score());
     }
 
     @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), score());
+    public ConvexOptimizer getOptimizer() {
+        return null;
     }
 
     @Override
@@ -237,93 +278,11 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         return null;
     }
 
-
-
-    /**
-     * Sets the input and labels and returns a score for the prediction
-     * wrt true labels
-     *
-     * @param data the data to score
-     * @return the score for the given input,label pairs
-     */
-    @Override
-    public double f1Score(DataSet data) {
-        return f1Score(data.getFeatures(), data.getLabels());
-    }
-
-    /**
-     * Returns the f1 score for the given examples.
-     * Think of this to be like a percentage right.
-     * The higher the number the more it got right.
-     * This is on a scale from 0 to 1.
-     *
-     * @param examples te the examples to classify (one example in each row)
-     * @param labels   the true labels
-     * @return the scores for each ndarray
-     */
-    @Override
-    public double f1Score(INDArray examples, INDArray labels) {
-        Evaluation eval = new Evaluation();
-        eval.eval(labels, labelProbabilities(examples));
-        return eval.f1();
-    }
-
-    /**
-     * Returns the number of possible labels
-     *
-     * @return the number of possible labels for this classifier
-     */
-    @Override
-    public int numLabels() {
-        return labels.size(1);
-    }
-
     @Override
     public void fit(DataSetIterator iter) {
         // no-op
     }
 
-    /**
-     * Returns the predictions for each example in the dataset
-     * @param input the matrix to predict
-     * @return the prediction for the dataset
-     */
-    @Override
-    public int[] predict(INDArray input) {
-        INDArray output = output(input);
-        int[] ret = new int[input.rows()];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
-        return ret;
-    }
-
-    /**
-     * Return predicted label names
-     *
-     * @param dataSet to predict
-     * @return the predicted labels for the dataSet
-     */
-    @Override
-    public List<String> predict(DataSet dataSet) {
-        int[] intRet = predict(dataSet.getFeatures());
-        List<String> ret = new ArrayList<>();
-        for (int i : intRet) {
-            ret.add(i, dataSet.getLabelName(i));
-        }
-        return ret;
-    }
-
-    /**
-     * Returns the probabilities for each label
-     * for each example row wise
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @return the likelihoods of each example and each label
-     */
-    @Override
-    public INDArray labelProbabilities(INDArray examples) {
-        return output(examples);
-    }
 
     /**
      * Fit the model
@@ -344,19 +303,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     @Override
     public void fit(DataSet data) {
         fit(data.getFeatures(), data.getLabels());
-    }
-
-    /**
-     * Fit the model
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @param labels   the labels for each example (the number of labels must match
-     */
-    @Override
-    public void fit(INDArray examples, int[] labels) {
-        INDArray outcomeMatrix = FeatureUtil.toOutcomeMatrix(labels, numLabels());
-        fit(examples, outcomeMatrix);
-
     }
 
     @Override
@@ -384,5 +330,4 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         }
         return labels;
     }
-
 }

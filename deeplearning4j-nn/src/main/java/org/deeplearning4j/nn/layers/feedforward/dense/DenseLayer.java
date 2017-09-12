@@ -17,9 +17,6 @@ public class DenseLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dens
     }
 
     @Override
-    public void fit(INDArray input) {}
-
-    @Override
     public boolean isPretrainLayer() {
         return false;
     }

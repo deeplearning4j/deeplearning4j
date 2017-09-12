@@ -47,10 +47,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected INDArray gradientsFlattened;
     protected Map<String, INDArray> params;
     protected transient Map<String, INDArray> gradientViews;
-    protected double score = 0.0;
-    protected ConvexOptimizer optimizer;
     protected Gradient gradient;
-    protected Solver solver;
 
     protected Map<String,INDArray> weightNoiseParams = new HashMap<>();
 
@@ -358,8 +355,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public String toString() {
-        return getClass().getName() + "{" + "conf=" + conf + ", dropoutMask=" + dropoutMask + ", score=" + score
-                        + ", optimizer=" + optimizer + '}';
+        return getClass().getName() + "{" + "conf=" + conf + '}';
     }
 
     @Override

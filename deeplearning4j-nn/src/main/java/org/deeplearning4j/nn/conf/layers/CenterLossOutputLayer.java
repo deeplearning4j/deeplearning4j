@@ -74,7 +74,6 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         LayerValidation.assertNInNOutSet("CenterLossOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         Layer ret = new org.deeplearning4j.nn.layers.training.CenterLossOutputLayer(conf);
-        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

@@ -44,7 +44,6 @@ public class Subsampling1DLayer extends SubsamplingLayer {
                     boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer ret =
                         new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(conf);
-        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

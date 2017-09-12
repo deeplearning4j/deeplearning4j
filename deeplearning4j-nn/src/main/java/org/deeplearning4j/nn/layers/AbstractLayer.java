@@ -45,7 +45,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     protected INDArray input, preOutput;
     protected NeuralNetConfiguration conf;
-    protected INDArray dropoutMask;
     protected boolean dropoutApplied = false;
     protected int index = 0;
     protected INDArray maskArray;

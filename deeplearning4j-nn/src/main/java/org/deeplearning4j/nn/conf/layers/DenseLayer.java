@@ -58,7 +58,6 @@ public class DenseLayer extends FeedForwardLayer {
 
         org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer ret =
                         new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf);
-        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

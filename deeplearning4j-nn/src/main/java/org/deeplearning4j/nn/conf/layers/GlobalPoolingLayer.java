@@ -63,7 +63,6 @@ public class GlobalPoolingLayer extends Layer {
                     boolean initializeParams) {
         org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer ret =
                         new org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer(conf);
-        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

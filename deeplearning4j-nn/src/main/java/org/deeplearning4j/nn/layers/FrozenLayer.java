@@ -115,35 +115,6 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public Collection<IterationListener> getListeners() {
-        return insideLayer.getListeners();
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        insideLayer.setListeners(listeners);
-    }
-
-    /**
-     * This method ADDS additional IterationListener to existing listeners
-     *
-     * @param listener
-     */
-    @Override
-    public void addListeners(IterationListener... listener) {
-        insideLayer.addListeners(listener);
-    }
-
-    @Override
-    public void fit() {
-        if (!logFit) {
-            OneTimeLogger.info(log, "Frozen layers cannot be fit. Warning will be issued only once per instance");
-            logFit = true;
-        }
-        //no op
-    }
-
-    @Override
     public void update(Gradient gradient) {
         if (!logUpdate) {
             OneTimeLogger.info(log, "Frozen layers will not be updated. Warning will be issued only once per instance");
@@ -158,22 +129,6 @@ public class FrozenLayer implements Layer {
             OneTimeLogger.info(log, "Frozen layers will not be updated. Warning will be issued only once per instance");
             logUpdate = true;
         }
-        //no op
-    }
-
-    @Override
-    public double score() {
-        return insideLayer.score();
-    }
-
-    @Override
-    public void computeGradientAndScore() {
-        if (!logGradient) {
-            OneTimeLogger.info(log,
-                            "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
-            logGradient = true;
-        }
-        insideLayer.score();
         //no op
     }
 
@@ -218,27 +173,8 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void fit(INDArray data) {
-        if (!logFit) {
-            OneTimeLogger.info(log, "Frozen layers cannot be fit.Warning will be issued only once per instance");
-            logFit = true;
-        }
-    }
-
-    @Override
     public Gradient gradient() {
         return zeroGradient;
-    }
-
-    //FIXME
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        if (!logGradient) {
-            OneTimeLogger.info(log,
-                            "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
-            logGradient = true;
-        }
-        return new Pair<>(zeroGradient, insideLayer.score());
     }
 
     @Override
@@ -259,11 +195,6 @@ public class FrozenLayer implements Layer {
     @Override
     public INDArray input() {
         return insideLayer.input();
-    }
-
-    @Override
-    public ConvexOptimizer getOptimizer() {
-        return insideLayer.getOptimizer();
     }
 
     @Override
@@ -301,19 +232,6 @@ public class FrozenLayer implements Layer {
         //No-op
     }
 
-    /**
-     * Init the model
-     */
-    @Override
-    public void init() {
-
-    }
-
-    @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        insideLayer.setListeners(listeners);
-    }
-
     @Override
     public void setIndex(int index) {
         insideLayer.setIndex(index);
@@ -347,6 +265,13 @@ public class FrozenLayer implements Layer {
     @Override
     public void setInput(INDArray input) {
         insideLayer.setInput(input);
+    }
+
+    @Override
+    public void setInput(int inputNumber, INDArray input) {
+        if(inputNumber != 0)
+            throw new UnsupportedOperationException();
+        setInput(input);
     }
 
     @Override

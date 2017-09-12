@@ -35,7 +35,6 @@ public class RnnOutputLayer extends BaseOutputLayer {
 
         org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer ret =
                         new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
-        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

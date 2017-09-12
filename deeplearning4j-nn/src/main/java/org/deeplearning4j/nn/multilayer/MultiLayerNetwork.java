@@ -87,7 +87,7 @@ import static org.deeplearning4j.nn.graph.ComputationGraph.workspaceConfiguratio
  * @author Adam Gibson
  */
 @Slf4j
-public class MultiLayerNetwork implements Serializable, Classifier, Layer, NeuralNetwork {
+public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
     //the hidden neural network layers (including output layer)
     protected Layer[] layers;
@@ -316,9 +316,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
 
         Layer layer = layers[layerIdx];
-        if (!layer.isPretrainLayer())
+        if (!layer.isPretrainLayer() || !(layer instanceof Model))
             return;
         layer.conf().setPretrain(true);
+
+        Model m = (Model)layer;
 
         MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE
                         ? new DummyWorkspace()
@@ -346,72 +348,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         layerInput = activationFromPrevLayer(j, layerInput, true);
                 }
             }
-            layer.fit(layerInput);
+            m.fit(layerInput);
         }
 
         // Turn off pretrain after it is complete
         layer.conf().setPretrain(false);
-    }
-
-
-    /**
-     * @deprecated use {@link #pretrain(DataSetIterator)} or {@link #pretrainLayer(int, DataSetIterator)} or {@link #pretrainLayer(int, INDArray)}.
-     * Pretraining each layer in a row on a single minibatch (as per this method) instead of N epochs per layer is not advisable.
-     */
-    @Deprecated
-    public void pretrain(INDArray input) {
-        if (!layerWiseConfigurations.isPretrain())
-            return;
-        if (flattenedGradients == null) {
-            initGradientsView();
-        }
-
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE
-                        ? new DummyWorkspace()
-                        : layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
-                                        ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        workspaceConfigurationFeedForward, workspaceFeedForward);
-
-        MemoryWorkspace pretrain = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE
-                        ? new DummyWorkspace()
-                        : layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
-                                        ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        workspaceConfigurationFeedForward,
-                                                        ComputationGraph.workspacePretrain);
-
-        /* During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
-
-        int miniBatchSize = input.size(0);
-        INDArray layerInput = null;
-        Layer layer;
-        int nPretrainLayers = getnLayers();
-        if (getLayer(getnLayers() - 1) instanceof IOutputLayer)
-            nPretrainLayers--;
-
-        try (MemoryWorkspace wsP = pretrain.notifyScopeEntered()) {
-            for (int i = 0; i < nPretrainLayers; i++) {
-                try (MemoryWorkspace wsFF = workspace.notifyScopeEntered()) {
-                    layer = getLayer(i);
-                    if (i == 0) {
-                        if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
-                            layerInput = getLayerWiseConfigurations().getInputPreProcess(i)
-                                            .preProcess(input, miniBatchSize)
-                                            .leverageTo(ComputationGraph.workspacePretrain);
-                        } else {
-                            layerInput = input.leverageTo(ComputationGraph.workspacePretrain);
-                        }
-                    } else {
-                        layerInput = activationFromPrevLayer(i - 1, layerInput, true)
-                                        .leverageTo(ComputationGraph.workspacePretrain);
-                    }
-                    layer.conf().setPretrain(true);
-                    layer.fit(layerInput);
-                    layer.conf().setPretrain(false);
-                }
-            }
-        }
     }
 
     @Override
@@ -1060,18 +1001,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return length;
     }
 
-    /**
-     * Sets the input and labels and returns a score for the prediction
-     * wrt true labels
-     *
-     * @param data the data to score
-     * @return the score for the given input,label pairs
-     */
-    @Override
-    public double f1Score(org.nd4j.linalg.dataset.api.DataSet data) {
-        return f1Score(data.getFeatures(), data.getLabels());
-    }
-
     @Override
     public void fit(DataSetIterator iterator) {
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
@@ -1094,14 +1023,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if (iter.resetSupported()) {
                 iter.reset();
             }
-            //            while (iter.hasNext()) {
-            //                DataSet next = iter.next();
-            //                if (next.getFeatureMatrix() == null || next.getLabels() == null)
-            //                    break;
-            //                setInput(next.getFeatureMatrix());
-            //                setLabels(next.getLabels());
-            //                finetune();
-            //            }
         }
 
 
@@ -1497,7 +1418,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             init();
         }
         for (Layer layer : layers) {
-            layer.setListeners(listeners);
+            if(layer instanceof Model){
+                ((Model)layer).setListeners(listeners);
+            }
         }
 
         if (solver != null) {
@@ -1582,58 +1505,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
-
-    /**
-     * Returns the predictions for each example in the dataset
-     *
-     * @param d the matrix to predict
-     * @return the prediction for the dataset
-     */
-    @Override
-    public int[] predict(INDArray d) {
-        INDArray output = output(d, false);
-        int[] ret = new int[d.size(0)];
-        if (d.isRowVector())
-            ret[0] = Nd4j.getBlasWrapper().iamax(output);
-        else {
-            for (int i = 0; i < ret.length; i++)
-                ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
-        }
-        return ret;
-    }
-
-    /**
-     * Return predicted label names
-     *
-     * @param dataSet to predict
-     * @return the predicted labels for the dataSet
-     */
-    @Override
-    public List<String> predict(org.nd4j.linalg.dataset.api.DataSet dataSet) {
-        int[] intRet = predict(dataSet.getFeatures());
-        List<String> ret = new ArrayList<>();
-        for (int i = 0; i < intRet.length; i++) {
-            ret.add(i, dataSet.getLabelName(intRet[i]));
-        }
-        return ret;
-    }
-
-
-
-    /**
-     * Returns the probabilities for each label
-     * for each example row wise
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @return the likelihoods of each example and each label
-     */
-    @Override
-    public INDArray labelProbabilities(INDArray examples) {
-        List<INDArray> feed = feedForward(examples);
-        IOutputLayer o = (IOutputLayer) getOutputLayer();
-        return o.labelProbabilities(feed.get(feed.size() - 1));
-    }
-
     /**
      * Fit the model
      *
@@ -1673,14 +1544,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                                                         ComputationGraph.workspaceConfigurationCache,
                                                         ComputationGraph.workspaceCache);
 
-        if (layerWiseConfigurations.isPretrain()) {
-            try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
-                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                    pretrain(features);
-                }
-            }
-        }
-
         if (layerWiseConfigurations.isBackprop()) {
             if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                 doTruncatedBPTT(features, labels, featuresMask, labelsMask);
@@ -1714,12 +1577,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     @Override
     public void fit(INDArray data) {
-        setInput(data);
-        if (!layerWiseConfigurations.isPretrain())
-            throw new IllegalStateException(
-                            "Set pretrain to true in the configuration in order to pretrain the model.");
-        update(TaskUtils.buildTask(data));
-        pretrain(data);
+        throw new UnsupportedOperationException("Use pretrainLayer method instead");
     }
 
 
@@ -1747,19 +1605,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
 
         clearLayersStates();
-    }
-
-    /**
-     * Fit the model
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @param labels   the labels for each example (the number of labels must match
-     */
-    @Override
-    public void fit(INDArray examples, int[] labels) {
-        org.deeplearning4j.nn.conf.layers.OutputLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.OutputLayer) getOutputLayer().conf().getLayer();
-        fit(examples, FeatureUtil.toOutcomeMatrix(labels, layerConf.getNOut()));
     }
 
     /**
@@ -1949,33 +1794,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
-
-    /**
-     * Sets the input and labels and returns a score for the prediction
-     * wrt true labels
-     *
-     * @param input  the input to score
-     * @param labels the true labels
-     * @return the score for the given input,label pairs
-     */
-    @Override
-    public double f1Score(INDArray input, INDArray labels) {
-        feedForward(input);
-        setLabels(labels);
-        Evaluation eval = new Evaluation();
-        eval.eval(labels, labelProbabilities(input));
-        return eval.f1();
-    }
-
-    /**
-     * Returns the number of possible labels
-     *
-     * @return the number of possible labels for this classifier
-     */
-    @Override
-    public int numLabels() {
-        return labels.columns();
-    }
 
     /**Sets the input and labels and returns a score for the prediction with respect to the true labels<br>
      * This is equivalent to {@link #score(DataSet, boolean)} with training==true.
@@ -2189,6 +2007,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                                 "Invalid input: length 0 (shape: " + Arrays.toString(input.shape()) + ")");
             setInputMiniBatchSize(input.size(0));
         }
+    }
+
+    @Override
+    public void setInput(int inputNumber, INDArray input) {
+        if(inputNumber != 0)
+            throw new IllegalArgumentException();
+        setInput(input);
     }
 
 

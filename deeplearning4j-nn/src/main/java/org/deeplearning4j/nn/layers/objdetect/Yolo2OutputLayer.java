@@ -10,6 +10,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
@@ -32,9 +34,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
@@ -386,6 +386,36 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
+    public void init() {
+        //No op
+    }
+
+    @Override
+    public void setListeners(Collection<IterationListener> listeners) {
+        //No op
+    }
+
+    @Override
+    public void setListeners(IterationListener... listeners) {
+        //No op
+    }
+
+    @Override
+    public void addListeners(IterationListener... listener) {
+        //No op
+    }
+
+    @Override
+    public Collection<IterationListener> getListeners() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public void fit() {
+        //No op
+    }
+
+    @Override
     public double score(){
         return score;
     }
@@ -538,6 +568,11 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
+    public void fit(INDArray data) {
+
+    }
+
+    @Override
     public INDArray preOutput(boolean training) {
         return input;
     }
@@ -548,42 +583,17 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
+    public ConvexOptimizer getOptimizer() {
+        return null;
+    }
+
+    @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public double f1Score(DataSet data) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public double f1Score(INDArray examples, INDArray labels) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public int numLabels() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
     public void fit(DataSetIterator iter) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public int[] predict(INDArray examples) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public List<String> predict(DataSet dataSet) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public INDArray labelProbabilities(INDArray examples) {
         throw new UnsupportedOperationException("Not supported");
     }
 
@@ -594,11 +604,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public void fit(DataSet data) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public void fit(INDArray examples, int[] labels) {
         throw new UnsupportedOperationException("Not supported");
     }
 

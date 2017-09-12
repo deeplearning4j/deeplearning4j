@@ -19,9 +19,14 @@
 package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.primitives.Pair;
 
 /**
@@ -116,6 +121,23 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         gradient = createGradient(wGradient, vBiasGradient, hBiasGradient);
         setScoreWithZ(z);
 
+    }
+
+    @Override
+    public void fit(DataSetIterator iter) {
+        while(iter.hasNext()){
+            fit(iter.next());
+        }
+    }
+
+    @Override
+    public void fit(INDArray examples, INDArray labels) {
+        fit(examples);
+    }
+
+    @Override
+    public void fit(DataSet data) {
+        fit(data.getFeatures());
     }
 
 

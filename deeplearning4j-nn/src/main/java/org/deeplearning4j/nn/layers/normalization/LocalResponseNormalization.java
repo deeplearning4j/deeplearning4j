@@ -111,9 +111,6 @@ public class LocalResponseNormalization
         return Type.NORMALIZATION;
     }
 
-    @Override
-    public void fit(INDArray input) {}
-
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         if (helper != null) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta);

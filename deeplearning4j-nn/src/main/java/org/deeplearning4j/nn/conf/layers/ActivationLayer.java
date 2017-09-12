@@ -43,7 +43,7 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.ActivationLayer ret = new org.deeplearning4j.nn.layers.ActivationLayer(conf);
-        ret.setListeners(iterationListeners);
+//        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

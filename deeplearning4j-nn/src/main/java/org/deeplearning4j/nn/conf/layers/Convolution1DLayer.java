@@ -48,7 +48,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
         org.deeplearning4j.nn.layers.convolution.Convolution1DLayer ret =
                         new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(conf);
-        ret.setListeners(iterationListeners);
+//        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
