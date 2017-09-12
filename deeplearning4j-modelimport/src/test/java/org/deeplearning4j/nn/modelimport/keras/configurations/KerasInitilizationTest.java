@@ -58,7 +58,7 @@ public class KerasInitilizationTest {
         return new WeightInit[] {
                 WeightInit.XAVIER,
                 WeightInit.XAVIER_UNIFORM,
-                WeightInit.NORMAL,
+                WeightInit.LECUN_NORMAL,
                 WeightInit.UNIFORM,
                 WeightInit.RELU,
                 WeightInit.RELU_UNIFORM,

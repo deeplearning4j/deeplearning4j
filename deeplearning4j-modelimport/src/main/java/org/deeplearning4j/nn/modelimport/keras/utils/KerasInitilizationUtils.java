@@ -43,7 +43,9 @@ public class KerasInitilizationUtils {
      * @return DL4J weight initialization enum
      * @see WeightInit
      */
-    public static Pair<WeightInit, Distribution> mapWeightInitialization(String kerasInit, KerasLayerConfiguration conf)
+    public static Pair<WeightInit, Distribution> mapWeightInitialization(String kerasInit,
+                                                                         KerasLayerConfiguration conf,
+                                                                         Map<String, Object> initConfig)
             throws UnsupportedKerasConfigurationException {
 
         WeightInit init = WeightInit.XAVIER;
@@ -133,17 +135,19 @@ public class KerasInitilizationUtils {
         if (!innerConfig.containsKey(initField))
             throw new InvalidKerasConfigurationException("Keras layer is missing " + initField + " field");
         String kerasInit = "glorot_normal";
-        if (kerasMajorVersion != 2)
+        Map<String, Object> initMap;
+        if (kerasMajorVersion != 2) {
             kerasInit = (String) innerConfig.get(initField);
-        else {
-            HashMap initMap = (HashMap) innerConfig.get(initField);
+            initMap = innerConfig;
+        } else {
+            initMap = (HashMap) innerConfig.get(initField);
             if (initMap.containsKey("class_name")) {
                 kerasInit = (String) initMap.get("class_name");
             }
         }
         Pair<WeightInit, Distribution> init;
         try {
-            init = mapWeightInitialization(kerasInit, conf);
+            init = mapWeightInitialization(kerasInit, conf, initMap);
         } catch (UnsupportedKerasConfigurationException e) {
             if (enforceTrainingConfig)
                 throw e;
