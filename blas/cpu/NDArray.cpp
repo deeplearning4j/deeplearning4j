@@ -3,6 +3,7 @@
 
 #include "../NDArray.h"
 #include "../NativeOpExcutioner.h"
+#include "../NDArrayFactory.h"
 #include <memory/Workspace.h>
 #include <memory/MemoryRegistrator.h>
 #include <ops/gemm.h>
@@ -132,7 +133,7 @@ template <typename T> NDArray<T>::NDArray(const int* shapeInfo, nd4j::memory::Wo
 
     memcpy(_shapeInfo, shapeInfo, shapeLength*sizeof(int));     // copy shape information into new array
 
-    _isBuffAlloc = true; 
+    _isBuffAlloc = true;
     _isShapeAlloc = true;
 }
 
@@ -261,7 +262,7 @@ template <typename T> NDArray<T>::NDArray(const char order, const std::initializ
 template<typename T> NDArray<T>& NDArray<T>::operator=(const NDArray<T>& other) {
 	if (this == &other) return *this;
 
-    if (shape::equalsStrict(_shapeInfo, other._shapeInfo))
+    if (_shapeInfo != nullptr && _buffer != nullptr && shape::equalsStrict(_shapeInfo, other._shapeInfo))
         memcpy(_buffer, other._buffer, lengthOf()*sizeOfT());
     else {
         if(_isBuffAlloc)
@@ -269,11 +270,11 @@ template<typename T> NDArray<T>& NDArray<T>::operator=(const NDArray<T>& other) 
         if(_isShapeAlloc)
             delete []_shapeInfo;
 
-        int arrLength = shape::length(other._shapeInfo);
-        int shapeLength = shape::rank(other._shapeInfo)*2 + 4;
+		int arrLength = other.lengthOf();
+		int shapeLength = other.rankOf()*2 + 4;
 
         _buffer = new T[arrLength];
-        memcpy(_buffer, other._buffer, lengthOf()*sizeOfT());               // copy elements of other current array
+        memcpy(_buffer, other._buffer, arrLength*sizeOfT());               // copy elements of other current array
 
         _shapeInfo = new int[shapeLength];
         memcpy(_shapeInfo, other._shapeInfo, shapeLength*sizeof(int));     // copy shape information into new array
@@ -1395,252 +1396,303 @@ NDArray<T>* NDArray<T>::broadcast(const NDArray<T>& other) {
 
 
 //////////////////////////////////////////////////////////////////////////
-// Singular value decomposition program, slightly modificated routine svdcmp, from "Numerical Recipes in C"
+// check whether array's rows (arg=0) or columns create orthogonal basis
+template<typename T>
+bool NDArray<T>::hasOrthonormalBasis(const int arg) {
+
+	if(rankOf() !=2 )
+		throw "hasOrthBasis method: rank of ndarray is not equal 2 !";
+
+	if(arg!=0  && arg!=1)
+		throw "hasOrthBasis method: input argument is not equal to 0 or 1 !";
+
+	const T eps = 1e-5f;
+	T dot = 0.f;
+	if(arg) {					// check whether columns create orthogonal basis
+		for(int j=0; j<columns()-1; ++j)
+			for(int k=j+1; k<columns(); ++k) {
+				for(int i=0; i<rows(); ++i)
+					dot += getScalar(i,j)*getScalar(i,k);
+				if(nd4j::math::nd4j_abs(dot) > eps )
+					return false;
+				dot = 0.f;
+			}
+		for(int j=0; j<columns(); ++j)	{	// check whether norm of column vector = 1
+			for(int i=0; i<rows(); ++i)
+				dot += getScalar(i,j)*getScalar(i,j);
+			if(dot!=0.f && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<T>(dot) - 1.f) > eps)
+				return false;
+			dot = 0.f;
+		}
+	}
+	else {						// check whether rows create orthogonal basis
+		for(int i=0; i<rows()-1; ++i)
+			for(int k=i+1; k<rows(); ++k) {
+				for(int j=0; j<columns(); ++j)
+					dot += getScalar(i,j)*getScalar(k,j);
+				if(nd4j::math::nd4j_abs(dot) > eps )
+					return false;
+				dot = 0.f;
+			}
+		for(int i=0; i<rows(); ++i) {		// check whether norm of row vector = 1
+			for(int j=0; j<columns(); ++j)
+					dot += getScalar(i,j)*getScalar(i,j);
+			if(dot!=0.f && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<T>(dot) - 1.f) > eps)
+				return false;
+			dot = 0.f;
+		}
+	}
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// check whether array is identity matrix
+template<typename T>
+bool NDArray<T>::isIdentityMatrix() {
+	if(rankOf() !=2 || rows() != columns())
+		throw "isIdentityMatrix method: matrix must be square and have rank = 2 !";
+
+	const T eps = 1e-5f;
+	for(int i=0; i<rows(); ++i)
+		if(nd4j::math::nd4j_abs(getScalar(i,i) - 1.f) > eps)
+			return false;
+
+	for(int i=0; i<rows(); ++i)
+		for(int j=0; j!=i && j<columns(); ++j)
+			if(nd4j::math::nd4j_abs(getScalar(i,j)) > eps)
+				return false;
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// check whether array is unitary matrix
+template<typename T>
+bool NDArray<T>::isUnitary() {
+
+	if(rankOf() !=2 || rows() != columns())
+		throw "isUnitary method: matrix must be square and have rank = 2 !";
+
+	NDArray<T> tr = *(this->transpose());
+	tr = *nd4j::NDArrayFactory::mmulHelper<T>(this, &tr, &tr, 1.f, 0.f);
+
+	return tr.isIdentityMatrix();
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Singular value decomposition program from "Numerical Recipes, The Art of Scientific Computing, 3d edition"
 // (Cambridge Univ. Press) by W.H. Press, S.A. Teukolsky, W.T. Vetterling, and B.P. Flannery
 /*******************************************************************************
-Given a matrix a[m][n], this routine computes its singular value
+Given a matrix a[m][n], this method computes its singular value
 decomposition, *this = U.W.VT.  The matrix U replaces *this on output.  The diagonal
 matrix of singular values W is output as a vector w[n].  The matrix vt is output as vt[n][n]
 *******************************************************************************/
 // compute (a2 + b2)^1/2 without destructive underflow or overflow
-    template<typename T>
-    T pythag (T a, T b) {
-        T absa, absb;
-        absa = fabs(a);
-        absb = fabs(b);
-        if (absa > absb) return absa*sqrt(1.f + (absb/absa)*(absb/absa));
-        else return (absb == 0.f ? 0.f : absb*sqrt(1.f + (absa/absb)*(absa/absb)));
-    };
+template<typename T>
+T pythag (T a, T b) {
+    T absa, absb;
+    absa = fabs(a);
+    absb = fabs(b);
+    if (absa > absb) return absa*nd4j::math::nd4j_sqrt<T>(1.f + (absb/absa)*(absb/absa));
+    else return (absb == 0.f ? 0.f : absb*nd4j::math::nd4j_sqrt<T>(1.f + (absa/absb)*(absa/absb)));
+};
 
 
-    template<typename T>
-    void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
-    {
-        if(rankOf() !=2 || w.rankOf() !=2 || vt.rankOf() !=2)
-            throw "SVD operation: rank of some of input matrices is not equal 2 !";
+template<typename T>
+void NDArray<T>::svd(NDArray<T>& u, NDArray<T>& w, NDArray<T>& vt)
+{
+    if(rankOf() !=2 || w.rankOf() !=2 || vt.rankOf() !=2)
+        throw "SVD operation: rank of some of input matrices is not equal 2 !";
 
-        int m = rows();
-        int n = columns();
+    int m = rows();
+    int n = columns();
 
-        if(w.rows() !=1 || w.columns() !=n || vt.rows() !=n || vt.columns() !=n)
-            throw "SVD operation: shape of some of input matrices is wrong !";
+    if(w.rows() !=1 || w.columns() !=n || vt.rows() !=n || vt.columns() !=n)
+        throw "SVD operation: shape of some of input matrices is wrong !";
 
-        u = *this;
-        int flag,i,its,j,jj,k,l,nm;
-        T anorm,c,f,g,h,s,scale,x,y,z;
-        T* rv1 = new T[n*sizeOfT()];
-
-// Householder reduction to bidiagonal form
-        g=scale=anorm=0.f;
-        for (i=0; i<n; i++) {
-            // left-hand reduction
-            l = i + 1;
-            rv1[i] = scale*g;
-            g = s = scale = 0.f;
-            if (i < m) {
-                for (k=i; k<m; k++)
-                    scale += fabs(u(k,i));
-                if (scale) {
-                    for (k=i; k<m; k++) {
-                        u(k,i) /= scale;
-                        s += u(k,i)*u(k,i);
-                    }
-                    f = u(i,i);
-                    g = - nd4j::math::nd4j_copysign<T>(sqrt(s),f);
-                    h = f*g - s;
-                    u(i,i) = f - g;
-                    if (i != n - 1) {
-                        for (j=l; j<n; j++) {
-                            for (s=0.f, k=i; k<m; k++)
-                                s += u(k,i)*u(k,j);
-                            f = s/h;
-                            for (k=i; k<m; k++)
-                                u(k,j) += f*u(k,i);
-                        }
-                    }
-                    for (k=i; k<m; k++)
-                        u(k,i) *= scale;
-                }
-            }
-            w(1,i) = scale*g;
-            // right-hand reduction
-            g=s=scale=0.f;
-            if (i < m && i != n-1) {
-                for (k=l; k<n; k++)
-                    scale += fabs(u(i,k));
-                if (scale) {
-                    for (k=l; k<n; k++) {
-                        u(i,k) /= scale;
-                        s += u(i,k)*u(i,k);
-                    }
-                    f = u(i,l);
-                    g = -nd4j::math::nd4j_copysign<T>(sqrt(s),f);
-                    h = f*g - s;
-                    u(i,l) = f - g;
-                    for (k=l; k<n; k++)
-                        rv1[k] = u(i,k)/h;
-                    if (i != m - 1) {
-                        for (j=l; j<m; j++) {
-                            for (s=0.f, k=l; k<n; k++)
-                                s += u(j,k)*u(i,k);
-                            for (k=l; k<n; k++)
-                                u(j,k) += s*rv1[k];
-                        }
-                    }
-                    for (k=l; k<n; k++)
-                        u(i,k) *= scale;
-                }
-            }
-            anorm = std::max(anorm,(fabs(w(1,i))+fabs(rv1[i])));
-        }
-// accumulation of right-hand transformations
-        for (i=n-1; i>=0; i--) {
-            if (i < n-1) {
-                if (g) {
-                    for (j=l; j<=n; j++) // double division to avoid possible underflow.
-                        vt(j,i) = (u(i,j)/u(i,l))/g;
-                    for (j=l; j<n; j++) {
-                        for (s=0.f, k=l; k<n; k++)
-                            s += u(i,k)*vt(k,j);
-                        for (k=l; k<n; k++)
-                            vt(k,j) += s*vt(k,i);
-                    }
-                }
-                for (j=l; j<n; j++)
-                    vt(i,j) = vt(j,i) = 0.f;
-            }
-            vt(i,i) = 1.f;
-            g = rv1[i];
-            l = i;
-        }
-// accumulation of left-hand transformations
-        for (i=n-1; i>=0; i--) {
-            l = i + 1;
-            g = w(1,i);
-            if (i < n - 1)
-                for (j=l ; j<n; j++)
-                    u(i,j) = 0.f;
-            if (g) {
-                g = 1.f/g;
-                if (i != n - 1) {
-                    for (j=l; j<n; j++) {
-                        for (s=0.f, k=l; k<m; k++)
-                            s += u(k,i)*u(k,j);
-                        f = (s/u(i,i))*g;
-                        for (k=i; k<m; k++)
-                            u(k,j) += f*u(k,i);
-                    }
-                }
-                for (j=i; j<m; j++)
-                    u(j,i) *= g;
-            }
-            else
-                for (j=i; j<m; j++)
-                    u(j,i) = 0.f;
-            ++u(i,i);
-        }
-// diagonalization of the bidiagonal form
-        for (k=n-1; k>=0; k--) { 				// loop over singular values
-            for (its=1; its<30; its++) {		// loop over allowed iterations
-                flag = 1;
-                for (l=k; l>=0; l--) { 			// test for splitting
-                    nm = l - 1; 				// note that rv1[1] is always zero
-                    if ((fabs(rv1[l]) + anorm) == anorm) {
-                        flag = 0;
-                        break;
-                    }
-                    if ((fabs(w(1,nm)) + anorm) == anorm)
-                        break;
-                }
-                if (flag) {
-                    c = 0.f; 					// Cancellation of rv1[l], if l > 1.
-                    s = 1.f;
-                    for (i=l; i<=k; i++) {
-                        f = s*rv1[i];
-                        rv1[i] = c*rv1[i];
-                        if ((fabs(f) + anorm) == anorm)
-                            break;
-                        g = w(1,i);
-                        h = pythag<T>(f,g);
-                        w(i,1) = h;
-                        h = 1.f/h;
-                        c = g*h;
-                        s = -f*h;
-                        for (j=0; j<m; j++) {
-                            y = u(j,nm);
-                            z = u(j,i);
-                            u(j,nm) = y*c + z*s;
-                            u(j,i)  = z*c - y*s;
-                        }
-                    }
-                }
-                z = w(1,k);
-                if (l == k) { 						// convergence
-                    if (z < 0.f) { 					// singular value is made nonnegative
-                        w(1,k) = -z;
-                        for (j=0; j<n; j++)
-                            vt(j,k) = -vt(j,k);
-                    }
-                    break;
-                }
-                if (its == 30) printf("no convergence in 30 svd iterations \n");
-                // shift from bottom 2-by-2 minor
-                x = w(1,l);
-                nm = k-1;
-                y = w(1,nm);
-                g = rv1[nm];
-                h = rv1[k];
-                f = ((y - z)*(y + z) + (g - h)*(g + h))/(2.f*h*y);
-                g = pythag<T>(f,1.f);
-                f = ((x - z)*(x + z) + h*((y/(f + nd4j::math::nd4j_copysign<T>((double) g,f))) - h))/x;
-                // next QR transformation
-                c = s = 1.f;
-                for (j=l; j<=nm; j++) {
-                    i = j + 1;
-                    g = rv1[i];
-                    y = w(1,i);
-                    h = s*g;
-                    g = c*g;
-                    z = pythag<T>(f,h);
-                    rv1[j] = z;
-                    c = f/z;
-                    s = h/z;
-                    f = x*c + g*s;
-                    g = g*c - x*s;
-                    h = y*s;
-                    y *= c;
-                    for (jj=0; jj<n; jj++) {
-                        x = vt(jj,j);
-                        z = vt(jj,i);
-                        vt(jj,j) = x*c + z*s;
-                        vt(jj,i) = z*c - x*s;
-                    }
-                    z = pythag<T>(f,h);
-                    w(1,j) = z; 		// rotation can be arbitrary if z = 0
-                    if (z) {
-                        z = 1.f/z;
-                        c = f*z;
-                        s = h*z;
-                    }
-                    f = c*g + s*y;
-                    x = c*y - s*g;
-                    for (jj=0; jj<m; jj++) {
-                        y = u(jj,j);
-                        z = u(jj,i);
-                        u(jj,j) = y*c + z*s;
-                        u(jj,i) = z*c - y*s;
-                    }
-                }
-                rv1[l] = 0.f;
-                rv1[k] = f;
-                w(1,k) = x;
-            }
-        }
-// transpose vt
-        vt.transposei();
-
-        delete []rv1;
-    }
+    u = *this;
+	const T eps = 1e-10f;
+	bool flag;
+	int i,its,j,jj,k,l,nm;
+	T anorm,c,f,g,h,s,scale,x,y,z;
+	std::vector<T> rv1(n);
+	// Householder reduction to bidiagonal form
+	g = scale = anorm = 0.f;
+	for (i=0;i<n;i++) {
+		l=i+2;
+		rv1[i]=scale*g;
+		g=s=scale=0.f;
+		if (i < m) {
+			for (k=i;k<m;k++) scale += nd4j::math::nd4j_abs<T>(u(k,i));
+			if (scale != 0.f) {
+				for (k=i;k<m;k++) {
+					u(k,i) /= scale;
+					s += u(k,i)*u(k,i);
+				}
+				f=u(i,i);
+				g = - nd4j::math::nd4j_copysign<T>(nd4j::math::nd4j_sqrt<T>(s),f);
+				h=f*g-s;
+				u(i,i)=f-g;
+				for (j=l-1;j<n;j++) {
+					for (s=0.f,k=i;k<m;k++) s += u(k,i)*u(k,j);
+					f=s/h;
+					for (k=i;k<m;k++) u(k,j) += f*u(k,i);
+				}
+				for (k=i;k<m;k++) u(k,i) *= scale;
+			}
+		}
+		w(0,i)=scale*g;
+		g=s=scale=0.f;
+		if (i+1 <= m && i+1 != n) {
+			for (k=l-1;k<n;k++) scale += nd4j::math::nd4j_abs<T>(u(i,k));
+			if (scale != 0.f) {
+				for (k=l-1;k<n;k++) {
+					u(i,k) /= scale;
+					s += u(i,k)*u(i,k);
+				}
+				f=u(i,l-1);
+				g = -nd4j::math::nd4j_copysign<T>(nd4j::math::nd4j_sqrt<T>(s),f);
+				h=f*g-s;
+				u(i,l-1)=f-g;
+				for (k=l-1;k<n;k++) rv1[k]=u(i,k)/h;
+				for (j=l-1;j<m;j++) {
+					for (s=0.f,k=l-1;k<n;k++) s += u(j,k)*u(i,k);
+					for (k=l-1;k<n;k++) u(j,k) += s*rv1[k];
+				}
+				for (k=l-1;k<n;k++) u(i,k) *= scale;
+			}
+		}
+		anorm = nd4j::math::nd4j_max<T>(anorm,(nd4j::math::nd4j_abs<T>(w(0,i)) + nd4j::math::nd4j_abs<T>(rv1[i])));
+	}
+	// accumulation of right-hand transformations
+	for (i=n-1;i>=0;i--) {
+		if (i < n-1) {
+			if (g != 0.f) {
+				for (j=l;j<n;j++)
+					vt(j,i)=(u(i,j)/u(i,l))/g;
+				for (j=l;j<n;j++) {
+					for (s=0.f,k=l;k<n;k++) s += u(i,k)*vt(k,j);
+					for (k=l;k<n;k++) vt(k,j) += s*vt(k,i);
+				}
+			}
+			for (j=l;j<n;j++) vt(i,j)=vt(j,i)=0.f;
+		}
+		vt(i,i)=1.f;
+		g=rv1[i];
+		l=i;
+	}
+	// accumulation of left-hand transformations
+	for (i=nd4j::math::nd4j_min<T>(m,n)-1;i>=0;i--) {
+		l=i+1;
+		g=w(0,i);
+		for (j=l;j<n;j++) u(i,j)=0.f;
+		if (g != 0.f) {
+			g=1.0/g;
+			for (j=l;j<n;j++) {
+				for (s=0.f,k=l;k<m;k++) s += u(k,i)*u(k,j);
+				f=(s/u(i,i))*g;
+				for (k=i;k<m;k++) u(k,j) += f*u(k,i);
+			}
+			for (j=i;j<m;j++) u(j,i) *= g;
+		}
+		else
+			for (j=i;j<m;j++) u(j,i)=0.f;
+		++u(i,i);
+	}
+	// diagonalization of the bidiagonal form
+	for (k=n-1;k>=0;k--) {						// loop over singular values
+		for (its=0;its<30;its++) {				// loop over allowed iterations
+			flag=true;
+			for (l=k;l>=0;l--) {				// test for splitting
+				nm=l-1;							// note that rv1[1] is always zero
+				if (l == 0 || nd4j::math::nd4j_abs<T>(rv1[l]) <= eps*anorm) {
+					flag=false;
+					break;
+				}
+				if (nd4j::math::nd4j_abs<T>(w(0,nm)) <= eps*anorm) break;
+			}
+			if (flag) {							// Cancellation of rv1[l], if l > 1
+				c=0.f;
+				s=1.0;
+				for (i=l;i<k+1;i++) {
+					f=s*rv1[i];
+					rv1[i] *=c;
+					if (nd4j::math::nd4j_abs<T>(f) <= eps*anorm) break;
+					g=w(0,i);
+					h=pythag<T>(f,g);
+					w(i,0)=h;
+					h=1.f/h;
+					c=g*h;
+					s = -f*h;
+					for (j=0;j<m;j++) {
+						y=u(j,nm);
+						z=u(j,i);
+						u(j,nm)=y*c+z*s;
+						u(j,i)=z*c-y*s;
+					}
+				}
+			}
+			z=w(0,k);
+			if (l == k) {						// convergence
+				if (z < 0.f) {					// singular value is made nonnegative
+					w(0,k) = -z;
+					for (j=0;j<n;j++) vt(j,k) = -vt(j,k);
+				}
+				break;
+			}
+			if (its == 29) throw("no convergence in 30 svdcmp iterations");
+			x=w(0,l);
+			nm=k-1;
+			y=w(0,nm);
+			g=rv1[nm];
+			h=rv1[k];
+			f=((y-z)*(y+z)+(g-h)*(g+h))/(2.0*h*y);
+			g=pythag<T>(f,1.f);
+			f=((x-z)*(x+z)+h*((y/(f+nd4j::math::nd4j_copysign<T>(g,f)))-h))/x;
+			c=s=1.0;
+			for (j=l;j<=nm;j++) {
+				i=j+1;
+				g=rv1[i];
+				y=w(0,i);
+				h=s*g;
+				g=c*g;
+				z=pythag<T>(f,h);
+				rv1[j]=z;
+				c=f/z;
+				s=h/z;
+				f=x*c+g*s;
+				g=g*c-x*s;
+				h=y*s;
+				y *= c;
+				for (jj=0;jj<n;jj++) {
+					x=vt(jj,j);
+					z=vt(jj,i);
+					vt(jj,j)=x*c+z*s;
+					vt(jj,i)=z*c-x*s;
+				}
+				z=pythag<T>(f,h);
+				w(0,j)=z;							// rotation can be arbitrary if z = 0
+				if (z) {
+					z=1.0/z;
+					c=f*z;
+					s=h*z;
+				}
+				f=c*g+s*y;
+				x=c*y-s*g;
+				for (jj=0;jj<m;jj++) {
+					y=u(jj,j);
+					z=u(jj,i);
+					u(jj,j)=y*c+z*s;
+					u(jj,i)=z*c-y*s;
+				}
+			}
+			rv1[l]=0.f;
+			rv1[k]=f;
+			w(0,k)=x;
+		}
+	}
+   // transpose vt
+    vt.transposei();
+}
 
     // default destructor
     template<typename T>

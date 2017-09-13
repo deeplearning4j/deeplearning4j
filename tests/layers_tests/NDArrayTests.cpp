@@ -744,3 +744,103 @@ TEST_F(NDArrayTest, TestAllTensors1) {
 
     ASSERT_EQ(3, rows->size());
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, SVD1) {
+    
+    double arrA[8]  = {1, 2, 3, 4, 5, 6, 7, 8};
+	double arrU[8]  = {-0.822647, 0.152483, -0.421375, 0.349918, -0.020103, 0.547354, 0.381169, 0.744789};
+	double arrS[2]  = {0.626828, 14.269095};
+	double arrVt[4] = {0.767187,-0.641423, 0.641423, 0.767187};
+		
+	int shapeA[8]  = {2, 4, 2, 2, 1, 0, 1, 99};
+	int shapeS[8]  = {2, 1, 2, 2, 1, 0, 1, 99};
+	int shapeVt[8] = {2, 2, 2, 2, 1, 0, 1, 99};
+   
+	NDArray<double> a(arrA,   shapeA);
+    NDArray<double> u(arrU,   shapeA);    
+	NDArray<double> s(arrS,   shapeS);    
+	NDArray<double> vt(arrVt, shapeVt);    
+	NDArray<double> expU, expS(shapeS), expVt(shapeVt);
+	
+	a.svd(expU, expS, expVt);
+	ASSERT_TRUE(u.equalsTo(&expU));
+	ASSERT_TRUE(s.equalsTo(&expS));
+	ASSERT_TRUE(vt.equalsTo(&expVt));
+	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, SVD2) {
+    
+    double arrA[6]  = {1, 2, 3, 4, 5, 6};
+	double arrU[6]  = {-0.386318, -0.922366, 0.000000, -0.922366, 0.386318, 0.000000};
+	double arrS[3]  = {9.508032, 0.77287, 0.000};
+	double arrVt[9] = {-0.428667, -0.566307, -0.703947, 0.805964, 0.112382,  -0.581199, 0.408248, -0.816497, 0.408248};
+
+	int shapeA[8]  = {2, 2, 3, 3, 1, 0, 1, 99};
+	int shapeS[8]  = {2, 1, 3, 3, 1, 0, 1, 99};
+	int shapeVt[8] = {2, 3, 3, 3, 1, 0, 1, 99};
+    
+	NDArray<double> a(arrA,   shapeA);
+    NDArray<double> u(arrU,   shapeA);    
+	NDArray<double> s(arrS,   shapeS);    
+	NDArray<double> vt(arrVt, shapeVt);    
+	NDArray<double> expU, expS(shapeS), expVt(shapeVt);
+	
+	a.svd(expU, expS, expVt);
+	ASSERT_TRUE(u.equalsTo	(&expU));
+	ASSERT_TRUE(s.equalsTo(&expS));
+	ASSERT_TRUE(vt.equalsTo(&expVt));
+	
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, SVD3) {
+   
+   double arrA[8]  = {1, 2, 3, 4, 5, 6, 7, 8};
+	double arrU[8]  = {-0.822647, 0.152483, -0.421375, 0.349918, -0.020103, 0.547354, 0.381169, 0.744789};
+	double arrS[2]  = {0.626828, 14.269095};
+	double arrVt[4] = {0.767187,-0.641423, 0.641423, 0.767187};
+		
+	int shapeA[8]  = {2, 4, 2, 2, 1, 0, 1, 99};
+	int shapeS[8]  = {2, 1, 2, 2, 1, 0, 1, 99};
+	int shapeVt[8] = {2, 2, 2, 2, 1, 0, 1, 99};
+  
+	NDArray<double> a(arrA,   shapeA);
+   NDArray<double> u(arrU,   shapeA);    
+	NDArray<double> s(arrS,   shapeS);    
+	NDArray<double> vt(arrVt, shapeVt);    
+	NDArray<double> expU, expS(shapeS), expVt(shapeVt);
+	
+	a.svd(expU, expS, expVt);
+	ASSERT_TRUE(expU.hasOrthonormalBasis(1));
+	ASSERT_TRUE(expVt.hasOrthonormalBasis(0));
+	ASSERT_TRUE(expVt.hasOrthonormalBasis(1));
+	ASSERT_TRUE(expVt.isUnitary());
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, SVD4) {
+    
+    double arrA[6]  = {1, 2, 3, 4, 5, 6};
+	double arrU[6]  = {-0.386318, -0.922366, 0.000000, -0.922366, 0.386318, 0.000000};
+	double arrS[3]  = {9.508032, 0.77287, 0.000};
+	double arrVt[9] = {-0.428667, -0.566307, -0.703947, 0.805964, 0.112382,  -0.581199, 0.408248, -0.816497, 0.408248};
+
+	int shapeA[8]  = {2, 2, 3, 3, 1, 0, 1, 99};
+	int shapeS[8]  = {2, 1, 3, 3, 1, 0, 1, 99};
+	int shapeVt[8] = {2, 3, 3, 3, 1, 0, 1, 99};
+    
+	NDArray<double> a(arrA,   shapeA);
+    NDArray<double> u(arrU,   shapeA);    
+	NDArray<double> s(arrS,   shapeS);    
+	NDArray<double> vt(arrVt, shapeVt);    
+	NDArray<double> expU, expS(shapeS), expVt(shapeVt);
+	
+	a.svd(expU, expS, expVt);
+	ASSERT_TRUE(expU.hasOrthonormalBasis(1));
+	ASSERT_TRUE(expVt.hasOrthonormalBasis(0));
+	ASSERT_TRUE(expVt.hasOrthonormalBasis(1));
+	ASSERT_TRUE(expVt.isUnitary());	
+}
