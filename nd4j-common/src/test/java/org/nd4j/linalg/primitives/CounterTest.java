@@ -88,4 +88,29 @@ public class CounterTest {
         assertEquals("B", list.get(3));
         assertEquals("A", list.get(4));
     }
+    
+    @Test
+    public void testCounterTotal() {
+        Counter<String> counter = new Counter<>();
+
+        counter.incrementCount("A", 1);
+        counter.incrementCount("B", 1);
+        counter.incrementCount("C", 1);
+
+        assertEquals(3.0, counter.totalCount(), 1e-5);
+        
+        counter.setCount("B", 234);
+
+        assertEquals(236.0, counter.totalCount(), 1e-5);
+        
+        counter.setCount("D", 1);
+        
+        assertEquals(237.0, counter.totalCount(), 1e-5);
+        
+        counter.removeKey("B");
+        
+        assertEquals(3.0, counter.totalCount(), 1e-5);
+        
+    }
+    
 }

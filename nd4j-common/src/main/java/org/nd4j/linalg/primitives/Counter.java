@@ -84,10 +84,13 @@ public class Counter<T> implements Serializable {
      */
     public double setCount(T element, double count) {
         AtomicDouble t = map.get(element);
-        if (t != null)
-            return t.getAndSet(count);
-        else {
+        if (t != null) {
+            double val = t.getAndSet(count);
+            dirty.set(true);
+            return val;
+        } else {
             map.put(element, new AtomicDouble(count));
+            totalCount.addAndGet(count);
             return 0;
         }
 
