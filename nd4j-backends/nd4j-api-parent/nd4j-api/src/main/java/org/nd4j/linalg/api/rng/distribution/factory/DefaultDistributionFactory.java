@@ -65,6 +65,11 @@ public class DefaultDistributionFactory implements DistributionFactory {
     }
 
     @Override
+    public Distribution createConstant(double value) {
+        return new ConstantDistribution(value);
+    }
+
+    @Override
     public Distribution createUniform(double min, double max) {
         return new UniformDistribution(min, max);
     }
