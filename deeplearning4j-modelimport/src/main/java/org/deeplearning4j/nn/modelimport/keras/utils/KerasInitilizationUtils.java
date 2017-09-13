@@ -103,8 +103,9 @@ public class KerasInitilizationUtils {
                 init = WeightInit.DISTRIBUTION;
             } else if (kerasInit.equals(conf.getINIT_CONSTANT()) ||
                     kerasInit.equals(conf.getINIT_CONSTANT_ALIAS())) {
-                // TODO: CONSTANT keras.initializers.Constant(value=0)
-                init = WeightInit.ONES;
+                double value = (double) initConfig.get(conf.getLAYER_FIELD_INIT_VALUE());
+                dist = new ConstantDistribution(value);
+                init = WeightInit.DISTRIBUTION;
             } else if (kerasInit.equals(conf.getINIT_ORTHOGONAL()) ||
                     kerasInit.equals(conf.getINIT_ORTHOGONAL_ALIAS())) {
                 if (kerasMajorVersion == 2) {

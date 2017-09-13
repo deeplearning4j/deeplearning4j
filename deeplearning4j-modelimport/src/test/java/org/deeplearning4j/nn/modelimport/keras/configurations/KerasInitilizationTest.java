@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.modelimport.keras.configurations;
 
+import org.deeplearning4j.nn.conf.distribution.*;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
@@ -7,6 +8,7 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasDense;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,13 +17,13 @@ import static org.junit.Assert.assertEquals;
 
 public class KerasInitilizationTest {
 
-    double scale = 0.4;
-    double minValue = -0.3;
+    double scale = 0.2;
+    double minValue = -0.2;
     double maxValue = 0.2;
-    double mean = 0.1;
-    double stdDev = 0.3;
-    double value = 0.0;
-    double gain = 2.0;
+    double mean = 0.0;
+    double stdDev = 0.2;
+    double value = 42.0;
+    double gain = 0.2;
     String distribution = "normal";
     String mode = "fan_in";
 
@@ -37,12 +39,14 @@ public class KerasInitilizationTest {
         String[] keras1Inits = initializers(conf1);
         String[] keras2Inits = initializers(conf2);
         WeightInit[] dl4jInits = dl4jInitializers();
+        Distribution[] dl4jDistributions = dl4jDistributions();
 
         for (int i=0; i< dl4jInits.length - 1; i++) {
-            initilizationDenseLayer(conf1, keras1, keras1Inits[i], dl4jInits[i]);
-            initilizationDenseLayer(conf2, keras2,  keras2Inits[i], dl4jInits[i]);
+            initilizationDenseLayer(conf1, keras1, keras1Inits[i], dl4jInits[i], dl4jDistributions[i]);
+            initilizationDenseLayer(conf2, keras2,  keras2Inits[i], dl4jInits[i], dl4jDistributions[i]);
 
-            initilizationDenseLayer(conf2, keras2,  keras2Inits[dl4jInits.length-1], dl4jInits[dl4jInits.length-1]);
+            initilizationDenseLayer(conf2, keras2,  keras2Inits[dl4jInits.length-1],
+                    dl4jInits[dl4jInits.length-1], dl4jDistributions[dl4jInits.length-1]);
         }
     }
 
@@ -80,13 +84,30 @@ public class KerasInitilizationTest {
                 WeightInit.IDENTITY,
                 WeightInit.DISTRIBUTION,
                 WeightInit.DISTRIBUTION,
-                WeightInit.ONES,
-                WeightInit.VAR_SCALING_NORMAL_FAN_IN,
-        };
+                WeightInit.DISTRIBUTION,
+                WeightInit.VAR_SCALING_NORMAL_FAN_IN};
+    }
+
+    private Distribution[] dl4jDistributions() {
+        return new Distribution[] {
+                null,
+                null,
+                null,
+                null,
+                new UniformDistribution(minValue, maxValue),
+                null,
+                null,
+                null,
+                null,
+                null,
+                new NormalDistribution(mean, stdDev),
+                new OrthogonalDistribution(gain),
+                new ConstantDistribution(value),
+                null};
     }
     
     private void initilizationDenseLayer(KerasLayerConfiguration conf, Integer kerasVersion,
-                                 String initializer, WeightInit dl4jInitializer)
+                                 String initializer, WeightInit dl4jInitializer, Distribution dl4jDistribution)
             throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_DENSE());
@@ -125,5 +146,7 @@ public class KerasInitilizationTest {
 
         DenseLayer layer = new KerasDense(layerConfig, false).getDenseLayer();
         assertEquals(dl4jInitializer, layer.getWeightInit());
+        assertEquals(dl4jDistribution, layer.getDist());
+
     }
 }
