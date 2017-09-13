@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -30,6 +27,7 @@ import java.util.Arrays;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(exclude = {"product"})
 public class CnnToRnnPreProcessor implements InputPreProcessor {
     private int inputHeight;
     private int inputWidth;
