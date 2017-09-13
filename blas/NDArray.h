@@ -305,7 +305,16 @@ namespace nd4j {
         
 		// return array which is broadcasted from this and argument array  
 		NDArray<T>*  broadcast(const NDArray<T>& other);
-	
+		
+		// check whether array's rows (arg=0) or columns create orthogonal basis
+		bool hasOrthonormalBasis(const int arg); 
+		
+		// check whether array is identity matrix
+		bool isIdentityMatrix(); 
+
+		// check whether array is unitary matrix
+		bool isUnitary(); 
+		
 		// default destructor
         ~NDArray();
 
