@@ -23,6 +23,7 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -83,7 +84,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int size = layerConf().getSize();
+        int size = ((BaseUpsamplingLayer) layerConf()).getSize();
 
         INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
@@ -99,7 +100,6 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
                 .callInplace(false)
                 .build();
         Nd4j.getExecutioner().exec(op);
-
 
         return new Pair<>(gradient, reshapedEpsilon);
     }
@@ -131,7 +131,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int size = layerConf().getSize();
+        int size = ((BaseUpsamplingLayer) layerConf()).getSize();
         int outH = inH * size;
         int outW = inW * size;
 
