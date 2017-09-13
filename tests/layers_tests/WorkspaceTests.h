@@ -118,11 +118,20 @@ TEST_F(WorkspaceTests, NewInWorkspaceTest1) {
     ASSERT_EQ(65536, ws.getCurrentSize());
     ASSERT_EQ(0, ws.getCurrentOffset());
 
+    ASSERT_FALSE(MemoryRegistrator::getInstance()->hasWorkspaceAttached());
+
     MemoryRegistrator::getInstance()->attachWorkspace(&ws);
+
+    ASSERT_TRUE(MemoryRegistrator::getInstance()->hasWorkspaceAttached());
 
     auto ast = new NDArray<float>(5, 5, 'c');
 
     ASSERT_TRUE(ws.getCurrentOffset() > 0);
+
+    MemoryRegistrator::getInstance()->forgetWorkspace();
+
+    ASSERT_FALSE(MemoryRegistrator::getInstance()->hasWorkspaceAttached());
+    ASSERT_TRUE(MemoryRegistrator::getInstance()->getWorkspace() == nullptr);
 }
 
 
@@ -139,6 +148,8 @@ TEST_F(WorkspaceTests, NewInWorkspaceTest2) {
     ASSERT_TRUE(ws.getCurrentOffset() > 0);
 
     delete ast;
+
+    MemoryRegistrator::getInstance()->forgetWorkspace();
 }
 
 
