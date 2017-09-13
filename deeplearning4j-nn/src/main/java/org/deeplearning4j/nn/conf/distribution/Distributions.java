@@ -46,6 +46,18 @@ public class Distributions {
             BinomialDistribution bd = (BinomialDistribution) dist;
             return Nd4j.getDistributions().createBinomial(bd.getNumberOfTrials(), bd.getProbabilityOfSuccess());
         }
+        if (dist instanceof LogNormalDistribution) {
+            LogNormalDistribution lnd = (LogNormalDistribution) dist;
+            return Nd4j.getDistributions().createLogNormal(lnd.getMean(), lnd.getStd());
+        }
+        if (dist instanceof TruncatedNormalDistribution) {
+            TruncatedNormalDistribution tnd = (TruncatedNormalDistribution) dist;
+            return Nd4j.getDistributions().createTruncatedNormal(tnd.getMean(), tnd.getStd());
+        }
+        if (dist instanceof OrthogonalDistribution) {
+            OrthogonalDistribution od = (OrthogonalDistribution) dist;
+            return Nd4j.getDistributions().createOrthogonal(od.getGain());
+        }
         throw new RuntimeException("unknown distribution type: " + dist.getClass());
     }
 }
