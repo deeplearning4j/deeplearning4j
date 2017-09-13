@@ -60,6 +60,11 @@ namespace nd4j {
 
             void scopeIn();
             void scopeOut();
+
+            /*
+             * This method creates NEW workspace of the same memory size and returns pointer to it
+             */
+            Workspace* clone();
         };
     }
 }
