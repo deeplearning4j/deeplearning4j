@@ -3,6 +3,7 @@ package org.deeplearning4j.arbiter.optimize;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
+import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.ConvolutionLayerSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
@@ -59,9 +60,8 @@ public class TestBasic {
     public void testBasicMnist() throws Exception {
 
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
-                .learningRate(new ContinuousParameterSpace(0.0001, 0.2))
+                .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
                 .l2(new ContinuousParameterSpace(0.0001, 0.05))
-                .dropOut(new ContinuousParameterSpace(0.2, 0.7))
                 .addLayer(
                         new ConvolutionLayerSpace.Builder().nIn(1)
                                 .nOut(new IntegerParameterSpace(5, 30))
@@ -124,9 +124,8 @@ public class TestBasic {
     public void testBasicMnistCompGraph() throws Exception {
 
         ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
-                .learningRate(new ContinuousParameterSpace(0.0001, 0.2))
+                .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
                 .l2(new ContinuousParameterSpace(0.0001, 0.05))
-                .dropOut(new ContinuousParameterSpace(0.2, 0.7))
                 .addInputs("in")
                 .addLayer("0",
                         new ConvolutionLayerSpace.Builder().nIn(1)
@@ -193,7 +192,7 @@ public class TestBasic {
         //This exception should be visible in UI, but training should continue otherwise
 
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
-                .learningRate(new ContinuousParameterSpace(0.0001, 0.2))
+                .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
                 .l2(new ContinuousParameterSpace(0.0001, 0.05))
                 .dropOut(new ContinuousParameterSpace(0.2, 0.7))
                 .addLayer(
@@ -259,7 +258,7 @@ public class TestBasic {
         //This exception should be visible in UI, but training should continue otherwise
 
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
-                .learningRate(new ContinuousParameterSpace(0.0001, 0.2))
+                .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
                 .l2(new ContinuousParameterSpace(0.0001, 0.05))
                 .dropOut(new ContinuousParameterSpace(0.2, 0.7))
                 .addLayer(
@@ -325,7 +324,7 @@ public class TestBasic {
         //This exception should be visible in UI, but training should continue otherwise
 
         ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
-                .learningRate(new ContinuousParameterSpace(0.0001, 0.2))
+                .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
                 .l2(new ContinuousParameterSpace(0.0001, 0.05))
                 .dropOut(new ContinuousParameterSpace(0.2, 0.7))
                 .addInputs("in")
@@ -391,7 +390,7 @@ public class TestBasic {
     public void testBasicMnistMultipleSessions() throws Exception {
 
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
-                .learningRate(new ContinuousParameterSpace(0.0001, 0.2))
+                .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
                 .l2(new ContinuousParameterSpace(0.0001, 0.05))
                 .dropOut(new ContinuousParameterSpace(0.2, 0.7))
                 .addLayer(

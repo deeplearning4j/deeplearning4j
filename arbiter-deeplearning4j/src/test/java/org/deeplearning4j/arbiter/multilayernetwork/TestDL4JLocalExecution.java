@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.multilayernetwork;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
+import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.evaluator.multilayer.ClassificationEvaluator;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
@@ -66,7 +67,7 @@ public class TestDL4JLocalExecution {
         //Define: network config (hyperparameter space)
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(new ContinuousParameterSpace(0.0001, 0.1)).regularization(true)
+                        .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.01))
                         .iterations(100).addLayer(
                                         new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
@@ -74,7 +75,7 @@ public class TestDL4JLocalExecution {
                                                                         Activation.TANH))
                                                         .build(),
                                         new IntegerParameterSpace(1, 2), true) //1-2 identical layers (except nIn)
-                        .addLayer(new OutputLayerSpace.Builder().nOut(3).activation("softmax")
+                        .addLayer(new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .numEpochs(3).pretrain(false).backprop(true).build();
 
@@ -120,7 +121,7 @@ public class TestDL4JLocalExecution {
         //Define: network config (hyperparameter space)
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(new ContinuousParameterSpace(0.0001, 0.1)).regularization(true)
+                        .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.01))
                         .iterations(100).addLayer(
                                         new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
@@ -128,7 +129,7 @@ public class TestDL4JLocalExecution {
                                                                         Activation.TANH))
                                                         .build(),
                                         new IntegerParameterSpace(1, 2), true) //1-2 identical layers (except nIn)
-                        .addLayer(new OutputLayerSpace.Builder().nOut(3).activation("softmax")
+                        .addLayer(new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .numEpochs(3).pretrain(false).backprop(true).build();
         Map<String, Object> commands = new HashMap<>();
@@ -177,7 +178,7 @@ public class TestDL4JLocalExecution {
         //Define: network config (hyperparameter space)
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(new ContinuousParameterSpace(0.0001, 0.1)).regularization(true)
+                        .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.01))
                         .iterations(1).addLayer(
                                         new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
@@ -185,7 +186,7 @@ public class TestDL4JLocalExecution {
                                                                         Activation.TANH))
                                                         .build(),
                                         new IntegerParameterSpace(1, 2), true) //1-2 identical layers (except nIn)
-                        .addLayer(new OutputLayerSpace.Builder().nOut(3).activation("softmax")
+                        .addLayer(new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
 

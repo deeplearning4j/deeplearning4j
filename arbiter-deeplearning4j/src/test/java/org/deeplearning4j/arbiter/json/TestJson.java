@@ -2,6 +2,9 @@ package org.deeplearning4j.arbiter.json;
 
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
+import org.deeplearning4j.arbiter.conf.updater.AdaMaxSpace;
+import org.deeplearning4j.arbiter.conf.updater.AdamSpace;
+import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
 import org.deeplearning4j.arbiter.multilayernetwork.MnistDataSetIteratorFactory;
@@ -44,9 +47,8 @@ public class TestJson {
     public void testMultiLayerSpaceJson() {
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(new ContinuousParameterSpace(0.0001, 0.2)).regularization(true)
+                        .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.05))
-                        .dropOut(new ContinuousParameterSpace(0.2, 0.7)).iterations(1)
                         .addLayer(new DenseLayerSpace.Builder().nIn(1).nOut(new IntegerParameterSpace(5, 30))
                                         .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.SOFTPLUS,
                                                         Activation.LEAKYRELU))
@@ -80,7 +82,7 @@ public class TestJson {
         //Define: network config (hyperparameter space)
         ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(new ContinuousParameterSpace(0.0001, 0.1)).regularization(true)
+                        .updater(new AdaMaxSpace(new ContinuousParameterSpace(0.0001, 0.1)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.01)).iterations(1).addInputs("in")
                         .setInputTypes(InputType.feedForward(4))
                         .addLayer("first",
@@ -117,7 +119,8 @@ public class TestJson {
     public void testComputationGraphSpaceJson() {
         ParameterSpace<Integer> p = new IntegerParameterSpace(10, 100);
         ComputationGraphSpace cgs =
-                        new ComputationGraphSpace.Builder().learningRate(new DiscreteParameterSpace<>(0.1, 0.5, 1.0))
+                        new ComputationGraphSpace.Builder()
+                                        .updater(new AdamSpace(new DiscreteParameterSpace<>(0.1, 0.5, 1.0)))
                                         .seed(12345).addInputs("in")
                                         .addLayer("0", new DenseLayerSpace.Builder()
                                                         .nIn(new IntegerParameterSpace(1, 100)).nOut(p).build(), "in")

@@ -18,6 +18,7 @@
 package org.deeplearning4j.arbiter.computationgraph;
 
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
+import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -33,6 +34,8 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.List;
@@ -46,7 +49,9 @@ public class TestComputationGraphSpace {
     @Test
     public void testBasic() {
 
-        ComputationGraphConfiguration expected = new NeuralNetConfiguration.Builder().learningRate(0.005).seed(12345)
+        ComputationGraphConfiguration expected = new NeuralNetConfiguration.Builder()
+                        .updater(new Sgd(0.005))
+                        .seed(12345)
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
                         .addLayer("1", new DenseLayer.Builder().nIn(10).nOut(10).build(), "0").addLayer("2",
@@ -55,7 +60,9 @@ public class TestComputationGraphSpace {
                                         "1")
                         .setOutputs("2").backprop(true).pretrain(false).build();
 
-        ComputationGraphSpace cgs = new ComputationGraphSpace.Builder().learningRate(0.005).seed(12345).addInputs("in")
+        ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
+                        .updater(new Sgd(0.005))
+                        .seed(12345).addInputs("in")
                         .addLayer("0", new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), "in")
                         .addLayer("1", new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), "0")
                         .addLayer("2", new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5)
@@ -75,7 +82,7 @@ public class TestComputationGraphSpace {
     public void testBasic2() {
 
         ComputationGraphSpace mls = new ComputationGraphSpace.Builder()
-                        .learningRate(new ContinuousParameterSpace(0.0001, 0.1)).regularization(true)
+                        .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
                         .l2(new ContinuousParameterSpace(0.2, 0.5))
                         .addInputs("in").addLayer("0",
                                         new DenseLayerSpace.Builder().nIn(10).nOut(10)
@@ -131,17 +138,19 @@ public class TestComputationGraphSpace {
                 NeuralNetConfiguration layerConf =
                                 ((LayerVertex) conf.getVertices().get(String.valueOf(j))).getLayerConf();
 
-                double lr = ((BaseLayer) layerConf.getLayer()).getLearningRate();
+                double lr = ((Sgd)((BaseLayer) layerConf.getLayer()).getIUpdater()).getLearningRate();
                 assertTrue(lr >= 0.0001 && lr <= 0.1);
                 double l2 = ((BaseLayer) layerConf.getLayer()).getL2();
                 assertTrue(l2 >= 0.2 && l2 <= 0.5);
 
                 if (j == nLayers - 1) { //Output layer
-                    assertEquals("softmax", ((BaseLayer) layerConf.getLayer()).getActivationFn().toString());
+                    assertEquals(Activation.SOFTMAX.getActivationFunction(),
+                            ((BaseLayer) layerConf.getLayer()).getActivationFn());
                 } else {
-                    String actFn = ((BaseLayer) layerConf.getLayer()).getActivationFn().toString();
-                    assertTrue("relu".equals(actFn) || "tanh".equals(actFn));
-                    if ("relu".equals(actFn))
+                    IActivation actFn = ((BaseLayer) layerConf.getLayer()).getActivationFn();
+                    assertTrue(Activation.RELU.getActivationFunction().equals(actFn) ||
+                            Activation.TANH.getActivationFunction().equals(actFn));
+                    if (Activation.RELU.getActivationFunction().equals(actFn))
                         reluCount++;
                     else
                         tanhCount++;

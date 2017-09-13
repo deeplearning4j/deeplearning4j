@@ -18,6 +18,7 @@
 package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.deeplearning4j.arbiter.MultiLayerSpace;
+import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.ConvolutionLayerSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
@@ -72,9 +73,9 @@ public class MNISTOptimizationTest {
         //Define: network config (hyperparameter space)
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(new ContinuousParameterSpace(0.0001, 0.2)).regularization(true)
+                        .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.05))
-                        .dropOut(new ContinuousParameterSpace(0.2, 0.7)).iterations(1).addLayer(
+                        .iterations(1).addLayer(
                                         new ConvolutionLayerSpace.Builder().nIn(1)
                                                         .nOut(new IntegerParameterSpace(5, 30))
                                                         .kernelSize(new DiscreteParameterSpace<>(new int[] {3, 3},

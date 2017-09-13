@@ -18,6 +18,8 @@
 package org.deeplearning4j.arbiter.computationgraph;
 
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
+import org.deeplearning4j.arbiter.conf.updater.AdamSpace;
+import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.evaluator.multilayer.ClassificationEvaluator;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
@@ -38,6 +40,7 @@ import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
 import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculatorCG;
@@ -66,19 +69,18 @@ public class TestGraphLocalExecution {
 
         //Define: network config (hyperparameter space)
         ComputationGraphSpace mls = new ComputationGraphSpace.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(new ContinuousParameterSpace(0.0001, 0.1)).regularization(true)
-                        .l2(new ContinuousParameterSpace(0.0001, 0.01)).iterations(100).addInputs("in")
-                        .setInputTypes(InputType.feedForward(4))
-                        .addLayer("layer0",
-                                        new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
-                                                        .activation(new DiscreteParameterSpace<>(Activation.RELU,
-                                                                        Activation.TANH))
-                                                        .build(),
-                                        "in")
-                        .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "layer0")
-                        .setOutputs("out").numEpochs(3).pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
+                .l2(new ContinuousParameterSpace(0.0001, 0.01)).iterations(100).addInputs("in")
+                .setInputTypes(InputType.feedForward(4))
+                .addLayer("layer0",
+                        new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2, 10))
+                                .activation(new DiscreteParameterSpace<>(Activation.RELU,Activation.TANH))
+                                .build(),
+                        "in")
+                .addLayer("out", new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "layer0")
+                .setOutputs("out").numEpochs(3).pretrain(false).backprop(true).build();
 
         //Define configuration:
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
@@ -114,7 +116,7 @@ public class TestGraphLocalExecution {
     public void testLocalExecutionEarlyStopping() throws Exception {
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
                         .epochTerminationConditions(new MaxEpochsTerminationCondition(100))
-                        .scoreCalculator(new DataSetLossCalculatorCG(new IrisDataSetIterator(150, 150), true))
+                        .scoreCalculator(new DataSetLossCalculatorCG(new MnistDataSetIterator(128, 1280), true))
                         .modelSaver(new InMemoryModelSaver()).build();
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
@@ -122,16 +124,16 @@ public class TestGraphLocalExecution {
         //Define: network config (hyperparameter space)
         ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(new ContinuousParameterSpace(0.0001, 0.1)).regularization(true)
+                        .updater(new AdamSpace(new ContinuousParameterSpace(0.0001, 0.1)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.01)).iterations(1).addInputs("in")
-                        .setInputTypes(InputType.feedForward(4))
+                        .setInputTypes(InputType.feedForward(784))
                         .addLayer("first",
-                                        new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
+                                        new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2, 10))
                                                         .activation(new DiscreteParameterSpace<>(Activation.RELU,
                                                                         Activation.TANH))
                                                         .build(),
                                         "in") //1-2 identical layers (except nIn)
-                        .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
+                        .addLayer("out", new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "first")
                         .setOutputs("out").earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
 

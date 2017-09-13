@@ -118,7 +118,7 @@ public abstract class LayerSpace<L extends Layer> extends AbstractParameterSpace
         protected ParameterSpace<Double> dropOut;
 
         public T dropOut(double dropOut) {
-            return dropOut(new FixedValue<Double>(dropOut));
+            return dropOut(new FixedValue<>(dropOut));
         }
 
         public T dropOut(ParameterSpace<Double> dropOut) {
