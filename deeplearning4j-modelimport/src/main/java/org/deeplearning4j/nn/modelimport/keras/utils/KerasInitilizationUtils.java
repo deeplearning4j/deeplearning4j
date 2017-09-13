@@ -142,8 +142,13 @@ public class KerasInitilizationUtils {
                 // TODO: map to scaled Identity
                 init = WeightInit.IDENTITY;
             } else if (kerasInit.equals(conf.getINIT_VARIANCE_SCALING())) {
-                int scale = (int) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
-                if (scale != 1)
+                double scale;
+                try {
+                    scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
+                } catch (Exception e) {
+                    scale = (int) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
+                }
+                if (scale != 1.)
                     log.warn("Scaled identity weight init not supported, setting scale=1");
                 String mode = (String) initConfig.get(conf.getLAYER_FIELD_INIT_MODE());
                 String distribution = (String) initConfig.get(conf.getLAYER_FIELD_INIT_DISTRIBUTION());

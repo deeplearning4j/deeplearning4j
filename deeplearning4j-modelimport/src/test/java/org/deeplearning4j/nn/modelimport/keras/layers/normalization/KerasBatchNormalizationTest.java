@@ -70,6 +70,5 @@ public class KerasBatchNormalizationTest {
         BatchNormalization layer = new KerasBatchNormalization(layerConfig).getBatchNormalizationLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(epsilon, layer.getEps(), 0.0);
-        assertEquals(momentum, ((Nesterovs)layer.getIUpdater()).getMomentum(), 0.0);
     }
 }
