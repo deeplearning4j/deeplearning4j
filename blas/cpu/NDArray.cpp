@@ -265,18 +265,18 @@ template<typename T> NDArray<T>& NDArray<T>::operator=(const NDArray<T>& other) 
     if (_shapeInfo != nullptr && _buffer != nullptr && shape::equalsStrict(_shapeInfo, other._shapeInfo))
         memcpy(_buffer, other._buffer, lengthOf()*sizeOfT());
     else {
-        if(_isBuffAlloc)
+        if(_isBuffAlloc && _workspace == nullptr)
             delete []_buffer;
-        if(_isShapeAlloc)
+        if(_isShapeAlloc && _workspace == nullptr)
             delete []_shapeInfo;
 
 		int arrLength = other.lengthOf();
-		int shapeLength = other.rankOf()*2 + 4;
+		int shapeLength = shape::shapeInfoLength(other.rankOf());
 
-        _buffer = new T[arrLength];
+        ALLOCATE(_buffer, _workspace, arrLength, T);
         memcpy(_buffer, other._buffer, arrLength*sizeOfT());               // copy elements of other current array
 
-        _shapeInfo = new int[shapeLength];
+        ALLOCATE(_shapeInfo, _workspace, shapeLength, int);
         memcpy(_shapeInfo, other._shapeInfo, shapeLength*sizeof(int));     // copy shape information into new array
 
         _isBuffAlloc = true;
@@ -292,10 +292,10 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
     this->_shapeInfo = shapeInfo;
 
     if (releaseExisting) {
-        if (_isShapeAlloc)
+        if (_isShapeAlloc && _workspace == nullptr)
             delete[] _shapeInfo;
 
-        if (_isBuffAlloc)
+        if (_isBuffAlloc && _workspace == nullptr)
             delete[] _buffer;
     }
 }
