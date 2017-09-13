@@ -189,6 +189,15 @@ public class KerasLayerConfiguration {
     /* Keras weight initializers. */
     private final String LAYER_FIELD_INIT = ""; // 1: init, 2: kernel_initializer
     private final String LAYER_FIELD_BIAS_INIT = "bias_initializer"; // keras 2 only
+    private final String LAYER_FIELD_INIT_MEAN = "mean";
+    private final String LAYER_FIELD_INIT_STDDEV = "stddev";
+    private final String LAYER_FIELD_INIT_SCALE = "scale";
+    private final String LAYER_FIELD_INIT_MINVAL = "minval";
+    private final String LAYER_FIELD_INIT_MAXVAL = "maxval";
+    private final String LAYER_FIELD_INIT_VALUE = "value";
+    private final String LAYER_FIELD_INIT_GAIN = "gain";
+    private final String LAYER_FIELD_INIT_MODE = "mode";
+    private final String LAYER_FIELD_INIT_DISTRIBUTION = "distribution";
 
     private final String INIT_UNIFORM = "uniform";
     private final String INIT_RANDOM_UNIFORM = "random_uniform";

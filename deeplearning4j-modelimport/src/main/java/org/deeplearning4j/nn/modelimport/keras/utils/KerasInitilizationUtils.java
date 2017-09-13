@@ -19,14 +19,18 @@ package org.deeplearning4j.nn.modelimport.keras.utils;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.api.rng.distribution.impl.OrthogonalDistribution;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Utility functionality for Keras weight initializers
@@ -45,10 +49,11 @@ public class KerasInitilizationUtils {
      */
     public static Pair<WeightInit, Distribution> mapWeightInitialization(String kerasInit,
                                                                          KerasLayerConfiguration conf,
-                                                                         Map<String, Object> initConfig)
-            throws UnsupportedKerasConfigurationException {
+                                                                         Map<String, Object> initConfig,
+                                                                         int kerasMajorVersion)
+            throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
 
-        WeightInit init = WeightInit.XAVIER;
+        WeightInit init = null;
         Distribution dist = null;
         if (kerasInit != null) {
             if (kerasInit.equals(conf.getINIT_GLOROT_NORMAL())) {
@@ -71,45 +76,103 @@ public class KerasInitilizationUtils {
                 kerasInit.equals(conf.getINIT_ZEROS()) ||
                 kerasInit.equals(conf.getINIT_ZEROS_ALIAS())) {
             init = WeightInit.ZERO;
-            } else if (kerasInit.equals(conf.getINIT_CONSTANT()) ||
-                    kerasInit.equals(conf.getINIT_CONSTANT_ALIAS())) {
-                // FIXME: CONSTANT
-                // keras.initializers.Constant(value=0)
-                init = WeightInit.ZERO;
             } else if (kerasInit.equals(conf.getINIT_UNIFORM()) ||
                     kerasInit.equals(conf.getINIT_RANDOM_UNIFORM()) ||
                     kerasInit.equals(conf.getINIT_RANDOM_UNIFORM_ALIAS())) {
-                // FIXME: read minval and maxval from config
-                // keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=None) keras1: scale
-                init = WeightInit.UNIFORM;
+                if (kerasMajorVersion == 2) {
+                    double minVal = (double) initConfig.get(conf.getLAYER_FIELD_INIT_MINVAL());
+                    double maxVal = (double) initConfig.get(conf.getLAYER_FIELD_INIT_MAXVAL());
+                    dist = new UniformDistribution(minVal, maxVal);
+                } else {
+                    double scale = 0.05;
+                    if (initConfig.containsKey(conf.getLAYER_FIELD_INIT_SCALE()))
+                        scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
+                    dist = new UniformDistribution(-scale, scale);
+                }
+                init = WeightInit.DISTRIBUTION;
             } else if (kerasInit.equals(conf.getINIT_RANDOM_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_RANDOM_NORMAL_ALIAS())) {
-                // FIXME: read mean and stddev from config
-                // keras.initializers.RandomNormal(mean=0.0, stddev=0.05, seed=None)
+                if (kerasMajorVersion == 2) {
+                    double mean = (double) initConfig.get(conf.getLAYER_FIELD_INIT_MEAN());
+                    double stdDev = (double) initConfig.get(conf.getLAYER_FIELD_INIT_STDDEV());
+                    dist = new NormalDistribution(mean, stdDev);
+                } else {
+                    double scale = 0.05;
+                    if (initConfig.containsKey(conf.getLAYER_FIELD_INIT_SCALE()))
+                        scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
+                    dist = new NormalDistribution(0, scale);
+                }
                 init = WeightInit.DISTRIBUTION;
+            } else if (kerasInit.equals(conf.getINIT_CONSTANT()) ||
+                    kerasInit.equals(conf.getINIT_CONSTANT_ALIAS())) {
+                // FIXME: CONSTANT keras.initializers.Constant(value=0)
+                init = WeightInit.ZERO;
             } else if (kerasInit.equals(conf.getINIT_ORTHOGONAL()) ||
                     kerasInit.equals(conf.getINIT_ORTHOGONAL_ALIAS())) {
-                // TODO keras.initializers.Orthogonal(gain=1.0, seed=None)
+                if (kerasMajorVersion == 2) {
+                    double gain = (double) initConfig.get(conf.getLAYER_FIELD_INIT_GAIN());
+                    // TODO: dist = new OrthogonalDistribution(gain);
+                } else {
+                    double scale = 1.1;
+                    if (initConfig.containsKey(conf.getLAYER_FIELD_INIT_SCALE()))
+                        scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
+                    //TODO: dist = new OrthogonalDistribution(scale);
+                }
                 init = WeightInit.DISTRIBUTION;
             } else if (kerasInit.equals(conf.getINIT_TRUNCATED_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_TRUNCATED_NORMAL_ALIAS())) {
-                // FIXME: read mean and stddev from config
-                // keras.initializers.TruncatedNormal(mean=0.0, stddev=0.05, seed=None) keras1: no mean, always 0, stddev is scale
+                double mean = (double) initConfig.get(conf.getLAYER_FIELD_INIT_MEAN());
+                double stdDev = (double) initConfig.get(conf.getLAYER_FIELD_INIT_STDDEV());
+                // TODO: map to truncated
+                dist = new NormalDistribution(mean, stdDev);
                 init = WeightInit.DISTRIBUTION;
             } else if (kerasInit.equals(conf.getINIT_IDENTITY()) ||
                     kerasInit.equals(conf.getINIT_IDENTITY_ALIAS())) {
-                // TODO: takes gain/scale parameter
-                // keras.initializers.Identity(gain=1.0) keras1: scale
+                if (kerasMajorVersion == 2) {
+                    double gain = (double) initConfig.get(conf.getLAYER_FIELD_INIT_GAIN());
+                    if (gain != 1.)
+                        log.warn("Scaled identity weight init not supported, setting gain=1");
+                } else {
+                    double scale = 1.;
+                    if (initConfig.containsKey(conf.getLAYER_FIELD_INIT_SCALE()))
+                        scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
+                    if (scale != 1.)
+                        log.warn("Scaled identity weight init not supported, setting scale=1");
+                }
+                // TODO: map to scaled Identity
                 init = WeightInit.IDENTITY;
             } else if (kerasInit.equals(conf.getINIT_VARIANCE_SCALING())) {
-                //  keras.initializers.VarianceScaling(scale=1.0, mode='fan_in', distribution='normal', seed=None)
-                //  With distribution="normal", samples are drawn from a truncated normal distribution centered on zero, with  stddev = sqrt(scale / n) where n is:
-                //  number of input units in the weight tensor, if mode = "fan_in"
-                //  number of output units, if mode = "fan_out"
-                //  average of the numbers of input and output units, if mode = "fan_avg"
-                //  With distribution="uniform", samples are drawn from a uniform distribution within [-limit, limit], with  limit = sqrt(3 * scale / n).
-
-                init = WeightInit.XAVIER_UNIFORM;
+                int scale = (int) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
+                if (scale != 1)
+                    log.warn("Scaled identity weight init not supported, setting scale=1");
+                String mode = (String) initConfig.get(conf.getLAYER_FIELD_INIT_MODE());
+                String distribution = (String) initConfig.get(conf.getLAYER_FIELD_INIT_DISTRIBUTION());
+                switch (mode) {
+                    case "fan_in":
+                        if (distribution.equals("normal")) {
+                            init = WeightInit.VAR_SCALING_NORMAL_FAN_IN;
+                        } else {
+                            init = WeightInit.VAR_SCALING_UNIFORM_FAN_IN;
+                        }
+                        break;
+                    case "fan_out":
+                        if (distribution.equals("normal")) {
+                            init = WeightInit.VAR_SCALING_NORMAL_FAN_OUT;
+                        } else {
+                            init = WeightInit.VAR_SCALING_UNIFORM_FAN_OUT;
+                        }
+                        break;
+                    case "fan_avg":
+                        if (distribution.equals("normal")) {
+                            init = WeightInit.VAR_SCALING_NORMAL_FAN_AVG;
+                        } else {
+                            init = WeightInit.VAR_SCALING_UNIFORM_FAN_AVG;
+                        }
+                        break;
+                    default:
+                        throw new InvalidKerasConfigurationException("Initialization argument 'mode' has to be either " +
+                                "fan_in, fan_out or fan_avg");
+                }
             } else {
                 throw new UnsupportedKerasConfigurationException("Unknown keras weight initializer " + kerasInit);
             }
@@ -134,20 +197,23 @@ public class KerasInitilizationUtils {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(initField))
             throw new InvalidKerasConfigurationException("Keras layer is missing " + initField + " field");
-        String kerasInit = "glorot_normal";
+        String kerasInit;
         Map<String, Object> initMap;
         if (kerasMajorVersion != 2) {
             kerasInit = (String) innerConfig.get(initField);
             initMap = innerConfig;
         } else {
-            initMap = (HashMap) innerConfig.get(initField);
-            if (initMap.containsKey("class_name")) {
-                kerasInit = (String) initMap.get("class_name");
+            Map<String, Object> fullInitMap = (HashMap) innerConfig.get(initField);
+            initMap = (HashMap) fullInitMap.get("config");
+            if (fullInitMap.containsKey("class_name")) {
+                kerasInit = (String) fullInitMap.get("class_name");
+            } else {
+                throw new UnsupportedKerasConfigurationException("Incomplete initialization class");
             }
         }
         Pair<WeightInit, Distribution> init;
         try {
-            init = mapWeightInitialization(kerasInit, conf, initMap);
+            init = mapWeightInitialization(kerasInit, conf, initMap, kerasMajorVersion);
         } catch (UnsupportedKerasConfigurationException e) {
             if (enforceTrainingConfig)
                 throw e;
