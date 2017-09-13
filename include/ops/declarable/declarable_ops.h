@@ -13,8 +13,6 @@
 #include <Block.h>
 #include "OpDescriptor.h"
 #include <helpers/helper_hash.h>
-#include <memory/Workspace.h>
-#include <memory/MemoryRegistrator.h>
 
 
 using namespace nd4j::graph;
@@ -477,28 +475,20 @@ template <typename T>
 bool nd4j::ops::DeclarableOp<T>::allocateResult(Block<T>& block, int* shape) {
     auto var = block.getVariableSpace()->getVariable(block.getNodeId());
 
-    auto workspace = block.getWorkspace();
-
     Nd4jIndex len = shape::length(shape);
-    int* __shape;
-    ALLOCATE(__shape, workspace, shape::shapeInfoLength(shape[0]), int); //new int[shape[0] * 2 + 4];
-
-    memcpy(__shape, shape, shape::shapeInfoByteLength(shape[0]));
+    int* __shape = new int[shape[0] * 2 + 4];
+    memcpy(__shape, shape, sizeof(int) * (shape[0] * 2 + 4));
 
     // if that's first run - we probably have nothing here
     if (var->getNDArray() == nullptr) {
-        T* buffer;
-        ALLOCATE(buffer, workspace, len, T);
-
-        var->setNDArray(new NDArray<T>(buffer, __shape, workspace));
+        T* buffer = new T[len];
+        var ->setNDArray(new NDArray<T>(buffer, __shape));
         var->getNDArray()->triggerAllocationFlag(true, true);
     } else if(var->getNDArray()->lengthOf() != len) {
         // if length not match - lets reallocate array
         delete var->getNDArray();
-        T* buffer;
-        ALLOCATE(buffer, workspace, len, T);
-
-        var ->setNDArray(new NDArray<T>(buffer, __shape, workspace));
+        T* buffer = new T[len];
+        var ->setNDArray(new NDArray<T>(buffer, __shape));
         var->getNDArray()->triggerAllocationFlag(true, true);
     }
 
@@ -508,18 +498,17 @@ bool nd4j::ops::DeclarableOp<T>::allocateResult(Block<T>& block, int* shape) {
 template <typename T>
 bool nd4j::ops::DeclarableOp<T>::allocateResult(Block<T>& block, std::initializer_list<int>& shape, char order) {
     auto var = block.getVariableSpace()->getVariable(block.getNodeId());
-    auto workspace = block.getWorkspace();
 
     Nd4jIndex len = shape::length(shape);
     // if that's first run - we probably have nothing here
     if (var->getNDArray() == nullptr) {
-        var ->setNDArray(new NDArray<T>(order, shape, workspace));
-        var->getNDArray()->triggerAllocationFlag(true, true);
+        var ->setNDArray(new NDArray<T>(order, shape));
+        var->getNDArray()->_allocated = true;
     } else if(var->getNDArray()->lengthOf() != len) {
         // if length not match - lets reallocate array
         delete var->getNDArray();
-        var ->setNDArray(new NDArray<T>(order, shape, workspace));
-        var->getNDArray()->triggerAllocationFlag(true, true);
+        var ->setNDArray(new NDArray<T>(order, shape));
+        var->getNDArray()->_allocated = true;
     }
 
     return true;
