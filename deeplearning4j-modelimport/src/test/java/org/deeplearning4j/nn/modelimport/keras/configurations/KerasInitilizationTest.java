@@ -60,9 +60,8 @@ public class KerasInitilizationTest {
                 conf.getINIT_IDENTITY(),
                 conf.getINIT_NORMAL(),
                 conf.getINIT_ORTHOGONAL(),
+                conf.getINIT_CONSTANT(),
                 conf.getINIT_VARIANCE_SCALING()
-                // TODO: add these initializations
-                // conf.getINIT_CONSTANT(),
 
         };
     }
@@ -81,6 +80,7 @@ public class KerasInitilizationTest {
                 WeightInit.IDENTITY,
                 WeightInit.DISTRIBUTION,
                 WeightInit.DISTRIBUTION,
+                WeightInit.ONES,
                 WeightInit.VAR_SCALING_NORMAL_FAN_IN,
         };
     }

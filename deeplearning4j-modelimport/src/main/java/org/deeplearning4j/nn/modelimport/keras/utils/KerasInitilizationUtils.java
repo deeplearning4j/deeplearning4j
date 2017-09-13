@@ -87,7 +87,8 @@ public class KerasInitilizationUtils {
                     dist = new UniformDistribution(-scale, scale);
                 }
                 init = WeightInit.DISTRIBUTION;
-            } else if (kerasInit.equals(conf.getINIT_RANDOM_NORMAL()) ||
+            } else if (kerasInit.equals(conf.getINIT_NORMAL()) ||
+                    kerasInit.equals(conf.getINIT_RANDOM_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_RANDOM_NORMAL_ALIAS())) {
                 if (kerasMajorVersion == 2) {
                     double mean = (double) initConfig.get(conf.getLAYER_FIELD_INIT_MEAN());
@@ -102,8 +103,8 @@ public class KerasInitilizationUtils {
                 init = WeightInit.DISTRIBUTION;
             } else if (kerasInit.equals(conf.getINIT_CONSTANT()) ||
                     kerasInit.equals(conf.getINIT_CONSTANT_ALIAS())) {
-                // FIXME: CONSTANT keras.initializers.Constant(value=0)
-                init = WeightInit.ZERO;
+                // TODO: CONSTANT keras.initializers.Constant(value=0)
+                init = WeightInit.ONES;
             } else if (kerasInit.equals(conf.getINIT_ORTHOGONAL()) ||
                     kerasInit.equals(conf.getINIT_ORTHOGONAL_ALIAS())) {
                 if (kerasMajorVersion == 2) {
@@ -189,7 +190,7 @@ public class KerasInitilizationUtils {
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
-    public static WeightInit getWeightInitFromConfig(Map<String, Object> layerConfig, String initField,
+    public static Pair<WeightInit, Distribution> getWeightInitFromConfig(Map<String, Object> layerConfig, String initField,
                                                  boolean enforceTrainingConfig,
                                                  KerasLayerConfiguration conf,
                                                  int kerasMajorVersion)
@@ -222,7 +223,7 @@ public class KerasInitilizationUtils {
                 log.warn("Unknown weight initializer " + kerasInit + " (Using XAVIER instead).");
             }
         }
-        return init.getFirst();
+        return init;
     }
 
 }
