@@ -514,12 +514,12 @@ bool nd4j::ops::DeclarableOp<T>::allocateResult(Block<T>& block, std::initialize
     // if that's first run - we probably have nothing here
     if (var->getNDArray() == nullptr) {
         var ->setNDArray(new NDArray<T>(order, shape, workspace));
-        var->getNDArray()->_allocated = true;
+        var->getNDArray()->triggerAllocationFlag(true, true);
     } else if(var->getNDArray()->lengthOf() != len) {
         // if length not match - lets reallocate array
         delete var->getNDArray();
         var ->setNDArray(new NDArray<T>(order, shape, workspace));
-        var->getNDArray()->_allocated = true;
+        var->getNDArray()->triggerAllocationFlag(true, true);
     }
 
     return true;
