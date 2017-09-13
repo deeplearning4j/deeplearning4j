@@ -55,7 +55,7 @@ public class KerasUpsampling2DTest {
 
     public void buildUpsampling2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
-        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_1D());
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_UPSAMPLING_2D());
         Map<String, Object> config = new HashMap<>();
         List<Integer> sizeList = new ArrayList<>();
         sizeList.add(size[0]);

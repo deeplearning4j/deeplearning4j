@@ -18,7 +18,6 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -30,13 +29,13 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,7 +119,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        INDArray weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
+        INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true);
 
         int miniBatch = input.size(0);
         int inH = input.size(2);
@@ -240,6 +239,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         }
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
 
+        weightNoiseParams.clear();
+
         return new Pair<>(retGradient, epsNext);
     }
 
@@ -267,11 +268,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
      * @return            Pair of arrays: preOutput (activations) and optionally the im2col2d array
      */
     protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop) {
-        INDArray weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
-        INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
-        if (conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
-            weights = Dropout.applyDropConnect(this, ConvolutionParamInitializer.WEIGHT_KEY);
-        }
+        INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training);
+        INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training);
 
         //Input validation: expect rank 4 matrix
         if (input.rank() != 4) {
@@ -451,19 +449,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         return false;
     }
 
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
     @Override
     public void fit(INDArray input) {}
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException(layerId());
-    }
 
     @Override
     public INDArray params() {

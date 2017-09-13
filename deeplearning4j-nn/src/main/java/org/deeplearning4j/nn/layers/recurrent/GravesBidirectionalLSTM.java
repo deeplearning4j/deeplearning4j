@@ -19,7 +19,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -28,6 +27,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
 
@@ -68,11 +68,6 @@ public class GravesBidirectionalLSTM
 
     @Override
     public Gradient gradient() {
-        throw new UnsupportedOperationException("Not supported " + layerId());
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray activation) {
         throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
@@ -263,11 +258,6 @@ public class GravesBidirectionalLSTM
                             prevOutputActivations, prevMemCellState, forBackprop, forwards, inputKey, maskArray, true,
                             null, forBackprop ? cacheMode : CacheMode.NONE);
         }
-    }
-
-    @Override
-    public INDArray activationMean() {
-        return activate();
     }
 
     @Override

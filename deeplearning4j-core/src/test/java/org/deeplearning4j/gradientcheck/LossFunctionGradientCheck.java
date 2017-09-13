@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
@@ -21,6 +20,7 @@ import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -62,36 +62,36 @@ public class LossFunctionGradientCheck {
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),};
 
-        String[] outputActivationFn = new String[] {"sigmoid", //xent
-                        "sigmoid", //xent
-                        "tanh", //cosine
-                        "tanh", //hinge -> trying to predict 1 or -1
-                        "sigmoid", //kld -> probab so should be between 0 and 1
-                        "softmax", //kld + softmax
-                        "tanh", //l1
-                        "rationaltanh", //l1
-                        "softmax", //l1 + softmax
-                        "tanh", //l2
-                        "softmax", //l2 + softmax
-                        "identity", //mae
-                        "softmax", //mae + softmax
-                        "identity", //mape
-                        "softmax", //mape + softmax
-                        "softmax", //mcxent
-                        "identity", //mse
-                        "softmax", //mse + softmax
-                        "sigmoid", //msle  -   requires positive labels/activations due to log
-                        "softmax", //msle + softmax
-                        "sigmoid", //nll
-                        "softmax", //nll + softmax
-                        "sigmoid", //poisson - requires positive predictions due to log... not sure if this is the best option
-                        "tanh", //squared hinge
-                        "sigmoid", //f-measure (binary, single sigmoid output)
-                        "sigmoid", //f-measure (binary, single sigmoid output)
-                        "softmax", //f-measure (binary, 2-label softmax output)
-                        "softmax", //f-measure (binary, 2-label softmax output)
-                        "identity", // MixtureDensity
-                        "tanh", // MixtureDensity + tanh
+        Activation[] outputActivationFn = new Activation[] {Activation.SIGMOID, //xent
+                        Activation.SIGMOID, //xent
+                        Activation.TANH, //cosine
+                        Activation.TANH, //hinge -> trying to predict 1 or -1
+                        Activation.SIGMOID, //kld -> probab so should be between 0 and 1
+                        Activation.SOFTMAX, //kld + softmax
+                        Activation.TANH, //l1
+                        Activation.RATIONALTANH, //l1
+                        Activation.SOFTMAX, //l1 + softmax
+                        Activation.TANH, //l2
+                        Activation.SOFTMAX, //l2 + softmax
+                        Activation.IDENTITY, //mae
+                        Activation.SOFTMAX, //mae + softmax
+                        Activation.IDENTITY, //mape
+                        Activation.SOFTMAX, //mape + softmax
+                        Activation.SOFTMAX, //mcxent
+                        Activation.IDENTITY, //mse
+                        Activation.SOFTMAX, //mse + softmax
+                        Activation.SIGMOID, //msle  -   requires positive labels/activations due to log
+                        Activation.SOFTMAX, //msle + softmax
+                        Activation.SIGMOID, //nll
+                        Activation.SOFTMAX, //nll + softmax
+                        Activation.SIGMOID, //poisson - requires positive predictions due to log... not sure if this is the best option
+                        Activation.TANH, //squared hinge
+                        Activation.SIGMOID, //f-measure (binary, single sigmoid output)
+                        Activation.SIGMOID, //f-measure (binary, single sigmoid output)
+                        Activation.SOFTMAX, //f-measure (binary, 2-label softmax output)
+                        Activation.SOFTMAX, //f-measure (binary, 2-label softmax output)
+                        Activation.IDENTITY, // MixtureDensity
+                        Activation.TANH, // MixtureDensity + tanh
         };
 
         int[] nOut = new int[] {1, //xent
@@ -140,7 +140,7 @@ public class LossFunctionGradientCheck {
                 Nd4j.getRandom().setSeed(12345);
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1)
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
-                                .updater(Updater.NONE).regularization(false).weightInit(WeightInit.DISTRIBUTION)
+                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new UniformDistribution(-2, 2)).list()
                                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH).build())
                                 .layer(1, new OutputLayer.Builder().lossFunction(lossFunctions[i])
@@ -205,35 +205,35 @@ public class LossFunctionGradientCheck {
                         new LossFMeasure(2.0), LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),};
 
-        String[] outputActivationFn = new String[] {"sigmoid", //xent
-                        "sigmoid", //xent
-                        "tanh", //cosine
-                        "tanh", //hinge -> trying to predict 1 or -1
-                        "sigmoid", //kld -> probab so should be between 0 and 1
-                        "softmax", //kld + softmax
-                        "tanh", //l1
-                        "softmax", //l1 + softmax
-                        "tanh", //l2
-                        "softmax", //l2 + softmax
-                        "identity", //mae
-                        "softmax", //mae + softmax
-                        "identity", //mape
-                        "softmax", //mape + softmax
-                        "softmax", //mcxent
-                        "identity", //mse
-                        "softmax", //mse + softmax
-                        "sigmoid", //msle  -   requires positive labels/activations due to log
-                        "softmax", //msle + softmax
-                        "sigmoid", //nll
-                        "softmax", //nll + softmax
-                        "sigmoid", //poisson - requires positive predictions due to log... not sure if this is the best option
-                        "tanh", //squared hinge
-                        "sigmoid", //f-measure (binary, single sigmoid output)
-                        "sigmoid", //f-measure (binary, single sigmoid output)
-                        "softmax", //f-measure (binary, 2-label softmax output)
-                        "softmax", //f-measure (binary, 2-label softmax output)
-                        "identity", // MixtureDensity
-                        "tanh", // MixtureDensity + tanh
+        Activation[] outputActivationFn = new Activation[] {Activation.SIGMOID, //xent
+                        Activation.SIGMOID, //xent
+                        Activation.TANH, //cosine
+                        Activation.TANH, //hinge -> trying to predict 1 or -1
+                        Activation.SIGMOID, //kld -> probab so should be between 0 and 1
+                        Activation.SOFTMAX, //kld + softmax
+                        Activation.TANH, //l1
+                        Activation.SOFTMAX, //l1 + softmax
+                        Activation.TANH, //l2
+                        Activation.SOFTMAX, //l2 + softmax
+                        Activation.IDENTITY, //mae
+                        Activation.SOFTMAX, //mae + softmax
+                        Activation.IDENTITY, //mape
+                        Activation.SOFTMAX, //mape + softmax
+                        Activation.SOFTMAX, //mcxent
+                        Activation.IDENTITY, //mse
+                        Activation.SOFTMAX, //mse + softmax
+                        Activation.SIGMOID, //msle  -   requires positive labels/activations due to log
+                        Activation.SOFTMAX, //msle + softmax
+                        Activation.SIGMOID, //nll
+                        Activation.SOFTMAX, //nll + softmax
+                        Activation.SIGMOID, //poisson - requires positive predictions due to log... not sure if this is the best option
+                        Activation.TANH, //squared hinge
+                        Activation.SIGMOID, //f-measure (binary, single sigmoid output)
+                        Activation.SIGMOID, //f-measure (binary, single sigmoid output)
+                        Activation.SOFTMAX, //f-measure (binary, 2-label softmax output)
+                        Activation.SOFTMAX, //f-measure (binary, 2-label softmax output)
+                        Activation.IDENTITY, // MixtureDensity
+                        Activation.TANH, // MixtureDensity + tanh
         };
 
         int[] nOut = new int[] {1, //xent
@@ -294,7 +294,7 @@ public class LossFunctionGradientCheck {
                 Nd4j.getRandom().setSeed(12345);
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1)
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
-                                .updater(Updater.NONE).regularization(false).weightInit(WeightInit.DISTRIBUTION)
+                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new UniformDistribution(-2, 2)).list()
                                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(nOut[i]).activation(Activation.TANH)
                                                 .build())
@@ -485,22 +485,22 @@ public class LossFunctionGradientCheck {
                             new LossMAPE(w), new LossMCXENT(w), new LossMSE(w), new LossMSE(w), new LossMSLE(w),
                             new LossMSLE(w), new LossNegativeLogLikelihood(w), new LossNegativeLogLikelihood(w),};
 
-            String[] outputActivationFn = new String[] {"sigmoid", //xent
-                            "tanh", //l1
-                            "softmax", //l1 + softmax
-                            "tanh", //l2
-                            "softmax", //l2 + softmax
-                            "identity", //mae
-                            "softmax", //mae + softmax
-                            "identity", //mape
-                            "softmax", //mape + softmax
-                            "softmax", //mcxent
-                            "identity", //mse
-                            "softmax", //mse + softmax
-                            "sigmoid", //msle  -   requires positive labels/activations due to log
-                            "softmax", //msle + softmax
-                            "sigmoid", //nll
-                            "softmax", //nll + softmax
+            Activation[] outputActivationFn = new Activation[] {Activation.SIGMOID, //xent
+                            Activation.TANH, //l1
+                            Activation.SOFTMAX, //l1 + softmax
+                            Activation.TANH, //l2
+                            Activation.SOFTMAX, //l2 + softmax
+                            Activation.IDENTITY, //mae
+                            Activation.SOFTMAX, //mae + softmax
+                            Activation.IDENTITY, //mape
+                            Activation.SOFTMAX, //mape + softmax
+                            Activation.SOFTMAX, //mcxent
+                            Activation.IDENTITY, //mse
+                            Activation.SOFTMAX, //mse + softmax
+                            Activation.SIGMOID, //msle  -   requires positive labels/activations due to log
+                            Activation.SOFTMAX, //msle + softmax
+                            Activation.SIGMOID, //nll
+                            Activation.SOFTMAX, //nll + softmax
             };
 
             int[] minibatchSizes = new int[] {1, 3};
@@ -513,7 +513,7 @@ public class LossFunctionGradientCheck {
                     Nd4j.getRandom().setSeed(12345);
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1)
                                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
-                                    .updater(Updater.NONE).regularization(false).weightInit(WeightInit.DISTRIBUTION)
+                                    .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                     .dist(new UniformDistribution(-3, 3)).list()
                                     .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH)
                                                     .build())

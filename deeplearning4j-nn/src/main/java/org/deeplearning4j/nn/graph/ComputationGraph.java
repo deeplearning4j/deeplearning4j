@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.graph;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
@@ -72,8 +73,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
@@ -84,9 +83,8 @@ import java.util.*;
  *
  * @author Alex Black
  */
+@Slf4j
 public class ComputationGraph implements Serializable, Model, NeuralNetwork {
-
-    private static final Logger log = LoggerFactory.getLogger(ComputationGraph.class);
 
     protected ComputationGraphConfiguration configuration;
     protected boolean initCalled = false;
@@ -598,6 +596,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
+        synchronizeIterEpochCounts();
         initCalled = true;
     }
 
@@ -880,6 +879,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             destructable = true;
         } else
             dataSetIterator = iterator;
+
+        if(!iterator.hasNext() && iterator.resetSupported()){
+            iterator.reset();
+        }
 
         if (trainingListeners.size() > 0) {
             for (TrainingListener tl : trainingListeners) {
@@ -1293,6 +1296,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public void computeGradientAndScore() {
+        synchronizeIterEpochCounts();
         //Calculate activations (which are stored in each layer, and used in backprop)
         if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
             Map<String, INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);
@@ -1338,6 +1342,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     tl.onBackwardPass(this);
                 }
             }
+        }
+
+        //Clear the fields (inc. post noise/dropconnect parameters) on the output layers
+        for( int i=0; i<numOutputArrays; i++ ){
+            getOutputLayer(i).clearNoiseWeightParams();
         }
     }
 
@@ -1834,7 +1843,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     /**
      * This method ADDS additional IterationListener to existing listeners
      *
-     * @param listener
+     * @param listeners Listeners to add
      */
     @Override
     public void addListeners(IterationListener... listeners) {
@@ -2207,11 +2216,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     NDArrayIndex.interval(paramsSoFar, paramsSoFar + range)));
             paramsSoFar += range;
         }
-    }
-
-    @Override
-    public void applyLearningRateScoreDecay() {
-        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -2992,7 +2996,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Perform evaluation on the given data (DataSetIterator) with the given {@link IEvaluation} instance
      *
      * @param iterator   Test data to evaluate on
-     * @param evaluation IEvaluation insntance
+     * @param evaluations IEvaluation instances
      * @param <T>        Type of the IEvaluation instance
      * @return The input IEvaluation instance, after performing evaluation on the test data
      */
@@ -3177,7 +3181,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             String in = "-";
             String out = "-";
             String paramShape = "-";
-
             if (currentVertex.isInputVertex()) {
                 if (inputTypes != null) vertexOutputs.put(currentVertexName, inputTypes[configuration.getNetworkInputs().indexOf(currentVertexName)]); //for input vertices the outputs are just the input types (only layer vertices have preprocessing?)
             } else {
@@ -3193,7 +3196,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         paramShape = "";
                         in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
                         out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
-                        Set<String> paraNames = currentLayer.conf().getLearningRateByParam().keySet();
+                        List<String> paraNames = currentLayer.conf().variables();
                         for (String aP : paraNames) {
                             String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
                             paramShape += aP + ":" + paramS + ", ";
@@ -3286,6 +3289,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public void incrementEpochCount(){
         configuration.setEpochCount(configuration.getEpochCount() + 1);
+    }
+
+    protected void synchronizeIterEpochCounts(){
+        //TODO: this is necessrry for some schedules - but the redundant values are a little ugly...
+        int currIter = getConfiguration().getIterationCount();
+        int currEpoch = getConfiguration().getEpochCount();
+        for(Layer l : layers){
+            l.setIterationCount(currIter);
+            l.setEpochCount(currEpoch);
+        }
     }
 
     /**

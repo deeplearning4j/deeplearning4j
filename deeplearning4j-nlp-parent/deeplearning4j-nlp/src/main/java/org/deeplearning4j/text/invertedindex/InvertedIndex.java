@@ -19,8 +19,8 @@
 package org.deeplearning4j.text.invertedindex;
 
 import com.google.common.base.Function;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.Serializable;
 import java.util.Collection;

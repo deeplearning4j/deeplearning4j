@@ -36,6 +36,8 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import scala.Tuple2;
 
@@ -76,7 +78,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
             list.add(iter.next());
 
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.1)
+                        .updater(new Sgd(0.1))
                         .graphBuilder().addInputs("in")
                         .addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in").addLayer("out",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3)
@@ -109,8 +111,8 @@ public class TestSparkComputationGraph extends BaseSparkTest {
     @Test
     public void testDistributedScoring() {
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l1(0.1).l2(0.1)
-                        .seed(123).updater(Updater.NESTEROVS).learningRate(0.1).momentum(0.9).graphBuilder()
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().l1(0.1).l2(0.1)
+                        .seed(123).updater(new Nesterovs(0.1, 0.9)).graphBuilder()
                         .addInputs("in")
                         .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(nIn).nOut(3)
                                         .activation(Activation.TANH).build(), "in")

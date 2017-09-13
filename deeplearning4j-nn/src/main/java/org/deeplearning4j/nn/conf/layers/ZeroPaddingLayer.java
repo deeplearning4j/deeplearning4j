@@ -107,11 +107,6 @@ public class ZeroPaddingLayer extends Layer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        return 0;
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("ZeroPaddingLayer does not contain parameters");
     }

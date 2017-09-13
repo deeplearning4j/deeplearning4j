@@ -1,14 +1,12 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import junit.framework.TestCase;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -24,7 +22,10 @@ import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -257,7 +258,7 @@ public class GravesBidirectionalLSTMTest {
                                         .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                                                         .nIn(nIn).nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
                                                         .dist(new UniformDistribution(-0.1, 0.1))
-                                                        .activation(Activation.TANH).updater(Updater.NONE).build())
+                                                        .activation(Activation.TANH).updater(new NoOp()).build())
                                         .build();
 
         final NeuralNetConfiguration confForwards = new NeuralNetConfiguration.Builder()
@@ -463,7 +464,8 @@ public class GravesBidirectionalLSTMTest {
 
         final MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(5)
-                        .learningRate(0.1).rmsDecay(0.95).regularization(true).l2(0.001).updater(Updater.ADAGRAD)
+                        .updater(new AdaGrad(0.1))
+                        .l2(0.001)
                         .seed(12345).list().pretrain(false)
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                                         .activation(Activation.TANH).nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
@@ -524,7 +526,8 @@ public class GravesBidirectionalLSTMTest {
 
         final MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(5)
-                        .learningRate(0.1).rmsDecay(0.95).regularization(true).l2(0.001).updater(Updater.ADAGRAD)
+                        .updater(new AdaGrad(0.1))
+                        .l2(0.001)
                         .seed(12345).list().pretrain(false)
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                                         .activation(Activation.TANH).nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)

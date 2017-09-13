@@ -5,7 +5,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -18,6 +17,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
@@ -44,26 +44,26 @@ public class CNNGradientCheckTest {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        String[] activFns = {"sigmoid", "tanh"};
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH};
         boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         LossFunctions.LossFunction[] lossFunctions =
                         {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
-        String[] outputActivations = {"softmax", "tanh"}; //i.e., lossFunctions[i] used with outputActivations[i] here
+        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
 
         DataSet ds = new IrisDataSetIterator(150, 150).next();
         ds.normalizeZeroMeanZeroUnitVariance();
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
-        for (String afn : activFns) {
+        for (Activation afn : activFns) {
             for (boolean doLearningFirst : characteristic) {
                 for (int i = 0; i < lossFunctions.length; i++) {
                     LossFunctions.LossFunction lf = lossFunctions[i];
-                    String outputActivation = outputActivations[i];
+                    Activation outputActivation = outputActivations[i];
 
-                    MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().regularization(false)
-                                    .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(Updater.NONE)
+                    MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                                    .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
                                     .weightInit(WeightInit.XAVIER).seed(12345L).list()
                                     .layer(0, new ConvolutionLayer.Builder(1, 1).nOut(6).activation(afn).build())
                                     .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3).build())
@@ -117,12 +117,12 @@ public class CNNGradientCheckTest {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        String[] activFns = {"sigmoid", "tanh"};
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH};
         boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         LossFunctions.LossFunction[] lossFunctions =
                         {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
-        String[] outputActivations = {"softmax", "tanh"}; //i.e., lossFunctions[i] used with outputActivations[i] here
+        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
 
         DataSet ds = new IrisDataSetIterator(150, 150).next();
         ds.normalizeZeroMeanZeroUnitVariance();
@@ -135,25 +135,25 @@ public class CNNGradientCheckTest {
         double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
         double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
 
-        for (String afn : activFns) {
+        for (Activation afn : activFns) {
             for (boolean doLearningFirst : characteristic) {
                 for (int i = 0; i < lossFunctions.length; i++) {
                     for (int k = 0; k < l2vals.length; k++) {
                         LossFunctions.LossFunction lf = lossFunctions[i];
-                        String outputActivation = outputActivations[i];
+                        Activation outputActivation = outputActivations[i];
                         double l2 = l2vals[k];
                         double l1 = l1vals[k];
 
                         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                                        .regularization(true).l2(l2).l1(l1).l2Bias(biasL2[k]).l1Bias(biasL1[k])
+                                        .l2(l2).l1(l1).l2Bias(biasL2[k]).l1Bias(biasL1[k])
                                         .optimizationAlgo(
                                                         OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                         .seed(12345L).list()
                                         .layer(0, new ConvolutionLayer.Builder(new int[] {1, 1}).nIn(1).nOut(6)
                                                         .weightInit(WeightInit.XAVIER).activation(afn)
-                                                        .updater(Updater.NONE).build())
+                                                        .updater(new NoOp()).build())
                                         .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3)
-                                                        .weightInit(WeightInit.XAVIER).updater(Updater.NONE).build())
+                                                        .weightInit(WeightInit.XAVIER).updater(new NoOp()).build())
                                         .pretrain(false).backprop(true)
                                         .setInputType(InputType.convolutionalFlat(1, 4, 1));
 
@@ -230,8 +230,8 @@ public class CNNGradientCheckTest {
                     }
 
                     MultiLayerConfiguration conf =
-                            new NeuralNetConfiguration.Builder().regularization(false).learningRate(1.0)
-                                    .updater(Updater.SGD).weightInit(WeightInit.DISTRIBUTION)
+                            new NeuralNetConfiguration.Builder()
+                                    .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                     .dist(new NormalDistribution(0, 1))
                                     .list().layer(new ConvolutionLayer.Builder(kernel,
                                             stride, padding).nIn(inputDepth)
@@ -281,12 +281,12 @@ public class CNNGradientCheckTest {
         int[] padding = {0, 0};
         int pnorm = 2;
 
-        String[] activations = {"sigmoid", "tanh"};
+        Activation[] activations = {Activation.SIGMOID, Activation.TANH};
         SubsamplingLayer.PoolingType[] poolingTypes =
                         new SubsamplingLayer.PoolingType[] {SubsamplingLayer.PoolingType.MAX,
                                         SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
 
-        for (String afn : activations) {
+        for (Activation afn : activations) {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
@@ -296,8 +296,8 @@ public class CNNGradientCheckTest {
                     }
 
                     MultiLayerConfiguration conf =
-                                    new NeuralNetConfiguration.Builder().regularization(false).learningRate(1.0)
-                                                    .updater(Updater.SGD).weightInit(WeightInit.DISTRIBUTION)
+                                    new NeuralNetConfiguration.Builder().updater(new NoOp())
+                                                    .weightInit(WeightInit.DISTRIBUTION)
                                                     .dist(new NormalDistribution(0, 1))
                                                     .list().layer(0,
                                                                     new ConvolutionLayer.Builder(kernel,
@@ -348,12 +348,12 @@ public class CNNGradientCheckTest {
         int[] padding = {0, 0};
         int pNorm = 3;
 
-        String[] activations = {"sigmoid", "tanh"};
+        Activation[] activations = {Activation.SIGMOID, Activation.TANH};
         SubsamplingLayer.PoolingType[] poolingTypes =
                         new SubsamplingLayer.PoolingType[] {SubsamplingLayer.PoolingType.MAX,
                                         SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
 
-        for (String afn : activations) {
+        for (Activation afn : activations) {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
@@ -363,8 +363,7 @@ public class CNNGradientCheckTest {
                     }
 
                     MultiLayerConfiguration conf =
-                                    new NeuralNetConfiguration.Builder().regularization(false).learningRate(1.0)
-                                                    .updater(Updater.SGD).weightInit(WeightInit.DISTRIBUTION)
+                                    new NeuralNetConfiguration.Builder().updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                                     .dist(new NormalDistribution(0, 1))
                                                     .list().layer(0,
                                                                     new ConvolutionLayer.Builder(kernel,
@@ -407,14 +406,14 @@ public class CNNGradientCheckTest {
         int height = 5;
         int[] inputDepths = {1, 2, 4};
 
-        String[] activations = {"sigmoid", "tanh"};
+        Activation[] activations = {Activation.SIGMOID, Activation.TANH};
         SubsamplingLayer.PoolingType[] poolingTypes = new SubsamplingLayer.PoolingType[] {
                         SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG};
 
         Nd4j.getRandom().setSeed(12345);
 
         for (int inputDepth : inputDepths) {
-            for (String afn : activations) {
+            for (Activation afn : activations) {
                 for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
                     for (int minibatchSize : minibatchSizes) {
                         INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
@@ -423,8 +422,8 @@ public class CNNGradientCheckTest {
                             labels.putScalar(new int[] {i, i % nOut}, 1.0);
                         }
 
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                                        .regularization(false).learningRate(1.0).updater(Updater.SGD).activation(afn)
+                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new NoOp())
+                                        .activation(afn)
                                         .list()
                                         .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
                                                         .padding(0, 0).nIn(inputDepth).nOut(2).build())//output: (5-2+0)/1+1 = 4
@@ -486,7 +485,7 @@ public class CNNGradientCheckTest {
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                                        .regularization(false).learningRate(1.0).updater(Updater.SGD)
+                                        .updater(new NoOp())
                                         .activation(Activation.TANH).convolutionMode(ConvolutionMode.Same).list()
                                         .layer(0, new ConvolutionLayer.Builder().name("layer 0").kernelSize(k, k)
                                                         .stride(1, 1).padding(0, 0).nIn(inputDepth).nOut(2).build())
@@ -553,7 +552,7 @@ public class CNNGradientCheckTest {
                                             .stride(stride, stride).padding(0, 0).build();
 
                             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                                            .regularization(false).learningRate(1.0).updater(Updater.SGD)
+                                            .updater(new NoOp())
                                             .activation(Activation.TANH).convolutionMode(ConvolutionMode.Same).list()
                                             .layer(0, convFirst ? convLayer : poolLayer)
                                             .layer(1, convFirst ? poolLayer : convLayer)
@@ -613,8 +612,7 @@ public class CNNGradientCheckTest {
                 for (int[] zeroPad : zeroPadLayer) {
 
                     MultiLayerConfiguration conf =
-                                    new NeuralNetConfiguration.Builder().regularization(false).learningRate(1.0)
-                                                    .updater(Updater.SGD).weightInit(WeightInit.DISTRIBUTION)
+                                    new NeuralNetConfiguration.Builder().updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                                     .dist(new NormalDistribution(0, 1)).list()
                                                     .layer(0, new ConvolutionLayer.Builder(kernel, stride, padding)
                                                                     .nIn(inputDepth).nOut(3).build())//output: (6-2+0)/1+1 = 5
@@ -688,7 +686,7 @@ public class CNNGradientCheckTest {
                             }
 
                             NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
-                                    .learningRate(1.0).updater(Updater.SGD)
+                                    .updater(new NoOp())
                                     .activation(Activation.TANH).convolutionMode(cm).list()
                                     .layer(new ConvolutionLayer.Builder().name("layer 0")
                                             .kernelSize(k, k)

@@ -1,12 +1,12 @@
 package org.deeplearning4j.ui.stats;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.ui.stats.api.*;
 import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
 import org.deeplearning4j.ui.stats.impl.SbeStatsReport;
 import org.deeplearning4j.ui.stats.impl.java.JavaStatsInitializationReport;
 import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
 import java.util.ArrayList;

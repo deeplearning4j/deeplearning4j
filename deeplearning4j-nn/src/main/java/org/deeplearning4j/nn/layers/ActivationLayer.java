@@ -19,12 +19,12 @@
 package org.deeplearning4j.nn.layers;
 
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 
 /**
@@ -109,20 +109,9 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         return false;
     }
 
-
     @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException("Not supported - " + layerId());
-    }
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException("Not supported - " + layerId());
-    }
-
-    @Override
-    public INDArray activationMean() {
-        return activate(false);
+    public void clearNoiseWeightParams() {
+        //No op
     }
 
 

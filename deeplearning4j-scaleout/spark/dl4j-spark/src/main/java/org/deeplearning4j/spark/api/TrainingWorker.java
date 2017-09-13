@@ -1,11 +1,11 @@
 package org.deeplearning4j.spark.api;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.Serializable;
 

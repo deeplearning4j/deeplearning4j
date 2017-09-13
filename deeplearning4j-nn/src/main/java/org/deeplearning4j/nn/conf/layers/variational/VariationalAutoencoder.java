@@ -8,11 +8,11 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
+import org.deeplearning4j.nn.conf.layers.LayerValidation;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
@@ -81,20 +81,6 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        if (paramName.endsWith("b")) {
-            if (!Double.isNaN(biasLearningRate)) {
-                //Bias learning rate has been explicitly set
-                return biasLearningRate;
-            } else {
-                return learningRate;
-            }
-        } else {
-            return learningRate;
-        }
-    }
-
-    @Override
     public double getL1ByParam(String paramName) {
         if (paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX))
             return l1Bias;
@@ -153,7 +139,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         int trainWorkingMemSize = 2 * (inferenceWorkingMemSizePerEx + decoderFwdSizeWorking);
 
 
-        if (getDropOut() > 0) {
+        if (getIDropout() != null) {
             if (false) {
                 //TODO drop connect
                 //Dup the weights... note that this does NOT depend on the minibatch size...
@@ -271,15 +257,6 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         public Builder pzxActivationFn(IActivation activationFunction) {
             this.pzxActivationFn = activationFunction;
             return this;
-        }
-
-
-        /**
-         * @deprecated Use {@link #pzxActivationFunction(Activation)}
-         */
-        @Deprecated
-        public Builder pzxActivationFunction(String activationFunction) {
-            return pzxActivationFn(Activation.fromString(activationFunction).getActivationFunction());
         }
 
         /**

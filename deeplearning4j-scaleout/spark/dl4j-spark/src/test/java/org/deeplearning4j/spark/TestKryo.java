@@ -2,7 +2,9 @@ package org.deeplearning4j.spark;
 
 import org.apache.spark.serializer.SerializerInstance;
 import org.deeplearning4j.eval.*;
-import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
@@ -13,6 +15,10 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.Nadam;
+import org.nd4j.linalg.schedule.MapSchedule;
+import org.nd4j.linalg.schedule.ScheduleType;
 import scala.collection.JavaConversions;
 
 import java.nio.ByteBuffer;
@@ -29,7 +35,7 @@ public class TestKryo extends BaseSparkKryoTest {
 
     private <T> void testSerialization(T in, SerializerInstance si) {
         ByteBuffer bb = si.serialize(in, null);
-        T deserialized = si.deserialize(bb, null);
+        T deserialized = (T)si.deserialize(bb, null);
 
         assertEquals(in, deserialized);
     }
@@ -41,19 +47,19 @@ public class TestKryo extends BaseSparkKryoTest {
 
         //Check network configurations:
         Map<Integer, Double> m = new HashMap<>();
+        m.put(0, 0.5);
         m.put(10, 0.1);
-        MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder().learningRate(0.2)
-                        .learningRateDecayPolicy(LearningRatePolicy.Schedule).learningRateSchedule(m)
-                        .updater(Updater.NADAM).list().layer(0, new OutputLayer.Builder().nIn(10).nOut(10).build())
+        MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder()
+                        .updater(new Nadam(new MapSchedule(ScheduleType.ITERATION,m))).list().layer(0, new OutputLayer.Builder().nIn(10).nOut(10).build())
                         .build();
 
         testSerialization(mlc, si);
 
 
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new UniformDistribution(-1, 1)).learningRate(0.2)
-                        .learningRateDecayPolicy(LearningRatePolicy.Schedule)
-                        .learningRateSchedule(Collections.singletonMap(10, 0.1)).updater(Updater.ADAM).graphBuilder()
+                        .dist(new UniformDistribution(-1, 1))
+                        .updater(new Adam(new MapSchedule(ScheduleType.ITERATION,m)))
+                        .graphBuilder()
                         .addInputs("in").addLayer("out", new OutputLayer.Builder().nIn(10).nOut(10).build(), "in")
                         .setOutputs("out").build();
 

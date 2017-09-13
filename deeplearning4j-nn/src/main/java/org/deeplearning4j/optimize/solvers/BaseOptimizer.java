@@ -19,13 +19,11 @@
 package org.deeplearning4j.optimize.solvers;
 
 import lombok.Getter;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -42,6 +40,7 @@ import org.deeplearning4j.optimize.terminations.ZeroDirection;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -276,10 +275,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             if (condition.terminate(score, oldScore, new Object[] {gradient})) {
                 log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score,
                                 oldScore, condition);
-                if (condition instanceof EpsTermination && conf.getLayer() != null
-                                && conf.getLearningRatePolicy() == LearningRatePolicy.Score) {
-                    model.applyLearningRateScoreDecay();
-                }
                 return true;
             }
         }
@@ -323,7 +318,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                     computationGraphUpdater = new ComputationGraphUpdater(graph);
                 }
             }
-            computationGraphUpdater.update(gradient, getIterationCount(model), batchSize);
+            computationGraphUpdater.update(gradient, getIterationCount(model), getEpochCount(model), batchSize);
         } else {
             if (updater == null) {
                 try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -332,7 +327,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             }
             Layer layer = (Layer) model;
 
-            updater.update(layer, gradient, getIterationCount(model), batchSize);
+            updater.update(layer, gradient, getIterationCount(model), getEpochCount(model), batchSize);
         }
     }
 

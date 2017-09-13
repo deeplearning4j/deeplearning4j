@@ -12,6 +12,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ParamAndGradientIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -24,7 +25,7 @@ public class TestParamAndGradientIterationListener {
         IrisDataSetIterator iter = new IrisDataSetIterator(30, 150);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(1e-5)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Sgd(1e-5))
                         .iterations(1).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(20).build())
                         .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)

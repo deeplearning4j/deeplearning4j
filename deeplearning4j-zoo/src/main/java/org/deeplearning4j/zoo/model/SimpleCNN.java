@@ -73,7 +73,7 @@ public class SimpleCNN extends ZooModel {
                                         .inferenceWorkspaceMode(workspaceMode).seed(seed).iterations(iterations)
                                         .activation(Activation.IDENTITY).weightInit(WeightInit.RELU)
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .updater(new AdaDelta()).regularization(false)
+                                        .updater(new AdaDelta())
                                         .convolutionMode(ConvolutionMode.Same).list()
                                         // block 1
                                         .layer(0, new ConvolutionLayer.Builder(new int[] {7, 7}).name("image_array")

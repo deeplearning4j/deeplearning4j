@@ -8,13 +8,13 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.io.IOUtils;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.ui.stats.api.Histogram;
 import org.deeplearning4j.ui.stats.api.StatsReport;
 import org.deeplearning4j.ui.stats.api.StatsType;
 import org.deeplearning4j.ui.stats.api.SummaryType;
 import org.deeplearning4j.ui.stats.sbe.*;
 import org.deeplearning4j.ui.storage.AgronaPersistable;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
 import java.nio.ByteBuffer;

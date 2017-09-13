@@ -1,6 +1,6 @@
 package org.deeplearning4j.nn.layers.normalization;
 
-import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -17,7 +17,6 @@ import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterBlock;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -36,9 +35,8 @@ import org.nd4j.linalg.learning.NoOpUpdater;
 import org.nd4j.linalg.learning.RmsPropUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -394,7 +392,7 @@ public class BatchNormalizationTest {
         // i.e., make sure state is properly stored
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(12345)
+                        .iterations(2).seed(12345)
                         .list()
                         .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.IDENTITY).build())
@@ -421,13 +419,7 @@ public class BatchNormalizationTest {
 
         assertEquals(out, out2);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ModelSerializer.writeModel(net, baos, true);
-        baos.close();
-        byte[] bArr = baos.toByteArray();
-
-        ByteArrayInputStream bais = new ByteArrayInputStream(bArr);
-        MultiLayerNetwork net2 = ModelSerializer.restoreMultiLayerNetwork(bais, true);
+        MultiLayerNetwork net2 = TestUtils.testModelSerialization(net);
 
         INDArray outDeser = net2.output(in, false);
 

@@ -21,10 +21,9 @@ package org.deeplearning4j.nn.multilayer;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.eval.*;
@@ -35,6 +34,7 @@ import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -68,10 +68,9 @@ import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.FeatureUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
@@ -87,8 +86,8 @@ import static org.deeplearning4j.nn.graph.ComputationGraph.workspaceConfiguratio
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class MultiLayerNetwork implements Serializable, Classifier, Layer, NeuralNetwork {
-    private static final Logger log = LoggerFactory.getLogger(MultiLayerNetwork.class);
 
     //the hidden neural network layers (including output layer)
     protected Layer[] layers;
@@ -644,6 +643,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 solver.initOptimizer();
             }
         }
+
+        synchronizeIterEpochCounts();
     }
 
     /**
@@ -733,18 +734,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public INDArray activate(int layer, INDArray input) {
         return getLayer(layer).activate(input);
-    }
-
-    @Override
-    public INDArray activationMean() {
-        //TODO determine how to pass back all activationMean for MLN
-        throw new UnsupportedOperationException();
-        //        List<INDArray> avgActivations =  new ArrayList<>();
-        //
-        //        for( Layer layer: getLayers() ){
-        //            avgActivations.add(layer.activationMean());
-        //            }
-        //        return Nd4j.toFlattened(avgActivations);
     }
 
     /**
@@ -1502,6 +1491,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     /** Equivalent to backprop(), but calculates gradient for truncated BPTT instead. */
     protected void truncatedBPTTGradient() {
+        synchronizeIterEpochCounts();
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -2224,6 +2214,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             truncatedBPTTGradient();
         } else {
+            synchronizeIterEpochCounts();
+
             //First: do a feed-forward through the network
             //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
             // need the input to the output layer to be set (such that backprop can be done)
@@ -2258,6 +2250,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 }
             }
         }
+
+        //Clear the post noise/dropconnect parameters on the output layer
+        getOutputLayer().clearNoiseWeightParams();
     }
 
     @Override
@@ -2282,42 +2277,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         for(Layer l : layers){
             l.applyConstraints(iteration, epoch);
         }
-    }
-
-    /**
-     * Averages the given logistic regression
-     * from a mini batch in to this one
-     *
-     * @param layer     the logistic regression to average in to this one
-     * @param batchSize the batch size
-     * @deprecated Not supported and not used
-     */
-    @Override
-    @Deprecated
-    public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Deprecated: Merges this network with the other one.
-     *
-     * @param network   the network to merge with
-     * @param batchSize the batch size (number of training examples)
-     *                  to average by
-     * @deprecated As of 0.7.3 - Feb 2017. No longer used; parameter averaging is performed via alternative means/methods
-     */
-    @Deprecated
-    public void merge(MultiLayerNetwork network, int batchSize) {
-        if (network.layers.length != layers.length)
-            throw new IllegalArgumentException("Unable to merge networks that are not of equal length");
-        for (int i = 0; i < getnLayers(); i++) {
-            Layer n = layers[i];
-            Layer otherNetwork = network.layers[i];
-            n.merge(otherNetwork, batchSize);
-
-        }
-
-        getOutputLayer().merge(network.getOutputLayer(), batchSize);
     }
 
 
@@ -2362,18 +2321,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public void setParameters(INDArray params) {
         setParams(params);
-    }
-
-    @Override
-    public void applyLearningRateScoreDecay() {
-        for (Layer layer : layers) {
-            if (!layer.conf().getLearningRateByParam().isEmpty()) {
-                for (Map.Entry<String, Double> lrPair : layer.conf().getLearningRateByParam().entrySet()) {
-                    layer.conf().setLearningRateByParam(lrPair.getKey(),
-                                    lrPair.getValue() * (layer.conf().getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
-                }
-            }
-        }
     }
 
     public NeuralNetConfiguration getDefaultConfiguration() {
@@ -2448,6 +2395,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     @Override
+    public void clearNoiseWeightParams() {
+        for(Layer l : layers){
+            l.clearNoiseWeightParams();
+        }
+    }
+
+    @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
         if (maskArray == null) {
@@ -2490,23 +2444,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     //Layer methods
 
     @Override
-    public Gradient error(INDArray errorSignal) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Type type() {
         return Type.MULTILAYER;
-    }
-
-    @Override
-    public INDArray derivativeActivation(INDArray input) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray activation) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -2560,6 +2499,26 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Override
     public int getIndex() {
         return layerIndex;
+    }
+
+    @Override
+    public int getIterationCount() {
+        return getLayerWiseConfigurations().getIterationCount();
+    }
+
+    @Override
+    public int getEpochCount() {
+        return getLayerWiseConfigurations().getEpochCount();
+    }
+
+    @Override
+    public void setIterationCount(int iterationCount) {
+        getLayerWiseConfigurations().setIterationCount(iterationCount);
+    }
+
+    @Override
+    public void setEpochCount(int epochCount) {
+        getLayerWiseConfigurations().setEpochCount(epochCount);
     }
 
     @Override
@@ -3067,7 +3026,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 paramShape = "";
                 in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
                 out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
-                Set<String> paraNames = currentLayer.conf().getLearningRateByParam().keySet();
+                Set<String> paraNames = currentLayer.paramTable().keySet();
                 for (String aP : paraNames) {
                     String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
                     paramShape += aP + ":" + paramS + ", ";
@@ -3122,6 +3081,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public void incrementEpochCount(){
         layerWiseConfigurations.setEpochCount(layerWiseConfigurations.getEpochCount() + 1);
+    }
+
+
+    protected void synchronizeIterEpochCounts(){
+        //TODO: this is necessrry for some schedules - but the redundant values are a little ugly...
+        int currIter = getIterationCount();
+        int currEpoch = getEpochCount();
+        for(Layer l : layers){
+            l.setIterationCount(currIter);
+            l.setEpochCount(currEpoch);
+        }
     }
 
     /**

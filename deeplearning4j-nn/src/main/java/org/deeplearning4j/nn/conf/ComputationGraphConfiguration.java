@@ -640,6 +640,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Add a layer, with no {@link InputPreProcessor}, with the specified name and specified inputs.
+         *
+         * @param layerName   Name/label of the layer to add
+         * @param layer       The layer configuration
+         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
+         *                    on a combination of the two.
+         * @see #addLayer(String, Layer, InputPreProcessor, String...)
+         */
+        public GraphBuilder layer(String layerName, Layer layer, String... layerInputs) {
+            return addLayer(layerName, layer, null, layerInputs);
+        }
+
+        /**
          * Add a layer and an {@link InputPreProcessor}, with the specified name and specified inputs.
          *
          * @param layerName    Name/label of the layer to add
@@ -655,6 +668,20 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             addVertex(layerName, new LayerVertex(builder.build(), preProcessor), layerInputs);
             layer.setLayerName(layerName);
             return this;
+        }
+
+        /**
+         * Add a layer and an {@link InputPreProcessor}, with the specified name and specified inputs.
+         *
+         * @param layerName    Name/label of the layer to add
+         * @param layer        The layer configuration
+         * @param preProcessor The InputPreProcessor to use with this layer.
+         * @param layerInputs  Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
+         *                     on a combination of the two.
+         */
+        public GraphBuilder layer(String layerName, Layer layer, InputPreProcessor preProcessor,
+                                     String... layerInputs) {
+            return addLayer(layerName, layer, preProcessor, layerInputs);
         }
 
         /**

@@ -1,26 +1,22 @@
 package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -36,21 +32,6 @@ public class NoBiasGradientCheckTests {
     static {
         Nd4j.zeros(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
-    }
-
-    private static void checkSerialization(MultiLayerNetwork net){
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ModelSerializer.writeModel(net, baos, true);
-            byte[] bytes = baos.toByteArray();
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            MultiLayerNetwork net2 = ModelSerializer.restoreMultiLayerNetwork(bais, true);
-            assertEquals(net.getLayerWiseConfigurations().toJson(), net2.getLayerWiseConfigurations().toJson());
-            assertEquals(net.params(), net2.params());
-        } catch (IOException e ){
-            throw new RuntimeException(e);
-        }
-
     }
 
     @Test
@@ -70,8 +51,8 @@ public class NoBiasGradientCheckTests {
             for (boolean denseHasBias : new boolean[]{true, false}) {
                 for (boolean outHasBias : new boolean[]{true, false}) {
 
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                            .updater(Updater.NONE)
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .updater(new NoOp())
                             .seed(12345L)
                             .list()
                             .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(layerSize)
@@ -120,7 +101,7 @@ public class NoBiasGradientCheckTests {
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                     assertTrue(msg, gradOK);
 
-                    checkSerialization(mln);
+                    TestUtils.testModelSerialization(mln);
                 }
             }
         }
@@ -142,8 +123,8 @@ public class NoBiasGradientCheckTests {
 
             for (boolean rnnOutHasBias : new boolean[]{true, false}) {
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                        .updater(Updater.NONE)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .updater(new NoOp())
                         .seed(12345L)
                         .list()
                         .layer(0, new LSTM.Builder().nIn(nIn).nOut(layerSize)
@@ -178,7 +159,7 @@ public class NoBiasGradientCheckTests {
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                 assertTrue(msg, gradOK);
 
-                checkSerialization(mln);
+                TestUtils.testModelSerialization(mln);
             }
         }
     }
@@ -202,8 +183,8 @@ public class NoBiasGradientCheckTests {
 
             for (boolean embeddingHasBias : new boolean[]{true, false}) {
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                        .updater(Updater.NONE)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .updater(new NoOp())
                         .seed(12345L)
                         .list()
                         .layer(0, new EmbeddingLayer.Builder().nIn(nIn).nOut(layerSize)
@@ -239,7 +220,7 @@ public class NoBiasGradientCheckTests {
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                 assertTrue(msg, gradOK);
 
-                checkSerialization(mln);
+                TestUtils.testModelSerialization(mln);
             }
         }
     }
@@ -268,8 +249,8 @@ public class NoBiasGradientCheckTests {
             for(boolean cnnHasBias : new boolean[]{true, false}) {
 
                 MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().learningRate(1.0)
-                                .updater(Updater.SGD).weightInit(WeightInit.DISTRIBUTION)
+                        new NeuralNetConfiguration.Builder().updater(new NoOp())
+                                .weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new NormalDistribution(0, 1))
                                 .list()
                                 .layer(new ConvolutionLayer.Builder(kernel,
@@ -305,7 +286,7 @@ public class NoBiasGradientCheckTests {
 
                 assertTrue(msg, gradOK);
 
-                checkSerialization(net);
+                TestUtils.testModelSerialization(net);
             }
         }
     }

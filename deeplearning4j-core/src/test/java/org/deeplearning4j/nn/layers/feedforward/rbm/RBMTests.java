@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.layers.feedforward.rbm;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -26,7 +25,6 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit;
@@ -47,8 +45,11 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,7 +131,7 @@ public class RBMTests {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(30)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(1e-1f)
+                        .updater(new Sgd(0.1))
                         .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder().nIn(784).nOut(600)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1, 1e-5))
                                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
@@ -355,7 +356,7 @@ public class RBMTests {
                     int learningRate) {
         org.deeplearning4j.nn.conf.layers.RBM layer =
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder(hiddenUnit, visibleUnit).nIn(nIn).nOut(nOut)
-                                        .learningRate(learningRate).lossFunction(lossFunctions).build();
+                                        .updater(new Sgd(learningRate)).lossFunction(lossFunctions).build();
 
         NeuralNetConfiguration conf =
                         new NeuralNetConfiguration.Builder().iterations(iterations).seed(42).layer(layer).build();
@@ -368,7 +369,7 @@ public class RBMTests {
                     boolean pretrain, boolean initialize, int iterations, LossFunctions.LossFunction lossFunctions) {
         org.deeplearning4j.nn.conf.layers.RBM layer =
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder(hiddenUnit, visibleUnit).nIn(nIn).nOut(nOut)
-                                        .learningRate(1e-1f).lossFunction(lossFunctions).build();
+                                        .updater(new Sgd(1e-1f)).lossFunction(lossFunctions).build();
 
         NeuralNetConfiguration conf =
                         new NeuralNetConfiguration.Builder().iterations(iterations).seed(42).layer(layer).build();
@@ -380,8 +381,8 @@ public class RBMTests {
     private static MultiLayerNetwork getRBMMLNNet(boolean backprop, boolean pretrain, INDArray input, int nOut1,
                     int nOut2, WeightInit weightInit) {
         MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder().seed(0xDEADBEEF).iterations(1000).biasInit(0)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NONE)
-                        .epsilon(1).weightInit(weightInit)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new NoOp())
+                        .weightInit(weightInit)
                         .list(new org.deeplearning4j.nn.conf.layers.RBM.Builder(HiddenUnit.BINARY, VisibleUnit.BINARY)
                                         .lossFunction(LossFunctions.LossFunction.MSE).nOut(nOut1).build(),
                                         new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
@@ -398,8 +399,8 @@ public class RBMTests {
     private static MultiLayerNetwork getMultiLayerRBMNet(boolean backprop, boolean pretrain, INDArray input, int nOut1,
                     int nOut2, int nOut3, WeightInit weightInit) {
         MultiLayerConfiguration rbm = new NeuralNetConfiguration.Builder().seed(0xDEADBEEF).iterations(1000).biasInit(0)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NONE)
-                        .epsilon(1).weightInit(weightInit)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new NoOp())
+                        .weightInit(weightInit)
                         .list(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                                         .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).nOut(nOut1).build(),
                                         new org.deeplearning4j.nn.conf.layers.RBM.Builder()

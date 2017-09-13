@@ -44,7 +44,7 @@ public class CustomPreprocessorTest {
 
         //Second: let's create a MultiLayerCofiguration with one, and check JSON and YAML config actually works...
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().learningRate(0.1).list()
+                        new NeuralNetConfiguration.Builder().list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10)
                                                         .nOut(10).build())

@@ -17,20 +17,19 @@
  */
 package org.deeplearning4j.nn.layers.recurrent;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.util.Dropout;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -64,6 +63,9 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         this.input = inputTemp;
         INDArray epsilon2d = gradAndEpsilonNext.getSecond();
         INDArray epsilon3d = TimeSeriesUtils.reshape2dTo3d(epsilon2d, input.size(0));
+
+        weightNoiseParams.clear();
+
         return new Pair<>(gradAndEpsilonNext.getFirst(), epsilon3d);
     }
 
@@ -142,8 +144,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             return TimeSeriesUtils.reshape2dTo3d(out2d, input.size(0));
         }
 
-        if (training)
-            applyDropOutIfNecessary(training);
+        applyDropOutIfNecessary(training);
         INDArray origInput = input;
         this.input = TimeSeriesUtils.reshape3dTo2d(input);
         INDArray out = super.activate(true);
@@ -159,11 +160,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
                             "Input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
-        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        if (conf.isUseDropConnect() && training) {
-            W = Dropout.applyDropConnect(this, DefaultParamInitializer.WEIGHT_KEY);
-        }
+        INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
+        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training);
 
         INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input);
 

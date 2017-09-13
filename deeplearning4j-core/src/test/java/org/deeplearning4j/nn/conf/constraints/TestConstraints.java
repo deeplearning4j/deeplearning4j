@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.constraints;
 
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -13,14 +14,11 @@ import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -40,7 +38,7 @@ public class TestConstraints {
         for (LayerConstraint lc : constraints) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .learningRate(0.0)
+                    .updater(new Sgd(0.0))
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
                     .list()
                     .layer(new LSTM.Builder().nIn(12).nOut(10)
@@ -75,15 +73,7 @@ public class TestConstraints {
                 assertEquals(RW0.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6);
             }
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ModelSerializer.writeModel(net, baos, true);
-            byte[] bytes = baos.toByteArray();
-
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
-
-            assertEquals(net.getLayerWiseConfigurations(), restored.getLayerWiseConfigurations());
-            assertEquals(net.params(), restored.params());
+            TestUtils.testModelSerialization(net);
         }
     }
 
@@ -100,7 +90,7 @@ public class TestConstraints {
         for (LayerConstraint lc : constraints) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .learningRate(0.0)
+                    .updater(new Sgd(0.0))
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
                     .biasInit(10.0)
                     .list()
@@ -136,15 +126,7 @@ public class TestConstraints {
                 assertEquals(b0.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6);
             }
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ModelSerializer.writeModel(net, baos, true);
-            byte[] bytes = baos.toByteArray();
-
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
-
-            assertEquals(net.getLayerWiseConfigurations(), restored.getLayerWiseConfigurations());
-            assertEquals(net.params(), restored.params());
+            TestUtils.testModelSerialization(net);
         }
     }
 
@@ -161,7 +143,7 @@ public class TestConstraints {
         for (LayerConstraint lc : constraints) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .learningRate(0.0)
+                    .updater(new Sgd(0.0))
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
                     .list()
                     .layer(new DenseLayer.Builder().nIn(12).nOut(10)
@@ -196,15 +178,7 @@ public class TestConstraints {
                 assertEquals(w0.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6);
             }
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ModelSerializer.writeModel(net, baos, true);
-            byte[] bytes = baos.toByteArray();
-
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
-
-            assertEquals(net.getLayerWiseConfigurations(), restored.getLayerWiseConfigurations());
-            assertEquals(net.params(), restored.params());
+            TestUtils.testModelSerialization(net);
         }
     }
 
@@ -221,7 +195,7 @@ public class TestConstraints {
         for (LayerConstraint lc : constraints) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .learningRate(0.0)
+                    .updater(new Sgd(0.0))
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
                     .biasInit(0.2)
                     .list()
@@ -264,15 +238,7 @@ public class TestConstraints {
                 assertEquals(b0.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6);
             }
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ModelSerializer.writeModel(net, baos, true);
-            byte[] bytes = baos.toByteArray();
-
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
-
-            assertEquals(net.getLayerWiseConfigurations(), restored.getLayerWiseConfigurations());
-            assertEquals(net.params(), restored.params());
+            TestUtils.testModelSerialization(net);
         }
     }
 
@@ -290,7 +256,7 @@ public class TestConstraints {
         for (LayerConstraint lc : constraints) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .learningRate(0.0)
+                    .updater(new Sgd(0.0))
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 5))
                     .biasInit(0.2)
                     .list()
@@ -333,15 +299,7 @@ public class TestConstraints {
                 assertEquals(b0.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6);
             }
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ModelSerializer.writeModel(net, baos, true);
-            byte[] bytes = baos.toByteArray();
-
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
-
-            assertEquals(net.getLayerWiseConfigurations(), restored.getLayerWiseConfigurations());
-            assertEquals(net.params(), restored.params());
+            TestUtils.testModelSerialization(net);
         }
     }
 
@@ -359,7 +317,7 @@ public class TestConstraints {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .constrainWeights(lc)
-                    .learningRate(0.0)
+                    .updater(new Sgd(0.0))
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,5))
                     .biasInit(1)
                     .list()
@@ -400,15 +358,7 @@ public class TestConstraints {
             }
 
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ModelSerializer.writeModel(net, baos, true);
-            byte[] bytes = baos.toByteArray();
-
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
-
-            assertEquals(net.getLayerWiseConfigurations(), restored.getLayerWiseConfigurations());
-            assertEquals(net.params(), restored.params());
+            TestUtils.testModelSerialization(net);
         }
 
     }

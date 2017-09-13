@@ -25,13 +25,11 @@ import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.CenterLossParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -91,44 +89,13 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    @Deprecated
-    public Updater getUpdaterByParam(String paramName) {
-        // center loss utilizes alpha directly for this so any updater can be used for other layers
-        switch (paramName) {
-            case CenterLossParamInitializer.CENTER_KEY:
-                return Updater.NONE;
-            default:
-                return updater;
-        }
-    }
-
-    @Override
-    public IUpdater getIUpdaterByParam(String paramName) {
+    public IUpdater getUpdaterByParam(String paramName) {
         // center loss utilizes alpha directly for this so any updater can be used for other layers
         switch (paramName) {
             case CenterLossParamInitializer.CENTER_KEY:
                 return new NoOp();
             default:
                 return iUpdater;
-        }
-    }
-
-    @Override
-    public double getLearningRateByParam(String paramName) {
-        switch (paramName) {
-            case CenterLossParamInitializer.WEIGHT_KEY:
-                return learningRate;
-            case CenterLossParamInitializer.BIAS_KEY:
-                if (!Double.isNaN(biasLearningRate)) {
-                    //Bias learning rate has been explicitly set
-                    return biasLearningRate;
-                } else {
-                    return learningRate;
-                }
-            case CenterLossParamInitializer.CENTER_KEY:
-                return 0;
-            default:
-                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
         }
     }
 
@@ -182,13 +149,13 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         int nParamsCenter = nIn * nOut;
         int numParams = nParamsW + nParamsB + nParamsCenter;
 
-        int updaterStateSize = (int) (getIUpdaterByParam(CenterLossParamInitializer.WEIGHT_KEY).stateSize(nParamsW)
-                        + getIUpdaterByParam(CenterLossParamInitializer.BIAS_KEY).stateSize(nParamsB)
-                        + getIUpdaterByParam(CenterLossParamInitializer.CENTER_KEY).stateSize(nParamsCenter));
+        int updaterStateSize = (int) (getUpdaterByParam(CenterLossParamInitializer.WEIGHT_KEY).stateSize(nParamsW)
+                        + getUpdaterByParam(CenterLossParamInitializer.BIAS_KEY).stateSize(nParamsB)
+                        + getUpdaterByParam(CenterLossParamInitializer.CENTER_KEY).stateSize(nParamsCenter));
 
         int trainSizeFixed = 0;
         int trainSizeVariable = 0;
-        if (getDropOut() > 0) {
+        if (getIDropout() != null) {
             if (false) {
                 //TODO drop connect
                 //Dup the weights... note that this does NOT depend on the minibatch size...

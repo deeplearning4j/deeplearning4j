@@ -1,9 +1,9 @@
 package org.deeplearning4j.eval;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 

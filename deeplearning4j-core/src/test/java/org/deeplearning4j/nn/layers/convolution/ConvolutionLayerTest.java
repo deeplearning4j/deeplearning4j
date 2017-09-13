@@ -7,7 +7,6 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -29,6 +28,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.*;
@@ -49,7 +49,7 @@ public class ConvolutionLayerTest {
     public void testTwdFirstLayer() throws Exception {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).iterations(5)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4)
-                        .regularization(true).momentum(0.9).updater(Updater.NESTEROVS).useDropConnect(true).dropOut(0.5)
+                        .updater(new Nesterovs(0.9)).dropOut(0.5)
                         .list().layer(0,
                                         new ConvolutionLayer.Builder(8, 8) //16 filters kernel size 8 stride 4
                                                         .stride(4, 4).nOut(16).dropOut(0.5)

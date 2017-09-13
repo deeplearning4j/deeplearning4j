@@ -18,7 +18,7 @@
      null
     ], 
     "W_regularizer": null, 
-    "dropout": 0.2, 
+    "dropout": 0.2,
     "output_dim": 128, 
     "input_length": null
    }
@@ -36,8 +36,8 @@
     "consume_less": "cpu", 
     "stateful": false, 
     "init": "glorot_uniform", 
-    "inner_init": "orthogonal", 
-    "dropout_U": 0.2, 
+    "inner_init": "glorot_uniform",
+    "dropout_U": 0.0,
     "dropout_W": 0.2, 
     "input_dim": 128, 
     "return_sequences": false, 

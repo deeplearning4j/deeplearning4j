@@ -1,12 +1,12 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
-import org.deeplearning4j.nn.api.ParamInitializer;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
@@ -63,7 +63,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
 
         int trainSizeFixed = 0;
         int trainSizeVariable = 0;
-        if (getDropOut() > 0) {
+        if (getIDropout() != null) {
             if (false) {
                 //TODO drop connect
                 //Dup the weights... note that this does NOT depend on the minibatch size...

@@ -17,7 +17,6 @@
  */
 package org.deeplearning4j.nn.layers.convolution;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.BwdDataAlgo;
@@ -26,6 +25,7 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.FwdAlgo;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * Helper for the convolution layer.

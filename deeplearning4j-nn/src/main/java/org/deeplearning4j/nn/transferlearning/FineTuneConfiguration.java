@@ -8,8 +8,11 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
+import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -20,7 +23,6 @@ import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by Alex on 21/02/2017.
@@ -37,46 +39,23 @@ public class FineTuneConfiguration {
     protected WeightInit weightInit;
     protected Double biasInit;
     protected Distribution dist;
-    protected Double learningRate;
-    protected Double biasLearningRate;
-    protected Map<Integer, Double> learningRateSchedule;
-    protected Double lrScoreBasedDecay;
     protected Double l1;
     protected Double l2;
     protected Double l1Bias;
     protected Double l2Bias;
-    protected Double dropOut;
-    @Deprecated
-    protected Updater updater;
+    protected IDropout dropout;
+    protected IWeightNoise weightNoise;
     protected IUpdater iUpdater;
-    @Deprecated
-    protected Double momentum;
-    @Deprecated
-    protected Map<Integer, Double> momentumSchedule;
-    @Deprecated
-    protected Double epsilon;
-    @Deprecated
-    protected Double rho;
-    @Deprecated
-    protected Double rmsDecay;
-    @Deprecated
-    protected Double adamMeanDecay;
-    @Deprecated
-    protected Double adamVarDecay;
+    protected IUpdater biasUpdater;
     protected Boolean miniBatch;
     protected Integer numIterations;
     protected Integer maxNumLineSearchIterations;
     protected Long seed;
     protected OptimizationAlgorithm optimizationAlgo;
     protected StepFunction stepFunction;
-    protected Boolean useDropConnect;
     protected Boolean minimize;
     protected GradientNormalization gradientNormalization;
     protected Double gradientNormalizationThreshold;
-    protected LearningRatePolicy learningRatePolicy;
-    protected Double lrPolicyDecayRate;
-    protected Double lrPolicySteps;
-    protected Double lrPolicyPower;
     protected ConvolutionMode convolutionMode;
     protected List<LayerConstraint> constraints;
     protected Boolean hasBiasConstraints;
@@ -105,17 +84,13 @@ public class FineTuneConfiguration {
             return this;
         }
 
-        /**
-         * @deprecated No longer used
-         */
-        @Deprecated
-        public Builder regularization(boolean regularization) {
-            return this;
-        }
-
         public Builder iterations(int iterations) {
             this.numIterations = iterations;
             return this;
+        }
+
+        public Builder dropOut(double dropout){
+            return dropout(new Dropout(dropout));
         }
 
         public Builder activation(Activation activation) {
@@ -127,8 +102,8 @@ public class FineTuneConfiguration {
             return iUpdater(updater);
         }
 
+        @Deprecated
         public Builder updater(Updater updater) {
-            this.updater = updater;
             return updater(updater.getIUpdaterWithDefaultConfig());
         }
     }
@@ -147,13 +122,12 @@ public class FineTuneConfiguration {
         WeightInit origWeightInit = null;
 
         if (l != null) {
-            if (dropOut != null)
-                l.setDropOut(dropOut);
+            if (dropout != null)
+                l.setIDropout(dropout);
         }
 
         if (l != null && l instanceof BaseLayer) {
             BaseLayer bl = (BaseLayer) l;
-            originalUpdater = bl.getUpdater();
             origWeightInit = bl.getWeightInit();
             if (activationFn != null)
                 bl.setActivationFn(activationFn);
@@ -163,18 +137,6 @@ public class FineTuneConfiguration {
                 bl.setBiasInit(biasInit);
             if (dist != null)
                 bl.setDist(dist);
-            if (learningRate != null) {
-                //usually the same learning rate is applied to both bias and weights
-                //so always overwrite the learning rate to both?
-                bl.setLearningRate(learningRate);
-                bl.setBiasLearningRate(learningRate);
-
-            }
-            if (biasLearningRate != null)
-                bl.setBiasLearningRate(biasLearningRate);
-            if (learningRateSchedule != null)
-                bl.setLearningRateSchedule(learningRateSchedule);
-            //        if(lrScoreBasedDecay != null)
             if (l1 != null)
                 bl.setL1(l1);
             if (l2 != null)
@@ -183,28 +145,19 @@ public class FineTuneConfiguration {
                 bl.setL1Bias(l1Bias);
             if (l2Bias != null)
                 bl.setL2Bias(l2Bias);
-            if (updater != null)
-                bl.setUpdater(updater);
-            if (iUpdater != null)
-                bl.setIUpdater(iUpdater);
-            if (momentum != null)
-                bl.setMomentum(momentum);
-            if (momentumSchedule != null)
-                bl.setMomentum(momentum);
-            if (epsilon != null)
-                bl.setEpsilon(epsilon);
-            if (rho != null)
-                bl.setRho(rho);
-            if (rmsDecay != null)
-                bl.setRmsDecay(rmsDecay);
-            if (adamMeanDecay != null)
-                bl.setAdamMeanDecay(adamMeanDecay);
-            if (adamVarDecay != null)
-                bl.setAdamVarDecay(adamVarDecay);
             if (gradientNormalization != null)
                 bl.setGradientNormalization(gradientNormalization);
             if (gradientNormalizationThreshold != null)
                 bl.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+            if (iUpdater != null){
+                bl.setIUpdater(iUpdater);
+            }
+            if (biasUpdater != null){
+                bl.setBiasUpdater(biasUpdater);
+            }
+            if (weightNoise != null){
+                bl.setWeightNoise(weightNoise);
+            }
         }
         if (miniBatch != null)
             nnc.setMiniBatch(miniBatch);
@@ -218,63 +171,14 @@ public class FineTuneConfiguration {
             nnc.setOptimizationAlgo(optimizationAlgo);
         if (stepFunction != null)
             nnc.setStepFunction(stepFunction);
-        if (useDropConnect != null)
-            nnc.setUseDropConnect(useDropConnect);
         if (minimize != null)
             nnc.setMinimize(minimize);
-        if (learningRatePolicy != null)
-            nnc.setLearningRatePolicy(learningRatePolicy);
-        if (lrPolicySteps != null)
-            nnc.setLrPolicySteps(lrPolicySteps);
-        if (lrPolicyPower != null)
-            nnc.setLrPolicyPower(lrPolicyPower);
 
         if (convolutionMode != null && l instanceof ConvolutionLayer) {
             ((ConvolutionLayer) l).setConvolutionMode(convolutionMode);
         }
         if (convolutionMode != null && l instanceof SubsamplingLayer) {
             ((SubsamplingLayer) l).setConvolutionMode(convolutionMode);
-        }
-
-        //Check the updater config. If we change updaters, we want to remove the old config to avoid warnings
-        if (l != null && l instanceof BaseLayer && updater != null && originalUpdater != null
-                        && updater != originalUpdater) {
-            BaseLayer bl = (BaseLayer) l;
-            switch (originalUpdater) {
-                case ADAM:
-                case ADAMAX:
-                    if (adamMeanDecay == null)
-                        bl.setAdamMeanDecay(Double.NaN);
-                    if (adamVarDecay == null)
-                        bl.setAdamVarDecay(Double.NaN);
-                    break;
-                case ADADELTA:
-                    if (rho == null)
-                        bl.setRho(Double.NaN);
-                    if (epsilon == null)
-                        bl.setEpsilon(Double.NaN);
-                    break;
-                case NESTEROVS:
-                    if (momentum == null)
-                        bl.setMomentum(Double.NaN);
-                    if (momentumSchedule == null)
-                        bl.setMomentumSchedule(null);
-                    if (epsilon == null)
-                        bl.setEpsilon(Double.NaN);
-                    break;
-                case ADAGRAD:
-                    if (epsilon == null)
-                        bl.setEpsilon(Double.NaN);
-                    break;
-                case RMSPROP:
-                    if (rmsDecay == null)
-                        bl.setRmsDecay(Double.NaN);
-                    if (epsilon == null)
-                        bl.setEpsilon(Double.NaN);
-                    break;
-
-                //Other cases: no changes required
-            }
         }
 
         //Check weight init. Remove dist if originally was DISTRIBUTION, and isn't now -> remove no longer needed distribution
@@ -285,12 +189,7 @@ public class FineTuneConfiguration {
 
         //Perform validation. This also sets the defaults for updaters. For example, Updater.RMSProp -> set rmsDecay
         if (l != null) {
-            LayerValidation.updaterValidation(l.getLayerName(), l, learningRate, momentum, momentumSchedule,
-                            adamMeanDecay, adamVarDecay, rho, rmsDecay, epsilon);
-
-            boolean useDropCon = (useDropConnect == null ? nnc.isUseDropConnect() : useDropConnect);
-            LayerValidation.generalValidation(l.getLayerName(), l, useDropCon, dropOut, l2, l2Bias, l1, l1Bias,
-                    dist, constraints, null, null);
+            LayerValidation.generalValidation(l.getLayerName(), l, dropout, l2, l2Bias, l1, l1Bias, dist, constraints, null, null);
         }
 
         //Also: update the LR, L1 and L2 maps, based on current config (which might be different to original config)
@@ -337,16 +236,6 @@ public class FineTuneConfiguration {
             confBuilder.setBiasInit(biasInit);
         if (dist != null)
             confBuilder.setDist(dist);
-        if (learningRate != null) {
-            //usually the same learning rate is applied to both bias and weights
-            //HOWEVER: this is set elsewhere. in the NNC, we only want to override the normal LR
-            confBuilder.setLearningRate(learningRate);
-        }
-        if (biasLearningRate != null)
-            confBuilder.setBiasLearningRate(biasLearningRate);
-        if (learningRateSchedule != null)
-            confBuilder.setLearningRateSchedule(learningRateSchedule);
-        //      if(lrScoreBasedDecay != null)
         if (l1 != null)
             confBuilder.setL1(l1);
         if (l2 != null)
@@ -355,26 +244,12 @@ public class FineTuneConfiguration {
             confBuilder.setL1Bias(l1Bias);
         if (l2Bias != null)
             confBuilder.setL2Bias(l2Bias);
-        if (dropOut != null)
-            confBuilder.setDropOut(dropOut);
+        if (dropout != null)
+            confBuilder.setIdropOut(dropout);
         if (iUpdater != null)
             confBuilder.updater(iUpdater);
-        if (updater != null)
-            confBuilder.setUpdater(updater);
-        if (momentum != null)
-            confBuilder.setMomentum(momentum);
-        if (momentumSchedule != null)
-            confBuilder.setMomentum(momentum);
-        if (epsilon != null)
-            confBuilder.setEpsilon(epsilon);
-        if (rho != null)
-            confBuilder.setRho(rho);
-        if (rmsDecay != null)
-            confBuilder.setRmsDecay(rmsDecay);
-        if (adamMeanDecay != null)
-            confBuilder.setAdamMeanDecay(adamMeanDecay);
-        if (adamVarDecay != null)
-            confBuilder.setAdamVarDecay(adamVarDecay);
+        if(biasUpdater != null)
+            confBuilder.biasUpdater(biasUpdater);
         if (miniBatch != null)
             confBuilder.setMiniBatch(miniBatch);
         if (numIterations != null)
@@ -387,21 +262,12 @@ public class FineTuneConfiguration {
             confBuilder.setOptimizationAlgo(optimizationAlgo);
         if (stepFunction != null)
             confBuilder.setStepFunction(stepFunction);
-        if (useDropConnect != null)
-            confBuilder.setUseDropConnect(useDropConnect);
         if (minimize != null)
             confBuilder.setMinimize(minimize);
         if (gradientNormalization != null)
             confBuilder.setGradientNormalization(gradientNormalization);
         if (gradientNormalizationThreshold != null)
             confBuilder.setGradientNormalizationThreshold(gradientNormalizationThreshold);
-        if (learningRatePolicy != null)
-            confBuilder.setLearningRatePolicy(learningRatePolicy);
-        if (lrPolicySteps != null)
-            confBuilder.setLrPolicySteps(lrPolicySteps);
-        if (lrPolicyPower != null)
-            confBuilder.setLrPolicyPower(lrPolicyPower);
-
         return confBuilder;
     }
 

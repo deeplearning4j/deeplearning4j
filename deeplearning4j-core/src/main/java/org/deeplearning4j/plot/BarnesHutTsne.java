@@ -23,7 +23,6 @@ package org.deeplearning4j.plot;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.SpTree;
 import org.deeplearning4j.clustering.vptree.VPTree;
@@ -39,6 +38,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.learning.legacy.AdaGrad;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -669,11 +669,6 @@ public class BarnesHutTsne implements Model {
     @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void applyLearningRateScoreDecay() {
-        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override

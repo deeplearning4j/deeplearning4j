@@ -21,13 +21,11 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
-import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -35,7 +33,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Upsampling layer
+ * Upsampling 2D layer
  *
  * @author Max Pumperla
  */
@@ -44,11 +42,11 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class Upsampling2D extends Layer {
+public class Upsampling2D extends BaseUpsamplingLayer {
 
     protected int size;
 
-    protected Upsampling2D(Upsampling2DBuilder builder) {
+    protected Upsampling2D(UpsamplingBuilder builder) {
         super(builder);
         this.size = builder.size;
     }
@@ -75,11 +73,6 @@ public class Upsampling2D extends Layer {
     }
 
     @Override
-    public ParamInitializer initializer() {
-        return EmptyParamInitializer.getInstance();
-    }
-
-    @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
@@ -94,40 +87,12 @@ public class Upsampling2D extends Layer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
-        //No op: upsampling layer doesn't have nIn value
-    }
-
-    @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Upsampling layer (layer name=\"" + getLayerName()
                             + "\"): input is null");
         }
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
-    }
-
-    @Override
-    public double getL1ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
-    public double getLearningRateByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
-    public boolean isPretrainParam(String paramName) {
-        throw new UnsupportedOperationException("UpsamplingLayer does not contain parameters");
     }
 
     @Override
@@ -140,7 +105,7 @@ public class Upsampling2D extends Layer {
 
         // Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         int trainingWorkingSizePerEx = im2colSizePerEx;
-        if (getDropOut() > 0) {
+        if (getIDropout() != null) {
             //Dup on the input before dropout, but only for training
             trainingWorkingSizePerEx += inputType.arrayElementsPerExample();
         }
@@ -154,7 +119,7 @@ public class Upsampling2D extends Layer {
 
 
     @NoArgsConstructor
-    public static class Builder extends Upsampling2DBuilder<Builder> {
+    public static class Builder extends UpsamplingBuilder<Builder> {
 
         public Builder(int size) {
             super(size);
@@ -171,21 +136,10 @@ public class Upsampling2D extends Layer {
             return this;
         }
 
-
         @Override
         @SuppressWarnings("unchecked")
         public Upsampling2D build() {
             return new Upsampling2D(this);
-        }
-    }
-
-    @NoArgsConstructor
-    protected static abstract class Upsampling2DBuilder<T extends Upsampling2DBuilder<T>>
-                    extends Layer.Builder<T> {
-        protected int size = 1;
-
-        protected Upsampling2DBuilder(int size) {
-            this.size = size;
         }
     }
 

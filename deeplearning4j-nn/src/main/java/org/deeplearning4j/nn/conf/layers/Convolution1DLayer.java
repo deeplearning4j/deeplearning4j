@@ -4,11 +4,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -45,7 +43,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
                     Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
                     boolean initializeParams) {
-        org.deeplearning4j.util.LayerValidation.assertNInNOutSet("Convolution1DLayer", getLayerName(), layerIndex,
+        LayerValidation.assertNInNOutSet("Convolution1DLayer", getLayerName(), layerIndex,
                         getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.Convolution1DLayer ret =

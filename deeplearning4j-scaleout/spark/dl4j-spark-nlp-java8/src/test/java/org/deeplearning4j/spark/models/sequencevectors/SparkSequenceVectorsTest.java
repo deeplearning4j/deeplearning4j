@@ -3,7 +3,6 @@ package org.deeplearning4j.spark.models.sequencevectors;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.nd4j.linalg.primitives.Counter;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -11,6 +10,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.primitives.Counter;
 
 import java.util.ArrayList;
 import java.util.List;

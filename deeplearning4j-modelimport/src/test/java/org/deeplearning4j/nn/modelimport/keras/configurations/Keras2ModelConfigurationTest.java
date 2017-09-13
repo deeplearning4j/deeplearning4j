@@ -38,15 +38,15 @@ public class Keras2ModelConfigurationTest {
 
     ClassLoader classLoader = getClass().getClassLoader();
 
-//    @Test
-//    public void imdbLstmTfSequentialConfigTest() throws Exception {
-//        runSequentialConfigTest("configs/keras2/imdb_lstm_tf_keras_2_config.json");
-//    }
-//
-//    @Test
-//    public void imdbLstmThSequentialConfigTest() throws Exception {
-//        runSequentialConfigTest("configs/keras2/imdb_lstm_th_keras_2_config.json");
-//    }
+    @Test
+    public void imdbLstmTfSequentialConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/imdb_lstm_tf_keras_2_config.json");
+    }
+
+    @Test
+    public void imdbLstmThSequentialConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/imdb_lstm_th_keras_2_config.json");
+    }
 
     @Test
     public void mnistMlpTfSequentialConfigTest() throws Exception {

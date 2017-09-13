@@ -3,7 +3,6 @@ package org.deeplearning4j.gradientcheck;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -15,6 +14,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Random;
@@ -53,8 +53,8 @@ public class GlobalPoolingGradientCheckTests {
         for (int miniBatchSize : minibatchSizes) {
             for (PoolingType pt : poolingTypes) {
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                                .updater(Updater.NONE).weightInit(WeightInit.DISTRIBUTION)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                                 .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                                 .build())
@@ -116,8 +116,8 @@ public class GlobalPoolingGradientCheckTests {
         for (int miniBatchSize : minibatchSizes) {
             for (PoolingType pt : poolingTypes) {
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                                .updater(Updater.NONE).weightInit(WeightInit.DISTRIBUTION)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                                 .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(layerDepth)
                                                 .build())
@@ -171,8 +171,8 @@ public class GlobalPoolingGradientCheckTests {
 
         for (PoolingType pt : poolingTypes) {
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                            .updater(Updater.NONE).weightInit(WeightInit.DISTRIBUTION)
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                             .build())
@@ -255,8 +255,8 @@ public class GlobalPoolingGradientCheckTests {
                         stride = new int[] {inputH, 1};
                     }
 
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                                    .updater(Updater.NONE).weightInit(WeightInit.DISTRIBUTION)
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                    .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                     .dist(new NormalDistribution(0, 1.0)).convolutionMode(ConvolutionMode.Same)
                                     .seed(12345L).list()
                                     .layer(0, new ConvolutionLayer.Builder().kernelSize(kernel).stride(stride)

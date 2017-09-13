@@ -16,7 +16,6 @@ import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
@@ -326,11 +325,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray activationMean() {
-        return activate();
-    }
-
-    @Override
     public INDArray activate(boolean training) {
         //Essentially: just apply activation functions...
 
@@ -593,6 +587,11 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     @Override
     public boolean isPretrainLayer() {
         return false;
+    }
+
+    @Override
+    public void clearNoiseWeightParams() {
+        //No op
     }
 
     /**

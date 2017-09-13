@@ -5,11 +5,11 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.apache.commons.compress.utils.IOUtils;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.ui.stats.api.Histogram;
 import org.deeplearning4j.ui.stats.api.StatsReport;
 import org.deeplearning4j.ui.stats.api.StatsType;
 import org.deeplearning4j.ui.stats.api.SummaryType;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
 import java.lang.reflect.Field;

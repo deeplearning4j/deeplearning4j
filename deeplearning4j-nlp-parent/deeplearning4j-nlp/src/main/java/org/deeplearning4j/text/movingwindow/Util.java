@@ -22,7 +22,6 @@ import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.primitives.CounterMap;
 
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

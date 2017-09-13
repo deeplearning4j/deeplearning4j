@@ -5,7 +5,6 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration.GraphBuilder;
-import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
@@ -19,6 +18,8 @@ import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.schedule.ScheduleType;
+import org.nd4j.linalg.schedule.StepSchedule;
 
 /**
  * GoogleLeNet
@@ -137,9 +138,9 @@ public class GoogLeNet extends ZooModel {
     public ComputationGraphConfiguration conf() {
         GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
                         .activation(Activation.RELU).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .learningRate(1e-2).biasLearningRate(2 * 1e-2).learningRateDecayPolicy(LearningRatePolicy.Step)
-                        .lrPolicyDecayRate(0.96).lrPolicySteps(320000).updater(new Nesterovs(1e-2, 0.9))
-                        .weightInit(WeightInit.XAVIER).regularization(true).l2(2e-4).graphBuilder();
+                        .updater(new Nesterovs(new StepSchedule(ScheduleType.ITERATION, 1e-2, 0.96, 320000), 0.9))
+                        .biasUpdater(new Nesterovs(new StepSchedule(ScheduleType.ITERATION, 2e-2, 0.96, 320000), 0.9))
+                        .weightInit(WeightInit.XAVIER).l2(2e-4).graphBuilder();
 
         graph.addInputs("input").addLayer("cnn1", conv7x7(inputShape[0], 64, 0.2), "input")
                         .addLayer("max1",

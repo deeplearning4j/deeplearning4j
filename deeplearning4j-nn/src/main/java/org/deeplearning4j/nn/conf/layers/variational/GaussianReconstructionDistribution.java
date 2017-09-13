@@ -33,15 +33,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
      * Create a GaussianReconstructionDistribution with the default identity activation function.
      */
     public GaussianReconstructionDistribution() {
-        this("identity");
-    }
-
-    /**
-     * @deprecated Use {@link #GaussianReconstructionDistribution(Activation)}
-     */
-    @Deprecated
-    public GaussianReconstructionDistribution(String activationFn) {
-        this(Activation.fromString(activationFn).getActivationFunction());
+        this(Activation.IDENTITY);
     }
 
     /**

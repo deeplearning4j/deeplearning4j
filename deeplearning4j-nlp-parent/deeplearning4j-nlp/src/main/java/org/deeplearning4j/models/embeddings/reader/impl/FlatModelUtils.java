@@ -1,9 +1,9 @@
 package org.deeplearning4j.models.embeddings.reader.impl;
 
-import org.nd4j.linalg.primitives.Counter;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
