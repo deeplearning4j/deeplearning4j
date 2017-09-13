@@ -12,6 +12,7 @@
 #include <mutex>
 //#include <NDArray.h>
 #include <graph/Variable.h>
+#include <memory/Workspace.h>
 
 namespace nd4j {
     namespace graph {
@@ -19,6 +20,9 @@ namespace nd4j {
         template <typename T>
         class VariableSpace {
         protected:
+
+            nd4j::memory::Workspace _workspace;
+
             std::map<std::pair<int, int>, nd4j::graph::Variable<T> *> _paired;
             std::map<std::string, nd4j::graph::Variable<T> *> _symbolic;
             std::map<const int32_t, nd4j::graph::Variable<T> *> _variables;

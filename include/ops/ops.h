@@ -1017,7 +1017,10 @@ namespace simdOps {
     template<typename T>
     class MatchCondition {
     public:
-        no_op_exec_special_accumulation
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		no_op_exec_special_accumulation
         no_op_exec_special_accumulation_cuda
 
         op_def static T startingValue(const T *input) {

@@ -127,6 +127,8 @@ namespace nd4j {
             OpRegistrator() {};
             ~OpRegistrator() {};
 
+            std::map<Nd4jIndex, std::string> _msvc;
+
             std::map<Nd4jIndex, nd4j::ops::DeclarableOp<float> *> _declarablesLF;
             std::map<std::string, nd4j::ops::DeclarableOp<float> *> _declarablesF;
 
@@ -145,6 +147,11 @@ namespace nd4j {
                     _INSTANCE = new nd4j::ops::OpRegistrator();
 
                 return _INSTANCE;
+            }
+
+            void updateMSVC(Nd4jIndex newHash, std::string& oldName) {
+                std::pair<Nd4jIndex, std::string> pair(newHash, oldName);
+                _msvc.insert(pair);
             }
 
             template <typename T>
@@ -247,7 +254,7 @@ namespace nd4j {
              */
              nd4j::ops::DeclarableOp<float> *getOperationFloat(std::string& name) {
                 if (!_declarablesF.count(name)) {
-                    nd4j_verbose("Unknown operation requested: [%s]\n", name.c_str())
+                    nd4j_printf("Unknown operation requested: [%s]\n", name.c_str());
                     return nullptr;
                 }
 
@@ -257,8 +264,21 @@ namespace nd4j {
 
             nd4j::ops::DeclarableOp<float> *getOperationFloat(Nd4jIndex hash) {
                 if (!_declarablesLF.count(hash)) {
-                    nd4j_verbose("Unknown operation requested by hash: [%lld]\n", hash);
-                    return nullptr;
+                    if (!_msvc.count(hash)) {
+                        nd4j_printf("Unknown operation requested by hash: [%lld]\n", hash);
+                        return nullptr;
+                    } else {
+                        _locker.lock();
+
+                        auto str = _msvc.at(hash);
+                        auto op = _declarablesF.at(str);
+                        auto oHash = op->getOpDescriptor()->getHash();
+
+                        std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<float>*> pair(oHash, op);
+                        _declarablesLF.insert(pair);
+
+                        _locker.unlock();
+                    }
                 }
 
                 return _declarablesLF.at(hash);
@@ -267,8 +287,21 @@ namespace nd4j {
 
             nd4j::ops::DeclarableOp<float16> *getOperationHalf(Nd4jIndex hash) {
                 if (!_declarablesLH.count(hash)) {
-                    nd4j_verbose("Unknown operation requested by hash: [%lld]\n", hash);
-                    return nullptr;
+                    if (!_msvc.count(hash)) {
+                        nd4j_printf("Unknown operation requested by hash: [%lld]\n", hash);
+                        return nullptr;
+                    } else {
+                        _locker.lock();
+
+                        auto str = _msvc.at(hash);
+                        auto op = _declarablesH.at(str);
+                        auto oHash = op->getOpDescriptor()->getHash();
+
+                        std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<float16>*> pair(oHash, op);
+                        _declarablesLH.insert(pair);
+
+                        _locker.unlock();
+                    }
                 }
 
                 return _declarablesLH.at(hash);
@@ -283,7 +316,7 @@ namespace nd4j {
 
             nd4j::ops::DeclarableOp<float16> *getOperationHalf(std::string& name) {
                 if (!_declarablesH.count(name)) {
-                    nd4j_verbose("Unknown operation requested: [%s]\n", name.c_str())
+                    nd4j_printf("Unknown operation requested: [%s]\n", name.c_str());
                     return nullptr;
                 }
 
@@ -299,8 +332,21 @@ namespace nd4j {
 
             nd4j::ops::DeclarableOp<double> *getOperationDouble(Nd4jIndex hash) {
                 if (!_declarablesLD.count(hash)) {
-                    nd4j_verbose("Unknown operation requested by hash: [%lld]\n", hash);
-                    return nullptr;
+                    if (!_msvc.count(hash)) {
+                        nd4j_printf("Unknown operation requested by hash: [%lld]\n", hash);
+                        return nullptr;
+                    } else {
+                        _locker.lock();
+
+                        auto str = _msvc.at(hash);
+                        auto op = _declarablesD.at(str);
+                        auto oHash = op->getOpDescriptor()->getHash();
+
+                        std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<double>*> pair(oHash, op);
+                        _declarablesLD.insert(pair);
+
+                        _locker.unlock();
+                    }
                 }
 
                 return _declarablesLD.at(hash);
@@ -308,7 +354,7 @@ namespace nd4j {
 
             nd4j::ops::DeclarableOp<double> *getOperationDouble(std::string& name) {
                 if (!_declarablesD.count(name)) {
-                    nd4j_verbose("Unknown operation requested: [%s]\n", name.c_str())
+                    nd4j_printf("Unknown operation requested: [%s]\n", name.c_str());
                     return nullptr;
                 }
 
@@ -320,6 +366,13 @@ namespace nd4j {
         struct __registratorSynonymFloat {
             __registratorSynonymFloat(const char *name, const char *oname) {
                 OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationFloat(oname);
+                if (ptr == nullptr) {
+                    std::string newName(name);
+                    std::string oldName(oname);
+
+                    OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
+                    return;
+                }
                 OpRegistrator::getInstance()->registerOperationFloat(name, ptr);
             }
         };
@@ -328,6 +381,13 @@ namespace nd4j {
         struct __registratorSynonymHalf {
             __registratorSynonymHalf(const char *name, const char *oname) {
                 OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationHalf(oname);
+                if (ptr == nullptr) {
+                    std::string newName(name);
+                    std::string oldName(oname);
+
+                    OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
+                    return;
+                }
                 OpRegistrator::getInstance()->registerOperationHalf(name, ptr);
             }
         };
@@ -336,6 +396,13 @@ namespace nd4j {
         struct __registratorSynonymDouble {
             __registratorSynonymDouble(const char *name, const char *oname) {
                 OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationDouble(oname);
+                if (ptr == nullptr) {
+                    std::string newName(name);
+                    std::string oldName(oname);
+
+                    OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
+                    return;
+                }
                 OpRegistrator::getInstance()->registerOperationDouble(name, ptr);
             }
         };
@@ -467,7 +534,7 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::validateArguments(Block<T>& block) {
      * If number of args is variable (-1), but variables MUST be present - we check for non-zero number of arguments
      */
     if (_descriptor->getNumberOfTArgs() > 0) {
-        if (block.getTArguments()->size() != _descriptor->getNumberOfTArgs())
+        if ((int) block.getTArguments()->size() != _descriptor->getNumberOfTArgs())
             return ND4J_STATUS_BAD_PARAMS;
     } else
         if (_descriptor->getNumberOfTArgs() == -1)
@@ -475,7 +542,7 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::validateArguments(Block<T>& block) {
                 return ND4J_STATUS_BAD_PARAMS;
 
     if (_descriptor->getNumberOfIArgs() > 0) {
-        if (block.getIArguments()->size() != _descriptor->getNumberOfIArgs())
+        if ((int) block.getIArguments()->size() != _descriptor->getNumberOfIArgs())
             return ND4J_STATUS_BAD_PARAMS;
     } else
         if (_descriptor->getNumberOfIArgs() == -1)

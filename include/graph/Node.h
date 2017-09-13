@@ -346,11 +346,11 @@ nd4j::graph::Node<T>::Node(const nd4j::graph::FlatNode *node) {
         nd4j_printf("Pulled node_%i (%s)\n", node->id(), this->_name.c_str())
 
         if (node->input() != nullptr)
-            for (int e = 0; e < node->input()->size(); e++)
+            for (int e = 0; e < (int) node->input()->size(); e++)
                 pickInput(node->input()->Get(e));
 
         if (node->output() != nullptr)
-            for (int e = 0; e < node->output()->size(); e++) {
+            for (int e = 0; e < (int) node->output()->size(); e++) {
                 nd4j_verbose("Picking output: %i\n", node->output()->Get(e));
                 pickOutput(node->output()->Get(e));
             }
@@ -358,14 +358,14 @@ nd4j::graph::Node<T>::Node(const nd4j::graph::FlatNode *node) {
 
         if (node->extraParams() != nullptr && node->extraParams()->size() > 0) {
             _extraParams = new T[node->extraParams()->size()];
-            for (int e = 0; e < node->extraParams()->size(); e++) {
+            for (int e = 0; e < (int) node->extraParams()->size(); e++) {
                 _extraParams[e] = (T) node->extraParams()->Get(e);
             }
         }
 
         if (node->dimensions() != nullptr && node->dimensions()->size() > 0) {
             _dim = new int[node->dimensions()->size()];
-            for (uint32_t e = 0; e < node->dimensions()->size(); e++) {
+            for (int e = 0; e < (int) node->dimensions()->size(); e++) {
                 _dimensions.push_back(node->dimensions()->Get(e));
                 _dim[e] = node->dimensions()->Get(e);
             }
