@@ -5,7 +5,7 @@
 #ifndef LIBND4J_MEMORYREGISTRATOR_H
 #define LIBND4J_MEMORYREGISTRATOR_H
 
-#include <Workspace.h>
+#include "Workspace.h"
 
 namespace nd4j {
     namespace memory {
