@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include "../Workspace.h"
 #include <helpers/logger.h>
+#include <templatemath.h>
 
 
 namespace nd4j {
@@ -120,6 +121,12 @@ namespace nd4j {
                 throw "CPU backend doesn't have device memory";
 
             return this->allocateBytes(numBytes);
+        }
+
+        Workspace* Workspace::clone() {
+            // for clone we take whatever is higher: current allocated size, or allocated size of current loop
+            Workspace* res = new Workspace(nd4j::math::nd4j_max<Nd4jIndex >(this->getCurrentSize(), this->_cycleAllocations.load()));
+            return res;
         }
     }
 }

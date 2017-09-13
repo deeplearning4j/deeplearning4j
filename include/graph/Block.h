@@ -8,6 +8,7 @@
 #include <vector>
 #include "Variable.h"
 #include "VariableSpace.h"
+#include <memory/Workspace.h>
 
 
 // CUDA-specific includes
@@ -28,6 +29,8 @@ namespace nd4j {
         template <typename T>
         class Block {
         protected:
+            nd4j::memory::Workspace* _workspace;
+
             // int ids of the input nodes
             std::vector<int> _inputs;
             std::vector<nd4j::graph::Variable<T> *> _variables;
@@ -41,6 +44,7 @@ namespace nd4j {
 			bool _isInplace;
 
         public:
+            // TODO: maybe override new here as well?
 
             // CUDA-specific fields
 #ifdef __CUDACC__
@@ -51,6 +55,7 @@ namespace nd4j {
                 _nodeId = nodeId;
                 _variableSpace = variableSpace;
 				_isInplace = false;
+                _workspace = nullptr;
             }
 
             Block(int nodeId, VariableSpace<T> *variableSpace, bool isInplace) : Block(nodeId, variableSpace) {
@@ -61,6 +66,21 @@ namespace nd4j {
                 //
             }
 
+            bool hasWorkspaceProvided() {
+                return _workspace != nullptr;
+            }
+
+            void attachWorkspace(nd4j::memory::Workspace* workspace) {
+                _workspace = workspace;
+            }
+
+            void forgetWorkspace() {
+                _workspace = nullptr;
+            }
+
+            nd4j::memory::Workspace* getWorkspace() {
+                return _workspace;
+            }
 
             nd4j::random::RandomBuffer* getRNG() {
                 return _rng;

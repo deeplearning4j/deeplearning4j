@@ -8,6 +8,7 @@
 #include "testlayers.h"
 #include <NDArray.h>
 #include <Workspace.h>
+#include <MemoryRegistrator.h>
 
 using namespace nd4j::memory;
 
@@ -109,6 +110,62 @@ TEST_F(WorkspaceTests, StretchTest1) {
 
     ASSERT_EQ(1280, workspace.getCurrentSize());
     ASSERT_EQ(0, workspace.getSpilledSize());
+}
+
+TEST_F(WorkspaceTests, NewInWorkspaceTest1) {
+    Workspace ws(65536);
+
+    ASSERT_EQ(65536, ws.getCurrentSize());
+    ASSERT_EQ(0, ws.getCurrentOffset());
+
+    ASSERT_FALSE(MemoryRegistrator::getInstance()->hasWorkspaceAttached());
+
+    MemoryRegistrator::getInstance()->attachWorkspace(&ws);
+
+    ASSERT_TRUE(MemoryRegistrator::getInstance()->hasWorkspaceAttached());
+
+    auto ast = new NDArray<float>(5, 5, 'c');
+
+    ASSERT_TRUE(ws.getCurrentOffset() > 0);
+
+    MemoryRegistrator::getInstance()->forgetWorkspace();
+
+    ASSERT_FALSE(MemoryRegistrator::getInstance()->hasWorkspaceAttached());
+    ASSERT_TRUE(MemoryRegistrator::getInstance()->getWorkspace() == nullptr);
+}
+
+
+TEST_F(WorkspaceTests, NewInWorkspaceTest2) {
+    Workspace ws(65536);
+
+    ASSERT_EQ(65536, ws.getCurrentSize());
+    ASSERT_EQ(0, ws.getCurrentOffset());
+
+    MemoryRegistrator::getInstance()->attachWorkspace(&ws);
+
+    auto ast = new NDArray<float>(5, 5, 'c', &ws);
+
+    ASSERT_TRUE(ws.getCurrentOffset() > 0);
+
+    delete ast;
+
+    MemoryRegistrator::getInstance()->forgetWorkspace();
+}
+
+TEST_F(WorkspaceTests, CloneTest1) {
+    Workspace ws(65536);
+
+    ws.allocateBytes(65536 * 2);
+
+    ASSERT_EQ(65536 * 2, ws.getSpilledSize());
+
+    auto clone = ws.clone();
+
+    ASSERT_EQ(65536 * 2, clone->getCurrentSize());
+    ASSERT_EQ(0, clone->getCurrentOffset());
+    ASSERT_EQ(0, clone->getSpilledSize());
+
+    delete clone;
 }
 
 
