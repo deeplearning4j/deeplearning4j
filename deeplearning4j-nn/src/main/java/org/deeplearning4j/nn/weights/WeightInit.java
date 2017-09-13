@@ -31,7 +31,9 @@ package org.deeplearning4j.nn.weights;
  * <p>
  * <b>NORMAL</b>: Normal/Gaussian distribution, with mean 0 and standard deviation 1/sqrt(fanIn).
  * This is the initialization recommented in Klambauer et al. 2017, "Self-Normalizing Neural Network". Equivalent to
- * DL4J's XAVIER_FAN_IN and Keras' "lecun_normal"
+ * DL4J's XAVIER_FAN_IN and LECUN_NORMAL (i.e. Keras' "lecun_normal")
+ * <p>
+ * <b>LECUN_UNIFORM</b> Uniform U[-a,a] with a=3/sqrt(fanIn).
  * <p>
  * <b>UNIFORM</b>: Uniform U[-a,a] with a=1/sqrt(fanIn). "Commonly used heuristic" as per Glorot and Bengio 2010
  * <p>
@@ -48,7 +50,19 @@ package org.deeplearning4j.nn.weights;
  * <b>RELU_UNIFORM</b>: He et al. (2015), "Delving Deep into Rectifiers". Uniform distribution U(-s,s) with s = sqrt(6/fanIn)
  * <p>
  * <b>IDENTITY</b>: Weights are set to an identity matrix. Note: can only be used with square weight matrices
- *
+ * <p>
+ * <b>VAR_SCALING_NORMAL_FAN_IN</b> Gaussian distribution with mean 0, variance 1.0/(fanIn)
+ * <p>
+ * <b>VAR_SCALING_NORMAL_FAN_OUT</b> Gaussian distribution with mean 0, variance 1.0/(fanOut)
+ * <p>
+ * <b>VAR_SCALING_NORMAL_FAN_AVG</b> Gaussian distribution with mean 0, variance 1.0/((fanIn + fanOut)/2)
+ * <p>
+ * <b>VAR_SCALING_UNIFORM_FAN_IN</b> Uniform U[-a,a] with a=3.0/(fanIn)
+ * <p>
+ * <b>VAR_SCALING_UNIFORM_FAN_OUT</b> Uniform U[-a,a] with a=3.0/(fanOut)
+ * <p>
+ * <b>VAR_SCALING_UNIFORM_FAN_AVG</b> Uniform U[-a,a] with a=3.0/((fanIn + fanOut)/2)
+ * <p>
  * @author Adam Gibson
  */
 public enum WeightInit {
