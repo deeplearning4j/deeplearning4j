@@ -152,5 +152,21 @@ TEST_F(WorkspaceTests, NewInWorkspaceTest2) {
     MemoryRegistrator::getInstance()->forgetWorkspace();
 }
 
+TEST_F(WorkspaceTests, CloneTest1) {
+    Workspace ws(65536);
+
+    ws.allocateBytes(65536 * 2);
+
+    ASSERT_EQ(65536 * 2, ws.getSpilledSize());
+
+    auto clone = ws.clone();
+
+    ASSERT_EQ(65536 * 2, clone->getCurrentSize());
+    ASSERT_EQ(0, clone->getCurrentOffset());
+    ASSERT_EQ(0, clone->getSpilledSize());
+
+    delete clone;
+}
+
 
 #endif //LIBND4J_WORKSPACETESTS_H

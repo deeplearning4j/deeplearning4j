@@ -78,6 +78,10 @@ namespace nd4j {
                 _workspace = nullptr;
             }
 
+            nd4j::memory::Workspace* getWorkspace() {
+                return _workspace;
+            }
+
             nd4j::random::RandomBuffer* getRNG() {
                 return _rng;
             }
