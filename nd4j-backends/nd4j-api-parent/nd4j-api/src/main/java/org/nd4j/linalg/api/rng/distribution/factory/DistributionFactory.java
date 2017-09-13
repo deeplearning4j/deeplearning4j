@@ -21,6 +21,9 @@ package org.nd4j.linalg.api.rng.distribution.factory;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.api.rng.distribution.impl.LogNormalDistribution;
+import org.nd4j.linalg.api.rng.distribution.impl.OrthogonalDistribution;
+import org.nd4j.linalg.api.rng.distribution.impl.TruncatedNormalDistribution;
 
 /**
  * Create a distribution
@@ -78,5 +81,31 @@ public interface DistributionFactory {
      * @return the uniform distribution
      */
     Distribution createUniform(double min, double max);
+
+    /**
+     * Creates a log-normal distribution
+     *
+     * @param mean
+     * @param std
+     * @return
+     */
+    Distribution createLogNormal(double mean, double std);
+
+    /**
+     * Creates truncated normal distribution
+     *
+     * @param mean
+     * @param std
+     * @return
+     */
+    Distribution createTruncatedNormal(double mean, double std);
+
+    /**
+     * Creates orthogonal distribution
+     *
+     * @param gain
+     * @return
+     */
+    Distribution createOrthogonal(double gain);
 
 }
