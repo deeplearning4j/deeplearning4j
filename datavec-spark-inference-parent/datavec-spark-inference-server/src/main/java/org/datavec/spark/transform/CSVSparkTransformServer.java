@@ -145,6 +145,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                         return badRequest();
                     return ok(objectMapper.writeValueAsString(transformSequenceArrayIncremental(record)));
                 } catch (Exception e) {
+                    e.printStackTrace();
                     return internalServerError();
                 }
             } else {
@@ -154,6 +155,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                         return badRequest();
                     return ok(objectMapper.writeValueAsString(transformArrayIncremental(record)));
                 } catch (Exception e) {
+                    e.printStackTrace();
                     return internalServerError();
                 }
             }
