@@ -243,7 +243,7 @@ template <typename T> NDArray<T>::NDArray(const char order, const std::initializ
 template<typename T> NDArray<T>& NDArray<T>::operator=(const NDArray<T>& other) {
 	if (this == &other) return *this;
 
-    if (shape::equalsStrict(_shapeInfo, other._shapeInfo))
+    if (_shapeInfo != nullptr && _buffer != nullptr && shape::equalsStrict(_shapeInfo, other._shapeInfo))
         memcpy(_buffer, other._buffer, lengthOf()*sizeOfT());
     else {
         if(_isBuffAlloc)
