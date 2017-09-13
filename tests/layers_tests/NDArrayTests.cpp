@@ -720,6 +720,22 @@ TEST_F(NDArrayTest, TestIndexedPut3) {
     ASSERT_NEAR(x.getBuffer()[1], 1.0, 1e-5);
 }
 
+TEST_F(NDArrayTest, TestIndexedPut4) {
+    NDArray<float> x(2, 2, 'f');
+    x.putScalar(0, 1, 1.0f);
+
+    x.printBuffer("after");
+    ASSERT_NEAR(x.getBuffer()[2], 1.0, 1e-5);
+}
+
+
+TEST_F(NDArrayTest, TestIndexedPut5) {
+    NDArray<float> x(2, 2, 'c');
+    x.putScalar(0, 1, 1.0f);
+
+    x.printBuffer("after");
+    ASSERT_NEAR(x.getBuffer()[1], 1.0, 1e-5);
+}
 
 TEST_F(NDArrayTest, TestAllTensors1) {
     NDArray<float> matrix(3, 5, 'c');

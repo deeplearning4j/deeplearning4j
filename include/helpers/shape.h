@@ -150,6 +150,11 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
 #endif
+    INLINEDEF int *shapeBufferFortran(int rank, int *shape, int *output);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
     INLINEDEF void doPermuteShapeBuffer(int *shapeBuffer,int *rearrange, int *tmpBuffer);
 
 #ifdef __CUDACC__
@@ -179,6 +184,11 @@ namespace shape {
 #endif
     INLINEDEF int * calcStridesFortran(int *shape, int rank);
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int * calcStridesFortran(int *shape, int rank, int* ret);
+
 /**
  * Computes the standard packed array strides for a given shape.
  *
@@ -190,6 +200,11 @@ namespace shape {
     __host__ __device__
 #endif
     INLINEDEF int* calcStrides(int *shape, int rank);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int* calcStrides(int *shape, int rank, int* ret);
 
 /**
  * Computes the standard packed array strides for a given shape.
@@ -203,6 +218,11 @@ namespace shape {
 #endif
     INLINEDEF int* calcStridesFortran(int *shape, int rank, int startNum);
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int* calcStridesFortran(int *shape, int rank, int startNum, int* ret);
+
 /**
  * Computes the standard packed array strides for a given shape.
  *
@@ -214,6 +234,11 @@ namespace shape {
     __host__ __device__
 #endif
     INLINEDEF int* calcStrides(int *shape, int rank, int startNum);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int* calcStrides(int *shape, int rank, int startNum, int* ret);
 
 /**
  * @param toCopy the shape to copy
@@ -977,6 +1002,12 @@ namespace shape {
 #endif
 
     INLINEDEF int *toShapeBuffer( ShapeInformation *info);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF int *toShapeBuffer( ShapeInformation *info, int* ret);
 
 /**
  * Returns the number of elements per thread
@@ -2626,6 +2657,28 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         return stride;
     }
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int * calcStridesFortran(int *shape, int rank, int startNum, int *ret) {
+        if (isVector(shape, rank)) {
+            for (int i = 0; i < 2; i++)
+                ret[i] = 1;
+            return ret;
+
+        }
+
+        int dimensions = rank;
+
+        int st = startNum;
+        for (int j = 0; j < rank; j++) {
+            ret[j] = st;
+            st *= shape[j];
+        }
+
+        return ret;
+    }
+
 /**
  * Computes the standard packed array strides for a given shape.
  *
@@ -2658,6 +2711,28 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         return stride;
     }
 
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int * calcStrides(int *shape, int rank, int startNum, int* ret) {
+
+        if (shape::isVector(shape, rank)) {
+            for (int i = 0; i < 2; i++)
+                ret[i] = 1;
+            return ret;
+
+        }
+
+        int st = startNum;
+        for (int j = rank - 1; j >= 0; j--) {
+            ret[j] = st;
+            st *= shape[j];
+        }
+
+        return ret;
+    }
+
 /**
  * Computes the standard packed array strides for a given shape.
  *
@@ -2672,6 +2747,13 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         return calcStridesFortran(shape, rank, 1);
     }
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int * calcStridesFortran(int *shape, int rank, int* ret) {
+        return calcStridesFortran(shape, rank, 1, ret);
+    }
+
 /**
  * Computes the standard packed array strides for a given shape.
  *
@@ -2684,6 +2766,13 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 #endif
     INLINEDEF int* calcStrides(int *shape, int rank) {
         return calcStrides(shape, rank, 1);
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int* calcStrides(int *shape, int rank, int* ret) {
+        return calcStrides(shape, rank, 1, ret);
     }
 
 /**
@@ -2913,16 +3002,20 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
     __host__ __device__
 #endif
     INLINEDEF int *shapeBuffer(int rank, int *shape, int *buffer) {
+        int stride[MAX_RANK];
+        shape::calcStrides(shape,rank, stride);
 
-        buffer[0] = rank;
-        buffer[1] = shape[0];
-        buffer[2] = 1;
-        buffer[3] = 1;
-        buffer[4] = 1;
-        buffer[5] = 0;
-        buffer[6] = 1;
-        buffer[7] = 99;
 
+        shape::ShapeInformation shapeInfo;
+        shapeInfo.shape = shape;
+        shapeInfo.stride = stride;
+        shapeInfo.offset = 0;
+        shapeInfo.rank = rank;
+        int elementWiseStride = shape::computeElementWiseStride(rank, shape, stride, 0);
+
+        shapeInfo.order = 'c';
+        shapeInfo.elementWiseStride = elementWiseStride;
+        shape::toShapeBuffer(&shapeInfo, buffer);
         return buffer;
     }
 
@@ -2943,8 +3036,8 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         shapeInfo->stride = stride;
         shapeInfo->offset = 0;
         shapeInfo->rank = rank;
-        int elementWiseStride = shape::computeElementWiseStride(rank, shape, stride,
-                                                                0);
+        int elementWiseStride = shape::computeElementWiseStride(rank, shape, stride, 0);
+
         shapeInfo->order = 'f';
         shapeInfo->elementWiseStride = elementWiseStride;
         int *shapeInfoBuffer = shape::toShapeBuffer(shapeInfo);
@@ -2953,6 +3046,26 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         return shapeInfoBuffer;
     }
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF int *shapeBufferFortran(int rank, int *shape, int *output) {
+        int stride[MAX_RANK];
+        shape::calcStridesFortran(shape,rank, stride);
+
+
+        shape::ShapeInformation shapeInfo;
+        shapeInfo.shape = shape;
+        shapeInfo.stride = stride;
+        shapeInfo.offset = 0;
+        shapeInfo.rank = rank;
+        int elementWiseStride = shape::computeElementWiseStride(rank, shape, stride, 0);
+
+        shapeInfo.order = 'f';
+        shapeInfo.elementWiseStride = elementWiseStride;
+        shape::toShapeBuffer(&shapeInfo, output);
+        return output;
+    }
 
 /**
  * Compute the real linear indices for the given shape and stride
@@ -4651,6 +4764,32 @@ __device__ int tadOffset(int *xInfo, int offset) {
         traceNew(29);
 
         int *ret = new int[shapeInfoLength(info->rank)];
+        int count = 1;
+        int rank = info->rank;
+
+        ret[0] = info->rank;
+
+        for (int i = 0; i < rank; i++) {
+            ret[count++] = info->shape[i];
+        }
+
+        for (int i = 0; i < rank; i++) {
+            ret[count++] = info->stride[i];
+        }
+
+        ret[count++] = info->offset;
+        ret[count++] = info->elementWiseStride;
+        ret[count++] = info->order;
+
+        return ret;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF int *toShapeBuffer( ShapeInformation *info, int* ret) {
+
         int count = 1;
         int rank = info->rank;
 
