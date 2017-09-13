@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.api;
 
 
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -155,7 +156,7 @@ public interface Layer {
      * @param training  training or test mode
      * @return the activation of the last specified input
      */
-    INDArray activate(boolean training);
+    Activations activate(boolean training);
 
     /**
      * Initialize the layer with the given input
@@ -165,7 +166,7 @@ public interface Layer {
      * @param training  train or test mode
      * @return
      */
-    INDArray activate(INDArray input, boolean training);
+    Activations activate(Activations input, boolean training);
 
     /**
      * Initialize the layer with the given input
@@ -174,7 +175,7 @@ public interface Layer {
      * @param input the input to use
      * @return
      */
-    INDArray activate(INDArray input);
+    Activations activate(Activations input);
 
 
     /**
@@ -198,29 +199,30 @@ public interface Layer {
     /**
      * Set the mask array. Note: In general, {@link #feedForwardMaskArray(INDArray, MaskState, int)} should be used in
      * preference to this.
+     * @param idx Index of the mask array
      * @param maskArray Mask array to set
      */
-    void setMaskArray(INDArray maskArray);
+    void setMaskArray(int idx, INDArray maskArray);
 
 
-    INDArray getMaskArray();
+    INDArray getMaskArray(int idx);
 
 
-    /**
-     * Feed forward the input mask array, setting in in the layer as appropriate. This allows different layers to
-     * handle masks differently - for example, bidirectional RNNs and normal RNNs operate differently with masks (the
-     * former sets activations to 0 outside of the data present region (and keeps the mask active for future layers like
-     * dense layers), whereas normal RNNs don't zero out the activations/errors )instead relying on backpropagated error
-     * arrays to handle the variable length case.<br>
-     * This is also used for example for networks that contain global pooling layers, arbitrary preprocessors, etc.
-     *
-     * @param maskArray        Mask array to set
-     * @param currentMaskState Current state of the mask - see {@link MaskState}
-     * @param minibatchSize    Current minibatch size. Needs to be known as it cannot always be inferred from the activations
-     *                         array due to reshaping (such as a DenseLayer within a recurrent neural network)
-     * @return                 New mask array after this layer, along with the new mask state.
-     */
-    Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize);
+//    /**
+//     * Feed forward the input mask array, setting in in the layer as appropriate. This allows different layers to
+//     * handle masks differently - for example, bidirectional RNNs and normal RNNs operate differently with masks (the
+//     * former sets activations to 0 outside of the data present region (and keeps the mask active for future layers like
+//     * dense layers), whereas normal RNNs don't zero out the activations/errors )instead relying on backpropagated error
+//     * arrays to handle the variable length case.<br>
+//     * This is also used for example for networks that contain global pooling layers, arbitrary preprocessors, etc.
+//     *
+//     * @param maskArray        Mask array to set
+//     * @param currentMaskState Current state of the mask - see {@link MaskState}
+//     * @param minibatchSize    Current minibatch size. Needs to be known as it cannot always be inferred from the activations
+//     *                         array due to reshaping (such as a DenseLayer within a recurrent neural network)
+//     * @return                 New mask array after this layer, along with the new mask state.
+//     */
+//    Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize);
 
 
 

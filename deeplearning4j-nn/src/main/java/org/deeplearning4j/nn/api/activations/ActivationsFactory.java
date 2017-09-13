@@ -97,7 +97,7 @@ public class ActivationsFactory {
         return to;
     }
 
-    private static <T> T get(T[] from, AtomicLong start, AtomicLong end){
+    public static <T> T get(T[] from, AtomicLong start, AtomicLong end){
         long s = start.get();
         long e = end.get();
         if(e < 0 || e < s){
@@ -117,7 +117,7 @@ public class ActivationsFactory {
         return null;    //Failed (other thread got all available values first)
     }
 
-    private static <T> void set(T value, T[] to, AtomicLong start, AtomicLong end){
+    public static <T> void set(T value, T[] to, AtomicLong start, AtomicLong end){
         long s = start.get();
         long e = end.get();
         if(s-e >= to.length-1){
