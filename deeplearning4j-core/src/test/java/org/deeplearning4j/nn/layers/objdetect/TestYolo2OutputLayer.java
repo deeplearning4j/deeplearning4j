@@ -1,14 +1,39 @@
 package org.deeplearning4j.nn.layers.objdetect;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.split.FileSplit;
+import org.datavec.api.util.ClassPathResource;
+import org.datavec.image.recordreader.ImageRecordReader;
+import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
+import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
 import org.deeplearning4j.TestUtils;
+import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.AdaDelta;
+import org.nd4j.linalg.learning.config.Adam;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.util.List;
 
 import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
@@ -154,5 +179,102 @@ public class TestYolo2OutputLayer {
         INDArray probsSum = probs.sum(1);
         assertEquals(1.0, probsSum.minNumber().doubleValue(), 1e-6);
         assertEquals(1.0, probsSum.maxNumber().doubleValue(), 1e-6);
+    }
+
+
+    @Test
+    public void testYoloOverfitting() throws Exception {
+
+        InputStream is1 = new ClassPathResource("yolo/VOC_SingleImage/JPEGImages/2007_009346.jpg").getInputStream();
+        InputStream is2 = new ClassPathResource("yolo/VOC_SingleImage/Annotations/2007_009346.xml").getInputStream();
+
+        File dir = Files.createTempDirectory("testYoloOverfitting").toFile();
+        File jpg = new File(dir, "JPEGImages");
+        File annot = new File(dir, "Annotations");
+        jpg.mkdirs();
+        annot.mkdirs();
+
+        File imgOut = new File(jpg, "2007_009346.jpg");
+        File annotationOut = new File(annot, "2007_009346.xml");
+
+        try(FileOutputStream fos = new FileOutputStream(imgOut)){
+            IOUtils.copy(is1, fos);
+        } finally {
+            is1.close();
+        }
+
+        try(FileOutputStream fos = new FileOutputStream(annotationOut)){
+            IOUtils.copy(is2, fos);
+        } finally {
+            is2.close();
+        }
+
+        INDArray bbPriors = Nd4j.create(new double[][]{
+                {3,3},
+                {5,5}});
+
+        //4x downsampling to 13x13 = 52x52 input images
+        //Required depth at output layer: 5B+C, with B=5, C=20 object classes, for VOC
+        VocLabelProvider lp = new VocLabelProvider(dir.getPath());
+        int h = 52;
+        int w = 52;
+        int c = 3;
+        int depthOut = bbPriors.size(0)*5 + 20;
+        RecordReader rr = new ObjectDetectionRecordReader(52, 52, 3, 13, 13, lp);
+        rr.initialize(new FileSplit(jpg));
+
+        DataSetIterator iter = new RecordReaderDataSetIterator(rr,1,1,1,true);
+
+
+//        INDArray bbPriors = Nd4j.create(new double[][]{
+//                {3,3},
+//                {3,5},
+//                {5,3},
+//                {5,5},
+//                {5,7}});
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .convolutionMode(ConvolutionMode.Same)
+                .updater(new Adam(0.01))
+                .activation(Activation.TANH)
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nOut(32).build())
+                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2).build())
+                .layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nOut(64).build())
+                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2).build())
+                .layer(new ConvolutionLayer.Builder().activation(Activation.IDENTITY).kernelSize(3,3).stride(1,1).nOut(depthOut).build())
+                .layer(new Yolo2OutputLayer.Builder()
+                        .boundingBoxPriors(bbPriors)
+                        .build())
+                .setInputType(InputType.convolutional(h,w,c))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+        net.setListeners(new ScoreIterationListener(10));
+
+        int nEpochs = 200;
+        for( int i=0; i<nEpochs; i++ ){
+            net.fit(iter);
+        }
+
+        iter.reset();
+        DataSet ds = iter.next();
+
+        org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ol =
+                (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer) net.getLayer(5);
+
+        INDArray out = net.output(ds.getFeatures());
+
+        for( int i=0; i<bbPriors.size(0); i++ ) {
+            INDArray confidenceEx0 = ol.getConfidenceMatrix(out, 0, i).dup();
+
+            System.out.println(confidenceEx0);
+            System.out.println("\n");
+        }
+
+        List<DetectedObject> l = ol.getPredictedObjects(out, 0.5);
+
     }
 }

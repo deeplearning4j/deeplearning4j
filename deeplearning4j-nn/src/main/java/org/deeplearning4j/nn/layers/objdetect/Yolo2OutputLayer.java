@@ -164,8 +164,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //We also need 1_ij^noobj, which is (a) no object, or (b) object present in grid cell, but this box doesn't
         // have the highest IOU
         INDArray mask1_ij_obj = Nd4j.getExecutioner().execAndReturn(new IsMax(iou.dup('c'), 1));
-        INDArray mask1_ij_noobj = Transforms.not(mask1_ij_obj);
         Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, maskObjectPresent, mask1_ij_obj, 0,2,3));
+        INDArray mask1_ij_noobj = Transforms.not(mask1_ij_obj);
 
 
 
@@ -232,6 +232,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 classPredictionLoss +
                 fullNetworkL1 +
                 fullNetworkL2;
+
+        if(getIterationCount() == 190){
+            System.out.println();
+        }
 
         this.score /= getInputMiniBatchSize();
 
@@ -664,5 +668,15 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         }
 
         return out;
+    }
+
+
+    public INDArray getConfidenceMatrix(INDArray networkOutput, int example, int bbNumber){
+
+        //Input format: [minibatch, 5B+C, H, W], with order [x,y,w,h,c]
+        //Therefore: confidences are at depths 4 + bbNumber * 5
+
+        INDArray conf = networkOutput.get(point(example), point(4+bbNumber*5), all(), all());
+        return conf;
     }
 }
