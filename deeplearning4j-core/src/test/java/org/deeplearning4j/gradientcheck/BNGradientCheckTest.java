@@ -5,7 +5,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -23,6 +22,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Random;
@@ -54,8 +54,8 @@ public class BNGradientCheckTest {
         INDArray labels = ds.getLabels();
 
         MultiLayerConfiguration.Builder builder =
-                        new NeuralNetConfiguration.Builder().learningRate(1.0).regularization(false)
-                                        .updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        new NeuralNetConfiguration.Builder().updater(new NoOp())
+                                .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).list()
                                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3)
                                                         .activation(Activation.IDENTITY).build())
@@ -93,8 +93,8 @@ public class BNGradientCheckTest {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                        .updater(new NoOp()).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
                                         .activation(Activation.IDENTITY).build())
@@ -157,9 +157,9 @@ public class BNGradientCheckTest {
                         Activation outputActivation = outputActivations[i];
 
                         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(12345)
-                                        .regularization(l1vals[j] > 0 || l2vals[j] > 0).l1(l1vals[j]).l2(l2vals[j])
+                                        .l2(l2vals[j])
                                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                                        .updater(Updater.NONE).weightInit(WeightInit.DISTRIBUTION)
+                                        .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new UniformDistribution(-2, 2)).seed(12345L).list()
                                         .layer(0, new ConvolutionLayer.Builder(2, 2).stride(1, 1).nOut(3)
                                                         .activation(afn).build())
@@ -256,10 +256,9 @@ public class BNGradientCheckTest {
 
                         MultiLayerConfiguration.Builder builder =
                                         new NeuralNetConfiguration.Builder()
-                                                        .regularization(l1vals[j] > 0 || l2vals[j] > 0).l1(l1vals[j])
                                                         .l2(l2vals[j])
                                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                                                        .updater(Updater.NONE).weightInit(WeightInit.DISTRIBUTION)
+                                                        .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                                         .dist(new UniformDistribution(-2, 2)).seed(12345L).list()
                                                         .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(4)
                                                                         .activation(afn).build())
@@ -325,8 +324,8 @@ public class BNGradientCheckTest {
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 1)).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY).build())
                         .layer(1, new BatchNormalization.Builder().lockGammaBeta(true).gamma(2.0).beta(0.5).nOut(3)
@@ -364,8 +363,8 @@ public class BNGradientCheckTest {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
                                         .activation(Activation.IDENTITY).build())
@@ -400,8 +399,8 @@ public class BNGradientCheckTest {
 
         int minibatchSize = 3;
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).updater(Updater.NONE)
-                        .weightInit(WeightInit.XAVIER).regularization(false).graphBuilder().addInputs("in")
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).updater(new NoOp())
+                        .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .setInputTypes(InputType.convolutional(height, width, channels))
                         .addLayer("bn", new BatchNormalization.Builder().build(), "in")
                         .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
@@ -465,9 +464,8 @@ public class BNGradientCheckTest {
                         Activation outputActivation = outputActivations[i];
 
                         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                                        .regularization(l1vals[j] > 0 || l2vals[j] > 0).l1(l1vals[j]).l2(l2vals[j])
                                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                                        .updater(Updater.NONE).weightInit(WeightInit.DISTRIBUTION)
+                                        .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new UniformDistribution(-2, 2)).seed(12345L).graphBuilder()
                                         .addInputs("in")
                                         .addLayer("0", new ConvolutionLayer.Builder(2, 2).stride(1, 1).nOut(3)

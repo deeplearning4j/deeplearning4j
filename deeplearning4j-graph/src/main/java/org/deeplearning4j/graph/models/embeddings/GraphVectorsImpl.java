@@ -2,7 +2,6 @@ package org.deeplearning4j.graph.models.embeddings;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.models.GraphVectors;
@@ -10,6 +9,7 @@ import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Comparator;
 import java.util.PriorityQueue;

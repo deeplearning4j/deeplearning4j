@@ -102,12 +102,6 @@ public class LocalResponseNormalization extends Layer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         return false; //No params in LRN
     }

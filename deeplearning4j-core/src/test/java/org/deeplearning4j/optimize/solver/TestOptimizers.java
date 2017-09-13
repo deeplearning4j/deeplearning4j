@@ -1,6 +1,5 @@
 package org.deeplearning4j.optimize.solver;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
@@ -9,7 +8,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
@@ -36,7 +34,10 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -115,15 +116,13 @@ public class TestOptimizers {
 
     private static MultiLayerConfiguration getMLPConfigIris(OptimizationAlgorithm oa, int nIterations) {
         MultiLayerConfiguration c = new NeuralNetConfiguration.Builder().optimizationAlgo(oa).iterations(nIterations)
-                        .learningRate(1e-1).seed(12345L)
+                        .updater(new AdaGrad(1e-1)).seed(12345L)
                         .list().layer(0,
                                         new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
-                                                        .updater(Updater.ADAGRAD).activation(
-                                                                        Activation.RELU)
+                                                        .activation(Activation.RELU)
                                                         .build())
                         .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
-                                        .weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD)
-                                        .activation(Activation.SOFTMAX).build())
+                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
                         .backprop(true).pretrain(false).build();
 
         return c;
@@ -188,8 +187,8 @@ public class TestOptimizers {
                             + nDimensions);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().maxNumLineSearchIterations(numLineSearchIter)
-                        .iterations(100).learningRate(1e-2)
-                        .layer(new RBM.Builder().nIn(1).nOut(1).updater(Updater.SGD).build()).build();
+                        .iterations(100).updater(new Sgd(1e-2))
+                        .layer(new RBM.Builder().nIn(1).nOut(1).build()).build();
         conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
         Random rng = new DefaultRandom(12345L);
@@ -278,8 +277,8 @@ public class TestOptimizers {
             org.nd4j.linalg.api.rng.distribution.Distribution dist =
                             new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -10, 10);
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .maxNumLineSearchIterations(maxNumLineSearchIter).iterations(i).learningRate(0.1)
-                            .layer(new DenseLayer.Builder().nIn(1).nOut(1).updater(Updater.SGD).build()).build();
+                            .maxNumLineSearchIterations(maxNumLineSearchIter).iterations(i).updater(new Sgd(0.1))
+                            .layer(new DenseLayer.Builder().nIn(1).nOut(1).build()).build();
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new SphereFunctionModel(100, dist, conf);
@@ -349,11 +348,6 @@ public class TestOptimizers {
         }
 
         @Override
-        public void applyLearningRateScoreDecay() {
-
-        }
-
-        @Override
         public void setCacheMode(CacheMode mode) {
             throw new UnsupportedOperationException();
         }
@@ -376,6 +370,11 @@ public class TestOptimizers {
         @Override
         public boolean isPretrainLayer() {
             return false;
+        }
+
+        @Override
+        public void clearNoiseWeightParams() {
+
         }
     }
 
@@ -412,8 +411,8 @@ public class TestOptimizers {
         for (int i = 0; i <= nOptIter; i++) {
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                             .maxNumLineSearchIterations(maxNumLineSearchIter).iterations(i).miniBatch(false)
-                            .learningRate(1e-2)
-                            .layer(new DenseLayer.Builder().nIn(1).nOut(1).updater(Updater.ADAGRAD).build()).build();
+                            .updater(new AdaGrad(1e-2))
+                            .layer(new DenseLayer.Builder().nIn(1).nOut(1).build()).build();
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RastriginFunctionModel(10, conf);
@@ -536,11 +535,6 @@ public class TestOptimizers {
             throw new UnsupportedOperationException();
         }
 
-        @Override
-        public void applyLearningRateScoreDecay() {
-
-        }
-
 
         @Override
         public void setCacheMode(CacheMode mode) {
@@ -565,6 +559,11 @@ public class TestOptimizers {
         @Override
         public boolean isPretrainLayer() {
             return false;
+        }
+
+        @Override
+        public void clearNoiseWeightParams() {
+
         }
     }
 
@@ -595,8 +594,9 @@ public class TestOptimizers {
         for (int i = 0; i <= nOptIter; i++) {
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                             .maxNumLineSearchIterations(maxNumLineSearchIter).iterations(i)
+                            .updater(new Sgd(1e-1))
                             .stepFunction(new org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction())
-                            .learningRate(1e-1).layer(new RBM.Builder().nIn(1).nOut(1).updater(Updater.SGD).build())
+                            .layer(new RBM.Builder().nIn(1).nOut(1).build())
                             .build();
             conf.addVariable("W"); //Normally done by ParamInitializers, but obviously that isn't done here
 
@@ -733,11 +733,6 @@ public class TestOptimizers {
             throw new UnsupportedOperationException();
         }
 
-        @Override
-        public void applyLearningRateScoreDecay() {
-
-        }
-
 
         @Override
         public void setCacheMode(CacheMode mode) {
@@ -762,6 +757,11 @@ public class TestOptimizers {
         @Override
         public boolean isPretrainLayer() {
             return false;
+        }
+
+        @Override
+        public void clearNoiseWeightParams() {
+
         }
     }
 
@@ -993,32 +993,7 @@ public class TestOptimizers {
         }
 
         @Override
-        public Gradient error(INDArray input) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray derivativeActivation(INDArray input) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void merge(Layer layer, int batchSize) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray activationMean() {
             throw new UnsupportedOperationException();
         }
 
@@ -1091,6 +1066,26 @@ public class TestOptimizers {
 
         @Override
         public void applyConstraints(int iteration, int epoch) {
+
+        }
+
+        @Override
+        public int getIterationCount() {
+            return 0;
+        }
+
+        @Override
+        public int getEpochCount() {
+            return 0;
+        }
+
+        @Override
+        public void setIterationCount(int iterationCount) {
+
+        }
+
+        @Override
+        public void setEpochCount(int epochCount) {
 
         }
     }

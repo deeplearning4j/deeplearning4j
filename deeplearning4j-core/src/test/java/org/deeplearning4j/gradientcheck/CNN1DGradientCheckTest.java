@@ -3,7 +3,6 @@ package org.deeplearning4j.gradientcheck;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -15,6 +14,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
@@ -69,7 +69,7 @@ public class CNN1DGradientCheckTest {
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                .learningRate(1.0).updater(Updater.SGD).weightInit(WeightInit.DISTRIBUTION)
+                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                                 .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
                                         .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
@@ -145,8 +145,8 @@ public class CNN1DGradientCheckTest {
                             }
                         }
 
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                                        .learningRate(1.0).updater(Updater.SGD).weightInit(WeightInit.DISTRIBUTION)
+                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                        .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                                         .layer(0, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
                                                         .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)

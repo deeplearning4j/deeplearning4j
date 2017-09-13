@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.layers.training;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -28,6 +27,7 @@ import org.deeplearning4j.nn.params.CenterLossParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.primitives.Pair;
 
 
 /**
@@ -168,9 +168,14 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray centersForExamples = labels.mmul(centers);
         INDArray dLcdai = input.sub(centersForExamples);
 
-        INDArray epsilonNext = params.get(CenterLossParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
+        INDArray w = getParamWithNoise(CenterLossParamInitializer.WEIGHT_KEY, true);
+
+        INDArray epsilonNext = w.mmul(delta.transpose()).transpose();
         double lambda = layerConf().getLambda();
         epsilonNext.addi(dLcdai.muli(lambda)); // add center loss here
+
+        weightNoiseParams.clear();
+
         return new Pair<>(pair.getFirst(), epsilonNext);
     }
 

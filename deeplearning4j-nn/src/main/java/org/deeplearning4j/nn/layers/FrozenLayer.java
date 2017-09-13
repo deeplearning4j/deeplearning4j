@@ -1,7 +1,6 @@
 package org.deeplearning4j.nn.layers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -12,6 +11,7 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Collection;
 import java.util.Map;
@@ -75,40 +75,10 @@ public class FrozenLayer implements Layer {
         return insideLayer.type();
     }
 
-    @Override
-    public Gradient error(INDArray input) {
-        if (!logGradient) {
-            OneTimeLogger.info(log,
-                            "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
-            logGradient = true;
-        }
-        return zeroGradient;
-    }
-
-    @Override
-    public INDArray derivativeActivation(INDArray input) {
-        return insideLayer.derivativeActivation(input);
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        return zeroGradient;
-    }
-
     //FIXME
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         return new Pair<>(zeroGradient, null);
-    }
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        insideLayer.merge(layer, batchSize);
-    }
-
-    @Override
-    public INDArray activationMean() {
-        return insideLayer.activationMean();
     }
 
     @Override
@@ -282,11 +252,6 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void applyLearningRateScoreDecay() {
-        insideLayer.applyLearningRateScoreDecay();
-    }
-
-    @Override
     public void fit(INDArray data) {
         if (!logFit) {
             OneTimeLogger.info(log, "Frozen layers cannot be fit.Warning will be issued only once per instance");
@@ -410,6 +375,26 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
+    public int getIterationCount() {
+        return insideLayer.getIterationCount();
+    }
+
+    @Override
+    public int getEpochCount() {
+        return insideLayer.getEpochCount();
+    }
+
+    @Override
+    public void setIterationCount(int iterationCount) {
+        insideLayer.setIterationCount(iterationCount);
+    }
+
+    @Override
+    public void setEpochCount(int epochCount) {
+        insideLayer.setEpochCount(epochCount);
+    }
+
+    @Override
     public void setInput(INDArray input) {
         insideLayer.setInput(input);
     }
@@ -437,6 +422,11 @@ public class FrozenLayer implements Layer {
     @Override
     public boolean isPretrainLayer() {
         return insideLayer.isPretrainLayer();
+    }
+
+    @Override
+    public void clearNoiseWeightParams() {
+        insideLayer.clearNoiseWeightParams();
     }
 
     @Override

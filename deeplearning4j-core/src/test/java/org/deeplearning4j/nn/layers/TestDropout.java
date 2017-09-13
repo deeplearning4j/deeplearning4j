@@ -1,9 +1,7 @@
 package org.deeplearning4j.nn.layers;
 
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -16,6 +14,7 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.lang.reflect.Field;
@@ -35,8 +34,8 @@ public class TestDropout {
         int nOut = 8;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
-                        .iterations(1).regularization(true).dropOut(0.5).list()
+                        .updater(new Sgd())
+                        .iterations(1).dropOut(0.5).list()
                         .layer(0, new OutputLayer.Builder().activation(Activation.IDENTITY)
                                         .lossFunction(LossFunctions.LossFunction.MSE).nIn(nIn).nOut(nOut)
                                         .weightInit(WeightInit.XAVIER).build())
@@ -110,8 +109,7 @@ public class TestDropout {
         int nOut = 4;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
-                        .iterations(1).regularization(true).dropOut(0.5).learningRate(1e-9)
+                        .iterations(1).dropOut(0.5).updater(new Sgd(1e-9))
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(10, 11)) //Weight init to cause sigmoid saturation
                         .list()
                         .layer(0, new DenseLayer.Builder().activation(Activation.SIGMOID).nIn(nIn).nOut(layerSize)

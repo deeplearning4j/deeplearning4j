@@ -6,7 +6,6 @@ import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -21,6 +20,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -412,7 +412,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 int layerIdx = 0;
                 for (Layer l : ((MultiLayerNetwork) model).getLayers()) {
                     NeuralNetConfiguration conf = l.conf();
-                    Map<String, Double> layerLrs = conf.getLearningRateByParam();
+                    Map<String, Double> layerLrs = null;    //TODO conf.getLearningRateByParam();
                     Set<String> backpropParams = l.paramTable(true).keySet();
                     for (Map.Entry<String, Double> entry : layerLrs.entrySet()) {
                         if (!backpropParams.contains(entry.getKey()))
@@ -425,7 +425,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 for (Layer l : ((ComputationGraph) model).getLayers()) {
                     //Need to append layer name
                     NeuralNetConfiguration conf = l.conf();
-                    Map<String, Double> layerLrs = conf.getLearningRateByParam();
+                    Map<String, Double> layerLrs = null;    //TODO conf.getLearningRateByParam();
                     String layerName = conf.getLayer().getLayerName();
                     Set<String> backpropParams = l.paramTable(true).keySet();
                     for (Map.Entry<String, Double> entry : layerLrs.entrySet()) {
@@ -436,7 +436,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 }
             } else if (model instanceof Layer) {
                 Layer l = (Layer) model;
-                Map<String, Double> map = l.conf().getLearningRateByParam();
+                Map<String, Double> map = null; //TODO l.conf().getLearningRateByParam();
                 lrs.putAll(map);
             }
             report.reportLearningRates(lrs);

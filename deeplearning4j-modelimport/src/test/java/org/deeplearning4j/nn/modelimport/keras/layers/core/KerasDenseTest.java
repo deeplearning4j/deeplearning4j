@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
+import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
@@ -85,7 +86,7 @@ public class KerasDenseTest {
         assertEquals(INIT_DL4J, layer.getWeightInit());
         assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
         assertEquals(L2_REGULARIZATION, layer.getL2(), 0.0);
-        assertEquals(DROPOUT_DL4J, layer.getDropOut(), 0.0);
+        assertEquals(new Dropout(DROPOUT_DL4J), layer.getIDropout());
         assertEquals(N_OUT, layer.getNOut());
     }
 }

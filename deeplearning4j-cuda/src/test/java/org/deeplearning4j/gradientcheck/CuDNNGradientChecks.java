@@ -4,7 +4,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -26,6 +25,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.lang.reflect.Field;
@@ -56,7 +56,7 @@ public class CuDNNGradientChecks {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        String[] activFns = {"sigmoid", "tanh"};
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH};
         boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         int[] minibatchSizes = {1, 4};
@@ -69,7 +69,7 @@ public class CuDNNGradientChecks {
         f.setAccessible(true);
 
         Random r = new Random(12345);
-        for (String afn : activFns) {
+        for (Activation afn : activFns) {
             for (boolean doLearningFirst : characteristic) {
                 for (int minibatchSize : minibatchSizes) {
 
@@ -79,10 +79,10 @@ public class CuDNNGradientChecks {
                         labels.putScalar(i, r.nextInt(nOut), 1.0);
                     }
 
-                    MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().regularization(false)
+                    MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                                     .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                     .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-1, 1))
-                                    .updater(Updater.NONE).seed(12345L).list()
+                                    .updater(new NoOp()).seed(12345L).list()
                                     .layer(0, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(1, 1).nOut(3)
                                                     .activation(afn).build())
                                     .layer(1, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(0, 0).nOut(3)
@@ -172,9 +172,9 @@ public class CuDNNGradientChecks {
                     labels.putScalar(i, r.nextInt(nOut), 1.0);
                 }
 
-                MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().regularization(false)
+                MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-1, 1))
-                        .updater(Updater.NONE).seed(12345L)
+                        .updater(new NoOp()).seed(12345L)
                         .list()
                         .layer(0, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(1, 1).nOut(3)
                                 .hasBias(convHasBias)
@@ -235,8 +235,8 @@ public class CuDNNGradientChecks {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
                                         .activation(Activation.IDENTITY).build())
@@ -289,8 +289,8 @@ public class CuDNNGradientChecks {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder().nOut(6).kernelSize(2, 2).stride(1, 1)
                                         .activation(Activation.TANH).build())
@@ -346,8 +346,8 @@ public class CuDNNGradientChecks {
             }
         }
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                        .updater(new NoOp()).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
@@ -403,8 +403,8 @@ public class CuDNNGradientChecks {
             }
         }
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
-                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                        .updater(new NoOp()).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
@@ -480,7 +480,7 @@ public class CuDNNGradientChecks {
                             }
 
                             NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
-                                    .learningRate(1.0).updater(Updater.SGD)
+                                    .updater(new NoOp())
                                     .activation(Activation.TANH).convolutionMode(cm).list()
                                     .layer(new ConvolutionLayer.Builder().name("layer 0")
                                             .kernelSize(k, k)

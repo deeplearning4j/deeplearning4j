@@ -72,30 +72,6 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        switch (paramName) {
-            case PretrainParamInitializer.WEIGHT_KEY:
-                return learningRate;
-            case PretrainParamInitializer.BIAS_KEY:
-                if (!Double.isNaN(biasLearningRate)) {
-                    //Bias learning rate has been explicitly set
-                    return biasLearningRate;
-                } else {
-                    return learningRate;
-                }
-            case PretrainParamInitializer.VISIBLE_BIAS_KEY:
-                if (!Double.isNaN(biasLearningRate)) {
-                    //Bias learning rate has been explicitly set
-                    return biasLearningRate;
-                } else {
-                    return learningRate;
-                }
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         return PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(paramName);
     }

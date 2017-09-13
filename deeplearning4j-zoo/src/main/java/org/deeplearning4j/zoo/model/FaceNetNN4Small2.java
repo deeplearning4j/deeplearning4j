@@ -76,8 +76,8 @@ public class FaceNetNN4Small2 extends ZooModel {
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
                         .iterations(iterations).activation(Activation.IDENTITY)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Adam(0.1, 0.9, 0.999, 0.01)).weightInit(WeightInit.RELU).regularization(true)
-                        .l2(5e-5).learningRate(0.1).miniBatch(true).convolutionMode(ConvolutionMode.Same)
+                        .updater(new Adam(0.1, 0.9, 0.999, 0.01)).weightInit(WeightInit.RELU)
+                        .l2(5e-5).miniBatch(true).convolutionMode(ConvolutionMode.Same)
                         .graphBuilder();
 
 

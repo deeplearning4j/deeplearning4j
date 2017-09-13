@@ -2,9 +2,9 @@ package org.deeplearning4j.nn.conf.layers;
 
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit;
 import org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -14,6 +14,8 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.convolution.Convolution;
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.io.*;
@@ -45,7 +47,7 @@ public class LayerBuilderTest {
     double corruptionLevel = 0.5;
     Distribution dist = new NormalDistribution(1.0, 0.1);
     double dropOut = 0.1;
-    Updater updater = Updater.ADAGRAD;
+    IUpdater updater = new AdaGrad();
     GradientNormalization gradNorm = GradientNormalization.ClipL2PerParamType;
     double gradNormThreshold = 8;
 
@@ -60,8 +62,8 @@ public class LayerBuilderTest {
         assertEquals(act, layer.getActivationFn());
         assertEquals(weight, layer.getWeightInit());
         assertEquals(dist, layer.getDist());
-        assertEquals(dropOut, layer.getDropOut(), DELTA);
-        assertEquals(updater, layer.getUpdater());
+        assertEquals(new Dropout(dropOut), layer.getIDropout());
+        assertEquals(updater, layer.getIUpdater());
         assertEquals(gradNorm, layer.getGradientNormalization());
         assertEquals(gradNormThreshold, layer.getGradientNormalizationThreshold(), 0.0);
     }
@@ -226,7 +228,7 @@ public class LayerBuilderTest {
         assertEquals("unequal YAML serialization", confExpected.getLayer(), confActual.getLayer());
 
         // check the layer's use of callSuper on equals method
-        confActual.getLayer().setDropOut(new java.util.Random().nextDouble());
+        confActual.getLayer().setIDropout(new Dropout(new java.util.Random().nextDouble()));
         assertNotEquals("broken equals method (missing callSuper?)", confExpected.getLayer(), confActual.getLayer());
     }
 

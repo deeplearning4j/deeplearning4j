@@ -28,7 +28,6 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.AbstractLayer;
-import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -110,10 +109,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     public INDArray preOutput(boolean training, boolean forBackprop) {
-
-        if (training && conf.getLayer().getDropOut() > 0) {
-            Dropout.applyDropout(input, conf.getLayer().getDropOut());
-        }
+        applyDropOutIfNecessary(training);
 
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
@@ -152,10 +148,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public INDArray activate(boolean training) {
-
-        if (training && conf.getLayer().getDropOut() > 0) {
-            Dropout.applyDropout(input, conf.getLayer().getDropOut());
-        }
+        applyDropOutIfNecessary(training);
 
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
@@ -174,27 +167,6 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public Gradient error(INDArray input) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public INDArray activationMean() {
-        return null;
-    }
-
-    @Override
     public Layer transpose() {
         throw new UnsupportedOperationException(layerId());
     }
@@ -207,6 +179,11 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public boolean isPretrainLayer() {
         return false;
+    }
+
+    @Override
+    public void clearNoiseWeightParams() {
+        //No op
     }
 
     @Override

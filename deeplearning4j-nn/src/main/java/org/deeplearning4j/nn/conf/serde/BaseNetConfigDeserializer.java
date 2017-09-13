@@ -11,9 +11,9 @@ import org.nd4j.shade.jackson.databind.JsonDeserializer;
 import org.nd4j.shade.jackson.databind.JsonMappingException;
 import org.nd4j.shade.jackson.databind.deser.ResolvableDeserializer;
 import org.nd4j.shade.jackson.databind.deser.std.StdDeserializer;
+import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
-import java.util.Map;
 
 /**
  * A custom (abstract) deserializer that handles backward compatibility (currently only for updater refactoring that
@@ -38,56 +38,104 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
     public abstract T deserialize(JsonParser jp, DeserializationContext ctxt)
                     throws IOException, JsonProcessingException;
 
-
-    protected void handleUpdaterBackwardCompatibility(Layer[] layers) {
-        //Updater configuration changed after 0.8.0 release
-        //Previously: enumerations and a bunch of fields. Now: classes
-        //Here, we manually create the appropriate Updater instances, if the iupdater field is empty
-        for (int i = 0; i < layers.length; i++) {
-            Layer l = layers[i];
-            if (l == null || !(l instanceof BaseLayer) || ((BaseLayer) l).getIUpdater() != null) {
-                //OK - no need to manually handle IUpdater instances for this layer
-                continue;
+    protected boolean requiresIUpdaterFromLegacy(Layer[] layers){
+        for(Layer l : layers){
+            if(l instanceof BaseLayer){
+                BaseLayer bl = (BaseLayer)l;
+                if(bl.getIUpdater() == null && bl.initializer().numParams(bl) > 0){
+                    return true;
+                }
             }
+        }
+        return false;
+    }
 
-            BaseLayer bl = (BaseLayer) l;
+    protected boolean requiresDropoutFromLegacy(Layer[] layers){
+        for(Layer l : layers){
+            if(l.getIDropout() != null){
+                return false;
+            }
+        }
+        return true;
+    }
 
-            Updater u = bl.getUpdater();
-            double lr = bl.getLearningRate();
-            double eps = bl.getEpsilon();
-            double rho = bl.getRho();
+    protected void handleUpdaterBackwardCompatibility(BaseLayer layer, ObjectNode on){
+        if(on != null && on.has("updater")){
+            String updaterName = on.get("updater").asText();
+            if(updaterName != null){
+                Updater u = Updater.valueOf(updaterName);
+                IUpdater iu = u.getIUpdaterWithDefaultConfig();
+                double lr = on.get("learningRate").asDouble();
+                double eps;
+                if(on.has("epsilon")){
+                    eps = on.get("epsilon").asDouble();
+                } else {
+                    eps = Double.NaN;
+                }
+                double rho = on.get("rho").asDouble();
+                switch (u){
+                    case SGD:
+                        ((Sgd)iu).setLearningRate(lr);
+                        break;
+                    case ADAM:
+                        if(Double.isNaN(eps)){
+                            eps = Adam.DEFAULT_ADAM_EPSILON;
+                        }
+                        ((Adam)iu).setLearningRate(lr);
+                        ((Adam)iu).setBeta1(on.get("adamMeanDecay").asDouble());
+                        ((Adam)iu).setBeta2(on.get("adamVarDecay").asDouble());
+                        ((Adam)iu).setEpsilon(eps);
+                        break;
+                    case ADAMAX:
+                        if(Double.isNaN(eps)){
+                            eps = AdaMax.DEFAULT_ADAMAX_EPSILON;
+                        }
+                        ((AdaMax)iu).setLearningRate(lr);
+                        ((AdaMax)iu).setBeta1(on.get("adamMeanDecay").asDouble());
+                        ((AdaMax)iu).setBeta2(on.get("adamVarDecay").asDouble());
+                        ((AdaMax)iu).setEpsilon(eps);
+                        break;
+                    case ADADELTA:
+                        if(Double.isNaN(eps)){
+                            eps = AdaDelta.DEFAULT_ADADELTA_EPSILON;
+                        }
+                        ((AdaDelta)iu).setRho(rho);
+                        ((AdaDelta)iu).setEpsilon(eps);
+                        break;
+                    case NESTEROVS:
+                        ((Nesterovs)iu).setLearningRate(lr);
+                        ((Nesterovs)iu).setMomentum(on.get("momentum").asDouble());
+                        break;
+                    case NADAM:
+                        if(Double.isNaN(eps)){
+                            eps = Nadam.DEFAULT_NADAM_EPSILON;
+                        }
+                        ((Nadam)iu).setLearningRate(lr);
+                        ((Nadam)iu).setBeta1(on.get("adamMeanDecay").asDouble());
+                        ((Nadam)iu).setBeta2(on.get("adamVarDecay").asDouble());
+                        ((Nadam)iu).setEpsilon(eps);
+                        break;
+                    case ADAGRAD:
+                        if(Double.isNaN(eps)){
+                            eps = AdaGrad.DEFAULT_ADAGRAD_EPSILON;
+                        }
+                        ((AdaGrad)iu).setLearningRate(lr);
+                        ((AdaGrad)iu).setEpsilon(eps);
+                        break;
+                    case RMSPROP:
+                        if(Double.isNaN(eps)){
+                            eps = RmsProp.DEFAULT_RMSPROP_EPSILON;
+                        }
+                        ((RmsProp)iu).setLearningRate(lr);
+                        ((RmsProp)iu).setEpsilon(eps);
+                        ((RmsProp)iu).setRmsDecay(on.get("rmsDecay").asDouble());
+                        break;
+                    default:
+                        //No op
+                        break;
+                }
 
-            switch (u) {
-                case SGD:
-                    bl.setIUpdater(new Sgd(lr));
-                    break;
-                case ADAM:
-                    double meanDecay = bl.getAdamMeanDecay();
-                    double varDecay = bl.getAdamVarDecay();
-                    bl.setIUpdater(Adam.builder().learningRate(lr).beta1(meanDecay).beta2(varDecay).epsilon(eps)
-                                    .build());
-                    break;
-                case ADADELTA:
-                    bl.setIUpdater(new AdaDelta(rho, eps));
-                    break;
-                case NESTEROVS:
-                    Map<Integer, Double> momentumSchedule = bl.getMomentumSchedule();
-                    double momentum = bl.getMomentum();
-                    bl.setIUpdater(new Nesterovs(lr, momentum, momentumSchedule));
-                    break;
-                case ADAGRAD:
-                    bl.setIUpdater(new AdaGrad(lr, eps));
-                    break;
-                case RMSPROP:
-                    double rmsDecay = bl.getRmsDecay();
-                    bl.setIUpdater(new RmsProp(lr, rmsDecay, eps));
-                    break;
-                case NONE:
-                    bl.setIUpdater(new NoOp());
-                    break;
-                case CUSTOM:
-                    //No op - shouldn't happen
-                    break;
+                layer.setIUpdater(iu);
             }
         }
     }

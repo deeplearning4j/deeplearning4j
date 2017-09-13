@@ -18,11 +18,11 @@
 
 package org.deeplearning4j.text.movingwindow;
 
-import org.deeplearning4j.util.StringUtils;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.util.MultiDimensionalMap;
+import org.deeplearning4j.util.StringUtils;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.List;

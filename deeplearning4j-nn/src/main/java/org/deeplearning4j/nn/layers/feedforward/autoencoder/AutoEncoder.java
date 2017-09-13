@@ -18,12 +18,11 @@
 
 package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
-import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  *  Autoencoder.
@@ -58,11 +57,8 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     // Encode
     public INDArray encode(INDArray v, boolean training) {
-        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
-        if (training && conf.isUseDropConnect() && conf.getLayer().getDropOut() > 0) {
-            W = Dropout.applyDropConnect(this, PretrainParamInitializer.WEIGHT_KEY);
-        }
-        INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
+        INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, training);
+        INDArray hBias = getParamWithNoise(PretrainParamInitializer.BIAS_KEY, training);
         INDArray preAct = v.mmul(W).addiRowVector(hBias);
 
         //INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), preAct));
@@ -73,8 +69,8 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     // Decode
     public INDArray decode(INDArray y) {
-        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
-        INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
+        INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, true);
+        INDArray vBias = getParamWithNoise(PretrainParamInitializer.VISIBLE_BIAS_KEY, true);
         INDArray preAct = y.mmul(W.transposei()).addiRowVector(vBias);
         //return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), preAct));
         return layerConf().getActivationFn().getActivation(preAct, true);
@@ -110,7 +106,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     @Override
     public void computeGradientAndScore() {
-        INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
+        INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, true);
 
         double corruptionLevel = layerConf().getCorruptionLevel();
 

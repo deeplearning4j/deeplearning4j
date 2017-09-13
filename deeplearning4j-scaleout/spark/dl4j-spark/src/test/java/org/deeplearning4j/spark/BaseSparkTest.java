@@ -23,7 +23,6 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.After;
@@ -32,6 +31,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.Serializable;
@@ -121,8 +121,8 @@ public abstract class BaseSparkTest implements Serializable {
     }
 
     protected MultiLayerConfiguration getBasicConf() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123).updater(Updater.NESTEROVS)
-                        .learningRate(0.1).momentum(0.9).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
+                .updater(new Nesterovs(0.1, 0.9)).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(nIn).nOut(3)
                                         .activation(Activation.TANH).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(

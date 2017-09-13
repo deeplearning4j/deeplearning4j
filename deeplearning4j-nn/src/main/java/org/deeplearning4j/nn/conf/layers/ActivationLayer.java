@@ -101,12 +101,6 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
     public void setNIn(InputType inputType, boolean override) {
         //No op
     }

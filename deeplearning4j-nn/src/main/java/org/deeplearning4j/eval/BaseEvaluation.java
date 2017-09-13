@@ -2,10 +2,10 @@ package org.deeplearning4j.eval;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.AtomicDouble;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.serde.JsonDeserializerAtomicBoolean;
 import org.nd4j.linalg.primitives.serde.JsonDeserializerAtomicDouble;
 import org.nd4j.linalg.primitives.serde.JsonSerializerAtomicBoolean;
