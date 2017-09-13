@@ -91,7 +91,8 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
     public void applyGradient(Gradient[] gradient, int batchSize) {
         MultiLayerConfiguration mlnConf = mln.getLayerWiseConfigurations();
         int iterationCount = mlnConf.getIterationCount();
-        mln.getUpdater().update(mln, gradient[0], iterationCount, batchSize);
+        int epochCount = mlnConf.getEpochCount();
+        mln.getUpdater().update(mln, gradient[0], iterationCount, epochCount, batchSize);
         mln.params().subi(gradient[0].gradient());
         Collection<IterationListener> iterationListeners = mln.getListeners();
         if (iterationListeners != null && iterationListeners.size() > 0) {

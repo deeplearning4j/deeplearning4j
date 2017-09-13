@@ -35,9 +35,8 @@ public class DQNTest {
             new DQNFactoryStdDense.Configuration(
                     3,         //number of layers
                     16,        //number of hidden nodes
-                    0.0005,    //learning rate
                     0.001,     //l2 regularization
-                    new RmsProp(), null
+                    new RmsProp(0.0005), null
             );
 
     @Test
