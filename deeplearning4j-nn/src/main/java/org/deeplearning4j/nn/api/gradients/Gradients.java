@@ -16,4 +16,6 @@ public interface Gradients {
     void setParameterGradients(Gradient gradient);
 
     void clear();
+
+    INDArray[] getActivationGradAsArray();
 }

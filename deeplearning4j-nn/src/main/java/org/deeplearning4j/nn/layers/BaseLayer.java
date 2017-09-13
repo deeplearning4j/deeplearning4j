@@ -20,6 +20,10 @@ package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -72,7 +76,11 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients epsilons) {
+        if(epsilons.size() != 1)
+            throw new IllegalArgumentException();
+        INDArray epsilon = epsilons.getActivationGrad(0);
+
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(true); //Note: using preOutput(INDArray) can't be used as this does a setInput(input) and resets the 'appliedDropout' flag
         //INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
@@ -102,7 +110,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         weightNoiseParams.clear();
 
-        return new Pair<>(ret, epsilonNext);
+        return GradientsFactory.getInstance().create(epsilonNext, ret);
     }
 
     @Override
@@ -271,7 +279,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         INDArray z = preOutput(training);
         INDArray ret = layerConf().getActivationFn().getActivation(z, training);
 
@@ -279,7 +287,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             applyMask(ret);
         }
 
-        return ret;
+        return ActivationsFactory.getInstance().create(ret);
     }
 
     @Override

@@ -1,5 +1,8 @@
 package org.deeplearning4j.nn.api.activations;
 
+import org.deeplearning4j.nn.api.MaskState;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 public abstract class BaseActivations implements Activations {
 
     protected void assertIndex(int idx){
@@ -16,5 +19,32 @@ public abstract class BaseActivations implements Activations {
             setMask(i, null);
             setMaskState(i, null);
         }
+    }
+
+    @Override
+    public INDArray[] getAsArray(){
+        INDArray[] out = new INDArray[size()];
+        for( int i=0; i<size(); i++ ){
+            out[i] = get(i);
+        }
+        return out;
+    }
+
+    @Override
+    public INDArray[] getMaskAsArray(){
+        INDArray[] out = new INDArray[size()];
+        for( int i=0; i<size(); i++ ){
+            out[i] = getMask(i);
+        }
+        return out;
+    }
+
+    @Override
+    public MaskState[] getMaskStateAsArray(){
+        MaskState[] out = new MaskState[size()];
+        for( int i=0; i<size(); i++ ){
+            out[i] = getMaskState(i);
+        }
+        return out;
     }
 }

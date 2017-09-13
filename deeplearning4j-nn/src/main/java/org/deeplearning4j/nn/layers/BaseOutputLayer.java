@@ -18,8 +18,13 @@
 
 package org.deeplearning4j.nn.layers;
 
+import org.apache.commons.math3.analysis.differentiation.GradientFunction;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -145,7 +150,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients epsilons) {
+
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         INDArray delta = pair.getSecond();
 
@@ -154,7 +160,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
         // So this is instead done in MultiLayerNetwork/CompGraph backprop methods
 
-        return new Pair<>(pair.getFirst(), epsilonNext);
+        return GradientsFactory.getInstance().create(epsilonNext, pair.getFirst());
     }
 
     /**
@@ -190,9 +196,11 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return output(training);
+    public Activations activate(Activations input, boolean training) {
+        if(input.size() != 1)
+            throw new IllegalStateException();
+        setInput(input.get(0));
+        return ActivationsFactory.getInstance().create(output(training), null, null);
     }
 
     public INDArray output(INDArray input, boolean training) {
@@ -218,7 +226,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input - " + layerId());
         }
-        return super.activate(training);
+        return super.activate(training).get(0);
     }
 
     @Override

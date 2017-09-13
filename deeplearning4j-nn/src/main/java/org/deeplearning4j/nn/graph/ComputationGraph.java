@@ -32,6 +32,10 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
@@ -281,6 +285,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     /**
      * Set the specified input for the ComputationGraph
      */
+    @Override
     public void setInput(int inputNum, INDArray input) {
         if (inputs == null) {
             //May be null after clear()
@@ -300,23 +305,18 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public void setMaskArray(INDArray maskArray) {
+    public void setMaskArray(int idx, INDArray maskArray) {
 
     }
 
     @Override
-    public INDArray getMaskArray() {
+    public INDArray getMaskArray(int idx) {
         return null;
     }
 
     @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
-        return null;
-    }
-
-    @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        return new Pair<>(backpropGradient(new INDArray[]{epsilon}), null);
+    public Gradients backpropGradient(Gradients epsilon) {
+        return GradientsFactory.getInstance().create(null, backpropGradient(epsilon.getActivationGradAsArray()));
     }
 
     /**
@@ -507,14 +507,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             Layer gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
                     initializeParams);
 
-            if (gv.hasLayer()) {
+            if (gv.numParams() > 0) {
                 numLayers++;
-                Layer l = gv.getLayer();
+                Layer l = gv;
                 tempLayerList.add(l);
                 List<String> layerVariables = l.conf().variables();
                 if (layerVariables != null) {
                     for (String s : layerVariables) {
-                        variables.add(gv.getVertexName() + "_" + s);
+                        variables.add(gv.getName() + "_" + s);
                     }
                 }
             }
@@ -528,7 +528,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Create the lookup table, so we can find vertices easily by name
         verticesMap = new HashMap<>();
         for (Layer gv : vertices) {
-            verticesMap.put(gv.getVertexName(), gv);
+            verticesMap.put(gv.getName(), gv);
         }
 
         //Now: do another pass to set the input and output indices, for each vertex
@@ -536,7 +536,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //To get output indices: need to essentially build the graph in reverse...
         Map<String, List<String>> verticesOutputTo = new HashMap<>(); //Key: vertex. Values: vertices that this node is an input for
         for (Layer gv : vertices) {
-            String vertexName = gv.getVertexName();
+            String vertexName = gv.getName();
             List<String> vertexInputNames;
             vertexInputNames = vertexInputs.get(vertexName);
 
@@ -590,7 +590,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Handle the outputs for this vertex
         for (Layer gv : vertices) {
-            String vertexName = gv.getVertexName();
+            String vertexName = gv.getName();
 
             List<String> thisVertexOutputsTo = verticesOutputTo.get(vertexName);
 
@@ -705,7 +705,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             if (!vertices[i].getLayer().isPretrainLayer())
                 continue; //Skip layers that aren't pretrainable
 
-            pretrainLayer(vertices[i].getVertexName(), iter);
+            pretrainLayer(vertices[i].getName(), iter);
         }
     }
 
@@ -1487,7 +1487,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     INDArray input = inputs[current.getIndex()].leverageTo(workspaceExternal);
 
 
-                    layerActivations.put(current.getVertexName(), input);
+                    layerActivations.put(current.getName(), input);
 
                     for (VertexIndices v : inputsTo) {
                         int vIdx = v.getVertexIndex();
@@ -1526,7 +1526,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
 
                     if (includeNonLayerVertexActivations || current.hasLayer() || current.isOutputVertex()) {
-                        layerActivations.put(current.getVertexName(), out);
+                        layerActivations.put(current.getName(), out);
                     }
 
                     //Now, set the inputs for the next vertices:
@@ -1569,7 +1569,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param input Inputs to the network
      * @return Output activations (order: same as defined in network configuration)
      */
-    public INDArray[] output(INDArray... input) {
+    public Activations output(INDArray... input) {
         return output(false, input);
     }
 
@@ -1593,7 +1593,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param input Inputs to the network
      * @return Output activations (order: same as defined in network configuration)
      */
-    public INDArray[] output(boolean train, INDArray... input) {
+    public Activations output(boolean train, INDArray... input) {
         WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
         configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
         MemoryWorkspace workspace =
@@ -1607,7 +1607,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 tmp[x] = tmp[x].detach();
 
             configuration.setTrainingWorkspaceMode(cMode);
-            return tmp;
+            return ActivationsFactory.getInstance().create(tmp, null, null);
         }
     }
 
@@ -1702,7 +1702,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     //(a) it's an output layer (i.e., instanceof IOutputLayer), or
                     //(b) it's a normal layer, but it has been marked as an output layer for use in external errors - for reinforcement learning, for example
 
-                    int thisOutputNumber = configuration.getNetworkOutputs().indexOf(current.getVertexName());
+                    int thisOutputNumber = configuration.getNetworkOutputs().indexOf(current.getName());
                     if (current.getLayer() instanceof IOutputLayer) {
                         IOutputLayer outputLayer = (IOutputLayer) current.getLayer();
 
@@ -1711,7 +1711,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     } else {
                         if ((externalEpsilons == null || externalEpsilons.length == 0)
                                 && labels[thisOutputNumber] != null) {
-                            throw new DL4JException("Layer \"" + current.getVertexName() + "\" of type "
+                            throw new DL4JException("Layer \"" + current.getName() + "\" of type "
                                     + current.getLayer().getClass().getSimpleName()
                                     + " is set as network output "
                                     + "(but isn't an IOutputLayer). Only IOutputLayer layers can be fit via backprop with"
@@ -1768,7 +1768,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     LinkedList<Triple<String, INDArray, Character>> tempList = new LinkedList<>();
                     for (Map.Entry<String, INDArray> entry : map.entrySet()) {
                         String origName = entry.getKey();
-                        String newName = current.getVertexName() + "_" + origName;
+                        String newName = current.getName() + "_" + origName;
                         tempList.addFirst(new Triple<>(newName, entry.getValue(),
                                 g.flatteningOrderForVariable(origName)));
                     }
@@ -1806,7 +1806,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (int i = 0; i < topologicalOrder.length; i++) {
             if (!vertices[topologicalOrder[i]].hasLayer())
                 continue;
-            String layerName = vertices[topologicalOrder[i]].getVertexName();
+            String layerName = vertices[topologicalOrder[i]].getName();
             if (getLayer(layerName) instanceof FrozenLayer) {
                 cg.getVertex(layerName).setLayerAsFrozen();
             }
@@ -2402,13 +2402,24 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if(numOutputArrays != 1)
             throw new IllegalStateException("Cannot use  this method with > 1 output arrays");
-        return outputSingle(getInputs());
+        return output(getInputs());
     }
 
     @Override
+    public Activations activate(Activations input, boolean training) {
+        INDArray[] activations = input.getAsArray();
+        return output(training, activations);
+    }
+
+    @Override
+    public Activations activate(Activations input) {
+        return activate(input, false);
+    }
+
+
     public INDArray activate(INDArray input, boolean training) {
         if(numInputArrays != 1)
             throw new IllegalStateException("Cannot use  this method with > 1 input arrays");
@@ -2417,16 +2428,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         return outputSingle(training, input);
     }
 
-    @Override
+
     public INDArray activate(INDArray input) {
         return activate(input, false);
-    }
-
-    @Override
-    public void setInput(INDArray input) {
-        if(numInputArrays != 1)
-            throw new IllegalStateException("Cannot use  this method with > 1 input arrays");
-        setInput(0, input);
     }
 
     @Override
@@ -2512,7 +2516,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                 if (current.isOutputVertex()) {
                     //Get the index of this output vertex...
-                    int idx = configuration.getNetworkOutputs().indexOf(current.getVertexName());
+                    int idx = configuration.getNetworkOutputs().indexOf(current.getName());
                     outputs[idx] = out;
                 }
 
@@ -2787,7 +2791,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 VertexIndices[] inputsTo = current.getOutputVertices();
                 INDArray input = inputs[current.getIndex()];
 
-                layerActivations.put(current.getVertexName(), input);
+                layerActivations.put(current.getName(), input);
 
                 for (VertexIndices v : inputsTo) {
                     int vIdx = v.getVertexIndex();
@@ -2811,7 +2815,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         //non-recurrent layer
                         out = current.activate(training);
                     }
-                    layerActivations.put(current.getVertexName(), out);
+                    layerActivations.put(current.getName(), out);
                 } else {
                     out = current.activate(training);
                 }
@@ -3275,7 +3279,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (int currVertexIdx : topologicalOrder) {
 
             Layer currentVertex = vertices[currVertexIdx];
-            String currentVertexName = currentVertex.getVertexName();
+            String currentVertexName = currentVertex.getName();
 
             //String vars for print
             String[] classNameArr = currentVertex.getClass().toString().split("\\.");
@@ -3318,7 +3322,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                     if (inputTypes != null) {
                         //get input type
-                        String inputVertexName = vertices[currentVertex.getInputVertices()[0].getVertexIndex()].getVertexName();
+                        String inputVertexName = vertices[currentVertex.getInputVertices()[0].getVertexIndex()].getName();
                         InputType currentInType = vertexOutputs.get(inputVertexName);
                         inShape = currentInType.toString();
                         inputTypeList.add(currentInType);
@@ -3336,7 +3340,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         if (inputVertices != null) {
                             for (int i = 0; i < inputVertices.length; i++) {
                                 Layer thisInputVertex = vertices[inputVertices[i].getVertexIndex()];
-                                inputTypeList.add(vertexOutputs.get(thisInputVertex.getVertexName()));
+                                inputTypeList.add(vertexOutputs.get(thisInputVertex.getName()));
                             }
                         }
                     }

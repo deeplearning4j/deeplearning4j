@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -92,20 +93,17 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
     }
 
-    public INDArray getInput() {
-        return input;
-    }
-
     @Override
-    public void setInput(INDArray input) {
+    public void setInput(int inputNumber, INDArray input){
+        if(inputNumber != 0) throw new IllegalArgumentException("Index must be 0: got " + inputNumber);
         this.input = input;
         dropoutApplied = false;
     }
 
     @Override
-    public void setInput(int inputNumber, INDArray input){
-        if(inputNumber != 0) throw new UnsupportedOperationException();
-        setInput(input);
+    public INDArray getInput(int inputNumber){
+        if(inputNumber != 0) throw new IllegalArgumentException("Index must be 0: got " + inputNumber);
+        return this.input;
     }
 
     @Override
@@ -198,13 +196,13 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
+    public Activations activate(Activations input, boolean training) {
+        setInput(input.get(0));
         return activate(training);
     }
 
     @Override
-    public INDArray activate(INDArray input){
+    public Activations activate(Activations input){
         return activate(input, false);
     }
 
@@ -279,26 +277,31 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void setMaskArray(INDArray maskArray) {
+    public void setMaskArray(int idx, INDArray maskArray) {
+        if(idx != 0)
+            throw new IllegalStateException("Index must be 0");
+
         this.maskArray = maskArray;
     }
 
     @Override
-    public INDArray getMaskArray() {
+    public INDArray getMaskArray(int idx) {
+        if(idx != 0)
+            throw new IllegalStateException("Index must be 0");
         return maskArray;
     }
 
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-        //Most layers: CNN, dense, activation, etc - set mask array, mask state and then leave the mask unmodified
-
-        this.maskArray = maskArray;
-        this.maskState = currentMaskState;
-
-        return new Pair<>(maskArray, currentMaskState);
-    }
+//    @Override
+//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+//                    int minibatchSize) {
+//        //Most layers: CNN, dense, activation, etc - set mask array, mask state and then leave the mask unmodified
+//
+//        this.maskArray = maskArray;
+//        this.maskState = currentMaskState;
+//
+//        return new Pair<>(maskArray, currentMaskState);
+//    }
 
 
     @Override

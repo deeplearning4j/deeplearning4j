@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.api;
 
 
 import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -181,8 +182,9 @@ public interface Layer {
     /**
      * Get the layer input.
      */
-    void setInput(INDArray input);
     void setInput(int inputNumber, INDArray input);
+
+    INDArray getInput(int inputNumber);
 
     /** Set current/last input mini-batch size.<br>
      * Used for score and gradient calculations. Mini batch size may be different from
@@ -235,7 +237,7 @@ public interface Layer {
      *  layer, but before element-wise multiply by sigmaPrime(z). So for standard feed-forward layer, if this layer is
      *  L, then return.getSecond() == (w^(L)*(delta^(L))^T)^T
      */
-    Pair<Gradient, INDArray> backpropGradient(INDArray epsilon);
+    Gradients backpropGradient(Gradients epsilon);
 
     /**
      * @return the gradient for this model
@@ -259,6 +261,8 @@ public interface Layer {
 
 
     // ----- General Methods -----
+
+    String getName();
 
     /**
      * Clear input

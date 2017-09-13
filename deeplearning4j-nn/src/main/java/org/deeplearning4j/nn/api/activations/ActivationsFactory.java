@@ -90,6 +90,10 @@ public class ActivationsFactory {
                 maskState1, maskState2, maskState3);
     }
 
+    public Activations create(INDArray[] activations, INDArray[] maskArrays, MaskState[] maskStates){
+        return new ActivationsTuple(activations, maskArrays, maskStates);
+    }
+
     private Activations setValues(Activations to, int idx, INDArray a, INDArray m, MaskState ms){
         to.set(idx, a);
         to.setMask(idx, m);

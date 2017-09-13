@@ -21,4 +21,11 @@ public interface Activations {
 
     void clear();
 
+
+    INDArray[] getAsArray();
+
+    INDArray[] getMaskAsArray();
+
+    MaskState[] getMaskStateAsArray();
+
 }
