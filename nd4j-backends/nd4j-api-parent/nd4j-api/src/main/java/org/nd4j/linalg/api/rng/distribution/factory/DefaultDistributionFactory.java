@@ -21,9 +21,7 @@ package org.nd4j.linalg.api.rng.distribution.factory;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
-import org.nd4j.linalg.api.rng.distribution.impl.BinomialDistribution;
-import org.nd4j.linalg.api.rng.distribution.impl.NormalDistribution;
-import org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution;
+import org.nd4j.linalg.api.rng.distribution.impl.*;
 
 /**
  * Default distribution factory
@@ -49,6 +47,21 @@ public class DefaultDistributionFactory implements DistributionFactory {
     @Override
     public Distribution createNormal(double mean, double std) {
         return new NormalDistribution(mean, std);
+    }
+
+    @Override
+    public Distribution createLogNormal(double mean, double std) {
+        return new LogNormalDistribution(mean, std);
+    }
+
+    @Override
+    public Distribution createTruncatedNormal(double mean, double std) {
+        return new TruncatedNormalDistribution(mean, std);
+    }
+
+    @Override
+    public Distribution createOrthogonal(double gain) {
+        return new OrthogonalDistribution(gain);
     }
 
     @Override
