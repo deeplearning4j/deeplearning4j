@@ -108,4 +108,11 @@ public interface DistributionFactory {
      */
     Distribution createOrthogonal(double gain);
 
+    /**
+     * Creates constant distribution
+     *
+     * @param value
+     * @return
+     */
+    Distribution createConstant(double value);
 }
