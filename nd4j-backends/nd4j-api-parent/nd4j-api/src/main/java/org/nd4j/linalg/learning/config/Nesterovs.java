@@ -6,6 +6,8 @@ import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.NesterovsUpdater;
+import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,33 +26,54 @@ public class Nesterovs implements IUpdater {
     public static final double DEFAULT_NESTEROV_MOMENTUM = 0.9;
     public static final double DEFAULT_NESTEROV_LEARNING_RATE = 0.1;
 
-    private double learningRate;
-    private double momentum;
-    private Map<Integer, Double> momentumSchedule;
+    @lombok.Builder.Default private double learningRate = DEFAULT_NESTEROV_LEARNING_RATE;
+    private ISchedule learningRateSchedule;
+    @lombok.Builder.Default private double momentum = DEFAULT_NESTEROV_MOMENTUM;
+    private ISchedule momentumISchedule;
+    @Deprecated
+    private Map<Integer,Double> momentumSchedule;
 
-    public Nesterovs() {
-        this(DEFAULT_NESTEROV_LEARNING_RATE, DEFAULT_NESTEROV_MOMENTUM, null);
+    public Nesterovs(){
+        this(DEFAULT_NESTEROV_LEARNING_RATE, null, DEFAULT_NESTEROV_MOMENTUM, null);
     }
 
     public Nesterovs(double momentum) {
         this(DEFAULT_NESTEROV_LEARNING_RATE, momentum);
     }
 
-    public Nesterovs(double learningRate, double momentum) {
-        this(learningRate, momentum, null);
+    public Nesterovs(double learningRate, double momentum){
+        this(learningRate, null, momentum, null);
+    }
+
+    public Nesterovs(ISchedule learningRateSchedule){
+        this(Double.NaN, learningRateSchedule, DEFAULT_NESTEROV_MOMENTUM, null);
+    }
+
+    public Nesterovs(ISchedule learningRateSchedule, double momentum){
+        this(Double.NaN, learningRateSchedule, momentum, null);
+    }
+
+    public Nesterovs(ISchedule learningRateSchedule, ISchedule momentumSchedule){
+        this(Double.NaN, learningRateSchedule, Double.NaN, momentumSchedule);
+    }
+
+    public Nesterovs(double learningRate, ISchedule momentumSchedule){
+        this(learningRate, null, Double.NaN, momentumSchedule);
+    }
+
+    private Nesterovs(@JsonProperty("learningRate") double learningRate,
+                      @JsonProperty("learningRateSchedule") ISchedule learningRateSchedule,
+                      @JsonProperty("momentum") double momentum,
+                      @JsonProperty("momentumSchedule") ISchedule momentumISchedule){
+        this.learningRate = learningRate;
+        this.learningRateSchedule = learningRateSchedule;
+        this.momentum = momentum;
+        this.momentumISchedule = momentumISchedule;
     }
 
     @Override
     public long stateSize(long numParams) {
         return numParams;
-    }
-
-    @Override
-    public void applySchedules(int iteration, double newLearningRate) {
-        this.learningRate = newLearningRate;
-        if (momentumSchedule != null && momentumSchedule.containsKey(iteration)) {
-            momentum = momentumSchedule.get(iteration);
-        }
     }
 
     @Override
@@ -62,15 +85,25 @@ public class Nesterovs implements IUpdater {
 
     @Override
     public Nesterovs clone() {
-        return new Nesterovs(learningRate, momentum, momentumSchedule == null ? null : new HashMap<>(momentumSchedule));
+        return new Nesterovs(learningRate, learningRateSchedule, momentum, momentumISchedule);
     }
 
-    //Partial builder class implementation for default values & public no-arg constructor
-    //https://reinhard.codes/2016/07/13/using-lomboks-builder-annotation-with-default-values/
-    public static class Builder {
-        private double learningRate = DEFAULT_NESTEROV_LEARNING_RATE;
-        private double momentum = DEFAULT_NESTEROV_LEARNING_RATE;
+    public double currentLearningRate(int iteration, int epoch){
+        if(learningRateSchedule != null){
+            return learningRateSchedule.valueAt(iteration, epoch);
+        }
+        return learningRate;
+    }
 
-        public Builder() {}
+    public double currentMomentum(int iteration, int epoch){
+        if(momentumISchedule != null){
+            return momentumISchedule.valueAt(iteration, epoch);
+        }
+        return momentum;
+    }
+
+    //Partial builder implementation to give public no-arg constructor
+    public static class Builder {
+        public Builder(){ }
     }
 }

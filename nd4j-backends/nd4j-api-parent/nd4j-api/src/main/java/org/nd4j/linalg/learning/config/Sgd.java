@@ -7,32 +7,43 @@ import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.SgdUpdater;
+import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * SGD updater applies a learning rate only
  * @author Adam Gibson
  */
-@AllArgsConstructor
 @Data
 @EqualsAndHashCode
 @Builder(builderClassName = "Builder")
 public class Sgd implements IUpdater {
     public static final double DEFAULT_SGD_LR = 1e-3;
 
-    private double learningRate;
+    @lombok.Builder.Default private double learningRate = DEFAULT_SGD_LR;
+    private ISchedule learningRateSchedule;
 
-    public Sgd() {
-        this(DEFAULT_SGD_LR);
+    public Sgd(){
+        this(DEFAULT_SGD_LR, null);
+    }
+
+    public Sgd(double learningRate){
+        this(learningRate, null);
+    }
+
+    public Sgd(ISchedule learningRateSchedule){
+        this(Double.NaN, learningRateSchedule);
+    }
+
+    private Sgd(@JsonProperty("learningRate") double learningRate,
+                @JsonProperty("learningRateSchedule") ISchedule learningRateSchedule){
+        this.learningRate = learningRate;
+        this.learningRateSchedule = learningRateSchedule;
     }
 
     @Override
     public long stateSize(long numParams) {
         return 0;
-    }
-
-    @Override
-    public void applySchedules(int iteration, double newLearningRate) {
-        this.learningRate = newLearningRate;
     }
 
     @Override
@@ -45,12 +56,18 @@ public class Sgd implements IUpdater {
 
     @Override
     public Sgd clone() {
-        return new Sgd(learningRate);
+        return new Sgd(learningRate, learningRateSchedule);
     }
 
-    public static class Builder {
-        private double learningRate = DEFAULT_SGD_LR;
+    public double currentLearningRate(int iteration, int epoch){
+        if(learningRateSchedule != null){
+            return learningRateSchedule.valueAt(iteration, epoch);
+        }
+        return learningRate;
+    }
 
-        public Builder() {}
+    //Partial builder implementation to give public no-arg constructor
+    public static class Builder {
+        public Builder(){ }
     }
 }

@@ -30,14 +30,6 @@ public interface IUpdater extends Serializable, Cloneable {
     long stateSize(long numParams);
 
     /**
-     * Apply the new learning rate and any other schedules
-     *
-     * @param iteration       Current iteration count
-     * @param newLearningRate new learning rate to set for the updater
-     */
-    void applySchedules(int iteration, double newLearningRate);
-
-    /**
      * Create a new gradient updater
      *
      * @param viewArray           The updater state size view away

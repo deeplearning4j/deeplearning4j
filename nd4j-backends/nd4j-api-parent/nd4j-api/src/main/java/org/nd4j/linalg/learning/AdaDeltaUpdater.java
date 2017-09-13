@@ -76,7 +76,7 @@ public class AdaDeltaUpdater implements GradientUpdater<AdaDelta> {
      * @return the update gradient
      */
     @Override
-    public void applyUpdater(INDArray gradient, int iteration) {
+    public void applyUpdater(INDArray gradient, int iteration, int epoch) {
         if (msg == null || msdx == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
 

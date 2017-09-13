@@ -59,7 +59,7 @@ public class UpdaterTest extends BaseNd4jTest {
         int cols = 2;
 
 
-        NesterovsUpdater grad = new NesterovsUpdater(new Nesterovs(0.5, 0.9, null));
+        NesterovsUpdater grad = new NesterovsUpdater(new Nesterovs(0.5, 0.9));
         grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new int[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1, 1);
