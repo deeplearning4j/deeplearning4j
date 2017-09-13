@@ -105,8 +105,8 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
 
     public void applyGradient(Gradient[] gradient, int batchSize) {
         MultiLayerConfiguration valueConf = valueNet.getLayerWiseConfigurations();
-        int valueIterationCount = valueNet.getIterationCount();
-        int valueEpochCount = valueNet.getEpochCount();
+        int valueIterationCount = valueConf.getIterationCount();
+        int valueEpochCount = valueConf.getEpochCount();
         valueNet.getUpdater().update(valueNet, gradient[0], valueIterationCount, valueEpochCount, batchSize);
         valueNet.params().subi(gradient[0].gradient());
         Collection<IterationListener> valueIterationListeners = valueNet.getListeners();
@@ -118,8 +118,8 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
         valueConf.setIterationCount(valueIterationCount + 1);
 
         MultiLayerConfiguration policyConf = policyNet.getLayerWiseConfigurations();
-        int policyIterationCount = policyNet.getIterationCount();
-        int policyEpochCount = policyNet.getEpochCount();
+        int policyIterationCount = policyConf.getIterationCount();
+        int policyEpochCount = policyConf.getEpochCount();
         policyNet.getUpdater().update(policyNet, gradient[1], policyIterationCount, policyEpochCount, batchSize);
         policyNet.params().subi(gradient[1].gradient());
         Collection<IterationListener> policyIterationListeners = policyNet.getListeners();
