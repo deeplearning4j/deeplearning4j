@@ -173,6 +173,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private Collection<IterationListener> listeners = new ArrayList<>();
     private Collection<TrainingListener> trainingListeners = new ArrayList<>();
 
+    private Map<String,VertexIndices[]> gvInputVertices = new HashMap<>();
+    private Map<String,VertexIndices[]> gvOutputVertices = new HashMap<>();
+    private Set<String> gvOutputVertex = new HashSet<>();
+    private Set<String> gvInputVertex = new HashSet<>();
 
     public ComputationGraph(ComputationGraphConfiguration configuration) {
         this.configuration = configuration;
@@ -556,7 +560,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
 
         for (Layer gv : vertices) {
-            String vertexName = gv.getVertexName();
+            String vertexName = gv.getName();
             int vertexIndex = gv.getIndex();
             List<String> vertexInputNames;
             vertexInputNames = vertexInputs.get(vertexName);
@@ -585,7 +589,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 inputIndices[j] = new VertexIndices(inputVertexIndex, outputNumberOfInput);
             }
 
-            gv.setInputVertices(inputIndices);
+//            gv.setInputVertices(inputIndices);
+            gvInputVertices.put(gv.getName(), inputIndices);
         }
 
         //Handle the outputs for this vertex
@@ -608,13 +613,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 int outputVertexIndex = allNamesReverse.get(s);
                 outputIndices[j++] = new VertexIndices(outputVertexIndex, outputVertexInputNumber);
             }
-            gv.setOutputVertices(outputIndices);
+//            gv.setOutputVertices(outputIndices);
+            gvOutputVertices.put(gv.getName(), outputIndices);
         }
 
         //Mark any output vertices as outputs:
         for (String s : configuration.getNetworkOutputs()) {
             Layer gv = verticesMap.get(s);
-            gv.setOutputVertex(true);
+//            gv.setOutputVertex(true);
+            gvOutputVertex.add(gv.getName());
         }
 
         // now we init solver & optimizer
@@ -698,11 +705,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Assume here that all layers are pretrainable layers
         for (int i = 0; i < topologicalOrder.length; i++) {
-            if (!vertices[i].hasLayer())
-                continue;
-            if (vertices[i].getLayer() instanceof IOutputLayer)
-                continue; //Don't pretrain output layer
-            if (!vertices[i].getLayer().isPretrainLayer())
+            if (vertices[i].numParams() == 0)
+                continue;   //Can't pretrain layers without parameters
+            if (!vertices[i].isPretrainLayer())
                 continue; //Skip layers that aren't pretrainable
 
             pretrainLayer(vertices[i].getName(), iter);
@@ -758,7 +763,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (int j = layerIndex - 1; j >= 0; j--) {
             //Do we need to do forward pass on this GraphVertex?
             //If it is input to any other layer we need, then yes. Otherwise: no
-            VertexIndices[] outputsTo = vertices[topologicalOrder[j]].getOutputVertices();
+//            VertexIndices[] outputsTo = vertices[topologicalOrder[j]].getOutputVertices();
+            VertexIndices[] outputsTo = gvOutputVertices.get(vertices[topologicalOrder[j]].getName());
             boolean needed = false;
             for (VertexIndices vi : outputsTo) {
                 if (seenSoFar.contains(vi.getVertexIndex())) {
@@ -778,7 +784,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             fwdPassOrder[k++] = g;
 
         Layer gv = vertices[fwdPassOrder[fwdPassOrder.length - 1]];
-        Layer layer = gv.getLayer();
+        Layer layer = gv;
 
         if(!(layer instanceof Model)){
             log.warn("Layer {} is not pretrainable, returning", layer.conf().getLayer().getLayerName());
@@ -825,8 +831,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         for (int j = 0; j < fwdPassOrder.length - 1; j++) {
                             try (MemoryWorkspace wF = wsFF.notifyScopeEntered()) {
                                 Layer current = vertices[fwdPassOrder[j]];
-                                if (current.isInputVertex()) {
-                                    VertexIndices[] inputsTo = current.getOutputVertices();
+//                                if (current.isInputVertex()) {
+                                if (gvInputVertex.contains(current.getName())) {
+//                                    VertexIndices[] inputsTo = current.getOutputVertices();
+                                    VertexIndices[] inputsTo = gvOutputVertices.get(current.getName());
                                     INDArray input = inputs[current.getIndex()];
 
                                     for (VertexIndices v : inputsTo) {
