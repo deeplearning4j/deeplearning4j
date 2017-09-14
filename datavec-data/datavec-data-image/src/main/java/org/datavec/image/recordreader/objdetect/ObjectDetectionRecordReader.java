@@ -86,7 +86,6 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
         Set<String> labelSet = new HashSet<>();
         if (locations != null && locations.length >= 1) {
             for (URI location : locations) {
-                System.out.println("ODRR: " + location);
                 List<ImageObject> imageObjects = labelProvider.getImageObjectsForPath(location);
                 for (ImageObject io : imageObjects) {
                     String name = io.getLabel();
