@@ -42,8 +42,6 @@ public class KerasBatchNormalization extends KerasLayer {
     private final String PARAM_NAME_BETA = "beta";
     private final String PARAM_NAME_RUNNING_MEAN = "running_mean";
     private final String PARAM_NAME_RUNNING_STD = "running_std";
-    private final String PARAM_NAME_MOVING_MEAN = "moving_mean";
-    private final String PARAM_NAME_MOVING_VARIANCE = "moving_variance";
 
     /**
      * Pass-through constructor from KerasLayer
@@ -153,24 +151,22 @@ public class KerasBatchNormalization extends KerasLayer {
         else
             throw new InvalidKerasConfigurationException(
                             "Parameter " + PARAM_NAME_GAMMA + " does not exist in weights");
-        String paramMean = kerasMajorVersion == 1 ? PARAM_NAME_RUNNING_MEAN : PARAM_NAME_MOVING_MEAN;
-        String paramVar = kerasMajorVersion == 1 ? PARAM_NAME_RUNNING_STD : PARAM_NAME_MOVING_VARIANCE;
-        if (weights.containsKey(paramMean))
-            this.weights.put(BatchNormalizationParamInitializer.GLOBAL_MEAN, weights.get(paramMean));
+        if (weights.containsKey(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN()))
+            this.weights.put(BatchNormalizationParamInitializer.GLOBAL_MEAN, weights.get(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN()));
         else
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + paramMean + " does not exist in weights");
-        if (weights.containsKey(paramVar))
-            this.weights.put(BatchNormalizationParamInitializer.GLOBAL_VAR, weights.get(paramVar));
+                            "Parameter " + conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN() + " does not exist in weights");
+        if (weights.containsKey(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE()))
+            this.weights.put(BatchNormalizationParamInitializer.GLOBAL_VAR, weights.get(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE()));
         else
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + paramVar + " does not exist in weights");
+                            "Parameter " + conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE() + " does not exist in weights");
         if (weights.size() > 4) {
             Set<String> paramNames = weights.keySet();
             paramNames.remove(PARAM_NAME_BETA);
             paramNames.remove(PARAM_NAME_GAMMA);
-            paramNames.remove(paramMean);
-            paramNames.remove(paramVar);
+            paramNames.remove(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN());
+            paramNames.remove(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE());
             String unknownParamNames = paramNames.toString();
             log.warn("Attemping to set weights for unknown parameters: "
                             + unknownParamNames.substring(1, unknownParamNames.length() - 1));
