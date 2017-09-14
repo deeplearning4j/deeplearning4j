@@ -332,17 +332,17 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray output = Nd4j.create(input.shape(), 'c');
         INDArray output4 = output.get(all(), interval(0,5*b), all(), all());
         INDArray input4 = input.get(all(), interval(0,5*b), all(), all()).dup('c');
-        INDArray input5 = input4.reshape(mb, b, 5, h, w);
+        INDArray input5 = input4.reshape('c', mb, b, 5, h, w);
 
         //X/Y center in grid: sigmoid
         INDArray predictedXYCenterGrid = input5.get(all(), all(), interval(0,2), all(), all());
         Transforms.sigmoid(predictedXYCenterGrid, false);
 
         //width/height: prior * exp(input)
-        INDArray predictedWH = input5.get(all(), all(), interval(2,4), all(), all());   //Shape: [mb, B, 2, H, W]
-        Transforms.exp(predictedWH, false);
-        INDArray priorBoxes = layerConf().getBoundingBoxes();   //Shape: [B, 2]
-        Broadcast.mul(predictedWH, priorBoxes, predictedWH, 1, 2);
+        INDArray predictedWHPreExp = input5.get(all(), all(), interval(2,4), all(), all());
+        INDArray predictedWH = Transforms.exp(predictedWHPreExp, true);
+        Broadcast.mul(predictedWH, layerConf().getBoundingBoxes(), predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
+        predictedWHPreExp.assign(predictedWH);
 
         //Confidence - sigmoid
         INDArray predictedConf = input5.get(all(), all(), point(4), all(), all());   //Shape: [mb, B, H, W]

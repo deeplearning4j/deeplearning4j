@@ -25,6 +25,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.AdaDelta;
@@ -36,6 +37,8 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -422,7 +425,7 @@ public class TestYolo2OutputLayer {
         } finally { is4.close(); }
 
         INDArray bbPriors = Nd4j.create(new double[][]{
-                {3,3},
+                {2,2},
                 {5,5}});
 
         //4x downsampling to 13x13 = 52x52 input images
@@ -431,17 +434,28 @@ public class TestYolo2OutputLayer {
         int h = 52;
         int w = 52;
         int c = 3;
-        int depthOut = bbPriors.size(0)*5 + 20;
-        RecordReader rr = new ObjectDetectionRecordReader(52, 52, 3, 13, 13, lp);
+        int origW = 500;
+        int origH = 375;
+        int gridW = 13;
+        int gridH = 13;
+
+        RecordReader rr = new ObjectDetectionRecordReader(52, 52, 3, gridH, gridW, lp);
         rr.initialize(new FileSplit(jpg));
 
+        int nClasses = rr.getLabels().size();
+        int depthOut = bbPriors.size(0)*5 + nClasses;
+        int idxCat = rr.getLabels().indexOf("cat");
+
+
         DataSetIterator iter = new RecordReaderDataSetIterator(rr,1,1,1,true);
+        iter.setPreProcessor(new ImagePreProcessingScaler());
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .convolutionMode(ConvolutionMode.Same)
-                .updater(new Adam(0.001))
-                .activation(Activation.TANH)
-                .weightInit(WeightInit.XAVIER)
+                .updater(new Adam(1e-3))
+                .activation(Activation.LEAKYRELU)
+                .weightInit(WeightInit.RELU)
+                .seed(123456)
                 .list()
                 .layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nOut(32).build())
                 .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2).build())
@@ -456,15 +470,14 @@ public class TestYolo2OutputLayer {
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-        net.setListeners(new ScoreIterationListener(10));
+        net.setListeners(new ScoreIterationListener(100));
 
-        int nEpochs = 500;
-        for( int i=0; i<nEpochs; i++ ){
-            net.fit(iter);
-        }
-
-        iter.reset();
+        int nEpochs = 1500;
         DataSet ds = iter.next();
+        assertEquals(1, ds.getFeatures().size(0));
+        for( int i=0; i<=nEpochs; i++ ){
+            net.fit(ds);
+        }
 
         org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ol =
                 (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer) net.getLayer(5);
@@ -489,6 +502,55 @@ public class TestYolo2OutputLayer {
         assertEquals(2, l.size());
 
         //Expect 2 detected objects:
-        //
+        //(60,123) to (220,305)
+        //(243,105) to (437,317)
+
+        double cx1Pixels = (60+220)/2.0;
+        double cy1Pixels = (123+305)/2.0;
+        double cx1 = gridW * cx1Pixels / origW;
+        double cy1 = gridH * cy1Pixels / origH;
+        double wGrid1 = (220.0-60.0)/origW * gridW;
+        double hGrid1 = (305.0-123.0)/origH * gridH;
+
+        double cx2Pixels = (243+437)/2.0;
+        double cy2Pixels = (105+317)/2.0;
+        double cx2 = gridW * cx2Pixels / origW;
+        double cy2 = gridH * cy2Pixels / origH;
+        double wGrid2 = (437.0-243.0)/origW * gridW;
+        double hGrid2 = (317-105.0)/origH * gridH;
+
+
+        //Sort by X position...
+        Collections.sort(l, new Comparator<DetectedObject>() {
+            @Override
+            public int compare(DetectedObject o1, DetectedObject o2) {
+                return Double.compare(o1.getCenterX(), o2.getCenterX());
+            }
+        });
+
+        System.out.println("Expected w/h: (" + wGrid1 + "," + hGrid1 + "), (" + wGrid2 + "," + hGrid2 + ")");
+
+        DetectedObject o1 = l.get(0);
+        double p1 = o1.getClassPredictions().getDouble(idxCat);
+        double c1 = o1.getConfidence();
+        assertEquals(idxCat, o1.getPredictedClass() );
+        assertTrue(String.valueOf(p1), p1 >= 0.8);
+        assertTrue(String.valueOf(c1), c1 >= 0.8);
+        assertEquals(cx1, o1.getCenterX(), 0.5);
+        assertEquals(cy1, o1.getCenterY(), 0.5);
+        assertEquals(wGrid1, o1.getWidth(), 1);
+        assertEquals(hGrid1, o1.getHeight(), 1);
+
+
+        DetectedObject o2 = l.get(1);
+        double p2 = o2.getClassPredictions().getDouble(idxCat);
+        double c2 = o2.getConfidence();
+        assertEquals(idxCat, o2.getPredictedClass() );
+        assertTrue(String.valueOf(p2), p2 >= 0.8);
+        assertTrue(String.valueOf(c2), c2 >= 0.8);
+        assertEquals(cx2, o2.getCenterX(), 0.5);
+        assertEquals(cy2, o2.getCenterY(), 0.5);
+        assertEquals(wGrid2, o2.getWidth(), 1);
+        assertEquals(hGrid2, o2.getHeight(), 1);
     }
 }
