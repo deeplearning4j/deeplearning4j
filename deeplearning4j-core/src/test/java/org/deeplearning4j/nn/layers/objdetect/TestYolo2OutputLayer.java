@@ -25,6 +25,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.Adam;
@@ -32,6 +33,8 @@ import org.nd4j.linalg.learning.config.Adam;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -181,9 +184,8 @@ public class TestYolo2OutputLayer {
         assertEquals(1.0, probsSum.maxNumber().doubleValue(), 1e-6);
     }
 
-
     @Test
-    public void testYoloOverfitting() throws Exception {
+    public void testIOUCalc() throws Exception {
 
         InputStream is1 = new ClassPathResource("yolo/VOC_SingleImage/JPEGImages/2007_009346.jpg").getInputStream();
         InputStream is2 = new ClassPathResource("yolo/VOC_SingleImage/Annotations/2007_009346.xml").getInputStream();
@@ -209,9 +211,213 @@ public class TestYolo2OutputLayer {
             is2.close();
         }
 
+//        INDArray bbPriors = Nd4j.create(new double[][]{
+//                {3, 3},
+//                {5, 4}});
         INDArray bbPriors = Nd4j.create(new double[][]{
-                {3,3},
-                {5,5}});
+                {3, 3}});
+
+        VocLabelProvider lp = new VocLabelProvider(dir.getPath());
+        int depthOut = bbPriors.size(0)*5 + 20;
+
+        int origW = 500;
+        int origH = 375;
+        int inputW = 52;
+        int inputH = 52;
+
+        int gridW = 13;
+        int gridH = 13;
+
+        RecordReader rr = new ObjectDetectionRecordReader(inputH, inputW, 3, gridH, gridW, lp);
+        rr.initialize(new FileSplit(jpg));
+
+        DataSetIterator iter = new RecordReaderDataSetIterator(rr,1,1,1,true);
+
+        //2 objects here:
+        //(60,123) to (220,305)
+        //(243,105) to (437,317)
+
+        double cx1 = (60+220)/2.0;
+        double cy1 = (123+305)/2.0;
+        int gridNumX1 = (int)(gridW * cx1 / origW);
+        int gridNumY1 = (int)(gridH * cy1 / origH);
+
+        double labelGridBoxX1_tl = gridW * 60.0 / origW;
+        double labelGridBoxY1_tl = gridH * 123.0 / origH;
+        double labelGridBoxX1_br = gridW * 220.0 / origW;
+        double labelGridBoxY1_br = gridH * 305.0 / origH;
+
+
+        double cx2 = (243+437)/2.0;
+        double cy2 = (105+317)/2.0;
+        int gridNumX2 = (int)(gridW * cx2 / origW);
+        int gridNumY2 = (int)(gridH * cy2 / origH);
+
+        double labelGridBoxX2_tl = gridW * 243.0 / origW;
+        double labelGridBoxY2_tl = gridH * 105.0 / origH;
+        double labelGridBoxX2_br = gridW * 437.0 / origW;
+        double labelGridBoxY2_br = gridH * 317.0 / origH;
+
+        //Check labels
+        DataSet ds = iter.next();
+        INDArray labelImgClasses = ds.getLabels().get(point(0), point(4), all(), all());
+        INDArray labelX_tl = ds.getLabels().get(point(0), point(0), all(), all());
+        INDArray labelY_tl = ds.getLabels().get(point(0), point(1), all(), all());
+        INDArray labelX_br = ds.getLabels().get(point(0), point(2), all(), all());
+        INDArray labelY_br = ds.getLabels().get(point(0), point(3), all(), all());
+
+        INDArray expLabelImg = Nd4j.create(gridH,gridW);
+        expLabelImg.putScalar(gridNumY1, gridNumX1, 1.0);
+        expLabelImg.putScalar(gridNumY2, gridNumX2, 1.0);
+
+        INDArray expX_TL = Nd4j.create(gridH, gridW);
+        expX_TL.putScalar(gridNumY1, gridNumX1, labelGridBoxX1_tl);
+        expX_TL.putScalar(gridNumY2, gridNumX2, labelGridBoxX2_tl);
+
+        INDArray expY_TL = Nd4j.create(gridH, gridW);
+        expY_TL.putScalar(gridNumY1, gridNumX1, labelGridBoxY1_tl);
+        expY_TL.putScalar(gridNumY2, gridNumX2, labelGridBoxY2_tl);
+
+        INDArray expX_BR = Nd4j.create(gridH, gridW);
+        expX_BR.putScalar(gridNumY1, gridNumX1, labelGridBoxX1_br);
+        expX_BR.putScalar(gridNumY2, gridNumX2, labelGridBoxX2_br);
+
+        INDArray expY_BR = Nd4j.create(gridH, gridW);
+        expY_BR.putScalar(gridNumY1, gridNumX1, labelGridBoxY1_br);
+        expY_BR.putScalar(gridNumY2, gridNumX2, labelGridBoxY2_br);
+
+
+        assertEquals(expLabelImg, labelImgClasses);
+        assertEquals(expX_TL, labelX_tl);
+        assertEquals(expY_TL, labelY_tl);
+        assertEquals(expX_BR, labelX_br);
+        assertEquals(expY_BR, labelY_br);
+
+
+        //Check IOU calculation
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nIn(3).nOut(3).build())
+                .layer(new Yolo2OutputLayer.Builder()
+                        .boundingBoxPriors(bbPriors)
+                        .build())
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+
+        org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ol = (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer) net.getLayer(1);
+
+        Method m = ol.getClass().getDeclaredMethod("calculateIOULabelPredicted", INDArray.class, INDArray.class, INDArray.class, INDArray.class, INDArray.class);
+        m.setAccessible(true);
+
+        INDArray labelTL = ds.getLabels().get(interval(0,1), interval(0,2), all(), all());
+        INDArray labelBR = ds.getLabels().get(interval(0,1), interval(2,4), all(), all());
+
+        double pw1 = 2.5;
+        double ph1 = 3.5;
+        double pw2 = 4.5;
+        double ph2 = 5.5;
+        INDArray predictedWH = Nd4j.create(1, bbPriors.size(0), 2, gridH, gridW);
+        predictedWH.putScalar(new int[]{0, 0, 0, gridNumY1, gridNumX1}, pw1);
+        predictedWH.putScalar(new int[]{0, 0, 1, gridNumY1, gridNumX1}, ph1);
+        predictedWH.putScalar(new int[]{0, 0, 0, gridNumY2, gridNumX2}, pw2);
+        predictedWH.putScalar(new int[]{0, 0, 1, gridNumY2, gridNumX2}, ph2);
+
+        double pX1 = 0.6;
+        double pY1 = 0.8;
+        double pX2 = 0.3;
+        double pY2 = 0.4;
+        INDArray predictedXYInGrid = Nd4j.create(1, bbPriors.size(0), 2, gridH, gridW);
+        predictedXYInGrid.putScalar(new int[]{0, 0, 0, gridNumY1, gridNumX1}, pX1);
+        predictedXYInGrid.putScalar(new int[]{0, 0, 1, gridNumY1, gridNumX1}, pY1);
+        predictedXYInGrid.putScalar(new int[]{0, 0, 0, gridNumY2, gridNumX2}, pX2);
+        predictedXYInGrid.putScalar(new int[]{0, 0, 1, gridNumY2, gridNumX2}, pY2);
+
+        INDArray objectPresentMask = labelImgClasses;   //Only 1 class here, so same thing as object present mask...
+
+        Object ret = m.invoke(ol, labelTL, labelBR, predictedWH, predictedXYInGrid, objectPresentMask);
+        Field fIou = ret.getClass().getDeclaredField("iou");
+        fIou.setAccessible(true);
+        INDArray iou = (INDArray)fIou.get(ret);
+
+
+        //Calculate IOU for first image object, first BB
+        double predictedTL_x1 = gridNumX1 + pX1 - 0.5 * pw1;
+        double predictedTL_y1 = gridNumY1 + pY1 - 0.5 * ph1;
+        double predictedBR_x1 = gridNumX1 + pX1 + 0.5 * pw1;
+        double predictedBR_y1 = gridNumY1 + pY1 + 0.5 * ph1;
+
+        double intersectionX_TL_1 = Math.max(predictedTL_x1, labelGridBoxX1_tl);
+        double intersectionY_TL_1 = Math.max(predictedTL_y1, labelGridBoxY1_tl);
+        double intersectionX_BR_1 = Math.min(predictedBR_x1, labelGridBoxX1_br);
+        double intersectionY_BR_1 = Math.min(predictedBR_y1, labelGridBoxY1_br);
+
+        double intersection1_bb1 = (intersectionX_BR_1 - intersectionX_TL_1) * (intersectionY_BR_1 - intersectionY_TL_1);
+        double pArea1 = pw1 * ph1;
+        double lArea1 = (labelGridBoxX1_br - labelGridBoxX1_tl) * (labelGridBoxY1_br - labelGridBoxY1_tl);
+        double unionA1 = pArea1 + lArea1 - intersection1_bb1;
+        double iou1 = intersection1_bb1 / unionA1;
+
+        //Calculate IOU for second image object, first BB
+        double predictedTL_x2 = gridNumX2 + pX2 - 0.5 * pw2;
+        double predictedTL_y2 = gridNumY2 + pY2 - 0.5 * ph2;
+        double predictedBR_x2 = gridNumX2 + pX2 + 0.5 * pw2;
+        double predictedBR_y2 = gridNumY2 + pY2 + 0.5 * ph2;
+
+        double intersectionX_TL_2 = Math.max(predictedTL_x2, labelGridBoxX2_tl);
+        double intersectionY_TL_2 = Math.max(predictedTL_y2, labelGridBoxY2_tl);
+        double intersectionX_BR_2 = Math.min(predictedBR_x2, labelGridBoxX2_br);
+        double intersectionY_BR_2 = Math.min(predictedBR_y2, labelGridBoxY2_br);
+
+        double intersection1_bb2 = (intersectionX_BR_2 - intersectionX_TL_2) * (intersectionY_BR_2 - intersectionY_TL_2);
+        double pArea2 = pw2 * ph2;
+        double lArea2 = (labelGridBoxX2_br - labelGridBoxX2_tl) * (labelGridBoxY2_br - labelGridBoxY2_tl);
+        double unionA2 = pArea2 + lArea2 - intersection1_bb2;
+        double iou2 = intersection1_bb2 / unionA2;
+
+        INDArray expIOU = Nd4j.create(1, bbPriors.size(0), gridH, gridW );
+        expIOU.putScalar(new int[]{0, 0, gridNumY1, gridNumX1}, iou1);
+        expIOU.putScalar(new int[]{0, 0, gridNumY2, gridNumX2}, iou2);
+
+        assertEquals(expIOU, iou);
+    }
+
+
+    @Test
+    public void testYoloOverfitting() throws Exception {
+        Nd4j.getRandom().setSeed(12345);
+
+        InputStream is1 = new ClassPathResource("yolo/VOC_SingleImage/JPEGImages/2007_009346.jpg").getInputStream();
+        InputStream is2 = new ClassPathResource("yolo/VOC_SingleImage/Annotations/2007_009346.xml").getInputStream();
+
+        File dir = Files.createTempDirectory("testYoloOverfitting").toFile();
+        File jpg = new File(dir, "JPEGImages");
+        File annot = new File(dir, "Annotations");
+        jpg.mkdirs();
+        annot.mkdirs();
+
+        File imgOut = new File(jpg, "2007_009346.jpg");
+        File annotationOut = new File(annot, "2007_009346.xml");
+
+        try(FileOutputStream fos = new FileOutputStream(imgOut)){
+            IOUtils.copy(is1, fos);
+        } finally {
+            is1.close();
+        }
+
+        try(FileOutputStream fos = new FileOutputStream(annotationOut)){
+            IOUtils.copy(is2, fos);
+        } finally {
+            is2.close();
+        }
+
+//        INDArray bbPriors = Nd4j.create(new double[][]{
+//                {3,3},
+//                {5,5}});
+        INDArray bbPriors = Nd4j.create(new double[][]{
+                {3,3}});
 
         //4x downsampling to 13x13 = 52x52 input images
         //Required depth at output layer: 5B+C, with B=5, C=20 object classes, for VOC
@@ -235,7 +441,7 @@ public class TestYolo2OutputLayer {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .convolutionMode(ConvolutionMode.Same)
-                .updater(new Adam(0.01))
+                .updater(new Adam(0.001))
                 .activation(Activation.TANH)
                 .weightInit(WeightInit.XAVIER)
                 .list()
@@ -254,7 +460,7 @@ public class TestYolo2OutputLayer {
         net.init();
         net.setListeners(new ScoreIterationListener(10));
 
-        int nEpochs = 200;
+        int nEpochs = 500;
         for( int i=0; i<nEpochs; i++ ){
             net.fit(iter);
         }
@@ -275,6 +481,23 @@ public class TestYolo2OutputLayer {
         }
 
         List<DetectedObject> l = ol.getPredictedObjects(out, 0.5);
+        System.out.println("Detected objects: " + l.size());
+        for(DetectedObject d : l){
+            System.out.println(d);
+            System.out.println();
+        }
+    }
 
+
+    @Test
+    public void broadcastTest(){
+
+        //5d: [1,2,2,13,13]
+        //3d: [1, 13, 13]
+
+        INDArray arr5 = Nd4j.ones(1,2,2,13,13);
+        INDArray arr3 = Nd4j.linspace(1,13*13, 13*13).reshape('c', 13, 13);
+
+//        Broadcast.mul(arr5, arr3, arr5, 0, )
     }
 }
