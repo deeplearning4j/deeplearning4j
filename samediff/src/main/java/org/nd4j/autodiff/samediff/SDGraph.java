@@ -161,20 +161,13 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
             List<OpExecAction> ret = new ArrayList<>();
             while(!depthQueue.isEmpty()) {
                 NDArrayVertex ndArrayVertex = depthQueue.poll();
-                ret.add(opExecActionMap.get(ndArrayVertex.vertexID()));
+                OpExecAction action = opExecActionMap.get(ndArrayVertex.vertexID());
+                //no op means it was a variable
+                if(action != null)
+                    ret.add(action);
+
 
             }
-
-            /**
-             * Setup the backward and forward links
-             * for each action
-             */
-            for(int i = 0; i < ret.size(); i++) {
-                OpExecAction action = ret.get(i);
-                OpExecAction backward = opExecActionMap.get(action.getOutputId());
-                action.setupForwardBackward(backward);
-            }
-
 
 
             return OpExecOrder.builder().actions(ret).build();

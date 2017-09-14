@@ -3,6 +3,7 @@ package org.nd4j.autodiff;
 import com.google.common.base.Preconditions;
 import lombok.*;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.functions.impl.binary.transform.gradient.GradientBackwardsMarker;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
@@ -1302,5 +1303,9 @@ public class ArrayField implements Field {
         result = 31 * result + (input != null ? input.hashCode() : 0);
         result = 31 * result + (vertex != null ? vertex.hashCode() : 0);
         return result;
+    }
+
+    public ArrayField gradientBackwardsMarker(ArrayField value, ArrayField value1) {
+        return addGradientOp(new GradientBackwardsMarker().functionName(),value,new Object[]{value1});
     }
 }

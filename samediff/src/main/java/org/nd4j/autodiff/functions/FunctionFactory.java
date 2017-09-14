@@ -140,6 +140,9 @@ public interface FunctionFactory {
     DifferentialFunction reshape(DifferentialFunction arrayField, int[] shape);
 
 
+    DifferentialFunction gradientBackwardsMarker(DifferentialFunction iX);
+
+
     DifferentialFunction rollAxis(Variable iX, int axis);
 
     DifferentialFunction cosineSimilarity(DifferentialFunction iX, DifferentialFunction i_y, int...dimensions);

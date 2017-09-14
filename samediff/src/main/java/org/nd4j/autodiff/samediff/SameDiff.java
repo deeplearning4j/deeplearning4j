@@ -1,7 +1,6 @@
 package org.nd4j.autodiff.samediff;
 
 import com.google.common.base.Preconditions;
-import com.google.common.primitives.Ints;
 import com.rits.cloning.Cloner;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,6 +25,7 @@ import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -993,9 +993,12 @@ public class SameDiff {
      * @param iX
      * @return
      */
-    public SDVariable softmaxDerivative(SDVariable iX,SDVariable wrt) {
-        return softmaxDerivative(generateVariableName("softmaxderivative",false,iX),iX,wrt);
+    public SDVariable gradientBackwardsMarker(SDVariable iX) {
+        return gradientBackwardsMarker(generateVariableName(new GradientBackwardsMarker().name(),true,iX),iX);
     }
+
+
+
 
     /**
      *
@@ -1424,6 +1427,24 @@ public class SameDiff {
 
 
 
+
+    /**
+     *
+     * @param name
+     * @param iX
+     * @return
+     */
+    public SDVariable gradientBackwardsMarker(String name, SDVariable iX) {
+        SDVariable ret = SDVariable.builder()
+                .arr(null).shape(iX.getShape())
+                .differentialFunction(functionFactory.gradientBackwardsMarker(getFunctionInput(iX)))
+                .varName(name)
+                .sameDiff(this)
+                .build();
+        Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
+        addVariable(ret);
+        return ret;
+    }
 
 
     /**
@@ -3049,6 +3070,7 @@ public class SameDiff {
                     outer.invokeGraphOn(sameDiff);
                     List<OpExecAction> opOrder = sameDiff.graph().getOpOrder(true).getActions();
                     List<OpExecAction> exec = new ArrayList<>();
+                    sameDiff.gradientBackwardsMarker(sameDiff.getVertexIdToVariable().get(opOrder.get(opOrder.size() - 1).getOutputId()));
 
                     //start with scalar backprop
                     List<DifferentialFunction> currentDiff = Arrays.asList(sameDiff.functionFactory.one(new int[]{1,1}));
@@ -3076,9 +3098,13 @@ public class SameDiff {
                                             true,
                                             differentialFunction))
                                     .build();
-                            sameDiff.addVariable(add);
 
-                            if (debugMode) {
+                            sameDiff.addVariable(add);
+                            SDVariable forwardVar = sameDiff.getVertexIdToVariable().get(action.getOutputId());
+                            add.setForwardVariable(forwardVar);
+
+
+                            if (isDebugMode()) {
                                 if(add.gradient() != null)
                                     sameDiff.addVariable(add.gradient());
                                 functionVars.add(add);
@@ -3286,6 +3312,7 @@ public class SameDiff {
         Map<SDVariable,Op> opMap = new HashMap<>();
         for(int i = 0; i < opExecActions.size(); i++) {
             OpExecAction opExecAction = opExecActions.get(i);
+            SDVariable variable = getVertexIdToVariable().get(opExecAction.getOutputId());
             Op op = createOp(
                     opExecAction.getOpState().getOpType(),
                     opExecAction);

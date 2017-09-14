@@ -229,4 +229,6 @@ public interface AbstractFactory
 
 
     ArrayField logSoftmax(ArrayField value);
+
+    ArrayField gradientBackwardsMarker(ArrayField value, ArrayField value1);
 }

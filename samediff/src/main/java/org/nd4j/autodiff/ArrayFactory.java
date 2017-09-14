@@ -322,6 +322,11 @@ public class ArrayFactory implements AbstractFactory {
     }
 
     @Override
+    public ArrayField gradientBackwardsMarker(ArrayField value, ArrayField value1) {
+        return sameDiff().setupArrayField(value.gradientBackwardsMarker(value,value1));
+    }
+
+    @Override
     public ArrayField atanh(ArrayField x) {
         return sameDiff().setupArrayField(x.atanh());
     }

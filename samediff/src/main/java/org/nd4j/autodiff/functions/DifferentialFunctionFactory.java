@@ -205,7 +205,10 @@ public class DifferentialFunctionFactory implements FunctionFactory  {
         return result;
     }
 
-
+    @Override
+    public DifferentialFunction gradientBackwardsMarker(DifferentialFunction iX) {
+        return sameDiff().setupFunction(new GradientBackwardsMarker(sameDiff(),iX,iX));
+    }
 
     @Override
     public DifferentialFunction expandDims(DifferentialFunction iX,int axis) {
