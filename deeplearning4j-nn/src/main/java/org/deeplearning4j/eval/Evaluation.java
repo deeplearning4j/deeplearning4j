@@ -252,7 +252,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param network the network to use for output
      */
     public void eval(INDArray trueLabels, INDArray input, ComputationGraph network) {
-        eval(trueLabels, network.output(false, input)[0]);
+        eval(trueLabels, network.output(false, input).get(0));
     }
 
 

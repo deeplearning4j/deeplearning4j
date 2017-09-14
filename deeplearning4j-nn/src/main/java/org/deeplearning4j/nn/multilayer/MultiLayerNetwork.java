@@ -31,6 +31,9 @@ import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
@@ -649,7 +652,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      * @return the activation of the layer based on the input
      */
     public INDArray activate(int layer, INDArray input, boolean training) {
-        return getLayer(layer).activate(input, training);
+        return getLayer(layer).activate(ActivationsFactory.getInstance().create(input, null, null), training).get(0);
     }
 
     /**
@@ -677,7 +680,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     public INDArray activationFromPrevLayer(int curr, INDArray input, boolean training) {
         if (getLayerWiseConfigurations().getInputPreProcess(curr) != null)
             input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input, getInputMiniBatchSize());
-        INDArray ret = layers[curr].activate(input, training);
+        INDArray ret = layers[curr].activate(ActivationsFactory.getInstance().create(input, null, null), training).get(0);
         return ret;
     }
 
@@ -1145,7 +1148,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         LinkedList<Triple<String, INDArray, Character>> gradientList = new LinkedList<>();
 
         int layerFrom;
-        Pair<Gradient, INDArray> currPair;
+        Gradients currPair;
         if (withOutputLayer) {
             if (!(getOutputLayer() instanceof IOutputLayer)) {
                 log.warn("Warning: final layer isn't output layer. You cannot use backprop without an output layer.");
@@ -1158,16 +1161,16 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             outputLayer.setLabels(labels);
             currPair = outputLayer.backpropGradient(null);
 
-            for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
+            for (Map.Entry<String, INDArray> entry : currPair.getParameterGradients().gradientForVariable().entrySet()) {
                 String origName = entry.getKey();
                 multiGradientKey = String.valueOf(numLayers - 1) + "_" + origName;
                 gradientList.addLast(new Triple<>(multiGradientKey, entry.getValue(),
-                                currPair.getFirst().flatteningOrderForVariable(origName)));
+                                currPair.getParameterGradients().flatteningOrderForVariable(origName)));
             }
             if (getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null)
-                currPair = new Pair<>(currPair.getFirst(),
+                currPair = new Pair<>(currPair.getParameterGradients(),
                                 this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
-                                                .backprop(currPair.getSecond(), getInputMiniBatchSize()));
+                                                .backprop(currPair.getActivationGrad(0), getInputMiniBatchSize()));
 
             layerFrom = numLayers - 2;
         } else {
@@ -1975,6 +1978,11 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         setInput(input);
     }
 
+    @Override
+    public INDArray getInput(int inputNumber) {
+        return null;
+    }
+
 
     /**
      * Get the output layer
@@ -2174,6 +2182,11 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
+    public Activations activate(boolean training) {
+        return null;
+    }
+
+    @Override
     public void update(Gradient gradient) {
         if (gradient.gradient().length() != numParams(true))
             throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true));
@@ -2197,19 +2210,29 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        return output(input, training);
+    public String getName() {
+        return "MultiLayerNetwork"; //TODO
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        return output(input, training);
+    public Activations activate(Activations input, boolean training) {
+        return ActivationsFactory.getInstance().create(output(input.get(0), training), null, null);
     }
 
     @Override
-    public INDArray activate(INDArray input) {
+    public Activations activate(Activations input) {
         return activate(input, false);
     }
+
+//    @Override
+//    public INDArray activate(INDArray input, boolean training) {
+//        return output(input, training);
+//    }
+//
+//    @Override
+//    public INDArray activate(INDArray input) {
+//        return activate(input, false);
+//    }
 
     @Override
     public void setInputMiniBatchSize(int size) {
@@ -2224,8 +2247,18 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public void setMaskArray(INDArray maskArray) {
-        throw new UnsupportedOperationException();
+    public void setMaskArray(int idx, INDArray maskArray) {
+
+    }
+
+    @Override
+    public INDArray getMaskArray(int idx) {
+        return null;
+    }
+
+    @Override
+    public Gradients backpropGradient(Gradients epsilon) {
+        return null;
     }
 
     /**

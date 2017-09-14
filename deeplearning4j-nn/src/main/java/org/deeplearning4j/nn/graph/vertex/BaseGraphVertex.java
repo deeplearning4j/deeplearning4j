@@ -21,6 +21,9 @@ package org.deeplearning4j.nn.graph.vertex;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
@@ -180,8 +183,11 @@ public abstract class BaseGraphVertex extends AbstractLayer {
 
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        return null;
+    public Gradients backpropGradient(Gradients epsilons) {
+
+        Pair<Gradient,INDArray[]> backward = doBackward(false); //TODO
+
+        return GradientsFactory.getInstance().create(backward.getFirst(), backward.getSecond());
     }
 
     @Override
@@ -192,5 +198,19 @@ public abstract class BaseGraphVertex extends AbstractLayer {
     @Override
     public void clearNoiseWeightParams() {
 
+    }
+
+    protected abstract Pair<Gradient,INDArray[]> doBackward(boolean tbptt);
+
+    protected abstract Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
+                                                                              int minibatchSize);
+
+
+    public boolean canDoForward(){
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    public boolean canDoBackward(){
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }

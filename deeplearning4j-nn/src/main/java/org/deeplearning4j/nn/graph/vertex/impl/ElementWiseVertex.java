@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -59,37 +61,40 @@ public class ElementWiseVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
         nInForwardPass = inputs.length;
         if (inputs.length == 1)
-            return inputs[0];
+            return ActivationsFactory.getInstance().create(inputs[0], null, null);  //TODO masks
 
+        INDArray ret;
         switch (op) {
             case Add:
                 INDArray sum = inputs[0].dup(inputs[0].ordering());
                 for (int i = 1; i < inputs.length; i++) {
                     sum.addi(inputs[i]);
                 }
-                return sum;
+                ret = sum;
             case Average:
                 INDArray average = inputs[0].dup(inputs[0].ordering());
                 for (int i = 1; i < inputs.length; i++) {
                     average.addi(inputs[i]);
                 }
-                return average.divi(inputs.length);
+                ret = average.divi(inputs.length);
+                break;
             case Subtract:
                 if (inputs.length != 2)
                     throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
-                return inputs[0].sub(inputs[1]);
+                ret =  inputs[0].sub(inputs[1]);
+                break;
             case Product:
                 INDArray product = inputs[0].dup(inputs[0].ordering());
                 for (int i = 1; i < inputs.length; i++) {
                     product.muli(inputs[i]);
                 }
-                return product;
+                ret = product;
             case Max:
                 INDArray max =  Nd4j.createUninitialized(inputs[0].shape(), inputs[0].ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemax")
@@ -98,13 +103,17 @@ public class ElementWiseVertex extends BaseGraphVertex {
                         .callInplace(false)
                         .build();
                 Nd4j.getExecutioner().exec(op);
-                return max;
+                ret = max;
+                break;
             default:
                 throw new UnsupportedOperationException("Unknown op: " + this.op);
         }
+
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{maskArray}, MaskState.Active, inputs[0].size(0));    //TODO
+        return ActivationsFactory.getInstance().create(ret, masks.getFirst(), masks.getSecond());
     }
 
-    @Override
+
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: errors not set");

@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.layers;
 
 import lombok.Data;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -218,14 +219,15 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     }
 
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        Pair<Gradient, INDArray> result = super.backpropGradient(epsilon);
-        ((DefaultGradient) result.getFirst()).setFlattenedGradient(gradientsFlattened);
+    @Override
+    public Gradients backpropGradient(Gradients epsilon) {
+        Gradients result = super.backpropGradient(epsilon);
+        ((DefaultGradient) result.getParameterGradients()).setFlattenedGradient(gradientsFlattened);
 
         //During backprop, visible bias gradients are set to 0 - this is necessary due to the gradient view mechanics
         // that DL4J uses
         INDArray vBiasGradient = gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY);
-        result.getFirst().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
+        result.getParameterGradients().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
         vBiasGradient.assign(0);
 
         weightNoiseParams.clear();

@@ -85,4 +85,7 @@ public class GradientsFactory {
         return new GradientsTriple(actGrad1, actGrad2, actGrad3, paramGrad);
     }
 
+    public Gradients create(Gradient paramGrad, INDArray... actGrad){
+        return new GradientsTuple(actGrad, paramGrad);
+    }
 }

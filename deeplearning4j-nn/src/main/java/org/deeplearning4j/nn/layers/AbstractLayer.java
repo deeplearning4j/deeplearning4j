@@ -77,6 +77,11 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
+    public String getName(){
+        return conf.getLayer().getLayerName();
+    }
+
+    @Override
     public void setCacheMode(CacheMode mode) {
         if (mode == null)
             mode = CacheMode.NONE;
