@@ -76,7 +76,7 @@ public class DetectedObject {
 
     public String toString() {
         return "DetectedObject(exampleNumber=" + exampleNumber + ", centerX=" + centerX + ", centerY=" + centerY +
-                ", width=" + width + ", height=" + height + ", classPredictions=" + classPredictions +
-                ", predictedClass=" + getPredictedClass() + ", confidencce=" + confidence + ")";
+                ", width=" + width + ", height=" + height + ", confidence=" + confidence
+                + ", classPredictions=" + classPredictions + ", predictedClass=" + getPredictedClass() + ")";
     }
 }

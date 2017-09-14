@@ -138,7 +138,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray predictedWH = Transforms.exp(predictedWHPreExp, true);
         Broadcast.mul(predictedWH, layerConf().getBoundingBoxes(), predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
 
-
         //Apply sqrt to W/H in preparation for loss function
         INDArray predictedWHSqrt = Transforms.sqrt(predictedWH, true);
 
@@ -340,9 +339,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //width/height: prior * exp(input)
         INDArray predictedWHPreExp = input5.get(all(), all(), interval(2,4), all(), all());
-        INDArray predictedWH = Transforms.exp(predictedWHPreExp, true);
+        INDArray predictedWH = Transforms.exp(predictedWHPreExp, false);
         Broadcast.mul(predictedWH, layerConf().getBoundingBoxes(), predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
-        predictedWHPreExp.assign(predictedWH);
 
         //Confidence - sigmoid
         INDArray predictedConf = input5.get(all(), all(), point(4), all(), all());   //Shape: [mb, B, H, W]
@@ -405,7 +403,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         int gridW = labelTL.size(2);
         int gridH = labelTL.size(3);
-//        todo: add grid positions to the predicted XY values (to get predicted XY in terms of grid cell units)
+        //Add grid positions to the predicted XY values (to get predicted XY in terms of grid cell units in image,
+        // from (0 to 1 in grid cell) format)
         INDArray linspaceX = Nd4j.linspace(0, gridW-1, gridW);
         INDArray linspaceY = Nd4j.linspace(0, gridH-1, gridH);
         INDArray grid = Nd4j.createUninitialized(new int[]{2, gridH, gridW}, 'c');
@@ -422,12 +421,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray halfWH = predictedWH.mul(0.5);
         INDArray predictedTL_XY = halfWH.rsub(predictedXY);     //xy - 0.5 * wh
         INDArray predictedBR_XY = halfWH.add(predictedXY);      //xy + 0.5 * wh
-
-        //TESTING
-//        Broadcast.mul(predictedTL_XY, objectPresentMask, predictedTL_XY, 0, 3, 4);  //Object present mask: [mb, H, W]. predictedTL_XY: [mb, d, 2, H, W]
-//        Broadcast.mul(predictedBR_XY, objectPresentMask, predictedBR_XY, 0, 3, 4);
-//        Broadcast.mul(predictedWH, objectPresentMask, predictedWH, 0, 3, 4);
-        //TESTING
 
         INDArray maxTL = Nd4j.createUninitialized(predictedTL_XY.shape(), predictedTL_XY.ordering());   //Shape: [mb, b, 2, H, W]
         Broadcast.max(predictedTL_XY, labelTL, maxTL, 0, 2, 3, 4);
@@ -659,10 +652,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                             continue;
                         }
 
-                        double px = output5.getDouble(i, box, 0, x, y); //Originally: in 0 to 1 in grid cell
-                        double py = output5.getDouble(i, box, 1, x, y); //Originally: in 0 to 1 in grid cell
-                        double pw = output5.getDouble(i, box, 2, x, y); //In grid units
-                        double ph = output5.getDouble(i, box, 3, x, y); //In grid units
+                        double px = output5.getDouble(i, box, 0, y, x); //Originally: in 0 to 1 in grid cell
+                        double py = output5.getDouble(i, box, 1, y, x); //Originally: in 0 to 1 in grid cell
+                        double pw = output5.getDouble(i, box, 2, y, x); //In grid units (for example, 0 to 13)
+                        double ph = output5.getDouble(i, box, 3, y, x); //In grid units (for example, 0 to 13)
 
                         //Convert the "position in grid cell" to "position in image (in grid cell units)"
                         px += x;
@@ -683,7 +676,15 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         return out;
     }
 
-
+    /**
+     * Get the confidence matrix (confidence for all x/y positions) for the specified bounding box, from the network
+     * output activations array
+     *
+     * @param networkOutput Network output activations
+     * @param example       Example number, in minibatch
+     * @param bbNumber      Bounding box number
+     * @return Confidence matrix
+     */
     public INDArray getConfidenceMatrix(INDArray networkOutput, int example, int bbNumber){
 
         //Input format: [minibatch, 5B+C, H, W], with order [x,y,w,h,c]
@@ -693,6 +694,15 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         return conf;
     }
 
+    /**
+     * Get the probability matrix (probability of the specified class, assuming an object is present, for all x/y
+     * positions), from the network output activations array
+     *
+     * @param networkOutput Network output activations
+     * @param example       Example number, in minibatch
+     * @param classNumber   Class number
+     * @return Confidence matrix
+     */
     public INDArray getProbabilityMatrix(INDArray networkOutput, int example, int classNumber){
         //Input format: [minibatch, 5B+C, H, W], with order [x,y,w,h,c]
         //Therefore: probabilities for class I is at depths 5B + classNumber

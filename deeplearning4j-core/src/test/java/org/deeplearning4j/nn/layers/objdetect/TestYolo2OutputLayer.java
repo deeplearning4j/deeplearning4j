@@ -484,18 +484,17 @@ public class TestYolo2OutputLayer {
 
         INDArray out = net.output(ds.getFeatures());
 
-        for( int i=0; i<bbPriors.size(0); i++ ) {
-            INDArray confidenceEx0 = ol.getConfidenceMatrix(out, 0, i).dup();
-
-            System.out.println(confidenceEx0);
-            System.out.println("\n");
-        }
+//        for( int i=0; i<bbPriors.size(0); i++ ) {
+//            INDArray confidenceEx0 = ol.getConfidenceMatrix(out, 0, i).dup();
+//
+//            System.out.println(confidenceEx0);
+//            System.out.println("\n");
+//        }
 
         List<DetectedObject> l = ol.getPredictedObjects(out, 0.5);
         System.out.println("Detected objects: " + l.size());
         for(DetectedObject d : l){
             System.out.println(d);
-            System.out.println();
         }
 
 
@@ -528,29 +527,28 @@ public class TestYolo2OutputLayer {
             }
         });
 
-        System.out.println("Expected w/h: (" + wGrid1 + "," + hGrid1 + "), (" + wGrid2 + "," + hGrid2 + ")");
 
         DetectedObject o1 = l.get(0);
         double p1 = o1.getClassPredictions().getDouble(idxCat);
         double c1 = o1.getConfidence();
         assertEquals(idxCat, o1.getPredictedClass() );
-        assertTrue(String.valueOf(p1), p1 >= 0.8);
-        assertTrue(String.valueOf(c1), c1 >= 0.8);
-        assertEquals(cx1, o1.getCenterX(), 0.5);
-        assertEquals(cy1, o1.getCenterY(), 0.5);
-        assertEquals(wGrid1, o1.getWidth(), 1);
-        assertEquals(hGrid1, o1.getHeight(), 1);
+        assertTrue(String.valueOf(p1), p1 >= 0.9);
+        assertTrue(String.valueOf(c1), c1 >= 0.9);
+        assertEquals(cx1, o1.getCenterX(), 0.1);
+        assertEquals(cy1, o1.getCenterY(), 0.1);
+        assertEquals(wGrid1, o1.getWidth(), 0.1);
+        assertEquals(hGrid1, o1.getHeight(), 0.1);
 
 
         DetectedObject o2 = l.get(1);
         double p2 = o2.getClassPredictions().getDouble(idxCat);
         double c2 = o2.getConfidence();
         assertEquals(idxCat, o2.getPredictedClass() );
-        assertTrue(String.valueOf(p2), p2 >= 0.8);
-        assertTrue(String.valueOf(c2), c2 >= 0.8);
-        assertEquals(cx2, o2.getCenterX(), 0.5);
-        assertEquals(cy2, o2.getCenterY(), 0.5);
-        assertEquals(wGrid2, o2.getWidth(), 1);
-        assertEquals(hGrid2, o2.getHeight(), 1);
+        assertTrue(String.valueOf(p2), p2 >= 0.9);
+        assertTrue(String.valueOf(c2), c2 >= 0.9);
+        assertEquals(cx2, o2.getCenterX(), 0.1);
+        assertEquals(cy2, o2.getCenterY(), 0.1);
+        assertEquals(wGrid2, o2.getWidth(), 0.1);
+        assertEquals(hGrid2, o2.getHeight(), 0.1);
     }
 }
