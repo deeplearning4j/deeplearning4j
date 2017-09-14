@@ -38,6 +38,7 @@ public class SDVariable  implements Serializable {
     private SameDiff sameDiff;
     private int[] shape;
     private SDVariable gradient;
+    private SDVariable forwardVariable;
     private int vertexId;
     private int depth;
     protected DifferentialFunction differentialFunction;
@@ -121,12 +122,16 @@ public class SDVariable  implements Serializable {
         }
 
 
+        if(this.gradient != null) {
+            this.gradient.setForwardVariable(this);
+        }
 
         return gradient;
     }
 
     public void setGradient(SDVariable gradient) {
         this.gradient = gradient;
+        this.gradient.setForwardVariable(this);
     }
 
     /**

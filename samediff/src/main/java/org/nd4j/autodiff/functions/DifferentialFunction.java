@@ -40,6 +40,11 @@ public abstract class DifferentialFunction implements Differential {
     @Setter
     protected boolean gradFunction;
 
+    @Getter
+    @Setter
+    protected DifferentialFunction forwardFunction;
+
+
     protected Object[] extraArgs;
 
     public NDArrayVertex getVertex() {
@@ -425,12 +430,18 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
-
+    /**
+     * Set a forward function reference
+     * and a gradient reference
+     * for this function
+     * @param gradient
+     */
     public void setGradient(DifferentialFunction gradient) {
         DifferentialFunction functionRef = sameDiff.getFunctionInstances().get(vertexId);
         if(functionRef != this)
             functionRef.setGradient(gradient);
         this.gradient = sameDiff.setupFunction(gradient);
+        this.gradient.setForwardFunction(this);
     }
 
     @Override

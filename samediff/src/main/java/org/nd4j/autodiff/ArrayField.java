@@ -504,7 +504,7 @@ public class ArrayField implements Field {
 
     @Override
     public ArrayField sigmoidDerivative(ArrayField wrt) {
-        return addTransformOp(new SigmoidDerivative().name());
+        return addTransformOp(new  org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative().name());
     }
 
     @Override

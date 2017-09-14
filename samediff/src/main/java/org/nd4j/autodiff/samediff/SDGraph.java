@@ -6,10 +6,14 @@ import com.rits.cloning.Cloner;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.*;
+import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
@@ -119,54 +123,114 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
      */
     public OpExecOrder getOpOrder(boolean reverse) {
         int[] order = topologicalSort(reverse);
-        List<OpExecAction> ret = new ArrayList<>();
-        //iterate over op execution order skipping
-        // nodes that are only inputs
-        //the goal is to get all of the needed op executions
-        for (int i = 0; i < order.length; i++) {
-            //skip vertices that are only inputs
-            if (getVertexInDegree(order[i]) < 1) {
-                continue;
+        if(reverse) {
+            List<OpExecAction> forwardActions = getOpOrder().getActions();
+            Map<Integer,OpExecAction> opExecActionMap = new HashMap<>();
+            //size the vertex id relative to where it would be encountered
+            //in a reverse order traversal
+            Map<Integer,Integer> normalForwardOrderMap = new HashMap<>();
+            for(int i = forwardActions.size() - 1,j = 0; i >= 0; i--,j++) {
+                OpExecAction currAction = forwardActions.get(i);
+                normalForwardOrderMap.put(currAction.getOutputId(),j);
+                opExecActionMap.put(currAction.getOutputId(),currAction);
             }
 
-            int numInputs = Math.max(1, getVertexInDegree(order[i]));
-            int inputsCount = 0;
-            NDArrayInformation[] inputs = new NDArrayInformation[numInputs];
-            int[] inputIds = new int[numInputs];
-            List<Edge<OpState>> inputOpStates = getIncomingEdges().get(order[i]);
-            //get the inputs for this this output array
-            for (Edge<OpState> edge : inputOpStates) {
-                inputIds[inputsCount] = edge.getFrom();
-                Preconditions.checkNotNull(getInformationFor(edge.getFrom()));
-                inputs[inputsCount] = getInformationFor(edge.getFrom());
-                inputsCount++;
+
+            PriorityQueue<NDArrayVertex> depthQueue = new PriorityQueue<>(numVertices(), new Comparator<NDArrayVertex>() {
+                @Override
+                public int compare(NDArrayVertex o1, NDArrayVertex o2) {
+                    if(o1.depth() == o2.depth()) {
+                        Integer o1Compare = normalForwardOrderMap.get(o1.vertexID());
+                        Integer o2Compare = normalForwardOrderMap.get(o2.vertexID());
+                        if(o1Compare != null && o2Compare != null) {
+                            return Ints.compare(o1Compare, o2Compare);
+                        }
+                        else {
+                            System.out.println(o1.vertexID() + " was null or " + o2.vertexID() + " was null during comparison");
+                        }
+                    }
+                    return Ints.compare(-o1.depth(),-o2.depth());
+                }
+            });
+
+            for(int i : order) {
+                NDArrayVertex vertex = (NDArrayVertex) getVertex(i);
+                depthQueue.add(vertex);
             }
 
-            Preconditions.checkState(inputsCount == numInputs, "Not all inputs were filled.");
-            //add edges
-            Edge<OpState> opStateEdge = inputOpStates.get(0);
-            for(int j = 0; j < inputs.length; j++)
-                Preconditions.checkNotNull(inputs[j],"Input " + j + " of edge " + opStateEdge.getFrom() + " -> " + opStateEdge.getTo() + " was null.");
+            List<OpExecAction> ret = new ArrayList<>();
+            while(!depthQueue.isEmpty()) {
+                NDArrayVertex ndArrayVertex = depthQueue.poll();
+                ret.add(opExecActionMap.get(ndArrayVertex.vertexID()));
 
-            ret.add(OpExecAction.builder()
-                    .output(opStateEdge.getValue().getResult())
-                    .opState(opStateEdge.getValue())
-                    .inputs(inputs)
-                    .inputsIds(inputIds)
-                    .outputId(order[i])
-                    .build());
+            }
+
+            /**
+             * Setup the backward and forward links
+             * for each action
+             */
+            for(int i = 0; i < ret.size(); i++) {
+                OpExecAction action = ret.get(i);
+                OpExecAction backward = opExecActionMap.get(action.getOutputId());
+                action.setupForwardBackward(backward);
+            }
+
+
+
+            return OpExecOrder.builder().actions(ret).build();
 
         }
+        else {
+            List<OpExecAction> ret = new ArrayList<>();
+            //iterate over op execution order skipping
+            // nodes that are only inputs
+            //the goal is to get all of the needed op executions
+            for (int i = 0; i < order.length; i++) {
+                //skip vertices that are only inputs
+                if (getVertexInDegree(order[i]) < 1) {
+                    continue;
+                }
 
+                int numInputs = Math.max(1, getVertexInDegree(order[i]));
+                int inputsCount = 0;
+                NDArrayInformation[] inputs = new NDArrayInformation[numInputs];
+                int[] inputIds = new int[numInputs];
+                List<Edge<OpState>> inputOpStates = getIncomingEdges().get(order[i]);
+                //get the inputs for this this output array
+                for (Edge<OpState> edge : inputOpStates) {
+                    inputIds[inputsCount] = edge.getFrom();
+                    Preconditions.checkNotNull(getInformationFor(edge.getFrom()));
+                    inputs[inputsCount] = getInformationFor(edge.getFrom());
+                    inputsCount++;
+                }
 
-        Collections.sort(ret, new Comparator<OpExecAction>() {
-            @Override
-            public int compare(OpExecAction o1, OpExecAction o2) {
-                return Integer.compare(o1.getOutputId(),o2.getOutputId());
+                Preconditions.checkState(inputsCount == numInputs, "Not all inputs were filled.");
+                //add edges
+                Edge<OpState> opStateEdge = inputOpStates.get(0);
+                for(int j = 0; j < inputs.length; j++)
+                    Preconditions.checkNotNull(inputs[j],"Input " + j + " of edge " + opStateEdge.getFrom() + " -> " + opStateEdge.getTo() + " was null.");
+
+                ret.add(OpExecAction.builder()
+                        .output(opStateEdge.getValue().getResult())
+                        .opState(opStateEdge.getValue())
+                        .inputs(inputs)
+                        .inputsIds(inputIds)
+                        .outputId(order[i])
+                        .build());
+
             }
-        });
 
-        return OpExecOrder.builder().actions(ret).build();
+
+            Collections.sort(ret, new Comparator<OpExecAction>() {
+                @Override
+                public int compare(OpExecAction o1, OpExecAction o2) {
+                    return Integer.compare(o1.getOutputId(),o2.getOutputId());
+                }
+            });
+
+            return OpExecOrder.builder().actions(ret).build();
+        }
+
     }
 
 
@@ -197,31 +261,57 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
      * @return
      */
     public int[] topologicalSort(boolean reverse) {
-        LinkedList<Integer> noIncoming = new LinkedList<>();
-        Map<Integer, Set<Integer>> inputEdges = new TreeMap<>(); //key: vertex. Values: vertices that the key vertex receives input from
-        Map<Integer, Set<Integer>> outputEdges = new TreeMap<>(); //key: vertex. Values: vertices that the key vertex outputs to
         int[] ret = new int[numVertices()];
         List<Integer> vertices = new ArrayList<>(getVertices().keySet());
         Collections.sort(vertices);
 
         if(reverse) {
-          PriorityQueue<NDArrayVertex> depthQueue = new PriorityQueue<>(numVertices(), new Comparator<NDArrayVertex>() {
-              @Override
-              public int compare(NDArrayVertex o1, NDArrayVertex o2) {
-                  return Ints.compare(o1.depth(),o2.depth());
-              }
-          });
+            List<OpExecAction> forwardActions = getOpOrder().getActions();
+            //size the vertex id relative to where it would be encountered
+            //in a reverse order traversal
+            Map<Integer,Integer> normalForwardOrderMap = new HashMap<>();
+            for(int i = forwardActions.size() - 1,j = 0; i >= 0; i--,j++) {
+                OpExecAction currAction = forwardActions.get(i);
+                normalForwardOrderMap.put(currAction.getOutputId(),j);
+            }
 
-          for(int i : vertices) {
-              NDArrayVertex vertex = (NDArrayVertex) getVertex(i);
-              depthQueue.add(vertex);
-          }
+            Collections.reverse(vertices);
 
-          for(int i = 0; i < ret.length; i++) {
-              ret[i] = depthQueue.poll().vertexID();
-          }
+            PriorityQueue<NDArrayVertex> depthQueue = new PriorityQueue<>(numVertices(), new Comparator<NDArrayVertex>() {
+                @Override
+                public int compare(NDArrayVertex o1, NDArrayVertex o2) {
+                    if(o1.depth() == o2.depth()) {
+                        Integer o1Compare = normalForwardOrderMap.get(o1.vertexID());
+                        Integer o2Compare = normalForwardOrderMap.get(o2.vertexID());
+                        if(o1Compare != null && o2Compare != null) {
+                            return Ints.compare(o1Compare, o2Compare);
+                        }
+                        else {
+                            System.out.println(o1.vertexID() + " was null or " + o2.vertexID() + " was null during comparison");
+                        }
+                    }
+                    return Ints.compare(-o1.depth(),-o2.depth());
+                }
+            });
+
+            for(int i : vertices) {
+                NDArrayVertex vertex = (NDArrayVertex) getVertex(i);
+                depthQueue.add(vertex);
+            }
+
+            for(int i = 0; i < ret.length; i++) {
+                NDArrayVertex vertex =  depthQueue.poll();
+                ret[i] = vertex.vertexID();
+            }
+
+
         }
         else {
+            LinkedList<Integer> noIncoming = new LinkedList<>();
+            Map<Integer, Set<Integer>> inputEdges = new TreeMap<>(); //key: vertex. Values: vertices that the key vertex receives input from
+            Map<Integer, Set<Integer>> outputEdges = new TreeMap<>(); //key: vertex. Values: vertices that the key vertex outputs to
+
+
             for (int i : vertices) {
                 if (getVertexInDegree(i) < 1) {
                     noIncoming.add(i);

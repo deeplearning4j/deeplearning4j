@@ -3048,29 +3048,18 @@ public class SameDiff {
 
                     outer.invokeGraphOn(sameDiff);
                     List<OpExecAction> opOrder = sameDiff.graph().getOpOrder(true).getActions();
-                    //Collections.reverse(opOrder);
-
                     List<OpExecAction> exec = new ArrayList<>();
 
                     //start with scalar backprop
                     List<DifferentialFunction> currentDiff = Arrays.asList(sameDiff.functionFactory.one(new int[]{1,1}));
-                    Map<DifferentialFunction,DifferentialFunction> gradCandidates = new IdentityHashMap<>();
-                    for(OpExecAction opExecAction : opOrder) {
-                        DifferentialFunction add = sameDiff.setupFunction(opExecAction.getOpState().getDifferentialFunction());
-                        gradCandidates.put(add,add);
-                    }
 
-                    PriorityQueue<OpExecAction> functions = new PriorityQueue<>(10, new Comparator<OpExecAction>() {
-                        @Override
-                        public int compare(OpExecAction o1, OpExecAction o2) {
-                            return -Ints.compare(Ints.min(o1.getOutputId()),Ints.min(o2.getOutputId()));
+
+                    for(OpExecAction action : opOrder) {
+                        if(action == null || action.getOpState() == null) {
+                            log.warn("Action op state is null");
+                            continue;
                         }
-                    });
 
-                    functions.addAll(opOrder);
-
-                    while(!functions.isEmpty()) {
-                        OpExecAction action = functions.poll();
                         DifferentialFunction currFunction = action.getOpState().getDifferentialFunction();
                         currentDiff = currFunction.diff(currentDiff);
 
@@ -3333,10 +3322,11 @@ public class SameDiff {
 
             SDVariable currVariable = getVertexIdToVariable().get(opExecAction.getOutputId());
             if(currVariable ==  null) {
+                List<SDVariable> functions = new ArrayList<>(opExecAction.getInputsIds().length);
                 SDVariable add = SDVariable.builder()
                         .differentialFunction(opExecAction.getOpState().getDifferentialFunction())
                         .sameDiff(this)
-                        .varName(opExecAction.getOpState().getOpName() + "-" + UUID.randomUUID().toString())
+                        .varName(generateVariableName(opExecAction.getOpState().getOpName(),true,functions.toArray(new SDVariable[functions.size()])))
                         .arr(op.z())
                         .shape(op.z().shape())
                         .vertexId(opExecAction.getOutputId())
