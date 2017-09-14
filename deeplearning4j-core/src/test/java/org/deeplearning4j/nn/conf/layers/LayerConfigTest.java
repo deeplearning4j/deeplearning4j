@@ -1,8 +1,11 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -11,11 +14,14 @@ import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.schedule.MapSchedule;
+import org.nd4j.linalg.schedule.ScheduleType;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class LayerConfigTest {
 
@@ -101,6 +107,7 @@ public class LayerConfigTest {
         assertEquals(0, ((BaseLayer) conf.getConf(1).getLayer()).getBiasInit(), 0.0);
     }
 
+    /*
     @Test
     public void testLrL1L2LayerwiseOverride() {
         //Idea: Set some common values for all layers. Then selectively override
@@ -128,7 +135,7 @@ public class LayerConfigTest {
         assertEquals(0.2, ((BaseLayer) conf.getConf(1).getLayer()).getLearningRate(), 0.0);
 
         //L1 and L2 without layerwise override:
-        conf = new NeuralNetConfiguration.Builder().regularization(true).l1(0.1).l2(0.2).list()
+        conf = new NeuralNetConfiguration.Builder().l1(0.1).l2(0.2).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
         net = new MultiLayerNetwork(conf);
@@ -140,7 +147,7 @@ public class LayerConfigTest {
         assertEquals(0.2, ((BaseLayer) conf.getConf(1).getLayer()).getL2(), 0.0);
 
         //L1 and L2 with layerwise override:
-        conf = new NeuralNetConfiguration.Builder().regularization(true).l1(0.1).l2(0.2).list()
+        conf = new NeuralNetConfiguration.Builder().l1(0.1).l2(0.2).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).l1(0.9).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).l2(0.8).build()).build();
         net = new MultiLayerNetwork(conf);
@@ -150,7 +157,7 @@ public class LayerConfigTest {
         assertEquals(0.1, ((BaseLayer) conf.getConf(1).getLayer()).getL1(), 0.0);
         assertEquals(0.2, ((BaseLayer) conf.getConf(0).getLayer()).getL2(), 0.0);
         assertEquals(0.8, ((BaseLayer) conf.getConf(1).getLayer()).getL2(), 0.0);
-    }
+    }*/
 
 
 
@@ -162,8 +169,8 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(1.0, conf.getConf(0).getLayer().getDropOut(), 0.0);
-        assertEquals(1.0, conf.getConf(1).getLayer().getDropOut(), 0.0);
+        assertEquals(new Dropout(1.0), conf.getConf(0).getLayer().getIDropout());
+        assertEquals(new Dropout(1.0), conf.getConf(1).getLayer().getIDropout());
 
         conf = new NeuralNetConfiguration.Builder().dropOut(1.0).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
@@ -172,8 +179,8 @@ public class LayerConfigTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(1.0, conf.getConf(0).getLayer().getDropOut(), 0.0);
-        assertEquals(2.0, conf.getConf(1).getLayer().getDropOut(), 0.0);
+        assertEquals(new Dropout(1.0), conf.getConf(0).getLayer().getIDropout());
+        assertEquals(new Dropout(2.0), conf.getConf(1).getLayer().getIDropout());
     }
 
     @Test
@@ -181,68 +188,55 @@ public class LayerConfigTest {
         Map<Integer, Double> testMomentumAfter = new HashMap<>();
         testMomentumAfter.put(0, 0.1);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.NESTEROVS).momentum(1.0)
-                        .momentumAfter(testMomentumAfter).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Nesterovs(1.0, new MapSchedule(ScheduleType.ITERATION, testMomentumAfter)))
+                        .list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(1.0, ((BaseLayer) conf.getConf(0).getLayer()).getMomentum(), 0.0);
-        assertEquals(1.0, ((BaseLayer) conf.getConf(1).getLayer()).getMomentum(), 0.0);
-        assertEquals(0.1, ((BaseLayer) conf.getConf(0).getLayer()).getMomentumSchedule().get(0), 0.0);
-        assertEquals(0.1, ((BaseLayer) conf.getConf(1).getLayer()).getMomentumSchedule().get(0), 0.0);
+        assertEquals(0.1, ((Nesterovs)((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentumISchedule().valueAt(0,0), 0.0);
+        assertEquals(0.1, ((Nesterovs)((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentumISchedule().valueAt(0,0), 0.0);
 
         Map<Integer, Double> testMomentumAfter2 = new HashMap<>();
         testMomentumAfter2.put(0, 0.2);
 
-        conf = new NeuralNetConfiguration.Builder().updater(Updater.NESTEROVS).momentum(1.0)
-                        .momentumAfter(testMomentumAfter).list()
+        conf = new NeuralNetConfiguration.Builder().updater(new Nesterovs(1.0, new MapSchedule(ScheduleType.ITERATION, testMomentumAfter) ))
+                        .list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build()).layer(1, new DenseLayer.Builder()
-                                        .nIn(2).nOut(2).momentum(2.0).momentumAfter(testMomentumAfter2).build())
+                                        .nIn(2).nOut(2).updater(new Nesterovs(1.0, new MapSchedule(ScheduleType.ITERATION, testMomentumAfter2))).build())
                         .build();
 
         net = new MultiLayerNetwork(conf);
         net.init();
-
-        assertEquals(1.0, ((BaseLayer) conf.getConf(0).getLayer()).getMomentum(), 0.0);
-        assertEquals(2.0, ((BaseLayer) conf.getConf(1).getLayer()).getMomentum(), 0.0);
-        assertEquals(1.0, ((Nesterovs) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentum(), 0.0);
-        assertEquals(2.0, ((Nesterovs) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentum(), 0.0);
-        assertEquals(0.1, ((BaseLayer) conf.getConf(0).getLayer()).getMomentumSchedule().get(0), 0.0);
-        assertEquals(0.2, ((BaseLayer) conf.getConf(1).getLayer()).getMomentumSchedule().get(0), 0.0);
-        assertEquals(0.1, ((Nesterovs) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentumSchedule()
-                        .get(0), 0.0);
-        assertEquals(0.2, ((Nesterovs) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentumSchedule()
-                        .get(0), 0.0);
-
+        assertEquals(0.1, ((Nesterovs)((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentumISchedule().valueAt(0,0), 0.0);
+        assertEquals(0.2, ((Nesterovs)((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentumISchedule().valueAt(0,0), 0.0);
     }
 
     @Test
     public void testUpdaterRhoRmsDecayLayerwiseOverride() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.ADADELTA).rho(0.5).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new AdaDelta(0.5, 0.9)).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).rho(0.01).build()).build();
+                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(new AdaDelta(0.01,0.9)).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals("ADADELTA", ((BaseLayer) conf.getConf(0).getLayer()).getUpdater().toString());
-        assertEquals("ADADELTA", ((BaseLayer) conf.getConf(1).getLayer()).getUpdater().toString());
-        assertEquals(0.5, ((BaseLayer) conf.getConf(0).getLayer()).getRho(), 0.0);
-        assertEquals(0.01, ((BaseLayer) conf.getConf(1).getLayer()).getRho(), 0.0);
+        assertTrue(((BaseLayer) conf.getConf(0).getLayer()).getIUpdater() instanceof AdaDelta);
+        assertTrue(((BaseLayer) conf.getConf(1).getLayer()).getIUpdater() instanceof AdaDelta);
+        assertEquals(0.5, ((AdaDelta)((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getRho(), 0.0);
+        assertEquals(0.01, ((AdaDelta)((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getRho(), 0.0);
 
-        conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP).rmsDecay(2.0).list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).rmsDecay(1.0).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(Updater.ADADELTA).rho(0.5).build())
+        conf = new NeuralNetConfiguration.Builder().updater(new RmsProp(1.0, 2.0, RmsProp.DEFAULT_RMSPROP_EPSILON)).list()
+                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).updater(new RmsProp(1.0, 1.0, RmsProp.DEFAULT_RMSPROP_EPSILON)).build())
+                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(new AdaDelta.Builder().rho(0.5).build()).build())
                         .build();
 
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals("RMSPROP", ((BaseLayer) conf.getConf(0).getLayer()).getUpdater().toString());
-        assertEquals("ADADELTA", ((BaseLayer) conf.getConf(1).getLayer()).getUpdater().toString());
-        assertEquals(1.0, ((BaseLayer) conf.getConf(0).getLayer()).getRmsDecay(), 0.0);
-        assertEquals(0.5, ((BaseLayer) conf.getConf(1).getLayer()).getRho(), 0.0);
+        assertTrue(((BaseLayer) conf.getConf(0).getLayer()).getIUpdater() instanceof RmsProp);
+        assertTrue(((BaseLayer) conf.getConf(1).getLayer()).getIUpdater() instanceof AdaDelta);
         assertEquals(1.0, ((RmsProp) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getRmsDecay(), 0.0);
         assertEquals(0.5, ((AdaDelta) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getRho(), 0.0);
     }
@@ -250,19 +244,14 @@ public class LayerConfigTest {
 
     @Test
     public void testUpdaterAdamParamsLayerwiseOverride() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.ADAM).adamMeanDecay(0.5)
-                        .adamVarDecay(0.5).list().layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).adamMeanDecay(0.6).adamVarDecay(0.7).build())
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Adam(1.0, 0.5, 0.5, 1e-8))
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
+                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(new Adam(1.0, 0.6, 0.7, 1e-8)).build())
                         .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-
-        assertEquals("ADAM", ((BaseLayer) conf.getConf(0).getLayer()).getUpdater().toString());
-        assertEquals("ADAM", ((BaseLayer) conf.getConf(1).getLayer()).getUpdater().toString(), "ADAM");
-        assertEquals(0.5, ((BaseLayer) conf.getConf(0).getLayer()).getAdamMeanDecay(), 0.0);
-        assertEquals(0.6, ((BaseLayer) conf.getConf(1).getLayer()).getAdamMeanDecay(), 0.0);
-        assertEquals(0.5, ((BaseLayer) conf.getConf(0).getLayer()).getAdamVarDecay(), 0.0);
-        assertEquals(0.7, ((BaseLayer) conf.getConf(1).getLayer()).getAdamVarDecay(), 0.0);
 
         assertEquals(0.5, ((Adam) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getBeta1(), 0.0);
         assertEquals(0.6, ((Adam) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getBeta1(), 0.0);
@@ -309,28 +298,15 @@ public class LayerConfigTest {
         assertEquals(2.5, ((BaseLayer) conf.getConf(1).getLayer()).getGradientNormalizationThreshold(), 0.0);
     }
 
-    @Test
-    public void testLearningRatePolicyNone() {
-        double lr = 2;
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr)
-                        .learningRateDecayPolicy(LearningRatePolicy.None).list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
 
-        assertEquals(LearningRatePolicy.None, conf.getConf(0).getLearningRatePolicy());
-        assertEquals(LearningRatePolicy.None, conf.getConf(1).getLearningRatePolicy());
-
-    }
-
-
+    /*
     @Test
     public void testLearningRatePolicyExponential() {
         double lr = 2;
         double lrDecayRate = 5;
         int iterations = 1;
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(iterations).learningRate(lr)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr)
+                        .updater(Updater.SGD)
                         .learningRateDecayPolicy(LearningRatePolicy.Exponential).lrPolicyDecayRate(lrDecayRate).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
@@ -428,5 +404,5 @@ public class LayerConfigTest {
         assertEquals(steps, conf.getConf(1).getLrPolicySteps(), 0.0);
     }
 
-
+*/
 }

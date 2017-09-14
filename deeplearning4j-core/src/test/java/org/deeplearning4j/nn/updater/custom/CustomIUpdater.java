@@ -27,11 +27,6 @@ public class CustomIUpdater implements IUpdater {
     }
 
     @Override
-    public void applySchedules(int iteration, double newLearningRate) {
-        this.learningRate = newLearningRate;
-    }
-
-    @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         if (viewArray != null) {
             throw new IllegalStateException("View arrays are not supported/required for SGD updater");

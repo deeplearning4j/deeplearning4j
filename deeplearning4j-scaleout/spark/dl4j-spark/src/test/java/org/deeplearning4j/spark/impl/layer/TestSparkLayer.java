@@ -30,6 +30,7 @@ import org.deeplearning4j.spark.BaseSparkTest;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.List;
@@ -44,7 +45,7 @@ public class TestSparkLayer extends BaseSparkTest {
     public void testIris2() throws Exception {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(10)
-                        .learningRate(1e-1)
+                        .updater(new Sgd(0.1))
                         .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).build())

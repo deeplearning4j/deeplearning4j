@@ -18,6 +18,7 @@ import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 
@@ -87,7 +88,8 @@ public class AlexNet extends ZooModel {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0.0, 0.01))
                         .activation(Activation.RELU).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(Updater.NESTEROVS).learningRate(1e-2).biasLearningRate(1e-2 * 2).regularization(true)
+                        .updater(new Nesterovs(1e-2, 0.9))
+                        .biasUpdater(new Nesterovs(2e-2, 0.9))
                         .convolutionMode(ConvolutionMode.Same)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer) // normalize to prevent vanishing or exploding gradients
                         .trainingWorkspaceMode(WorkspaceMode.SINGLE).inferenceWorkspaceMode(WorkspaceMode.SINGLE)

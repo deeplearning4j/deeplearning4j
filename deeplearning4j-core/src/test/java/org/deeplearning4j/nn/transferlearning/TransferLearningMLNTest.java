@@ -2,7 +2,10 @@ package org.deeplearning4j.nn.transferlearning;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.BackpropType;
+import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -16,6 +19,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.*;
@@ -34,7 +38,7 @@ public class TransferLearningMLNTest {
         //original conf
         NeuralNetConfiguration.Builder confToChange =
                         new NeuralNetConfiguration.Builder().seed(rng).optimizationAlgo(OptimizationAlgorithm.LBFGS)
-                                        .updater(Updater.NESTEROVS).momentum(0.99).learningRate(0.01);
+                                        .updater(new Nesterovs(0.01, 0.99));
 
         MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(confToChange.list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
@@ -46,24 +50,22 @@ public class TransferLearningMLNTest {
 
         //model after applying changes with transfer learning
         MultiLayerNetwork modelNow =
-                        new TransferLearning.Builder(modelToFineTune)
-                                        .fineTuneConfiguration(new FineTuneConfiguration.Builder().seed(rng)
-                                                        .optimizationAlgo(
-                                                                        OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                                        .updater(Updater.RMSPROP).learningRate(0.5) //Intent: override both weight and bias LR, unless bias LR is manually set also
-                                                        .l2(0.4).regularization(true).build())
-                                        .build();
+                new TransferLearning.Builder(modelToFineTune)
+                        .fineTuneConfiguration(new FineTuneConfiguration.Builder().seed(rng)
+                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                .updater(new RmsProp(0.5)) //Intent: override both weight and bias LR, unless bias LR is manually set also
+                                .l2(0.4).build())
+                        .build();
 
         for (org.deeplearning4j.nn.api.Layer l : modelNow.getLayers()) {
             BaseLayer bl = ((BaseLayer) l.conf().getLayer());
-            assertEquals(Updater.RMSPROP, bl.getUpdater());
-            assertEquals(0.5, bl.getLearningRate(), 1e-6);
+            assertEquals(new RmsProp(0.5), bl.getIUpdater());
         }
 
 
         NeuralNetConfiguration.Builder confSet = new NeuralNetConfiguration.Builder().seed(rng)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.RMSPROP)
-                        .learningRate(0.5).l2(0.4).regularization(true);
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(new RmsProp(0.5)).l2(0.4);
 
         MultiLayerNetwork expectedModel = new MultiLayerNetwork(confSet.list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
@@ -94,10 +96,8 @@ public class TransferLearningMLNTest {
     public void testNoutChanges() {
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 2));
 
-        NeuralNetConfiguration.Builder equivalentConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
-        FineTuneConfiguration overallConf = new FineTuneConfiguration.Builder().learningRate(0.1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+        NeuralNetConfiguration.Builder equivalentConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1));
+        FineTuneConfiguration overallConf = new FineTuneConfiguration.Builder().updater(new Sgd(0.1))
                         .build();
 
         MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(equivalentConf.list()
@@ -155,11 +155,8 @@ public class TransferLearningMLNTest {
     public void testRemoveAndAdd() {
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
 
-        NeuralNetConfiguration.Builder equivalentConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
-        FineTuneConfiguration overallConf = new FineTuneConfiguration.Builder().learningRate(0.1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
-                        .build();
+        NeuralNetConfiguration.Builder equivalentConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1));
+        FineTuneConfiguration overallConf = new FineTuneConfiguration.Builder().updater(new Sgd(0.1)).build();
 
         MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(//overallConf.list()
                         equivalentConf.list().layer(0, new DenseLayer.Builder().nIn(4).nOut(5).build())
@@ -177,7 +174,7 @@ public class TransferLearningMLNTest {
                                         .nOutReplace(0, 7, WeightInit.XAVIER, WeightInit.XAVIER)
                                         .nOutReplace(2, 5, WeightInit.XAVIER).removeOutputLayer()
                                         .addLayer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5)
-                                                        .nOut(3).learningRate(0.5).activation(Activation.SOFTMAX)
+                                                        .nOut(3).updater(new Sgd(0.5)).activation(Activation.SOFTMAX)
                                                         .build())
                                         .build();
 
@@ -187,7 +184,7 @@ public class TransferLearningMLNTest {
                         .layer(2, new DenseLayer.Builder().nIn(2).nOut(5).build())
                         .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)
-                                                        .learningRate(0.5).nIn(5).nOut(3).build())
+                                                        .updater(new Sgd(0.5)).nIn(5).nOut(3).build())
                         .build());
         modelExpectedArch.init();
 
@@ -214,34 +211,29 @@ public class TransferLearningMLNTest {
         int V_NFRAMES = 150;
 
         MultiLayerConfiguration confForArchitecture =
-                        new NeuralNetConfiguration.Builder().seed(12345).regularization(true).l2(0.001) //l2 regularization on all layers
+                        new NeuralNetConfiguration.Builder().seed(12345).l2(0.001) //l2 regularization on all layers
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).learningRate(0.4).list()
+                                        .iterations(1).updater(new AdaGrad(0.4)).list()
                                         .layer(0, new ConvolutionLayer.Builder(10, 10).nIn(3) //3 channels: RGB
                                                         .nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(
-                                                                        WeightInit.RELU)
-                                                        .updater(Updater.ADAGRAD).build()) //Output: (130-10+0)/4+1 = 31 -> 31*31*30
+                                                                        WeightInit.RELU).build()) //Output: (130-10+0)/4+1 = 31 -> 31*31*30
                                         .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
                                                         .kernelSize(3, 3).stride(2, 2).build()) //(31-3+0)/2+1 = 15
                                         .layer(2, new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
                                                         .activation(Activation.RELU).weightInit(WeightInit.RELU)
-                                                        .updater(Updater.ADAGRAD).build()) //Output: (15-3+0)/2+1 = 7 -> 7*7*10 = 490
+                                                        .build()) //Output: (15-3+0)/2+1 = 7 -> 7*7*10 = 490
                                         .layer(3, new DenseLayer.Builder().activation(Activation.RELU).nIn(490).nOut(50)
-                                                        .weightInit(WeightInit.RELU).updater(Updater.ADAGRAD)
-                                                        .gradientNormalization(
-                                                                        GradientNormalization.ClipElementWiseAbsoluteValue)
-                                                        .gradientNormalizationThreshold(10).learningRate(0.5).build())
+                                                        .weightInit(WeightInit.RELU).updater(new AdaGrad(0.5))
+                                                        .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+                                                        .gradientNormalizationThreshold(10).build())
                                         .layer(4, new GravesLSTM.Builder().activation(Activation.SOFTSIGN).nIn(50)
-                                                        .nOut(50).weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD)
-                                                        .gradientNormalization(
-                                                                        GradientNormalization.ClipElementWiseAbsoluteValue)
-                                                        .gradientNormalizationThreshold(10).learningRate(0.6)
-                                                        .build())
+                                                        .nOut(50).weightInit(WeightInit.XAVIER).updater(new AdaGrad(0.6))
+                                                        .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+                                                        .gradientNormalizationThreshold(10).build())
                                         .layer(5, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                         .activation(Activation.SOFTMAX).nIn(50).nOut(4) //4 possible shapes: circle, square, arc, line
-                                                        .updater(Updater.ADAGRAD).weightInit(WeightInit.XAVIER)
-                                                        .gradientNormalization(
-                                                                        GradientNormalization.ClipElementWiseAbsoluteValue)
+                                                        .weightInit(WeightInit.XAVIER)
+                                                        .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                                         .gradientNormalizationThreshold(10).build())
                                         .inputPreProcessor(0, new RnnToCnnPreProcessor(V_HEIGHT, V_WIDTH, 3))
                                         .inputPreProcessor(3, new CnnToFeedForwardPreProcessor(7, 7, 10))
@@ -254,18 +246,14 @@ public class TransferLearningMLNTest {
         MultiLayerNetwork modelToTweak =
                         new MultiLayerNetwork(
                                         new NeuralNetConfiguration.Builder().seed(12345)
-                                                        //.regularization(true).l2(0.001) //change l2
-                                                        .optimizationAlgo(
-                                                                        OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                                        .iterations(1).learningRate(0.1) //change learning rate
-                                                        .updater(Updater.RMSPROP)// change updater
+                                                        .iterations(1).updater(new RmsProp(0.1))
                                                         .list()
                                                         .layer(0, new ConvolutionLayer.Builder(10, 10) //Only keep the first layer the same
                                                                         .nIn(3) //3 channels: RGB
                                                                         .nOut(30).stride(4, 4)
                                                                         .activation(Activation.RELU)
                                                                         .weightInit(WeightInit.RELU)
-                                                                        .updater(Updater.ADAGRAD).build()) //Output: (130-10+0)/4+1 = 31 -> 31*31*30
+                                                                        .updater(new AdaGrad(0.1)).build()) //Output: (130-10+0)/4+1 = 31 -> 31*31*30
                                                         .layer(1, new SubsamplingLayer.Builder(
                                                                         SubsamplingLayer.PoolingType.MAX) //change kernel size
                                                                                         .kernelSize(5, 5).stride(2, 2)
@@ -280,7 +268,7 @@ public class TransferLearningMLNTest {
                                                                         .gradientNormalization(
                                                                                         GradientNormalization.ClipElementWiseAbsoluteValue)
                                                                         .gradientNormalizationThreshold(10)
-                                                                        .learningRate(0.01).build())
+                                                                        .updater(new RmsProp(0.01)).build())
                                                         .layer(4, new GravesLSTM.Builder() //change here
                                                                         .activation(Activation.SOFTSIGN).nIn(50)
                                                                         .nOut(25).weightInit(WeightInit.XAVIER)
@@ -290,15 +278,11 @@ public class TransferLearningMLNTest {
                                                                                         .activation(Activation.SOFTMAX)
                                                                                         .nIn(25).nOut(4)
                                                                                         .weightInit(WeightInit.XAVIER)
-                                                                                        .gradientNormalization(
-                                                                                                        GradientNormalization.ClipElementWiseAbsoluteValue)
-                                                                                        .gradientNormalizationThreshold(
-                                                                                                        10)
+                                                                                        .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+                                                                                        .gradientNormalizationThreshold(10)
                                                                                         .build())
-                                                        .inputPreProcessor(0,
-                                                                        new RnnToCnnPreProcessor(V_HEIGHT, V_WIDTH, 3))
-                                                        .inputPreProcessor(3,
-                                                                        new CnnToFeedForwardPreProcessor(5, 5, 10))
+                                                        .inputPreProcessor(0,new RnnToCnnPreProcessor(V_HEIGHT, V_WIDTH, 3))
+                                                        .inputPreProcessor(3,new CnnToFeedForwardPreProcessor(5, 5, 10))
                                                         .inputPreProcessor(4, new FeedForwardToRnnPreProcessor())
                                                         .pretrain(false).backprop(true)
                                                         .backpropType(BackpropType.TruncatedBPTT)
@@ -308,28 +292,25 @@ public class TransferLearningMLNTest {
 
         MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToTweak)
                         .fineTuneConfiguration(
-                                        new FineTuneConfiguration.Builder().seed(12345).regularization(true).l2(0.001) //l2 regularization on all layers
-                                                        .optimizationAlgo(
-                                                                        OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                                        .updater(Updater.ADAGRAD).weightInit(WeightInit.RELU)
-                                                        .iterations(1).learningRate(0.4).build())
+                                        new FineTuneConfiguration.Builder().seed(12345).l2(0.001) //l2 regularization on all layers
+                                                        .updater(new AdaGrad(0.4))
+                                                        .weightInit(WeightInit.RELU).build())
                         .removeLayersFromOutput(5)
                         .addLayer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3, 3)
                                         .stride(2, 2).build())
                         .addLayer(new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
-                                        .activation(Activation.RELU).weightInit(WeightInit.RELU)
-                                        .updater(Updater.ADAGRAD).build())
+                                        .activation(Activation.RELU).weightInit(WeightInit.RELU).build())
                         .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(490).nOut(50)
-                                        .weightInit(WeightInit.RELU).updater(Updater.ADAGRAD)
+                                        .weightInit(WeightInit.RELU).updater(new AdaGrad(0.5))
                                         .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
-                                        .gradientNormalizationThreshold(10).learningRate(0.5).build())
+                                        .gradientNormalizationThreshold(10).build())
                         .addLayer(new GravesLSTM.Builder().activation(Activation.SOFTSIGN).nIn(50).nOut(50)
-                                        .weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD)
+                                        .weightInit(WeightInit.XAVIER).updater(new AdaGrad(0.6))
                                         .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
-                                        .gradientNormalizationThreshold(10).learningRate(0.6).build())
+                                        .gradientNormalizationThreshold(10).build())
                         .addLayer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(50).nOut(4) //4 possible shapes: circle, square, arc, line
-                                        .updater(Updater.ADAGRAD).weightInit(WeightInit.XAVIER)
+                                        .weightInit(WeightInit.XAVIER)
                                         .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                         .gradientNormalizationThreshold(10).build())
                         .setInputPreProcessor(3, new CnnToFeedForwardPreProcessor(7, 7, 10))
@@ -366,12 +347,9 @@ public class TransferLearningMLNTest {
         DataSet randomData = new DataSet(Nd4j.rand(10, 28 * 28 * 3).reshape(10, 3, 28, 28), Nd4j.rand(10, 10));
         MultiLayerNetwork modelToFineTune =
                         new MultiLayerNetwork(
-                                        new NeuralNetConfiguration.Builder().seed(123).iterations(1).learningRate(.01)
+                                        new NeuralNetConfiguration.Builder().seed(123)
                                                         .weightInit(WeightInit.XAVIER)
-                                                        .optimizationAlgo(
-                                                                        OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                                        .updater(Updater.NESTEROVS).momentum(
-                                                                        0.9)
+                                                        .updater(new Nesterovs(0.01, 0.9))
                                                         .list()
                                                         .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).stride(1, 1)
                                                                         .nOut(20).activation(Activation.IDENTITY)
@@ -401,11 +379,10 @@ public class TransferLearningMLNTest {
         modelToFineTune.init();
         INDArray asFrozenFeatures = modelToFineTune.feedForwardToLayer(2, randomData.getFeatures(), false).get(2); //10x20x12x12
 
-        NeuralNetConfiguration.Builder equivalentConf = new NeuralNetConfiguration.Builder().learningRate(0.2)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+        NeuralNetConfiguration.Builder equivalentConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.2))
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT);
 
-        FineTuneConfiguration overallConf = new FineTuneConfiguration.Builder().learningRate(0.2)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+        FineTuneConfiguration overallConf = new FineTuneConfiguration.Builder().updater(new Sgd(0.2))
                         .build();
 
         MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune).fineTuneConfiguration(overallConf)
@@ -466,8 +443,8 @@ public class TransferLearningMLNTest {
         //Check that fine-tune overrides are selective - i.e., if I only specify a new LR, only the LR should be modified
 
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().learningRate(1e-4).updater(Updater.ADAM)
-                                        .activation(Activation.TANH).weightInit(WeightInit.RELU).regularization(true)
+                        new NeuralNetConfiguration.Builder().updater(new Adam(1e-4))
+                                        .activation(Activation.TANH).weightInit(WeightInit.RELU)
                                         .l1(0.1).l2(0.2).list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(5).build()).layer(1,
                                                         new OutputLayer.Builder().nIn(5).nOut(4)
@@ -478,7 +455,7 @@ public class TransferLearningMLNTest {
         net.init();
 
         MultiLayerNetwork net2 = new TransferLearning.Builder(net)
-                        .fineTuneConfiguration(new FineTuneConfiguration.Builder().learningRate(2e-2) //Should be set on layers
+                        .fineTuneConfiguration(new FineTuneConfiguration.Builder().updater(new Adam(2e-2))
                                         .backpropType(BackpropType.TruncatedBPTT) //Should be set on MLC
                                         .build())
                         .build();
@@ -486,16 +463,14 @@ public class TransferLearningMLNTest {
 
         //Check original net isn't modified:
         BaseLayer l0 = (BaseLayer) net.getLayer(0).conf().getLayer();
-        assertEquals(Updater.ADAM, l0.getUpdater());
+        assertEquals(new Adam(1e-4), l0.getIUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
-        assertEquals(1e-4, l0.getLearningRate(), 1e-8);
         assertEquals(WeightInit.RELU, l0.getWeightInit());
         assertEquals(0.1, l0.getL1(), 1e-6);
 
         BaseLayer l1 = (BaseLayer) net.getLayer(1).conf().getLayer();
-        assertEquals(Updater.ADAM, l1.getUpdater());
+        assertEquals(new Adam(1e-4), l1.getIUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
-        assertEquals(1e-4, l1.getLearningRate(), 1e-8);
         assertEquals(WeightInit.RELU, l1.getWeightInit());
         assertEquals(0.2, l1.getL2(), 1e-6);
 
@@ -503,16 +478,14 @@ public class TransferLearningMLNTest {
 
         //Check new net has only the appropriate things modified (i.e., LR)
         l0 = (BaseLayer) net2.getLayer(0).conf().getLayer();
-        assertEquals(Updater.ADAM, l0.getUpdater());
+        assertEquals(new Adam(2e-2), l0.getIUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
-        assertEquals(2e-2, l0.getLearningRate(), 1e-8);
         assertEquals(WeightInit.RELU, l0.getWeightInit());
         assertEquals(0.1, l0.getL1(), 1e-6);
 
         l1 = (BaseLayer) net2.getLayer(1).conf().getLayer();
-        assertEquals(Updater.ADAM, l1.getUpdater());
+        assertEquals(new Adam(2e-2), l1.getIUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
-        assertEquals(2e-2, l1.getLearningRate(), 1e-8);
         assertEquals(WeightInit.RELU, l1.getWeightInit());
         assertEquals(0.2, l1.getL2(), 1e-6);
 
@@ -525,12 +498,9 @@ public class TransferLearningMLNTest {
         DataSet randomData = new DataSet(Nd4j.rand(10, 28 * 28 * 3).reshape(10, 3, 28, 28), Nd4j.rand(10, 10));
         MultiLayerNetwork modelToFineTune =
                         new MultiLayerNetwork(
-                                        new NeuralNetConfiguration.Builder().seed(123).iterations(1).learningRate(.01)
+                                        new NeuralNetConfiguration.Builder().seed(123).iterations(1)
                                                         .weightInit(WeightInit.XAVIER)
-                                                        .optimizationAlgo(
-                                                                        OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                                        .updater(Updater.NESTEROVS).momentum(
-                                                                        0.9)
+                                                        .updater(new Nesterovs(0.01, 0.9))
                                                         .list()
                                                         .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).stride(1, 1)
                                                                         .nOut(20).activation(Activation.IDENTITY)
@@ -560,11 +530,8 @@ public class TransferLearningMLNTest {
         modelToFineTune.init();
         INDArray asFrozenFeatures = modelToFineTune.feedForwardToLayer(2, randomData.getFeatures(), false).get(2); //10x20x12x12
 
-        NeuralNetConfiguration.Builder equivalentConf = new NeuralNetConfiguration.Builder().learningRate(0.2)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
-        FineTuneConfiguration overallConf = new FineTuneConfiguration.Builder().learningRate(0.2)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
-                        .build();
+        NeuralNetConfiguration.Builder equivalentConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.2));
+        FineTuneConfiguration overallConf = new FineTuneConfiguration.Builder().updater(new Sgd(0.2)).build();
 
         MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune).fineTuneConfiguration(overallConf)
                         .setFeatureExtractor(1).removeLayersFromOutput(5)

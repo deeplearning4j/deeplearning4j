@@ -2,7 +2,6 @@ package org.deeplearning4j.iterator;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.iterator.provider.LabelAwareConverter;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.text.documentiterator.LabelAwareDocumentIterator;
@@ -20,6 +19,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
 

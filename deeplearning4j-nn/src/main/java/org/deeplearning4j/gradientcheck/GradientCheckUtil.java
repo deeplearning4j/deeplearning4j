@@ -1,6 +1,7 @@
 package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
@@ -30,6 +31,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,7 +70,7 @@ public class GradientCheckUtil {
     private GradientCheckUtil() {}
 
 
-    private static void configureSoftmaxClippingIfPresent(IOutputLayer outputLayer){
+    private static void configureLossFnClippingIfPresent(IOutputLayer outputLayer){
 
         ILossFunction lfn = null;
         IActivation afn = null;
@@ -86,6 +88,10 @@ public class GradientCheckUtil {
             log.info("Setting softmax clipping epsilon to 0.0 for " + lfn.getClass()
                     + " loss function to avoid spurious gradient check failures");
             ((LossMCXENT) lfn).setSoftmaxClipEps(0.0);
+        } else if(lfn instanceof LossBinaryXENT && ((LossBinaryXENT) lfn).getClipEps() != 0) {
+            log.info("Setting clipping epsilon to 0.0 for " + lfn.getClass()
+                    + " loss function to avoid spurious gradient check failures");
+            ((LossBinaryXENT) lfn).setClipEps(0.0);
         }
     }
 
@@ -128,7 +134,7 @@ public class GradientCheckUtil {
                 IUpdater u = bl.getIUpdater();
                 if (u instanceof Sgd) {
                     //Must have LR of 1.0
-                    double lr = bl.getLearningRate();
+                    double lr = ((Sgd) u).getLearningRate();
                     if (lr != 1.0) {
                         throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
                                         + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
@@ -150,17 +156,16 @@ public class GradientCheckUtil {
                 }
             }
 
-            double dropout = n.getLayer().getDropOut();
-            if (dropout != 0.0) {
-                throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
-                                + dropout + " for layer " + layerCount);
+            if (n.getLayer().getIDropout() != null) {
+                throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
+                                + n.getLayer().getIDropout() + " for layer " + layerCount);
             }
         }
 
         //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
         for(Layer l : mln.getLayers()){
             if(l instanceof IOutputLayer){
-                configureSoftmaxClippingIfPresent((IOutputLayer) l);
+                configureLossFnClippingIfPresent((IOutputLayer) l);
             }
         }
 
@@ -170,7 +175,7 @@ public class GradientCheckUtil {
         Pair<Gradient, Double> gradAndScore = mln.gradientAndScore();
 
         Updater updater = UpdaterCreator.getUpdater(mln);
-        updater.update(mln, gradAndScore.getFirst(), 0, mln.batchSize());
+        updater.update(mln, gradAndScore.getFirst(), 0, 0, mln.batchSize());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = mln.params().dup(); //need dup: params are a *view* of full parameters
@@ -308,7 +313,7 @@ public class GradientCheckUtil {
                 IUpdater u = bl.getIUpdater();
                 if (u instanceof Sgd) {
                     //Must have LR of 1.0
-                    double lr = bl.getLearningRate();
+                    double lr = ((Sgd) u).getLearningRate();
                     if (lr != 1.0) {
                         throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
                                         + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
@@ -330,17 +335,16 @@ public class GradientCheckUtil {
                 }
             }
 
-            double dropout = lv.getLayerConf().getLayer().getDropOut();
-            if (dropout != 0.0) {
-                throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
-                                + dropout + " for layer " + layerCount);
+            if (lv.getLayerConf().getLayer().getIDropout() != null) {
+                throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
+                        + lv.getLayerConf().getLayer().getIDropout() + " for layer " + layerCount);
             }
         }
 
         //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
         for(Layer l : graph.getLayers()){
             if(l instanceof IOutputLayer){
-                configureSoftmaxClippingIfPresent((IOutputLayer) l);
+                configureLossFnClippingIfPresent((IOutputLayer) l);
             }
         }
 
@@ -353,7 +357,7 @@ public class GradientCheckUtil {
         Pair<Gradient, Double> gradAndScore = graph.gradientAndScore();
 
         ComputationGraphUpdater updater = new ComputationGraphUpdater(graph);
-        updater.update(gradAndScore.getFirst(), 0, graph.batchSize());
+        updater.update(gradAndScore.getFirst(), 0, 0, graph.batchSize());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = graph.params().dup(); //need dup: params are a *view* of full parameters
@@ -469,7 +473,7 @@ public class GradientCheckUtil {
         Pair<Gradient, Double> gradAndScore = layer.gradientAndScore();
 
         Updater updater = UpdaterCreator.getUpdater(layer);
-        updater.update(layer, gradAndScore.getFirst(), 0, layer.batchSize());
+        updater.update(layer, gradAndScore.getFirst(), 0, 0, layer.batchSize());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = layer.params().dup(); //need dup: params are a *view* of full parameters

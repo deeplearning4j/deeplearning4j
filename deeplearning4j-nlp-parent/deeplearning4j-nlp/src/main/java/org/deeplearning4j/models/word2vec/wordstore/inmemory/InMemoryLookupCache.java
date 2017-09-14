@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
-import org.nd4j.linalg.primitives.Counter;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.util.Index;
 import org.deeplearning4j.util.SerializationUtils;
+import org.nd4j.linalg.primitives.Counter;
 
 import java.io.File;
 import java.io.InputStream;

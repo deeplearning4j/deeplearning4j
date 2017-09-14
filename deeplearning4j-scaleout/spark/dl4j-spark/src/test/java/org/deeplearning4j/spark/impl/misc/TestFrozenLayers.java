@@ -2,7 +2,6 @@ package org.deeplearning4j.spark.impl.misc;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
@@ -19,6 +18,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.ArrayList;
@@ -36,10 +36,10 @@ public class TestFrozenLayers extends BaseSparkTest {
     @Test
     public void testSparkFrozenLayers() {
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
-                        .updater(Updater.SGD).activation(Activation.TANH);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
+                        .activation(Activation.TANH);
 
-        FineTuneConfiguration finetune = new FineTuneConfiguration.Builder().learningRate(0.1).build();
+        FineTuneConfiguration finetune = new FineTuneConfiguration.Builder().updater(new Sgd(0.1)).build();
 
         int nIn = 6;
         int nOut = 3;
@@ -114,13 +114,13 @@ public class TestFrozenLayers extends BaseSparkTest {
     @Test
     public void testSparkFrozenLayersCompGraph() {
 
-        FineTuneConfiguration finetune = new FineTuneConfiguration.Builder().learningRate(0.1).build();
+        FineTuneConfiguration finetune = new FineTuneConfiguration.Builder().updater(new Sgd(0.1)).build();
 
         int nIn = 6;
         int nOut = 3;
 
-        ComputationGraph origModel = new ComputationGraph(new NeuralNetConfiguration.Builder().learningRate(0.1)
-                        .updater(Updater.SGD).activation(Activation.TANH).graphBuilder().addInputs("in")
+        ComputationGraph origModel = new ComputationGraph(new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
+                        .activation(Activation.TANH).graphBuilder().addInputs("in")
                         .addLayer("0", new DenseLayer.Builder().nIn(6).nOut(5).build(), "in")
                         .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(4).build(), "0")
                         .addLayer("2", new DenseLayer.Builder().nIn(4).nOut(3).build(), "1")

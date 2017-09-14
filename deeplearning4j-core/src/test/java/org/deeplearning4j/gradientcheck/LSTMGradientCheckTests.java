@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Random;
@@ -57,27 +58,27 @@ public class LSTMGradientCheckTests {
             if (graves) {
                 l0 = new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.SIGMOID)
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
-                                .updater(Updater.NONE).build();
+                                .updater(new NoOp()).build();
                 l1 = new GravesLSTM.Builder().nIn(layerSize).nOut(layerSize).activation(Activation.SIGMOID)
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
-                                .updater(Updater.NONE).build();
+                                .updater(new NoOp()).build();
             } else {
                 l0 = new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.SIGMOID)
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
-                                .updater(Updater.NONE).build();
+                                .updater(new NoOp()).build();
                 l1 = new LSTM.Builder().nIn(layerSize).nOut(layerSize).activation(Activation.SIGMOID)
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
-                                .updater(Updater.NONE).build();
+                                .updater(new NoOp()).build();
             }
 
             MultiLayerConfiguration conf =
-                            new NeuralNetConfiguration.Builder().regularization(false).seed(12345L).list()
+                            new NeuralNetConfiguration.Builder().seed(12345L).list()
                                             .layer(0, l0).layer(1,
                                                             l1)
                                             .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT)
                                                             .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                                                             .weightInit(WeightInit.DISTRIBUTION)
-                                                            .dist(new NormalDistribution(0, 1.0)).updater(Updater.NONE)
+                                                            .dist(new NormalDistribution(0, 1.0)).updater(new NoOp())
                                                             .build())
                                             .pretrain(false).backprop(true).build();
 
@@ -166,9 +167,9 @@ public class LSTMGradientCheckTests {
                         double l1 = l1vals[k];
 
                         NeuralNetConfiguration.Builder conf =
-                                        new NeuralNetConfiguration.Builder().regularization(l1 > 0.0 || l2 > 0.0)
+                                        new NeuralNetConfiguration.Builder()
                                                         .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
-                                                        .dist(new NormalDistribution(0, 1)).updater(Updater.NONE);
+                                                        .dist(new NormalDistribution(0, 1)).updater(new NoOp());
 
                         if (l1 > 0.0)
                             conf.l1(l1);
@@ -255,9 +256,9 @@ public class LSTMGradientCheckTests {
                     layer = new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build();
                 }
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).regularization(false)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L)
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                .updater(Updater.NONE).list().layer(0, layer)
+                                .updater(new NoOp()).list().layer(0, layer)
                                 .layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX)
                                                 .nIn(layerSize).nOut(nOut).build())
                                 .pretrain(false).backprop(true).build();
@@ -321,7 +322,7 @@ public class LSTMGradientCheckTests {
                     double l1 = l1vals[k];
 
                     NeuralNetConfiguration.Builder conf =
-                                    new NeuralNetConfiguration.Builder().regularization(l1 > 0.0 || l2 > 0.0);
+                                    new NeuralNetConfiguration.Builder();
                     if (l1 > 0.0)
                         conf.l1(l1);
                     if (l2 > 0.0)
@@ -341,7 +342,7 @@ public class LSTMGradientCheckTests {
                                                                     .build())
                                     .layer(1, new RnnOutputLayer.Builder(lf).activation(outputActivation).nIn(layerSize)
                                                     .nOut(nOut).weightInit(WeightInit.DISTRIBUTION)
-                                                    .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
+                                                    .dist(new NormalDistribution(0, 1)).updater(new NoOp()).build())
                                     .pretrain(false).backprop(true).build();
 
 
@@ -398,7 +399,7 @@ public class LSTMGradientCheckTests {
                 }
             }
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false).seed(12345L)
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L)
                             .list()
                             .layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize)
                                             .weightInit(WeightInit.DISTRIBUTION)
@@ -407,7 +408,7 @@ public class LSTMGradientCheckTests {
                                             .build())
                             .layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX)
                                             .nIn(layerSize).nOut(nOut).weightInit(WeightInit.DISTRIBUTION)
-                                            .dist(new NormalDistribution(0, 1)).updater(Updater.NONE).build())
+                                            .dist(new NormalDistribution(0, 1)).updater(new NoOp()).build())
                             .pretrain(false).backprop(true).build();
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
@@ -445,7 +446,7 @@ public class LSTMGradientCheckTests {
         }
 
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.NONE).seed(12345)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp()).seed(12345)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-2, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).nOut(5).stride(1, 1)
                                         .activation(Activation.TANH).build()) //Out: (10-5)/1+1 = 6 -> 6x6x5

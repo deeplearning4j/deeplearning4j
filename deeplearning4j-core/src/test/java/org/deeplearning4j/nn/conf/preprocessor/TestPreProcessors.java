@@ -1,10 +1,8 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
@@ -432,27 +430,22 @@ public class TestPreProcessors {
     @Test
     public void testCnnToDense() {
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder()
-                                        //.gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .learningRate(0.01) // default
-                                        //.momentum(0.9)
-                                        .regularization(true)
-                                        .list().layer(0,
-                                                        new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
-                                                                        4, 4) // 28*28*1 => 15*15*10
-                                                                                        .nIn(1).nOut(10).padding(2, 2)
-                                                                                        .stride(2, 2)
-                                                                                        .weightInit(WeightInit.RELU)
-                                                                                        .activation(Activation.RELU)
-                                                                                        .build())
-                                        .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
-                                                        .activation(Activation.RELU).nOut(200).build())
-                                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(200)
-                                                        .nOut(5).weightInit(WeightInit.RELU)
-                                                        .activation(Activation.SOFTMAX).updater(Updater.SGD).build())
-                                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).backprop(true)
-                                        .pretrain(false).build();
+                new NeuralNetConfiguration.Builder()
+                        .list().layer(0,
+                        new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                4, 4) // 28*28*1 => 15*15*10
+                                .nIn(1).nOut(10).padding(2, 2)
+                                .stride(2, 2)
+                                .weightInit(WeightInit.RELU)
+                                .activation(Activation.RELU)
+                                .build())
+                        .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                                .activation(Activation.RELU).nOut(200).build())
+                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(200)
+                                .nOut(5).weightInit(WeightInit.RELU)
+                                .activation(Activation.SOFTMAX).build())
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).backprop(true)
+                        .pretrain(false).build();
 
         assertNotNull(conf.getInputPreProcess(0));
         assertNotNull(conf.getInputPreProcess(1));

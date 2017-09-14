@@ -14,6 +14,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.lang.reflect.Field;
@@ -46,8 +47,8 @@ public class ValidateCudnnLSTM {
         }
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().inferenceWorkspaceMode(WorkspaceMode.NONE)
-                        .trainingWorkspaceMode(WorkspaceMode.NONE).learningRate(1.0).regularization(false)
-                        .updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .trainingWorkspaceMode(WorkspaceMode.NONE).updater(new NoOp())
+                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
@@ -123,9 +124,9 @@ public class ValidateCudnnLSTM {
             }
         }
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(1.0)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                         .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
-                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
@@ -207,9 +208,9 @@ public class ValidateCudnnLSTM {
         int tbpttLength = 5;
         int nOut = 2;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(1.0)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                         .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
-                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new LSTM.Builder().nIn(inputSize).nOut(lstmLayerSize)
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
@@ -274,9 +275,9 @@ public class ValidateCudnnLSTM {
         int tbpttLength = 5;
         int nOut = 2;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(1.0)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                         .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
-                        .cacheMode(CacheMode.NONE).regularization(false).updater(Updater.NONE).seed(12345L)
+                        .cacheMode(CacheMode.NONE).seed(12345L)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new LSTM.Builder().nIn(inputSize).nOut(lstmLayerSize)
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())

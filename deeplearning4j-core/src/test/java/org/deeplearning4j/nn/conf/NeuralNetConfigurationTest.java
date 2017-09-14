@@ -35,9 +35,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
@@ -92,14 +91,12 @@ public class NeuralNetConfigurationTest {
     public void testClone() {
         NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.UNIFORM, true);
         BaseLayer bl = (BaseLayer) conf.getLayer();
-        bl.setMomentumSchedule(new HashMap<Integer, Double>());
         conf.setStepFunction(new DefaultStepFunction());
 
         NeuralNetConfiguration conf2 = conf.clone();
 
         assertEquals(conf, conf2);
         assertNotSame(conf, conf2);
-        assertNotSame(bl.getMomentumSchedule(), ((BaseLayer) conf2.getLayer()).getMomentumSchedule());
         assertNotSame(conf.getLayer(), conf2.getLayer());
         assertNotSame(bl.getDist(), ((BaseLayer) conf2.getLayer()).getDist());
         assertNotSame(conf.getStepFunction(), conf2.getStepFunction());
@@ -207,7 +204,7 @@ public class NeuralNetConfigurationTest {
                         .activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(3)
-                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).regularization(false).layer(layer)
+                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer)
                         .build();
         conf.setPretrain(pretrain);
         return conf;
@@ -232,14 +229,11 @@ public class NeuralNetConfigurationTest {
         int iteration = 3;
         INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.3).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.3)).list()
                         .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).learningRate(lr)
-                                        .biasLearningRate(biasLr).build())
-                        .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).learningRate(0.7)
-                                        .build())
-                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                                        .updater(new Sgd(lr)).biasUpdater(new Sgd(biasLr)).build())
+                        .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(new Sgd(0.7)).build())
+                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).build())
                         .backprop(true).pretrain(false).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -248,11 +242,11 @@ public class NeuralNetConfigurationTest {
         ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(),
                         new NegativeDefaultStepFunction(), null, net);
         opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
-        assertEquals(lr, net.getLayer(0).conf().getLearningRateByParam("W"), 1e-4);
-        assertEquals(biasLr, net.getLayer(0).conf().getLearningRateByParam("b"), 1e-4);
-        assertEquals(0.7, net.getLayer(1).conf().getLearningRateByParam("gamma"), 1e-4);
-        assertEquals(0.3, net.getLayer(2).conf().getLearningRateByParam("W"), 1e-4); //From global LR
-        assertEquals(0.3, net.getLayer(2).conf().getLearningRateByParam("b"), 1e-4); //From global LR
+        assertEquals(lr, ((Sgd)net.getLayer(0).conf().getLayer().getUpdaterByParam("W")).getLearningRate(), 1e-4);
+        assertEquals(biasLr, ((Sgd)net.getLayer(0).conf().getLayer().getUpdaterByParam("b")).getLearningRate(), 1e-4);
+        assertEquals(0.7, ((Sgd)net.getLayer(1).conf().getLayer().getUpdaterByParam("gamma")).getLearningRate(), 1e-4);
+        assertEquals(0.3, ((Sgd)net.getLayer(2).conf().getLayer().getUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
+        assertEquals(0.3, ((Sgd)net.getLayer(2).conf().getLayer().getUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
     }
 
     @Test
@@ -297,13 +291,11 @@ public class NeuralNetConfigurationTest {
         int iteration = 3;
         INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(8).regularization(true).l1(l1)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l1(l1)
                         .l2(l2).list()
-                        .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                        .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).build())
                         .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).l2(0.5).build())
-                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).build())
                         .backprop(true).pretrain(false).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -328,7 +320,7 @@ public class NeuralNetConfigurationTest {
 
         org.deeplearning4j.nn.conf.layers.RBM layer =
                         new org.deeplearning4j.nn.conf.layers.RBM.Builder(RBM.HiddenUnit.BINARY, RBM.VisibleUnit.BINARY)
-                                        .nIn(10).nOut(5).learningRate(1e-1f)
+                                        .nIn(10).nOut(5).updater(new Sgd(1e-1))
                                         .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).seed(42).layer(layer).build();

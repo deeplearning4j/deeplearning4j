@@ -1,11 +1,9 @@
 package org.deeplearning4j.nn.api.layers;
 
-import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Set;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")

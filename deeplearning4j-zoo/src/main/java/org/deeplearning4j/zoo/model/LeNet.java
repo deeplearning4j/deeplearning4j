@@ -85,7 +85,7 @@ public class LeNet extends ZooModel {
                         .inferenceWorkspaceMode(workspaceMode).seed(seed).iterations(iterations)
                         .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new AdaDelta())
-                        .regularization(false).convolutionMode(ConvolutionMode.Same).list()
+                        .convolutionMode(ConvolutionMode.Same).list()
                         // block 1
                         .layer(0, new ConvolutionLayer.Builder(new int[] {5, 5}, new int[] {1, 1}).name("cnn1")
                                         .nIn(inputShape[0]).nOut(20).activation(Activation.RELU).build())

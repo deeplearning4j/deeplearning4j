@@ -1,9 +1,7 @@
 package org.deeplearning4j.nn.layers.variational;
 
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.*;
@@ -18,6 +16,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
@@ -253,26 +252,25 @@ public class TestVAE {
 
         MultiLayerConfiguration config = new NeuralNetConfiguration.Builder().seed(12345).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
-                                        .reconstructionDistribution(new GaussianReconstructionDistribution("identity"))
+                                        .reconstructionDistribution(new GaussianReconstructionDistribution(Activation.IDENTITY))
                                         .nIn(3).nOut(4).encoderLayerSizes(5).decoderLayerSizes(6).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
-                                        .reconstructionDistribution(new GaussianReconstructionDistribution("tanh"))
+                                        .reconstructionDistribution(new GaussianReconstructionDistribution(Activation.TANH))
                                         .nIn(7).nOut(8).encoderLayerSizes(9).decoderLayerSizes(10).build())
                         .layer(2, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
                                         .reconstructionDistribution(new BernoulliReconstructionDistribution()).nIn(11)
                                         .nOut(12).encoderLayerSizes(13).decoderLayerSizes(14).build())
                         .layer(3, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
-                                        .reconstructionDistribution(new ExponentialReconstructionDistribution("tanh"))
+                                        .reconstructionDistribution(new ExponentialReconstructionDistribution(Activation.TANH))
                                         .nIn(11).nOut(12).encoderLayerSizes(13).decoderLayerSizes(14).build())
                         .layer(4, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
-                                        //.lossFunction("tanh", LossFunctions.LossFunction.MSE)
                                         .lossFunction(new ActivationTanH(), LossFunctions.LossFunction.MSE).nIn(11)
                                         .nOut(12).encoderLayerSizes(13).decoderLayerSizes(14).build())
                         .layer(5, new org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder.Builder()
                                         .reconstructionDistribution(new CompositeReconstructionDistribution.Builder()
                                                         .addDistribution(5, new GaussianReconstructionDistribution())
                                                         .addDistribution(5,
-                                                                        new GaussianReconstructionDistribution("tanh"))
+                                                                        new GaussianReconstructionDistribution(Activation.TANH))
                                                         .addDistribution(5, new BernoulliReconstructionDistribution())
                                                         .build())
                                         .nIn(15).nOut(16).encoderLayerSizes(17).decoderLayerSizes(18).build())
@@ -334,8 +332,8 @@ public class TestVAE {
                         throw new RuntimeException();
                 }
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l2(0.2).l1(0.3)
-                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(1.0)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.3)
+                                .updater(new Sgd(1.0))
                                 .seed(12345L).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                                 .list().layer(0,
                                                 new VariationalAutoencoder.Builder().nIn(inOutSize).nOut(3)
@@ -343,7 +341,7 @@ public class TestVAE {
                                                                 .pzxActivationFunction(Activation.TANH)
                                                                 .reconstructionDistribution(
                                                                                 reconstructionDistributions[i])
-                                                                .activation(new ActivationTanH()).updater(Updater.SGD)
+                                                                .activation(new ActivationTanH())
                                                                 .build())
                                 .pretrain(true).backprop(false).build();
 
@@ -400,8 +398,8 @@ public class TestVAE {
             for (int i = 0; i < reconstructionDistributions.length; i++) {
                 INDArray data = Nd4j.rand(minibatch, inOutSize).muli(2).subi(1);
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l2(0.2).l1(0.3)
-                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(1.0)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.3)
+                                .updater(new Sgd(1.0))
                                 .seed(12345L).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                                 .list().layer(0,
                                                 new VariationalAutoencoder.Builder().nIn(inOutSize).nOut(3)
@@ -409,7 +407,7 @@ public class TestVAE {
                                                                 .pzxActivationFunction(Activation.TANH)
                                                                 .reconstructionDistribution(
                                                                                 reconstructionDistributions[i])
-                                                                .activation(new ActivationTanH()).updater(Updater.SGD)
+                                                                .activation(new ActivationTanH())
                                                                 .build())
                                 .pretrain(true).backprop(false).build();
 

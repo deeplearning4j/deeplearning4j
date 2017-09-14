@@ -1,6 +1,9 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.*;
@@ -12,7 +15,6 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -203,23 +205,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        switch (paramName) {
-            case ConvolutionParamInitializer.WEIGHT_KEY:
-                return learningRate;
-            case ConvolutionParamInitializer.BIAS_KEY:
-                if (!Double.isNaN(biasLearningRate)) {
-                    //Bias learning rate has been explicitly set
-                    return biasLearningRate;
-                } else {
-                    return learningRate;
-                }
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         int paramSize = initializer().numParams(this);
         int updaterStateSize = (int) getIUpdater().stateSize(paramSize);
@@ -252,7 +237,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
                 trainWorkingSizePerEx = im2colSizePerEx;
             }
 
-            if (getDropOut() > 0) {
+            if (getIDropout() != null) {
                 //Dup on the input before dropout, but only for training
                 trainWorkingSizePerEx += inputType.arrayElementsPerExample();
             }
@@ -378,36 +363,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         /**
-         * Learning rate. Defaults to 1e-1
-         *
-         * @param learningRate
-         */
-        @Override
-        public Builder learningRate(double learningRate) {
-            return super.learningRate(learningRate);
-        }
-
-        /**
-         * Bias learning rate. Set this to apply a different learning rate to the bias
-         *
-         * @param biasLearningRate
-         */
-        @Override
-        public Builder biasLearningRate(double biasLearningRate) {
-            return super.biasLearningRate(biasLearningRate);
-        }
-
-        /**
-         * Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration.
-         *
-         * @param learningRateSchedule
-         */
-        @Override
-        public Builder learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
-            return super.learningRateSchedule(learningRateSchedule);
-        }
-
-        /**
          * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
          * coefficient for the bias.
          *
@@ -450,26 +405,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         /**
-         * Momentum rate.
-         *
-         * @param momentum
-         */
-        @Override
-        public Builder momentum(double momentum) {
-            return super.momentum(momentum);
-        }
-
-        /**
-         * Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration.
-         *
-         * @param momentumAfter
-         */
-        @Override
-        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
-            return super.momentumAfter(momentumAfter);
-        }
-
-        /**
          * Gradient updater. For example, SGD for standard stochastic gradient descent, NESTEROV for Nesterov momentum,
          * RSMPROP for RMSProp, etc.
          *
@@ -477,59 +412,9 @@ public class ConvolutionLayer extends FeedForwardLayer {
          * @see Updater
          */
         @Override
+        @Deprecated
         public Builder updater(Updater updater) {
             return super.updater(updater);
-        }
-
-        /**
-         * Ada delta coefficient, rho. Only applies if using .updater(Updater.ADADELTA)
-         *
-         * @param rho
-         */
-        @Override
-        public Builder rho(double rho) {
-            return super.rho(rho);
-        }
-
-        /**
-         * Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
-         *
-         * @param rmsDecay
-         */
-        @Override
-        public Builder rmsDecay(double rmsDecay) {
-            return super.rmsDecay(rmsDecay);
-        }
-
-        /**
-         * Epsilon value for updaters: Adagrad and Adadelta. Only used if using Updater.ADAGRAD or Updater.ADADELTA
-         *
-         * @param epsilon Epsilon value to use for adagrad and adadelta
-         */
-        @Override
-        public Builder epsilon(double epsilon) {
-            return super.epsilon(epsilon);
-        }
-
-        /**
-         * Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
-         *
-         * @param adamMeanDecay
-         */
-        @Override
-        public Builder adamMeanDecay(double adamMeanDecay) {
-            return super.adamMeanDecay(adamMeanDecay);
-        }
-
-        /**
-         * Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
-         *
-         * @param adamVarDecay
-         */
-        @Override
-        public Builder adamVarDecay(double adamVarDecay) {
-            super.adamVarDecay(adamVarDecay);
-            return this;
         }
 
         /**
@@ -555,18 +440,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
         @Override
         public Builder gradientNormalizationThreshold(double threshold) {
             super.gradientNormalizationThreshold(threshold);
-            return this;
-        }
-
-        /**
-         * Learning rate decay policy. Used to adapt learning rate based on policy.
-         *
-         * @param policy Type of policy to use. Defaults to None.
-         * @see GradientNormalization
-         */
-        @Override
-        public Builder learningRateDecayPolicy(LearningRatePolicy policy) {
-            super.learningRateDecayPolicy(policy);
             return this;
         }
 

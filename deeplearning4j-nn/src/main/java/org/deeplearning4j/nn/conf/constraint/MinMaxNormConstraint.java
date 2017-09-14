@@ -3,13 +3,14 @@ package org.deeplearning4j.nn.conf.constraint;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Broadcast;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -86,8 +87,12 @@ public class MinMaxNormConstraint extends BaseConstraint {
     public void apply(INDArray param) {
         INDArray norm = param.norm2(dimensions);
         INDArray clipped = norm.unsafeDuplication();
-        BooleanIndexing.replaceWhere(clipped, max, Conditions.greaterThan(max));
-        BooleanIndexing.replaceWhere(clipped, min, Conditions.lessThan(min));
+        CustomOp op = DynamicCustomOp.builder("clipbyvalue")
+                .setInputs(clipped)
+                .callInplace(true)
+                .setFloatingPointArguments(min, max)
+                .build();
+        Nd4j.getExecutioner().exec(op);
 
         norm.addi(epsilon);
         clipped.divi(norm);

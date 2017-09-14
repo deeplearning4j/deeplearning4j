@@ -67,6 +67,8 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_CONVOLUTION_1D = ""; // 1: Convolution1D, 2: Conv1D
     private final String LAYER_CLASS_NAME_CONVOLUTION_2D = ""; // 1: Convolution2D, 2: Conv2D
     private final String LAYER_CLASS_NAME_LEAKY_RELU = "LeakyReLU";
+    private final String LAYER_CLASS_NAME_UPSAMPLING_1D = "UpSampling1D";
+    private final String LAYER_CLASS_NAME_UPSAMPLING_2D = "UpSampling2D";
 
 
     /* Partially shared layer configurations. */
@@ -140,7 +142,9 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_POOL_STRIDES = "strides";
     private final String LAYER_FIELD_POOL_1D_SIZE = ""; // 1: pool_length, 2: pool_size
     private final String LAYER_FIELD_POOL_1D_STRIDES = ""; // 1: stride, 2: strides
-    private final String LAYER_FIELD_UPSAMPLING_SIZE = ""; // 1: length, 2: size
+    private final String LAYER_FIELD_UPSAMPLING_1D_SIZE = ""; // 1: length, 2: size
+    private final String LAYER_FIELD_UPSAMPLING_2D_SIZE = "size";
+
 
     /* Keras convolution border modes. */
     private final String LAYER_FIELD_BORDER_MODE = ""; // 1: border_mode, 2: padding
@@ -186,6 +190,15 @@ public class KerasLayerConfiguration {
     /* Keras weight initializers. */
     private final String LAYER_FIELD_INIT = ""; // 1: init, 2: kernel_initializer
     private final String LAYER_FIELD_BIAS_INIT = "bias_initializer"; // keras 2 only
+    private final String LAYER_FIELD_INIT_MEAN = "mean";
+    private final String LAYER_FIELD_INIT_STDDEV = "stddev";
+    private final String LAYER_FIELD_INIT_SCALE = "scale";
+    private final String LAYER_FIELD_INIT_MINVAL = "minval";
+    private final String LAYER_FIELD_INIT_MAXVAL = "maxval";
+    private final String LAYER_FIELD_INIT_VALUE = "value";
+    private final String LAYER_FIELD_INIT_GAIN = "gain";
+    private final String LAYER_FIELD_INIT_MODE = "mode";
+    private final String LAYER_FIELD_INIT_DISTRIBUTION = "distribution";
 
     private final String INIT_UNIFORM = "uniform";
     private final String INIT_RANDOM_UNIFORM = "random_uniform";

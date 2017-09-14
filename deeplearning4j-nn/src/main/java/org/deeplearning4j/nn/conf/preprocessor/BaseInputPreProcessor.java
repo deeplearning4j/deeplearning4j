@@ -1,9 +1,9 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * @author Adam Gibson

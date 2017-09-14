@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.custom.testclasses.CustomActivation;
 import org.junit.Test;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
@@ -43,7 +44,7 @@ public class TestCustomActivation {
 
         //Second: let's create a MultiLayerCofiguration with one, and check JSON and YAML config actually works...
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.1).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1)).list()
                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).activation(new CustomActivation()).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(10).build())
                         .pretrain(false).backprop(true).build();

@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.layers.feedforward.rbm;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -27,11 +26,11 @@ import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
-import org.deeplearning4j.util.Dropout;
 import org.deeplearning4j.util.RBMUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
@@ -309,12 +308,9 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
     }
 
     public INDArray preOutput(INDArray v, boolean training) {
-        INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
-        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        if (training && conf.isUseDropConnect() && conf.getLayer().getDropOut() > 0) {
-            W = Dropout.applyDropConnect(this, DefaultParamInitializer.WEIGHT_KEY);
-        }
-        return v.mmul(W).addiRowVector(hBias);
+        INDArray weights = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, training);
+        INDArray bias = getParamWithNoise(PretrainParamInitializer.BIAS_KEY, training);
+        return v.mmul(weights).addiRowVector(bias);
     }
 
     /**
@@ -422,8 +418,8 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
      */
     @Override
     public INDArray activate(boolean training) {
-        if (training && conf.getLayer().getDropOut() > 0.0) {
-            Dropout.applyDropout(input, conf.getLayer().getDropOut());
+        if (training && conf.getLayer().getIDropout() != null) {
+            applyDropOutIfNecessary(training);
         }
         //reconstructed: propUp ----> hidden propDown to transform
         INDArray propUp = propUp(input, training);

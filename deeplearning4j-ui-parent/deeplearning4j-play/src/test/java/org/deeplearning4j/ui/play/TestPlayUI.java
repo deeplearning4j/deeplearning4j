@@ -6,7 +6,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
@@ -23,6 +22,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
@@ -87,19 +87,19 @@ public class TestPlayUI {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .learningRate(1e-5)
+                        .updater(new Sgd(1e-5))
                         .list().layer(0,
                                         new VariationalAutoencoder.Builder().nIn(4).nOut(3).encoderLayerSizes(10, 11)
                                                         .decoderLayerSizes(12, 13).weightInit(WeightInit.XAVIER)
-                                                        .pzxActivationFunction("identity")
+                                                        .pzxActivationFunction(Activation.IDENTITY)
                                                         .reconstructionDistribution(
                                                                         new GaussianReconstructionDistribution())
-                                                        .activation(Activation.LEAKYRELU).updater(Updater.SGD).build())
+                                                        .activation(Activation.LEAKYRELU).build())
                         .layer(1, new VariationalAutoencoder.Builder().nIn(3).nOut(3).encoderLayerSizes(7)
                                         .decoderLayerSizes(8).weightInit(WeightInit.XAVIER)
-                                        .pzxActivationFunction("identity")
+                                        .pzxActivationFunction(Activation.IDENTITY)
                                         .reconstructionDistribution(new GaussianReconstructionDistribution())
-                                        .activation(Activation.LEAKYRELU).updater(Updater.SGD).build())
+                                        .activation(Activation.LEAKYRELU).build())
                         .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build()).pretrain(true).backprop(true)
                         .build();
 
@@ -130,7 +130,7 @@ public class TestPlayUI {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .learningRate(1e-5).list().layer(0, new RBM.Builder().nIn(4).nOut(3).build())
+                        .updater(new Sgd(0.1)).list().layer(0, new RBM.Builder().nIn(4).nOut(3).build())
                         .layer(1, new RBM.Builder().nIn(3).nOut(3).build())
                         .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build()).pretrain(true).backprop(true)
                         .build();

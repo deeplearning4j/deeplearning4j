@@ -11,7 +11,6 @@ import org.apache.spark.sql.SQLContext;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -24,6 +23,8 @@ import org.deeplearning4j.spark.ml.utils.ParamSerializer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -95,12 +96,12 @@ public class SparkDl4jNetworkTest {
     private MultiLayerConfiguration getNNConfiguration() {
         return new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(10)
-                        .weightInit(WeightInit.UNIFORM).learningRate(0.1).updater(Updater.NESTEROVS).list()
+                        .weightInit(WeightInit.UNIFORM).updater(new Nesterovs(0.1)).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(100).weightInit(WeightInit.XAVIER)
-                                        .activation("relu").build())
+                                        .activation(Activation.RELU).build())
                         .layer(1, new DenseLayer.Builder().nIn(100).nOut(120).weightInit(WeightInit.XAVIER)
-                                        .activation("relu").build())
-                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("softmax").nIn(120)
+                                        .activation(Activation.RELU).build())
+                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SOFTMAX).nIn(120)
                                         .nOut(2).build())
                         .pretrain(false).backprop(true).build();
     }

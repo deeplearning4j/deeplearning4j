@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ public class TestCustomLayer extends BaseSparkTest {
         //Basic test - checks whether exceptions etc are thrown with custom layers + spark
         //Custom layers are tested more extensively in dl4j core
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().learningRate(0.1).list()
+                        new NeuralNetConfiguration.Builder().updater(new Sgd(0.1)).list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
                                         .layer(1, new CustomLayer(3.14159)).layer(2,
                                                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)

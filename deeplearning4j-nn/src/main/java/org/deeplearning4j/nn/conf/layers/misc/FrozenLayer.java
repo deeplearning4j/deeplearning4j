@@ -3,13 +3,12 @@ package org.deeplearning4j.nn.conf.layers.misc;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
-import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.nn.params.FrozenLayerParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -68,12 +67,10 @@ public class FrozenLayer extends Layer {
                 conf.variables(false).add(s);
                 conf.getL1ByParam().put(s, 0.0);
                 conf.getL2ByParam().put(s, 0.0);
-                conf.getLearningRateByParam().put(s, 0.0);
 
                 nncUnderlying.variables(false).add(s);
                 nncUnderlying.getL1ByParam().put(s, 0.0);
                 nncUnderlying.getL2ByParam().put(s, 0.0);
-                nncUnderlying.getLearningRateByParam().put(s, 0.0);
             }
         }
 
@@ -111,22 +108,12 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        return 0;
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         return false;
     }
 
     @Override
-    public Updater getUpdaterByParam(String paramName) {
-        return null;
-    }
-
-    @Override
-    public IUpdater getIUpdaterByParam(String paramName) {
+    public IUpdater getUpdaterByParam(String paramName) {
         return null;
     }
 
@@ -139,6 +126,12 @@ public class FrozenLayer extends Layer {
     public void setLayerName(String layerName) {
         super.setLayerName(layerName);
         layer.setLayerName(layerName);
+    }
+
+    @Override
+    public void setConstraints(List<LayerConstraint> constraints){
+        this.constraints = constraints;
+        this.layer.setConstraints(constraints);
     }
 
     public static class Builder extends Layer.Builder<Builder> {

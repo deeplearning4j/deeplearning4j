@@ -3,10 +3,13 @@ package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.LSTM;
-import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
@@ -17,15 +20,16 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.mapActivation;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
 
 /**
  * Imports a Keras LSTM layer as a DL4J LSTM layer.
@@ -96,17 +100,24 @@ public class KerasLstm extends KerasLayer {
     public KerasLstm(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        WeightInit weightInit = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
+
+        Pair<WeightInit, Distribution> init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
-        WeightInit recurrentWeightInit = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INNER_INIT(),
+        WeightInit weightInit = init.getFirst();
+        Distribution distribution = init.getSecond();
+
+        Pair<WeightInit, Distribution> recurrentInit = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INNER_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
+        WeightInit recurrentWeightInit = recurrentInit.getFirst();
+        Distribution recurrentDistribution = recurrentInit.getSecond();
+
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         Boolean returnSequences = (Boolean) innerConfig.get(conf.getLAYER_FIELD_RETURN_SEQUENCES());
         if (!returnSequences) {
             log.warn("Keras setting 'return_sequences = False' is not properly supported," +
                     "DL4J's LSTM layer returns sequences by default");
         }
-        if (weightInit != recurrentWeightInit)
+        if (weightInit != recurrentWeightInit || distribution != recurrentDistribution)
             if (enforceTrainingConfig)
                 throw new UnsupportedKerasConfigurationException(
                                 "Specifying different initialization for recurrent weights not supported.");
@@ -133,6 +144,8 @@ public class KerasLstm extends KerasLayer {
                         .biasInit(0.0)
                         .l1(this.weightL1Regularization)
                         .l2(this.weightL2Regularization);
+        if (distribution != null)
+            builder.dist(distribution);
         if (biasConstraint != null)
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
@@ -163,7 +176,11 @@ public class KerasLstm extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                             "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
-        return this.getLSTMLayer().getOutputType(-1, inputType[0]);
+        InputPreProcessor preProcessor = getInputPreprocessor(inputType);
+        if (preProcessor != null)
+            return  preProcessor.getOutputType(inputType[0]);
+        else
+            return this.getLSTMLayer().getOutputType(-1, inputType[0]);
     }
 
     /**
@@ -175,6 +192,28 @@ public class KerasLstm extends KerasLayer {
     public int getNumParams() {
         return kerasMajorVersion == 2 ? NUM_TRAINABLE_PARAMS_KERAS_2 : NUM_TRAINABLE_PARAMS;
     }
+
+    /**
+     * Gets appropriate DL4J InputPreProcessor for given InputTypes.
+     *
+     * @param  inputType    Array of InputTypes
+     * @return              DL4J InputPreProcessor
+     * @throws InvalidKerasConfigurationException Invalid Keras configuration exception
+     * @see org.deeplearning4j.nn.conf.InputPreProcessor
+     */
+    @Override
+    public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
+        if (inputType.length > 1)
+            throw new InvalidKerasConfigurationException(
+                    "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
+        InputPreProcessor preprocessor = null;
+        if (inputType[0] instanceof InputType.InputTypeFeedForward) {
+            preprocessor = new FeedForwardToRnnPreProcessor();
+        }
+        return preprocessor;
+    }
+
+
 
     /**
      * Set weights for layer.

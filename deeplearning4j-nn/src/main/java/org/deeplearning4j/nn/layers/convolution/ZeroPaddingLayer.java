@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.layers.convolution;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -10,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * Zero padding layer for convolutional neural networks.
@@ -37,6 +37,11 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
+    public void clearNoiseWeightParams() {
+        //No op
+    }
+
+    @Override
     public Type type() {
         return Type.CONVOLUTIONAL;
     }
@@ -50,11 +55,6 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                         NDArrayIndex.interval(padding[2], padding[2] + inShape[3]));
 
         return new Pair<>((Gradient) new DefaultGradient(), epsNext);
-    }
-
-    @Override
-    public INDArray activationMean() {
-        throw new UnsupportedOperationException();
     }
 
 

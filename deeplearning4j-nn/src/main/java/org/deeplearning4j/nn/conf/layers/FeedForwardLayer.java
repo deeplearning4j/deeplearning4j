@@ -107,23 +107,6 @@ public abstract class FeedForwardLayer extends BaseLayer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        switch (paramName) {
-            case DefaultParamInitializer.WEIGHT_KEY:
-                return learningRate;
-            case DefaultParamInitializer.BIAS_KEY:
-                if (!Double.isNaN(biasLearningRate)) {
-                    //Bias learning rate has been explicitly set
-                    return biasLearningRate;
-                } else {
-                    return learningRate;
-                }
-            default:
-                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         return false; //No pretrain params in standard FF layers
     }

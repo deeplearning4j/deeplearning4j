@@ -1,7 +1,6 @@
 package org.deeplearning4j.models.glove;
 
 import lombok.NonNull;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.models.glove.count.*;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.FilteredSequenceIterator;
@@ -14,6 +13,7 @@ import org.deeplearning4j.text.sentenceiterator.PrefetchingSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SynchronizedSentenceIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

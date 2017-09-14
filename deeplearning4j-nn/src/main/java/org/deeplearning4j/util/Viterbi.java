@@ -19,9 +19,9 @@
 package org.deeplearning4j.util;
 
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.Serializable;
 

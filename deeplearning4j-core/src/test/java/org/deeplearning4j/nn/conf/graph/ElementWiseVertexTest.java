@@ -1,10 +1,8 @@
 package org.deeplearning4j.nn.conf.graph;
 
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -19,8 +17,10 @@ import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
 
@@ -175,7 +175,7 @@ public class ElementWiseVertexTest {
         int midsz = 13;
         int outputsz = 11;
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
-                        .biasInit(0.0).updater(Updater.SGD)
+                        .biasInit(0.0).updater(new Sgd())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                         .addInputs("input1", "input2", "input3")
                         .addLayer("dense1",
@@ -240,7 +240,7 @@ public class ElementWiseVertexTest {
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
 
 
-        INDArray output = nullsafe(cg.getOutputLayer(0).activate());
+        INDArray output = nullsafe(cg.output(input1, input2, input3)[0]);
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
 
@@ -350,7 +350,7 @@ public class ElementWiseVertexTest {
         int midsz = 13;
         int outputsz = 11;
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
-                        .biasInit(0.0).updater(Updater.SGD)
+                        .biasInit(0.0).updater(new Sgd())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                         .addInputs("input1", "input2", "input3")
                         .addLayer("dense1",
@@ -415,7 +415,7 @@ public class ElementWiseVertexTest {
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
 
 
-        INDArray output = nullsafe(cg.getOutputLayer(0).activate());
+        INDArray output = nullsafe(cg.output(input1, input2, input3)[0]);
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
 
@@ -524,7 +524,7 @@ public class ElementWiseVertexTest {
         int midsz = 13;
         int outputsz = 11;
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
-                        .biasInit(0.0).updater(Updater.SGD)
+                        .biasInit(0.0).updater(new Sgd())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                         .addInputs("input1", "input2")
                         .addLayer("dense1",
@@ -579,7 +579,7 @@ public class ElementWiseVertexTest {
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
 
 
-        INDArray output = nullsafe(cg.getOutputLayer(0).activate());
+        INDArray output = nullsafe(cg.output(input1, input2)[0]);
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
 

@@ -20,11 +20,14 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
 
@@ -82,6 +85,11 @@ public class KerasConvolution2D extends KerasConvolution {
         numTrainableParams = hasBias ? 2 : 1;
         int[] dilationRate = getDilationRate(layerConfig, 2, conf, false);
 
+        Pair<WeightInit, Distribution> init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
+                enforceTrainingConfig, conf, kerasMajorVersion);
+        WeightInit weightInit = init.getFirst();
+        Distribution distribution = init.getSecond();
+
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_B_CONSTRAINT(), conf, kerasMajorVersion);
         LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
@@ -90,14 +98,15 @@ public class KerasConvolution2D extends KerasConvolution {
         ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig, conf))
-                .weightInit(getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
-                        enforceTrainingConfig, conf, kerasMajorVersion))
+                .weightInit(weightInit)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
                 .hasBias(hasBias)
                 .stride(getStrideFromConfig(layerConfig, 2, conf));
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
+        if (distribution != null)
+            builder.dist(distribution);
         if (hasBias)
             builder.biasInit(0.0);
         if (padding != null)

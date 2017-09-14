@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
@@ -59,8 +60,8 @@ public class AutoEncoderTest {
     public void testAutoEncoder() throws Exception {
 
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(1).learningRate(1e-1f)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(1).updater(new Sgd(0.1))
                         .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(784).nOut(600)
                                         .corruptionLevel(0.6)
                                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
@@ -88,9 +89,9 @@ public class AutoEncoderTest {
     public void testBackProp() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         //        LayerFactory layerFactory = LayerFactories.getFactory(new org.deeplearning4j.nn.conf.layers.AutoEncoder());
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(100)
-                        .learningRate(1e-1f)
+                        .updater(new Sgd(0.1))
                         .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().nIn(784).nOut(600)
                                         .corruptionLevel(0.6)
                                         .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())

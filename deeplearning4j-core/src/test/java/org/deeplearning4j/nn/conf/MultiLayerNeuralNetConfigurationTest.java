@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -31,6 +32,8 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.*;
@@ -87,7 +90,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
         //setup the network
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
-                        .regularization(true).l1(1e-1).l2(2e-4).useDropConnect(true).dropOut(0.5).miniBatch(true)
+                        .l1(1e-1).l2(2e-4).weightNoise(new DropConnect(0.5)).miniBatch(true)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
@@ -121,7 +124,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
         //setup the network
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
-                .regularization(true).l1(1e-1).l2(2e-4).useDropConnect(true).dropOut(0.5).miniBatch(true)
+                .l1(1e-1).l2(2e-4).dropOut(0.5).miniBatch(true)
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
                 .layer(new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
                         .activation(Activation.RELU).build())
@@ -144,7 +147,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     @Test
     public void testGlobalPoolingJson() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false).updater(Updater.NONE)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                         .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(5).build())
                         .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.PNORM).pnorm(3).build())
@@ -363,13 +366,12 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testBiasLr() {
         //setup the network
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).learningRate(1e-2)
-                        .biasLearningRate(0.5).updater(Updater.ADAM).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new Adam(1e-2))
+                        .biasUpdater(new Adam(0.5)).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
                         .layer(1, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())
-                        .layer(2, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).biasLearningRate(0.25)
-                                        .build())
+                        .layer(2, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())
                         .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(10)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(28, 28, 1)).build();
@@ -379,17 +381,17 @@ public class MultiLayerNeuralNetConfigurationTest {
         org.deeplearning4j.nn.conf.layers.BaseLayer l2 = (BaseLayer) conf.getConf(2).getLayer();
         org.deeplearning4j.nn.conf.layers.BaseLayer l3 = (BaseLayer) conf.getConf(3).getLayer();
 
-        assertEquals(0.5, l0.getBiasLearningRate(), 1e-6);
-        assertEquals(1e-2, l0.getLearningRate(), 1e-6);
+        assertEquals(0.5, ((Adam)l0.getUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l0.getUpdaterByParam("W")).getLearningRate(), 1e-6);
 
-        assertEquals(0.5, l1.getBiasLearningRate(), 1e-6);
-        assertEquals(1e-2, l1.getLearningRate(), 1e-6);
+        assertEquals(0.5, ((Adam)l1.getUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l1.getUpdaterByParam("W")).getLearningRate(), 1e-6);
 
-        assertEquals(0.25, l2.getBiasLearningRate(), 1e-6);
-        assertEquals(1e-2, l2.getLearningRate(), 1e-6);
+        assertEquals(0.5, ((Adam)l2.getUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l2.getUpdaterByParam("W")).getLearningRate(), 1e-6);
 
-        assertEquals(0.5, l3.getBiasLearningRate(), 1e-6);
-        assertEquals(1e-2, l3.getLearningRate(), 1e-6);
+        assertEquals(0.5, ((Adam)l3.getUpdaterByParam("b")).getLearningRate(), 1e-6);
+        assertEquals(1e-2, ((Adam)l3.getUpdaterByParam("W")).getLearningRate(), 1e-6);
     }
 
 }

@@ -7,10 +7,16 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.graph.*;
+import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
+import org.deeplearning4j.nn.conf.graph.MergeVertex;
+import org.deeplearning4j.nn.conf.graph.SubsetVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.misc.TestGraphVertex;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -20,6 +26,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
@@ -31,8 +38,8 @@ public class ComputationGraphConfigurationTest {
     public void testJSONBasic() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(Updater.NONE)
-                        .learningRate(1.0).graphBuilder().addInputs("input")
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(new NoOp())
+                        .graphBuilder().addInputs("input")
                         .addLayer("firstLayer",
                                         new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
                                         "input")
@@ -229,43 +236,6 @@ public class ComputationGraphConfigurationTest {
         String jsonCloned = cloned.toJson();
 
         assertEquals(json, jsonCloned);
-    }
-
-    @Test
-    public void testBiasLr() {
-        //setup the network
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).learningRate(1e-2)
-                        .biasLearningRate(0.5).graphBuilder().addInputs("in")
-                        .addLayer("0", new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5)
-                                        .weightInit(WeightInit.XAVIER).activation(Activation.RELU).build(), "in")
-                        .addLayer("1", new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build(), "0")
-                        .addLayer("2", new DenseLayer.Builder().nOut(100).activation(Activation.RELU)
-                                        .biasLearningRate(0.25).build(), "1")
-                        .addLayer("3", new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                        .nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build(),
-                                        "2")
-                        .setOutputs("3").setInputTypes(InputType.convolutional(28, 28, 1)).build();
-
-        org.deeplearning4j.nn.conf.layers.BaseLayer l0 =
-                        (BaseLayer) ((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer();
-        org.deeplearning4j.nn.conf.layers.BaseLayer l1 =
-                        (BaseLayer) ((LayerVertex) conf.getVertices().get("1")).getLayerConf().getLayer();
-        org.deeplearning4j.nn.conf.layers.BaseLayer l2 =
-                        (BaseLayer) ((LayerVertex) conf.getVertices().get("2")).getLayerConf().getLayer();
-        org.deeplearning4j.nn.conf.layers.BaseLayer l3 =
-                        (BaseLayer) ((LayerVertex) conf.getVertices().get("3")).getLayerConf().getLayer();
-
-        assertEquals(0.5, l0.getBiasLearningRate(), 1e-6);
-        assertEquals(1e-2, l0.getLearningRate(), 1e-6);
-
-        assertEquals(0.5, l1.getBiasLearningRate(), 1e-6);
-        assertEquals(1e-2, l1.getLearningRate(), 1e-6);
-
-        assertEquals(0.25, l2.getBiasLearningRate(), 1e-6);
-        assertEquals(1e-2, l2.getLearningRate(), 1e-6);
-
-        assertEquals(0.5, l3.getBiasLearningRate(), 1e-6);
-        assertEquals(1e-2, l3.getLearningRate(), 1e-6);
     }
 
     @AllArgsConstructor

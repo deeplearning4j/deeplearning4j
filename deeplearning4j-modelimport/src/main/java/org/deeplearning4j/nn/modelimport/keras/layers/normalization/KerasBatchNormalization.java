@@ -5,8 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
-import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
@@ -93,8 +93,7 @@ public class KerasBatchNormalization extends KerasLayer {
                 layerConfig, conf.getLAYER_FIELD_BATCHNORMALIZATION_GAMMA_CONSTRAINT(), conf, kerasMajorVersion);
 
         BatchNormalization.Builder builder = new BatchNormalization.Builder().name(this.layerName).dropOut(this.dropout).minibatch(true)
-                        .lockGammaBeta(false).eps(getEpsFromConfig(layerConfig))
-                        .momentum(getMomentumFromConfig(layerConfig));
+                        .lockGammaBeta(false).eps(getEpsFromConfig(layerConfig));
         if (betaConstraint != null)
             builder.constrainBeta(betaConstraint);
         if (gammaConstraint != null)
@@ -152,22 +151,22 @@ public class KerasBatchNormalization extends KerasLayer {
         else
             throw new InvalidKerasConfigurationException(
                             "Parameter " + PARAM_NAME_GAMMA + " does not exist in weights");
-        if (weights.containsKey(PARAM_NAME_RUNNING_MEAN))
-            this.weights.put(BatchNormalizationParamInitializer.GLOBAL_MEAN, weights.get(PARAM_NAME_RUNNING_MEAN));
+        if (weights.containsKey(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN()))
+            this.weights.put(BatchNormalizationParamInitializer.GLOBAL_MEAN, weights.get(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN()));
         else
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + PARAM_NAME_RUNNING_MEAN + " does not exist in weights");
-        if (weights.containsKey(PARAM_NAME_RUNNING_STD))
-            this.weights.put(BatchNormalizationParamInitializer.GLOBAL_VAR, weights.get(PARAM_NAME_RUNNING_STD));
+                            "Parameter " + conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN() + " does not exist in weights");
+        if (weights.containsKey(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE()))
+            this.weights.put(BatchNormalizationParamInitializer.GLOBAL_VAR, weights.get(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE()));
         else
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + PARAM_NAME_RUNNING_STD + " does not exist in weights");
+                            "Parameter " + conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE() + " does not exist in weights");
         if (weights.size() > 4) {
             Set<String> paramNames = weights.keySet();
             paramNames.remove(PARAM_NAME_BETA);
             paramNames.remove(PARAM_NAME_GAMMA);
-            paramNames.remove(PARAM_NAME_RUNNING_MEAN);
-            paramNames.remove(PARAM_NAME_RUNNING_STD);
+            paramNames.remove(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN());
+            paramNames.remove(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE());
             String unknownParamNames = paramNames.toString();
             log.warn("Attemping to set weights for unknown parameters: "
                             + unknownParamNames.substring(1, unknownParamNames.length() - 1));

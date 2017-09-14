@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.layers.variational.ExponentialReconstructionDi
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -46,7 +47,7 @@ public class TestReconstructionDistributions {
                 distributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(inputSize, 2 * inputSize))
                                 .assign(logStdevSquared);
 
-                ReconstructionDistribution dist = new GaussianReconstructionDistribution("identity");
+                ReconstructionDistribution dist = new GaussianReconstructionDistribution(Activation.IDENTITY);
 
                 double negLogProb = dist.negLogProbability(x, distributionParams, average);
 
@@ -115,7 +116,7 @@ public class TestReconstructionDistributions {
                 INDArray distributionParams = Nd4j.rand(minibatch, inputSize).muli(2).subi(1); //i.e., pre-sigmoid prob
                 INDArray prob = Transforms.sigmoid(distributionParams, true);
 
-                ReconstructionDistribution dist = new BernoulliReconstructionDistribution("sigmoid");
+                ReconstructionDistribution dist = new BernoulliReconstructionDistribution(Activation.SIGMOID);
 
                 double negLogProb = dist.negLogProbability(x, distributionParams, average);
 
@@ -192,7 +193,7 @@ public class TestReconstructionDistributions {
                 INDArray distributionParams = Nd4j.rand(minibatch, inputSize).muli(2).subi(1); //i.e., pre-afn gamma
                 INDArray gammas = Transforms.tanh(distributionParams, true);
 
-                ReconstructionDistribution dist = new ExponentialReconstructionDistribution("tanh");
+                ReconstructionDistribution dist = new ExponentialReconstructionDistribution(Activation.TANH);
 
                 double negLogProb = dist.negLogProbability(x, distributionParams, average);
 
@@ -263,11 +264,11 @@ public class TestReconstructionDistributions {
         Random r = new Random(12345);
 
         ReconstructionDistribution[] distributions =
-                        new ReconstructionDistribution[] {new GaussianReconstructionDistribution("identity"),
-                                        new GaussianReconstructionDistribution("tanh"),
-                                        new BernoulliReconstructionDistribution("sigmoid"),
-                                        new ExponentialReconstructionDistribution("identity"),
-                                        new ExponentialReconstructionDistribution("tanh")};
+                        new ReconstructionDistribution[] {new GaussianReconstructionDistribution(Activation.IDENTITY),
+                                        new GaussianReconstructionDistribution(Activation.TANH),
+                                        new BernoulliReconstructionDistribution(Activation.SIGMOID),
+                                        new ExponentialReconstructionDistribution(Activation.IDENTITY),
+                                        new ExponentialReconstructionDistribution(Activation.TANH)};
 
 
         List<String> passes = new ArrayList<>();

@@ -19,20 +19,11 @@
 package org.deeplearning4j.datasets.iterator.impl;
 
 import lombok.Getter;
-import org.datavec.api.io.labels.ParentPathLabelGenerator;
-import org.datavec.api.io.labels.PathLabelGenerator;
-import org.datavec.api.io.labels.PatternPathLabelGenerator;
-import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.image.transform.ImageTransform;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
-import org.deeplearning4j.datasets.fetchers.*;
-import org.deeplearning4j.datasets.iterator.BaseDatasetIterator;
+import org.deeplearning4j.datasets.fetchers.DataSetType;
+import org.deeplearning4j.datasets.fetchers.TinyImageNetFetcher;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 
 /**
  * Tiny ImageNet is a subset of the ImageNet database. TinyImageNet is the default course challenge for CS321n
