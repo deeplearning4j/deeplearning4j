@@ -5048,9 +5048,9 @@ public class Nd4j {
         return ret;
     }
 
-    protected static void checkShapeValues(int[] shape) {
-        for (int e = 0; e < shape.length; e++) {
-            if (shape[e] < 1)
+    public static void checkShapeValues(int[] shape) {
+        for (int e: shape) {
+            if (e < 1)
                 throw new ND4JIllegalStateException("Invalid shape: Requested INDArray shape " + Arrays.toString(shape)
                         + " contains dimension size values < 1 (all dimensions must be 1 or more)");
         }

@@ -187,10 +187,10 @@ public class CosineDistance extends BaseAccumulation {
 
     @Override
     public Op opForDimension(int index, int... dimension) {
-        INDArray xForDimesnion = x.tensorAlongDimension(index, dimension);
+        INDArray xForDimension = x.tensorAlongDimension(index, dimension);
         CosineDistance ret;
         if (y() != null)
-            ret = new CosineDistance(xForDimesnion, y.tensorAlongDimension(index, dimension), xForDimesnion.length());
+            ret = new CosineDistance(xForDimension, y.tensorAlongDimension(index, dimension), xForDimension.length());
         else
             ret = new CosineDistance(x.tensorAlongDimension(index, dimension));
         ret.setApplyFinalTransform(applyFinalTransform());
