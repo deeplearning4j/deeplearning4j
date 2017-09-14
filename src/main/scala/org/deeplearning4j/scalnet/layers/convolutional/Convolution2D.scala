@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.scalnet.layers.Layer
 import org.deeplearning4j.scalnet.regularizers.{NoRegularizer, WeightRegularizer}
+import org.nd4j.linalg.activations.{Activation, IActivation}
 
 
 /**
@@ -32,17 +33,17 @@ import org.deeplearning4j.scalnet.regularizers.{NoRegularizer, WeightRegularizer
   * @author David Kale
   */
 class Convolution2D(
-    nFilter: Int,
-    kernelSize: List[Int],
-    nChannels: Int = 0,
-    stride: List[Int] = List(1, 1),
-    padding: List[Int] = List(0, 0),
-    nIn: Option[List[Int]] = None,
-    val weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
-    val activation: String = "identity",
-    val regularizer: WeightRegularizer = NoRegularizer(),
-    val dropOut: Double = 0.0,
-    override val name: String = "")
+                     nFilter: Int,
+                     kernelSize: List[Int],
+                     nChannels: Int = 0,
+                     stride: List[Int] = List(1, 1),
+                     padding: List[Int] = List(0, 0),
+                     nIn: Option[List[Int]] = None,
+                     val weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
+                     val activation: Activation = Activation.IDENTITY,
+                     val regularizer: WeightRegularizer = NoRegularizer(),
+                     val dropOut: Double = 0.0,
+                     override val name: String = "")
   extends Convolution(kernelSize, stride, padding, nChannels, nIn, nFilter)
     with Layer {
 
@@ -74,7 +75,7 @@ object Convolution2D {
             padding: List[Int] = List(0, 0),
             nIn: Option[List[Int]] = None,
             weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
-            activation: String = "identity",
+            activation: Activation = Activation.IDENTITY,
             regularizer: WeightRegularizer = NoRegularizer(),
             dropOut: Double = 0.0): Convolution2D = {
     new Convolution2D(nFilter, kernelSize, nChannels, stride, padding, nIn,

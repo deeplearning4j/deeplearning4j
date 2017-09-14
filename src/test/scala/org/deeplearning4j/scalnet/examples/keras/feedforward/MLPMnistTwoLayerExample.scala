@@ -26,6 +26,7 @@ import org.deeplearning4j.scalnet.layers.Dense
 import org.deeplearning4j.scalnet.regularizers.L2
 import org.deeplearning4j.scalnet.models.Sequential
 import org.deeplearning4j.scalnet.optimizers.SGD
+import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
@@ -55,10 +56,10 @@ object MLPMnistTwoLayerExample extends App {
 
   log.info("Build model....")
   private val model: Sequential = Sequential(rngSeed = rngSeed)
-  model.add(Dense(nOut = 500, nIn = numRows*numColumns, weightInit = WeightInit.XAVIER, activation = "relu",
+  model.add(Dense(nOut = 500, nIn = numRows*numColumns, weightInit = WeightInit.XAVIER, activation = Activation.RELU,
     regularizer = L2(learningRate * 0.005)))
-  model.add(Dense(nOut = 100, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = L2(learningRate * 0.005)))
-  model.add(Dense(nOut = outputNum, weightInit = WeightInit.XAVIER, activation = "softmax",
+  model.add(Dense(nOut = 100, weightInit = WeightInit.XAVIER, activation = Activation.RELU, regularizer = L2(learningRate * 0.005)))
+  model.add(Dense(nOut = outputNum, weightInit = WeightInit.XAVIER, activation = Activation.SOFTMAX,
     regularizer = L2(learningRate * 0.005)))
   model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD,
     optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
