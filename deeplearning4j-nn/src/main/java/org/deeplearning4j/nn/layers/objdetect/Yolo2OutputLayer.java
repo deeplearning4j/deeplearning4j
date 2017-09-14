@@ -251,7 +251,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray gradXYCenter5d = gradXYCenter2d.dup('c')
                 .reshape('c', mb, b, h, w, 2)
                 .permute(0,1,4,2,3);   //From: [mb, B, H, W, 2] to [mb, B, 2, H, W]
-        gradXYCenter5d = new ActivationSigmoid().backprop(preSigmoidPredictedXYCenterGrid, gradXYCenter5d).getFirst();
+        gradXYCenter5d = new ActivationSigmoid().backprop(preSigmoidPredictedXYCenterGrid.dup(), gradXYCenter5d).getFirst();
         epsXY.assign(gradXYCenter5d);
 
         //Calculate gradient component from width/height (w,h) loss - dL_size/dw and dL_size/dw
@@ -277,6 +277,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Calculate dL/dtc
         INDArray epsConfidence4d = dLc_dzc_2d.dup('c').reshape('c', mb, b, h, w);   //[mb*b*h*w, 2] to [mb, b, h, w]
         epsC.assign(epsConfidence4d);
+
+
+
+
 
         //Note that we ALSO have components to x,y,w,h  from confidence loss (via IOU, which depends on all of these values)
         //that is: dLc/dx, dLc/dy, dLc/dw, dLc/dh
@@ -670,7 +674,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                             }
                         }
 
-                        out.add(new DetectedObject(i, px, py, pw, ph, sm));
+                        out.add(new DetectedObject(i, px, py, pw, ph, sm, conf));
                     }
                 }
             }

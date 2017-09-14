@@ -389,8 +389,10 @@ public class TestYolo2OutputLayer {
     public void testYoloOverfitting() throws Exception {
         Nd4j.getRandom().setSeed(12345);
 
-        InputStream is1 = new ClassPathResource("yolo/VOC_SingleImage/JPEGImages/2007_009346.jpg").getInputStream();
-        InputStream is2 = new ClassPathResource("yolo/VOC_SingleImage/Annotations/2007_009346.xml").getInputStream();
+        InputStream is1 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2007_009346.jpg").getInputStream();
+        InputStream is2 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2007_009346.xml").getInputStream();
+        InputStream is3 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2008_003344.jpg").getInputStream();
+        InputStream is4 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2008_003344.xml").getInputStream();
 
         File dir = Files.createTempDirectory("testYoloOverfitting").toFile();
         File jpg = new File(dir, "JPEGImages");
@@ -403,21 +405,25 @@ public class TestYolo2OutputLayer {
 
         try(FileOutputStream fos = new FileOutputStream(imgOut)){
             IOUtils.copy(is1, fos);
-        } finally {
-            is1.close();
-        }
+        } finally { is1.close(); }
 
         try(FileOutputStream fos = new FileOutputStream(annotationOut)){
             IOUtils.copy(is2, fos);
-        } finally {
-            is2.close();
-        }
+        } finally { is2.close(); }
 
-//        INDArray bbPriors = Nd4j.create(new double[][]{
-//                {3,3},
-//                {5,5}});
+        imgOut = new File(jpg, "2008_003344.jpg");
+        annotationOut = new File(annot, "2008_003344.xml");
+        try(FileOutputStream fos = new FileOutputStream(imgOut)){
+            IOUtils.copy(is3, fos);
+        } finally { is3.close(); }
+
+        try(FileOutputStream fos = new FileOutputStream(annotationOut)){
+            IOUtils.copy(is4, fos);
+        } finally { is4.close(); }
+
         INDArray bbPriors = Nd4j.create(new double[][]{
-                {3,3}});
+                {3,3},
+                {5,5}});
 
         //4x downsampling to 13x13 = 52x52 input images
         //Required depth at output layer: 5B+C, with B=5, C=20 object classes, for VOC
@@ -430,14 +436,6 @@ public class TestYolo2OutputLayer {
         rr.initialize(new FileSplit(jpg));
 
         DataSetIterator iter = new RecordReaderDataSetIterator(rr,1,1,1,true);
-
-
-//        INDArray bbPriors = Nd4j.create(new double[][]{
-//                {3,3},
-//                {3,5},
-//                {5,3},
-//                {5,5},
-//                {5,7}});
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .convolutionMode(ConvolutionMode.Same)
@@ -486,18 +484,11 @@ public class TestYolo2OutputLayer {
             System.out.println(d);
             System.out.println();
         }
-    }
 
 
-    @Test
-    public void broadcastTest(){
+        assertEquals(2, l.size());
 
-        //5d: [1,2,2,13,13]
-        //3d: [1, 13, 13]
-
-        INDArray arr5 = Nd4j.ones(1,2,2,13,13);
-        INDArray arr3 = Nd4j.linspace(1,13*13, 13*13).reshape('c', 13, 13);
-
-//        Broadcast.mul(arr5, arr3, arr5, 0, )
+        //Expect 2 detected objects:
+        //
     }
 }

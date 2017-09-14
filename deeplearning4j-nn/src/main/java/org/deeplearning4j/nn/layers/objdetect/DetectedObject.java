@@ -23,6 +23,7 @@ public class DetectedObject {
     private final double height;
     private final INDArray classPredictions;
     private int predictedClass = -1;
+    private final double confidence;
 
 
     /**
@@ -33,13 +34,15 @@ public class DetectedObject {
      * @param height           Height of  the detected object
      * @param classPredictions Row vector of class probabilities for the detected object
      */
-    public DetectedObject(int exampleNumber, double centerX, double centerY, double width, double height, INDArray classPredictions){
+    public DetectedObject(int exampleNumber, double centerX, double centerY, double width, double height,
+                          INDArray classPredictions, double confidence){
         this.exampleNumber = exampleNumber;
         this.centerX = centerX;
         this.centerY = centerY;
         this.width = width;
         this.height = height;
         this.classPredictions = classPredictions;
+        this.confidence = confidence;
     }
 
     /**
@@ -71,4 +74,9 @@ public class DetectedObject {
         return predictedClass;
     }
 
+    public String toString() {
+        return "DetectedObject(exampleNumber=" + exampleNumber + ", centerX=" + centerX + ", centerY=" + centerY +
+                ", width=" + width + ", height=" + height + ", classPredictions=" + classPredictions +
+                ", predictedClass=" + getPredictedClass() + ", confidencce=" + confidence + ")";
+    }
 }
