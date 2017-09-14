@@ -17,6 +17,7 @@
 package org.datavec.api.writable;
 
 
+import com.google.common.math.DoubleMath;
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.io.WritableComparator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -59,12 +60,38 @@ public class IntWritable implements WritableComparable {
         out.writeInt(value);
     }
 
+    public boolean fuzzyEquals(Writable o, double tolerance) {
+        double other;
+        if (o instanceof IntWritable){
+            other = ((IntWritable) o).toDouble();
+        } else if (o instanceof  LongWritable) {
+            other = ((LongWritable) o).toDouble();
+        } else if (o instanceof ByteWritable) {
+            other = ((ByteWritable) o).toDouble();
+        } else if (o instanceof  DoubleWritable) {
+            other = ((DoubleWritable) o).toDouble();
+        } else if (o instanceof  FloatWritable) {
+            other = ((FloatWritable) o).toDouble();
+        } else { return false; }
+        return DoubleMath.fuzzyEquals(this.value, other, tolerance);
+    }
+
     /** Returns true iff <code>o</code> is a IntWritable with the same value. */
     public boolean equals(Object o) {
-        if (!(o instanceof IntWritable))
+        if (o instanceof  ByteWritable){
+            ByteWritable other = (ByteWritable) o;
+            return  this.value == other.get();
+        }
+        if (o instanceof IntWritable) {
+            IntWritable other = (IntWritable) o;
+            return this.value == other.get();
+        }
+        if (o instanceof LongWritable) {
+            LongWritable other = (LongWritable) o;
+            return this.value == other.get();
+        } else {
             return false;
-        IntWritable other = (IntWritable) o;
-        return this.value == other.value;
+        }
     }
 
     public int hashCode() {
