@@ -21,6 +21,7 @@ package org.deeplearning4j.scalnet.layers
 import org.deeplearning4j.nn.conf.layers.{DenseLayer, OutputLayer => JOutputLayer}
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.scalnet.regularizers.{NoRegularizer, WeightRegularizer}
+import org.nd4j.linalg.activations.{Activation, IActivation}
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
 /**
@@ -29,14 +30,14 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
   * @author David Kale
   */
 class Dense(
-    nOut: List[Int],
-    nIn: List[Int],
-    val weightInit: WeightInit,
-    val activation: String,
-    val regularizer: WeightRegularizer,
-    val dropOut: Double = 0.0,
-    override val name: String,
-    lossFunction: Option[LossFunction])
+             nOut: List[Int],
+             nIn: List[Int],
+             val weightInit: WeightInit,
+             val activation: Activation,
+             val regularizer: WeightRegularizer,
+             val dropOut: Double = 0.0,
+             override val name: String,
+             lossFunction: Option[LossFunction])
   extends OutputLayer {
 
   override val outputShape: List[Int] = nOut
@@ -84,7 +85,7 @@ object Dense {
   def apply(nOut: Int,
             nIn: Int = 0,
             weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
-            activation: String = "identity",
+            activation: Activation = Activation.IDENTITY,
             regularizer: WeightRegularizer = NoRegularizer(),
             dropOut: Double = 0.0,
             name: String = "",

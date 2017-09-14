@@ -29,6 +29,7 @@ import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.deeplearning4j.scalnet.optimizers.SGD
 import org.deeplearning4j.scalnet.regularizers.L2
+import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
@@ -67,8 +68,8 @@ object LeNetMnistExample extends App {
   model.add(Convolution2D(nFilter = 50, kernelSize = List(5, 5), stride = List(1, 1),
     weightInit = WeightInit.XAVIER, regularizer = L2(weightDecay)))
   model.add(MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-  model.add(Dense(nOut = 500, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = L2(weightDecay)))
-  model.add(Dense(nOut = nbOutput, weightInit = WeightInit.XAVIER, activation = "softmax"))
+  model.add(Dense(nOut = 500, weightInit = WeightInit.XAVIER, activation = Activation.RELU, regularizer = L2(weightDecay)))
+  model.add(Dense(nOut = nbOutput, weightInit = WeightInit.XAVIER, activation = Activation.SOFTMAX))
   model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD,
     optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
 

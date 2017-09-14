@@ -24,10 +24,10 @@ import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.scalnet.layers.{Node, OutputLayer}
 import org.deeplearning4j.scalnet.optimizers.{Optimizer, SGD}
 import org.deeplearning4j.scalnet.utils.Implicits._
-
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
+import org.nd4j.linalg.learning.config.{Nesterovs, Sgd}
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
 /**
@@ -58,18 +58,13 @@ abstract class Model {
       builder = builder.seed(seed)
     }
     optimizer match {
+      case sgd: SGD if sgd.nesterov =>
+        builder.updater(new Nesterovs(sgd.lr, sgd.momentum))
       case sgd: SGD =>
-        builder = builder.optimizationAlgo(sgd.optimizationAlgorithm)
-          .learningRate(sgd.lr)
-        sgd match {
-          case opt if opt.nesterov =>
-            builder = builder.updater(Updater.NESTEROVS).momentum(opt.momentum)
-        }
+        builder.updater(new Sgd(sgd.lr))
       case _ =>
-        builder = builder.optimizationAlgo(optimizer.optimizationAlgorithm)
-          .learningRate(optimizer.asInstanceOf[SGD].lr)
+        builder.optimizationAlgo(optimizer.optimizationAlgorithm).updater(new Sgd(optimizer.asInstanceOf[SGD].lr))
     }
-    builder
   }
 
   /**
@@ -79,10 +74,10 @@ abstract class Model {
     * @param lossFunction loss function to use
     */
   def buildOutput(lossFunction: LossFunction): Unit = {
-    layers.last match {
-      case l if !l.isInstanceOf[OutputLayer] =>
+    layers.lastOption match {
+      case Some(l) if !l.isInstanceOf[OutputLayer] =>
         throw new IllegalArgumentException("Last layer must have Output trait")
-      case l if !l.asInstanceOf[OutputLayer].output.isOutput => {
+      case Some(l) if !l.asInstanceOf[OutputLayer].output.isOutput => {
         val last: OutputLayer = layers.last.asInstanceOf[OutputLayer].toOutputLayer(lossFunction)
         layers = layers.updated(layers.length - 1, last)
       }

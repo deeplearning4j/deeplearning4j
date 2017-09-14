@@ -31,6 +31,7 @@ import org.deeplearning4j.scalnet.layers.Dense
 import org.deeplearning4j.scalnet.regularizers.L2
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.deeplearning4j.scalnet.optimizers.SGD
+import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.dataset.{DataSet, SplitTestAndTrain}
@@ -70,10 +71,10 @@ object IrisCSVExample extends App {
 
   log.info("Build model....")
   val model: NeuralNet = NeuralNet()
-  model.add(Dense(numDenseOut, nIn = numIn, activation = "relu", regularizer = L2(learningRate * decay)))
-  model.add(Dense(numDenseOut, activation = "relu", regularizer = L2(learningRate * decay)))
-  model.add(Dense(numDenseOut, activation = "relu", regularizer = L2(learningRate * decay)))
-  model.add(Dense(numOut, activation = "softmax", regularizer = L2(learningRate * decay)))
+  model.add(Dense(numDenseOut, nIn = numIn, activation = Activation.RELU, regularizer = L2(learningRate * decay)))
+  model.add(Dense(numDenseOut, activation = Activation.RELU, regularizer = L2(learningRate * decay)))
+  model.add(Dense(numDenseOut, activation = Activation.RELU, regularizer = L2(learningRate * decay)))
+  model.add(Dense(numOut, activation = Activation.SOFTMAX, regularizer = L2(learningRate * decay)))
   model.compile(lossFunction = LossFunction.MCXENT, optimizer = SGD(learningRate))
 
   log.info("Train model....")

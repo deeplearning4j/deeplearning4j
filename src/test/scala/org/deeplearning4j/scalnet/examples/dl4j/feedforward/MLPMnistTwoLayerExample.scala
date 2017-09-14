@@ -26,6 +26,7 @@ import org.deeplearning4j.scalnet.layers.Dense
 import org.deeplearning4j.scalnet.regularizers.L2
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.deeplearning4j.scalnet.optimizers.SGD
+import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
@@ -58,10 +59,10 @@ object MLPMnistTwoLayerExample extends App {
   log.info("Build model....")
   private val model: NeuralNet = NeuralNet(rngSeed = rngSeed)
   model.add(Dense(nOut = 500, nIn = numRows * numColumns, weightInit = WeightInit.XAVIER,
-    activation = "relu", regularizer = L2(learningRate * decay)))
-  model.add(Dense(nOut = 100, weightInit = WeightInit.XAVIER, activation = "relu",
+    activation = Activation.RELU, regularizer = L2(learningRate * decay)))
+  model.add(Dense(nOut = 100, weightInit = WeightInit.XAVIER, activation = Activation.RELU,
     regularizer = L2(learningRate * decay)))
-  model.add(Dense(outputNum, weightInit = WeightInit.XAVIER, activation = "softmax",
+  model.add(Dense(outputNum, weightInit = WeightInit.XAVIER, activation = Activation.SOFTMAX,
     regularizer = L2(learningRate * decay)))
 
   model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD,

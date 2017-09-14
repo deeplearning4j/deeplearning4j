@@ -37,8 +37,8 @@ class NeuralNetTest extends FunSpec with BeforeAndAfter {
 
   describe("A NeuralNet network") {
 
-    it("without layers should produce a MatchError when compiled") {
-      assertThrows[scala.MatchError] {
+    it("without layers should produce an IllegalArgumentException when compiled") {
+      assertThrows[java.lang.IllegalArgumentException] {
         model.compile(null)
       }
     }
