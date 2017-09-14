@@ -93,9 +93,13 @@ public class KerasMerge extends KerasLayer {
                 // leave null
                 break;
             case LAYER_MERGE_MODE_AVE:
+                op = ElementWiseVertex.Op.Average;
+                break;
+            case LAYER_MERGE_MODE_MAX:
+                op = ElementWiseVertex.Op.Max;
+                break;
             case LAYER_MERGE_MODE_COS:
             case LAYER_MERGE_MODE_DOT:
-            case LAYER_MERGE_MODE_MAX:
             default:
                 throw new UnsupportedKerasConfigurationException(
                                 "Keras Merge layer mode " + mergeMode + " not supported");
