@@ -23,6 +23,7 @@ import java.util.Collections;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Created by susaneraly on 2/17/17.
@@ -353,8 +354,9 @@ public class TransferLearningCompGraphTest {
                                         "layer7")
                                 .setOutputs("layer8").backprop(true).pretrain(false).build());
         modelExpectedArch.init();
-        modelExpectedArch.getVertex("layer0").setLayerAsFrozen();
-        modelExpectedArch.getVertex("layer1").setLayerAsFrozen();
+//        modelExpectedArch.getVertex("layer0").setLayerAsFrozen();
+//        modelExpectedArch.getVertex("layer1").setLayerAsFrozen();
+        fail();
 
         assertEquals(modelExpectedArch.getConfiguration().toJson(), modelNow.getConfiguration().toJson());
 

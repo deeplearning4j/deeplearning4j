@@ -2,6 +2,7 @@ package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -632,7 +633,7 @@ public class CNNGradientCheckTest {
                                     (org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer) net.getLayer(1);
                     int[] expShape = new int[] {minibatchSize, inputDepth, height + zeroPad[0] + zeroPad[1],
                                     width + zeroPad[2] + zeroPad[3]};
-                    INDArray out = zpl.activate(input, true);
+                    INDArray out = zpl.activate(ActivationsFactory.getInstance().create(input), true).get(0);
                     assertArrayEquals(expShape, out.shape());
 
                     String msg = "minibatch=" + minibatchSize + ", depth=" + inputDepth + ", zeroPad = "

@@ -3,6 +3,9 @@ package org.deeplearning4j.nn.layers.normalization;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -31,6 +34,8 @@ import static org.junit.Assert.assertEquals;
  *
  */
 public class LocalResponseTest {
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+    private static final GradientsFactory gf = GradientsFactory.getInstance();
 
     private INDArray x = Nd4j.create(new double[] {0.88128096, -0.96666986, -0.61832994, 0.26418415, 0.05694608,
                     0.2950289, 0.99222249, 0.24541704, 0.4219842, 0.96430975, 0.19299535, -0.06658337, -0.27603117,
@@ -95,7 +100,7 @@ public class LocalResponseTest {
                         .build();
 
         layer = new LocalResponseNormalization().instantiate(conf, null, 0, null, false);
-        activationsActual = layer.activate(x);
+        activationsActual = layer.activate(af.create(x)).get(0);
     }
 
     @Test
@@ -107,12 +112,12 @@ public class LocalResponseTest {
 
     @Test
     public void testBackpropGradient() {
-        Gradients containedOutput = layer.backpropGradient(epsilon);
+        Gradients containedOutput = layer.backpropGradient(gf.create(epsilon));
 
-        assertEquals(newEpsilonExpected.getDouble(8), containedOutput.getSecond().getDouble(8), 1e-4);
-        assertEquals(newEpsilonExpected.getDouble(20), containedOutput.getSecond().getDouble(20), 1e-4);
-        assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
-        assertArrayEquals(newEpsilonExpected.shape(), containedOutput.getSecond().shape());
+        assertEquals(newEpsilonExpected.getDouble(8), containedOutput.get(0).getDouble(8), 1e-4);
+        assertEquals(newEpsilonExpected.getDouble(20), containedOutput.get(0).getDouble(20), 1e-4);
+        assertEquals(null, containedOutput.getParameterGradients().getGradientFor("W"));
+        assertArrayEquals(newEpsilonExpected.shape(), containedOutput.get(0).shape());
     }
 
     @Test
@@ -187,7 +192,7 @@ public class LocalResponseTest {
                         (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization) lrn.instantiate(nnc,
                                         null, 0, null, false);
 
-        INDArray outAct = layer.activate(in, true);
+        INDArray outAct = layer.activate(af.create(in), true).get(0);
 
         assertEquals(outExp, outAct);
     }

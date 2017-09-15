@@ -331,7 +331,7 @@ public class ParallelInference {
 
                         // FIXME: get rid of instanceof here, model won't change during runtime anyway
                         if (replicatedModel instanceof ComputationGraph) {
-                            INDArray[] output = ((ComputationGraph) replicatedModel).output(false, request.getInput());
+                            INDArray[] output = ((ComputationGraph) replicatedModel).output(false, request.getInput()).getAsArray();
                             request.setOutput(output);
                         } else if (replicatedModel instanceof MultiLayerNetwork) {
                             INDArray output = ((MultiLayerNetwork) replicatedModel).output(request.getInput()[0]);

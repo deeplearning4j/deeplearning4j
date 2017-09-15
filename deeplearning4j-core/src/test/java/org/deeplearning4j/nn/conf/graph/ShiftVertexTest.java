@@ -24,6 +24,8 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static org.deeplearning4j.TestUtils.nullsafe;
+
 /**
  * Created by binesh on 6/13/2017. 
  */
@@ -230,13 +232,6 @@ public class ShiftVertexTest {
     private static double sum_errors(INDArray a, INDArray b) {
         INDArray o = a.sub(b);
         return o.mul(o).sumNumber().doubleValue();
-    }
-
-    private static <T> T nullsafe(T obj) {
-        if (obj == null)
-            throw new NullPointerException();
-        T clean = obj;
-        return clean;
     }
 
     private double epsilon = 1e-10;

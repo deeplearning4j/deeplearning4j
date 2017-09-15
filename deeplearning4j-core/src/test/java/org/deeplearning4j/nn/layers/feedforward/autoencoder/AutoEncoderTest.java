@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -105,7 +106,7 @@ public class AutoEncoderTest {
         INDArray params = Nd4j.create(1, numParams);
         AutoEncoder da = (AutoEncoder) conf.getLayer().instantiate(conf, null, 0, params, true);
         Gradient g = new DefaultGradient();
-        g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, da.decode(da.activate(input)).sub(input));
+        g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, da.decode(da.activate(ActivationsFactory.getInstance().create(input)).get(0)).sub(input));
     }
 
 }

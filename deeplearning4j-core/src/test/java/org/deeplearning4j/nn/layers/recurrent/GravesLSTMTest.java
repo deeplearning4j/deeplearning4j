@@ -1,6 +1,9 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
@@ -28,6 +31,9 @@ import static org.junit.Assert.*;
 
 public class GravesLSTMTest {
 
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+    private static final GradientsFactory gf = GradientsFactory.getInstance();
+
     @Test
     public void testLSTMGravesForwardBasic() {
         //Very basic test of forward prop. of LSTM layer with a time series.
@@ -50,19 +56,19 @@ public class GravesLSTMTest {
         //Output/activations has shape [miniBatchsize,nHiddenUnits,timeSeriesLength];
 
         INDArray dataSingleExampleTimeLength1 = Nd4j.ones(1, nIn, 1);
-        INDArray activations1 = layer.activate(dataSingleExampleTimeLength1);
+        INDArray activations1 = layer.activate(af.create(dataSingleExampleTimeLength1)).get(0);
         assertArrayEquals(activations1.shape(), new int[] {1, nHiddenUnits, 1});
 
         INDArray dataMultiExampleLength1 = Nd4j.ones(10, nIn, 1);
-        INDArray activations2 = layer.activate(dataMultiExampleLength1);
+        INDArray activations2 = layer.activate(af.create(dataMultiExampleLength1)).get(0);
         assertArrayEquals(activations2.shape(), new int[] {10, nHiddenUnits, 1});
 
         INDArray dataSingleExampleLength12 = Nd4j.ones(1, nIn, 12);
-        INDArray activations3 = layer.activate(dataSingleExampleLength12);
+        INDArray activations3 = layer.activate(af.create(dataSingleExampleLength12)).get(0);
         assertArrayEquals(activations3.shape(), new int[] {1, nHiddenUnits, 12});
 
         INDArray dataMultiExampleLength15 = Nd4j.ones(10, nIn, 15);
-        INDArray activations4 = layer.activate(dataMultiExampleLength15);
+        INDArray activations4 = layer.activate(af.create(dataMultiExampleLength15)).get(0);
         assertArrayEquals(activations4.shape(), new int[] {10, nHiddenUnits, 15});
     }
 
@@ -93,14 +99,14 @@ public class GravesLSTMTest {
         GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
         lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.getLayer().initializer().numParams(conf)));
         //Set input, do a forward pass:
-        lstm.activate(inputData);
+        lstm.activate(af.create(inputData)).get(0);
         assertNotNull(lstm.input());
 
         INDArray epsilon = Nd4j.ones(miniBatchSize, lstmNHiddenUnits, timeSeriesLength);
 
-        Gradients out = lstm.backpropGradient(epsilon);
-        Gradient outGradient = out.getFirst();
-        INDArray nextEpsilon = out.getSecond();
+        Gradients out = lstm.backpropGradient(gf.create(epsilon));
+        Gradient outGradient = out.getParameterGradients();
+        INDArray nextEpsilon = out.get(0);
 
         INDArray biasGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.BIAS_KEY);
         INDArray inWeightGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);

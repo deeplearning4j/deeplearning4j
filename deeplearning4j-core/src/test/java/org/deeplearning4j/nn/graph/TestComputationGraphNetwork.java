@@ -8,6 +8,9 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.graph.*;
@@ -47,6 +50,9 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 public class TestComputationGraphNetwork {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+    private static final GradientsFactory gf = GradientsFactory.getInstance();
 
     private static ComputationGraphConfiguration getIrisGraphConfiguration() {
         return new NeuralNetConfiguration.Builder().seed(12345)
@@ -650,15 +656,15 @@ public class TestComputationGraphNetwork {
         org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
         Gradients olPairStd = ol.backpropGradient(null);
 
-        INDArray olEpsilon = olPairStd.getSecond();
+        INDArray olEpsilon = olPairStd.get(0);
 
         e.feedForward(inData, true);
-        Pair<Gradient,INDArray> extErrorGrad = e.backpropGradient(olEpsilon);
+        Gradients extErrorGrad = e.backpropGradient(gf.create(olEpsilon));
 
 
         int nParamsDense = 10 * 10 + 10;
         assertEquals(sGrad.gradient().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsDense)),
-                extErrorGrad.getFirst().gradient());
+                extErrorGrad.getParameterGradients().gradient());
 
     }
 
@@ -1099,7 +1105,7 @@ public class TestComputationGraphNetwork {
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
 
-        INDArray[] out = net.output(img);
+        INDArray[] out = net.output(img).getAsArray();
 
         assertNotNull(out);
         assertEquals(1, out.length);

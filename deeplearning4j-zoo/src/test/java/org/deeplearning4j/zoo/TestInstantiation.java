@@ -79,7 +79,7 @@ public class TestInstantiation {
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
-        INDArray[] result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
+        INDArray[] result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224})).getAsArray();
         assertArrayEquals(result[0].shape(), new int[] {1, 1000});
 
         // clean up for current model
@@ -90,7 +90,7 @@ public class TestInstantiation {
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         initializedModel = (ComputationGraph) model.initPretrained();
-        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
+        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224})).getAsArray();
         assertArrayEquals(result[0].shape(), new int[] {1, 1000});
 
         // clean up for current model
@@ -101,7 +101,7 @@ public class TestInstantiation {
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         initializedModel = (ComputationGraph) model.initPretrained();
-        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
+        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224})).getAsArray();
         assertArrayEquals(result[0].shape(), new int[] {1, 1000});
 
         // clean up for current model

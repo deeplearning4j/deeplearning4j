@@ -534,7 +534,7 @@ public class ComputationGraphTestRNN {
             assertNull(net.getInputMaskArrays());
             assertNull(net.getLabelMaskArrays());
             for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
+                assertNull(l.getMaskArray(0));
             }
 
             DataSet ds = new DataSet(data.getFeatures(0), data.getLabels(0), data.getFeaturesMaskArray(0),
@@ -543,14 +543,14 @@ public class ComputationGraphTestRNN {
             assertNull(net.getInputMaskArrays());
             assertNull(net.getLabelMaskArrays());
             for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
+                assertNull(l.getMaskArray(0));
             }
 
             net.fit(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
             assertNull(net.getInputMaskArrays());
             assertNull(net.getLabelMaskArrays());
             for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
+                assertNull(l.getMaskArray(0));
             }
 
             MultiDataSetIterator iter = new IteratorMultiDataSetIterator(
@@ -559,7 +559,7 @@ public class ComputationGraphTestRNN {
             assertNull(net.getInputMaskArrays());
             assertNull(net.getLabelMaskArrays());
             for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
+                assertNull(l.getMaskArray(0));
             }
 
             DataSetIterator iter2 = new IteratorDataSetIterator(Collections.singletonList(ds).iterator(), 1);
@@ -567,7 +567,7 @@ public class ComputationGraphTestRNN {
             assertNull(net.getInputMaskArrays());
             assertNull(net.getLabelMaskArrays());
             for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
+                assertNull(l.getMaskArray(0));
             }
         }
     }

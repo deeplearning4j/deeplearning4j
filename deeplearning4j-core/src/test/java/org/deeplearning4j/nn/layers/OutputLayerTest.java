@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.layers;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -89,7 +90,7 @@ public class OutputLayerTest {
         DataSet test = trainTest.getTest();
         test.normalizeZeroMeanZeroUnitVariance();
         Evaluation eval = new Evaluation();
-        INDArray output = l.output(test.getFeatureMatrix());
+        INDArray output = l.output(test.getFeatureMatrix()).get(0);
         eval.eval(test.getLabels(), output);
         log.info("Score " + eval.stats());
 
@@ -154,7 +155,7 @@ public class OutputLayerTest {
         o.fit(t.getTrain());
         log.info("Evaluate model....");
         Evaluation eval = new Evaluation(3);
-        eval.eval(t.getTest().getLabels(), o.output(t.getTest().getFeatureMatrix(), true));
+        eval.eval(t.getTest().getLabels(), o.output(t.getTest().getFeatureMatrix(), true).get(0));
         log.info(eval.stats());
 
     }
@@ -220,7 +221,7 @@ public class OutputLayerTest {
         DataSet test = trainTest.getTest();
         test.normalizeZeroMeanZeroUnitVariance();
         Evaluation eval = new Evaluation();
-        INDArray output = l.output(test.getFeatureMatrix());
+        INDArray output = l.output(test.getFeatureMatrix()).get(0);
         eval.eval(test.getLabels(), output);
         log.info("Score " + eval.stats());
 
@@ -285,7 +286,7 @@ public class OutputLayerTest {
         INDArray out = mln.output(input);
         assertArrayEquals(out.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
 
-        INDArray act = mln.activate(input, false);
+        INDArray act = mln.activate(ActivationsFactory.getInstance().create(input), false).get(0);
         assertArrayEquals(act.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
 
         //As above, but for RnnOutputLayer. Expect all activations etc. to be 3d
@@ -309,7 +310,7 @@ public class OutputLayerTest {
         INDArray outRnn = mlnRnn.output(input);
         assertArrayEquals(outRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
 
-        INDArray actRnn = mlnRnn.activate(false);
+        INDArray actRnn = mlnRnn.activate(false).get(0);
         assertArrayEquals(actRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
     }
 
@@ -417,7 +418,7 @@ public class OutputLayerTest {
             INDArray out = mln.output(input);
             assertArrayEquals(out.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
 
-            INDArray act = mln.activate(false);
+            INDArray act = mln.activate(false).get(0);
             assertArrayEquals(act.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
 
 
@@ -427,7 +428,7 @@ public class OutputLayerTest {
             INDArray outRnn2 = mlnRnn.output(input);
             assertArrayEquals(outRnn2.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
 
-            INDArray actRnn = mlnRnn.activate(false);
+            INDArray actRnn = mlnRnn.activate(false).get(0);
             assertArrayEquals(actRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
         }
     }

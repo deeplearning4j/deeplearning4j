@@ -384,8 +384,8 @@ public class TestVariableLengthTSCG {
                         net2.setLayerMaskArrays(null, new INDArray[] {labelMaskArray});
 
 
-                        INDArray out = net.output(input)[0];
-                        INDArray out2 = net2.output(input)[0];
+                        INDArray out = net.output(input).get(0);
+                        INDArray out2 = net2.output(input).get(0);
                         for (int i = 0; i < miniBatch; i++) {
                             for (int j = 0; j < tsLength; j++) {
                                 double m = labelMaskArray.getDouble(i, j);

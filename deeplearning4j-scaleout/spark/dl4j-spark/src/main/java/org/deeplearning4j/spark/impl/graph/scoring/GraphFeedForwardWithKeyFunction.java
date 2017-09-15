@@ -179,7 +179,7 @@ class GraphFeedForwardWithKeyFunctionAdapter<K>
             }
 
 
-            INDArray[] out = network.output(false, batchFeatures);
+            INDArray[] out = network.output(false, batchFeatures).getAsArray();
 
             examplesInBatch = 0;
             for (int i = firstIdx; i < nextIdx; i++) {

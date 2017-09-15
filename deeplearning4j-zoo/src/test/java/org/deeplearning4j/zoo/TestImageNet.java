@@ -47,7 +47,7 @@ public class TestImageNet {
         INDArray image = loader.asMatrix(classloader.getResourceAsStream("goldenretriever.jpg"));
         DataNormalization scaler = new VGG16ImagePreProcessor();
         scaler.transform(image);
-        INDArray[] output = initializedModel.output(false, image);
+        INDArray[] output = initializedModel.output(false, image).getAsArray();
 
         // check output labels of result
         String decodedLabels = new ImageNetLabels().decodePredictions(output[0]);

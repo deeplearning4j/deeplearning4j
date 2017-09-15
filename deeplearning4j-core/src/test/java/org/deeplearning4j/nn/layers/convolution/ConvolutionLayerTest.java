@@ -5,6 +5,8 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -37,6 +39,9 @@ import static org.junit.Assert.*;
  * @author Adam Gibson
  */
 public class ConvolutionLayerTest {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+    private static final GradientsFactory gf = GradientsFactory.getInstance();
 
     @Before
     public void before() {
@@ -235,7 +240,7 @@ public class ConvolutionLayerTest {
     public void testCNNInputSetupMNIST() throws Exception {
         INDArray input = getMnistData();
         Layer layer = getMNISTConfig();
-        layer.activate(input);
+        layer.activate(af.create(input)).get(0);
 
         assertEquals(input, layer.input());
         assertArrayEquals(input.shape(), layer.input().shape());
@@ -254,7 +259,7 @@ public class ConvolutionLayerTest {
         INDArray input = getMnistData();
 
         Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize, stride, padding);
-        INDArray convActivations = layer.activate(input);
+        INDArray convActivations = layer.activate(af.create(input)).get(0);
 
         assertEquals(featureMapWidth, convActivations.size(2));
         assertEquals(depth, convActivations.size(1));
@@ -270,7 +275,7 @@ public class ConvolutionLayerTest {
                         0.99966465, 0.99966465, 0.99966465, 0.98201379, 0.98201379, 0.98201379, 0.98201379, 0.99966465,
                         0.99966465, 0.99966465, 0.99966465}, new int[] {1, 2, 4, 4});
 
-        INDArray convActivations = layer.activate(input);
+        INDArray convActivations = layer.activate(af.create(input)).get(0);
 
         assertArrayEquals(expectedOutput.shape(), convActivations.shape());
         assertEquals(expectedOutput, convActivations);

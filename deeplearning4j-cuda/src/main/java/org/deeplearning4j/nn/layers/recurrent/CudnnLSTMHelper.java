@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.layers.recurrent;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -191,13 +193,13 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
     @Override
     public Gradients backpropGradient(final NeuralNetConfiguration conf,
-                    final IActivation gateActivationFn, final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
-                    final INDArray inputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
-                    final INDArray epsilon, final boolean truncatedBPTT, final int tbpttBackwardLength,
-                    final FwdPassReturn fwdPass, final boolean forwards, final String inputWeightKey,
-                    final String recurrentWeightKey, final String biasWeightKey,
-                    final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections) { //True for GravesLSTM, false for LSTM
+                                      final IActivation gateActivationFn, final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+                                      final INDArray inputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
+                                      final INDArray epsilon, final boolean truncatedBPTT, final int tbpttBackwardLength,
+                                      final FwdPassReturn fwdPass, final boolean forwards, final String inputWeightKey,
+                                      final String recurrentWeightKey, final String biasWeightKey,
+                                      final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
+                                      final boolean hasPeepholeConnections) { //True for GravesLSTM, false for LSTM
 
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
         int hiddenLayerSize = recurrentWeights.size(0); //i.e., n^L
@@ -354,7 +356,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
         INDArray epsilonNext = dx.permute(1, 2, 0); //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
 
-        return new Pair<>(retGradient, epsilonNext);
+        return GradientsFactory.getInstance().create(epsilonNext, retGradient);
     }
 
     @Override

@@ -7,6 +7,7 @@ import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -336,7 +337,7 @@ public class ConvolutionLayerSetupTest {
         network.init();
 
         network.setInput(next.getFeatureMatrix());
-        INDArray activationsActual = network.activate(next.getFeatureMatrix());
+        INDArray activationsActual = network.activate(ActivationsFactory.getInstance().create(next.getFeatureMatrix())).get(0);
         assertEquals(10, activationsActual.shape()[1], 1e-2);
 
         network.fit(next);

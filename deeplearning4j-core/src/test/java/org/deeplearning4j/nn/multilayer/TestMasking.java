@@ -59,19 +59,19 @@ public class TestMasking {
 
             net.fit(data);
             for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
+                assertNull(l.getMaskArray(0));
             }
 
 
             net.fit(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArray(), data.getLabelsMaskArray());
             for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
+                assertNull(l.getMaskArray(0));
             }
 
             DataSetIterator iter = new ExistingDataSetIterator(Collections.singletonList(data).iterator());
             net.fit(iter);
             for (Layer l : net.getLayers()) {
-                assertNull(l.getMaskArray());
+                assertNull(l.getMaskArray(0));
             }
         }
     }

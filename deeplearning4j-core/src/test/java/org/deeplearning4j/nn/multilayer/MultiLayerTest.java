@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.multilayer;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -25,6 +26,9 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
@@ -74,9 +78,10 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 12/27/14.
  */
+@Slf4j
 public class MultiLayerTest {
-
-    private static final Logger log = LoggerFactory.getLogger(MultiLayerTest.class);
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+    private static final GradientsFactory gf = GradientsFactory.getInstance();
 
     @Test
     public void testSetParams() {
@@ -442,12 +447,12 @@ public class MultiLayerTest {
 
         net.feedForward(input); //Need to feed forward before backprop
 
-        Gradients pair = net.backpropGradient(eps);
-        INDArray epsOut = pair.getSecond();
+        Gradients pair = net.backpropGradient(gf.create(eps));
+        INDArray epsOut = pair.get(0);
         assertNotNull(epsOut);
         assertArrayEquals(new int[] {miniBatch, nIn}, epsOut.shape());
 
-        Gradient g = pair.getFirst();
+        Gradient g = pair.getParameterGradients();
         Map<String, INDArray> gradMap = g.gradientForVariable();
         assertEquals(6, gradMap.size()); //3 layers, weight + bias gradients for each
 

@@ -2,6 +2,9 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Upsampling1D;
@@ -23,6 +26,9 @@ import static org.junit.Assert.assertTrue;
  */
 public class Upsampling1DTest {
 
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+    private static final GradientsFactory gf = GradientsFactory.getInstance();
+
     private int nExamples = 1;
     private int depth = 20;
     private int nChannelsIn = 1;
@@ -41,11 +47,11 @@ public class Upsampling1DTest {
         INDArray input = getData();
         Layer layer =  getUpsampling1DLayer();
 
-        INDArray containedOutput = layer.activate(containedInput);
+        INDArray containedOutput = layer.activate(af.create(containedInput)).get(0);
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
         assertEquals(containedExpectedOut, containedOutput);
 
-        INDArray output = layer.activate(input);
+        INDArray output = layer.activate(af.create(input)).get(0);
         assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, outputLength},
                         output.shape()));
         assertEquals(nChannelsIn, output.size(1), 1e-4);
@@ -64,23 +70,23 @@ public class Upsampling1DTest {
         INDArray input = getContainedData();
 
         Layer layer = getUpsampling1DLayer();
-        layer.activate(input);
+        layer.activate(af.create(input));
 
-        Gradients containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
+        Gradients containedOutput = layer.backpropGradient(gf.create(expectedContainedEpsilonInput));
 
-        assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
-        assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
-        assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
+        assertEquals(expectedContainedEpsilonResult, containedOutput.get(0));
+        assertEquals(null, containedOutput.getParameterGradients().getGradientFor("W"));
+        assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.get(0).shape().length);
 
         INDArray input2 = getData();
-        layer.activate(input2);
+        layer.activate(af.create(input2));
         int depth = input2.size(1);
 
         epsilon = Nd4j.ones(5, depth, outputLength);
 
-        Gradients out = layer.backpropGradient(epsilon);
-        assertEquals(input.shape().length, out.getSecond().shape().length);
-        assertEquals(depth, out.getSecond().size(1));
+        Gradients out = layer.backpropGradient(gf.create(epsilon));
+        assertEquals(input.shape().length, out.get(0).shape().length);
+        assertEquals(depth, out.get(0).size(1));
     }
 
 

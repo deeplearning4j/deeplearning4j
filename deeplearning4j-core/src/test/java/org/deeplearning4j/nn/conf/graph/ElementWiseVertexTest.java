@@ -24,6 +24,8 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
 
+import static org.deeplearning4j.TestUtils.nullsafe;
+
 /**
  * Created by binesh on 6/14/2017.
  */
@@ -240,7 +242,7 @@ public class ElementWiseVertexTest {
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
 
 
-        INDArray output = nullsafe(cg.output(input1, input2, input3)[0]);
+        INDArray output = nullsafe(cg.output(input1, input2, input3).get(0));
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
 
@@ -415,7 +417,7 @@ public class ElementWiseVertexTest {
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
 
 
-        INDArray output = nullsafe(cg.output(input1, input2, input3)[0]);
+        INDArray output = nullsafe(cg.output(input1, input2, input3).get(0));
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
 
@@ -579,7 +581,7 @@ public class ElementWiseVertexTest {
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
 
 
-        INDArray output = nullsafe(cg.output(input1, input2)[0]);
+        INDArray output = nullsafe(cg.output(input1, input2).get(0));
 
         Assert.assertEquals(0.0, mse(output, expect), this.epsilon);
 
@@ -673,13 +675,6 @@ public class ElementWiseVertexTest {
         double mse_expect = Transforms.pow(output.sub(target), 2.0).sumNumber().doubleValue()
                         / (output.columns() * output.rows());
         return mse_expect;
-    }
-
-    private static <T> T nullsafe(T obj) {
-        if (obj == null)
-            throw new NullPointerException();
-        T clean = obj;
-        return clean;
     }
 
     private double epsilon = 1e-10;

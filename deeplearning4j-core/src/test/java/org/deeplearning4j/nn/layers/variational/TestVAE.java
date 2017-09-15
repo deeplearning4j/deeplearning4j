@@ -158,7 +158,7 @@ public class TestVAE {
         Map<String, INDArray> layerParams = layer.paramTable();
         Map<String, INDArray> layerGradViews = layer.getGradientViews();
 
-        layer.setInput(Nd4j.rand(3, 10));
+        layer.setInput(0, Nd4j.rand(3, 10));
         layer.computeGradientAndScore();;
         Gradient g = layer.gradient();
         Map<String, INDArray> grads = g.gradientForVariable();

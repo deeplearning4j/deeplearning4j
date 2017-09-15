@@ -5,6 +5,9 @@ import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -47,6 +50,9 @@ import static org.junit.Assert.*;
 /**
  */
 public class BatchNormalizationTest {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+    private static final GradientsFactory gf = GradientsFactory.getInstance();
 
     static {
         //Force Nd4j initialization, then set data type to double:
@@ -95,7 +101,7 @@ public class BatchNormalizationTest {
         assertEquals(4 * nOut, l.numParams()); //Gamma, beta, global mean, global var
 
         INDArray randInput = Nd4j.rand(100, nOut);
-        INDArray output = l.activate(randInput, true);
+        INDArray output = l.activate(af.create(randInput), true).get(0);
 
         INDArray mean = output.mean(0);
         INDArray stdev = output.std(false, 0);
@@ -110,7 +116,7 @@ public class BatchNormalizationTest {
         double beta = 3.0;
         l = getLayer(nOut, 0.0, true, gamma, beta);
         assertEquals(2 * nOut, l.numParams()); //Should have only global mean/var parameters
-        output = l.activate(randInput, true);
+        output = l.activate(af.create(randInput), true).get(0);
         mean = output.mean(0);
         stdev = output.std(false, 0);
 
@@ -137,7 +143,7 @@ public class BatchNormalizationTest {
         INDArray xHat = input.subRowVector(mean).divRowVector(Transforms.sqrt(var.add(eps), true));
         INDArray outExpected = xHat.mulRowVector(gamma).addRowVector(beta);
 
-        INDArray out = l.activate(input, true);
+        INDArray out = l.activate(af.create(input), true).get(0);
 
         System.out.println(Arrays.toString(outExpected.data().asDouble()));
         System.out.println(Arrays.toString(out.data().asDouble()));
@@ -160,18 +166,18 @@ public class BatchNormalizationTest {
                         .add(input.subRowVector(mean).mul(2.0 / minibatch).mulRowVector(dldvar))
                         .addRowVector(dldmu.mul(1.0 / minibatch));
 
-        Gradients p = l.backpropGradient(epsilon);
+        Gradients p = l.backpropGradient(gf.create(epsilon));
 
-        INDArray dldgamma = p.getFirst().getGradientFor("gamma");
-        INDArray dldbeta = p.getFirst().getGradientFor("beta");
+        INDArray dldgamma = p.getParameterGradients().getGradientFor("gamma");
+        INDArray dldbeta = p.getParameterGradients().getGradientFor("beta");
 
         assertEquals(dldgammaExp, dldgamma);
         assertEquals(dldbetaExp, dldbeta);
 
         System.out.println("EPSILONS");
         System.out.println(Arrays.toString(dldinExp.data().asDouble()));
-        System.out.println(Arrays.toString(p.getSecond().dup().data().asDouble()));
-        assertEquals(dldinExp, p.getSecond());
+        System.out.println(Arrays.toString(p.get(0).dup().data().asDouble()));
+        assertEquals(dldinExp, p.get(0));
     }
 
     @Test
@@ -183,7 +189,7 @@ public class BatchNormalizationTest {
 
         Nd4j.getRandom().setSeed(12345);
         INDArray randInput = Nd4j.rand(12345, 100, nOut, hw, hw);
-        INDArray output = l.activate(randInput, true);
+        INDArray output = l.activate(af.create(randInput), true).get(0);
 
         assertEquals(4, output.rank());
 
@@ -198,7 +204,7 @@ public class BatchNormalizationTest {
         double beta = 3.0;
         l = getLayer(nOut, 0.0, true, gamma, beta);
         assertEquals(2 * nOut, l.numParams()); //Should have only global mean/var parameters
-        output = l.activate(randInput, true);
+        output = l.activate(af.create(randInput), true).get(0);
         mean = output.mean(0, 2, 3);
         stdev = output.std(false, 0, 2, 3);
 
@@ -228,8 +234,8 @@ public class BatchNormalizationTest {
         Layer l1 = getLayer(nOut);
         Layer l2 = getLayer(nOut);
 
-        INDArray out2d = l1.activate(in.dup(), true);
-        INDArray out4d = l2.activate(in4.dup(), true);
+        INDArray out2d = l1.activate(af.create(in.dup()), true).get(0);
+        INDArray out4d = l2.activate(af.create(in4.dup()), true).get(0);
 
         INDArray out4dAs2 = out4d.permute(0, 2, 3, 1).dup('c');
         out4dAs2 = Shape.newShapeNoCopy(out4dAs2, new int[] {m * h * w, nOut}, false);
@@ -243,13 +249,13 @@ public class BatchNormalizationTest {
         assertNotNull(epsilons4d);
         epsilons4d = epsilons4d.permute(0, 3, 1, 2).dup();
 
-        Gradients b2d = l1.backpropGradient(epsilons2d);
-        Gradients b4d = l2.backpropGradient(epsilons4d);
+        Gradients b2d = l1.backpropGradient(gf.create(epsilons2d));
+        Gradients b4d = l2.backpropGradient(gf.create(epsilons4d));
 
-        INDArray e4dAs2d = b4d.getSecond().permute(0, 2, 3, 1).dup('c');
+        INDArray e4dAs2d = b4d.get(0).permute(0, 2, 3, 1).dup('c');
         e4dAs2d = Shape.newShapeNoCopy(e4dAs2d, new int[] {m * h * w, nOut}, false);
 
-        assertEquals(b2d.getSecond(), e4dAs2d);
+        assertEquals(b2d.get(0), e4dAs2d);
     }
 
     @Test
@@ -275,7 +281,7 @@ public class BatchNormalizationTest {
         INDArray outExpected = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat, gamma, xHat.dup(), 1));
         Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(outExpected, beta, outExpected, 1));
 
-        INDArray out = l.activate(input, true);
+        INDArray out = l.activate(af.create(input), true).get(0);
 
         System.out.println(Arrays.toString(outExpected.data().asDouble()));
         System.out.println(Arrays.toString(out.data().asDouble()));
@@ -314,18 +320,18 @@ public class BatchNormalizationTest {
         dldinExp = Nd4j.getExecutioner().execAndReturn(
                         new BroadcastAddOp(dldinExp, dldmu.mul(1.0 / effectiveMinibatch), dldinExp.dup(), 1));
 
-        Gradients p = l.backpropGradient(epsilon);
+        Gradients p = l.backpropGradient(gf.create(epsilon));
 
-        INDArray dldgamma = p.getFirst().getGradientFor("gamma");
-        INDArray dldbeta = p.getFirst().getGradientFor("beta");
+        INDArray dldgamma = p.getParameterGradients().getGradientFor("gamma");
+        INDArray dldbeta = p.getParameterGradients().getGradientFor("beta");
 
         assertEquals(dldgammaExp, dldgamma);
         assertEquals(dldbetaExp, dldbeta);
 
         //        System.out.println("EPSILONS");
         //        System.out.println(Arrays.toString(dldinExp.data().asDouble()));
-        //        System.out.println(Arrays.toString(p.getSecond().dup().data().asDouble()));
-        assertEquals(dldinExp, p.getSecond());
+        //        System.out.println(Arrays.toString(p.get(0).dup().data().asDouble()));
+        assertEquals(dldinExp, p.get(0));
     }
 
     @Test
@@ -351,7 +357,7 @@ public class BatchNormalizationTest {
         network.init();
 
         network.setInput(next.getFeatureMatrix());
-        INDArray activationsActual = network.activate(next.getFeatureMatrix());
+        INDArray activationsActual = network.activate(af.create(next.getFeatureMatrix())).get(0);
         assertEquals(10, activationsActual.shape()[1], 1e-2);
 
         network.fit(next);

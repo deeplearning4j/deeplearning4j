@@ -12,6 +12,15 @@ import static org.junit.Assert.assertEquals;
 
 public class TestUtils {
 
+    private TestUtils() { }
+
+    public static <T> T nullsafe(T obj) {
+        if (obj == null)
+            throw new NullPointerException();
+        T clean = obj;
+        return clean;
+    }
+
     public static MultiLayerNetwork testModelSerialization(MultiLayerNetwork net){
 
         try {

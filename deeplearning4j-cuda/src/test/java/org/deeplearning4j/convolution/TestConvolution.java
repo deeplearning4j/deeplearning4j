@@ -1,6 +1,9 @@
 package org.deeplearning4j.convolution;
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -29,6 +32,9 @@ import static org.junit.Assert.*;
  * Created by Alex on 15/11/2016.
  */
 public class TestConvolution {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+    private static final GradientsFactory gf = GradientsFactory.getInstance();
 
     @Test
     public void testSameModeActivationSizes() {
@@ -117,28 +123,28 @@ public class TestConvolution {
 
                 INDArray in = Nd4j.rand(new int[] {1, 1, 20, 20}); //(20-4+0)/2 +1 = 9
 
-                INDArray outCudnn = layerCudnn.activate(in);
-                INDArray outStd = layerStandard.activate(in);
+                INDArray outCudnn = layerCudnn.activate(af.create(in)).get(0);
+                INDArray outStd = layerStandard.activate(af.create(in)).get(0);
 
                 assertEquals(outStd, outCudnn);
 
 
                 //Check backprop:
                 INDArray epsilon = Nd4j.rand(outStd.shape());
-                Gradients pCudnn = layerCudnn.backpropGradient(epsilon);
-                Gradients pStd = layerStandard.backpropGradient(epsilon);
+                Gradients pCudnn = layerCudnn.backpropGradient(gf.create(epsilon));
+                Gradients pStd = layerStandard.backpropGradient(gf.create(epsilon));
 
-                System.out.println(Arrays.toString(pStd.getSecond().data().asFloat()));
-                System.out.println(Arrays.toString(pCudnn.getSecond().data().asFloat()));
+                System.out.println(Arrays.toString(pStd.get(0).data().asFloat()));
+                System.out.println(Arrays.toString(pCudnn.get(0).data().asFloat()));
 
-                INDArray epsOutStd = pStd.getSecond();
-                INDArray epsOutCudnn = pCudnn.getSecond();
+                INDArray epsOutStd = pStd.get(0);
+                INDArray epsOutCudnn = pCudnn.get(0);
 
                 assertTrue(epsOutStd.equalsWithEps(epsOutCudnn, 1e-4));
 
                 if (conv) {
-                    INDArray gradStd = pStd.getFirst().gradient();
-                    INDArray gradCudnn = pCudnn.getFirst().gradient();
+                    INDArray gradStd = pStd.getParameterGradients().gradient();
+                    INDArray gradCudnn = pCudnn.getParameterGradients().gradient();
 
                     assertTrue(gradStd.equalsWithEps(gradCudnn, 1e-4));
                 }

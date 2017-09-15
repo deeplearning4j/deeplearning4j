@@ -22,6 +22,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Created by susaneraly on 2/24/17.
@@ -151,9 +152,10 @@ public class TransferLearningHelperTest {
         MultiDataSet origData = new MultiDataSet(new INDArray[] {inCentre, inRight},
                         new INDArray[] {outLeft, outCentre, outRight});
         ComputationGraph modelIdentical = modelToTune.clone();
-        modelIdentical.getVertex("denseCentre0").setLayerAsFrozen();
-        modelIdentical.getVertex("denseCentre1").setLayerAsFrozen();
-        modelIdentical.getVertex("denseCentre2").setLayerAsFrozen();
+//        modelIdentical.getVertex("denseCentre0").setLayerAsFrozen();
+//        modelIdentical.getVertex("denseCentre1").setLayerAsFrozen();
+//        modelIdentical.getVertex("denseCentre2").setLayerAsFrozen();
+        fail();
 
         TransferLearningHelper helper = new TransferLearningHelper(modelToTune, "denseCentre2");
         MultiDataSet featurizedDataSet = helper.featurize(origData);
