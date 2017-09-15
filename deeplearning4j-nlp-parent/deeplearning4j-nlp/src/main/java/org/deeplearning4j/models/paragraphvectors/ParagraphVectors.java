@@ -1211,6 +1211,10 @@ public class ParagraphVectors extends Word2Vec {
         /**
          * This method defines whether negative sampling should be used or not
          *
+         * PLEASE NOTE: If you're going to use negative sampling, you might want to disable HierarchicSoftmax, which is disabled by default
+         *
+         * Default value: 0
+         *
          * @param negative set > 0 as negative sampling argument, or 0 to disable
          * @return
          */
@@ -1303,6 +1307,14 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
+        /**
+         * This method enables/disables Hierarchic softmax
+         *
+         * Default value: enabled
+         *
+         * @param reallyUse
+         * @return
+         */
         @Override
         public Builder useHierarchicSoftmax(boolean reallyUse) {
             super.useHierarchicSoftmax(reallyUse);
