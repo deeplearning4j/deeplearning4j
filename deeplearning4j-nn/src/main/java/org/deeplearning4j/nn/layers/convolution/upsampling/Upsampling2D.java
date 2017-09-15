@@ -21,6 +21,10 @@ package org.deeplearning4j.nn.layers.convolution.upsampling;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer;
@@ -71,7 +75,8 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.getActivationGrad(0);
 
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
@@ -95,7 +100,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
                 .build();
         Nd4j.getExecutioner().exec(op);
 
-        return new Pair<>(gradient, reshapedEpsilon);
+        return GradientsFactory.getInstance().create(reshapedEpsilon, gradient);
     }
 
     public INDArray preOutput(boolean training, boolean forBackprop) {
@@ -137,7 +142,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         applyDropOutIfNecessary(training);
 
         if (cacheMode == null)
@@ -153,7 +158,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
                 preOutput = z.unsafeDuplication();
             }
         }
-        return z;
+        return ActivationsFactory.getInstance().create(z);
     }
 
     @Override

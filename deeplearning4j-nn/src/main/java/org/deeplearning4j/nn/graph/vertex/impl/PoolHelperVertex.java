@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -48,17 +50,7 @@ public class PoolHelperVertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
@@ -67,7 +59,7 @@ public class PoolHelperVertex extends BaseGraphVertex {
 
         INDArray strippedInput = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.interval(1, inputs[0].size(2)), NDArrayIndex.interval(1, inputs[0].size(3)));
-        return strippedInput;
+        return ActivationsFactory.getInstance().create(strippedInput);
     }
 
     @Override

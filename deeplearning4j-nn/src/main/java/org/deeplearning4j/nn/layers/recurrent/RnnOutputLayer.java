@@ -19,6 +19,9 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
@@ -53,7 +56,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients epsilon) {
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
                             "Input is not rank 3. Got input with rank " + input.rank() + " " + layerId());
@@ -61,12 +64,13 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         this.input = TimeSeriesUtils.reshape3dTo2d(input);
         Gradients gradAndEpsilonNext = super.backpropGradient(epsilon);
         this.input = inputTemp;
-        INDArray epsilon2d = gradAndEpsilonNext.getSecond();
+        INDArray epsilon2d = gradAndEpsilonNext.getActivationGrad(0);
         INDArray epsilon3d = TimeSeriesUtils.reshape2dTo3d(epsilon2d, input.size(0));
 
         weightNoiseParams.clear();
 
-        return new Pair<>(gradAndEpsilonNext.getFirst(), epsilon3d);
+        gradAndEpsilonNext.setActivationGrad(0, epsilon3d);
+        return gradAndEpsilonNext;
     }
 
     public INDArray getInput() {
@@ -97,7 +101,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray output(INDArray input) {
+    public Activations output(INDArray input) {
         if (input.rank() != 3)
             throw new IllegalArgumentException("Input must be rank 3 (is: " + input.rank() + ") " + layerId());
         //Returns 3d activations from 3d input
@@ -106,7 +110,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray output(boolean training) {
+    public Activations output(boolean training) {
         //Assume that input is 3d
         if (input.rank() != 3)
             throw new IllegalArgumentException(
@@ -119,22 +123,24 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             if (maskArray != null) {
                 out2d.muliColumnVector(maskArray);
             }
-            return TimeSeriesUtils.reshape2dTo3d(out2d, input.size(0));
+            INDArray ret = TimeSeriesUtils.reshape2dTo3d(out2d, input.size(0));
+            return ActivationsFactory.getInstance().create(ret, null, null);    //TODO masks
         }
 
         applyDropOutIfNecessary(training);
         INDArray origInput = input;
         this.input = TimeSeriesUtils.reshape3dTo2d(input);
-        INDArray out = super.activate(true);
+        Activations out = super.activate(true);
         this.input = origInput;
         if (maskArray != null) {
-            out.muliColumnVector(maskArray);
+            out.get(0).muliColumnVector(maskArray);
         }
-        return TimeSeriesUtils.reshape2dTo3d(out, input.size(0));
+        out.set(0, TimeSeriesUtils.reshape2dTo3d(out.get(0), input.size(0)));
+        return out;
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
                             "Input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
@@ -149,7 +155,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         if (maskArray != null) {
             act2d.muliColumnVector(maskArray);
         }
-        return TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0));
+        INDArray ret = TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0));
+        return ActivationsFactory.getInstance().create(ret);    //TODO masks
     }
 
     @Override
@@ -172,21 +179,21 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         }
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-
-        //If the *input* mask array is present and active, we should use it to mask the output
-        if (maskArray != null && currentMaskState == MaskState.Active) {
-            this.inputMaskArray = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray);
-            this.inputMaskArrayState = currentMaskState;
-        } else {
-            this.inputMaskArray = null;
-            this.inputMaskArrayState = null;
-        }
-
-        return null; //Last layer in network
-    }
+//    @Override
+//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+//                    int minibatchSize) {
+//
+//        //If the *input* mask array is present and active, we should use it to mask the output
+//        if (maskArray != null && currentMaskState == MaskState.Active) {
+//            this.inputMaskArray = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray);
+//            this.inputMaskArrayState = currentMaskState;
+//        } else {
+//            this.inputMaskArray = null;
+//            this.inputMaskArrayState = null;
+//        }
+//
+//        return null; //Last layer in network
+//    }
 
     /**Compute the score for each example individually, after labels and input have been set.
      *

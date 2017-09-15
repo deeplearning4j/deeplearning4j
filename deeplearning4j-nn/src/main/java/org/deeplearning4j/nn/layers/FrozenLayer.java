@@ -3,6 +3,9 @@ package org.deeplearning4j.nn.layers;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -82,24 +85,24 @@ public class FrozenLayer implements Layer {
 
     //FIXME
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
-        return new Pair<>(zeroGradient, null);
+    public Gradients backpropGradient(Gradients epsilon) {
+        return GradientsFactory.getInstance().create(null, zeroGradient);
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         logTestMode(training);
         return insideLayer.activate(false);
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
+    public Activations activate(Activations input, boolean training) {
         logTestMode(training);
         return insideLayer.activate(input, false);
     }
 
     @Override
-    public INDArray activate(INDArray input) {
+    public Activations activate(Activations input) {
         return activate(input, false);
     }
 
@@ -110,6 +113,11 @@ public class FrozenLayer implements Layer {
             logUpdate = true;
         }
         //no op
+    }
+
+    @Override
+    public String getName() {
+        return insideLayer.getName();
     }
 
     @Override
@@ -243,15 +251,15 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void setInput(INDArray input) {
-        insideLayer.setInput(input);
+    public void setInput(int idx, INDArray input) {
+        insideLayer.setInput(idx, input);
     }
 
     @Override
-    public void setInput(int inputNumber, INDArray input) {
+    public INDArray getInput(int inputNumber) {
         if(inputNumber != 0)
-            throw new UnsupportedOperationException();
-        setInput(input);
+            throw new IllegalArgumentException("Invalid idx: " + inputNumber);
+        return input();
     }
 
     @Override
@@ -265,13 +273,13 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void setMaskArray(INDArray maskArray) {
-        insideLayer.setMaskArray(maskArray);
+    public void setMaskArray(int idx, INDArray maskArray) {
+        insideLayer.setMaskArray(idx, maskArray);
     }
 
     @Override
-    public INDArray getMaskArray() {
-        return insideLayer.getMaskArray();
+    public INDArray getMaskArray(int idx) {
+        return insideLayer.getMaskArray(idx);
     }
 
     @Override
@@ -284,11 +292,11 @@ public class FrozenLayer implements Layer {
         insideLayer.clearNoiseWeightParams();
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-        return insideLayer.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
-    }
+//    @Override
+//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+//                    int minibatchSize) {
+//        return insideLayer.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
+//    }
 
     public void logTestMode(boolean training) {
         if (!training)

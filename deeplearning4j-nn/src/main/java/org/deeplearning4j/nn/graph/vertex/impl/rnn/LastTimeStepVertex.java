@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.graph.vertex.impl.rnn;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -64,17 +66,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         //First: get the mask arrays for the given input, if any
         INDArray[] inputMaskArrays = graph.getInputMaskArrays();
         INDArray mask = (inputMaskArrays != null ? inputMaskArrays[inputIdx] : null);
@@ -111,7 +103,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
             }
         }
 
-        return out;
+        return ActivationsFactory.getInstance().create(out);
     }
 
     @Override

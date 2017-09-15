@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -53,17 +55,7 @@ public class L2Vertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
@@ -75,7 +67,7 @@ public class L2Vertex extends BaseGraphVertex {
             dimensions[i - 1] = i;
         }
 
-        return Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), dimensions);
+        return ActivationsFactory.getInstance().create(Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), dimensions));
     }
 
     @Override
@@ -85,7 +77,7 @@ public class L2Vertex extends BaseGraphVertex {
 
         INDArray a = inputs[0];
         INDArray b = inputs[1];
-        INDArray out = activate(tbptt);
+        INDArray out = activate(tbptt).get(0);
         Transforms.max(out, eps, false); // in case of 0
 
         INDArray dLdlambda = epsilon; //dL/dlambda aka 'epsilon' - from layer above

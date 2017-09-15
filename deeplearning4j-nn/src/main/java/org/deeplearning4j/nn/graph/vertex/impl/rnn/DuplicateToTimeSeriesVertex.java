@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.graph.vertex.impl.rnn;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -60,22 +62,12 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
     public boolean isOutputVertex() {
         return false;
     }
 
     @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
 
         //First: work out the time series length
         int tsLength = graph.getInput(inputVertexIndex).size(2);
@@ -85,7 +77,7 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
         for (int i = 0; i < tsLength; i++) {
             out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, inputs[0]);
         }
-        return out;
+        return ActivationsFactory.getInstance().create(out);
     }
 
     @Override

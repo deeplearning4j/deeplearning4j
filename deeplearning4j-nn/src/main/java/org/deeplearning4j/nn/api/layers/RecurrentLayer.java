@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.api.layers;
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,7 +40,7 @@ public interface RecurrentLayer extends Layer {
      * @param input Input to this layer
      * @return activations
      */
-    INDArray rnnTimeStep(INDArray input);
+    Activations rnnTimeStep(Activations input);
 
     /**
      * Returns a shallow copy of the RNN stateMap (that contains the stored history for use in methods such

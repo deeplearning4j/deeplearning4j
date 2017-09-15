@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -60,17 +62,7 @@ public class UnstackVertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
@@ -80,18 +72,23 @@ public class UnstackVertex extends BaseGraphVertex {
         int start = from * step;
         int end = (from + 1) * step;
 
+        INDArray ret;
         switch (inputs[0].rank()) { //TODO remove the dups here if/when possible (gradient checks must pass)
             case 2:
-                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all()).dup();
+                ret = inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all()).dup();
+                break;
             case 3:
-                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()).dup();
+                ret = inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()).dup();
+                break;
             case 4:
-                return inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(),
+                ret = inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(),
                                 NDArrayIndex.all()).dup();
+                break;
             default:
                 throw new UnsupportedOperationException(
                                 "Cannot get subset for activations of rank " + inputs[0].rank());
         }
+        return ActivationsFactory.getInstance().create(ret);
     }
 
     @Override

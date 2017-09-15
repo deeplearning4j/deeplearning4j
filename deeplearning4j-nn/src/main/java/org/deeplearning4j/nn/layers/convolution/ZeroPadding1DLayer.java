@@ -18,6 +18,10 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -54,18 +58,18 @@ public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     }
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients epsilon) {
         int[] inShape = input.shape();
 
-        INDArray epsNext = epsilon.get(NDArrayIndex.all(), NDArrayIndex.all(),
+        INDArray epsNext = epsilon.getActivationGrad(0).get(NDArrayIndex.all(), NDArrayIndex.all(),
                 NDArrayIndex.interval(padding[0], padding[0] + inShape[2]));
 
-        return new Pair<>((Gradient) new DefaultGradient(), epsNext);
+        return GradientsFactory.getInstance().create(epsNext, null);
     }
 
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         int[] inShape = input.shape();
         int paddedOut = inShape[2] + padding[0] + padding[1];
         int[] outShape = new int[] {inShape[0], inShape[1], paddedOut};
@@ -74,7 +78,7 @@ public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
                 NDArrayIndex.interval(padding[0], padding[0] + inShape[2])}, input);
 
-        return out;
+        return ActivationsFactory.getInstance().create(out);
     }
 
     @Override

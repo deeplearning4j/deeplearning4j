@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.layers.convolution.upsampling;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -50,7 +52,8 @@ public class Upsampling1D extends Upsampling2D {
 
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.getActivationGrad(0);
 
         int size = ((BaseUpsamplingLayer) layerConf()).getSize();
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
@@ -60,18 +63,19 @@ public class Upsampling1D extends Upsampling2D {
         INDArray originalInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
-        Gradients gradientEpsNext = super.backpropGradient(epsilon);
-        INDArray epsNext = gradientEpsNext.getSecond();
-        Gradient gradient = gradientEpsNext.getFirst();
+        Gradients gradientEpsNext = super.backpropGradient(gradients);
+        INDArray epsNext = gradientEpsNext.getActivationGrad(0);
+        Gradient gradient = gradientEpsNext.getParameterGradients();
 
         epsNext = epsNext.slice(0, 3);
         input = originalInput;
 
         // Since we aggregate the gradient across "size" slices, we need to normalize afterwards.
-        return new Pair<>(gradient, epsNext.divi(size));
+        gradientEpsNext.setActivationGrad(0, epsNext);
+        return gradientEpsNext;
     }
 
-    @Override
+
     public INDArray preOutput(boolean training) {
         return preOutput(training, false);
     }

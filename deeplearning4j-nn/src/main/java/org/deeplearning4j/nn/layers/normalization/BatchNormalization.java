@@ -2,6 +2,10 @@ package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -75,7 +79,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.getActivationGrad(0);
         INDArray nextEpsilon;
         int[] shape = getShape(epsilon);
         int batchSize = epsilon.size(0); // number examples in batch
@@ -200,12 +205,12 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                                             + layerId());
         }
 
-        return new Pair<>(retGradient, nextEpsilon);
+        return GradientsFactory.getInstance().create(nextEpsilon, retGradient);
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        return preOutput(input, training );
+    public Activations activate(boolean training) {
+        return ActivationsFactory.getInstance().create(preOutput(input, training ));
     }
 
     @Override

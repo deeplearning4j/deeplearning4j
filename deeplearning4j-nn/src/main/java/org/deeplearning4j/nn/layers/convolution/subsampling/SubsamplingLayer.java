@@ -21,6 +21,10 @@ package org.deeplearning4j.nn.layers.convolution.subsampling;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
@@ -92,7 +96,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.getActivationGrad(0);
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
         int inH = input.size(2);
@@ -216,7 +221,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 numerator.muliColumnVector(denom.rdivi(epsilon1d));
                 break;
             case NONE:
-                return new Pair<>(retGradient, epsilon);
+                return GradientsFactory.getInstance().create(epsilon, retGradient);
             default:
                 throw new IllegalStateException("Unknown or unsupported pooling type: " + layerConf().getPoolingType()
                                 + " " + layerId());
@@ -233,12 +238,12 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         if (layerConf().getPoolingType() == PoolingType.AVG)
             outEpsilon.divi(ArrayUtil.prod(layerConf().getKernelSize()));
-        return new Pair<>(retGradient, outEpsilon);
+        return GradientsFactory.getInstance().create(outEpsilon, retGradient);
     }
 
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (training && !dropoutApplied && layerConf().getIDropout() != null) {
             applyDropOutIfNecessary(true);
         }
@@ -275,7 +280,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
                             convolutionMode, dilation);
             if (ret != null) {
-                return ret;
+                return ActivationsFactory.getInstance().create(ret);
             }
         }
 
@@ -321,13 +326,13 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
                 break;
             case NONE:
-                return input;
+                return ActivationsFactory.getInstance().create(input);
             default:
                 throw new IllegalStateException("Unknown/not supported pooling type: " + layerConf().getPoolingType()
                                 + " " + layerId());
         }
 
-        return output;
+        return return ActivationsFactory.getInstance().create(output);
     }
 
     @Override

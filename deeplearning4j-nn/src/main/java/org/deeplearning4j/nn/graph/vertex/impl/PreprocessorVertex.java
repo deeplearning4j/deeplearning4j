@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -47,18 +49,8 @@ public class PreprocessorVertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
-        return preProcessor.preProcess(inputs[0], graph.batchSize());
+    public Activations activate(boolean training) {
+        return ActivationsFactory.getInstance().create(preProcessor.preProcess(inputs[0], graph.batchSize()));
     }
 
     @Override

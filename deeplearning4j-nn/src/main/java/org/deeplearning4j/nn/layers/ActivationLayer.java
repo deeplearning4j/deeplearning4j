@@ -20,6 +20,10 @@ package org.deeplearning4j.nn.layers;
 
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -46,7 +50,8 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.getActivationGrad(0);
         INDArray delta = layerConf().getActivationFn().backprop(input.dup(), epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
@@ -54,11 +59,11 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         }
 
         Gradient ret = new DefaultGradient();
-        return new Pair<>(ret, delta);
+        return GradientsFactory.getInstance().create(delta, ret);
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (input == null) {
             throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
         }
@@ -72,8 +77,8 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
             in = input;
         }
         //return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), in));
-        return layerConf().getActivationFn().getActivation(in, training);
-
+        INDArray act = layerConf().getActivationFn().getActivation(in, training);
+        return ActivationsFactory.getInstance().create(act);
     }
 
     @Override

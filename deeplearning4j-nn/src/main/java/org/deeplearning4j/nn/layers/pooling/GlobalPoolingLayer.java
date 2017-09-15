@@ -3,6 +3,10 @@ package org.deeplearning4j.nn.layers.pooling;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -73,7 +77,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (input == null) {
             throw new IllegalStateException("Cannot perform forward pass: input not set for layer " + layerId());
         }
@@ -161,17 +165,20 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             }
         }
 
+        INDArray ret;
         if (collapseDimensions) {
             //Standard/common case
-            return reduced2d;
+            ret = reduced2d;
         } else {
             int[] inputShape = input.shape();
             if (input.rank() == 3) {
-                return reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1);
+                ret = reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1);
             } else {
-                return reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1);
+                ret = reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1);
             }
         }
+
+        return ActivationsFactory.getInstance().create(ret, null, null);
     }
 
     @Override
@@ -203,7 +210,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     }
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradient) {
+        INDArray epsilon = gradient.getActivationGrad(0);
 
         if (!collapseDimensions && epsilon.rank() != 2) {
             int[] origShape = epsilon.shape();
@@ -254,7 +262,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
         }
 
-        return new Pair<>(retGradient, epsilonNd);
+        return GradientsFactory.getInstance().create(epsilonNd, retGradient);
     }
 
     private INDArray epsilonHelperFullArray(INDArray inputArray, INDArray epsilon, int[] poolDim) {
@@ -318,14 +326,14 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         }
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-        //Global pooling layer: no masking is possible after this point... i.e., masks have been taken into account
-        // as part of the pooling
-        this.maskArray = maskArray;
-        this.maskState = null; //Not used in global pooling - always applied
-
-        return null;
-    }
+//    @Override
+//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+//                    int minibatchSize) {
+//        //Global pooling layer: no masking is possible after this point... i.e., masks have been taken into account
+//        // as part of the pooling
+//        this.maskArray = maskArray;
+//        this.maskState = null; //Not used in global pooling - always applied
+//
+//        return null;
+//    }
 }

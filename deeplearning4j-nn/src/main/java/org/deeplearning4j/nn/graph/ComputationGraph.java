@@ -2523,22 +2523,25 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
 
             } else {
-                INDArray out;
+                Activations out;
                 //Layer
                 Layer l = current;
+                Activations a = ActivationsFactory.getInstance().create(current.getInput(0));
                 if (l instanceof RecurrentLayer) {
-                    out = ((RecurrentLayer) l).rnnTimeStep(current.getInput(0));
+                    out = ((RecurrentLayer) l).rnnTimeStep(a);
+
                 } else if (l instanceof MultiLayerNetwork) {
-                    out = ((MultiLayerNetwork) l).rnnTimeStep(current.getInput(0));
+                    out = ActivationsFactory.getInstance().create(((MultiLayerNetwork) l).rnnTimeStep(a));
                 } else {
                     //non-recurrent layer
-                    out = current.activate(false).get(0);
+                    out = current.activate(false);
                 }
+                ActivationsFactory.getInstance().release(a);
 
                 if (gvOutputVertex.contains(current.getName())) {
                     //Get the index of this output vertex...
                     int idx = configuration.getNetworkOutputs().indexOf(current.getName());
-                    outputs[idx] = out;
+                    outputs[idx] = out.get(0);
                 }
 
                 //Now, set the inputs for the next vertices:
@@ -2548,7 +2551,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         int vIdx = v.getVertexIndex();
                         int inputNum = v.getVertexEdgeNumber();
                         //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                        vertices[vIdx].setInput(inputNum, out);
+                        vertices[vIdx].setInput(inputNum, out.get(0));
                     }
                 }
             }

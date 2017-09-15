@@ -59,7 +59,6 @@ public class Upsampling1D extends BaseUpsamplingLayer {
                                                        boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D ret =
                 new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D(conf);
-        ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

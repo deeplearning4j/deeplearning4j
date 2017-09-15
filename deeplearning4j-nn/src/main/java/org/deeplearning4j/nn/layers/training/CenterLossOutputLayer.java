@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.layers.training;
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -143,7 +145,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         INDArray preOut = preOutput2d(true);
         Gradients pair = getGradientsAndDelta(preOut);
-        this.gradient = pair.getFirst();
+        this.gradient = pair.getParameterGradients();
 
         score = computeScore(fullNetworkL1, fullNetworkL2, true);
     }
@@ -154,9 +156,9 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     }
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients epsilon) {
         Gradients pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
-        INDArray delta = pair.getSecond();
+        INDArray delta = pair.getActivationGrad(0);
 
         // centers
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
@@ -171,7 +173,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         weightNoiseParams.clear();
 
-        return new Pair<>(pair.getFirst(), epsilonNext);
+        return GradientsFactory.getInstance().create(epsilonNext, pair.getParameterGradients());
     }
 
     /**
@@ -230,6 +232,6 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         gradient.gradientForVariable().put(CenterLossParamInitializer.BIAS_KEY, biasGradView);
         gradient.gradientForVariable().put(CenterLossParamInitializer.CENTER_KEY, centersGradView);
 
-        return new Pair<>(gradient, delta);
+        return GradientsFactory.getInstance().create(delta, gradient);
     }
 }

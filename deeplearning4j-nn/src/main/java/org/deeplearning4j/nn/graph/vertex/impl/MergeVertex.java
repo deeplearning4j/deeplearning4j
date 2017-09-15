@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -61,17 +63,7 @@ public class MergeVertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
@@ -79,7 +71,7 @@ public class MergeVertex extends BaseGraphVertex {
             //No-op case
             int[] shape = inputs[0].shape();
             forwardPassShapes = new int[][] {Arrays.copyOf(shape, shape.length)};
-            return inputs[0];
+            return ActivationsFactory.getInstance().create(inputs[0]);
         }
 
         forwardPassShapes = new int[inputs.length][0];
@@ -105,62 +97,8 @@ public class MergeVertex extends BaseGraphVertex {
             nOut += currShape[1]; //Same dimension for all of CNNs, FF, RNNs
         }
 
-        int nOutCumulative = 0;
-        INDArray out;
-        switch (inputs[0].rank()) {
-            case 2:
-                //Standard feedforward inputs...
-                /*
-                out = Nd4j.create(nExamples, nOut);
-                
-                for (INDArray activation : inputs) {
-                    int[] currShape = activation.shape();
-                    out.get(NDArrayIndex.all(), NDArrayIndex.interval(nOutCumulative, nOutCumulative + currShape[1]))
-                                    .assign(activation);
-                    nOutCumulative += currShape[1];
-                }
-                */
-                out = Nd4j.hstack(inputs);
-                break;
-            case 3:
-                //Time series inputs...
-                /*
-                int tsLength = inputs[0].size(2);
-                out = Nd4j.create(nExamples, nOut, tsLength);
-                
-                for (INDArray activation : inputs) {
-                    int[] currShape = activation.shape();
-                    out.get(NDArrayIndex.all(), NDArrayIndex.interval(nOutCumulative, nOutCumulative + currShape[1]),
-                                    NDArrayIndex.all()).assign(activation);
-                    nOutCumulative += currShape[1];
-                }
-                */
-                out = Nd4j.hstack(inputs);
-
-                break;
-            case 4:
-                fwdPassRank = 4;
-                /*
-                int[] outShape = Arrays.copyOf(inputs[0].shape(), 4);
-                outShape[1] = nOut;
-                out = Nd4j.create(outShape);
-                
-                //Input activations: [minibatch,depth,width,height]
-                for (INDArray activation : inputs) {
-                    out.get(NDArrayIndex.all(),
-                                    NDArrayIndex.interval(nOutCumulative, nOutCumulative + activation.size(1)),
-                                    NDArrayIndex.all(), NDArrayIndex.all()).assign(activation);
-                    nOutCumulative += activation.size(1);
-                }
-                */
-                out = Nd4j.hstack(inputs);
-
-                break;
-            default:
-                throw new UnsupportedOperationException("Cannot merge activations with rank 4 or more");
-        }
-
-        return out;
+        INDArray out = Nd4j.hstack(inputs);
+        return ActivationsFactory.getInstance().create(out);
     }
 
     @Override

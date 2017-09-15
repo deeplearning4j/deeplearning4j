@@ -20,6 +20,10 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -94,7 +98,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.getActivationGrad(0);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true);
 
         int miniBatch = input.size(0);
@@ -217,7 +222,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         weightNoiseParams.clear();
 
-        return new Pair<>(retGradient, epsNext);
+        return GradientsFactory.getInstance().create(epsNext, retGradient);
     }
 
     /**
@@ -375,7 +380,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
@@ -402,12 +407,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if (helper != null && Shape.strideDescendingCAscendingF(z)) {
             INDArray ret = helper.activate(z, layerConf().getActivationFn());
             if (ret != null) {
-                return ret;
+                return ActivationsFactory.getInstance().create(ret);
             }
         }
 
         INDArray activation = afn.getActivation(z, training);
-        return activation;
+        return ActivationsFactory.getInstance().create(activation);
     }
 
     @Override

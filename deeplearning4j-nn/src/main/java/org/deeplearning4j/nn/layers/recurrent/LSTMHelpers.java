@@ -2,6 +2,8 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -389,7 +391,7 @@ public class LSTMHelpers {
         return toReturn;
     }
 
-    static public Gradients backpropGradientHelper(final NeuralNetConfiguration conf,
+    public static Gradients backpropGradientHelper(final NeuralNetConfiguration conf,
                     final IActivation gateActivationFn, final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                     final INDArray inputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
                     final INDArray epsilon, final boolean truncatedBPTT, final int tbpttBackwardLength,
@@ -691,7 +693,7 @@ public class LSTMHelpers {
         retGradient.gradientForVariable().put(recurrentWeightKey, rwGradientsOut);
         retGradient.gradientForVariable().put(biasWeightKey, bGradientsOut);
 
-        return new Pair<>(retGradient, epsilonNext);
+        return GradientsFactory.getInstance().create(epsilon, retGradient);
     }
 
 

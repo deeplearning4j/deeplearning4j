@@ -21,6 +21,9 @@ package org.deeplearning4j.nn.layers.recurrent;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -91,18 +94,19 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     }
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients epsilon) {
         return backpropGradientHelper(epsilon, false, -1);
     }
 
     @Override
-    public Gradients tbpttBackpropGradient(INDArray epsilon, int tbpttBackwardLength) {
+    public Gradients tbpttBackpropGradient(Gradients epsilon, int tbpttBackwardLength) {
         return backpropGradientHelper(epsilon, true, tbpttBackwardLength);
     }
 
 
-    private Gradients backpropGradientHelper(final INDArray epsilon, final boolean truncatedBPTT,
+    private Gradients backpropGradientHelper(final Gradients gradients, final boolean truncatedBPTT,
                     final int tbpttBackwardLength) {
+        INDArray epsilon = gradients.getActivationGrad(0);
 
         final INDArray inputWeights = getParamWithNoise(LSTMParamInitializer.INPUT_WEIGHT_KEY, true);
         final INDArray recurrentWeights = getParamWithNoise(LSTMParamInitializer.RECURRENT_WEIGHT_KEY, true); //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
@@ -120,7 +124,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         }
 
 
-        Pair<Gradient,INDArray> p = LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
+        Gradients p = LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         LSTMParamInitializer.INPUT_WEIGHT_KEY, LSTMParamInitializer.RECURRENT_WEIGHT_KEY,
                         LSTMParamInitializer.BIAS_KEY, gradientViews, null, false, helper);
@@ -130,14 +134,16 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return activateHelper(training, null, null, false).fwdPassOutput;
+    public Activations activate(Activations input, boolean training) {
+        setInput(input.get(0));
+        INDArray ret = activateHelper(training, null, null, false).fwdPassOutput;
+        return ActivationsFactory.getInstance().create(ret);
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        return activateHelper(training, null, null, false).fwdPassOutput;
+    public Activations activate(boolean training) {
+        INDArray ret = activateHelper(training, null, null, false).fwdPassOutput;
+        return ActivationsFactory.getInstance().create(ret);
     }
 
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
@@ -174,22 +180,22 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         return false;
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-        //LSTM (standard, not bi-directional) don't make any changes to the data OR the mask arrays
-        //Any relevant masking occurs during backprop
-        //They also set the current mask array as inactive: this is for situations like the following:
-        // in -> dense -> lstm -> dense -> lstm
-        // The first dense should be masked using the input array, but the second shouldn't. If necessary, the second
-        // dense will be masked via the output layer mask
+//    @Override
+//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+//                    int minibatchSize) {
+//        //LSTM (standard, not bi-directional) don't make any changes to the data OR the mask arrays
+//        //Any relevant masking occurs during backprop
+//        //They also set the current mask array as inactive: this is for situations like the following:
+//        // in -> dense -> lstm -> dense -> lstm
+//        // The first dense should be masked using the input array, but the second shouldn't. If necessary, the second
+//        // dense will be masked via the output layer mask
+//
+//        return new Pair<>(maskArray, MaskState.Passthrough);
+//    }
 
-        return new Pair<>(maskArray, MaskState.Passthrough);
-    }
-
     @Override
-    public INDArray rnnTimeStep(INDArray input) {
-        setInput(input);
+    public Activations rnnTimeStep(Activations input) {
+        setInput(input.get(0));
         FwdPassReturn fwdPass = activateHelper(false, stateMap.get(STATE_KEY_PREV_ACTIVATION),
                         stateMap.get(STATE_KEY_PREV_MEMCELL), false);
         INDArray outAct = fwdPass.fwdPassOutput;
@@ -197,7 +203,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         stateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct);
         stateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell);
 
-        return outAct;
+        return ActivationsFactory.getInstance().create(outAct);
     }
 
 

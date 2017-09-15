@@ -1,6 +1,10 @@
 package org.deeplearning4j.nn.layers.normalization;
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -96,7 +100,8 @@ public class LocalResponseNormalization
         }
     }
 
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.getActivationGrad(0);
         if (helper != null) {
             Gradients ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta);
             if (ret != null) {
@@ -125,11 +130,12 @@ public class LocalResponseNormalization
 
         // gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}    - rearranged for more in-place ops
         INDArray nextEpsilon = epsilon.mul(scale).subi(sumPart.muli(input).divi(unitScale).muli(2 * alpha * beta));
-        return new Pair<>(retGradient, nextEpsilon);
+//        return new Pair<>(retGradient, nextEpsilon);
+        return GradientsFactory.getInstance().create(nextEpsilon, retGradient);
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         k = layerConf().getK();
         n = layerConf().getN();
         alpha = layerConf().getAlpha();
@@ -139,7 +145,7 @@ public class LocalResponseNormalization
         if (helper != null) {
             activations = helper.activate(input, training, k, n, alpha, beta);
             if (activations != null) {
-                return activations;
+                return ActivationsFactory.getInstance().create(activations);
             }
         }
 
@@ -168,7 +174,7 @@ public class LocalResponseNormalization
         // y = x * unitScale**-beta
         scale = Transforms.pow(unitScale, -beta).leverageTo(ComputationGraph.workspaceExternal);
         activations = input.mul(scale).leverageTo(ComputationGraph.workspaceExternal);
-        return activations;
+        return ActivationsFactory.getInstance().create(activations);
     }
 
     @Override

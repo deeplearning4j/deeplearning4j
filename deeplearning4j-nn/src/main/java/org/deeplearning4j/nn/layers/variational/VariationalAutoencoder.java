@@ -7,6 +7,10 @@ import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -133,6 +137,11 @@ public class VariationalAutoencoder implements Model {
     @Override
     public void update(Gradient gradient) {
         throw new UnsupportedOperationException("Not supported " + layerId());
+    }
+
+    @Override
+    public String getName() {
+        return layerConf().getLayerName();
     }
 
     @Override
@@ -512,7 +521,7 @@ public class VariationalAutoencoder implements Model {
 
     @Override
     public void fit(INDArray data) {
-        this.setInput(data);
+        this.setInput(0, data);
         fit();
     }
 
@@ -653,7 +662,8 @@ public class VariationalAutoencoder implements Model {
     }
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.getActivationGrad(0);
         if (!zeroedPretrainParamGradients) {
             for (Map.Entry<String, INDArray> entry : gradientViews.entrySet()) {
                 if (isPretrainParam(entry.getKey())) {
@@ -712,7 +722,7 @@ public class VariationalAutoencoder implements Model {
             epsilon = weights.mmul(currentDelta.transpose()).transpose();
         }
 
-        return new Pair<>(gradient, epsilon);
+        return GradientsFactory.getInstance().create(epsilon, gradient);
     }
 
     public INDArray preOutput(boolean training) {
@@ -767,21 +777,21 @@ public class VariationalAutoencoder implements Model {
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         INDArray output = preOutput(training); //Mean values for p(z|x)
         pzxActivationFn.getActivation(output, training);
 
-        return output;
+        return ActivationsFactory.getInstance().create(output); //TODO masks
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
+    public Activations activate(Activations input, boolean training) {
+        setInput(0, input.get(0));
         return activate(training);
     }
 
     @Override
-    public INDArray activate(INDArray input) {
+    public Activations activate(Activations input) {
         return activate(input, false);
     }
 
@@ -856,15 +866,17 @@ public class VariationalAutoencoder implements Model {
     }
 
     @Override
-    public void setInput(INDArray input) {
+    public void setInput(int inputNumber, INDArray input) {
+        if(inputNumber != 0)
+            throw new IllegalArgumentException();
         this.input = input;
     }
 
     @Override
-    public void setInput(int inputNumber, INDArray input) {
+    public INDArray getInput(int inputNumber) {
         if(inputNumber != 0)
-            throw new IllegalArgumentException();
-        setInput(input);
+            throw new IllegalArgumentException("Invalid index: must be 0. Got: " + inputNumber);
+        return input;
     }
 
     @Override
@@ -878,12 +890,12 @@ public class VariationalAutoencoder implements Model {
     }
 
     @Override
-    public void setMaskArray(INDArray maskArray) {
+    public void setMaskArray(int idx, INDArray maskArray) {
         this.maskArray = maskArray;
     }
 
     @Override
-    public INDArray getMaskArray() {
+    public INDArray getMaskArray(int idx) {
         return maskArray;
     }
 
@@ -895,14 +907,6 @@ public class VariationalAutoencoder implements Model {
     @Override
     public void clearNoiseWeightParams() {
         weightNoiseParams.clear();
-    }
-
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-
-
-        throw new UnsupportedOperationException("Not yet implemented " + layerId());
     }
 
 
@@ -967,7 +971,7 @@ public class VariationalAutoencoder implements Model {
         }
 
         //Forward pass through the encoder and mean for P(Z|X)
-        setInput(data);
+        setInput(0, data);
         VAEFwdHelper fwd = doForward(true, true);
         IActivation afn = layerConf().getActivationFn();
 
@@ -1025,7 +1029,7 @@ public class VariationalAutoencoder implements Model {
             }
         }
 
-        setInput(null);
+        setInput(0,null);
         return sumReconstructionNegLogProbability.divi(-numSamples);
     }
 
@@ -1111,9 +1115,11 @@ public class VariationalAutoencoder implements Model {
                                             + layerId());
         }
 
-        INDArray pZXMean = activate(data, false);
+        Activations a = ActivationsFactory.getInstance().create(data);
+        INDArray pZXMean = activate(a, false).get(0);
         INDArray reconstruction = generateAtMeanGivenZ(pZXMean); //Not probabilistic -> "mean" == output
 
+        ActivationsFactory.getInstance().release(a);
         if (reconstructionDistribution instanceof CompositeReconstructionDistribution) {
             CompositeReconstructionDistribution c = (CompositeReconstructionDistribution) reconstructionDistribution;
             return c.computeLossFunctionScoreArray(data, reconstruction);

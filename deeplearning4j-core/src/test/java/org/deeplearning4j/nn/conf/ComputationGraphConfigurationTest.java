@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
@@ -269,7 +270,7 @@ public class ComputationGraphConfigurationTest {
 
         @Override
         public Layer instantiate(ComputationGraph graph, String name, int idx,
-                        INDArray paramsView, boolean initializeParams) {
+                                 INDArray paramsView, boolean initializeParams) {
             throw new UnsupportedOperationException("Not supported");
         }
 

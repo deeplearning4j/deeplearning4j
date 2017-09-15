@@ -566,55 +566,45 @@ public class TransferLearning {
                         Distribution dist, Distribution distNext) {
             initBuilderIfReq();
 
-            if (origGraph.getVertex(layerName).hasLayer()) {
+            NeuralNetConfiguration layerConf = origGraph.getLayer(layerName).conf();
+            Layer layerImpl = layerConf.getLayer().clone();
+            layerImpl.resetLayerDefaultConfig();
+            FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
+            layerImplF.setWeightInit(scheme);
+            layerImplF.setDist(dist);
+            layerImplF.setNOut(nOut);
 
-                NeuralNetConfiguration layerConf = origGraph.getLayer(layerName).conf();
-                Layer layerImpl = layerConf.getLayer().clone();
-                layerImpl.resetLayerDefaultConfig();
-                FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
-                layerImplF.setWeightInit(scheme);
-                layerImplF.setDist(dist);
-                layerImplF.setNOut(nOut);
+            editedConfigBuilder.removeVertex(layerName, false);
+            LayerVertex lv = (LayerVertex) origConfig.getVertices().get(layerName);
+            String[] lvInputs = origConfig.getVertexInputs().get(layerName).toArray(new String[0]);
+            editedConfigBuilder.addLayer(layerName, layerImpl, lv.getPreProcessor(), lvInputs);
+            editedVertices.add(layerName);
 
-                editedConfigBuilder.removeVertex(layerName, false);
-                LayerVertex lv = (LayerVertex) origConfig.getVertices().get(layerName);
-                String[] lvInputs = origConfig.getVertexInputs().get(layerName).toArray(new String[0]);
-                editedConfigBuilder.addLayer(layerName, layerImpl, lv.getPreProcessor(), lvInputs);
-                editedVertices.add(layerName);
-
-                //collect other vertices that have this vertex as inputs
-                List<String> fanoutVertices = new ArrayList<>();
-                for (Map.Entry<String, List<String>> entry : origConfig.getVertexInputs().entrySet()) {
-                    String currentVertex = entry.getKey();
-                    if (!currentVertex.equals(layerName)) {
-                        if (entry.getValue().contains(layerName)) {
-                            fanoutVertices.add(currentVertex);
-                        }
+            //collect other vertices that have this vertex as inputs
+            List<String> fanoutVertices = new ArrayList<>();
+            for (Map.Entry<String, List<String>> entry : origConfig.getVertexInputs().entrySet()) {
+                String currentVertex = entry.getKey();
+                if (!currentVertex.equals(layerName)) {
+                    if (entry.getValue().contains(layerName)) {
+                        fanoutVertices.add(currentVertex);
                     }
                 }
+            }
 
-                //change nIn of fanout
-                for (String fanoutVertexName : fanoutVertices) {
-                    if (!origGraph.getVertex(fanoutVertexName).hasLayer()) {
-                        throw new UnsupportedOperationException(
-                                        "Cannot modify nOut of a layer vertex that feeds non-layer vertices. Use removeVertexKeepConnections followed by addVertex instead");
-                    }
-                    layerConf = origGraph.getLayer(fanoutVertexName).conf();
-                    layerImpl = layerConf.getLayer().clone();
-                    layerImplF = (FeedForwardLayer) layerImpl;
-                    layerImplF.setWeightInit(schemeNext);
-                    layerImplF.setDist(distNext);
-                    layerImplF.setNIn(nOut);
+            //change nIn of fanout
+            for (String fanoutVertexName : fanoutVertices) {
+                layerConf = origGraph.getLayer(fanoutVertexName).conf();
+                layerImpl = layerConf.getLayer().clone();
+                layerImplF = (FeedForwardLayer) layerImpl;
+                layerImplF.setWeightInit(schemeNext);
+                layerImplF.setDist(distNext);
+                layerImplF.setNIn(nOut);
 
-                    editedConfigBuilder.removeVertex(fanoutVertexName, false);
-                    lv = (LayerVertex) origConfig.getVertices().get(fanoutVertexName);
-                    lvInputs = origConfig.getVertexInputs().get(fanoutVertexName).toArray(new String[0]);
-                    editedConfigBuilder.addLayer(fanoutVertexName, layerImpl, lv.getPreProcessor(), lvInputs);
-                    editedVertices.add(fanoutVertexName);
-                }
-            } else {
-                throw new IllegalArgumentException("noutReplace can only be applied to layer vertices. " + layerName
-                                + " is not a layer vertex");
+                editedConfigBuilder.removeVertex(fanoutVertexName, false);
+                lv = (LayerVertex) origConfig.getVertices().get(fanoutVertexName);
+                lvInputs = origConfig.getVertexInputs().get(fanoutVertexName).toArray(new String[0]);
+                editedConfigBuilder.addLayer(fanoutVertexName, layerImpl, lv.getPreProcessor(), lvInputs);
+                editedVertices.add(fanoutVertexName);
             }
             return this;
         }
@@ -755,16 +745,13 @@ public class TransferLearning {
             newGraph.init();
 
             int[] topologicalOrder = newGraph.topologicalSortOrder();
-            Layer[] vertices = newGraph.getVertices();
+            org.deeplearning4j.nn.api.Layer[] vertices = newGraph.getVertices();
             if (!editedVertices.isEmpty()) {
                 //set params from orig graph as necessary to new graph
                 for (int i = 0; i < topologicalOrder.length; i++) {
 
-                    if (!vertices[topologicalOrder[i]].hasLayer())
-                        continue;
-
-                    org.deeplearning4j.nn.api.Layer layer = vertices[topologicalOrder[i]].getLayer();
-                    String layerName = vertices[topologicalOrder[i]].getVertexName();
+                    org.deeplearning4j.nn.api.Layer layer = vertices[topologicalOrder[i]];
+                    String layerName = vertices[topologicalOrder[i]].getName();
                     int range = layer.numParams();
                     if (range <= 0)
                         continue; //some layers have no params
@@ -789,54 +776,52 @@ public class TransferLearning {
                 Collections.addAll(allFrozen, frozenOutputAt);
 
                 for (int i = topologicalOrder.length - 1; i >= 0; i--) {
-                    Layer gv = vertices[topologicalOrder[i]];
-                    if (allFrozen.contains(gv.getVertexName())) {
-                        if (gv.hasLayer()) {
-                            //Need to freeze this layer - both the layer implementation, and the layer configuration
-                            org.deeplearning4j.nn.api.Layer l = gv.getLayer();
-                            gv.setLayerAsFrozen();
+                    org.deeplearning4j.nn.api.Layer gv = vertices[topologicalOrder[i]];
+                    if (allFrozen.contains(gv.getName())) {
+                        //Need to freeze this layer - both the layer implementation, and the layer configuration
+                        org.deeplearning4j.nn.api.Layer l = gv;
+//                        gv.setLayerAsFrozen();    //TODO
 
-                            String layerName = gv.getVertexName();
-                            LayerVertex currLayerVertex = (LayerVertex) newConfig.getVertices().get(layerName);
-                            Layer origLayerConf = currLayerVertex.getLayerConf().getLayer();
-                            Layer newLayerConf = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayerConf);
-                            newLayerConf.setLayerName(origLayerConf.getLayerName());
-                            //Complication here(and reason for clone on next line): inner Layer (implementation)
-                            // NeuralNetConfiguration.layer (config) should keep the original layer config. While network
-                            // NNC should have the frozen layer
-                            NeuralNetConfiguration newNNC = currLayerVertex.getLayerConf().clone();
-                            currLayerVertex.setLayerConf(newNNC);
-                            currLayerVertex.getLayerConf().setLayer(newLayerConf);
+                        String layerName = gv.getName();
+                        LayerVertex currLayerVertex = (LayerVertex) newConfig.getVertices().get(layerName);
+                        Layer origLayerConf = currLayerVertex.getLayerConf().getLayer();
+                        Layer newLayerConf = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayerConf);
+                        newLayerConf.setLayerName(origLayerConf.getLayerName());
+                        //Complication here(and reason for clone on next line): inner Layer (implementation)
+                        // NeuralNetConfiguration.layer (config) should keep the original layer config. While network
+                        // NNC should have the frozen layer
+                        NeuralNetConfiguration newNNC = currLayerVertex.getLayerConf().clone();
+                        currLayerVertex.setLayerConf(newNNC);
+                        currLayerVertex.getLayerConf().setLayer(newLayerConf);
 
-                            //Make sure the underlying layer doesn't change:
-                            List<String> vars = currLayerVertex.getLayerConf().variables(true);
-                            currLayerVertex.getLayerConf().clearVariables();
-                            for (String s : vars) {
-                                newNNC.variables(false).add(s);
-                                newNNC.getL1ByParam().put(s, 0.0);
-                                newNNC.getL2ByParam().put(s, 0.0);
-                            }
+                        //Make sure the underlying layer doesn't change:
+                        List<String> vars = currLayerVertex.getLayerConf().variables(true);
+                        currLayerVertex.getLayerConf().clearVariables();
+                        for (String s : vars) {
+                            newNNC.variables(false).add(s);
+                            newNNC.getL1ByParam().put(s, 0.0);
+                            newNNC.getL2ByParam().put(s, 0.0);
+                        }
 
-                            //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
-                            //This could no doubt be done more efficiently
-                            org.deeplearning4j.nn.api.Layer[] layers = newGraph.getLayers();
-                            for (int j = 0; j < layers.length; j++) {
-                                if (layers[j] == l) {
-                                    layers[j] = gv.getLayer(); //Place the new frozen layer to replace the original layer
-                                    break;
-                                }
+                        //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
+                        //This could no doubt be done more efficiently
+                        org.deeplearning4j.nn.api.Layer[] layers = newGraph.getLayers();
+                        for (int j = 0; j < layers.length; j++) {
+                            if (layers[j] == l) {
+                                layers[j] = gv; //Place the new frozen layer to replace the original layer
+                                break;
                             }
                         }
 
-                        //Also: mark any inputs as to be frozen also
-                        VertexIndices[] inputs = gv.getInputVertices();
-                        if (inputs != null && inputs.length > 0) {
-                            for (int j = 0; j < inputs.length; j++) {
-                                int inputVertexIdx = inputs[j].getVertexIndex();
-                                String alsoFreeze = vertices[inputVertexIdx].getVertexName();
-                                allFrozen.add(alsoFreeze);
-                            }
-                        }
+//                        //Also: mark any inputs as to be frozen also
+//                        VertexIndices[] inputs = gv.getInputVertices();
+//                        if (inputs != null && inputs.length > 0) {
+//                            for (int j = 0; j < inputs.length; j++) {
+//                                int inputVertexIdx = inputs[j].getVertexIndex();
+//                                String alsoFreeze = vertices[inputVertexIdx].getVertexName();
+//                                allFrozen.add(alsoFreeze);
+//                            }
+//                        }
                     }
                 }
                 newGraph.initGradientsView();

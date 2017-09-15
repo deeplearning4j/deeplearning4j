@@ -21,6 +21,10 @@ package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -162,7 +166,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
         INDArray preOut = input;
         Gradients pair = getGradientsAndDelta(preOut);
-        this.gradient = pair.getFirst();
+        this.gradient = pair.getParameterGradients();
 
         score = computeScore(fullNetworkL1, fullNetworkL2, true);
     }
@@ -178,7 +182,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients epsilon) {
         return getGradientsAndDelta(input);
     }
 
@@ -192,7 +196,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         // grab the empty gradient
         Gradient gradient = new DefaultGradient();
 
-        return new Pair<>(gradient, delta);
+        return GradientsFactory.getInstance().create(delta, gradient);
     }
 
     /**
@@ -220,7 +224,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         INDArray z = input;
         INDArray ret = layerConf().getActivationFn().getActivation(z.dup(), training);
 
@@ -228,13 +232,13 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             ret.muliColumnVector(maskArray);
         }
 
-        return ret;
+        return ActivationsFactory.getInstance().create(ret);
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return output(training);
+    public Activations activate(Activations input, boolean training) {
+        setInput(input.get(0));
+        return ActivationsFactory.getInstance().create(output(training));
     }
 
     public INDArray output(INDArray input, boolean training) {
@@ -260,7 +264,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
-        return activate(training);
+        return activate(training).get(0);
     }
 
     @Override

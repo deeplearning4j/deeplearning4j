@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -1017,7 +1018,7 @@ public class TestOptimizers {
         }
 
         @Override
-        public Gradients backpropGradient(INDArray epsilon) {
+        public Gradients backpropGradient(Gradients epsilon) {
             throw new UnsupportedOperationException();
         }
 
@@ -1050,10 +1051,10 @@ public class TestOptimizers {
         }
 
         @Override
-        public void setMaskArray(INDArray maskArray) {}
+        public void setMaskArray(int idx, INDArray maskArray) {}
 
         @Override
-        public INDArray getMaskArray() {
+        public INDArray getMaskArray(int idx, ) {
             return null;
         }
 

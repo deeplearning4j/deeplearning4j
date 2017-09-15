@@ -1373,8 +1373,9 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             gradientList.addLast(new Pair<>(multiGradientKey, entry.getValue()));
         }
 
+        GradientsFactory gf = GradientsFactory.getInstance();
         if (getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null){
-            currPair = GradientsFactory.getInstance().create(this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
+            currPair = gf.create(this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
                     .backprop(currPair.getActivationGrad(0), getInputMiniBatchSize()), currPair.getParameterGradients());
         }
 
@@ -1385,14 +1386,16 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             if (currLayer instanceof RecurrentLayer) {
 
 
-                currPair = ((RecurrentLayer) currLayer).tbpttBackpropGradient(currPair.getSecond(),
-                                layerWiseConfigurations.getTbpttBackLength());
+//                currPair = ((RecurrentLayer) currLayer).tbpttBackpropGradient(currPair.getSecond(),
+//                                layerWiseConfigurations.getTbpttBackLength());
+                currPair = ((RecurrentLayer) currLayer).tbpttBackpropGradient(currPair,
+                        layerWiseConfigurations.getTbpttBackLength());
             } else {
-                currPair = currLayer.backpropGradient(currPair.getSecond());
+                currPair = currLayer.backpropGradient(currPair);
             }
 
             LinkedList<Pair<String, INDArray>> tempList = new LinkedList<>();
-            for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
+            for (Map.Entry<String, INDArray> entry : currPair.getParameterGradients().gradientForVariable().entrySet()) {
                 multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
                 tempList.addFirst(new Pair<>(multiGradientKey, entry.getValue()));
             }
@@ -1401,9 +1404,12 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                 gradientList.addFirst(pair);
 
             //Pass epsilon through input processor before passing to next layer (if applicable)
-            if (getLayerWiseConfigurations().getInputPreProcess(j) != null)
-                currPair = new Pair<>(currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j)
-                                .backprop(currPair.getSecond(), getInputMiniBatchSize()));
+            if (getLayerWiseConfigurations().getInputPreProcess(j) != null){
+                currPair = gf.create(getLayerWiseConfigurations().getInputPreProcess(j)
+                                .backprop(currPair.getActivationGrad(0), getInputMiniBatchSize()),
+                            currPair.getParameterGradients());
+            }
+
         }
 
         //Add gradients to Gradients, in correct order
@@ -1806,7 +1812,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                 if (getLayerWiseConfigurations().getInputPreProcess(n - 1) != null) {
                     olInput = getLayerWiseConfigurations().getInputPreProcess(n - 1).preProcess(olInput, input.size(0));
                 }
-                ol.setInput(olInput); //Feedforward doesn't include output layer for efficiency
+                ol.setInput(0, olInput); //Feedforward doesn't include output layer for efficiency
                 ol.setLabels(data.getLabels());
                 ol.computeScore(calcL1(true), calcL2(true), training);
                 this.score = ol.score();
@@ -1912,7 +1918,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             if (layerWiseConfigurations.getInputPreProcess(layers.length - 1) != null)
                 actSecondLastLayer = layerWiseConfigurations.getInputPreProcess(layers.length - 1)
                                 .preProcess(actSecondLastLayer, getInputMiniBatchSize());
-            getOutputLayer().setInput(actSecondLastLayer);
+            getOutputLayer().setInput(0, actSecondLastLayer);
             //Then: compute gradients
             backprop();
         }
@@ -2090,54 +2096,54 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         }
     }
 
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-        if (maskArray == null) {
-            for (int i = 0; i < layers.length; i++) {
-                layers[i].feedForwardMaskArray(null, null, minibatchSize);
-            }
-        } else {
-            //Do a forward pass through each preprocessor and layer
-            for (int i = 0; i < layers.length; i++) {
-                InputPreProcessor preProcessor = getLayerWiseConfigurations().getInputPreProcess(i);
-
-                if (preProcessor != null) {
-                    Pair<INDArray, MaskState> p =
-                                    preProcessor.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
-                    if (p != null) {
-                        maskArray = p.getFirst();
-                        currentMaskState = p.getSecond();
-                    } else {
-                        maskArray = null;
-                        currentMaskState = null;
-                    }
-                }
-
-                Pair<INDArray, MaskState> p =
-                                layers[i].feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
-                if (p != null) {
-                    maskArray = p.getFirst();
-                    currentMaskState = p.getSecond();
-                } else {
-                    maskArray = null;
-                    currentMaskState = null;
-                }
-            }
-        }
-
-        return new Pair<>(maskArray, currentMaskState);
-    }
+//    @Override
+//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+//                    int minibatchSize) {
+//        if (maskArray == null) {
+//            for (int i = 0; i < layers.length; i++) {
+//                layers[i].feedForwardMaskArray(null, null, minibatchSize);
+//            }
+//        } else {
+//            //Do a forward pass through each preprocessor and layer
+//            for (int i = 0; i < layers.length; i++) {
+//                InputPreProcessor preProcessor = getLayerWiseConfigurations().getInputPreProcess(i);
+//
+//                if (preProcessor != null) {
+//                    Pair<INDArray, MaskState> p =
+//                                    preProcessor.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
+//                    if (p != null) {
+//                        maskArray = p.getFirst();
+//                        currentMaskState = p.getSecond();
+//                    } else {
+//                        maskArray = null;
+//                        currentMaskState = null;
+//                    }
+//                }
+//
+//                Pair<INDArray, MaskState> p =
+//                                layers[i].feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
+//                if (p != null) {
+//                    maskArray = p.getFirst();
+//                    currentMaskState = p.getSecond();
+//                } else {
+//                    maskArray = null;
+//                    currentMaskState = null;
+//                }
+//            }
+//        }
+//
+//        return new Pair<>(maskArray, currentMaskState);
+//    }
 
     //==========
     //Layer methods
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients epsilon) {
         if (getOutputLayer() instanceof IOutputLayer)
             throw new UnsupportedOperationException("Cannot calculate gradients based on epsilon with OutputLayer");
 
-        return calcBackpropGradients(epsilon, false);
+        return calcBackpropGradients(epsilon.getActivationGrad(0), false);
     }
 
     @Override
@@ -2263,11 +2269,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         return null;
     }
 
-    @Override
-    public Gradients backpropGradient(Gradients epsilon) {
-        return null;
-    }
-
     /**
      *
      * If this MultiLayerNetwork contains one or more RNN layers: conduct forward pass (prediction)
@@ -2287,28 +2288,33 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer.
      */
     public INDArray rnnTimeStep(INDArray input) {
-        this.setInputMiniBatchSize(input.size(0)); //Necessary for preprocessors/reshaping
-        this.input = input;
-        boolean inputIs2d = input.rank() == 2;
+        return rnnTimeStep(ActivationsFactory.getInstance().create(input));
+    }
+
+    public INDArray rnnTimeStep(Activations input){
+        this.setInputMiniBatchSize(input.get(0).size(0)); //Necessary for preprocessors/reshaping
+        this.input = input.get(0);
+        boolean inputIs2d = input.get(0).rank() == 2;
         for (int i = 0; i < layers.length; i++) {
-            if (getLayerWiseConfigurations().getInputPreProcess(i) != null)
-                input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize());
+            if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
+                input.set(0, getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input.get(0), getInputMiniBatchSize()));
+            }
             if (layers[i] instanceof RecurrentLayer) {
                 input = ((RecurrentLayer) layers[i]).rnnTimeStep(input);
             } else if (layers[i] instanceof MultiLayerNetwork) {
-                input = ((MultiLayerNetwork) layers[i]).rnnTimeStep(input);
+                input = ActivationsFactory.getInstance().create(((MultiLayerNetwork) layers[i]).rnnTimeStep(input), null, null);
             } else {
                 input = layers[i].activate(input, false);
             }
         }
-        if (inputIs2d && input.rank() == 3 ) {
+        if (inputIs2d && input.get(0).rank() == 3 ) {
             //Return 2d output with shape [miniBatchSize,nOut]
             // instead of 3d output with shape [miniBatchSize,nOut,1]
-            return input.tensorAlongDimension(0, 1, 0);
+            input.set(0, input.get(0).tensorAlongDimension(0, 1, 0));
         }
 
         this.input = null;
-        return input;
+        return input.get(0);
     }
 
     /**Get the state of the RNN layer, as used in rnnTimeStep().
@@ -2377,7 +2383,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                                 storeLastForTBPTT);
                 currInput = temp.get(temp.size() - 1);
             } else {
-                currInput = layers[i].activate(currInput, training);
+                currInput = layers[i].activate(
+                        ActivationsFactory.getInstance().create(currInput, null, null), training).get(0);
             }
             activations.add(currInput);
         }
@@ -2417,37 +2424,38 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      * @see #clearLayerMaskArrays()
      */
     public void setLayerMaskArrays(INDArray featuresMaskArray, INDArray labelsMaskArray) {
-        if (featuresMaskArray != null) {
+//        if (featuresMaskArray != null) {
 
-            //New approach: use feedForwardMaskArray method
-            feedForwardMaskArray(featuresMaskArray, MaskState.Active, featuresMaskArray.size(0));
-
-
-            /*
-            //feedforward layers below a RNN layer: need the input (features) mask array
-            //Reason: even if the time series input is zero padded, the output from the dense layers are
-            // non-zero (i.e., activationFunction(0*weights + bias) != 0 in general)
-            //This assumes that the time series input is masked - i.e., values are 0 at the padded time steps,
-            // so we don't need to do anything for the recurrent layer
-            
-            //Now, if mask array is 2d -> need to reshape to 1d (column vector) in the exact same order
-            // as is done for 3d -> 2d time series reshaping
-            INDArray reshapedFeaturesMask = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(featuresMaskArray);
-            
-            for( int i=0; i<layers.length-1; i++ ){
-                Type t = layers[i].type();
-                if( t == Type.CONVOLUTIONAL || t == Type.FEED_FORWARD ){
-                    layers[i].setMaskArray(reshapedFeaturesMask);
-                } else if( t == Type.RECURRENT ) break;
-            
-            }
-            */
-        }
-        if (labelsMaskArray != null) {
-            if (!(getOutputLayer() instanceof IOutputLayer))
-                return;
-            layers[layers.length - 1].setMaskArray(labelsMaskArray);
-        }
+//            //New approach: use feedForwardMaskArray method
+//            feedForwardMaskArray(featuresMaskArray, MaskState.Active, featuresMaskArray.size(0));
+//
+//
+//            /*
+//            //feedforward layers below a RNN layer: need the input (features) mask array
+//            //Reason: even if the time series input is zero padded, the output from the dense layers are
+//            // non-zero (i.e., activationFunction(0*weights + bias) != 0 in general)
+//            //This assumes that the time series input is masked - i.e., values are 0 at the padded time steps,
+//            // so we don't need to do anything for the recurrent layer
+//
+//            //Now, if mask array is 2d -> need to reshape to 1d (column vector) in the exact same order
+//            // as is done for 3d -> 2d time series reshaping
+//            INDArray reshapedFeaturesMask = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(featuresMaskArray);
+//
+//            for( int i=0; i<layers.length-1; i++ ){
+//                Type t = layers[i].type();
+//                if( t == Type.CONVOLUTIONAL || t == Type.FEED_FORWARD ){
+//                    layers[i].setMaskArray(reshapedFeaturesMask);
+//                } else if( t == Type.RECURRENT ) break;
+//
+//            }
+//            */
+//        }
+//        if (labelsMaskArray != null) {
+//            if (!(getOutputLayer() instanceof IOutputLayer))
+//                return;
+//            layers[layers.length - 1].setMaskArray(labelsMaskArray);
+//        }
+        throw new UnsupportedOperationException("Not yet reimplemented");
     }
 
     /** Remove the mask arrays from all layers.<br>
@@ -2455,7 +2463,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      */
     public void clearLayerMaskArrays() {
         for (Layer layer : layers) {
-            layer.setMaskArray(null);
+            layer.setMaskArray(0, null);
         }
     }
 
@@ -2737,8 +2745,6 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      */
     protected void clearLayersStates() {
         for (int f = 0; f < layers.length; f++) {
-            layers[f].setInput(null);
-            layers[f].setMaskArray(null);
             layers[f].clear();
         }
     }

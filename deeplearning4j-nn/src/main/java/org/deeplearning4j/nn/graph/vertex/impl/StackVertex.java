@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -53,17 +55,7 @@ public class StackVertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         // stacking along dimension 0
         // inputs[] is an array of INDArray (e.g.: shape of 3 x [nExamples, nSize])
         // what we want to do is make a stacked output (e.g.: [3 x nExamples, nSize])
@@ -91,7 +83,7 @@ public class StackVertex extends BaseGraphVertex {
             variableLengthTS = (minLength != maxLength);
 
             if (!variableLengthTS) {
-                return Nd4j.concat(0, inputs);
+                return ActivationsFactory.getInstance().create(Nd4j.concat(0, inputs));
             }
 
             outShape[2] = maxLength;
@@ -104,9 +96,9 @@ public class StackVertex extends BaseGraphVertex {
                 lastInputShapes[i] = inputs[i].shape();
             }
 
-            return out;
+            return ActivationsFactory.getInstance().create(out);
         } else {
-            return Nd4j.concat(0, inputs);
+            return ActivationsFactory.getInstance().create(Nd4j.concat(0, inputs));
         }
     }
 

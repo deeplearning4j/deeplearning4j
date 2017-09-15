@@ -52,6 +52,10 @@ public class GradientsFactory {
         }
     }
 
+    public Gradients create(INDArray actGrad){
+        return create(actGrad, null);
+    }
+
     public Gradients create(INDArray actGrad, Gradient paramGradient){
         //First: determine if any cached value is available
         GradientsSingle single = ActivationsFactory.get(singles, singlesStart, singlesEnd);

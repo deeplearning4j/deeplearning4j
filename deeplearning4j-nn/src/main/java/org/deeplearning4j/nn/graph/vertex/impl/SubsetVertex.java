@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -57,34 +59,29 @@ public class SubsetVertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
         forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
 
+        INDArray ret;
         switch (inputs[0].rank()) {
             case 2:
-                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true));
+                ret = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true));
+                break;
             case 3:
-                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all());
+                ret = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all());
+                break;
             case 4:
-                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(),
+                ret = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(),
                                 NDArrayIndex.all());
+                break;
             default:
                 throw new UnsupportedOperationException(
                                 "Cannot get subset for activations of rank " + inputs[0].rank());
         }
+        return ActivationsFactory.getInstance().create(ret);
     }
 
     @Override

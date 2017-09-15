@@ -22,6 +22,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -72,11 +75,6 @@ public class LayerVertex extends BaseGraphVertex {
         this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
     }
 
-    @Override
-    public boolean hasLayer() {
-        return true;
-    }
-
     public void setLayerAsFrozen() {
         if (this.layer instanceof FrozenLayer)
             return;
@@ -91,12 +89,7 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Layer getLayer() {
-        return layer;
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: all inputs not set");
 
@@ -107,43 +100,39 @@ public class LayerVertex extends BaseGraphVertex {
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
         if (!canDoBackward()) {
             throw new IllegalStateException("Cannot do backward pass: all epsilons not set. Layer " + vertexName
-                            + " (idx " + vertexIndex + ") numInputs " + numInputs() + "; numOutputs "
-                            + getNumOutputConnections());
+                            + " (idx " + vertexIndex + ") numInputs " + numInputs() );  // + "; numOutputs "
+//                            + getNumOutputConnections());
         }
 
         Gradients pair;
         if (tbptt && layer instanceof RecurrentLayer) {
             //Truncated BPTT for recurrent layers
-            pair = ((RecurrentLayer) layer).tbpttBackpropGradient(epsilon,
+            pair = ((RecurrentLayer) layer).tbpttBackpropGradient(GradientsFactory.getInstance().create(epsilon),
                             graph.getConfiguration().getTbpttBackLength());
         } else {
             //Normal backprop
-            pair = layer.backpropGradient(epsilon); //epsTotal may be null for OutputLayers
+            pair = layer.backpropGradient(GradientsFactory.getInstance().create(epsilon, null)); //epsTotal may be null for OutputLayers
         }
 
         if (layerPreProcessor != null) {
-            INDArray eps = pair.getSecond();
+            INDArray eps = pair.getActivationGrad(0);
             eps = layerPreProcessor.backprop(eps, graph.batchSize());
-            pair.setSecond(eps);
+            pair.setActivationGrad(0, eps);
         }
 
         //Layers always have single activations input -> always have single epsilon output during backprop
-        return new Pair<>(pair.getFirst(), new INDArray[] {pair.getSecond()});
+        return new Pair<>(pair.getParameterGradients(), pair.getActivationGradAsArray());
     }
 
     @Override
     public void setInput(int inputNumber, INDArray input) {
-        if (inputNumber > 0)
-            throw new IllegalArgumentException(
-                            "Invalid input number: LayerVertex instances have only 1 input (got inputNumber = "
-                                            + inputNumber + ")");
         inputs[inputNumber] = input;
 
         INDArray currInput = inputs[0];
         if (layerPreProcessor != null) {
             currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
         }
-        layer.setInput(currInput);
+        layer.setInput(inputNumber, currInput);
     }
 
     @Override
@@ -170,7 +159,8 @@ public class LayerVertex extends BaseGraphVertex {
             }
         }
 
-        return layer.feedForwardMaskArray(maskArrays[0], currentMaskState, minibatchSize);
+//        return layer.feedForwardMaskArray(maskArrays[0], currentMaskState, minibatchSize);
+        throw new UnsupportedOperationException();
     }
 
 

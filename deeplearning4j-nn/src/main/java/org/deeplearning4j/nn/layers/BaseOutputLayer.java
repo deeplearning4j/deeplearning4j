@@ -139,7 +139,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         INDArray preOut = preOutput2d(true);
         Gradients pair = getGradientsAndDelta(preOut);
-        this.gradient = pair.getFirst();
+        this.gradient = pair.getParameterGradients();
 
         score = computeScore(fullNetworkL1, fullNetworkL2, true);
     }
@@ -153,14 +153,14 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public Gradients backpropGradient(Gradients epsilons) {
 
         Gradients pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
-        INDArray delta = pair.getSecond();
+        INDArray delta = pair.getActivationGrad(0);
 
         INDArray epsilonNext = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true).mmul(delta.transpose()).transpose();
 
         //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
         // So this is instead done in MultiLayerNetwork/CompGraph backprop methods
 
-        return GradientsFactory.getInstance().create(epsilonNext, pair.getFirst());
+        return GradientsFactory.getInstance().create(epsilonNext, pair.getParameterGradients());
     }
 
     /**
@@ -191,7 +191,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradView);
         }
 
-        return new Pair<>(gradient, delta);
+        return GradientsFactory.getInstance().create(gradient, delta);
     }
 
 
@@ -200,15 +200,15 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if(input.size() != 1)
             throw new IllegalStateException();
         setInput(input.get(0));
-        return ActivationsFactory.getInstance().create(output(training), null, null);
+        return output(training);
     }
 
-    public INDArray output(INDArray input, boolean training) {
+    public Activations output(INDArray input, boolean training) {
         setInput(input);
         return output(training);
     }
 
-    public INDArray output(INDArray input) {
+    public Activations output(INDArray input) {
         setInput(input);
         return output(false);
     }
@@ -222,11 +222,11 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * Each row will be the likelihood of a label given that example
      * @return a probability distribution for each row
      */
-    public INDArray output(boolean training) {
+    public Activations output(boolean training) {
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input - " + layerId());
         }
-        return super.activate(training).get(0);
+        return super.activate(training);
     }
 
     @Override

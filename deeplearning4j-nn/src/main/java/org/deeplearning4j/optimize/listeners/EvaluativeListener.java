@@ -221,10 +221,10 @@ public class EvaluativeListener implements TrainingListener {
             } else if (ds != null) {
                 for (IEvaluation evaluation : evaluations)
                     evalAtIndex(evaluation, new INDArray[] {ds.getLabels()},
-                                    ((ComputationGraph) model).output(ds.getFeatureMatrix()), 0);
+                                    ((ComputationGraph) model).output(ds.getFeatureMatrix()).getAsArray(), 0);
             } else if (mds != null) {
                 for (IEvaluation evaluation : evaluations)
-                    evalAtIndex(evaluation, mds.getLabels(), ((ComputationGraph) model).output(mds.getFeatures()), 0);
+                    evalAtIndex(evaluation, mds.getLabels(), ((ComputationGraph) model).output(mds.getFeatures()).getAsArray(), 0);
             }
         } else
             throw new DL4JInvalidInputException("Model is unknown: " + model.getClass().getCanonicalName());

@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -58,17 +60,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public Layer getLayer() {
-        return null;
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set (L2NormalizeVertex " + vertexName
                             + " idx " + vertexIndex + ")");
@@ -82,10 +74,10 @@ public class L2NormalizeVertex extends BaseGraphVertex {
         Transforms.max(xNorm2, eps, false);
 
         if (x.rank() == 2) {
-            return x.divColumnVector(xNorm2);
+            return ActivationsFactory.getInstance().create(x.divColumnVector(xNorm2));
         } else {
             INDArray out = Nd4j.createUninitialized(x.shape(), x.ordering());
-            return Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(x, xNorm2, out, 0));
+            return ActivationsFactory.getInstance().create(Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(x, xNorm2, out, 0)));
         }
     }
 

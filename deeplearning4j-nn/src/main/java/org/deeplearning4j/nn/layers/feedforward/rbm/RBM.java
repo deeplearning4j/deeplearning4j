@@ -18,6 +18,10 @@
 
 package org.deeplearning4j.nn.layers.feedforward.rbm;
 
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -434,17 +438,18 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
      * @return the reconstruction of the visible input
      */
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (training && conf.getLayer().getIDropout() != null) {
             applyDropOutIfNecessary(training);
         }
         //reconstructed: propUp ----> hidden propDown to transform
         INDArray propUp = propUp(input, training);
-        return propUp;
+        return ActivationsFactory.getInstance().create(propUp);
     }
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.getActivationGrad(0);
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input, true);
         INDArray activationDerivative = propUpDerivative(z);
@@ -468,7 +473,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
 
         INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
 
-        return new Pair<>(ret, epsilonNext);
+        return GradientsFactory.getInstance().create(epsilonNext, ret);
     }
 
     @Override

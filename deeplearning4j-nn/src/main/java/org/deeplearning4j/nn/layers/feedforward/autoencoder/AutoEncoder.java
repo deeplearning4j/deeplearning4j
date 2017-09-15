@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
@@ -83,9 +85,9 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return encode(input, training);
+    public Activations activate(Activations input, boolean training) {
+        setInput(input.get(0));
+        return ActivationsFactory.getInstance().create(encode(input.get(0), training));
     }
 
     @Override
@@ -94,8 +96,8 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        return decode(encode(input, training));
+    public Activations activate(boolean training) {
+        return ActivationsFactory.getInstance().create(decode(encode(input, training)));
     }
 
     @Override

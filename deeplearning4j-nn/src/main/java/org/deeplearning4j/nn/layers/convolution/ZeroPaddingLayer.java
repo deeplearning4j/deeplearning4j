@@ -1,6 +1,10 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -19,6 +23,7 @@ import org.nd4j.linalg.primitives.Pair;
  */
 public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer> {
 
+    private static final Gradient EMPTY_GRADIENT = new DefaultGradient();
     private int[] padding; //[padTop, padBottom, padLeft, padRight]
 
     public ZeroPaddingLayer(NeuralNetConfiguration conf) {
@@ -37,19 +42,20 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.getActivationGrad(0);
         int[] inShape = input.shape();
 
         INDArray epsNext = epsilon.get(NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.interval(padding[0], padding[0] + inShape[2]),
                         NDArrayIndex.interval(padding[2], padding[2] + inShape[3]));
 
-        return new Pair<>((Gradient) new DefaultGradient(), epsNext);
+        return GradientsFactory.getInstance().create(epsNext, EMPTY_GRADIENT);
     }
 
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         int[] inShape = input.shape();
         int outH = inShape[2] + padding[0] + padding[1];
         int outW = inShape[3] + padding[2] + padding[3];
@@ -61,6 +67,6 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                         NDArrayIndex.interval(padding[0], padding[0] + inShape[2]),
                         NDArrayIndex.interval(padding[2], padding[2] + inShape[3])}, input);
 
-        return out;
+        return ActivationsFactory.getInstance().create(out);
     }
 }

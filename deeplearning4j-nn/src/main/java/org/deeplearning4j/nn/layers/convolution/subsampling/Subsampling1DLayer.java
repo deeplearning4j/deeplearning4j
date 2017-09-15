@@ -1,6 +1,9 @@
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,7 +37,8 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     }
 
     @Override
-    public Gradients backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.getActivationGrad(0);
         if (epsilon.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + epsilon.rank()
                             + " array as epsilon for Subsampling1DLayer backprop with shape "
@@ -47,18 +51,20 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
 
         // call 2D SubsamplingLayer's backpropGradient method
-        Gradients gradientEpsNext = super.backpropGradient(epsilon);
-        INDArray epsNext = gradientEpsNext.getSecond();
+        gradients.setActivationGrad(0, epsilon);
+        Gradients gradientEpsNext = super.backpropGradient(gradients);
+        INDArray epsNext = gradientEpsNext.getActivationGrad(0);
 
         // remove singleton fourth dimension from input and current epsilon
         input = origInput;
         epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
+        gradientEpsNext.setActivationGrad(0, epsNext);
 
-        return new Pair<>(gradientEpsNext.getFirst(), epsNext);
+        return gradientEpsNext;
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public Activations activate(boolean training) {
         if (input.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                             + " array as input to Subsampling1DLayer with shape " + Arrays.toString(input.shape())
@@ -69,11 +75,12 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
         // call 2D SubsamplingLayer's activate method
-        INDArray acts = super.activate(training);
+        Activations acts = super.activate(training);
 
         // remove singleton fourth dimension from input and output activations
         input = origInput;
-        acts = acts.reshape(acts.size(0), acts.size(1), acts.size(2));
+        INDArray a = acts.get(0);
+        acts.set(0, acts.get(0).reshape(a.size(0), a.size(1), a.size(2)));
 
         return acts;
     }
