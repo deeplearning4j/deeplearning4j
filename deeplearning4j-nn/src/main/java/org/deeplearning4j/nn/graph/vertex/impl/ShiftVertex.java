@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -49,13 +50,8 @@ public class ShiftVertex extends BaseGraphVertex {
 
     private double shiftFactor;
 
-    public ShiftVertex(ComputationGraph graph, String name, int vertexIndex, double shiftFactor) {
-        this(graph, name, vertexIndex, null, null, shiftFactor);
-    }
-
-    public ShiftVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, double shiftFactor) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public ShiftVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, double shiftFactor) {
+        super(graph, name, vertexIndex,numInputs);
         this.shiftFactor = shiftFactor;
     }
 
@@ -76,12 +72,8 @@ public class ShiftVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        if (!canDoBackward())
-            throw new IllegalStateException("Cannot do backward pass: errors not set (ShiftVertex " + vertexName
-                            + " idx " + vertexIndex + ")");
-
-        return new Pair<>(null, new INDArray[] {epsilon.addi(0)});
+    public Gradients backpropGradient(Gradients gradients) {
+        return gradients;
     }
 
     @Override

@@ -22,6 +22,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -47,14 +49,9 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     private String inputName;
     private int inputVertexIndex;
 
-    public DuplicateToTimeSeriesVertex(ComputationGraph graph, String name, int vertexIndex, String inputVertexName) {
-        this(graph, name, vertexIndex, null, null, inputVertexName);
-    }
-
-    public DuplicateToTimeSeriesVertex(ComputationGraph graph, String name, int vertexIndex,
-                    VertexIndices[] inputVertices, VertexIndices[] outputVertices, String inputName) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
-        this.inputName = inputName;
+    public DuplicateToTimeSeriesVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, String inputVertexName) {
+        super(graph, name, vertexIndex, numInputs);
+        this.inputName = inputVertexName;
         this.inputVertexIndex = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
         if (inputVertexIndex == -1)
             throw new IllegalArgumentException("Invalid input name: \"" + inputName + "\" not found in list "
@@ -81,9 +78,9 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Gradients backpropGradient(Gradients gradient) {
         //Because we duplicated for each time step: simply need to sum along time for errors/epsilons
-        return new Pair<>(null, new INDArray[] {epsilon.sum(2)});
+        return GradientsFactory.getInstance().create(gradient.get(0).sum(2), null);
     }
 
     @Override

@@ -91,8 +91,8 @@ public class ReshapeVertex extends GraphVertex {
 
     @Override
     public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.ReshapeVertex(graph, name, idx, reshapeOrder, newShape, maskShape);
+                             int numInputs, INDArray paramsView, boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.ReshapeVertex(graph, name, idx, numInputs, reshapeOrder, newShape, maskShape);
     }
 
     @Override

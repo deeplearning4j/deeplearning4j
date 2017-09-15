@@ -22,11 +22,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.api.gradients.Gradients;
-import org.deeplearning4j.nn.api.gradients.GradientsFactory;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
@@ -43,20 +39,7 @@ public abstract class BaseGraphVertex extends AbstractLayer {
     /** The index of this vertex */
     protected int vertexIndex;
 
-    /**A representation of the vertices that are inputs to this vertex (inputs during forward pass)
-     * Specifically, if inputVertices[X].getIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
-     * then the Zth output of vertex Y is the Xth input to this vertex
-     */
-    protected VertexIndices[] inputVertices;
-
-    /**A representation of the vertices that this vertex is connected to (outputs duing forward pass)
-     * Specifically, if outputVertices[X].getIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
-     * then the output of this vertex (there is only one output) is connected to the Zth input of vertex Y
-     */
-    protected VertexIndices[] outputVertices;
-
     protected INDArray[] inputs;
-    protected INDArray epsilon;
 
     //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
     // For RL situations, this Layer insn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
@@ -64,15 +47,12 @@ public abstract class BaseGraphVertex extends AbstractLayer {
     @Setter @Getter
     protected boolean outputVertex;
 
-    protected BaseGraphVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices) {
+    protected BaseGraphVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs) {
         this.graph = graph;
         this.vertexName = name;
         this.vertexIndex = vertexIndex;
-        this.inputVertices = inputVertices;
-        this.outputVertices = outputVertices;
 
-        this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
+        this.inputs = new INDArray[numInputs];
     }
 
     @Override
@@ -81,61 +61,23 @@ public abstract class BaseGraphVertex extends AbstractLayer {
     }
 
     @Override
-    public int numInputs() {
-        return (inputVertices == null ? 0 : inputVertices.length);
+    public String getName(){
+        return vertexName;
     }
 
-//    @Override
-//    public int getNumOutputConnections() {
-//        return (outputVertices == null ? 0 : outputVertices.length);
-//    }
-
-//    /**A representation of the vertices that are inputs to this vertex (inputs duing forward pass)<br>
-//     * Specifically, if inputVertices[X].getIndex() = Y, and inputVertices[X].getVertexEdgeNumber() = Z
-//     * then the Zth output of vertex Y is the Xth input to this vertex
-//     */
-//    @Override
-//    public VertexIndices[] getInputVertices() {
-//        return inputVertices;
-//    }
-
-//    @Override
-//    public void setInputVertices(VertexIndices[] inputVertices) {
-//        this.inputVertices = inputVertices;
-//        this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
-//    }
-
-//    /**A representation of the vertices that this vertex is connected to (outputs duing forward pass)
-//     * Specifically, if outputVertices[X].getIndex() = Y, and outputVertices[X].getVertexEdgeNumber() = Z
-//     * then the Xth output of this vertex is connected to the Zth input of vertex Y
-//     */
-//    @Override
-//    public VertexIndices[] getOutputVertices() {
-//        return outputVertices;
-//    }
-//
-//    @Override
-//    public void setOutputVertices(VertexIndices[] outputVertices) {
-//        this.outputVertices = outputVertices;
-//    }
-//
-//    @Override
-//    public boolean isInputVertex() {
-//        return false;
-//    }
+    @Override
+    public int numInputs() {
+        return inputs.length;
+    }
 
     @Override
     public void setInput(int inputNumber, INDArray input) {
         if (inputNumber >= numInputs()) {
-            throw new IllegalArgumentException("Invalid input number");
+            throw new IllegalArgumentException("Invalid input number: got " + inputNumber + ", inputs must be in range" +
+                    "0 to " + (numInputs()-1) + " inclusive");
         }
         inputs[inputNumber] = input;
     }
-
-//    @Override
-//    public void setEpsilon(INDArray epsilon) {
-//        this.epsilon = epsilon;
-//    }
 
     @Override
     public void clear() {
@@ -144,51 +86,16 @@ public abstract class BaseGraphVertex extends AbstractLayer {
         }
     }
 
-//    @Override
-//    public boolean canDoForward() {
-//        for (INDArray input : inputs) {
-//            if (input == null) {
-//                return false;
-//            }
-//        }
-//        return true;
-//    }
-//
-//    @Override
-//    public boolean canDoBackward() {
-//        for (INDArray input : inputs) {
-//            if (input == null) {
-//                return false;
-//            }
-//        }
-//        return epsilon != null;
-//    }
-//
-//    @Override
-//    public INDArray getEpsilon() {
-//        return epsilon;
-//    }
-
     @Override
     public abstract String toString();
 
+
 //    @Override
-//    public void setLayerAsFrozen() {
-//        if (!(this instanceof LayerVertex)) {
-//            throw new IllegalArgumentException("Cannot set non layer vertices as frozen");
-//        }
+//    public Gradients backpropGradient(Gradients epsilons) {
+//        Pair<Gradient,INDArray[]> backward = doBackward(false); //TODO
+//
+//        return GradientsFactory.getInstance().create(backward.getFirst(), backward.getSecond());
 //    }
-
-
-
-
-    @Override
-    public Gradients backpropGradient(Gradients epsilons) {
-
-        Pair<Gradient,INDArray[]> backward = doBackward(false); //TODO
-
-        return GradientsFactory.getInstance().create(backward.getFirst(), backward.getSecond());
-    }
 
     @Override
     public boolean isPretrainLayer() {
@@ -200,17 +107,27 @@ public abstract class BaseGraphVertex extends AbstractLayer {
 
     }
 
-    protected abstract Pair<Gradient,INDArray[]> doBackward(boolean tbptt);
+//    protected abstract Pair<Gradient,INDArray[]> backpropGradient(Gradients gradient);
 
     protected abstract Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                                                                               int minibatchSize);
 
+    @Override
+    public INDArray getInput(int inputNumber){
+        //TODO have both input and inputs fields...
+        return this.inputs[inputNumber];
+    }
 
     public boolean canDoForward(){
-        throw new UnsupportedOperationException("Not yet implemented");
+        for( int i=0; i<numInputs(); i++ ){
+            if(getInput(i) == null){
+                return false;
+            }
+        }
+        return true;
     }
 
     public boolean canDoBackward(){
-        throw new UnsupportedOperationException("Not yet implemented");
+        return true;    //TODO remove
     }
 }

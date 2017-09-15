@@ -16,6 +16,8 @@ public class GradientsTuple extends BaseGradients {
 
     @Override
     public int size() {
+        if(actGrads == null)
+            return 0;
         return actGrads.length;
     }
 

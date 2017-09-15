@@ -22,6 +22,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -45,13 +47,8 @@ public class StackVertex extends BaseGraphVertex {
 
     private int[][] lastInputShapes;
 
-    public StackVertex(ComputationGraph graph, String name, int vertexIndex) {
-        this(graph, name, vertexIndex, null, null);
-    }
-
-    public StackVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public StackVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs) {
+        super(graph, name, vertexIndex, numInputs);
     }
 
     @Override
@@ -103,15 +100,16 @@ public class StackVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Gradients backpropGradient(Gradients gradient) {
+        INDArray epsilon = gradient.get(0);
         // this is basically activate on UnstackVertex
-        if (!canDoForward())
-            throw new IllegalStateException("Cannot do forward pass: input not set");
+        if (!canDoBackward())
+            throw new IllegalStateException("Cannot do backward pass");
 
         if (epsilon == null) {
             //Edge case for stack vertex: stack -> embedding
             //If the null epsilons are a problem in practice, this should be picked up by other layers
-            return new Pair<>(null, new INDArray[inputs.length]);
+            return gradient;
         }
 
         int nStack = inputs.length;
@@ -144,7 +142,7 @@ public class StackVertex extends BaseGraphVertex {
             }
         }
 
-        return new Pair<>(null, out);
+        return GradientsFactory.getInstance().create(null, out);
     }
 
     @Override

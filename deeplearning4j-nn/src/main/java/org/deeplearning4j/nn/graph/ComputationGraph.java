@@ -40,7 +40,6 @@ import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
@@ -444,7 +443,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Create network input vertices:
         int vertexNumber = 0;
         for (String name : networkInputNames) {
-            Layer gv = new InputVertex(this, name, vertexNumber, null); //Output vertices: set later
+            Layer gv = new InputVertex(this, name, vertexNumber, 0);
             allNamesReverse.put(name, vertexNumber);
             vertices[vertexNumber++] = gv;
         }
@@ -510,13 +509,18 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
             org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
             String name = nodeEntry.getKey();
-            Layer gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
-                    initializeParams);
+            List<String> currentInputs = vertexInputs.get(name);
+            int nInputs = (currentInputs == null ? 0 : currentInputs.size());
+            Layer gv = n.instantiate(this, name, vertexNumber, nInputs, paramsViewForVertex[vertexNumber], initializeParams);
 
             if (gv.numParams() > 0) {
                 numLayers++;
                 Layer l = gv;
                 tempLayerList.add(l);
+                if(l.conf() == null){
+                    //No conf for thisgs like ElementwiseVertex
+                    continue;
+                }
                 List<String> layerVariables = l.conf().variables();
                 if (layerVariables != null) {
                     for (String s : layerVariables) {
@@ -622,8 +626,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Mark any output vertices as outputs:
         for (String s : configuration.getNetworkOutputs()) {
             Layer gv = verticesMap.get(s);
-//            gv.setOutputVertex(true);
             gvOutputVertex.add(gv.getName());
+        }
+
+        //Mark any input vertices as inputs
+        for (String s : configuration.getNetworkInputs()){
+            Layer gv = verticesMap.get(s);
+            gvInputVertex.add(gv.getName());
         }
 
         // now we init solver & optimizer
@@ -1377,7 +1386,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (String s : configuration.getNetworkOutputs()) {
             Layer gv = verticesMap.get(s);
 
-            score += ((IOutputLayer) gv).computeScore(l1, l2, true);
+            if(gv instanceof LayerVertex){
+                score += ((IOutputLayer) ((LayerVertex)gv).getLayer()).computeScore(l1, l2, true);
+            } else {
+                score += ((IOutputLayer) gv).computeScore(l1, l2, true);
+            }
+
 
             //Only want to add l1/l2 once...
             l1 = 0.0;
@@ -1491,8 +1505,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                 if (gvInputVertex.contains(current.getName())) {
-//                    VertexIndices[] inputsTo = gvOutputVertices.get(current.getName());
-                    VertexIndices[] inputsTo = gvInputVertices.get(current.getName());
+                    VertexIndices[] inputsTo = gvOutputVertices.get(current.getName());
                     // pushing out copy to parent workspace
                     INDArray input = inputs[current.getIndex()].leverageTo(workspaceExternal);
 
@@ -1717,26 +1730,25 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                         INDArray currLabels = labels[thisOutputNumber];
                         outputLayer.setLabels(currLabels);
+                    } else if(current instanceof LayerVertex && ((LayerVertex) current).getLayer() instanceof IOutputLayer){
+                        IOutputLayer outputLayer = (IOutputLayer) ((LayerVertex) current).getLayer();
+
+                        INDArray currLabels = labels[thisOutputNumber];
+                        outputLayer.setLabels(currLabels);
                     } else {
-                        if ((externalEpsilons == null || externalEpsilons.length == 0)
-                                && labels[thisOutputNumber] != null) {
+                        if ((externalEpsilons == null || externalEpsilons.length == 0) && labels[thisOutputNumber] != null) {
                             throw new DL4JException("Layer \"" + current.getName() + "\" of type "
                                     + current.getClass().getSimpleName()
                                     + " is set as network output "
                                     + "(but isn't an IOutputLayer). Only IOutputLayer layers can be fit via backprop with"
                                     + " a labels array. ");
                         }
-                        INDArray[] temp = tempEpsilons.get(current.getName());
-                        if(temp == null){
-                            temp = new INDArray[1];
-                            tempEpsilons.put(current.getName(), temp);
-                        }
-                        temp[0] = externalEpsilons[thisOutputNumber];
+                        getTempEpsilonsArray(current.getName())[0] = externalEpsilons[thisOutputNumber];
                         setVertexEpsilon[topologicalOrder[i]] = true;
                     }
                 }
 
-//                Pair<Gradient, INDArray[]> pair = current.doBackward(truncatedBPTT);
+//                Gradients pair = current.doBackward(truncatedBPTT);
                 Gradients gradIn = GradientsFactory.getInstance().create(null, tempEpsilons.get(current.getName()) );
                 Gradients pair = current.backpropGradient(gradIn);
                 INDArray[] epsilons = pair.getActivationGradAsArray();
@@ -1760,22 +1772,19 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         if (setVertexEpsilon[gv.getIndex()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
 //                            INDArray currentEps = gv.getEpsilon().leverageTo(workspaceExternal);
-                            INDArray currentEps = tempEpsilons.get(current.getName())[0].leverageTo(workspaceExternal);
+                            INDArray currentEps = getTempEpsilonsArray(gv.getName())[0].leverageTo(workspaceExternal);
                             if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
 //                                gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
-                                tempEpsilons.get(current.getName())[0] = currentEps.add(epsilons[j++]); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
+                                getTempEpsilonsArray(gv.getName())[0] = currentEps.add(epsilons[j++]); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
                             } else {
                                 try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                                         .getWorkspaceForCurrentThread(workspaceExternal)
                                         .notifyScopeBorrowed()) {
-                                    //try (MemoryWorkspace wsB = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-//                                    gv.setEpsilon(currentEps.add(epsilons[j++]));
-                                    tempEpsilons.get(current.getName())[0] = currentEps.add(epsilons[j++]);
+                                    getTempEpsilonsArray(gv.getName())[0] = currentEps.add(epsilons[j++]);
                                 }
                             }
                         } else {
-//                            gv.setEpsilon(epsilons[j++]);
-                            tempEpsilons.get(current.getName())[0] = epsilons[j++];
+                            getTempEpsilonsArray(gv.getName())[0] = epsilons[j++];
                         }
                         setVertexEpsilon[gv.getIndex()] = true;
 
@@ -1808,6 +1817,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         this.gradient = gradient;
+    }
+
+    private INDArray[] getTempEpsilonsArray(String vertex){
+        INDArray[] temp = tempEpsilons.get(vertex);
+        if(temp == null){
+            temp = new INDArray[1];
+            tempEpsilons.put(vertex, temp);
+        }
+        return temp;
     }
 
     @Override

@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -40,13 +41,8 @@ public class ScaleVertex extends BaseGraphVertex {
 
     private double scaleFactor;
 
-    public ScaleVertex(ComputationGraph graph, String name, int vertexIndex, double scaleFactor) {
-        this(graph, name, vertexIndex, null, null, scaleFactor);
-    }
-
-    public ScaleVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, double scaleFactor) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public ScaleVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, double scaleFactor) {
+        super(graph, name, vertexIndex, numInputs);
         this.scaleFactor = scaleFactor;
     }
 
@@ -67,12 +63,15 @@ public class ScaleVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Gradients backpropGradient(Gradients gradient) {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: errors not set (ScaleVertex " + vertexName
                             + " idx " + vertexIndex + ")");
 
-        return new Pair<>(null, new INDArray[] {epsilon.muli(scaleFactor)});
+        INDArray epsilon = gradient.get(0);
+        epsilon.muli(scaleFactor);
+
+        return gradient;
     }
 
     @Override

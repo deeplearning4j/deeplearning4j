@@ -21,6 +21,8 @@ package org.deeplearning4j.nn.graph.vertex.impl;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -34,8 +36,13 @@ import org.nd4j.linalg.primitives.Pair;
 public class InputVertex extends BaseGraphVertex {
 
 
-    public InputVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] outputVertices) {
-        super(graph, name, vertexIndex, null, outputVertices);
+    public InputVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs) {
+        super(graph, name, vertexIndex, numInputs);
+    }
+
+    @Override
+    public int numInputs(){
+        return 1;
     }
 
     @Override
@@ -45,11 +52,11 @@ public class InputVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        throw new UnsupportedOperationException("Cannot do forward pass for InputVertex");
+        return ActivationsFactory.getInstance().create(input);
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Gradients backpropGradient(Gradients gradient) {
         throw new UnsupportedOperationException("Cannot do backward pass for InputVertex");
     }
 

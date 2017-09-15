@@ -89,9 +89,9 @@ public class L2NormalizeVertex extends GraphVertex {
 
     @Override
     public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             INDArray paramsView, boolean initializeParams) {
+                             int numInputs, INDArray paramsView, boolean initializeParams) {
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.L2NormalizeVertex(graph, name, idx, dimension, eps);
+        return new org.deeplearning4j.nn.graph.vertex.impl.L2NormalizeVertex(graph, name, idx, numInputs, dimension, eps);
     }
 
     @Override

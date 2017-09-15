@@ -80,12 +80,12 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      * @param graph            The computation graph that this GraphVertex is to be part of
      * @param name             The name of the GraphVertex object
      * @param idx              The index of the GraphVertex
-     * @param paramsView       A view of the full parameters array
-     * @param initializeParams If true: initialize the parameters. If false: make no change to the values in the paramsView array
-     * @return The implementation GraphVertex object (i.e., implementation, no the configuration)
+     * @param numInputs        Number of inputs to this graph vertex
+     *@param paramsView       A view of the full parameters array
+     * @param initializeParams If true: initialize the parameters. If false: make no change to the values in the paramsView array   @return The implementation GraphVertex object (i.e., implementation, no the configuration)
      */
     public abstract Layer instantiate(ComputationGraph graph, String name,
-                                      int idx, INDArray paramsView, boolean initializeParams);
+                                      int idx, int numInputs, INDArray paramsView, boolean initializeParams);
 
     /**
      * Determine the type of output for this GraphVertex, given the specified inputs. Given that a GraphVertex may do arbitrary

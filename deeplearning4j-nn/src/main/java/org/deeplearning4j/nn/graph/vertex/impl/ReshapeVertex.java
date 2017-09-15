@@ -22,6 +22,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -43,13 +45,8 @@ public class ReshapeVertex extends BaseGraphVertex {
     private int[] maskShape;
 
 
-    public ReshapeVertex(ComputationGraph graph, String name, int vertexIndex, char order, int[] newShape, int[] maskShape) {
-        this(graph, name, vertexIndex, null, null, order, newShape, maskShape);
-    }
-
-    public ReshapeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, char order, int[] newShape, int[] maskShape) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public ReshapeVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, char order, int[] newShape, int[] maskShape) {
+        super(graph, name, vertexIndex, numInputs);
         this.order = order;
         this.newShape = newShape;
         this.maskShape = maskShape;
@@ -68,13 +65,12 @@ public class ReshapeVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Gradients backpropGradient(Gradients gradients) {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: errors not set");
 
-        INDArray[] out = new INDArray[1];
-        out[0] = epsilon.reshape(order, inputs[0].shape());
-        return new Pair<>(null, out);
+        INDArray out = gradients.get(0).reshape(order, inputs[0].shape());
+        return GradientsFactory.getInstance().create(out, null);
     }
 
     @Override

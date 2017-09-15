@@ -93,8 +93,8 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
     @Override
     public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.DuplicateToTimeSeriesVertex(graph, name, idx, inputName);
+                             int numInputs, INDArray paramsView, boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.rnn.DuplicateToTimeSeriesVertex(graph, name, idx, numInputs, inputName);
     }
 
     @Override

@@ -70,8 +70,8 @@ public class StackVertex extends GraphVertex {
 
     @Override
     public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.StackVertex(graph, name, idx);
+                             int numInputs, INDArray paramsView, boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.StackVertex(graph, name, idx, numInputs);
     }
 
     @Override

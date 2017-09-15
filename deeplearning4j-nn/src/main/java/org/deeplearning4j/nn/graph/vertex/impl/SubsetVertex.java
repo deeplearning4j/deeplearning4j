@@ -22,6 +22,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -47,13 +49,8 @@ public class SubsetVertex extends BaseGraphVertex {
     private int to; //inclusive
     private int[] forwardShape;
 
-    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, int from, int to) {
-        this(graph, name, vertexIndex, null, null, from, to);
-    }
-
-    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, int from, int to) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, int from, int to) {
+        super(graph, name, vertexIndex, numInputs);
         this.from = from;
         this.to = to;
     }
@@ -85,7 +82,8 @@ public class SubsetVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Gradients backpropGradient(Gradients gradient) {
+        INDArray epsilon = gradient.get(0);
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: error not set");
 
@@ -105,7 +103,7 @@ public class SubsetVertex extends BaseGraphVertex {
             default:
                 throw new RuntimeException("Invalid activation rank"); //Should never happen
         }
-        return new Pair<>(null, new INDArray[] {out});
+        return GradientsFactory.getInstance().create(out, null);
     }
 
     @Override

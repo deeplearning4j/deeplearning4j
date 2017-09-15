@@ -22,6 +22,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -48,13 +50,8 @@ public class MergeVertex extends BaseGraphVertex {
     private int[][] forwardPassShapes;
     private int fwdPassRank;
 
-    public MergeVertex(ComputationGraph graph, String name, int vertexIndex) {
-        this(graph, name, vertexIndex, null, null);
-    }
-
-    public MergeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public MergeVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs) {
+        super(graph, name, vertexIndex, numInputs);
     }
 
     @Override
@@ -102,13 +99,13 @@ public class MergeVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Gradients backpropGradient(Gradients gradient) {
+        INDArray epsilon = gradient.get(0);
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: errors not set");
 
         if (forwardPassShapes.length == 1) {
-            //No op case
-            return new Pair<>(null, new INDArray[] {epsilon});
+            return gradient;
         }
 
         //Split the epsilons in the opposite way that the activations were merged
@@ -148,7 +145,7 @@ public class MergeVertex extends BaseGraphVertex {
                 throw new RuntimeException("Invalid rank during forward pass (not 2, 3, 4)"); //Should never happen
         }
 
-        return new Pair<>(null, out);
+        return GradientsFactory.getInstance().create(null, out);
     }
 
     @Override

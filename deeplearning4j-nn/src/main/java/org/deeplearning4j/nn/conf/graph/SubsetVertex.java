@@ -90,8 +90,8 @@ public class SubsetVertex extends GraphVertex {
 
     @Override
     public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex(graph, name, idx, from, to);
+                             int numInputs, INDArray paramsView, boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex(graph, name, idx, numInputs, from, to);
     }
 
     @Override

@@ -22,6 +22,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -48,13 +50,8 @@ public class L2NormalizeVertex extends BaseGraphVertex {
     private int[] dimension;
     private double eps;
 
-    public L2NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, int[] dimension, double eps) {
-        this(graph, name, vertexIndex, null, null, dimension, eps);
-    }
-
-    public L2NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, int[] dimension, double eps) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public L2NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, int[] dimension, double eps) {
+        super(graph, name, vertexIndex, numInputs);
         this.dimension = dimension;
         this.eps = eps;
     }
@@ -82,10 +79,11 @@ public class L2NormalizeVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Gradients backpropGradient(Gradients gradient) {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: errors not set (L2NormalizeVertex " + vertexName
                             + " idx " + vertexIndex + ")");
+        INDArray epsilon = gradient.get(0);
 
         INDArray x = inputs[0];
         int[] dimensions = getDimensions(x);
@@ -116,7 +114,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
             dLdx.subi(xDivNorm3);
         }
 
-        return new Pair<>(null, new INDArray[] {dLdx});
+        return GradientsFactory.getInstance().create(dLdx, null);
     }
 
     private int[] getDimensions(INDArray x) {

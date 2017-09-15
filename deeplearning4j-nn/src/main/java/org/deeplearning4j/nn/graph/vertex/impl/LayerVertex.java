@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -38,6 +39,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * LayerVertex is a GraphVertex with a neural network Layer (and, optionally an {@link InputPreProcessor}) in it
@@ -54,25 +57,17 @@ public class LayerVertex extends BaseGraphVertex {
     /**
      * Create a network input vertex:
      */
-    public LayerVertex(ComputationGraph graph, String name, int vertexIndex, Layer layer,
+    public LayerVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, Layer layer,
                     InputPreProcessor layerPreProcessor, boolean outputVertex) {
-        this(graph, name, vertexIndex, null, null, layer, layerPreProcessor, outputVertex);
-    }
-
-    public LayerVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, Layer layer, InputPreProcessor layerPreProcessor,
-                    boolean outputVertex) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+        super(graph, name, vertexIndex, numInputs);
         this.graph = graph;
         this.vertexName = name;
         this.vertexIndex = vertexIndex;
-        this.inputVertices = inputVertices;
-        this.outputVertices = outputVertices;
         this.layer = layer;
         this.layerPreProcessor = layerPreProcessor;
         this.outputVertex = outputVertex;
 
-        this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
+        this.inputs = new INDArray[layer.numInputs()];
     }
 
     public void setLayerAsFrozen() {
@@ -81,6 +76,31 @@ public class LayerVertex extends BaseGraphVertex {
 
         this.layer = new FrozenLayer(this.layer);
         this.layer.conf().getLayer().setLayerName(vertexName);
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
+        return layer.paramTable();
+    }
+
+    /**
+     * The number of parameters for the model
+     *
+     * @return the number of parameters for the model
+     */
+    @Override
+    public int numParams() {
+        return layer.numParams();
+    }
+
+    @Override
+    public int numParams(boolean backwards) {
+        return numParams(backwards);
+    }
+
+    @Override
+    public NeuralNetConfiguration conf(){
+        return layer.conf();
     }
 
     @Override
@@ -97,7 +117,8 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Gradients backpropGradient(Gradients gradient) {
+        INDArray epsilon = gradient.size() == 0 ? null : gradient.get(0);
         if (!canDoBackward()) {
             throw new IllegalStateException("Cannot do backward pass: all epsilons not set. Layer " + vertexName
                             + " (idx " + vertexIndex + ") numInputs " + numInputs() );  // + "; numOutputs "
@@ -105,7 +126,8 @@ public class LayerVertex extends BaseGraphVertex {
         }
 
         Gradients pair;
-        if (tbptt && layer instanceof RecurrentLayer) {
+        //TODO FIX ME
+        if (false && layer instanceof RecurrentLayer) {
             //Truncated BPTT for recurrent layers
             pair = ((RecurrentLayer) layer).tbpttBackpropGradient(GradientsFactory.getInstance().create(epsilon),
                             graph.getConfiguration().getTbpttBackLength());
@@ -121,11 +143,14 @@ public class LayerVertex extends BaseGraphVertex {
         }
 
         //Layers always have single activations input -> always have single epsilon output during backprop
-        return new Pair<>(pair.getParameterGradients(), pair.getActivationGradAsArray());
+        return pair;
     }
 
     @Override
     public void setInput(int inputNumber, INDArray input) {
+        if(inputNumber < 0 || inputNumber >= layer.numInputs() )
+            throw new IllegalArgumentException("Cannot set input " + inputNumber + ": inputs must be 0 to "
+                    + (layer.numInputs()-1) + " inclusive for this layer only");
         inputs[inputNumber] = input;
 
         INDArray currInput = inputs[0];
@@ -167,9 +192,7 @@ public class LayerVertex extends BaseGraphVertex {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("LayerVertex(id=").append(vertexIndex).append(",name=\"").append(vertexName).append("\",inputs=")
-                        .append(Arrays.toString(inputVertices)).append(",outputs=")
-                        .append(Arrays.toString(outputVertices)).append(")");
+        sb.append("LayerVertex(id=").append(vertexIndex).append(",name=\"").append(vertexName).append("\")");
         return sb.toString();
     }
 
@@ -186,12 +209,6 @@ public class LayerVertex extends BaseGraphVertex {
 
         for (INDArray input : inputs) {
             if (input == null) {
-                return false;
-            }
-        }
-
-        if (!(layer instanceof IOutputLayer)) {
-            if (epsilon == null) {
                 return false;
             }
         }

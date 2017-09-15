@@ -22,6 +22,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -38,13 +40,8 @@ public class PreprocessorVertex extends BaseGraphVertex {
 
     private InputPreProcessor preProcessor;
 
-    public PreprocessorVertex(ComputationGraph graph, String name, int vertexIndex, InputPreProcessor preProcessor) {
-        this(graph, name, vertexIndex, null, null, preProcessor);
-    }
-
-    public PreprocessorVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, InputPreProcessor preProcessor) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public PreprocessorVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, InputPreProcessor preProcessor) {
+        super(graph, name, vertexIndex, numInputs);
         this.preProcessor = preProcessor;
     }
 
@@ -54,8 +51,10 @@ public class PreprocessorVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        return new Pair<>(null, new INDArray[] {preProcessor.backprop(epsilon, graph.batchSize())});
+    public Gradients backpropGradient(Gradients gradient) {
+        INDArray epsilon = gradient.get(0);
+        epsilon = preProcessor.backprop(epsilon, graph.batchSize());
+        return GradientsFactory.getInstance().create(epsilon, null);
     }
 
     @Override

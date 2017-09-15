@@ -270,7 +270,7 @@ public class ComputationGraphConfigurationTest {
 
         @Override
         public Layer instantiate(ComputationGraph graph, String name, int idx,
-                                 INDArray paramsView, boolean initializeParams) {
+                                 int numInputs, INDArray paramsView, boolean initializeParams) {
             throw new UnsupportedOperationException("Not supported");
         }
 

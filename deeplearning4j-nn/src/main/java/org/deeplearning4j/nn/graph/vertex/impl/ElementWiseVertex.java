@@ -22,6 +22,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -50,13 +52,8 @@ public class ElementWiseVertex extends BaseGraphVertex {
     private Op op;
     private int nInForwardPass;
 
-    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, Op op) {
-        this(graph, name, vertexIndex, null, null, op);
-    }
-
-    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, Op op) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, Op op) {
+        super(graph, name, vertexIndex, numInputs);
         this.op = op;
     }
 
@@ -114,42 +111,42 @@ public class ElementWiseVertex extends BaseGraphVertex {
     }
 
 
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    @Override
+    public Gradients backpropGradient(Gradients gradients) {
+        INDArray epsilon = gradients.get(0);
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: errors not set");
 
         if (nInForwardPass == 1)
-            return new Pair<>(null, new INDArray[] {epsilon});
+            return gradients;
 
+        INDArray[] out = new INDArray[nInForwardPass];
         switch (op) {
             case Add:
                 //If x=sum_i a_i then dL/da_i = dL/dx * dx/da_i = dL/dx
-                INDArray[] out = new INDArray[nInForwardPass];
                 for (int i = 0; i < nInForwardPass; i++)
                     out[i] = epsilon.dup();
-                return new Pair<>(null, out);
+                break;
             case Average:
-                INDArray[] outAverage = new INDArray[nInForwardPass];
                 for (int i = 0; i < nInForwardPass; i++)
-                    outAverage[i] = epsilon.div(nInForwardPass);
-                return new Pair<>(null, outAverage);
+                    out[i] = epsilon.div(nInForwardPass);
+                break;
             case Subtract:
-                INDArray[] out2 = new INDArray[2];
-                out2[0] = epsilon;
-                out2[1] = epsilon.neg();
-                return new Pair<>(null, out2);
+                out = new INDArray[2];
+                out[0] = epsilon;
+                out[1] = epsilon.neg();
+                break;
             case Product:
-                INDArray[] out_product = new INDArray[nInForwardPass];
+                out = new INDArray[nInForwardPass];
                 for (int i = 0; i < nInForwardPass; i++) {
-                    out_product[i] = epsilon.dup();
+                    out[i] = epsilon.dup();
                     for (int j = 0; j < nInForwardPass; ++j) {
                         if (i != j)
-                            out_product[i].muli(inputs[j]);
+                            out[i].muli(inputs[j]);
                     }
                 }
-                return new Pair<>(null, out_product);
+                break;
             case Max:
-                INDArray[] outMax = new INDArray[nInForwardPass];
                 INDArray maxIndices = Nd4j.createUninitialized(epsilon.shape(), epsilon.ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemaxindex")
                         .addInputs(inputs)
@@ -159,16 +156,17 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 Nd4j.getExecutioner().exec(op);
                 for (int i = 0; i < nInForwardPass; i++) {
                     //gradient is epsilon where the max index is the same as i and zero elsewhere
-                    outMax[i] = maxIndices.dup();
+                    out[i] = maxIndices.dup();
                     //generate a mask with 1s and 0s in the right places and muli with epsilon
-                    MatchConditionTransform nd4jop = new MatchConditionTransform(outMax[i], outMax[i], Conditions.equals(i));
+                    MatchConditionTransform nd4jop = new MatchConditionTransform(out[i], out[i], Conditions.equals(i));
                     Nd4j.getExecutioner().exec(nd4jop);
-                    outMax[i].muli(epsilon);
+                    out[i].muli(epsilon);
                 }
-                return new Pair<>(null, outMax);
+                break;
             default:
                 throw new UnsupportedOperationException("Unknown op: " + this.op);
         }
+        return GradientsFactory.getInstance().create(null, out);
     }
 
     @Override

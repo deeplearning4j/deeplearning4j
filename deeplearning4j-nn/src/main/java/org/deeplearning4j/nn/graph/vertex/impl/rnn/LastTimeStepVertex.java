@@ -22,6 +22,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -50,14 +52,8 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     /** Indexes of the time steps that were extracted, for each example */
     private int[] fwdPassTimeSteps;
 
-    public LastTimeStepVertex(ComputationGraph graph, String name, int vertexIndex, String inputName) {
-        this(graph, name, vertexIndex, null, null, inputName);
-    }
-
-
-    public LastTimeStepVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, String inputName) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public LastTimeStepVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, String inputName) {
+        super(graph, name, vertexIndex, numInputs);
         this.inputName = inputName;
         this.inputIdx = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
         if (inputIdx == -1)
@@ -107,8 +103,8 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-
+    public Gradients backpropGradient(Gradients gradient) {
+        INDArray epsilon = gradient.get(0);
         //Allocate the appropriate sized array:
         INDArray epsilonsOut = Nd4j.create(fwdPassShape);
 
@@ -123,7 +119,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
                                 NDArrayIndex.point(fwdPassTimeSteps[i])}, epsilon.getRow(i));
             }
         }
-        return new Pair<>(null, new INDArray[] {epsilonsOut});
+        return GradientsFactory.getInstance().create(epsilonsOut, null);
     }
 
     @Override

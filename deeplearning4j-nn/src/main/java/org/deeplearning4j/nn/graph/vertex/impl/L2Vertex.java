@@ -22,6 +22,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -44,13 +46,8 @@ import org.nd4j.linalg.primitives.Pair;
 public class L2Vertex extends BaseGraphVertex {
     private double eps;
 
-    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, double eps) {
-        this(graph, name, vertexIndex, null, null, eps);
-    }
-
-    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, double eps) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, double eps) {
+        super(graph, name, vertexIndex, numInputs);
         this.eps = eps;
     }
 
@@ -71,13 +68,14 @@ public class L2Vertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Gradients backpropGradient(Gradients gradient) {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: error not set");
+        INDArray epsilon = gradient.get(0);
 
         INDArray a = inputs[0];
         INDArray b = inputs[1];
-        INDArray out = activate(tbptt).get(0);
+        INDArray out = activate(true).get(0);
         Transforms.max(out, eps, false); // in case of 0
 
         INDArray dLdlambda = epsilon; //dL/dlambda aka 'epsilon' - from layer above
@@ -100,7 +98,7 @@ public class L2Vertex extends BaseGraphVertex {
             dLdb = dLda.neg();
         }
 
-        return new Pair<>(null, new INDArray[] {dLda, dLdb});
+        return GradientsFactory.getInstance().createPair(dLda, dLdb, null);
     }
 
     @Override

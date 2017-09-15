@@ -101,14 +101,14 @@ public class LayerVertex extends GraphVertex {
 
     @Override
     public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             INDArray paramsView, boolean initializeParams) {
+                             int numInputs, INDArray paramsView, boolean initializeParams) {
         //Now, we need to work out if this vertex is an output vertex or not...
         boolean isOutput = graph.getConfiguration().getNetworkOutputs().contains(name);
 
         org.deeplearning4j.nn.api.Layer layer =
                         layerConf.getLayer().instantiate(layerConf, null, idx, paramsView, initializeParams);
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(graph, name, idx, layer, preProcessor, isOutput);
+        return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(graph, name, idx, numInputs, layer, preProcessor, isOutput);
     }
 
     @Override

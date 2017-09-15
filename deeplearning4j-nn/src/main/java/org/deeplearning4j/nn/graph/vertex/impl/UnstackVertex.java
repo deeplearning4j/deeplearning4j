@@ -18,10 +18,13 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
+import org.apache.commons.math3.analysis.differentiation.GradientFunction;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
@@ -50,13 +53,8 @@ public class UnstackVertex extends BaseGraphVertex {
     private int forwardShape[];
     private int step;
 
-    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int from, int stackSize) {
-        this(graph, name, vertexIndex, null, null, from, stackSize);
-    }
-
-    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, int from, int stackSize) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+    public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs, int from, int stackSize) {
+        super(graph, name, vertexIndex, numInputs);
         this.from = from;
         this.stackSize = stackSize;
     }
@@ -92,9 +90,10 @@ public class UnstackVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Gradients backpropGradient(Gradients gradient) {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: error not set");
+        INDArray epsilon = gradient.get(0);
 
         INDArray out = Nd4j.zeros(forwardShape);
         int start = from * step;
@@ -115,7 +114,7 @@ public class UnstackVertex extends BaseGraphVertex {
             default:
                 throw new RuntimeException("Invalid activation rank"); //Should never happen
         }
-        return new Pair<>(null, new INDArray[] {out});
+        return GradientsFactory.getInstance().create(out, null);
     }
 
     @Override

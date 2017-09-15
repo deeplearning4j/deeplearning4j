@@ -78,9 +78,9 @@ public class ScaleVertex extends GraphVertex {
 
     @Override
     public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             INDArray paramsView, boolean initializeParams) {
+                             int numInputs, INDArray paramsView, boolean initializeParams) {
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.ScaleVertex(graph, name, idx, scaleFactor);
+        return new org.deeplearning4j.nn.graph.vertex.impl.ScaleVertex(graph, name, idx, numInputs, scaleFactor);
     }
 
     @Override

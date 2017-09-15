@@ -55,8 +55,8 @@ public class UnstackVertex extends GraphVertex {
 
     @Override
     public Layer instantiate(ComputationGraph graph, String name, int idx,
-                             INDArray paramsView, boolean initializeParams) {
-        return new org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex(graph, name, idx, null, null, from, stackSize);
+                             int numInputs, INDArray paramsView, boolean initializeParams) {
+        return new org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex(graph, name, idx, numInputs, from, stackSize);
     }
 
     @Override
