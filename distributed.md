@@ -41,6 +41,12 @@ Another option to keep in mind is that in case of YARN use (or any other resourc
 
 A option of last resort for IP address selection is the `DL4J_VOID_IP` environment variable. Set that variable on each node you're running, with local IP address to be used for comms.
 
+### Netmask
+
+Network mask is CIDR notation, is just a way to tell software, which network interfaces should be used for communication. For example, if your cluster has 3 boxes with following IP addresses: `192.168.1.23, 192.168.1.78, 192.168.2.133` their common part of network address is 192.168.*, so netmask is `192.168.0.0/16`. You can also get detailed explanation what is netmask in wikipedia: [https://en.wikipedia.org/wiki/Subnetwork](https://en.wikipedia.org/wiki/Subnetwork)
+
+We're using netmasks for cases when Spark cluster is run on top of hadoop, or any other environment which doesn't assume Spark IP addresses announced. In such cases valid netmask should be provided in `VoidConfiguration` bean, and it will be used to pick interface for out-of-Spark communications. 
+
 ### Dependencies
 
 Here's the template for the only required dependency:
