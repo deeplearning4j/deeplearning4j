@@ -313,12 +313,6 @@ public class VocabConstructor<T extends SequenceElement> {
 
 
         System.gc();
-        System.gc();
-        try {
-            Thread.sleep(1000);
-        } catch (Exception e) {
-            //
-        }
 
         cache.importVocabulary(topHolder);
 
@@ -358,12 +352,7 @@ public class VocabConstructor<T extends SequenceElement> {
         executorService.shutdown();
 
         System.gc();
-        System.gc();
-        try {
-            Thread.sleep(1000);
-        } catch (Exception e) {
-            //
-        }
+
         long endSequences = seqCount.get();
         long endTime = System.currentTimeMillis();
         double seconds = (endTime - startTime) / (double) 1000;
