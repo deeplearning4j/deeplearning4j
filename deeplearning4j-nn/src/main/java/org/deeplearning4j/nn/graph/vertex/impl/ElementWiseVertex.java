@@ -212,7 +212,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "ElementWiseVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\",op=" + op
+        return "ElementWiseVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",op=" + op
                         + ")";
     }
 }

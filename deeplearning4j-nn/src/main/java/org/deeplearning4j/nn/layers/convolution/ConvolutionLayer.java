@@ -19,7 +19,6 @@ package org.deeplearning4j.nn.layers.convolution;
 
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -45,7 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Properties;
 
 
@@ -99,7 +97,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Gradients backpropGradient(Gradients gradients) {
-        INDArray epsilon = gradients.getActivationGrad(0);
+        INDArray epsilon = gradients.get(0);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true);
 
         int miniBatch = input.size(0);

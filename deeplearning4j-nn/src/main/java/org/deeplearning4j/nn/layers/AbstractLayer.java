@@ -82,6 +82,19 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
+    public void setInputs(INDArray... inputs){
+        if(inputs == null) {
+            input = null;
+            return;
+        }
+
+        if(inputs.length != 1){
+            throw new IllegalArgumentException("Cannot set itputs: 1 input expected, got " + inputs.length);
+        }
+        this.input = inputs[0];
+    }
+
+    @Override
     public void setCacheMode(CacheMode mode) {
         if (mode == null)
             mode = CacheMode.NONE;

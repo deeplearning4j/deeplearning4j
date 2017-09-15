@@ -19,8 +19,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -30,9 +28,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
-
-import java.util.Map;
 
 /**
  * LSTM layer implementation.
@@ -80,7 +75,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     private Gradients backpropGradientHelper(final Gradients gradients, final boolean truncatedBPTT,
                     final int tbpttBackwardLength) {
-        INDArray epsilon = gradients.getActivationGrad(0);
+        INDArray epsilon = gradients.get(0);
 
         final INDArray inputWeights = getParamWithNoise(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, true);
         final INDArray recurrentWeights = getParamWithNoise(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY, true); //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]

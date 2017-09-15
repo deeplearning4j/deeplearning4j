@@ -256,6 +256,11 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
+    public void setInputs(INDArray... inputs) {
+        insideLayer.setInputs(inputs);
+    }
+
+    @Override
     public INDArray getInput(int inputNumber) {
         if(inputNumber != 0)
             throw new IllegalArgumentException("Invalid idx: " + inputNumber);

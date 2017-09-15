@@ -17,13 +17,10 @@
  */
 package org.deeplearning4j.nn.layers.recurrent;
 
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
@@ -32,7 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -64,12 +60,12 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         this.input = TimeSeriesUtils.reshape3dTo2d(input);
         Gradients gradAndEpsilonNext = super.backpropGradient(epsilon);
         this.input = inputTemp;
-        INDArray epsilon2d = gradAndEpsilonNext.getActivationGrad(0);
+        INDArray epsilon2d = gradAndEpsilonNext.get(0);
         INDArray epsilon3d = TimeSeriesUtils.reshape2dTo3d(epsilon2d, input.size(0));
 
         weightNoiseParams.clear();
 
-        gradAndEpsilonNext.setActivationGrad(0, epsilon3d);
+        gradAndEpsilonNext.set(0, epsilon3d);
         return gradAndEpsilonNext;
     }
 

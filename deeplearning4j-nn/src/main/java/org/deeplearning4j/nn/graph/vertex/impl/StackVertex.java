@@ -188,6 +188,6 @@ public class StackVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "StackVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + ")";
+        return "StackVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + ")";
     }
 }

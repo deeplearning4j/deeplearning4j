@@ -20,13 +20,13 @@ public class GradientsPair extends BaseGradients {
     }
 
     @Override
-    public INDArray getActivationGrad(int idx) {
+    public INDArray get(int idx) {
         assertIndex(idx);
         return (idx == 0 ? actGrad1 : actGrad2);
     }
 
     @Override
-    public void setActivationGrad(int idx, INDArray actGrad) {
+    public void set(int idx, INDArray actGrad) {
         assertIndex(idx);
         if(idx == 0){
             actGrad1 = actGrad;

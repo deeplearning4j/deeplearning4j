@@ -111,7 +111,7 @@ public class L2Vertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "L2Vertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + ")";
+        return "L2Vertex(id=" + this.getIndex() + ",name=\"" + this.getName() + ")";
     }
 
     @Override

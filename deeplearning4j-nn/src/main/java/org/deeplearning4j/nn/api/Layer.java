@@ -184,6 +184,8 @@ public interface Layer {
      */
     void setInput(int inputNumber, INDArray input);
 
+    void setInputs(INDArray... inputs);
+
     INDArray getInput(int inputNumber);
 
     /** Set current/last input mini-batch size.<br>

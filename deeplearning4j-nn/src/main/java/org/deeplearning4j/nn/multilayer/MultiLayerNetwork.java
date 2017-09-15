@@ -45,7 +45,6 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
-import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
@@ -74,7 +73,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
-import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.Serializable;
 import java.util.*;
@@ -1112,7 +1110,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     protected void backprop() {
         Gradients pair = calcBackpropGradients(null, true);
         this.gradient = (pair == null ? null : pair.getParameterGradients());
-        this.epsilon = (pair == null ? null : pair.getActivationGrad(0));
+        this.epsilon = (pair == null ? null : pair.get(0));
     }
 
     /** Calculate gradients and errors. Used in two places:
@@ -1170,7 +1168,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             }
             if (getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null)
                 currPair = GradientsFactory.getInstance().create(this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
-                                                .backprop(currPair.getActivationGrad(0), getInputMiniBatchSize()),
+                                                .backprop(currPair.get(0), getInputMiniBatchSize()),
                         currPair.getParameterGradients());
 
             layerFrom = numLayers - 2;
@@ -1213,7 +1211,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                 if (getLayerWiseConfigurations().getInputPreProcess(j) != null)
                     currPair = GradientsFactory.getInstance().create(
                             getLayerWiseConfigurations().getInputPreProcess(j)
-                                    .backprop(currPair.getActivationGrad(0), getInputMiniBatchSize()),  //TODO multiple activations
+                                    .backprop(currPair.get(0), getInputMiniBatchSize()),  //TODO multiple activations
                             currPair.getParameterGradients()
                     );
 
@@ -1376,7 +1374,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         GradientsFactory gf = GradientsFactory.getInstance();
         if (getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null){
             currPair = gf.create(this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
-                    .backprop(currPair.getActivationGrad(0), getInputMiniBatchSize()), currPair.getParameterGradients());
+                    .backprop(currPair.get(0), getInputMiniBatchSize()), currPair.getParameterGradients());
         }
 
 
@@ -1406,7 +1404,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             //Pass epsilon through input processor before passing to next layer (if applicable)
             if (getLayerWiseConfigurations().getInputPreProcess(j) != null){
                 currPair = gf.create(getLayerWiseConfigurations().getInputPreProcess(j)
-                                .backprop(currPair.getActivationGrad(0), getInputMiniBatchSize()),
+                                .backprop(currPair.get(0), getInputMiniBatchSize()),
                             currPair.getParameterGradients());
             }
 
@@ -1984,6 +1982,15 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         }
     }
 
+    public void setInputs(INDArray... inputs){
+        if(inputs == null)
+            setInput(null);
+        if(inputs.length != 1)
+            throw new IllegalArgumentException("Cannot set more than 1 input in MultiLayerNetwork: got "
+                    + inputs.length + " inputs");
+        setInput(inputs[0]);
+    }
+
     @Override
     public void setInput(int inputNumber, INDArray input) {
         if(inputNumber != 0)
@@ -2143,7 +2150,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         if (getOutputLayer() instanceof IOutputLayer)
             throw new UnsupportedOperationException("Cannot calculate gradients based on epsilon with OutputLayer");
 
-        return calcBackpropGradients(epsilon.getActivationGrad(0), false);
+        return calcBackpropGradients(epsilon.get(0), false);
     }
 
     @Override

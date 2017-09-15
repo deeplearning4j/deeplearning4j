@@ -2,7 +2,6 @@ package org.deeplearning4j.nn.layers.pooling;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -19,7 +18,6 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -211,7 +209,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     @Override
     public Gradients backpropGradient(Gradients gradient) {
-        INDArray epsilon = gradient.getActivationGrad(0);
+        INDArray epsilon = gradient.get(0);
 
         if (!collapseDimensions && epsilon.rank() != 2) {
             int[] origShape = epsilon.shape();

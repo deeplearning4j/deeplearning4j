@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
@@ -663,7 +662,7 @@ public class VariationalAutoencoder implements Model {
 
     @Override
     public Gradients backpropGradient(Gradients gradients) {
-        INDArray epsilon = gradients.getActivationGrad(0);
+        INDArray epsilon = gradients.get(0);
         if (!zeroedPretrainParamGradients) {
             for (Map.Entry<String, INDArray> entry : gradientViews.entrySet()) {
                 if (isPretrainParam(entry.getKey())) {
@@ -870,6 +869,11 @@ public class VariationalAutoencoder implements Model {
         if(inputNumber != 0)
             throw new IllegalArgumentException();
         this.input = input;
+    }
+
+    @Override
+    public void setInputs(INDArray... inputs) {
+        setInput(0, inputs[0]);
     }
 
     @Override

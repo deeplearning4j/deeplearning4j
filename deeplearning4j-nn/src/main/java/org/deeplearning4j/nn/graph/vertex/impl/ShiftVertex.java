@@ -94,7 +94,7 @@ public class ShiftVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "ShiftVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\",shiftFactor="
+        return "ShiftVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",shiftFactor="
                         + shiftFactor + ")";
     }
 

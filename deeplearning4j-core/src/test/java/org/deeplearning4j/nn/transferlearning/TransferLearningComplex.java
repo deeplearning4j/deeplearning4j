@@ -55,7 +55,7 @@ public class TransferLearningComplex {
 
         for (int i = 0; i < topologicalOrder.length; i++) {
             Layer v = vertices[topologicalOrder[i]];
-            log.info(i + "\t" + v.getVertexName());
+            log.info(i + "\t" + v.getName());
         }
 
         ComputationGraph graph2 =
@@ -136,7 +136,8 @@ public class TransferLearningComplex {
         modelOther.getLayer("denseRight0").setParams(modelToTune.getLayer("denseRight0").params());
         modelOther.getLayer("outRight").setParams(modelToTune.getLayer("outRight").params());
 
-        modelToTune.getVertex("denseCentre0").setLayerAsFrozen();
+//        modelToTune.getVertex("denseCentre0").setLayerAsFrozen();
+        fail();
         ComputationGraph modelNow =
                         new TransferLearning.GraphBuilder(modelToTune).setFeatureExtractor("denseCentre0").build();
         int n = 0;
@@ -198,7 +199,8 @@ public class TransferLearningComplex {
                         .setOutputs("outCentre", "outRight").build();
         ComputationGraph modelToTune = new ComputationGraph(conf);
         modelToTune.init();
-        modelToTune.getVertex("denseCentre0").setLayerAsFrozen();
+//        modelToTune.getVertex("denseCentre0").setLayerAsFrozen();
+        fail();
 
         MultiDataSet randData = new MultiDataSet(new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 3)},
                         new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 2)});

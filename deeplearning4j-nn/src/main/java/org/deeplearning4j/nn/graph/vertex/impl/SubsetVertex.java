@@ -110,7 +110,7 @@ public class SubsetVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "SubsetVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from
+        return "SubsetVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",fromIdx=" + from
                         + ",toIdx=" + to + ")";
     }
 

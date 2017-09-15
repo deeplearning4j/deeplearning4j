@@ -18,11 +18,9 @@
 
 package org.deeplearning4j.nn.layers;
 
-import org.apache.commons.math3.analysis.differentiation.GradientFunction;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.activations.Activations;
-import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
@@ -153,7 +151,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public Gradients backpropGradient(Gradients epsilons) {
 
         Gradients pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
-        INDArray delta = pair.getActivationGrad(0);
+        INDArray delta = pair.get(0);
 
         INDArray epsilonNext = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true).mmul(delta.transpose()).transpose();
 

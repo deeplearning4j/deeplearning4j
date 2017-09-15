@@ -15,7 +15,7 @@ public abstract class BaseGradients implements Gradients {
     @Override
     public void clear() {
         for( int i=0; i<size(); i++ ){
-            setActivationGrad(i, null);
+            set(i, null);
         }
         parameterGradients = null;
     }
@@ -31,7 +31,7 @@ public abstract class BaseGradients implements Gradients {
     public INDArray[] getActivationGradAsArray(){
         INDArray[] out = new INDArray[size()];
         for( int i=0; i<size(); i++ ){
-            out[i] = getActivationGrad(i);
+            out[i] = get(i);
         }
         return out;
     }
@@ -39,12 +39,12 @@ public abstract class BaseGradients implements Gradients {
     @Override
     public void leverageActGradsToWorkspace(String workspace){
         for( int i=0; i<size(); i++ ){
-            INDArray a = getActivationGrad(i);
+            INDArray a = get(i);
             if(a == null){
                 continue;
             }
 
-            setActivationGrad(i, a.leverageTo(workspace));
+            set(i, a.leverageTo(workspace));
         }
     }
 }

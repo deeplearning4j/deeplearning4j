@@ -111,6 +111,6 @@ public class PoolHelperVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "PoolHelperVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\")";
+        return "PoolHelperVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\")";
     }
 }

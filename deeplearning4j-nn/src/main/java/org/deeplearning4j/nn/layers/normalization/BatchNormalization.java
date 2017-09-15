@@ -22,11 +22,8 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 
@@ -80,7 +77,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public Gradients backpropGradient(Gradients gradients) {
-        INDArray epsilon = gradients.getActivationGrad(0);
+        INDArray epsilon = gradients.get(0);
         INDArray nextEpsilon;
         int[] shape = getShape(epsilon);
         int batchSize = epsilon.size(0); // number examples in batch

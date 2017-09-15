@@ -59,7 +59,7 @@ public class MergeVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "MergeVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\")";
+        return "MergeVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\")";
     }
 
     @Override

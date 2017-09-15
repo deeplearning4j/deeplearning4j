@@ -7,9 +7,9 @@ public interface Gradients {
 
     int size();
 
-    INDArray getActivationGrad(int idx);
+    INDArray get(int idx);
 
-    void setActivationGrad(int idx, INDArray activationGradient);
+    void set(int idx, INDArray activationGradient);
 
     Gradient getParameterGradients();
 

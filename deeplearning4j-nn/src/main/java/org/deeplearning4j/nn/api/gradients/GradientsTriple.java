@@ -22,7 +22,7 @@ public class GradientsTriple extends BaseGradients {
     }
 
     @Override
-    public INDArray getActivationGrad(int idx) {
+    public INDArray get(int idx) {
         assertIndex(idx);
         switch (idx){
             case 0:
@@ -37,7 +37,7 @@ public class GradientsTriple extends BaseGradients {
     }
 
     @Override
-    public void setActivationGrad(int idx, INDArray actGrad) {
+    public void set(int idx, INDArray actGrad) {
         assertIndex(idx);
         switch (idx){
             case 0:

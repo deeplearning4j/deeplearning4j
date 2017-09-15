@@ -154,7 +154,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "L2NormalizeVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + ",dim=\""
+        return "L2NormalizeVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + ",dim=\""
                         + dimension + "\")";
     }
 }

@@ -3,11 +3,8 @@ package org.deeplearning4j.nn.layers.convolution.subsampling;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
-import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -38,7 +35,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
     @Override
     public Gradients backpropGradient(Gradients gradients) {
-        INDArray epsilon = gradients.getActivationGrad(0);
+        INDArray epsilon = gradients.get(0);
         if (epsilon.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + epsilon.rank()
                             + " array as epsilon for Subsampling1DLayer backprop with shape "
@@ -51,14 +48,14 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
 
         // call 2D SubsamplingLayer's backpropGradient method
-        gradients.setActivationGrad(0, epsilon);
+        gradients.set(0, epsilon);
         Gradients gradientEpsNext = super.backpropGradient(gradients);
-        INDArray epsNext = gradientEpsNext.getActivationGrad(0);
+        INDArray epsNext = gradientEpsNext.get(0);
 
         // remove singleton fourth dimension from input and current epsilon
         input = origInput;
         epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
-        gradientEpsNext.setActivationGrad(0, epsNext);
+        gradientEpsNext.set(0, epsNext);
 
         return gradientEpsNext;
     }

@@ -19,7 +19,6 @@
 package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -32,9 +31,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.primitives.Pair;
 
-import java.lang.reflect.Constructor;
 import java.util.*;
 
 /**
@@ -79,7 +76,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public Gradients backpropGradient(Gradients epsilons) {
         if(epsilons.size() != 1)
             throw new IllegalArgumentException();
-        INDArray epsilon = epsilons.getActivationGrad(0);
+        INDArray epsilon = epsilons.get(0);
 
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(true); //Note: using preOutput(INDArray) can't be used as this does a setInput(input) and resets the 'appliedDropout' flag

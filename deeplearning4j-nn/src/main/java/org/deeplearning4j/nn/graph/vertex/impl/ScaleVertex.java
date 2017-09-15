@@ -85,7 +85,7 @@ public class ScaleVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "ScaleVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\",scaleFactor="
+        return "ScaleVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",scaleFactor="
                         + scaleFactor + ")";
     }
 

@@ -165,7 +165,7 @@ public class TransferLearningHelper {
         }
 //        for (int i = 0; i < backPropOrder.length; i++) {
 //            Layer gv = origGraph.getVertices()[backPropOrder[i]];
-//            if (applyFrozen && allFrozen.contains(gv.getVertexName())) {
+//            if (applyFrozen && allFrozen.contains(gv.getName())) {
 //                if (gv.hasLayer()) {
 //                    //Need to freeze this layer
 //                    org.deeplearning4j.nn.api.Layer l = gv.getLayer();
@@ -187,20 +187,20 @@ public class TransferLearningHelper {
 //                if (inputs != null && inputs.length > 0) {
 //                    for (int j = 0; j < inputs.length; j++) {
 //                        int inputVertexIdx = inputs[j].getVertexIndex();
-//                        String alsoFreeze = origGraph.getVertices()[inputVertexIdx].getVertexName();
+//                        String alsoFreeze = origGraph.getVertices()[inputVertexIdx].getName();
 //                        allFrozen.add(alsoFreeze);
 //                    }
 //                }
 //            } else {
 //                if (gv.hasLayer()) {
 //                    if (gv.getLayer() instanceof FrozenLayer) {
-//                        allFrozen.add(gv.getVertexName());
+//                        allFrozen.add(gv.getName());
 //                        //also need to add parents to list of allFrozen
 //                        VertexIndices[] inputs = gv.getInputVertices();
 //                        if (inputs != null && inputs.length > 0) {
 //                            for (int j = 0; j < inputs.length; j++) {
 //                                int inputVertexIdx = inputs[j].getVertexIndex();
-//                                String alsoFrozen = origGraph.getVertices()[inputVertexIdx].getVertexName();
+//                                String alsoFrozen = origGraph.getVertices()[inputVertexIdx].getName();
 //                                allFrozen.add(alsoFrozen);
 //                            }
 //                        }
@@ -210,13 +210,13 @@ public class TransferLearningHelper {
 //        }
 //        for (int i = 0; i < backPropOrder.length; i++) {
 //            Layer gv = origGraph.getVertices()[backPropOrder[i]];
-//            String gvName = gv.getVertexName();
+//            String gvName = gv.getName();
 //            //is it an unfrozen vertex that has an input vertex that is frozen?
 //            if (!allFrozen.contains(gvName) && !gv.isInputVertex()) {
 //                VertexIndices[] inputs = gv.getInputVertices();
 //                for (int j = 0; j < inputs.length; j++) {
 //                    int inputVertexIdx = inputs[j].getVertexIndex();
-//                    String inputVertex = origGraph.getVertices()[inputVertexIdx].getVertexName();
+//                    String inputVertex = origGraph.getVertices()[inputVertexIdx].getName();
 //                    if (allFrozen.contains(inputVertex)) {
 //                        frozenInputVertices.add(inputVertex);
 //                    }
@@ -409,7 +409,7 @@ public class TransferLearningHelper {
 //        for (GraphVertex aVertex : unFrozenSubsetGraph.getVertices()) {
 //            if (!aVertex.hasLayer())
 //                continue;
-//            origGraph.getVertex(aVertex.getVertexName()).getLayer().setParams(aVertex.getLayer().params());
+//            origGraph.getVertex(aVertex.getName()).getLayer().setParams(aVertex.getLayer().params());
 //        }
     }
 
@@ -418,7 +418,7 @@ public class TransferLearningHelper {
 //        for (GraphVertex aVertex : unFrozenSubsetGraph.getVertices()) {
 //            if (!aVertex.hasLayer())
 //                continue;
-//            aVertex.getLayer().setParams(origGraph.getLayer(aVertex.getVertexName()).params());
+//            aVertex.getLayer().setParams(origGraph.getLayer(aVertex.getName()).params());
 //        }
     }
 

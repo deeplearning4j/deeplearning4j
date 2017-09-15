@@ -115,9 +115,9 @@ public class LayerVertex extends BaseGraphVertex {
         }
 
         if (layerPreProcessor != null) {
-            INDArray eps = pair.getActivationGrad(0);
+            INDArray eps = pair.get(0);
             eps = layerPreProcessor.backprop(eps, graph.batchSize());
-            pair.setActivationGrad(0, eps);
+            pair.set(0, eps);
         }
 
         //Layers always have single activations input -> always have single epsilon output during backprop

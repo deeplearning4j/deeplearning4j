@@ -449,7 +449,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
 
     @Override
     public Gradients backpropGradient(Gradients gradients) {
-        INDArray epsilon = gradients.getActivationGrad(0);
+        INDArray epsilon = gradients.get(0);
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input, true);
         INDArray activationDerivative = propUpDerivative(z);

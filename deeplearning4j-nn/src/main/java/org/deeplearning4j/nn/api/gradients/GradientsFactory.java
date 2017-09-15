@@ -60,7 +60,7 @@ public class GradientsFactory {
         //First: determine if any cached value is available
         GradientsSingle single = ActivationsFactory.get(singles, singlesStart, singlesEnd);
         if(single != null){
-            single.setActivationGrad(0, actGrad);
+            single.set(0, actGrad);
             single.setParameterGradients(paramGradient);
         }
         return new GradientsSingle(actGrad, paramGradient);
@@ -70,8 +70,8 @@ public class GradientsFactory {
         //First: determine if any cached value is available
         GradientsPair pair = ActivationsFactory.get(pairs, pairsStart, pairsEnd);
         if(pair != null){
-            pair.setActivationGrad(0, actGrad1);
-            pair.setActivationGrad(1, actGrad2);
+            pair.set(0, actGrad1);
+            pair.set(1, actGrad2);
             pair.setParameterGradients(paramGrad);
         }
         return new GradientsPair(actGrad1, actGrad2, paramGrad);
@@ -81,9 +81,9 @@ public class GradientsFactory {
         //First: determine if any cached value is available
         GradientsTriple triple = ActivationsFactory.get(triples, triplesStart, triplesEnd);
         if(triple != null){
-            triple.setActivationGrad(0, actGrad1);
-            triple.setActivationGrad(1, actGrad2);
-            triple.setActivationGrad(2, actGrad3);
+            triple.set(0, actGrad1);
+            triple.set(1, actGrad2);
+            triple.set(2, actGrad3);
             triple.setParameterGradients(paramGrad);
         }
         return new GradientsTriple(actGrad1, actGrad2, actGrad3, paramGrad);

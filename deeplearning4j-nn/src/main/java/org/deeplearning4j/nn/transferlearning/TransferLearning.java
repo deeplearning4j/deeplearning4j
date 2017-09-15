@@ -818,7 +818,7 @@ public class TransferLearning {
 //                        if (inputs != null && inputs.length > 0) {
 //                            for (int j = 0; j < inputs.length; j++) {
 //                                int inputVertexIdx = inputs[j].getVertexIndex();
-//                                String alsoFreeze = vertices[inputVertexIdx].getVertexName();
+//                                String alsoFreeze = vertices[inputVertexIdx].getName();
 //                                allFrozen.add(alsoFreeze);
 //                            }
 //                        }

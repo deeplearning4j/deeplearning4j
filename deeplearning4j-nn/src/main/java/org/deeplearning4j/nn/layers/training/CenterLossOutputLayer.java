@@ -158,7 +158,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     @Override
     public Gradients backpropGradient(Gradients epsilon) {
         Gradients pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
-        INDArray delta = pair.getActivationGrad(0);
+        INDArray delta = pair.get(0);
 
         // centers
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);

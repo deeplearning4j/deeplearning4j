@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -364,6 +365,11 @@ public class TestOptimizers {
         }
 
         @Override
+        public String getName() {
+            return null;
+        }
+
+        @Override
         public void setCacheMode(CacheMode mode) {
             throw new UnsupportedOperationException();
         }
@@ -379,13 +385,18 @@ public class TestOptimizers {
         }
 
         @Override
-        public void setInput(INDArray input) {
+        public void setInput(int inputNumber, INDArray input) {
 
         }
 
         @Override
-        public void setInput(int inputNumber, INDArray input) {
+        public void setInputs(INDArray... inputs) {
 
+        }
+
+        @Override
+        public INDArray getInput(int inputNumber) {
+            return null;
         }
 
         @Override
@@ -571,6 +582,11 @@ public class TestOptimizers {
             throw new UnsupportedOperationException();
         }
 
+        @Override
+        public String getName() {
+            return null;
+        }
+
 
         @Override
         public void setCacheMode(CacheMode mode) {
@@ -588,13 +604,18 @@ public class TestOptimizers {
         }
 
         @Override
-        public void setInput(INDArray input) {
+        public void setInput(int inputNumber, INDArray input) {
 
         }
 
         @Override
-        public void setInput(int inputNumber, INDArray input) {
+        public void setInputs(INDArray... inputs) {
 
+        }
+
+        @Override
+        public INDArray getInput(int inputNumber) {
+            return null;
         }
 
         @Override
@@ -790,6 +811,11 @@ public class TestOptimizers {
         }
 
         @Override
+        public String getName() {
+            return null;
+        }
+
+        @Override
         public void setCacheMode(CacheMode mode) {
             throw new UnsupportedOperationException();
         }
@@ -805,13 +831,18 @@ public class TestOptimizers {
         }
 
         @Override
-        public void setInput(INDArray input) {
+        public void setInput(int idx, INDArray input) {
 
         }
 
         @Override
-        public void setInput(int inputNumber, INDArray input) {
+        public void setInputs(INDArray... inputs) {
 
+        }
+
+        @Override
+        public INDArray getInput(int inputNumber) {
+            return null;
         }
 
         @Override
@@ -875,7 +906,7 @@ public class TestOptimizers {
         }
 
         @Override
-        public void setInput(INDArray input) {
+        public void setInput(int idx, INDArray input) {
 
         }
 
@@ -895,17 +926,17 @@ public class TestOptimizers {
         }
 
         @Override
-        public INDArray activate(boolean training) {
+        public Activations activate(boolean training) {
             return null;
         }
 
         @Override
-        public INDArray activate(INDArray input, boolean training) {
+        public Activations activate(Activations input, boolean training) {
             return null;
         }
 
         @Override
-        public INDArray activate(INDArray input){
+        public Activations activate(Activations input){
             return null;
         }
 
@@ -1054,14 +1085,8 @@ public class TestOptimizers {
         public void setMaskArray(int idx, INDArray maskArray) {}
 
         @Override
-        public INDArray getMaskArray(int idx, ) {
+        public INDArray getMaskArray(int idx) {
             return null;
-        }
-
-        @Override
-        public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                        int minibatchSize) {
-            throw new UnsupportedOperationException();
         }
 
         @Override

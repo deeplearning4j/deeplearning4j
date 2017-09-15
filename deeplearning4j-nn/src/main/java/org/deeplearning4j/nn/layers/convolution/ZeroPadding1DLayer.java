@@ -23,14 +23,11 @@ import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.DefaultGradient;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.primitives.Pair;
 
 /**
  * Zero padding 1D layer for convolutional neural networks.
@@ -61,7 +58,7 @@ public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     public Gradients backpropGradient(Gradients epsilon) {
         int[] inShape = input.shape();
 
-        INDArray epsNext = epsilon.getActivationGrad(0).get(NDArrayIndex.all(), NDArrayIndex.all(),
+        INDArray epsNext = epsilon.get(0).get(NDArrayIndex.all(), NDArrayIndex.all(),
                 NDArrayIndex.interval(padding[0], padding[0] + inShape[2]));
 
         return GradientsFactory.getInstance().create(epsNext, null);

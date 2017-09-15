@@ -127,7 +127,7 @@ public class ReshapeVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "ReshapeVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\",shape="
+        return "ReshapeVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",shape="
                         + newShape.toString() + ")";
     }
 }

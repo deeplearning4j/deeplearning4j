@@ -151,7 +151,7 @@ public class UnstackVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "UnstackVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\",fromIdx=" + from
+        return "UnstackVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",fromIdx=" + from
                         + ",forwardShape=" + forwardShape + ")";
     }
 }

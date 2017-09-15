@@ -36,7 +36,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 
@@ -76,7 +75,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Gradients backpropGradient(Gradients gradients) {
-        INDArray epsilon = gradients.getActivationGrad(0);
+        INDArray epsilon = gradients.get(0);
 
         int miniBatch = input.size(0);
         int inDepth = input.size(1);

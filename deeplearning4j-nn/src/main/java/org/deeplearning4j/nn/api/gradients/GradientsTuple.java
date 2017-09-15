@@ -20,13 +20,13 @@ public class GradientsTuple extends BaseGradients {
     }
 
     @Override
-    public INDArray getActivationGrad(int idx) {
+    public INDArray get(int idx) {
         assertIndex(idx);
         return actGrads[idx];
     }
 
     @Override
-    public void setActivationGrad(int idx, INDArray activationGradient) {
+    public void set(int idx, INDArray activationGradient) {
         assertIndex(idx);
         actGrads[idx] = activationGradient;
     }

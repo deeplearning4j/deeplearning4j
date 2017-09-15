@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.layers;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -9,7 +8,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
 
 /**
  * Created by davekale on 12/7/16.
@@ -26,7 +24,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
 
     @Override
     public Gradients backpropGradient(Gradients epsilon) {
-        INDArray delta = epsilon.getActivationGrad(0).dup();
+        INDArray delta = epsilon.get(0).dup();
 
         if (maskArray != null) {
             delta.muliColumnVector(maskArray);

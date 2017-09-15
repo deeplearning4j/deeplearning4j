@@ -19,8 +19,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
@@ -31,7 +29,6 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
 
@@ -88,7 +85,7 @@ public class GravesBidirectionalLSTM
 
     private Gradients backpropGradientHelper(final Gradients gradients, final boolean truncatedBPTT,
                     final int tbpttBackwardLength) {
-        INDArray epsilon = gradients.getActivationGrad(0);
+        INDArray epsilon = gradients.get(0);
 
         if (truncatedBPTT) {
             throw new UnsupportedOperationException(
@@ -143,8 +140,8 @@ public class GravesBidirectionalLSTM
             correctOrderedGradient.setGradientFor(key, combinedGradient.getGradientFor(key));
         }
 
-        final INDArray forwardEpsilon = forwardsGradient.getActivationGrad(0);
-        final INDArray backwardsEpsilon = backwardsGradient.getActivationGrad(0);
+        final INDArray forwardEpsilon = forwardsGradient.get(0);
+        final INDArray backwardsEpsilon = backwardsGradient.get(0);
         final INDArray combinedEpsilon = forwardEpsilon.addi(backwardsEpsilon);
 
         //sum the errors that were back-propagated

@@ -60,7 +60,7 @@ public class PreprocessorVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "PreprocessorVertex(id=" + this.getIndex() + ",name=\"" + this.getVertexName() + "\",preProcessor="
+        return "PreprocessorVertex(id=" + this.getIndex() + ",name=\"" + this.getName() + "\",preProcessor="
                         + preProcessor.toString() + ")";
     }
 
