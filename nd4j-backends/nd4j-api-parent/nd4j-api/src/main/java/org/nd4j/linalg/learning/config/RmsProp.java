@@ -72,7 +72,8 @@ public class RmsProp implements IUpdater {
         return new RmsProp(learningRate, learningRateSchedule, rmsDecay, epsilon);
     }
 
-    public double currentLearningRate(int iteration, int epoch){
+    @Override
+    public double getLearningRate(int iteration, int epoch){
         if(learningRateSchedule != null){
             return learningRateSchedule.valueAt(iteration, epoch);
         }

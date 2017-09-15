@@ -45,4 +45,15 @@ public interface IUpdater extends Serializable, Cloneable {
      */
     IUpdater clone();
 
+    /**
+     * Get the learning rate - if any - for the updater, at the specified iteration and epoch.
+     * Note that if no learning rate is applicable (AdaDelta, NoOp updaters etc) then Double.NaN should
+     * be return
+     *
+     * @param iteration Iteration at which to get the learning rate
+     * @param epoch     Epoch at which to get the learning rate
+     * @return          Learning rate, or Double.NaN if no learning rate is applicable for this updater
+     */
+    double getLearningRate(int iteration, int epoch);
+
 }

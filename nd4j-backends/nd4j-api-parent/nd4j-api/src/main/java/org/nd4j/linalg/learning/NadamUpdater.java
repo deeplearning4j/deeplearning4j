@@ -78,7 +78,7 @@ public class NadamUpdater implements GradientUpdater<Nadam> {
 
         double beta1 = config.getBeta1();
         double beta2 = config.getBeta2();
-        double learningRate = config.currentLearningRate(iteration, epoch);
+        double learningRate = config.getLearningRate(iteration, epoch);
         double epsilon = config.getEpsilon();
 
         INDArray oneMinusBeta1Grad = gradient.mul(1.0 - beta1);

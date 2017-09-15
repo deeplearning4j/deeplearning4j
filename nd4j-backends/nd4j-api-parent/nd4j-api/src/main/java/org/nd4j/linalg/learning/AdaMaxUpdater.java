@@ -74,7 +74,7 @@ public class AdaMaxUpdater implements GradientUpdater<AdaMax> {
 
         double beta1t = FastMath.pow(config.getBeta1(), iteration + 1);
 
-        double learningRate = config.currentLearningRate(iteration, epoch);
+        double learningRate = config.getLearningRate(iteration, epoch);
         double alphat = learningRate / (1.0 - beta1t);
         if (Double.isNaN(alphat) || Double.isInfinite(alphat) || alphat == 0.0) {
             alphat = config.getEpsilon();

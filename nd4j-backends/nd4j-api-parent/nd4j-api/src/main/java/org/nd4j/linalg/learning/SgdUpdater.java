@@ -43,7 +43,7 @@ public class SgdUpdater implements GradientUpdater<Sgd> {
 
     @Override
     public void applyUpdater(INDArray gradient, int iteration, int epoch) {
-        double lr = config.currentLearningRate(iteration, epoch);
+        double lr = config.getLearningRate(iteration, epoch);
         gradient.muli(lr);
     }
 }

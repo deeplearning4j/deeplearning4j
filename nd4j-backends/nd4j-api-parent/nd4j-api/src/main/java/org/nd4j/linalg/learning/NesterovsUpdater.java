@@ -74,7 +74,7 @@ public class NesterovsUpdater implements GradientUpdater<Nesterovs> {
             throw new IllegalStateException("Updater has not been initialized with view state");
 
         double momentum = config.currentMomentum(iteration, epoch);
-        double learningRate = config.currentLearningRate(iteration, epoch);
+        double learningRate = config.getLearningRate(iteration, epoch);
 
         //reference https://cs231n.github.io/neural-networks-3/#sgd 2nd equation
         //DL4J default is negative step function thus we flipped the signs:

@@ -73,7 +73,8 @@ public class AdaGrad implements IUpdater {
     }
 
 
-    public double currentLearningRate(int iteration, int epoch){
+    @Override
+    public double getLearningRate(int iteration, int epoch){
         if(learningRateSchedule != null){
             return learningRateSchedule.valueAt(iteration, epoch);
         }

@@ -88,7 +88,8 @@ public class Nesterovs implements IUpdater {
         return new Nesterovs(learningRate, learningRateSchedule, momentum, momentumISchedule);
     }
 
-    public double currentLearningRate(int iteration, int epoch){
+    @Override
+    public double getLearningRate(int iteration, int epoch){
         if(learningRateSchedule != null){
             return learningRateSchedule.valueAt(iteration, epoch);
         }

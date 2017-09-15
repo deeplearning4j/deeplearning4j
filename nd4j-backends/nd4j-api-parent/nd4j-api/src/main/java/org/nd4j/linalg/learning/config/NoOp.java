@@ -29,4 +29,9 @@ public class NoOp implements IUpdater {
     public NoOp clone() {
         return new NoOp();
     }
+
+    @Override
+    public double getLearningRate(int iteration, int epoch) {
+        return Double.NaN;  //No LR
+    }
 }

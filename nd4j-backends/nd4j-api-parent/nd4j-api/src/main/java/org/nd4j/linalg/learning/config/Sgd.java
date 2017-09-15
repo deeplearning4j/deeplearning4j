@@ -59,7 +59,8 @@ public class Sgd implements IUpdater {
         return new Sgd(learningRate, learningRateSchedule);
     }
 
-    public double currentLearningRate(int iteration, int epoch){
+    @Override
+    public double getLearningRate(int iteration, int epoch){
         if(learningRateSchedule != null){
             return learningRateSchedule.valueAt(iteration, epoch);
         }
