@@ -884,7 +884,7 @@ public class ArrayField implements Field {
         OpState owner =    OpState.builder()
                 .n(ArrayUtil.prod(getInput().getShape()))
                 .opName(name).extraArgs(extraArgs)
-                .scalarValue(getInput().scalar())
+                .scalarValue(ArrayUtil.prod(getInput().getShape()) == 1 ? getInput().scalar() : null)
                 .arrayField(this)
                 .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                 .opType(OpState.OpType.SCALAR_TRANSFORM).result(newVertex.getValue())

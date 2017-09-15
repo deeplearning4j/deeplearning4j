@@ -3309,13 +3309,30 @@ public class SameDiff {
         allocate();
         List<Op> ops = new ArrayList<>();
         List<OpExecAction> opExecActions = graph().getOpOrder().getActions();
+
         Map<SDVariable,Op> opMap = new HashMap<>();
+
+        boolean onBackward = false;
         for(int i = 0; i < opExecActions.size(); i++) {
+
             OpExecAction opExecAction = opExecActions.get(i);
-            SDVariable variable = getVertexIdToVariable().get(opExecAction.getOutputId());
+            SDVariable variable = null;
+            Op forwardOp = null;
+            if(onBackward && getVertexIdToVariable().get(opExecAction.getOutputId()) != null) {
+                variable = getVertexIdToVariable().get(opExecAction.getOutputId()).getForwardVariable();
+                forwardOp = opMap.get(variable);
+                System.out.println(forwardOp);
+
+            }
+
+            if(!onBackward && opExecAction.getOpState().getOpName().equals(new GradientBackwardsMarker().name())) {
+                onBackward = true;
+            }
+
             Op op = createOp(
                     opExecAction.getOpState().getOpType(),
                     opExecAction);
+
             if(debugMode) {
                 opsForResult.put(opExecAction.getOutputId(),op);
             }
@@ -3353,7 +3370,8 @@ public class SameDiff {
                 SDVariable add = SDVariable.builder()
                         .differentialFunction(opExecAction.getOpState().getDifferentialFunction())
                         .sameDiff(this)
-                        .varName(generateVariableName(opExecAction.getOpState().getOpName(),true,functions.toArray(new SDVariable[functions.size()])))
+                        .varName(generateVariableName(opExecAction.getOpState().getOpName(),true,
+                                functions.toArray(new SDVariable[functions.size()])))
                         .arr(op.z())
                         .shape(op.z().shape())
                         .vertexId(opExecAction.getOutputId())

@@ -87,6 +87,14 @@ public abstract class DifferentialFunction implements Differential {
     }
 
 
+    public DifferentialFunction getGradient() {
+        if(gradient == null) {
+            this.gradient = arg().getGradient();
+        }
+
+        return gradient;
+    }
+
     public  boolean isVariable() {
         return false;
     }

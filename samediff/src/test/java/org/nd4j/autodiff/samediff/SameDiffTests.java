@@ -16,6 +16,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNotNull;
@@ -342,6 +343,35 @@ public class SameDiffTests {
 
 
 
+    @Test
+    public void testMulGradient() {
+        INDArray arr1 = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray arr2 = Nd4j.linspace(1,4,4).reshape(2,2);
+
+        INDArray gradAssertion =  Nd4j.ones(arr1.shape());
+
+        SameDiff sameDiff = SameDiff.create();
+
+        SDVariable sdVariable = sameDiff.var("arr1",arr1);
+        SDVariable sdVariable1 = sameDiff.var("arr2",arr2);
+        SDVariable varMul = sdVariable.mul(sdVariable1);
+        SDVariable sum = sameDiff.sum(varMul,Integer.MAX_VALUE);
+        Pair<Map<SDVariable, Op>, List<Op>> execBackwards = sameDiff.execBackwards();
+        Set<SDVariable> vars = execBackwards.getFirst().keySet();
+
+        SDVariable key = null;
+        for(SDVariable var : vars) {
+            if(var.getVarName().equals(sum.getVarName())) {
+                key = var;
+                break;
+            }
+        }
+
+
+        INDArray gradTest = key.gradient().getArr();
+        assertEquals(gradAssertion,gradTest);
+    }
+
 
     @Test
     public void testLogisticRegression() {
@@ -358,7 +388,7 @@ public class SameDiffTests {
                 SDVariable oneMinusY = y.rsub("oneminusy",1.0);
                 SDVariable oneMinusPredictions = activation.rsub("oneminusactivations",1.0);
                 SDVariable outputTimesY = y.mul("output * y",activation);
-                SDVariable yHat = oneMinusY.mul("yhat",oneMinusPredictions);
+                SDVariable yHat = oneMinusPredictions.mul("yhat",oneMinusY);
                 SDVariable probs = outputTimesY.add("probs",yHat);
                 SDVariable logProbs = sameDiff.log("logprob",probs);
                 SDVariable ret = sameDiff.sum("totalsum",logProbs,Integer.MAX_VALUE);
