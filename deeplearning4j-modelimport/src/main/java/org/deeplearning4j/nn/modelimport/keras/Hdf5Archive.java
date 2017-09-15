@@ -71,7 +71,7 @@ public class Hdf5Archive {
     }
 
     private void closeGroups(hdf5.Group[] groupArray) {
-        for (int i = 0; i < groupArray.length; i++) {
+        for (int i = groupArray.length - 1; i >= 0; i--) {
             groupArray[i].deallocate();
         }
     }
@@ -244,6 +244,8 @@ public class Hdf5Archive {
             default:
                 throw new UnsupportedKerasConfigurationException("Cannot import weights with rank " + nbDims);
         }
+        space.deallocate();
+        dataset.deallocate();
         return data;
     }
 
