@@ -54,6 +54,11 @@ public class AdaDelta implements IUpdater {
         return new AdaDelta(rho, epsilon);
     }
 
+    @Override
+    public double getLearningRate(int iteration, int epoch) {
+        return Double.NaN;  //No LR for  this updater
+    }
+
     //Partial builder implementation to give public no-arg constructor
     public static class Builder {
         public Builder(){ }

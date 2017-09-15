@@ -80,7 +80,7 @@ public class AdaGradUpdater implements GradientUpdater<AdaGrad> {
         if (historicalGradient == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
 
-        double learningRate = config.currentLearningRate(iteration, epoch);
+        double learningRate = config.getLearningRate(iteration, epoch);
         double epsilon = config.getEpsilon();
 
         historicalGradient.addi(gradient.mul(gradient));

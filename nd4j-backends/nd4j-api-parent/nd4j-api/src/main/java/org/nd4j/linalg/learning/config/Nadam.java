@@ -80,7 +80,8 @@ public class Nadam implements IUpdater {
         return new Nadam(learningRate, beta1, beta2, epsilon);
     }
 
-    public double currentLearningRate(int iteration, int epoch){
+    @Override
+    public double getLearningRate(int iteration, int epoch){
         if(learningRateSchedule != null){
             return learningRateSchedule.valueAt(iteration, epoch);
         }

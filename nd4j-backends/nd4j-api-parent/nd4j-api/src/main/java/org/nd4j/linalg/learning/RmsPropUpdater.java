@@ -66,7 +66,7 @@ public class RmsPropUpdater implements GradientUpdater<RmsProp> {
         if (lastGradient == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
 
-        double learningRate = config.currentLearningRate(iteration, epoch);
+        double learningRate = config.getLearningRate(iteration, epoch);
         double rmsDecay = config.getRmsDecay();
         double epsilon = config.getEpsilon();
 

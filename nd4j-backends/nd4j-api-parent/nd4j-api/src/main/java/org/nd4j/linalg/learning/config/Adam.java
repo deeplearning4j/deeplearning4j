@@ -80,7 +80,8 @@ public class Adam implements IUpdater {
         return new Adam(learningRate, learningRateSchedule, beta1, beta2, epsilon);
     }
 
-    public double currentLearningRate(int iteration, int epoch){
+    @Override
+    public double getLearningRate(int iteration, int epoch){
         if(learningRateSchedule != null){
             return learningRateSchedule.valueAt(iteration, epoch);
         }
