@@ -91,17 +91,17 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(INDArray epsilon) {
         return backpropGradientHelper(epsilon, false, -1);
     }
 
     @Override
-    public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackwardLength) {
+    public Gradients tbpttBackpropGradient(INDArray epsilon, int tbpttBackwardLength) {
         return backpropGradientHelper(epsilon, true, tbpttBackwardLength);
     }
 
 
-    private Pair<Gradient, INDArray> backpropGradientHelper(final INDArray epsilon, final boolean truncatedBPTT,
+    private Gradients backpropGradientHelper(final INDArray epsilon, final boolean truncatedBPTT,
                     final int tbpttBackwardLength) {
 
         final INDArray inputWeights = getParamWithNoise(LSTMParamInitializer.INPUT_WEIGHT_KEY, true);

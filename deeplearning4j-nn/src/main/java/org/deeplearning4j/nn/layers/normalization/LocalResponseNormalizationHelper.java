@@ -29,7 +29,7 @@ import org.nd4j.linalg.primitives.Pair;
 public interface LocalResponseNormalizationHelper {
     boolean checkSupported(double k, double n, double alpha, double beta);
 
-    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
+    Gradients backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
                     double beta);
 
     INDArray activate(INDArray x, boolean training, double k, double n, double alpha, double beta);

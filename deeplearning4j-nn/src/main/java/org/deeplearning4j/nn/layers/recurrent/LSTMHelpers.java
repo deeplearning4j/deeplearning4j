@@ -389,7 +389,7 @@ public class LSTMHelpers {
         return toReturn;
     }
 
-    static public Pair<Gradient, INDArray> backpropGradientHelper(final NeuralNetConfiguration conf,
+    static public Gradients backpropGradientHelper(final NeuralNetConfiguration conf,
                     final IActivation gateActivationFn, final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                     final INDArray inputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
                     final INDArray epsilon, final boolean truncatedBPTT, final int tbpttBackwardLength,
@@ -460,7 +460,7 @@ public class LSTMHelpers {
         }
 
         if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(conf, gateActivationFn, input, recurrentWeights,
+            Gradients ret = helper.backpropGradient(conf, gateActivationFn, input, recurrentWeights,
                             inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, forwards,
                             inputWeightKey, recurrentWeightKey, biasWeightKey, gradientViews, maskArray,
                             hasPeepholeConnections);

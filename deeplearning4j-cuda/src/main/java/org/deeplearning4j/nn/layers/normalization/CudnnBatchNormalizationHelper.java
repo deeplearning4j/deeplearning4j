@@ -108,7 +108,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
+    public Gradients backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
                     INDArray dGammaView, INDArray dBetaView, double eps) {
         int miniBatch = input.size(0);
         int depth = input.size(1);

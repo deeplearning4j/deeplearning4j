@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.api.layers;
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
@@ -95,6 +96,6 @@ public interface RecurrentLayer extends Layer {
      * forward pass using stored state for truncated BPTT vs. from zero initialization
      * for standard BPTT.
      */
-    Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength);
+    Gradients tbpttBackpropGradient(Gradients epsilon, int tbpttBackLength);
 
 }

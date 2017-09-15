@@ -82,7 +82,7 @@ public class FrozenLayer implements Layer {
 
     //FIXME
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(INDArray epsilon) {
         return new Pair<>(zeroGradient, null);
     }
 

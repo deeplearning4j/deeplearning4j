@@ -161,7 +161,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             return;
 
         INDArray preOut = input;
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
+        Gradients pair = getGradientsAndDelta(preOut);
         this.gradient = pair.getFirst();
 
         score = computeScore(fullNetworkL1, fullNetworkL2, true);
@@ -178,13 +178,13 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(INDArray epsilon) {
         return getGradientsAndDelta(input);
     }
 
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
-    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut) {
+    private Gradients getGradientsAndDelta(INDArray preOut) {
         // delta calculation
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray delta = lossFunction.computeGradient(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray);

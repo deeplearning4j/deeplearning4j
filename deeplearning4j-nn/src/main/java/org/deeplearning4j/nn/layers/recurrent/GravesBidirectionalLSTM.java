@@ -72,17 +72,17 @@ public class GravesBidirectionalLSTM
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(INDArray epsilon) {
         return backpropGradientHelper(epsilon, false, -1);
     }
 
     @Override
-    public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackwardLength) {
+    public Gradients tbpttBackpropGradient(INDArray epsilon, int tbpttBackwardLength) {
         return backpropGradientHelper(epsilon, true, tbpttBackwardLength);
     }
 
 
-    private Pair<Gradient, INDArray> backpropGradientHelper(final INDArray epsilon, final boolean truncatedBPTT,
+    private Gradients backpropGradientHelper(final INDArray epsilon, final boolean truncatedBPTT,
                     final int tbpttBackwardLength) {
 
         if (truncatedBPTT) {
@@ -93,7 +93,7 @@ public class GravesBidirectionalLSTM
 
         final FwdPassReturn fwdPass = activateHelperDirectional(true, null, null, true, true);
 
-        final Pair<Gradient, INDArray> forwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
+        final Gradients forwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
                         this.layerConf().getGateActivationFn(), this.input,
                         getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                         getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS), epsilon,
@@ -107,7 +107,7 @@ public class GravesBidirectionalLSTM
 
         final FwdPassReturn backPass = activateHelperDirectional(true, null, null, true, false);
 
-        final Pair<Gradient, INDArray> backwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
+        final Gradients backwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
                         this.layerConf().getGateActivationFn(), this.input,
                         getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
                         getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS), epsilon,

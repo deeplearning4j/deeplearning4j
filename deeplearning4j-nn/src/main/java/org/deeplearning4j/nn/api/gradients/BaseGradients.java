@@ -35,4 +35,16 @@ public abstract class BaseGradients implements Gradients {
         }
         return out;
     }
+
+    @Override
+    public void leverageActGradsToWorkspace(String workspace){
+        for( int i=0; i<size(); i++ ){
+            INDArray a = getActivationGrad(i);
+            if(a == null){
+                continue;
+            }
+
+            setActivationGrad(i, a.leverageTo(workspace));
+        }
+    }
 }

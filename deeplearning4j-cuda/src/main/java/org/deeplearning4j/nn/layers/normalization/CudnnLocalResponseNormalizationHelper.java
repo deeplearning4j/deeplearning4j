@@ -117,7 +117,7 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
+    public Gradients backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
                     double beta) {
         int miniBatch = input.size(0);
         int depth = input.size(1);

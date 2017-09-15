@@ -29,7 +29,7 @@ import org.nd4j.linalg.primitives.Pair;
 public interface BatchNormalizationHelper {
     boolean checkSupported(double eps);
 
-    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
+    Gradients backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
                     INDArray dGammaView, INDArray dBetaView, double eps);
 
     INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,

@@ -648,7 +648,7 @@ public class TestComputationGraphNetwork {
         Gradient sGrad = s.gradient();
 
         org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
-        Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null);
+        Gradients olPairStd = ol.backpropGradient(null);
 
         INDArray olEpsilon = olPairStd.getSecond();
 

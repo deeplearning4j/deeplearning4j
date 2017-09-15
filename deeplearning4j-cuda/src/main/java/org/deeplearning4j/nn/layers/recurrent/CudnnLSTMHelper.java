@@ -190,7 +190,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(final NeuralNetConfiguration conf,
+    public Gradients backpropGradient(final NeuralNetConfiguration conf,
                     final IActivation gateActivationFn, final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
                     final INDArray inputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
                     final INDArray epsilon, final boolean truncatedBPTT, final int tbpttBackwardLength,

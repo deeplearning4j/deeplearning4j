@@ -96,9 +96,9 @@ public class LocalResponseNormalization
         }
     }
 
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(INDArray epsilon) {
         if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta);
+            Gradients ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta);
             if (ret != null) {
                 return ret;
             }

@@ -142,7 +142,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
             return;
 
         INDArray preOut = preOutput2d(true);
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
+        Gradients pair = getGradientsAndDelta(preOut);
         this.gradient = pair.getFirst();
 
         score = computeScore(fullNetworkL1, fullNetworkL2, true);
@@ -154,8 +154,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+    public Gradients backpropGradient(INDArray epsilon) {
+        Gradients pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         INDArray delta = pair.getSecond();
 
         // centers
@@ -184,7 +184,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     }
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
-    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut) {
+    private Gradients getGradientsAndDelta(INDArray preOut) {
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray labels2d = getLabels2d();
         if (labels2d.size(1) != preOut.size(1)) {

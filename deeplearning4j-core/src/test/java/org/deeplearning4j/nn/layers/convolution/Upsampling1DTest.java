@@ -66,7 +66,7 @@ public class Upsampling1DTest {
         Layer layer = getUpsampling1DLayer();
         layer.activate(input);
 
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
+        Gradients containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
 
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
@@ -78,7 +78,7 @@ public class Upsampling1DTest {
 
         epsilon = Nd4j.ones(5, depth, outputLength);
 
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
+        Gradients out = layer.backpropGradient(epsilon);
         assertEquals(input.shape().length, out.getSecond().shape().length);
         assertEquals(depth, out.getSecond().size(1));
     }

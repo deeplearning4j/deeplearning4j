@@ -107,7 +107,7 @@ public class LocalResponseTest {
 
     @Test
     public void testBackpropGradient() {
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(epsilon);
+        Gradients containedOutput = layer.backpropGradient(epsilon);
 
         assertEquals(newEpsilonExpected.getDouble(8), containedOutput.getSecond().getDouble(8), 1e-4);
         assertEquals(newEpsilonExpected.getDouble(20), containedOutput.getSecond().getDouble(20), 1e-4);

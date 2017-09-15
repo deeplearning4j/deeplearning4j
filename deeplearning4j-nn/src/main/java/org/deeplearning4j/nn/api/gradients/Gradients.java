@@ -18,4 +18,6 @@ public interface Gradients {
     void clear();
 
     INDArray[] getActivationGradAsArray();
+
+    void leverageActGradsToWorkspace(String workspace);
 }

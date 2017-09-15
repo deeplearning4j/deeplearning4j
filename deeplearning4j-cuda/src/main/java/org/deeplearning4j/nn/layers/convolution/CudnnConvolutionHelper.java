@@ -117,7 +117,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     private DataCache workSpace = new DataCache();
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
+    public Gradients backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
                     int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
                     AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
                     ConvolutionMode convolutionMode, int[] dilation) {

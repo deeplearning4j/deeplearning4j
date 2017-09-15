@@ -442,7 +442,7 @@ public class MultiLayerTest {
 
         net.feedForward(input); //Need to feed forward before backprop
 
-        Pair<Gradient, INDArray> pair = net.backpropGradient(eps);
+        Gradients pair = net.backpropGradient(eps);
         INDArray epsOut = pair.getSecond();
         assertNotNull(epsOut);
         assertArrayEquals(new int[] {miniBatch, nIn}, epsOut.shape());

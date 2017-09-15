@@ -1017,7 +1017,7 @@ public class TestOptimizers {
         }
 
         @Override
-        public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+        public Gradients backpropGradient(INDArray epsilon) {
             throw new UnsupportedOperationException();
         }
 

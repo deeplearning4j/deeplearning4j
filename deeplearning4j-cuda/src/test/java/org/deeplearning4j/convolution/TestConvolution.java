@@ -125,8 +125,8 @@ public class TestConvolution {
 
                 //Check backprop:
                 INDArray epsilon = Nd4j.rand(outStd.shape());
-                Pair<Gradient, INDArray> pCudnn = layerCudnn.backpropGradient(epsilon);
-                Pair<Gradient, INDArray> pStd = layerStandard.backpropGradient(epsilon);
+                Gradients pCudnn = layerCudnn.backpropGradient(epsilon);
+                Gradients pStd = layerStandard.backpropGradient(epsilon);
 
                 System.out.println(Arrays.toString(pStd.getSecond().data().asFloat()));
                 System.out.println(Arrays.toString(pCudnn.getSecond().data().asFloat()));

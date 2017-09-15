@@ -122,7 +122,7 @@ public class SubsamplingLayerTest {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
         layer.activate(input);
 
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
+        Gradients containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
@@ -133,7 +133,7 @@ public class SubsamplingLayerTest {
 
         epsilon = Nd4j.ones(5, depth, featureMapHeight, featureMapWidth);
 
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
+        Gradients out = layer.backpropGradient(epsilon);
         assertEquals(input.shape().length, out.getSecond().shape().length);
         assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
@@ -151,7 +151,7 @@ public class SubsamplingLayerTest {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
         layer.activate(input);
 
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
+        Gradients containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertArrayEquals(expectedContainedEpsilonResult.shape(), containedOutput.getSecond().shape());
@@ -170,7 +170,7 @@ public class SubsamplingLayerTest {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
         layer.setInput(input);
 
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
+        Gradients containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
@@ -178,7 +178,7 @@ public class SubsamplingLayerTest {
         INDArray input2 = getData();
         layer.activate(input2);
 
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
+        Gradients out = layer.backpropGradient(epsilon);
         assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
 

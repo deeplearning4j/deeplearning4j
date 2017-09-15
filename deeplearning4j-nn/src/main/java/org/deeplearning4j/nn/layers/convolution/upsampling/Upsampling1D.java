@@ -50,7 +50,7 @@ public class Upsampling1D extends Upsampling2D {
 
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(INDArray epsilon) {
 
         int size = ((BaseUpsamplingLayer) layerConf()).getSize();
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
@@ -60,7 +60,7 @@ public class Upsampling1D extends Upsampling2D {
         INDArray originalInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
-        Pair<Gradient, INDArray> gradientEpsNext = super.backpropGradient(epsilon);
+        Gradients gradientEpsNext = super.backpropGradient(epsilon);
         INDArray epsNext = gradientEpsNext.getSecond();
         Gradient gradient = gradientEpsNext.getFirst();
 

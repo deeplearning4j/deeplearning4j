@@ -101,7 +101,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
     private INDArray reduced = null;
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides,
+    public Gradients backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides,
                     int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation) {
         if(dilation[0] != 1 || dilation[1] != 1){
             //CuDNN doesn't support dilated subsampling

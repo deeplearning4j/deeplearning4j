@@ -1,15 +1,14 @@
 package org.deeplearning4j.nn.layers.objdetect;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
-import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
 import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -26,9 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
-import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.Adam;
 
 import java.io.File;
@@ -79,7 +76,7 @@ public class TestYolo2OutputLayer {
 
         INDArray input = Nd4j.rand(new int[]{mb, depth, h, w});
 
-        INDArray out = y2impl.activate(input, true);
+        INDArray out = y2impl.activate(ActivationsFactory.getInstance().create(input), true).get(0);
         assertNotNull(out);
         assertArrayEquals(input.shape(), out.shape());
 
@@ -157,7 +154,7 @@ public class TestYolo2OutputLayer {
 
         INDArray input = Nd4j.rand(new int[]{mb, depth, h, w});
 
-        INDArray out = y2impl.activate(input);
+        INDArray out = y2impl.activate(ActivationsFactory.getInstance().create(input)).get(0);
 
         assertEquals(4, out.rank());
 

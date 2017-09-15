@@ -34,7 +34,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(INDArray epsilon) {
         if (epsilon.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + epsilon.rank()
                             + " array as epsilon for Convolution1DLayer backprop with shape "
@@ -47,7 +47,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
         // call 2D ConvolutionLayer's backpropGradient method
-        Pair<Gradient, INDArray> gradientEpsNext = super.backpropGradient(epsilon);
+        Gradients gradientEpsNext = super.backpropGradient(epsilon);
         INDArray epsNext = gradientEpsNext.getSecond();
 
         // remove singleton fourth dimension from input and current epsilon

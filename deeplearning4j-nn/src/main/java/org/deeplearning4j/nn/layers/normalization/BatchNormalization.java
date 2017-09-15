@@ -75,7 +75,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(INDArray epsilon) {
         INDArray nextEpsilon;
         int[] shape = getShape(epsilon);
         int batchSize = epsilon.size(0); // number examples in batch
@@ -105,7 +105,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             if (layerConf.isLockGammaBeta()) {
                 gamma = Nd4j.valueArrayOf(new int[] {1, shape[1]}, layerConf.getGamma());
             }
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, shape, gamma, dGammaView, dBetaView,
+            Gradients ret = helper.backpropGradient(input, epsilon, shape, gamma, dGammaView, dBetaView,
                             layerConf.getEps());
             if (ret != null) {
                 return ret;

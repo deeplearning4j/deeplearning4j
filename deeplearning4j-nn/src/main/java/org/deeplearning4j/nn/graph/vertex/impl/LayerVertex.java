@@ -111,7 +111,7 @@ public class LayerVertex extends BaseGraphVertex {
                             + getNumOutputConnections());
         }
 
-        Pair<Gradient, INDArray> pair;
+        Gradients pair;
         if (tbptt && layer instanceof RecurrentLayer) {
             //Truncated BPTT for recurrent layers
             pair = ((RecurrentLayer) layer).tbpttBackpropGradient(epsilon,

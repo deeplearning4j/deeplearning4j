@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
@@ -1109,9 +1110,9 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
     /** Calculate and set gradients for MultiLayerNetwork, based on OutputLayer and labels*/
     protected void backprop() {
-        Pair<Gradient, INDArray> pair = calcBackpropGradients(null, true);
-        this.gradient = (pair == null ? null : pair.getFirst());
-        this.epsilon = (pair == null ? null : pair.getSecond());
+        Gradients pair = calcBackpropGradients(null, true);
+        this.gradient = (pair == null ? null : pair.getParameterGradients());
+        this.epsilon = (pair == null ? null : pair.getActivationGrad(0));
     }
 
     /** Calculate gradients and errors. Used in two places:
@@ -1123,7 +1124,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      *                        If false: calculate backprop gradients
      * @return Gradients and the error (epsilon) at the input
      */
-    protected Pair<Gradient, INDArray> calcBackpropGradients(INDArray epsilon, boolean withOutputLayer) {
+    protected Gradients calcBackpropGradients(INDArray epsilon, boolean withOutputLayer) {
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -1168,13 +1169,13 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                                 currPair.getParameterGradients().flatteningOrderForVariable(origName)));
             }
             if (getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null)
-                currPair = new Pair<>(currPair.getParameterGradients(),
-                                this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
-                                                .backprop(currPair.getActivationGrad(0), getInputMiniBatchSize()));
+                currPair = GradientsFactory.getInstance().create(this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
+                                                .backprop(currPair.getActivationGrad(0), getInputMiniBatchSize()),
+                        currPair.getParameterGradients());
 
             layerFrom = numLayers - 2;
         } else {
-            currPair = new Pair<>(null, epsilon);
+            currPair = GradientsFactory.getInstance().create(epsilon, null);
             layerFrom = numLayers - 1;
         }
 
@@ -1195,26 +1196,27 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                 if (currLayer instanceof FrozenLayer) {
                     break;
                 }
-                currPair = currLayer.backpropGradient(currPair.getSecond());
-                if (currPair.getSecond() != null) {
-                    //May be null for embedding layer, etc
-                    currPair.setSecond(currPair.getSecond().leverageTo(workspaceExternal));
-                }
+                currPair = currLayer.backpropGradient(currPair);
+                currPair.leverageActGradsToWorkspace(workspaceExternal);
 
                 LinkedList<Triple<String, INDArray, Character>> tempList = new LinkedList<>();
-                for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
+                for (Map.Entry<String, INDArray> entry : currPair.getParameterGradients().gradientForVariable().entrySet()) {
                     String origName = entry.getKey();
                     multiGradientKey = String.valueOf(j) + "_" + origName;
                     tempList.addFirst(new Triple<>(multiGradientKey, entry.getValue(),
-                                    currPair.getFirst().flatteningOrderForVariable(origName)));
+                                    currPair.getParameterGradients().flatteningOrderForVariable(origName)));
                 }
                 for (Triple<String, INDArray, Character> triple : tempList)
                     gradientList.addFirst(triple);
 
                 //Pass epsilon through input processor before passing to next layer (if applicable)
                 if (getLayerWiseConfigurations().getInputPreProcess(j) != null)
-                    currPair = new Pair<>(currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j)
-                                    .backprop(currPair.getSecond(), getInputMiniBatchSize()));
+                    currPair = GradientsFactory.getInstance().create(
+                            getLayerWiseConfigurations().getInputPreProcess(j)
+                                    .backprop(currPair.getActivationGrad(0), getInputMiniBatchSize()),  //TODO multiple activations
+                            currPair.getParameterGradients()
+                    );
+
 
                 //log.info("This layer space: {}", ((Nd4jWorkspace) ws).getThisCycleAllocations());
             } catch (Exception e) {
@@ -1231,7 +1233,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             gradient.setGradientFor(triple.getFirst(), triple.getSecond(), triple.getThird());
         }
 
-        return new Pair<>(gradient, currPair.getSecond());
+//        return new Pair<>(gradient, currPair.getSecond());
+        return GradientsFactory.getInstance().create(gradient, currPair.getActivationGradAsArray());
     }
 
     protected void doTruncatedBPTT(INDArray input, INDArray labels, INDArray featuresMaskArray,
@@ -1363,21 +1366,25 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         //Store gradients is a list; used to ensure iteration order in DefaultGradient linked hash map. i.e., layer 0 first instead of output layer
         LinkedList<Pair<String, INDArray>> gradientList = new LinkedList<>();
 
-        Pair<Gradient, INDArray> currPair = outputLayer.backpropGradient(null);
+        Gradients currPair = outputLayer.backpropGradient(null);
 
-        for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
+        for (Map.Entry<String, INDArray> entry : currPair.getParameterGradients().gradientForVariable().entrySet()) {
             multiGradientKey = String.valueOf(numLayers - 1) + "_" + entry.getKey();
             gradientList.addLast(new Pair<>(multiGradientKey, entry.getValue()));
         }
 
-        if (getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null)
-            currPair = new Pair<>(currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
-                            .backprop(currPair.getSecond(), getInputMiniBatchSize()));
+        if (getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null){
+            currPair = GradientsFactory.getInstance().create(this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
+                    .backprop(currPair.getActivationGrad(0), getInputMiniBatchSize()), currPair.getParameterGradients());
+        }
+
 
         // Calculate gradients for previous layers & drops output layer in count
         for (int j = numLayers - 2; j >= 0; j--) {
             currLayer = getLayer(j);
             if (currLayer instanceof RecurrentLayer) {
+
+
                 currPair = ((RecurrentLayer) currLayer).tbpttBackpropGradient(currPair.getSecond(),
                                 layerWiseConfigurations.getTbpttBackLength());
             } else {
@@ -2126,7 +2133,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     //Layer methods
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Gradients backpropGradient(INDArray epsilon) {
         if (getOutputLayer() instanceof IOutputLayer)
             throw new UnsupportedOperationException("Cannot calculate gradients based on epsilon with OutputLayer");
 
