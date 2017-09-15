@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.convolution.Pooling2D;
@@ -39,6 +40,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
+import java.util.Properties;
 
 
 /**
@@ -77,6 +79,13 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
                 log.warn("Could not initialize CudnnSubsamplingHelper", t);
+            } else {
+                Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
+                if (p.getProperty("backend").equals("CUDA")) {
+                    OneTimeLogger.info(log, "cuDNN not found: "
+                                    + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
+                                    + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
+                }
             }
         }
     }
