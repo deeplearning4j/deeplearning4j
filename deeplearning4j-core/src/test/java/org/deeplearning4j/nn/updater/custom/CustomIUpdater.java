@@ -38,4 +38,9 @@ public class CustomIUpdater implements IUpdater {
     public CustomIUpdater clone() {
         return new CustomIUpdater(learningRate);
     }
+
+    @Override
+    public double getLearningRate(int iteration, int epoch) {
+        return learningRate;
+    }
 }
