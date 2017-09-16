@@ -349,7 +349,7 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.linspace(1,4,4).reshape(2,2);
 
         INDArray gradAssertion =  Nd4j.ones(arr1.shape());
-
+        INDArray scalar = Nd4j.scalar(1.0);
         SameDiff sameDiff = SameDiff.create();
 
         SDVariable sdVariable = sameDiff.var("arr1",arr1);
@@ -359,16 +359,23 @@ public class SameDiffTests {
         Pair<Map<SDVariable, Op>, List<Op>> execBackwards = sameDiff.execBackwards();
         Set<SDVariable> vars = execBackwards.getFirst().keySet();
 
-        SDVariable key = null;
+        SDVariable finalResult = null;
+        SDVariable mulGradResult = null;
         for(SDVariable var : vars) {
             if(var.getVarName().equals(sum.getVarName())) {
-                key = var;
-                break;
+                finalResult = var;
             }
+            else if(var.getVarName().equals(varMul.getVarName())) {
+                mulGradResult = var;
+            }   
         }
 
 
-        INDArray gradTest = key.gradient().getArr();
+        INDArray scalarGradTest = finalResult.gradient().getArr();
+        assertEquals(scalar,scalarGradTest);
+
+
+        INDArray gradTest = mulGradResult.gradient().getArr();
         assertEquals(gradAssertion,gradTest);
     }
 

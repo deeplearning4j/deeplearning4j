@@ -3074,7 +3074,7 @@ public class SameDiff {
 
                     //start with scalar backprop
                     List<DifferentialFunction> currentDiff = Arrays.asList(sameDiff.functionFactory.one(new int[]{1,1}));
-
+                    boolean firstGradientSet = false;
 
                     for(OpExecAction action : opOrder) {
                         if(action == null || action.getOpState() == null) {
@@ -3083,6 +3083,19 @@ public class SameDiff {
                         }
 
                         DifferentialFunction currFunction = action.getOpState().getDifferentialFunction();
+                        if(!firstGradientSet) {
+                            firstGradientSet = true;
+                            currFunction.setGradient(currentDiff.get(0));
+                            SDVariable initialGrad = SDVariable.builder()
+                                    .varName("initialgrad")
+                                    .vertexId(currentDiff.get(0).resultVertexId())
+                                    .sameDiff(sameDiff).arr(Nd4j.scalar(1.0))
+                                    .shape(currentDiff.get(0).getResultShape())
+                                    .differentialFunction(currentDiff.get(0))
+                                    .build();
+                            sameDiff.addVariable(initialGrad);
+                        }
+
                         currentDiff = currFunction.diff(currentDiff);
 
                         //clear out all the variables
@@ -3154,109 +3167,6 @@ public class SameDiff {
                      */
 
 
-            /*        PriorityQueue<DifferentialFunction> functions = new PriorityQueue<>(10, new Comparator<DifferentialFunction>() {
-                        @Override
-                        public int compare(DifferentialFunction o1, DifferentialFunction o2) {
-                            return Ints.compare(o1.resultVertexId(),o2.resultVertexId());
-                        }
-                    });
-
-                    functions.add(opOrder.get(0).getOpState().getDifferentialFunction());
-
-                    Map<DifferentialFunction,DifferentialFunction> seen = new IdentityHashMap<>();
-                    List<DifferentialFunction> exec = new ArrayList<>();
-                    while(!functions.isEmpty()) {
-                        DifferentialFunction currFunction = functions.poll();
-                        currentDiff = currFunction.diff(currentDiff);
-
-                        //clear out all the variables
-                        List<SDVariable> functionVars = debugMode ? new ArrayList<>(2) : null;
-
-                        for(DifferentialFunction differentialFunction : currentDiff) {
-                            SDVariable add = SDVariable.builder()
-                                    .arr(null).differentialFunction(differentialFunction)
-                                    .vertexId(differentialFunction.resultVertexId())
-                                    .shape(differentialFunction.getResultShape())
-                                    .sameDiff(sameDiff)
-                                    .varName(sameDiff.generateVariableName(differentialFunction.functionName(),
-                                            true,
-                                            differentialFunction))
-                                    .build();
-                            sameDiff.addVariable(add);
-
-                            if (debugMode) {
-                                if(add.gradient() != null)
-                                    sameDiff.addVariable(add.gradient());
-                                functionVars.add(add);
-                            }
-                        }
-
-                        if(isDebugMode()) {
-                            exec.add(currFunction);
-                        }
-
-                        for(DifferentialFunction arg : currFunction.args()) {
-                            arg = sameDiff.setupFunction(arg);
-                            if(!seen.containsKey(arg) && gradCandidates.containsKey(arg)) {
-                                seen.put(arg,arg);
-                                functions.add(arg);
-                            }
-                            else {
-                                System.out.println(arg);
-                            }
-                        }
-                    }*/
-
-/*                    for(int i = 0; i < opOrder.size(); i++) {
-                        OpExecAction action = opOrder.get(i);
-                        OpState opState = action.getOpState();
-                        if(opState != null) {
-                            DifferentialFunction func = opState.getDifferentialFunction() != null ?
-                                    sameDiff.setupFunction(opState.getDifferentialFunction()) : null;
-                            if(func != null) {
-                                List<DifferentialFunction> diffOutput = func.diff(currentDiff);
-                                //clear out all the variables
-                                List<SDVariable> functionVars = debugMode ? new ArrayList<>(2) : null;
-
-                                for(DifferentialFunction differentialFunction : currentDiff) {
-                                    SDVariable add = SDVariable.builder()
-                                            .arr(null).differentialFunction(differentialFunction)
-                                            .vertexId(differentialFunction.resultVertexId())
-                                            .shape(differentialFunction.getResultShape())
-                                            .sameDiff(sameDiff)
-                                            .varName(sameDiff.generateVariableName(differentialFunction.functionName(),
-                                                    true,
-                                                    differentialFunction))
-                                            .build();
-                                    sameDiff.addVariable(add);
-
-                                    if (debugMode) {
-                                        if(add.gradient() != null)
-                                            sameDiff.addVariable(add.gradient());
-                                        functionVars.add(add);
-                                    }
-                                }
-
-                                if(debugMode) {
-                                    ForwardBackwardState forwardBackwardState = ForwardBackwardState
-                                            .builder()
-                                            .forwardOpExecAction(action)
-                                            .backward(diffOutput)
-                                            .backwardVariable(functionVars)
-                                            .forward(Arrays.asList(opState.getDifferentialFunction()))
-                                            .forwardVariable(Arrays.asList(getVertexIdToVariable().get(opState.getDifferentialFunction().resultVertexId())))
-                                            .build();
-                                    sameDiff.forwardBackwardStates.put(action, forwardBackwardState);
-                                }
-
-                                currentDiff = diffOutput;
-
-                            }
-                            else if(action.getOpState().getArrayField() != null) {
-                                log.trace("Array field occurred for " + action.getOutputId());
-                            }
-                        }
-                    }*/
 
                     if(sameDiff.isDebugMode()) {
                         //ensure all gradients are present for all variables
