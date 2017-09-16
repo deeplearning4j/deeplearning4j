@@ -61,6 +61,21 @@ public class Hdf5Archive {
         this.file = new hdf5.H5File(archiveFilename, H5F_ACC_RDONLY);
     }
 
+    private hdf5.Group[] openGroups(String ... groups) {
+        hdf5.Group[] groupArray = new hdf5.Group[groups.length];
+        groupArray[0] = this.file.asCommonFG().openGroup(groups[0]);
+        for (int i = 1; i < groups.length; i++) {
+            groupArray[i] = groupArray[i - 1].asCommonFG().openGroup(groups[i]);
+        }
+        return groupArray;
+    }
+
+    private void closeGroups(hdf5.Group[] groupArray) {
+        for (int i = groupArray.length - 1; i >= 0; i--) {
+            groupArray[i].deallocate();
+        }
+    }
+
     /**
      * Read data set as ND4J array from group path.
      *
@@ -70,10 +85,12 @@ public class Hdf5Archive {
      * @throws UnsupportedKerasConfigurationException
      */
     public INDArray readDataSet(String datasetName, String... groups) throws UnsupportedKerasConfigurationException {
-        hdf5.CommonFG group = this.file.asCommonFG();
-        for (int i = 0; i < groups.length; i++)
-            group = group.openGroup(groups[i]).asCommonFG();
-        return readDataSet(group, datasetName);
+        if (groups.length == 0)
+            return readDataSet(this.file.asCommonFG(), datasetName);
+        hdf5.Group[] groupArray = openGroups(groups);
+        INDArray a = readDataSet(groupArray[groupArray.length - 1].asCommonFG(), datasetName);
+        closeGroups(groupArray);
+        return a;
     }
 
     /**
@@ -88,10 +105,10 @@ public class Hdf5Archive {
                     throws UnsupportedKerasConfigurationException {
         if (groups.length == 0)
             return readAttributeAsJson(this.file.openAttribute(attributeName));
-        hdf5.Group group = this.file.asCommonFG().openGroup(groups[0]);
-        for (int i = 1; i < groups.length; i++)
-            group = group.asCommonFG().openGroup(groups[i]);
-        return readAttributeAsJson(group.openAttribute(attributeName));
+        hdf5.Group[] groupArray = openGroups(groups);
+        String s = readAttributeAsJson(groupArray[groups.length - 1].openAttribute(attributeName));
+        closeGroups(groupArray);
+        return s;
     }
 
     /**
@@ -103,13 +120,13 @@ public class Hdf5Archive {
      * @throws UnsupportedKerasConfigurationException
      */
     public String readAttributeAsString(String attributeName, String... groups)
-        throws UnsupportedKerasConfigurationException {
+                    throws UnsupportedKerasConfigurationException {
         if (groups.length == 0)
             return readAttributeAsString(this.file.openAttribute(attributeName));
-        hdf5.Group group = this.file.asCommonFG().openGroup(groups[0]);
-        for (int i = 1; i < groups.length; i++)
-            group = group.asCommonFG().openGroup(groups[i]);
-        return readAttributeAsString(group.openAttribute(attributeName));
+        hdf5.Group[] groupArray = openGroups(groups);
+        String s = readAttributeAsString(groupArray[groupArray.length - 1].openAttribute(attributeName));
+        closeGroups(groupArray);
+        return s;
     }
 
     /**
@@ -122,10 +139,10 @@ public class Hdf5Archive {
     public boolean hasAttribute(String attributeName, String... groups) {
         if (groups.length == 0)
             return this.file.attrExists(attributeName);
-        hdf5.Group group = this.file.asCommonFG().openGroup(groups[0]);
-        for (int i = 1; i < groups.length; i++)
-            group = group.asCommonFG().openGroup(groups[i]);
-        return group.attrExists(attributeName);
+        hdf5.Group[] groupArray = openGroups(groups);
+        boolean b = groupArray[groupArray.length - 1].attrExists(attributeName);
+        closeGroups(groupArray);
+        return b;
     }
 
     /**
@@ -135,10 +152,12 @@ public class Hdf5Archive {
      * @return
      */
     public List<String> getDataSets(String... groups) {
-        hdf5.CommonFG group = this.file.asCommonFG();
-        for (int i = 0; i < groups.length; i++)
-            group = group.openGroup(groups[i]).asCommonFG();
-        return getObjects(group, H5O_TYPE_DATASET);
+        if (groups.length == 0)
+            return getObjects(this.file.asCommonFG(), H5O_TYPE_DATASET);
+        hdf5.Group[] groupArray = openGroups(groups);
+        List<String> ls = getObjects(groupArray[groupArray.length - 1].asCommonFG(), H5O_TYPE_DATASET);
+        closeGroups(groupArray);
+        return ls;
     }
 
     /**
@@ -148,10 +167,12 @@ public class Hdf5Archive {
      * @return
      */
     public List<String> getGroups(String... groups) {
-        hdf5.CommonFG group = this.file.asCommonFG();
-        for (int i = 0; i < groups.length; i++)
-            group = group.openGroup(groups[i]).asCommonFG();
-        return getObjects(group, H5O_TYPE_GROUP);
+        if (groups.length == 0)
+            return getObjects(this.file.asCommonFG(), H5O_TYPE_GROUP);
+        hdf5.Group[] groupArray = openGroups(groups);
+        List<String> ls = getObjects(groupArray[groupArray.length - 1].asCommonFG(), H5O_TYPE_GROUP);
+        closeGroups(groupArray);
+        return ls;
     }
 
     /**
@@ -223,6 +244,8 @@ public class Hdf5Archive {
             default:
                 throw new UnsupportedKerasConfigurationException("Cannot import weights with rank " + nbDims);
         }
+        space.deallocate();
+        dataset.deallocate();
         return data;
     }
 
