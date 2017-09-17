@@ -185,7 +185,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
         })));
 
 
-        server = Server.forRouter(routingDsl.build(), Mode.DEV, port);
+        server = Server.forRouter(routingDsl.build(), Mode.PROD, port);
     }
 
     public static void main(String[] args) throws Exception {
