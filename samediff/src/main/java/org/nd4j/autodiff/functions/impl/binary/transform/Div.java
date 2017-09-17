@@ -36,8 +36,6 @@ public class Div extends AbstractBinaryFunction {
         List<DifferentialFunction> ret = new ArrayList<>(2);
         ret.add(gradWrtX);
         ret.add(gradWrtY);
-        larg().setGradient(gradWrtX);
-        rarg().setGradient(gradWrtY);
         return ret;
     }
 

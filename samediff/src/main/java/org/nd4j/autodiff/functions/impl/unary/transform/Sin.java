@@ -28,7 +28,7 @@ public class Sin extends AbstractUnaryFunction {
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         validateDifferentialFunctionsameDiff(i_v);
         DifferentialFunction ret = f().cos(arg());
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 

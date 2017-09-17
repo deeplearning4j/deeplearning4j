@@ -29,7 +29,7 @@ public class Neg extends AbstractUnaryFunction {
         validateDifferentialFunctionsameDiff(i_v);
         validateDifferentialFunctionsameDiff(arg());
         DifferentialFunction ret = f().neg(i_v.get(0));
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 

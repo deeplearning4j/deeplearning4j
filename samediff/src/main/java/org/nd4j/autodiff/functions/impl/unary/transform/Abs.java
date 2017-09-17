@@ -28,7 +28,7 @@ public class Abs extends AbstractUnaryFunction {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().div(arg(),f().abs(arg()));
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 

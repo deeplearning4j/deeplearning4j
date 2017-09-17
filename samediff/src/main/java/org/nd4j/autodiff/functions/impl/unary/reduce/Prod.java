@@ -36,7 +36,7 @@ public class Prod extends AbstractReduceUnaryFunction {
                 i_v1.get(0)
                 ,dimensions),f().mul(f().one(getResultShape()),f()
                                 .getInputLength(i_v1.get(0))));
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 }

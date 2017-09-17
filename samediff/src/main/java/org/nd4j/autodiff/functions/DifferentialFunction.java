@@ -88,10 +88,6 @@ public abstract class DifferentialFunction implements Differential {
 
 
     public DifferentialFunction getGradient() {
-        if(gradient == null) {
-            this.gradient = arg().getGradient();
-        }
-
         return gradient;
     }
 
@@ -203,7 +199,13 @@ public abstract class DifferentialFunction implements Differential {
     @Override
     public  List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
         List<DifferentialFunction> vals = doDiff(i_v1);
-        for(DifferentialFunction differentialFunction : vals) {
+        for(int i = 0; i < vals.size(); i++) {
+            DifferentialFunction differentialFunction = vals.get(i);
+            DifferentialFunction arg = args()[i];
+            if(arg.getGradient() != null)
+                f().addi(arg.getGradient(),differentialFunction);
+            else
+                arg.setGradient(differentialFunction);
             differentialFunction.setGradFunction(true);
         }
 
@@ -470,7 +472,6 @@ public abstract class DifferentialFunction implements Differential {
         int result = super.hashCode();
         result = 31 * result + (opState != null ? opState.hashCode() : 0);
         result = 31 * result + vertexId;
-        result = 31 * result + (gradient != null ? gradient.hashCode() : 0);
         return result;
     }
 

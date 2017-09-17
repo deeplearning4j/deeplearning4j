@@ -52,7 +52,6 @@ public class ScalarAdd extends AbstractScalarFunction {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         DifferentialFunction g = i_v1.get(0);
-        arg().setGradient(g);
         return Arrays.asList(g);
     }
 }

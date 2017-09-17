@@ -36,8 +36,6 @@ public class Sub extends AbstractBinaryFunction {
         List<DifferentialFunction> ret = new ArrayList<>();
         ret.add(gradWrtX);
         ret.add(gradWrtY);
-        larg().setGradient(gradWrtX);
-        rarg().setGradient(gradWrtY);
         return ret;
     }
 

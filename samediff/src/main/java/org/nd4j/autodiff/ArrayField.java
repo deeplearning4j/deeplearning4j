@@ -50,6 +50,13 @@ public class ArrayField implements Field {
         this.ops = ops;
     }
 
+    public NDArrayInformation getInput() {
+        return input;
+    }
+
+    public void setInput(NDArrayInformation input) {
+        this.input = input;
+    }
 
     @Override
     public ArrayField negate() {
@@ -911,12 +918,6 @@ public class ArrayField implements Field {
         //for the purpose of the graph, we only need the scalar
         //value, therefore the input should be the
         //non scalar
-
-
-        if(this.getInput() != input) {
-            setInput(input);
-            getVertex().setValue(input);
-        }
 
 
         NDArrayInformation result =  NDArrayInformation.builder()

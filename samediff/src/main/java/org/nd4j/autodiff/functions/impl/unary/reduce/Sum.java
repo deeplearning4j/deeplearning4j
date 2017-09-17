@@ -35,7 +35,6 @@ public class Sum extends AbstractReduceUnaryFunction {
         DifferentialFunction repeat =  f().doRepeat(
                 i_v1.get(0),
                 arg(),dimensions);
-        arg().setGradient(repeat);
         return Collections.singletonList(repeat);
     }
 }

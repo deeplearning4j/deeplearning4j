@@ -22,7 +22,6 @@ public class Transpose extends AbstractUnaryFunction {
 
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
-        arg().setGradient(this);
         return Collections.singletonList(this);
     }
 

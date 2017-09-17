@@ -23,10 +23,12 @@ public class Mul extends AbstractBinaryFunction {
 
     @Override
     public ArrayField doGetValue() {
+        ArrayField left = larg().getValue(true);
+        ArrayField right = rarg().getValue(true);
         if(!isInPlace())
-            return larg().getValue(true).mul(rarg().getValue(true));
+            return left.mul(right);
         else
-            return larg().getValue(true).muli(rarg().getValue(true));
+            return left.muli(right);
     }
 
 
@@ -35,9 +37,7 @@ public class Mul extends AbstractBinaryFunction {
         DifferentialFunction g = sameDiff.setupFunction(i_v.get(0));
         DifferentialFunction gradWrtX = f().mul(g,rarg());
         DifferentialFunction gradWrtY = f().mul(g,larg());
-        List<DifferentialFunction> ret = new ArrayList<>();
-        larg().setGradient(gradWrtX);
-        rarg().setGradient(gradWrtY);
+        List<DifferentialFunction> ret = new ArrayList<>(2);
         ret.add(gradWrtX);
         ret.add(gradWrtY);
         return ret;

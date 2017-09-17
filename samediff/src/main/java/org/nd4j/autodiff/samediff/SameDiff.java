@@ -3070,11 +3070,22 @@ public class SameDiff {
                     outer.invokeGraphOn(sameDiff);
                     List<OpExecAction> opOrder = sameDiff.graph().getOpOrder(true).getActions();
                     List<OpExecAction> exec = new ArrayList<>();
-                    sameDiff.gradientBackwardsMarker(sameDiff.getVertexIdToVariable().get(opOrder.get(opOrder.size() - 1).getOutputId()));
+                    sameDiff.gradientBackwardsMarker(sameDiff.getVertexIdToVariable().get(opOrder.get(0).getOutputId()));
 
                     //start with scalar backprop
-                    List<DifferentialFunction> currentDiff = Arrays.asList(sameDiff.functionFactory.one(new int[]{1,1}));
-                    boolean firstGradientSet = false;
+                    DifferentialFunction initialGrad = sameDiff.setupFunction(sameDiff.functionFactory.one(new int[]{1,1}));
+                    DifferentialFunction firstBackward = opOrder.get(0).getOpState().getDifferentialFunction();
+                    firstBackward.setGradient(initialGrad);
+                    SDVariable initialGradVar = SDVariable.builder()
+                            .varName("initialgrad")
+                            .vertexId(initialGrad.resultVertexId())
+                            .sameDiff(sameDiff).arr(Nd4j.scalar(1.0))
+                            .shape(initialGrad.getResultShape())
+                            .differentialFunction(initialGrad)
+                            .build();
+                    sameDiff.addVariable(initialGradVar);
+
+
 
                     for(OpExecAction action : opOrder) {
                         if(action == null || action.getOpState() == null) {
@@ -3083,25 +3094,12 @@ public class SameDiff {
                         }
 
                         DifferentialFunction currFunction = action.getOpState().getDifferentialFunction();
-                        if(!firstGradientSet) {
-                            firstGradientSet = true;
-                            currFunction.setGradient(currentDiff.get(0));
-                            SDVariable initialGrad = SDVariable.builder()
-                                    .varName("initialgrad")
-                                    .vertexId(currentDiff.get(0).resultVertexId())
-                                    .sameDiff(sameDiff).arr(Nd4j.scalar(1.0))
-                                    .shape(currentDiff.get(0).getResultShape())
-                                    .differentialFunction(currentDiff.get(0))
-                                    .build();
-                            sameDiff.addVariable(initialGrad);
-                        }
-
-                        currentDiff = currFunction.diff(currentDiff);
+                        List<DifferentialFunction> backwardResult = currFunction.diff(Arrays.asList(currFunction.getGradient()));
 
                         //clear out all the variables
                         List<SDVariable> functionVars = debugMode ? new ArrayList<>(2) : null;
 
-                        for(DifferentialFunction differentialFunction : currentDiff) {
+                        for(DifferentialFunction differentialFunction : backwardResult) {
                             SDVariable add = SDVariable.builder()
                                     .arr(null).differentialFunction(differentialFunction)
                                     .vertexId(differentialFunction.resultVertexId())
@@ -3161,7 +3159,7 @@ public class SameDiff {
                      * Another thing to look in to is whether output_grad
                      * propagates properly as well.
                      *
-                     * The goal here should be to build a minm aal test
+                     * The goal here should be to build a minimal test
                      * that reproduces this wrong behavior
                      * for transitive dependencies.
                      */
@@ -3177,7 +3175,7 @@ public class SameDiff {
 
 
                     return SDVariable.builder()
-                            .differentialFunction(currentDiff.get(0))
+                            .differentialFunction(opOrder.get(0).getOpState().getDifferentialFunction())
                             .sameDiff(sameDiff)
                             .varName("grad")
                             .build();

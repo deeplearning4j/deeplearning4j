@@ -28,9 +28,10 @@ public class One extends Constant {
     }
 
 
-
-
-
+    @Override
+    public void setM_x(ArrayField m_x) {
+        super.setM_x(m_x);
+    }
 
     @Override
     public DifferentialFunction dup() {

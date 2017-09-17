@@ -79,8 +79,6 @@ public class Mmul extends TensorMmul {
         ret.add(gradWrtY);
         validateFunctionReference(larg());
         validateFunctionReference(rarg());
-        larg().setGradient(gradWrtX);
-        rarg().setGradient(gradWrtY);
         return ret;
     }
 

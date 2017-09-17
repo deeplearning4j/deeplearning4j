@@ -28,7 +28,6 @@ public class HardTanhDerivative extends AbstractBinaryFunction {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().one(getResultShape());
-        arg().setGradient(ret);
         return Arrays.asList(ret);
     }
 

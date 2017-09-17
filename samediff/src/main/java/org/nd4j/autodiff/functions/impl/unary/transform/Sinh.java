@@ -27,7 +27,7 @@ public class Sinh extends AbstractUnaryFunction {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().cosh(arg());
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 

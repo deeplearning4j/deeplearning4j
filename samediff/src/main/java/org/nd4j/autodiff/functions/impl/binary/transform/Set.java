@@ -33,8 +33,8 @@ public class Set extends AbstractBinaryFunction {
         Constant ym1 = f()
                 .val(rarg().getValue(true).sub(a().one(getResultShape())));
         DifferentialFunction ret = f().mul(f().mul(rarg(),f().pow(larg(), 2.0)),larg());
-        larg().setGradient(ret);
-        rarg().setGradient(ret);
+
+
         return Collections.singletonList(ret);
     }
 

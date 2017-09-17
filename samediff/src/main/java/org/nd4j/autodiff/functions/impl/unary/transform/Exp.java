@@ -26,7 +26,7 @@ public class Exp extends AbstractUnaryFunction {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().mul(f().exp(arg()),i_v.get(0));
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 

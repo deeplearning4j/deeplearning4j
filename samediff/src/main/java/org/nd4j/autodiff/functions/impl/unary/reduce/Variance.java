@@ -45,7 +45,7 @@ public class Variance extends AbstractReduceUnaryFunction {
         ret = f().sub(ret,f().mean(arg(),dimensions));
         ret = f().div(ret,f().one(getResultShape()));
         ret = f().mul(ret,inputs);
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 }

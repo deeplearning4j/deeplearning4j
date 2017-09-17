@@ -32,7 +32,7 @@ public class Min extends AbstractReduceUnaryFunction {
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         validateDifferentialFunctionsameDiff(i_v1);
         DifferentialFunction ret = f().doGradChoose(this,i_v1.get(0),dimensions);
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 }

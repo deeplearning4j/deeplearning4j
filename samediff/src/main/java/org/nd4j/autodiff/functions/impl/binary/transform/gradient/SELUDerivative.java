@@ -31,7 +31,7 @@ public class SELUDerivative extends AbstractBinaryFunction {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = f().div(arg(),f().seluDerivative(arg()));
-        arg().setGradient(ret);
+
         return Arrays.asList(ret);
     }
 

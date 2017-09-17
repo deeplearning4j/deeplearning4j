@@ -31,7 +31,7 @@ public class RollAxis extends AbstractUnaryFunction {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction ret = this;
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 

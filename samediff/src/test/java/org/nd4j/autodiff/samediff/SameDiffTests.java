@@ -354,7 +354,9 @@ public class SameDiffTests {
 
         SDVariable sdVariable = sameDiff.var("arr1",arr1);
         SDVariable sdVariable1 = sameDiff.var("arr2",arr2);
-        SDVariable varMul = sdVariable.mul(sdVariable1);
+        SDVariable varMulPre = sdVariable.mul("arr3",sdVariable1);
+        SDVariable varMul = varMulPre.mul(sdVariable1);
+
         SDVariable sum = sameDiff.sum(varMul,Integer.MAX_VALUE);
         Pair<Map<SDVariable, Op>, List<Op>> execBackwards = sameDiff.execBackwards();
         Set<SDVariable> vars = execBackwards.getFirst().keySet();
@@ -367,7 +369,7 @@ public class SameDiffTests {
             }
             else if(var.getVarName().equals(varMul.getVarName())) {
                 mulGradResult = var;
-            }   
+            }
         }
 
 

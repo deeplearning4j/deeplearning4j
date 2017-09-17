@@ -32,7 +32,7 @@ public class Mean extends AbstractReduceUnaryFunction {
         DifferentialFunction ret = f().div(f().doRepeat(this,i_v1.get(0),dimensions),
                  f().mul(f().one(i_v1.get(0).getResultShape()),
                         f().getInputLength(i_v1.get(0))));
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 }

@@ -53,7 +53,7 @@ public class ScalarMul extends AbstractScalarFunction {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v1) {
         DifferentialFunction g = f().mul(i_v1.get(0),scalarValue.doubleValue());
-        arg().setGradient(g);
+
         return Arrays.asList(g);
     }
 }

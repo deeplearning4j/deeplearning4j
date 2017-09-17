@@ -42,7 +42,7 @@ public class StandardDeviation  extends AbstractReduceUnaryFunction {
         DifferentialFunction g =  f().doRepeat(this,i_v1.get(0),dimensions);
         DifferentialFunction ret = f().div(f().sub(f().mul(g,arg()),f().mean(arg(),dimensions)),f().mul(f()
                 .one(g.getResultShape()),inputs));
-        arg().setGradient(ret);
+
         return Collections.singletonList(ret);
     }
 }

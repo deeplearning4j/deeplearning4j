@@ -30,7 +30,6 @@ public class Log extends AbstractUnaryFunction {
         validateDifferentialFunctionsameDiff(i_v);
         validateDifferentialFunctionsameDiff(arg());
         DifferentialFunction toInverse = sameDiff.setupFunction(f().div(i_v.get(0),arg()));
-        arg().setGradient(toInverse);
         return Collections.singletonList(toInverse);
     }
 

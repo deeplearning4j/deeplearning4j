@@ -36,8 +36,6 @@ public class Add extends AbstractBinaryFunction {
     @Override
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         DifferentialFunction g = sameDiff.setupFunction(i_v.get(0));
-        larg().setGradient(g);
-        rarg().setGradient(g);
         List<DifferentialFunction> ret = new ArrayList<>();
         for(int i = 0; i < 2; i++)
             ret.add(g);
