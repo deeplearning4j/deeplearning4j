@@ -5,14 +5,21 @@ layout: cn-default
 <p><h1>基于Spark的Deeplearning4j</h1></p>
 <p>深度学习的计算强度较高，所以对于规模非常大的数据集而言，速度很重要。您可以采用速度更快的硬件、优化的代码以及某种形式的并行来处理问题。</p>
 <p>数据并行指切分大规模的数据集，然后将分片交给不同的神经网络，而每个网络可能都在各自不同的处理器核上运行。Deeplearning4j依靠Spark来实现数据并行，以并行方式训练模型，对这些模型产生的参数进行<a href="iterativereduce">迭代式平均化</a>，得到一个中央模型。（<a href="https://static.googleusercontent.com/media/research.google.com/en//archive/large_deep_networks_nips2012.pdf" target="_blank">如Jeff Dean等人在这篇论文中所述</a>，模型并行可以让多个模型分别负责大型数据集中的不同部分而无需平均化。）</p>
+<p>请注意，如果您希望采用基于参数服务器的方法（需要更多设置步骤！），请参阅我们最新的<a href=http://deeplearning4j.org/distributed>分布式训练页</a></p>
 <p><strong>目录</strong></p>
 <ul>
   <li><a href="#overview">概述</a></li>
+  <li><a href="#prerequisites">先决条件</a></li>
   <li><a href="#how">基于Spark的DL4J如何进行分布式的网络训练</a></li>
   <li><a href="#minimal">最简示例</a></li>
   <li><a href="#configuring">配置TrainingMaster</a></li>
   <li><a href="#dependencies">在Spark上训练所需的依赖项</a></li>
   <li><a href="#examples">Spark示例库</a></li>
+  <li><a href="#gpusspark">用GPU进行基于Spark的训练</a></li>
+    <ul>
+	<li><a href="#yarngpus">YARN与GPU</a></li>
+	<li><a href="#mesosgpus">Mesos与GPU</a></li>
+    </ul>
   <li><a href="#memoryyarn">在YARN上为Spark配置内存</a>
     <ul>
       <li><a href="#memory1">Deeplearning4j（以及ND4J）的内存管理方式</a></li>
@@ -32,6 +39,18 @@ layout: cn-default
 </ul>
 <br>
 
+<p><h2><a name="prerequisites">先决条件</a></h2></p>
+<p>本页假设读者已掌握Spark的基本工作方法。如果您还不熟悉如何设置Spark集群或运行Spark任务，本页不包含这方面的教程，请考虑先了解Spark的基础知识。<a href="https://spark.apache.org/docs/latest/quick-start.html" target="_blank">Spark快速入门指南</a>是学习如何运行Spark任务的理想材料。</p>
+<p>如果您只是想寻找在同个服务器上运行多个模型的方法，请考虑<a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-cuda-specific-examples/src/main/java/org/deeplearning4j/examples/multigpu/MultiGpuLenetMnistExample.java" target="_blank">改用ParallelWrapper</a>。</p>
+<p>ParallelWrapper采用为单个服务器优化的方式来实施相同的分布式训练思路（参数平均化与梯度共享）。</p>
+<p>如果您有一台大型主机（64核或更多）或多个GPU，那么就应该使用ParallelWrapper。</p>
+<p>请注意，Spark可以让您同时使用多个GPU和cuDNN，但在实际操作中，最难的是集群设置。DL4J本身仅是一项Spark任务，在此之外的领域<em>不属于</em> 我们的责任范畴。</p>
+<p>如果您从未运行过基于JVM的Spark任务，我们建议<a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/pom.xml#L140" target="_blank">用Maven的shade插件来构建一个Uber JAR</a>。</p>
+<p>本页余下内容将介绍运行Spark任务的具体细节，包括如何定制Spark任务以及如何将Spark接口用于DL4J。</p>
+<p>如果您希望使用托管的Spark集群，<a href="https://skymind.ai/" target="_blank">请与我们联系</a></p>
+<p>另一种运行和管理Spark集群的方法是利用弹性MapReduce等各类云端服务。</p>
+<br>
+	
 <p><h2><a name="overview">概述</a></h2></p>
 <p>Deeplearning4j支持在Spark集群上训练神经网络，以便加快网络训练速度。</p>
 <p>DL4J定义了两个与MultiLayerNetwork和ComputationGraph相似的类，用于在Spark上训练神经网络：</p>
@@ -183,6 +202,54 @@ TrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(int dataSetObje
 <p><a href="https://github.com/deeplearning4j/dl4j-examples" target="_blank">Deeplearning4j示例库</a> （<a href="https://github.com/deeplearning4j/dl4j-spark-cdh5-examples" target="_blank">旧的示例见此处</a>）中包含一些Spark示例。</p>
 <br>
 
+<p><h2><a name="gpusspark">用GPU进行基于Spark的训练</a></h2></p>
+<p>用CUDA在Spark上运行Deeplearning4j时，需要注意与YARN等集群管理器有关的一些事项。</p>
+<br>
+
+<p><h3><a name="yarngpus">YARN与GPU</a></h3></p>
+<p><a href="https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html">YARN<a>是一种常用的集群资源管理/调度工具，主要面向Hadoop集群。您可以用GPU在Spark+YARN上运行Deeplearning4j，但（与内存和CPU资源不同）YARN无法直接将GPU作为一种资源来跟踪/处理。因此，您一般需要完成几项额外步骤，才能用GPU在YARN上运行DL4J。这会造成两方面的问题：</p>
+   <ol>
+	<li>在异类硬件集群（即某些计算机有GPU，某些没有）上会出现问题，因为YARN在原生状态下无法只将任务分配给装有GPU的计算机</li>
+	<li>YARN有可能将两项甚至更多需要利用GPU的任务分配给单台计算机/GPU</li>
+   </ol>
+<p>解决办法之一是利用节点标签（2.6及更新版本的YARN提供这一功能）。节点标签让您可以依据自己的标准来对计算机进行标记或分组－此处需要的标准为是否装有GPU。在YARN配置中启用节点标签后，就可以创建相应的标签，添加至集群中的计算机。随后您就可以通过指定节点标签来要求Spark任务仅使用包含GPU的计算机。</p>
+<p>关于节点标签及其配置方式的资源参见以下链接：</p>
+	<ul>
+	   <li><a href="https://hadoop.apache.org/docs/r2.7.3/hadoop-yarn/hadoop-yarn-site/NodeLabel.html">https://hadoop.apache.org/docs/r2.7.3/hadoop-yarn/hadoop-yarn-site/NodeLabel.html<a></li>
+	   <li><a href="https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.4.2/bk_yarn_resource_mgt/content/configuring_node_labels.html">https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.4.2/bk_yarn_resource_mgt/content/configuring_node_labels.html<a></li>
+	   <li><a href="https://developer.ibm.com/hadoop/2017/03/10/yarn-node-labels/">https://developer.ibm.com/hadoop/2017/03/10/yarn-node-labels/<a></li>
+	</ul>
+<p>在YARN上启动GPU任务：</p>
+	<ol>
+	   <li>确保YARN配置中已启用节点标签</li>
+	   <li>为装有GPU的计算机创建标签（一个或多个标签）</li>
+	   <li>为每一台需要用于训练的GPU计算机添加上一步创建的节点标签</li>
+	   <li>将<code>--conf spark.yarn.executor.nodeLabelExpression=YOUR_NODE_LABEL</code>添加至Spark提交的启动配置</li>
+	</o>
+<p>请注意，您可以为每个节点添加多个标签。利用多个标签可以实现更精细（不过需要手动完成）的任务/节点调度控制，也是避免YARN过度分配GPU资源的潜在方法之一。</p>
+<p>用GPU和Spark/YARN运行DL4J时还需要注意以下问题。</p>
+	<ol>
+	   <li>与DL4J的单机训练一样，系统必须装有CUDA，用于执行任务的路径中须有NVCC</li>
+	   <li>由于YARN不会划分GPU或限制GPU的使用，您应当确保YARN只会为每个GPU节点分配一项GPU任务。具体实现方法可以是在使用GPU的任务中提出足够的CPU和内存要求，不让执行器留下足以接受另一项类似任务的容量。否则，YARN就有可能会把多项GPU任务分配给同个执行器，而不顾该执行器是否有足够的GPU资源来满足所有任务的需求。</li>
+	</ol>
+<p>有三种方法可以避免调度造成的问题：</p>
+<p>首先，如上文所述，采用多个标签来手动控制调度。</p>
+<p>其次，将足够的资源（核、内存）分配给容器，确保每个节点上没有分配其他需要利用GPU的任务。</p>
+<p>第三，可以利用容器（具体而言，即<a href="https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/DockerContainerExecutor.html">Docker容器执行器<a>），通过<code>devices</code>控制组来声明容器内正在使用GPU－确保GPU不会被分配给多项任务。一种比较简单的方法是使用<a href="https://github.com/NVIDIA/nvidia-docker/wiki/GPU-isolation">nvidia-docker containers<a>来为您处理这项声明。</p>
+<p>Docker容器执行器的系统要求：</p>
+	<ul>
+	   <li>2.6.0或更新版本的Hadoop</li>
+	   <li>支持Docker的操作系统（控制组和命名空间为必需，因此必须采用3.x或更新版本的Linux内核。某些操作系统，例如CentOS 6、RHEL 6及其更旧版本不予支持）</li>
+	   <li>每个节点上都已完成Docker客户端的安装与配置</li>
+	   <li>正确配置的Docker镜像，用于启动您的任务</li>
+	</ul>
+<p>关于Docker容器执行器的详情参见<a href="https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/DockerContainerExecutor.html">此处<a>。</p>
+<br>
+
+<p><h3><a name="mesosgpus">Mesos与GPU</a></h3></p>
+<p><a href="http://mesos.apache.org/">Apache Mesos<a>是另一种集群资源管理工具。与YARN不同，Mesos内建<a href="https://mesos.apache.org/documentation/latest/gpu-support/">NVIDIA GPU的支持机制<a>（自1.0.0版起），不存在YARN的GPU过度分配问题。因此，在其他条件相同的前提下，在Mesos上运行DL4J + GPU要比在YARN上运行相同的任务更容易。</p>
+<br>
+	
 <p><h2><a name="memoryyarn">在YARN上为Spark配置内存</a></h2></p>
 <p>Apache Hadoop YARN是Hadoop集群常用的资源管理器（<a href="https://mesos.apache.org/" target="_blank">Apache Mesos</a>是另一种选择）。 用Spark submit向一个集群提交一项任务的时候，必须指定几个配置选项，比如执行器数量、每个执行器的处理器核数量，以及每个执行器的内存。</p>
 <p>为了让基于Spark的DL4J训练取得最理想的表现（同时避免超出内存限制），还需要进行一些额外的内存配置。本段将解释其必要性，并介绍实际的操作方法。</p><br>
