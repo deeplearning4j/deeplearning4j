@@ -188,7 +188,7 @@ public class NearestNeighborsServer {
             }
         })));
 
-        server = Server.forRouter(routingDsl.build(), Mode.DEV, port);
+        server = Server.forRouter(routingDsl.build(), Mode.PROD, port);
 
 
     }
