@@ -9,7 +9,7 @@ layout: default
 ベンチマークのデータセット（MNISTやCIFAR-10など）とは対照的に、実際のデータは、無秩序で、多種多様なものであり、継続的に変化します。 
 このように実際の状況ではディープラーニングはこれらの条件に対処できなければなりません。 
 
-![Alt text](./img/dl-workflow-cats.png) 
+![Alt text](../img/dl-workflow-cats.png) 
 
 ## データの種類
 
