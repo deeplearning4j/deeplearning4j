@@ -17,7 +17,7 @@ setTimeout(ldinsp, 500); document.readyState != "complete" ? (window.attachEvent
 
 Esto es todo lo que tiene que saber para ejecutar los ejemplos de DL4J y empezar sus propios proyectos.
 
-Le recomendamos unirse a nuestro [Chat en vivo de Gitter](https://gitter.im/deeplearning4j/deeplearning4j). Gitter es el sitio donde puede pedir ayuda y hacer comentarios, pero por favor use esta gu&iacute;a antes de hacer preguntas que ya hemos respondido anteriormente. Si es nuevo en deep learning, hemos incluido [una hoja de ruta para principiantes](../deeplearningforbeginners.html) con enlaces a cursos, lecturas y otros recursos. Si necestia un tutorial de principio a fin para comenzar (incluida la configuraci&oacute;n), por favor vaya a nuestra p&aacute;gina [primeros pasos](http://deeplearning4j.org/gettingstarted).
+Le recomendamos unirse a nuestro [chat en vivo de Gitter](https://gitter.im/deeplearning4j/deeplearning4j). Gitter es el sitio donde puede pedir ayuda y hacer comentarios, pero por favor use esta gu&iacute;a antes de hacer preguntas que ya hemos respondido anteriormente. Si es nuevo en deep learning, hemos incluido [una hoja de ruta para principiantes](../deeplearningforbeginners.html) con enlaces a cursos, lecturas y otros recursos. Si necestia un tutorial de principio a fin para comenzar (incluida la configuraci&oacute;n), por favor vaya a nuestra p&aacute;gina [primeros pasos](http://deeplearning4j.org/gettingstarted).
 
 ### Una Muestra de C&oacute;digo
 
@@ -95,7 +95,7 @@ para trabajar con DL4J. Si viene de un entorno diferente
 
 Un Entorno de Desarrollo Integrado ([IDE en ingl&eacute;s](http://encyclopedia.thefreedictionary.com/integrated+development+environment)) le permite trabajar con nuestra API y configurar redes neuronales en unos pocos pasos. Le recomendamos encarecidamente usar [IntelliJ](https://www.jetbrains.com/idea/download/), que se integra con Maven para gestionar las dependencias. La [community edition de IntelliJ](https://www.jetbrains.com/idea/download/) es gratuita. 
 
-Hay otros IDEs populares como [Eclipse](https://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html) y [Netbeans](http://wiki.netbeans.org/MavenBestPractices). IntelliJ es preferido, y utiliz&aacute;ndolo har&aacute; m&aacute;s sencillo encontrar ayuda en el [Chat en vivo de Gitter](https://gitter.im/deeplearning4j/deeplearning4j) si lo necesita.
+Hay otros IDEs populares como [Eclipse](https://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html) y [Netbeans](http://wiki.netbeans.org/MavenBestPractices). IntelliJ es preferido, y utiliz&aacute;ndolo har&aacute; m&aacute;s sencillo encontrar ayuda en el [chat en vivo de Gitter](https://gitter.im/deeplearning4j/deeplearning4j) si lo necesita.
 
 #### <a name="Git">Git</a>
 
@@ -162,7 +162,7 @@ En otra ventana, aparecer&aacute; un gr&aacute;fico, mostr&aacute;ndo como la re
 2. Lea la [introducción a las redes neuronales profundas](./neuralnet-overview) o [uno de nuestros detallados tutoriales](./tutorials).
 3. Eche un vistazo a la m&aacute;s detallada [Gu&iacute;a Extensa de Configuraci&oacute;n](./gettingstarted).Check out the more detailed [Comprehensive Setup Guide](./gettingstarted).
 4. Explore la [documentaci&oacute;n de DL4J](./documentation).
-5. **Gente de Python**: si tiene planeado evaluar el rendimiento de Deeplearning4j para compararlo con otro bien conocido framework de Python [x], por favor lea [estas instrucciones](https://deeplearning4j.org/benchmark) sobre c&oacute;mo optimizar el tama&ntilde;o del heap, el recolector de basura y ETL en la JVM. Sigui&eacute;ndolos, observar&aacute; una mejora de al menos *10x de velocidad en el tiempo de entrenamiento*.
+5. **Gente de Python**: si tiene planeado evaluar el rendimiento de Deeplearning4j para compararlo con otro bien conocido framework de Python, por favor lea [estas instrucciones](https://deeplearning4j.org/benchmark) sobre c&oacute;mo optimizar el tama&ntilde;o del heap, el recolector de basura y ETL en la JVM. Sigui&eacute;ndolos, observar&aacute; una mejora de al menos *10x de velocidad en el tiempo de entrenamiento*.
 
 ### Enlaces adicionales
 
