@@ -40,14 +40,14 @@ layout: cn-default
 <br>
 
 <p><h2><a name="prerequisites">先决条件</a></h2></p>
-<p>本页假设读者已掌握Spark的基本工作方法。如果您还不熟悉如何设置Spark集群或运行Spark任务，本页不包含这方面的教程，请考虑先了解Spark的基础知识。<a href="https://spark.apache.org/docs/latest/quick-start.html">Spark快速入门指南<a>是学习如何运行Spark任务的理想材料。</p>
-<p>如果您只是想寻找在同个服务器上运行多个模型的方法，请考虑<a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-cuda-specific-examples/src/main/java/org/deeplearning4j/examples/multigpu/MultiGpuLenetMnistExample.java">改用ParallelWrapper<a>。</p>
+<p>本页假设读者已掌握Spark的基本工作方法。如果您还不熟悉如何设置Spark集群或运行Spark任务，本页不包含这方面的教程，请考虑先了解Spark的基础知识。<a href="https://spark.apache.org/docs/latest/quick-start.html" target="_blank">Spark快速入门指南</a>是学习如何运行Spark任务的理想材料。</p>
+<p>如果您只是想寻找在同个服务器上运行多个模型的方法，请考虑<a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-cuda-specific-examples/src/main/java/org/deeplearning4j/examples/multigpu/MultiGpuLenetMnistExample.java" target="_blank">改用ParallelWrapper</a>。</p>
 <p>ParallelWrapper采用为单个服务器优化的方式来实施相同的分布式训练思路（参数平均化与梯度共享）。</p>
 <p>如果您有一台大型主机（64核或更多）或多个GPU，那么就应该使用ParallelWrapper。</p>
 <p>请注意，Spark可以让您同时使用多个GPU和cuDNN，但在实际操作中，最难的是集群设置。DL4J本身仅是一项Spark任务，在此之外的领域<em>不属于</em> 我们的责任范畴。</p>
-<p>如果您从未运行过基于JVM的Spark任务，我们建议<a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/pom.xml#L140">用Maven的shade插件来构建一个Uber JAR<a>。</p>
+<p>如果您从未运行过基于JVM的Spark任务，我们建议<a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/pom.xml#L140" target="_blank">用Maven的shade插件来构建一个Uber JAR</a>。</p>
 <p>本页余下内容将介绍运行Spark任务的具体细节，包括如何定制Spark任务以及如何将Spark接口用于DL4J。</p>
-<p>如果您希望使用托管的Spark集群，<a href="https://skymind.ai/">请与我们联系<a></p>
+<p>如果您希望使用托管的Spark集群，<a href="https://skymind.ai/" target="_blank">请与我们联系</a></p>
 <p>另一种运行和管理Spark集群的方法是利用弹性MapReduce等各类云端服务。</p>
 <br>
 	
