@@ -1,5 +1,5 @@
 ---
-title: 深度学习框架比较：Deeplearning4j、Torch、Theano、TensorFlow、Caffe、Paddle、MxNet、Keras 和 CNTK
+title: 顶级的深度学习框架比较：Deeplearning4j、Torch、Theano、TensorFlow、Caffe、Caffe2、Paddle、MxNet、Keras 和 CNTK
 layout: cn-default
 redirect_from: /zh-compare-dl4j-torch7-pylearn
 ---
@@ -79,7 +79,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 <ul>
   <li>谷歌开发了<strong>TensorFlow</strong>来取代Theano，这两个学习库其实很相似。有一些Theano的开发者在谷歌继续参与了<strong>TensorFlow</strong>的开发，其中包括后来加入了OpenAI 的 Ian Goodfellow。</li>
   <li>目前<strong>TensorFlow</strong>还不支持所谓的&ldquo;内联（inline）&rdquo;矩阵运算，必须要复制矩阵才能对其进行运算。复制非常大的矩阵会导致成本全面偏高。TF运行所需的时间是最新深度学习工具的四倍。谷歌表示正在解决这一问题。</li>
-  <li>和大多数深度学习框架一样，TensorFlow是用一个Python API编写的，通过C/C++引擎加速。这种解决方案并不适合Java和Scala用户群。</li>
+  <li>和大多数深度学习框架一样，TensorFlow是用一个Python API编写的，通过C/C++引擎加速。虽然它对Java API有实验性支持，但目前它是是非常不稳定的，这种解决方案并不适合Java和Scala用户群。</li>
 	<li>TensorFlow运行<a href="https://arxiv.org/pdf/1608.07249v7.pdf" target="_blank">明显比其他框架慢</a>（例如：CNTK 和 MxNet）</li>
   <li>TensorFlow的用途不止于深度学习。TensorFlow其实还有支持强化学习和其他算法的工具。</li>
   <li>谷歌似乎已承认TensorFlow的目标包括招募人才，让其研究者的代码可以共享，推动软件工程师以标准化方式应用深度学习，同时为谷歌云端服务带来更多业务――TensorFlow正是为该服务而优化的。</li>
@@ -106,7 +106,7 @@ redirect_from: /zh-compare-dl4j-torch7-pylearn
 
 <p><h3><a name="caffe">Caffe</a></h3></p>
 <p><a href="http://caffe.berkeleyvision.org/" target="_blank"><strong>Caffe</strong></a> 是一个广为人知、广泛应用的机器视觉库，将Matlab实现的快速卷积网络移植到了C和C++平台上（<a href="https://sites.google.com/site/steveyegge2/google-at-delphi" target="_blank">参见Steve Yegge关于一个芯片一个芯片地移植C++代码的博客，可以帮助你思考如何在速度和这种特定的技术债务之间进行权衡</a>）。Caffe不适用于文本、声音或时间序列数据等其他类型的深度学习应用。与本文提到的其他一些框架相同，Caffe选择了Python作为其API。</p>
-<p>Deeplearning4j和Caffe都可以用卷积网络进行图像分类，这是最先进的技术。与Caffe不同，Deeplearning4j<em>支持</em>任意芯片数的GPU并行运行，并且提供许多看似微不足道，却能使深度学习在多个并行GPU集群上运行得更流畅的功能。虽然在论文中被广泛引述，但Caffe主要用于为其Model Zoo网站提供已预训练的模型。Deeplearning4j正在开发将Caffe模型导入Spark的<a href="https://github.com/deeplearning4j/deeplearning4j/pull/480" target="_blank">开发解析器</a>。 </p>
+<p>Deeplearning4j和Caffe都可以用卷积网络进行图像分类，这是最先进的技术。与Caffe不同，Deeplearning4j<em>支持</em>任意芯片数的GPU并行运行，并且提供许多看似微不足道，却能使深度学习在多个并行GPU集群上运行得更流畅的功能。虽然在论文中被广泛引述，但Caffe主要用于为其Model Zoo网站提供已预训练的模型。 </p>
 <br />
 <p><h4>利与弊:</h4></p>
 <span class="label label-success">+</span> 适合前馈网络和图像处理 <br />

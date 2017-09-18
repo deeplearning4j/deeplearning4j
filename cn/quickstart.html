@@ -5,7 +5,7 @@ redirect_from: /zh-quickstart
 ---
 <p><h1>快速入门指南</h1></p>
 <p>本页将向您全面介绍如何运行DL4J示例，启动您自己的项目。</p>
-<p>建议您加入我们的<a href="https://gitter.im/deeplearning4j/deeplearning4j" target="_blank">Gitter线上交流群</a>。您可以在Gitter上请求帮助、提出反馈，不过也请您在遇到问题时先参考本指南中已列出的疑难解答。如果您是初次接触深度学习，我们准备了<a href="deeplearningforbeginners">一份初学者学习计划</a>，包括课程、阅读材料和其他资源的链接。</p>
+<p>建议您加入我们的<a href="https://gitter.im/deeplearning4j/deeplearning4j" target="_blank">Gitter线上交流群</a>或<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=5d3891e980a3a1d54f72dbe3e9831df9237be11634766440e8fbe2bdf4836748">QQ交流群</a>。您可以在Gitter或QQ上请求帮助、提出反馈，不过也请您在遇到问题时先参考本指南中已列出的疑难解答。如果您是初次接触深度学习，我们准备了<a href="deeplearningforbeginners">一份初学者学习计划</a>，包括课程、阅读材料和其他资源的链接。</p>
 <br />
 <p><h2>代码一瞥</h2></p>
 
@@ -20,6 +20,7 @@ MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
         .learningRate(0.05)
         // ……其他超参数
+        .list()
         .backprop(true)
         .build();
 </code></pre>
@@ -62,8 +63,7 @@ mvn --version
 brew install maven
 </code></pre>
 <br />
-<p>Maven被Java开发者广泛使用，可以说是DL4J的必备条件。如果您此前并未从事Java开发，对Maven了解有限，请参考<a href="http://maven.apache.org/what-is-maven.html" title="Maven Explained" target="_blank">Apache的Maven概述以及</a>本站<a href="maven" title="Maven for non-java" target="_blank">面向非Java程序员的Maven简介</a>，其中包括额外的疑难解答内容。Ivy和Gradle等<a href="buildtools" title="构建工具">其他构建工具</a>也能够运行，但我们对Maven的支持最好。
-</p>
+<p>Maven被Java开发者广泛使用，可以说是DL4J的必备条件。如果您此前并未从事Java开发，对Maven了解有限，请参考<a href="http://maven.apache.org/what-is-maven.html" title="Maven Explained" target="_blank">Apache的Maven概述以及</a>本站<a href="maven" title="Maven for non-java" target="_blank">面向非Java程序员的Maven简介</a>，其中包括额外的疑难解答内容。Ivy和Gradle等<a href="buildtools" title="构建工具">其他构建工具</a>也能够运行，但我们对Maven的支持最好。参考<a href="https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html" target="_blank">5分钟看懂Maven</a></p>
 <br />
 
 <p><a name="IntelliJ"><h4>IntelliJ IDEA</h4></a></p>
@@ -168,8 +168,31 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 <p><strong>问：</strong>我遇到了这个错误：<code>Intel MKL FATAL ERROR:Cannot load mkl_intel_thread.dll</code>，导致JVM故障（不会崩溃，只是停止运行……）。</p>
 <p><strong>答：</strong>Maven Central当前的rc3.10版本中，<code>libnd4j</code>库在路径中发现英特尔的MKL时无法将其正确加载。解决方法是添加 <code>System.loadLibrary("mkl_rt")</code>。
+<br>
 
-<br />
+<p><strong>问：</strong>SPARK的问题：我正在运行示例，并遇到Spark分析培训或DataVec转换选项等问题。</p>
+<p><strong>答：</strong>你可能会缺少Spark所需的一些依赖项组件。有关潜在依赖性问题，可以看看这<a href="https://stackoverflow.com/a/38735202/3892515">Stack Overflow 的讨论</a>的讨论。Windows用户可能需要来自Hadoop的winutils.exe。请到<a href=" https://github.com/steveloughran/winutils and put it into the null/bin/winutils.exe" target="_blank">这里</a>下载winutils.exe（或创建一个hadoop文件夹并将其添加到HADOOP_HOME）。<br />
+
+<p><h3>疑难解答：在Windows上调试UnsatisfiedLinkError</h3></p>
+<p>Windows用户可能会看到以下的报错：</p>
+<pre class="line-numbers"><code class="language-java">
+Exception in thread "main" java.lang.ExceptionInInitializerError
+at org.deeplearning4j.nn.conf.NeuralNetConfiguration$Builder.seed(NeuralNetConfiguration.java:624)
+at org.deeplearning4j.examples.feedforward.anomalydetection.MNISTAnomalyExample.main(MNISTAnomalyExample.java:46)
+Caused by: java.lang.RuntimeException: org.nd4j.linalg.factory.Nd4jBackend$NoAvailableBackendException: Please ensure that you have an nd4j backend on your classpath. Please see: http://nd4j.org/getstarted.html
+at org.nd4j.linalg.factory.Nd4j.initContext(Nd4j.java:5556)
+at org.nd4j.linalg.factory.Nd4j.(Nd4j.java:189)
+... 2 more
+Caused by: org.nd4j.linalg.factory.Nd4jBackend$NoAvailableBackendException: Please ensure that you have an nd4j backend on your classpath. Please see: http://nd4j.org/getstarted.html
+at org.nd4j.linalg.factory.Nd4jBackend.load(Nd4jBackend.java:259)
+at org.nd4j.linalg.factory.Nd4j.initContext(Nd4j.java:5553)
+... 3 more
+</code></pre>
+<p>
+如果是这个问题看，看这个<a href="https://github.com/bytedeco/javacpp-presets/wiki/Debugging-UnsatisfiedLinkError-on-Windows#using-dependency-walker">页面</a> 。在这种情况下用将“d4jCpu”替换。</p>
+<br>
+<br>
+
 <p><h3>在不使用Maven的前提下用Eclipse进行设置</h3></p>
 <p>我们推荐使用Maven和Intellij。如果您更青睐Eclipse且不想使用Maven，请参考<a href="http://electronsfree.blogspot.com/2016/10/how-to-setup-dl4j-project-with-eclipse.html" target="
 ">这篇博文</a>中的Eclipse配置详解。</p>
