@@ -6,6 +6,7 @@ import org.nd4j.parameterserver.model.MasterStatus;
 import org.nd4j.parameterserver.model.ServerTypeJson;
 import org.nd4j.parameterserver.model.SlaveStatus;
 import org.nd4j.parameterserver.model.SubscriberState;
+import play.Mode;
 import play.libs.F;
 import play.libs.Json;
 import play.mvc.Result;
@@ -116,7 +117,7 @@ public class StatusServer {
             }
         });
 
-        Server server = Server.forRouter(dsl.build(), statusServerPort);
+        Server server = Server.forRouter(dsl.build(), Mode.PROD, statusServerPort);
 
         return server;
 
