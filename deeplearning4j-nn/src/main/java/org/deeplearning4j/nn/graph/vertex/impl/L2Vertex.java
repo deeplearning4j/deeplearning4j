@@ -56,8 +56,8 @@ public class L2Vertex extends BaseGraphVertex {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
-        INDArray a = inputs[0];
-        INDArray b = inputs[1];
+        INDArray a = input.get(0);
+        INDArray b = input.get(1);
 
         int[] dimensions = new int[a.rank() - 1];
         for (int i = 1; i < a.rank(); i++) {
@@ -73,8 +73,8 @@ public class L2Vertex extends BaseGraphVertex {
             throw new IllegalStateException("Cannot do backward pass: error not set");
         INDArray epsilon = gradient.get(0);
 
-        INDArray a = inputs[0];
-        INDArray b = inputs[1];
+        INDArray a = input.get(0);
+        INDArray b = input.get(1);
         INDArray out = activate(true).get(0);
         Transforms.max(out, eps, false); // in case of 0
 

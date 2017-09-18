@@ -59,10 +59,6 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         super(conf);
     }
 
-    public BasePretrainNetwork(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
 
     @Override
     public double score(){
@@ -158,7 +154,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         ILossFunction lossFunction = layerConf().getLossFunction().getILossFunction();
 
         //double score = lossFunction.computeScore(input, z, layerConf().getActivationFunction(), maskArray, false);
-        double score = lossFunction.computeScore(input, z, layerConf().getActivationFn(), maskArray, false);
+        double score = lossFunction.computeScore(input.get(0), z, layerConf().getActivationFn(), input.getMask(0), false);
         score += calcL1(false) + calcL2(false);
         score /= getInputMiniBatchSize();
 

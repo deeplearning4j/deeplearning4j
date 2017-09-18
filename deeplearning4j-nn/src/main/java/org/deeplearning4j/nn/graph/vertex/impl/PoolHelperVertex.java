@@ -51,11 +51,11 @@ public class PoolHelperVertex extends BaseGraphVertex {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
-        if (inputs.length > 1)
+        if (input.size() > 1)
             throw new IllegalStateException("PoolHelper vertex requires a single input.");
 
-        INDArray strippedInput = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.interval(1, inputs[0].size(2)), NDArrayIndex.interval(1, inputs[0].size(3)));
+        INDArray strippedInput = input.get(0).get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.interval(1, input.get(0).size(2)), NDArrayIndex.interval(1, input.get(0).size(3)));
         return ActivationsFactory.getInstance().create(strippedInput);
     }
 

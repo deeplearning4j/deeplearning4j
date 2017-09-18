@@ -65,26 +65,26 @@ public class UnstackVertex extends BaseGraphVertex {
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
         // once we know the inputs, save the shape and interval size for doBackward
-        this.forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
-        this.step = inputs[0].size(0) / stackSize;
+        this.forwardShape = Arrays.copyOf(input.get(0).shape(), input.get(0).rank());
+        this.step = input.get(0).size(0) / stackSize;
         int start = from * step;
         int end = (from + 1) * step;
 
         INDArray ret;
-        switch (inputs[0].rank()) { //TODO remove the dups here if/when possible (gradient checks must pass)
+        switch (input.get(0).rank()) { //TODO remove the dups here if/when possible (gradient checks must pass)
             case 2:
-                ret = inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all()).dup();
+                ret = input.get(0).get(NDArrayIndex.interval(start, end), NDArrayIndex.all()).dup();
                 break;
             case 3:
-                ret = inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()).dup();
+                ret = input.get(0).get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all()).dup();
                 break;
             case 4:
-                ret = inputs[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(),
+                ret = input.get(0).get(NDArrayIndex.interval(start, end), NDArrayIndex.all(), NDArrayIndex.all(),
                                 NDArrayIndex.all()).dup();
                 break;
             default:
                 throw new UnsupportedOperationException(
-                                "Cannot get subset for activations of rank " + inputs[0].rank());
+                                "Cannot get subset for activations of rank " + input.get(0).rank());
         }
         return ActivationsFactory.getInstance().create(ret);
     }

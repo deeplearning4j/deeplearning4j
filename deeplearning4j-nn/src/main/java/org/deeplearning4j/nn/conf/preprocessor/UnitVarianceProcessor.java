@@ -40,7 +40,7 @@ public class UnitVarianceProcessor extends BaseInputPreProcessor {
     INDArray columnStds;
 
     @Override
-    public Activations preProcess(Activations a, int miniBatchSize) {
+    public Activations preProcess(Activations a, int miniBatchSize, boolean training) {
 
         Activations out = ActivationsFactory.getInstance().create(a.getAsArray(),
                 a.getMaskAsArray(), a.getMaskStateAsArray());
@@ -54,7 +54,7 @@ public class UnitVarianceProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public Gradients backprop(Gradients g, int miniBatchSize) {
+    public Gradients backprop(Gradients g, int miniBatchSize, boolean training) {
         return g; //no-op
     }
 

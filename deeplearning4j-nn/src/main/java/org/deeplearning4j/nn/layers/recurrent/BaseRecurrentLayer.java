@@ -28,10 +28,6 @@ public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.n
         super(conf);
     }
 
-    public BaseRecurrentLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     /**
      * Returns a shallow copy of the stateMap
      */

@@ -44,13 +44,10 @@ public class Upsampling1D extends Upsampling2D {
         super(conf);
     }
 
-    public Upsampling1D(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
 
     @Override
     public Gradients backpropGradient(Gradients gradients) {
+        INDArray input = this.input.get(0);
         INDArray epsilon = gradients.get(0);
 
         int size = ((BaseUpsamplingLayer) layerConf()).getSize();
@@ -79,12 +76,13 @@ public class Upsampling1D extends Upsampling2D {
     }
 
     public INDArray preOutput(boolean training, boolean forBackprop) {
+        INDArray input = this.input.get(0);
         INDArray originalInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        this.input.set(0, input.reshape(input.size(0), input.size(1), input.size(2), 1));
 
         INDArray preOutput = super.preOutput(training, forBackprop);
 
-        input = originalInput;
+        this.input.set(0, originalInput);
         preOutput = preOutput.slice(0, 3);
 
         return preOutput;

@@ -69,16 +69,16 @@ public class LastTimeStepVertex extends BaseGraphVertex {
 
         //Then: work out, from the mask array, which time step of activations we want, extract activations
         //Also: record where they came from (so we can do errors later)
-        fwdPassShape = inputs[0].shape();
+        fwdPassShape = input.get(0).shape();
 
         INDArray out;
         if (mask == null) {
             //No mask array -> extract same (last) column for all
-            int lastTS = inputs[0].size(2) - 1;
-            out = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
+            int lastTS = input.get(0).size(2) - 1;
+            out = input.get(0).get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
             fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {
-            int[] outShape = new int[] {inputs[0].size(0), inputs[0].size(1)};
+            int[] outShape = new int[] {input.get(0).size(0), input.get(0).size(1)};
             out = Nd4j.create(outShape);
 
             //Want the index of the last non-zero entry in the mask array.
@@ -94,7 +94,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
 
             //Now, get and assign the corresponding subsets of 3d activations:
             for (int i = 0; i < fwdPassTimeSteps.length; i++) {
-                out.putRow(i, inputs[0].get(NDArrayIndex.point(i), NDArrayIndex.all(),
+                out.putRow(i, input.get(0).get(NDArrayIndex.point(i), NDArrayIndex.all(),
                                 NDArrayIndex.point(fwdPassTimeSteps[i])));
             }
         }

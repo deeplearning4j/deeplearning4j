@@ -52,10 +52,6 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         super(conf);
     }
 
-    public CenterLossOutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     /** Compute score after labels and input have been set.
      * @param fullNetworkL1 L1 regularization term for the entire network
      * @param fullNetworkL2 L2 regularization term for the entire network

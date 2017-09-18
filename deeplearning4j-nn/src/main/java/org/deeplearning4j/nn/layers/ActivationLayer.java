@@ -44,17 +44,13 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         super(conf);
     }
 
-    public ActivationLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     @Override
     public Gradients backpropGradient(Gradients gradients) {
         INDArray epsilon = gradients.get(0);
-        INDArray delta = layerConf().getActivationFn().backprop(input.dup(), epsilon).getFirst(); //TODO handle activation function params
+        INDArray delta = layerConf().getActivationFn().backprop(input.get(0).dup(), epsilon).getFirst(); //TODO handle activation function params
 
-        if (maskArray != null) {
-            delta.muliColumnVector(maskArray);
+        if (input.getMask(0) != null) {
+            delta.muliColumnVector(input.getMask(0));
         }
 
         Gradient ret = new DefaultGradient();
@@ -67,6 +63,8 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
             throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
         }
         applyDropOutIfNecessary(training);
+
+        INDArray input = this.input.get(0);
 
         INDArray in;
         if (training) {

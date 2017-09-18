@@ -65,12 +65,10 @@ public class LayerVertex extends BaseGraphVertex {
         super(graph, name, vertexIndex, numInputs);
         this.graph = graph;
         this.vertexName = name;
-        this.vertexIndex = vertexIndex;
+        this.index = vertexIndex;
         this.layer = layer;
         this.layerPreProcessor = layerPreProcessor;
         this.outputVertex = outputVertex;
-
-        this.inputs = new INDArray[layer.numInputs()];
     }
 
 
@@ -314,44 +312,6 @@ public class LayerVertex extends BaseGraphVertex {
 
     @Override
     public Gradients backpropGradient(Gradients gradient) {
-        INDArray epsilon = gradient.size() == 0 ? null : gradient.get(0);
-        if (!canDoBackward()) {
-            throw new IllegalStateException("Cannot do backward pass: all epsilons not set. Layer " + vertexName
-                            + " (idx " + vertexIndex + ") numInputs " + numInputs() );  // + "; numOutputs "
-//                            + getNumOutputConnections());
-        }
-
-        Gradients pair;
-        //TODO FIX ME
-        if (false && layer instanceof RecurrentLayer) {
-            //Truncated BPTT for recurrent layers
-            pair = ((RecurrentLayer) layer).tbpttBackpropGradient(GradientsFactory.getInstance().create(epsilon),
-                            graph.getConfiguration().getTbpttBackLength());
-        } else {
-            //Normal backprop
-            pair = layer.backpropGradient(GradientsFactory.getInstance().create(epsilon, null)); //epsTotal may be null for OutputLayers
-        }
-
-        if (layerPreProcessor != null) {
-            pair = layerPreProcessor.backprop(pair, graph.batchSize());
-        }
-
-        //Layers always have single activations input -> always have single epsilon output during backprop
-        return pair;
-    }
-
-    @Override
-    public void setInput(int inputNumber, INDArray input) {
-        if(inputNumber < 0 || inputNumber >= layer.numInputs() )
-            throw new IllegalArgumentException("Cannot set input " + inputNumber + ": inputs must be 0 to "
-                    + (layer.numInputs()-1) + " inclusive for this layer only");
-        inputs[inputNumber] = input;
-
-        INDArray currInput = inputs[0];
-        if (layerPreProcessor != null) {
-//            currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
-            throw new UnsupportedOperationException("Not yet reimplemented");
-        }
-        layer.setInput(inputNumber, currInput);
+        return layer.backpropGradient(gradient);
     }
 }

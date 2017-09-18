@@ -64,7 +64,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
 
         // L2 norm along all dimensions except 0, unless user-specified
         // x / |x|2
-        INDArray x = inputs[0];
+        INDArray x = input.get(0);
         int[] dimensions = getDimensions(x);
 
         INDArray xNorm2 = x.norm2(dimensions);
@@ -85,7 +85,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
                             + " idx " + vertexIndex + ")");
         INDArray epsilon = gradient.get(0);
 
-        INDArray x = inputs[0];
+        INDArray x = input.get(0);
         int[] dimensions = getDimensions(x);
 
         INDArray norm = x.norm2(dimensions);

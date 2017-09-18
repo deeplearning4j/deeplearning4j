@@ -36,7 +36,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class ZeroMeanPrePreProcessor extends BaseInputPreProcessor {
 
     @Override
-    public Activations preProcess(Activations a, int miniBatchSize) {
+    public Activations preProcess(Activations a, int miniBatchSize, boolean training) {
         Activations out = ActivationsFactory.getInstance().create(a.getAsArray(),
                 a.getMaskAsArray(), a.getMaskStateAsArray());
         for(int i=0; i<a.size(); i++ ) {
@@ -49,7 +49,7 @@ public class ZeroMeanPrePreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public Gradients backprop(Gradients output, int miniBatchSize) {
+    public Gradients backprop(Gradients output, int miniBatchSize, boolean training) {
         return output;
     }
 

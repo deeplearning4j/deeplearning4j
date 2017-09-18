@@ -12,10 +12,6 @@ public class DenseLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dens
         super(conf);
     }
 
-    public DenseLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     @Override
     public boolean isPretrainLayer() {
         return false;

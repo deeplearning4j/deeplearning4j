@@ -59,13 +59,13 @@ public class ShiftVertex extends BaseGraphVertex {
     public Activations activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set (ShiftVertex " + vertexName
-                            + " idx " + vertexIndex + ")");
+                            + " idx " + input.size() + ")");
 
-        if (inputs.length > 1)
+        if (input.size() > 1)
             throw new IllegalArgumentException(
-                            "ShiftVertex (name " + vertexName + " idx " + vertexIndex + ") only supports 1 input.");
+                            "ShiftVertex (name " + vertexName + " idx " + input.size() + ") only supports 1 input.");
 
-        INDArray shifted = inputs[0].dup();
+        INDArray shifted = input.get(0).dup();
         shifted.addi(shiftFactor);
 
         return ActivationsFactory.getInstance().create(shifted);
@@ -81,7 +81,7 @@ public class ShiftVertex extends BaseGraphVertex {
         if (backpropGradientsViewArray != null)
             throw new RuntimeException(
                             "Vertex does not have gradients; gradients view array cannot be set here (ShiftVertex "
-                                            + vertexName + " idx " + vertexIndex + ")");
+                                            + vertexName + " idx " + input.size() + ")");
     }
 
     @Override

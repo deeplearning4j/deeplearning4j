@@ -68,11 +68,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         convolutionMode = ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf().getLayer()).getConvolutionMode();
     }
 
-    public ConvolutionLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-        initializeHelper();
-    }
-
     void initializeHelper() {
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper")
@@ -97,6 +92,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Gradients backpropGradient(Gradients gradients) {
+        INDArray input = this.input.get(0);
         INDArray epsilon = gradients.get(0);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true);
 
@@ -249,6 +245,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop) {
         INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training);
+        INDArray input = this.input.get(0);
 
         //Input validation: expect rank 4 matrix
         if (input.rank() != 4) {

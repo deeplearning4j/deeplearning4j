@@ -60,23 +60,23 @@ public class SubsetVertex extends BaseGraphVertex {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
-        forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
+        forwardShape = Arrays.copyOf(input.get(0).shape(), input.get(0).rank());
 
         INDArray ret;
-        switch (inputs[0].rank()) {
+        switch (input.get(0).rank()) {
             case 2:
-                ret = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true));
+                ret = input.get(0).get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true));
                 break;
             case 3:
-                ret = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all());
+                ret = input.get(0).get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all());
                 break;
             case 4:
-                ret = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(),
+                ret = input.get(0).get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(),
                                 NDArrayIndex.all());
                 break;
             default:
                 throw new UnsupportedOperationException(
-                                "Cannot get subset for activations of rank " + inputs[0].rank());
+                                "Cannot get subset for activations of rank " + input.get(0).rank());
         }
         return ActivationsFactory.getInstance().create(ret);
     }

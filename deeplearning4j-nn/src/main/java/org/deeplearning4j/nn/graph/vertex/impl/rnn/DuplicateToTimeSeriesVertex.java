@@ -68,11 +68,11 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
 
         //First: work out the time series length
         int tsLength = graph.getInput(inputVertexIndex).size(2);
-        int[] outShape = new int[] {inputs[0].size(0), inputs[0].size(1), tsLength};
+        int[] outShape = new int[] {input.get(0).size(0), input.get(0).size(1), tsLength};
 
         INDArray out = Nd4j.create(outShape);
         for (int i = 0; i < tsLength; i++) {
-            out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, inputs[0]);
+            out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, input.get(0));
         }
         return ActivationsFactory.getInstance().create(out);
     }

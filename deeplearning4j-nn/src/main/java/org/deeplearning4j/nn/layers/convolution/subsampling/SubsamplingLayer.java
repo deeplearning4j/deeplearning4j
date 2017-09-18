@@ -66,11 +66,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                         ((org.deeplearning4j.nn.conf.layers.SubsamplingLayer) conf.getLayer()).getConvolutionMode();
     }
 
-    public SubsamplingLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-        initializeHelper();
-    }
-
     void initializeHelper() {
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.convolution.subsampling.CudnnSubsamplingHelper")
@@ -96,6 +91,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Gradients backpropGradient(Gradients gradients) {
+        INDArray input = this.input.get(0);
         INDArray epsilon = gradients.get(0);
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
@@ -246,6 +242,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         if (training && !dropoutApplied && layerConf().getIDropout() != null) {
             applyDropOutIfNecessary(true);
         }
+        INDArray input = this.input.get(0);
 
         //Input validation: expect rank 4 matrix
         if (input.rank() != 4) {

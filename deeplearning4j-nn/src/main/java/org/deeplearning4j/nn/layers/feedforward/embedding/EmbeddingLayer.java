@@ -59,16 +59,17 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray z = preOutput(true);
         INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
-        if (maskArray != null) {
-            delta.muliColumnVector(maskArray);
+        if (input.getMask(0) != null) {
+            delta.muliColumnVector(input.getMask(0));
         }
 
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
 
-        int[] indexes = new int[input.length()];
+        int[] indexes = new int[input.get(0).length()];
+        INDArray in = input.get(0);
         for (int i = 0; i < indexes.length; i++) {
-            indexes[i] = input.getInt(i, 0);
+            indexes[i] = in.getInt(i, 0);
         }
 
         ScatterUpdate op = new ScatterUpdate(weightGradients, delta, indexes, DIM_1, ScatterUpdate.UpdateOp.ADD);
@@ -89,7 +90,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
     @Override
     public INDArray preOutput(boolean training) {
-        if (input.columns() != 1) {
+        if (input.get(0).columns() != 1) {
             //Assume shape is [numExamples,1], and each entry is an integer index
             throw new DL4JInvalidInputException(
                             "Cannot do forward pass for embedding layer with input more than one column. "
@@ -97,9 +98,10 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
                                             + layerId());
         }
 
-        int[] indexes = new int[input.length()];
+        int[] indexes = new int[input.get(0).length()];
+        INDArray in = input.get(0);
         for (int i = 0; i < indexes.length; i++)
-            indexes[i] = input.getInt(i, 0);
+            indexes[i] = in.getInt(i, 0);
 
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
@@ -118,8 +120,8 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
         //INDArray ret =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), rows));
         INDArray ret = layerConf().getActivationFn().getActivation(rows, training);
-        if (maskArray != null) {
-            ret.muliColumnVector(maskArray);
+        if (input.getMask(0) != null) {
+            ret.muliColumnVector(input.getMask(0));
         }
         return ActivationsFactory.getInstance().create(ret);
     }

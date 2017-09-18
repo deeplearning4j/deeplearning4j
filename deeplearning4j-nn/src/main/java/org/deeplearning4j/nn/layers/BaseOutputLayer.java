@@ -71,10 +71,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         super(conf);
     }
 
-    public BaseOutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     @Override
     public double score(){
         return score;
@@ -89,7 +85,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
-        if (input == null || labels == null)
+        if (getInput(0) == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
@@ -98,7 +94,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         ILossFunction lossFunction = layerConf().getLossFn();
 
         //double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFunction(), maskArray, false);
-        double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray,
+        double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), input.getMask(0),
                         false);
         score += fullNetworkL1 + fullNetworkL2;
         score /= getInputMiniBatchSize();
@@ -116,13 +112,13 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
-        if (input == null || labels == null)
+        if (getInput(0) == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = preOutput2d(false);
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
-                        lossFunction.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray);
+                        lossFunction.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(), input.getMask(0));
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
@@ -132,7 +128,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     public void computeGradientAndScore() {
-        if (input == null || labels == null)
+        if (getInput(0) == null || labels == null)
             return;
 
         INDArray preOut = preOutput2d(true);
@@ -175,12 +171,12 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray labels2d = getLabels2d();
         //INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFunction(), maskArray);
-        INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);
+        INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), input.getMask(0));
 
         Gradient gradient = new DefaultGradient();
 
         INDArray weightGradView = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
-        Nd4j.gemm(input, delta, weightGradView, true, false, 1.0, 0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
+        Nd4j.gemm(input.get(0), delta, weightGradView, true, false, 1.0, 0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradView);
 
         if(hasBias()){
@@ -197,7 +193,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public Activations activate(Activations input, boolean training) {
         if(input.size() != 1)
             throw new IllegalStateException();
-        setInput(input.get(0));
+        setInput(input);
         return output(training);
     }
 
@@ -304,6 +300,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     protected void applyMask(INDArray to) {
+        INDArray maskArray = input.getMask(0);
         //For output layers: can be either per-example masking, or per-
         if (maskArray.isColumnVector()) {
             to.muliColumnVector(maskArray);

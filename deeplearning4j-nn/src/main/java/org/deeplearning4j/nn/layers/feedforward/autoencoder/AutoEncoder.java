@@ -45,10 +45,6 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         super(conf);
     }
 
-    public AutoEncoder(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     @Override
     public Pair<INDArray, INDArray> sampleHiddenGivenVisible(INDArray v) {
         setInput(v);
@@ -97,7 +93,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     @Override
     public Activations activate(boolean training) {
-        return ActivationsFactory.getInstance().create(decode(encode(input, training)));
+        return ActivationsFactory.getInstance().create(decode(encode(input.get(0), training)));
     }
 
     @Override
@@ -106,13 +102,13 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
         double corruptionLevel = layerConf().getCorruptionLevel();
 
-        INDArray corruptedX = corruptionLevel > 0 ? getCorruptedInput(input, corruptionLevel) : input;
+        INDArray corruptedX = corruptionLevel > 0 ? getCorruptedInput(input.get(0), corruptionLevel) : input.get(0);
         setInput(corruptedX);
 
         INDArray y = encode(corruptedX, true);
         INDArray z = decode(y);
 
-        INDArray visibleLoss = input.sub(z);
+        INDArray visibleLoss = input.get(0).sub(z);
         INDArray hiddenLoss = layerConf().getSparsity() == 0 ? visibleLoss.mmul(W).muli(y).muli(y.rsub(1))
                         : visibleLoss.mmul(W).muli(y).muli(y.add(-layerConf().getSparsity()));
 

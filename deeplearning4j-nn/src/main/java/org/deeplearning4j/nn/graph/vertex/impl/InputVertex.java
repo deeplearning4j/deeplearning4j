@@ -52,7 +52,7 @@ public class InputVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        return ActivationsFactory.getInstance().create(input);
+        return input;
     }
 
     @Override
@@ -79,6 +79,6 @@ public class InputVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "InputVertex(id=" + vertexIndex + ",name=\"" + vertexName + "\")";
+        return "InputVertex(id=" + getIndex() + ",name=\"" + vertexName + "\")";
     }
 }

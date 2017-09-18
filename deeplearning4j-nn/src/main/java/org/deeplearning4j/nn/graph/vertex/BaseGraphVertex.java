@@ -36,11 +36,6 @@ public abstract class BaseGraphVertex extends AbstractLayer {
 
     protected String vertexName;
 
-    /** The index of this vertex */
-    protected int vertexIndex;
-
-    protected INDArray[] inputs;
-
     //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
     // For RL situations, this Layer insn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
     // passed in externally
@@ -50,14 +45,8 @@ public abstract class BaseGraphVertex extends AbstractLayer {
     protected BaseGraphVertex(ComputationGraph graph, String name, int vertexIndex, int numInputs) {
         this.graph = graph;
         this.vertexName = name;
-        this.vertexIndex = vertexIndex;
-
-        this.inputs = new INDArray[numInputs];
-    }
-
-    @Override
-    public int getIndex() {
-        return vertexIndex;
+        this.index = vertexIndex;
+        this.numInputs = numInputs;
     }
 
     @Override
@@ -65,26 +54,6 @@ public abstract class BaseGraphVertex extends AbstractLayer {
         return vertexName;
     }
 
-    @Override
-    public int numInputs() {
-        return inputs.length;
-    }
-
-    @Override
-    public void setInput(int inputNumber, INDArray input) {
-        if (inputNumber >= numInputs()) {
-            throw new IllegalArgumentException("Invalid input number: got " + inputNumber + ", inputs must be in range" +
-                    "0 to " + (numInputs()-1) + " inclusive");
-        }
-        inputs[inputNumber] = input;
-    }
-
-    @Override
-    public void clear() {
-        for (int i = 0; i < inputs.length; i++) {
-            inputs[i] = null;
-        }
-    }
 
     @Override
     public abstract String toString();
@@ -101,12 +70,6 @@ public abstract class BaseGraphVertex extends AbstractLayer {
 
     protected abstract Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                                                                               int minibatchSize);
-
-    @Override
-    public INDArray getInput(int inputNumber){
-        //TODO have both input and inputs fields...
-        return this.inputs[inputNumber];
-    }
 
     public boolean canDoForward(){
         for( int i=0; i<numInputs(); i++ ){

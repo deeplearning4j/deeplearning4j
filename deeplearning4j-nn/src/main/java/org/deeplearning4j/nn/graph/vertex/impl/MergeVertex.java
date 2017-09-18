@@ -64,18 +64,18 @@ public class MergeVertex extends BaseGraphVertex {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
-        if (inputs.length == 1) {
+        if (input.size() == 1) {
             //No-op case
-            int[] shape = inputs[0].shape();
+            int[] shape = input.get(0).shape();
             forwardPassShapes = new int[][] {Arrays.copyOf(shape, shape.length)};
-            return ActivationsFactory.getInstance().create(inputs[0]);
+            return input;
         }
 
-        forwardPassShapes = new int[inputs.length][0];
-        int nExamples = inputs[0].size(0);
+        forwardPassShapes = new int[input.size()][0];
+        int nExamples = input.get(0).size(0);
         int nOut = 0;
-        fwdPassRank = inputs[0].rank();
-        for (int i = 0; i < inputs.length; i++) {
+        fwdPassRank = input.get(0).rank();
+        for (int i = 0; i < input.size(); i++) {
             int[] currShape = inputs[i].shape();
             if (fwdPassRank != currShape.length) {
                 throw new IllegalStateException(
@@ -87,7 +87,7 @@ public class MergeVertex extends BaseGraphVertex {
             if (currShape[0] != nExamples) {
                 throw new IllegalStateException(
                                 "Cannot merge activations with different number of examples (activations[0] shape: "
-                                                + Arrays.toString(inputs[0].shape()) + ", activations[" + i
+                                                + Arrays.toString(input.get(0).shape()) + ", activations[" + i
                                                 + "] shape: " + Arrays.toString(inputs[i].shape()));
             }
 

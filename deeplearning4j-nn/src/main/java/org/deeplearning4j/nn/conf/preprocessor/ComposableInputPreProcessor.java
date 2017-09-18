@@ -45,18 +45,18 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public Activations preProcess(Activations input, int miniBatchSize) {
+    public Activations preProcess(Activations input, int miniBatchSize, boolean training) {
         for (InputPreProcessor preProcessor : inputPreProcessors)
-            input = preProcessor.preProcess(input, miniBatchSize);
+            input = preProcessor.preProcess(input, miniBatchSize, training);
         return input;
     }
 
     @Override
-    public Gradients backprop(Gradients output, int miniBatchSize) {
+    public Gradients backprop(Gradients output, int miniBatchSize, boolean training) {
         //Apply input preprocessors in opposite order for backprop (compared to forward pass)
         //For example, CNNtoFF + FFtoRNN, need to do backprop in order of FFtoRNN + CNNtoFF
         for (int i = inputPreProcessors.length - 1; i >= 0; i--) {
-            output = inputPreProcessors[i].backprop(output, miniBatchSize);
+            output = inputPreProcessors[i].backprop(output, miniBatchSize, training);
         }
         return output;
     }

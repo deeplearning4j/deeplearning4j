@@ -61,11 +61,6 @@ public class LocalResponseNormalization
     private int halfN;
     private INDArray activations, unitScale, scale;
 
-    public LocalResponseNormalization(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-        initializeHelper();
-    }
-
     @Override
     public Layer clone() {
         return new LocalResponseNormalization(conf.clone());
@@ -102,13 +97,13 @@ public class LocalResponseNormalization
     public Gradients backpropGradient(Gradients gradients) {
         INDArray epsilon = gradients.get(0);
         if (helper != null) {
-            Gradients ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta);
+            Gradients ret = helper.backpropGradient(input.get(0), epsilon, k, n, alpha, beta);
             if (ret != null) {
                 return ret;
             }
         }
 
-        int channel = input.size(1);
+        int channel = input.get(0).size(1);
         INDArray tmp, addVal;
         Gradient retGradient = new DefaultGradient();
         INDArray reverse = activations.mul(epsilon);
@@ -128,7 +123,7 @@ public class LocalResponseNormalization
         }
 
         // gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}    - rearranged for more in-place ops
-        INDArray nextEpsilon = epsilon.mul(scale).subi(sumPart.muli(input).divi(unitScale).muli(2 * alpha * beta));
+        INDArray nextEpsilon = epsilon.mul(scale).subi(sumPart.muli(input.get(0)).divi(unitScale).muli(2 * alpha * beta));
 //        return new Pair<>(retGradient, nextEpsilon);
         return GradientsFactory.getInstance().create(nextEpsilon, retGradient);
     }
@@ -142,16 +137,16 @@ public class LocalResponseNormalization
         halfN = (int) n / 2;
 
         if (helper != null) {
-            activations = helper.activate(input, training, k, n, alpha, beta);
+            activations = helper.activate(input.get(0), training, k, n, alpha, beta);
             if (activations != null) {
                 return ActivationsFactory.getInstance().create(activations);
             }
         }
 
-        int channel = input.size(1);
+        int channel = input.get(0).size(1);
         INDArray tmp, addVal;
         // x^2 = (a^j_{x,y})^2
-        INDArray activitySqr = input.mul(input);
+        INDArray activitySqr = input.get(0).mul(input.get(0));
         INDArray sumPart = activitySqr.dup();
 
         //sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
@@ -172,7 +167,7 @@ public class LocalResponseNormalization
         unitScale = sumPart.mul(alpha).addi(k).leverageTo(ComputationGraph.workspaceExternal);
         // y = x * unitScale**-beta
         scale = Transforms.pow(unitScale, -beta).leverageTo(ComputationGraph.workspaceExternal);
-        activations = input.mul(scale).leverageTo(ComputationGraph.workspaceExternal);
+        activations = input.get(0).mul(scale).leverageTo(ComputationGraph.workspaceExternal);
         return ActivationsFactory.getInstance().create(activations);
     }
 

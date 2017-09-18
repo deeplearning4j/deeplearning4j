@@ -53,11 +53,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         super(conf);
     }
 
-    public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
-        this(conf);
-        this.input = input;
-    }
-
     public LayerConfT layerConf() {
         return (LayerConfT) this.conf.getLayer();
     }
@@ -85,14 +80,14 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         //        INDArray delta = epsilon.muli(activationDerivative);
         INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
-        if (maskArray != null) {
+        if (input.getMask(0) != null) {
             applyMask(delta);
         }
 
         Gradient ret = new DefaultGradient();
 
         INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY); //f order
-        Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
+        Nd4j.gemm(input.get(0), delta, weightGrad, true, false, 1.0, 0.0);
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
 
         if(hasBias()){
@@ -250,25 +245,25 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
 
         //Input validation:
-        if (input.rank() != 2 || input.columns() != W.rows()) {
-            if (input.rank() != 2) {
+        if (input.get(0).rank() != 2 || input.get(0).columns() != W.rows()) {
+            if (input.get(0).rank() != 2) {
                 throw new DL4JInvalidInputException("Input that is not a matrix; expected matrix (rank 2), got rank "
-                                + input.rank() + " array with shape " + Arrays.toString(input.shape())
+                                + input.get(0).rank() + " array with shape " + Arrays.toString(input.get(0).shape())
                                 + ". Missing preprocessor or wrong input type? " + layerId());
             }
             throw new DL4JInvalidInputException(
-                            "Input size (" + input.columns() + " columns; shape = " + Arrays.toString(input.shape())
+                            "Input size (" + input.get(0).columns() + " columns; shape = " + Arrays.toString(input.get(0).shape())
                                             + ") is invalid: does not match layer input size (layer # inputs = "
                                             + W.size(0) + ") " + layerId());
         }
 
 
-        INDArray ret = input.mmul(W);
+        INDArray ret = input.get(0).mmul(W);
         if(hasBias()){
             ret.addiRowVector(b);
         }
 
-        if (maskArray != null) {
+        if (input.getMask(0) != null) {
             applyMask(ret);
         }
 
@@ -280,7 +275,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray z = preOutput(training);
         INDArray ret = layerConf().getActivationFn().getActivation(z, training);
 
-        if (maskArray != null) {
+        if (input.getMask(0) != null) {
             applyMask(ret);
         }
 

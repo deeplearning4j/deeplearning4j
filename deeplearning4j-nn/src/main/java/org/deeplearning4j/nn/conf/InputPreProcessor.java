@@ -50,7 +50,7 @@ import java.io.Serializable;
 //                @JsonSubTypes.Type(value = UnitVarianceProcessor.class, name = "unitVariance"),
 //                @JsonSubTypes.Type(value = ZeroMeanAndUnitVariancePreProcessor.class, name = "zeroMeanAndUnitVariance"),
 //                @JsonSubTypes.Type(value = ZeroMeanPrePreProcessor.class, name = "zeroMean"),})
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface InputPreProcessor extends Serializable, Cloneable {
 
 
@@ -60,7 +60,7 @@ public interface InputPreProcessor extends Serializable, Cloneable {
      * @param miniBatchSize
      * @return the processed input
      */
-    Activations preProcess(Activations input, int miniBatchSize);
+    Activations preProcess(Activations input, int miniBatchSize, boolean training);
 
     /**Reverse the preProcess during backprop. Process Gradient/epsilons before
      * passing them to the layer below.
@@ -68,7 +68,7 @@ public interface InputPreProcessor extends Serializable, Cloneable {
      * @param miniBatchSize
      * @return the reverse of the pre preProcess step (if any)
      */
-    Gradients backprop(Gradients gradients, int miniBatchSize);
+    Gradients backprop(Gradients gradients, int miniBatchSize, boolean training);
 
     InputPreProcessor clone();
 

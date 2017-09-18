@@ -50,13 +50,13 @@ public class ScaleVertex extends BaseGraphVertex {
     public Activations activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set (ScaleVertex " + vertexName
-                            + " idx " + vertexIndex + ")");
+                            + " idx " + getIndex() + ")");
 
-        if (inputs.length > 1)
+        if (input.size() > 1)
             throw new IllegalArgumentException(
-                            "ScaleVertex (name " + vertexName + " idx " + vertexIndex + ") only supports 1 input.");
+                            "ScaleVertex (name " + vertexName + " idx " + getIndex() + ") only supports 1 input.");
 
-        INDArray prod = inputs[0].dup();
+        INDArray prod = input.get(0).dup();
         prod.muli(scaleFactor);
 
         return ActivationsFactory.getInstance().create(prod);
@@ -66,7 +66,7 @@ public class ScaleVertex extends BaseGraphVertex {
     public Gradients backpropGradient(Gradients gradient) {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: errors not set (ScaleVertex " + vertexName
-                            + " idx " + vertexIndex + ")");
+                            + " idx " + getIndex() + ")");
 
         INDArray epsilon = gradient.get(0);
         epsilon.muli(scaleFactor);
@@ -79,7 +79,7 @@ public class ScaleVertex extends BaseGraphVertex {
         if (backpropGradientsViewArray != null)
             throw new RuntimeException(
                             "Vertex does not have gradients; gradients view array cannot be set here (ScaleVertex "
-                                            + vertexName + " idx " + vertexIndex + ")");
+                                            + vertexName + " idx " + getIndex() + ")");
     }
 
     @Override

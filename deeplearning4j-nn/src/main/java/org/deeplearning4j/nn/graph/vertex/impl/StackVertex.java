@@ -57,8 +57,8 @@ public class StackVertex extends BaseGraphVertex {
         // inputs[] is an array of INDArray (e.g.: shape of 3 x [nExamples, nSize])
         // what we want to do is make a stacked output (e.g.: [3 x nExamples, nSize])
         lastInputShapes = null;
-        int nStack = inputs.length;
-        int[] inShape = inputs[0].shape();
+        int nStack = input.size();
+        int[] inShape = input.get(0).shape();
         int[] outShape = new int[inShape.length];
 
         // create the new shape
@@ -70,32 +70,32 @@ public class StackVertex extends BaseGraphVertex {
         boolean variableLengthTS = false;
         if (inShape.length == 3) {
             //RNN data - check for variable length time series
-            int minLength = inputs[0].size(2);
+            int minLength = input.get(0).size(2);
             int maxLength = minLength;
-            for (int i = 1; i < inputs.length; i++) {
-                int thisLength = inputs[i].size(2);
+            for (int i = 1; i < input.size(); i++) {
+                int thisLength = input.get(i).size(2);
                 minLength = Math.min(minLength, thisLength);
                 maxLength = Math.max(maxLength, thisLength);
             }
             variableLengthTS = (minLength != maxLength);
 
             if (!variableLengthTS) {
-                return ActivationsFactory.getInstance().create(Nd4j.concat(0, inputs));
+                return ActivationsFactory.getInstance().create(Nd4j.concat(0, input.getAsArray()));
             }
 
             outShape[2] = maxLength;
             INDArray out = Nd4j.create(outShape);
-            int numExamples = inputs[0].size(0);
-            lastInputShapes = new int[inputs.length][0];
-            for (int i = 0; i < inputs.length; i++) {
+            int numExamples = input.get(0).size(0);
+            lastInputShapes = new int[input.size()][0];
+            for (int i = 0; i < input.size(); i++) {
                 out.put(new INDArrayIndex[] {NDArrayIndex.interval(i * numExamples, (i + 1) * numExamples),
-                                NDArrayIndex.all(), NDArrayIndex.interval(0, inputs[i].size(2))}, inputs[i]);
-                lastInputShapes[i] = inputs[i].shape();
+                                NDArrayIndex.all(), NDArrayIndex.interval(0, input.get(i).size(2))}, input.get(i));
+                lastInputShapes[i] = input.get(i).shape();
             }
 
             return ActivationsFactory.getInstance().create(out);
         } else {
-            return ActivationsFactory.getInstance().create(Nd4j.concat(0, inputs));
+            return ActivationsFactory.getInstance().create(Nd4j.concat(0, input.getAsArray()));
         }
     }
 
@@ -112,7 +112,7 @@ public class StackVertex extends BaseGraphVertex {
             return gradient;
         }
 
-        int nStack = inputs.length;
+        int nStack = input.size();
         INDArray[] out = new INDArray[nStack];
 
         int step = epsilon.size(0) / nStack;
@@ -138,7 +138,7 @@ public class StackVertex extends BaseGraphVertex {
                     break;
                 default:
                     throw new UnsupportedOperationException(
-                                    "Cannot get subset for activations of rank " + inputs[0].rank());
+                                    "Cannot get subset for activations of rank " + input.get(0).rank());
             }
         }
 

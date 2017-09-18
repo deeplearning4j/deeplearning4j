@@ -37,7 +37,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public class BinomialSamplingPreProcessor extends BaseInputPreProcessor {
 
     @Override
-    public Activations preProcess(Activations input, int miniBatchSize) {
+    public Activations preProcess(Activations input, int miniBatchSize, boolean training) {
         Activations out = ActivationsFactory.getInstance().create(input.getAsArray(),
                 input.getMaskAsArray(), input.getMaskStateAsArray());
         for(int i=0; i<input.size(); i++ ){
@@ -49,7 +49,7 @@ public class BinomialSamplingPreProcessor extends BaseInputPreProcessor {
 
 
     @Override
-    public Gradients backprop(Gradients gradients, int miniBatchSize) {
+    public Gradients backprop(Gradients gradients, int miniBatchSize, boolean training) {
         return gradients;   //No op
     }
 

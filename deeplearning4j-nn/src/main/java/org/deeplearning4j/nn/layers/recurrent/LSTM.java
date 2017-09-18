@@ -55,11 +55,6 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         initializeHelper();
     }
 
-    public LSTM(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-        initializeHelper();
-    }
-
     void initializeHelper() {
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.recurrent.CudnnLSTMHelper")
@@ -120,7 +115,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         }
 
 
-        Gradients p = LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
+        Gradients p = LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input.get(0),
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         LSTMParamInitializer.INPUT_WEIGHT_KEY, LSTMParamInitializer.RECURRENT_WEIGHT_KEY,
                         LSTMParamInitializer.BIAS_KEY, gradientViews, null, false, helper);
@@ -159,7 +154,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         final INDArray biases = getParamWithNoise(LSTMParamInitializer.BIAS_KEY, training); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
 
         FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
-                        this.input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
+                        this.input.get(0), recurrentWeights, inputWeights, biases, training, prevOutputActivations,
                         prevMemCellState, (training && cacheMode != CacheMode.NONE) || forBackprop, true,
                         LSTMParamInitializer.INPUT_WEIGHT_KEY, null, false, helper,
                         forBackprop ? cacheMode : CacheMode.NONE);

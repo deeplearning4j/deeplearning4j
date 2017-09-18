@@ -22,8 +22,10 @@ import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -43,15 +45,20 @@ import java.util.*;
 @NoArgsConstructor
 public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer> implements Layer {
 
-    @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
-    protected INDArray input;
+    @Getter(AccessLevel.PROTECTED)
+    protected Activations input;
     @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
     protected INDArray preOutput;
     protected NeuralNetConfiguration conf;
+    protected InputPreProcessor preProcessor;
+    protected boolean preprocessorApplied = false;
     protected boolean dropoutApplied = false;
+    @Getter @Setter
     protected int index = 0;
-    protected INDArray maskArray;
-    protected MaskState maskState;
+    protected int numInputs = 1;
+    protected int numOutput = 1;
+//    protected INDArray maskArray;
+//    protected MaskState maskState;
     protected CacheMode cacheMode = CacheMode.NONE;
 
     protected int iterationCount;
@@ -62,19 +69,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         cacheMode = conf.getCacheMode();
     }
 
-    public AbstractLayer(NeuralNetConfiguration conf, INDArray input) {
-        this(conf);
-        this.input = input;
-    }
-
     @Override
     public int numInputs() {
-        return 1;
+        return numInputs;
     }
 
     @Override
     public int numOutputs() {
-        return 1;
+        return numOutput;
     }
 
     @Override
@@ -89,10 +91,16 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
             return;
         }
 
-        if(inputs.length != 1){
-            throw new IllegalArgumentException("Cannot set itputs: 1 input expected, got " + inputs.length);
+        if(inputs.length != numInputs()){
+            throw new IllegalArgumentException("Cannot set inputs: length " + numInputs() + " expected, got " + inputs.length);
         }
-        this.input = inputs[0];
+        if(input == null){
+            input = ActivationsFactory.getInstance().create(inputs, null, null);
+        } else {
+            for (int i = 0; i < inputs.length; i++) {
+                input.set(i, inputs[i]);
+            }
+        }
     }
 
     @Override
@@ -116,28 +124,31 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         setInput(0, input);
     }
 
+    protected void setInput(Activations input){
+        this.input = input;
+    }
+
     @Override
     public void setInput(int inputNumber, INDArray input){
-        if(inputNumber != 0)
-            throw new IllegalArgumentException("Index must be 0: got " + inputNumber);
-        this.input = input;
+        if(inputNumber >= numInputs())
+            throw new IllegalArgumentException("Index must be in range 0 to " + (numInputs()-1) + ": got " + inputNumber);
+        if(this.input == null){
+            this.input = ActivationsFactory.getInstance().create(input);
+        } else {
+            this.input.set(inputNumber, input);
+        }
         dropoutApplied = false;
+        preprocessorApplied = false;
     }
 
     @Override
     public INDArray getInput(int inputNumber){
-        if(inputNumber != 0) throw new IllegalArgumentException("Index must be 0: got " + inputNumber);
-        return this.input;
-    }
-
-    @Override
-    public int getIndex() {
-        return index;
-    }
-
-    @Override
-    public void setIndex(int index) {
-        this.index = index;
+        if(inputNumber >= numInputs())
+            throw new IllegalArgumentException("Index must be in range 0 to " + (numInputs()-1) + ": got " + inputNumber);
+        if(input == null){
+            return null;
+        }
+        return this.input.get(inputNumber);
     }
 
     @Override
@@ -216,7 +227,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     protected void applyMask(INDArray to) {
-        to.muliColumnVector(maskArray);
+        to.muliColumnVector(input.getMask(0));
     }
 
     @Override
@@ -242,7 +253,10 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public int batchSize() {
-        return input.size(0);
+        if(input == null){
+            return -1;
+        }
+        return input.get(0).size(0);
     }
 
     @Override
@@ -253,7 +267,12 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public void clear() {
-        input = null;
+        if(input != null){
+            input.clear();
+        }
+        dropoutApplied = false;
+        preprocessorApplied = false;
+        preOutput = null;
     }
 
     protected void applyDropOutIfNecessary(boolean training){//} int iteration, int epoch) {
@@ -263,13 +282,19 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
                 try (MemoryWorkspace ws = Nd4j.getWorkspaceManager()
                         .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)
                         .notifyScopeBorrowed()) {
-                    input = layerConf().getIDropout().applyDropout(input, getIterationCount(), getEpochCount(), false);
+                    INDArray postDropout = layerConf().getIDropout().applyDropout(input.get(0), getIterationCount(), getEpochCount(), false);
+                    input.set(0, postDropout);
                 }
             } else {
-                input = layerConf().getIDropout().applyDropout(input, getIterationCount(), getEpochCount(), false);
+                INDArray postDropout = layerConf().getIDropout().applyDropout(input.get(0), getIterationCount(), getEpochCount(), false);
+                input.set(0, postDropout);
             }
             dropoutApplied = true;
         }
+    }
+
+    protected void applyPreprocessorIfNecessary(boolean training){
+
     }
 
     /**
@@ -289,7 +314,10 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public INDArray input() {
-        return input;
+        if(input == null){
+            return null;
+        }
+        return input.get(0);
     }
 
     @Override
@@ -297,7 +325,9 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public int getInputMiniBatchSize() {
-        return input.size(0);
+        if(input == null || input.get(0) == null)
+            return -1;
+        return input.get(0).size(0);
     }
 
     @Override
@@ -305,14 +335,21 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         if(idx != 0)
             throw new IllegalStateException("Index must be 0");
 
-        this.maskArray = maskArray;
+        if(input == null){
+            this.input = ActivationsFactory.getInstance().create(null, maskArray, null);
+        } else {
+            this.input.setMask(0, maskArray);
+        }
     }
 
     @Override
     public INDArray getMaskArray(int idx) {
         if(idx != 0)
             throw new IllegalStateException("Index must be 0");
-        return maskArray;
+        if(input == null){
+            return null;
+        }
+        return input.getMask(0);
     }
 
 

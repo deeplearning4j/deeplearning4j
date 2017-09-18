@@ -35,7 +35,7 @@ import java.util.Arrays;
 public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @Override
-    public Activations preProcess(Activations activations, int miniBatchSize) {
+    public Activations preProcess(Activations activations, int miniBatchSize, boolean training) {
         if(activations.size() != 1){
             throw new IllegalArgumentException("Cannot preprocess input: Activations must have exactly 1 array. Got: "
                     + activations.size());
@@ -68,7 +68,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public Gradients backprop(Gradients gradients, int miniBatchSize) {
+    public Gradients backprop(Gradients gradients, int miniBatchSize, boolean training) {
         if(gradients.size() != 1){
             throw new IllegalArgumentException("Cannot preprocess activation gradients: Activation gradients must have " +
                     "exactly 1 array. Got: " + gradients.size());

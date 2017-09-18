@@ -57,10 +57,6 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         super(conf);
     }
 
-    public Upsampling2D(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
@@ -75,6 +71,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Gradients backpropGradient(Gradients gradients) {
+        INDArray input = this.input.get(0);
         INDArray epsilon = gradients.get(0);
 
         int miniBatch = input.size(0);
@@ -104,6 +101,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
     public INDArray preOutput(boolean training, boolean forBackprop) {
         applyDropOutIfNecessary(training);
+        INDArray input = this.input.get(0);
 
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()

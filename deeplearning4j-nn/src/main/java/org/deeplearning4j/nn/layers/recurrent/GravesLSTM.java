@@ -96,7 +96,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         Gradients p = LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, maskArray, true, null);
+                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, this.input.getMask(0), true, null);
 
         weightNoiseParams.clear();
 
@@ -135,7 +135,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
                         this.input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
                         prevMemCellState, forBackprop || (cacheMode != CacheMode.NONE && training), true,
-                        GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, true, null,
+                        GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, this.input.getMask(0), true, null,
                         forBackprop ? cacheMode : CacheMode.NONE);
 
 
@@ -152,7 +152,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     }
 
 //    @Override
-//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray this.input.getMask(0), MaskState currentMaskState,
 //                    int minibatchSize) {
 //        //LSTM (standard, not bi-directional) don't make any changes to the data OR the mask arrays
 //        //Any relevant masking occurs during backprop
@@ -161,7 +161,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 //        // The first dense should be masked using the input array, but the second shouldn't. If necessary, the second
 //        // dense will be masked via the output layer mask
 //
-//        return new Pair<>(maskArray, MaskState.Passthrough);
+//        return new Pair<>(this.input.getMask(0), MaskState.Passthrough);
 //    }
 
     @Override

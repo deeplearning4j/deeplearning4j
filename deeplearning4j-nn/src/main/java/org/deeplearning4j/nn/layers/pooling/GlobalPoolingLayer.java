@@ -80,6 +80,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             throw new IllegalStateException("Cannot perform forward pass: input not set for layer " + layerId());
         }
 
+        INDArray input = this.input.get(0);
+
         int[] poolDim = null;
         if (input.rank() == 3) {
             //TODO validation on pooling dimensions
@@ -106,7 +108,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         }
 
         INDArray reduced2d;
-        if (maskArray == null) {
+        if (this.input.getMask(0) == null) {
             //Standard 'full array' global pooling op
             reduced2d = activateHelperFullArray(input, poolDim);
         } else {
@@ -114,7 +116,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             if (input.rank() == 3) {
                 //Masked time series
 
-                reduced2d = MaskedReductionUtil.maskedPoolingTimeSeries(poolingType, input, maskArray, pNorm);
+                reduced2d = MaskedReductionUtil.maskedPoolingTimeSeries(poolingType, input, this.input.getMask(0), pNorm);
             } else if (input.rank() == 4) {
                 //Masked convolutions. 4d convolution data, shape [minibatch, depth, h, w]
                 //and 2d mask array.
@@ -122,26 +124,26 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 // [minibatch, depth, 1, X] or [minibatch, depth, X, 1] data
                 // with a mask array of shape [minibatch, X]
 
-                if (maskArray.rank() != 2) {
+                if (this.input.getMask(0).rank() != 2) {
                     throw new UnsupportedOperationException(
                                     "Only 2d mask arrays are currently supported for masked global reductions "
                                                     + "on CNN data. Got 4d activations array (shape "
-                                                    + Arrays.toString(input.shape()) + ") and " + maskArray.rank()
-                                                    + "d mask array (shape " + Arrays.toString(maskArray.shape()) + ") "
+                                                    + Arrays.toString(input.shape()) + ") and " + this.input.getMask(0).rank()
+                                                    + "d mask array (shape " + Arrays.toString(this.input.getMask(0).shape()) + ") "
                                                     + layerId());
                 }
 
                 int h = input.size(2);
                 int w = input.size(3);
-                int maskLength = maskArray.size(1);
+                int maskLength = this.input.getMask(0).size(1);
                 if ((h != 1 && w != 1) || (h != maskLength && w != maskLength)) {
                     throw new UnsupportedOperationException(
                                     "Masked global pooling with on CNN data currently only supports data with h=1 or w=1:\n"
                                                     + " input activations must have shape [minibatchSize,depth,height=1,width] or [minibatchSize,depth,height,width=1] with "
                                                     + " mask array of shape [minibatchSize,width] or [minibatchSize,height] respectively.\n"
                                                     + " Got 4d activations array (shape "
-                                                    + Arrays.toString(input.shape()) + ") and " + maskArray.rank()
-                                                    + "d mask array (shape " + Arrays.toString(maskArray.shape()) + ") "
+                                                    + Arrays.toString(input.shape()) + ") and " + this.input.getMask(0).rank()
+                                                    + "d mask array (shape " + Arrays.toString(this.input.getMask(0).shape()) + ") "
                                                     + layerId());
                 }
 
@@ -156,7 +158,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
                 boolean maskAlongHeight = (h == maskLength); //At this point: can't confuse w and h, as one has to be 1...
 
-                reduced2d = MaskedReductionUtil.maskedPoolingConvolution(poolingType, input, maskArray, maskAlongHeight,
+                reduced2d = MaskedReductionUtil.maskedPoolingConvolution(poolingType, input, this.input.getMask(0), maskAlongHeight,
                                 pNorm);
             } else {
                 throw new UnsupportedOperationException("Invalid input: is rank " + input.rank() + " " + layerId());
@@ -209,6 +211,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     @Override
     public Gradients backpropGradient(Gradients gradient) {
+        INDArray input = this.input.get(0);
         INDArray epsilon = gradient.get(0);
 
         if (!collapseDimensions && epsilon.rank() != 2) {
@@ -240,19 +243,19 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         }
 
         INDArray epsilonNd;
-        if (maskArray == null) {
+        if (this.input.getMask(0) == null) {
             //Standard 'full array' global pooling op
             epsilonNd = epsilonHelperFullArray(input, epsilon, poolDim);
         } else {
             if (input.rank() == 3) {
-                epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonTimeSeries(poolingType, input, maskArray, epsilon,
+                epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonTimeSeries(poolingType, input, this.input.getMask(0), epsilon,
                                 pNorm);
             } else if (input.rank() == 4) {
 
                 int h = input.size(2);
 
-                boolean maskAlongHeight = (h == maskArray.size(1));
-                epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonCnn(poolingType, input, maskArray, epsilon,
+                boolean maskAlongHeight = (h == this.input.getMask(0).size(1));
+                epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonCnn(poolingType, input, this.input.getMask(0), epsilon,
                                 maskAlongHeight, pNorm);
             } else {
                 throw new UnsupportedOperationException(layerId());

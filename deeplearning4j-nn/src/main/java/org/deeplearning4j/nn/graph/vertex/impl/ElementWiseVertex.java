@@ -62,40 +62,40 @@ public class ElementWiseVertex extends BaseGraphVertex {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
-        nInForwardPass = inputs.length;
-        if (inputs.length == 1)
-            return ActivationsFactory.getInstance().create(inputs[0], null, null);  //TODO masks
+        nInForwardPass = input.size();
+        if (input.size() == 1)
+            return input;
 
         INDArray ret;
         switch (op) {
             case Add:
-                INDArray sum = inputs[0].dup(inputs[0].ordering());
-                for (int i = 1; i < inputs.length; i++) {
-                    sum.addi(inputs[i]);
+                INDArray sum = input.get(0).dup();
+                for (int i = 1; i < input.size(); i++) {
+                    sum.addi(input.get(i));
                 }
                 ret = sum;
             case Average:
-                INDArray average = inputs[0].dup(inputs[0].ordering());
-                for (int i = 1; i < inputs.length; i++) {
-                    average.addi(inputs[i]);
+                INDArray average = input.get(0).dup(input.get(0).ordering());
+                for (int i = 1; i < input.size(); i++) {
+                    average.addi(input.get(i));
                 }
-                ret = average.divi(inputs.length);
+                ret = average.divi(input.size());
                 break;
             case Subtract:
-                if (inputs.length != 2)
+                if (input.size() != 2)
                     throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
-                ret =  inputs[0].sub(inputs[1]);
+                ret =  input.get(0).sub(input.get(1));
                 break;
             case Product:
-                INDArray product = inputs[0].dup(inputs[0].ordering());
-                for (int i = 1; i < inputs.length; i++) {
-                    product.muli(inputs[i]);
+                INDArray product = input.get(0).dup();
+                for (int i = 1; i < input.size(); i++) {
+                    product.muli(input.get(i));
                 }
                 ret = product;
             case Max:
-                INDArray max =  Nd4j.createUninitialized(inputs[0].shape(), inputs[0].ordering());
+                INDArray max =  Nd4j.createUninitialized(input.get(0).shape(), input.get(0).ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemax")
-                        .addInputs(inputs)
+                        .addInputs(input.getAsArray())
                         .addOutputs(max)
                         .callInplace(false)
                         .build();
@@ -106,7 +106,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 throw new UnsupportedOperationException("Unknown op: " + this.op);
         }
 
-        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{maskArray}, MaskState.Active, inputs[0].size(0));    //TODO
+        Pair<INDArray, MaskState> masks = feedForwardMaskArrays(new INDArray[]{input.getMask(0)}, MaskState.Active, input.get(0).size(0));    //TODO
         return ActivationsFactory.getInstance().create(ret, masks.getFirst(), masks.getSecond());
     }
 
@@ -142,7 +142,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     out[i] = epsilon.dup();
                     for (int j = 0; j < nInForwardPass; ++j) {
                         if (i != j)
-                            out[i].muli(inputs[j]);
+                            out[i].muli(input.get(j));
                     }
                 }
                 break;

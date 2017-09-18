@@ -39,7 +39,7 @@ public class ZeroMeanAndUnitVariancePreProcessor extends BaseInputPreProcessor {
 
 
     @Override
-    public Activations preProcess(Activations a, int miniBatchSize) {
+    public Activations preProcess(Activations a, int miniBatchSize, boolean training) {
         Activations out = ActivationsFactory.getInstance().create(a.getAsArray(),
                 a.getMaskAsArray(), a.getMaskStateAsArray());
         for(int i=0; i<a.size(); i++ ) {
@@ -55,7 +55,7 @@ public class ZeroMeanAndUnitVariancePreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public Gradients backprop(Gradients g, int miniBatchSize) {
+    public Gradients backprop(Gradients g, int miniBatchSize, boolean training) {
         return g; //no-op
     }
 

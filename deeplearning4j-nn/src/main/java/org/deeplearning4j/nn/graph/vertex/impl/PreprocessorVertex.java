@@ -47,13 +47,12 @@ public class PreprocessorVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        Activations a = ActivationsFactory.getInstance().create(inputs, null, null);
-        return preProcessor.preProcess(a, graph.batchSize());
+        return preProcessor.preProcess(input, graph.batchSize(), training);
     }
 
     @Override
     public Gradients backpropGradient(Gradients gradient) {
-        return preProcessor.backprop(gradient, -1); //TODO
+        return preProcessor.backprop(gradient, -1, true); //TODO
     }
 
     @Override

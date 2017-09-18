@@ -83,7 +83,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public Activations preProcess(Activations a, int miniBatchSize) {
+    public Activations preProcess(Activations a, int miniBatchSize, boolean training) {
         if(a.size() != 1){
             throw new IllegalArgumentException("Cannot preprocess input: Activations must have exactly 1 array. Got: "
                     + a.size());
@@ -108,7 +108,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
 
     @Override
     // return 4 dimensions
-    public Gradients backprop(Gradients g, int miniBatchSize) {
+    public Gradients backprop(Gradients g, int miniBatchSize, boolean training) {
         if(g.size() != 1){
             throw new IllegalArgumentException("Cannot preprocess activation gradients: Activation gradients must have " +
                     "exactly 1 array. Got: " + g.size());

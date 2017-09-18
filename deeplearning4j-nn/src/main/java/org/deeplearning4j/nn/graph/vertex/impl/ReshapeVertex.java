@@ -57,11 +57,11 @@ public class ReshapeVertex extends BaseGraphVertex {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
-        if (inputs.length > 1)
+        if (input.size() > 1)
             throw new IllegalStateException("Reshape vertex requires a single input.");
 
 
-        return ActivationsFactory.getInstance().create(inputs[0].reshape(order, newShape));
+        return ActivationsFactory.getInstance().create(input.get(0).reshape(order, newShape));
     }
 
     @Override
@@ -69,7 +69,7 @@ public class ReshapeVertex extends BaseGraphVertex {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: errors not set");
 
-        INDArray out = gradients.get(0).reshape(order, inputs[0].shape());
+        INDArray out = gradients.get(0).reshape(order, input.get(0).shape());
         return GradientsFactory.getInstance().create(out, null);
     }
 
