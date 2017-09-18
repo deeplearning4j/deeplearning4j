@@ -186,6 +186,11 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
+    public void setInput(int inputNumber, INDArray input){
+        layer.setInput(inputNumber, input);
+    }
+
+    @Override
     public void setInputMiniBatchSize(int size){
         layer.setInputMiniBatchSize(size);
     }

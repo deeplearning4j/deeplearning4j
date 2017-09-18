@@ -39,6 +39,7 @@ import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -3334,7 +3335,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             } else {
                 connections = configuration.getVertexInputs().get(currentVertexName).toString();
                 List<InputType> inputTypeList = new ArrayList<>();
-                Layer currentLayer = ((LayerVertex) currentVertex);
+                Layer currentLayer = currentVertex;
                 classNameArr = currentLayer.getClass().getName().split("\\.");
                 className = classNameArr[classNameArr.length - 1];
                 paramCount = String.valueOf(currentLayer.numParams());
@@ -3364,9 +3365,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     inShape = currentInType.toString();
                     inputTypeList.add(currentInType);
 
-                    InputPreProcessor layerVertexPreProcesor = ((org.deeplearning4j.nn.conf.graph.LayerVertex) configuration.getVertices().get(currentVertexName)).getPreProcessor();
-                    if (layerVertexPreProcesor != null) {
-                        inShape += "-->" + layerVertexPreProcesor.getOutputType(currentInType);
+                    //TODO
+                    if(((Layer)configuration.getVertices().get(currentVertexName)).conf() != null){
+                        InputPreProcessor layerVertexPreProcesor = ((Layer) configuration.getVertices().get(currentVertexName)).conf().getLayer().getPreProcessor();
+                        if (layerVertexPreProcesor != null) {
+                            inShape += "-->" + layerVertexPreProcesor.getOutputType(currentInType);
+                        }
                     }
                 }
                 currLayerIdx++;

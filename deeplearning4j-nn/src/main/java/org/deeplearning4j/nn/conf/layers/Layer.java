@@ -77,6 +77,7 @@ import java.util.*;
 public abstract class Layer implements Serializable, Cloneable {
     protected String layerName;
     protected IDropout iDropout;
+    protected InputPreProcessor preProcessor;
     protected List<LayerConstraint> constraints;
 
 

@@ -51,6 +51,21 @@ public class ActivationsFactory {
         }
     }
 
+    public Activations create(int size){
+        switch (size){
+            case 1:
+                return new ActivationsSingle(null, null, null);
+            case 2:
+                return new ActivationsPair(null, null, null, null, null, null);
+            case 3:
+                return new ActivationsTriple(null, null, null,
+                        null, null, null,
+                        null, null, null);
+            default:
+                return new ActivationsTuple(new INDArray[size], null, null);
+        }
+    }
+
     public Activations create(INDArray activations){
         return create(activations, null, null);
     }

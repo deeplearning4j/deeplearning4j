@@ -50,7 +50,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
     protected INDArray preOutput;
     protected NeuralNetConfiguration conf;
-    protected InputPreProcessor preProcessor;
     protected boolean preprocessorApplied = false;
     protected boolean dropoutApplied = false;
     @Getter @Setter
@@ -133,7 +132,8 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         if(inputNumber >= numInputs())
             throw new IllegalArgumentException("Index must be in range 0 to " + (numInputs()-1) + ": got " + inputNumber);
         if(this.input == null){
-            this.input = ActivationsFactory.getInstance().create(input);
+            this.input = ActivationsFactory.getInstance().create(numInputs());
+            this.input.set(inputNumber, input);
         } else {
             this.input.set(inputNumber, input);
         }
