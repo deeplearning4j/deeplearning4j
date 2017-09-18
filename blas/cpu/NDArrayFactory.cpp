@@ -11,6 +11,16 @@
 #include "NDArray.cpp"
 
 namespace nd4j {
+
+    template<typename T>
+    ArrayList<T>* NDArrayFactory::allExamples(NDArray<T>* ndArray) {
+        std::vector<int> dimensions;
+        for (int e = 1; e < ndArray->rankOf(); e++)
+            dimensions.push_back(e);
+
+        return allTensorsAlongDimension(ndArray, dimensions);
+    }
+
     template<typename T>
     ArrayList<T>* NDArrayFactory::multipleTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &indices, std::vector<int> &dimensions) {
         auto result = new ArrayList<T>();

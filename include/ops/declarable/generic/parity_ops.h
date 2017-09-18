@@ -13,9 +13,12 @@
 #include <ops/ops.h>
 #include <loops/random.h>
 #include <NDArray.h>
+#include <graph/Variable.h>
 #include <ops/declarable/declarable_ops.h>
 #include <NDArrayFactory.h>
 #include <ops/declarable/generic/third_party.h>
+#include <ops/declarable/generic/convo/convo_ops.h>
+#include <ops/declarable/generic/helpers/convolutions.h>
 
 namespace nd4j {
     namespace ops {
@@ -129,33 +132,7 @@ namespace nd4j {
         DECLARE_SYN(gemv, matMul);
         DECLARE_SYN(dot, matMul);
 
-//////////////////////////////////////////////////////////////////////////
-        DECLARE_CONFIGURABLE_OP(conv2d, 2, 1, false, 0, 7) {
-            // basically im2col + gemm
-            return ND4J_STATUS_OK;
-        }
 
-//////////////////////////////////////////////////////////////////////////
-        DECLARE_CONFIGURABLE_OP(conv3d, 2, 1, false, 0, 7) {
-            // cubic convo
-            return ND4J_STATUS_OK;
-        }
-
-//////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(maxpool, 2, 1, true) {
-            // MaxPooling
-            return ND4J_STATUS_OK;
-        }
-        DECLARE_SYN(MaxPool2D, maxpool);
-        DECLARE_SYN(MaxPool, maxpool);
-
-//////////////////////////////////////////////////////////////////////////
-        DECLARE_OP(avgpool, 2, 1, true) {
-            // AvgPooling
-            return ND4J_STATUS_OK;
-        }
-        DECLARE_SYN(AvgPool2D, avgpool);
-        DECLARE_SYN(AvgPool, avgpool);
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_OP(lrn, 2, 1, true) {
@@ -371,7 +348,40 @@ namespace nd4j {
         DECLARE_SYN(TestOp2i2o, testop2i2o);
 
 
+        DECLARE_REDUCTION_OP(testreduction, 1, 1, false, 0, -1) {
+            auto z = this->getZ(block);
 
+            STORE_RESULT(*z);
+            return ND4J_STATUS_OK;
+        }
+
+/////////////////////////////////////////
+        DECLARE_CUSTOM_OP(testcustom, 1, 1, false, 0, -1) {
+            auto z = this->getZ(block);
+
+            STORE_RESULT(*z);
+            return ND4J_STATUS_OK;
+        }
+        DECLARE_SHAPE_FN(testcustom) {
+            // this test op will just return back original shape doubled
+            int *shapeOf;
+            ALLOCATE(shapeOf, block.getWorkspace(), shape::rank(inputShape->at(0)), int);
+
+            int *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
+
+            for (int e = 0; e < shape::rank(inputShape->at(0)); e++)
+                shapeOf[e] = inputShape->at(0)[e+1] * 2;
+
+
+            shape::shapeBuffer(shape::rank(inputShape->at(0)), shapeOf, newShape);
+
+            RELEASE(shapeOf, block.getWorkspace());
+
+            return new ShapeList(newShape);
+        }
+
+/////////////////////////////////////////
         DECLARE_OP(assign, 2, 1, false) {
             REQUIRE_OK(this->validateInputLengthMatch(block));
             REQUIRE_OK(this->validateInputDimensionsMatch(block));
@@ -505,151 +515,7 @@ namespace nd4j {
         }
         DECLARE_SYN(ClipByValue, clipbyvalue);
 
-        /**
-         * Upsampling implementation, based on pytorch
-         *
-         * IArgs map:
-         * IArgs[0] - scale factor
-         */
-        DECLARE_CONFIGURABLE_OP(upsampling, 1, 1, false, 0, 1) {
-            NDArray<T>* input = block.getVariables().at(0)->getNDArray();
-            NDArray<T>* output = this->getZ(block);
-            int scale_factor = block.getIArguments()->at(0);
 
-//            int inputHeight = input->sizeAt(2);
-//            int inputWidth  = input->sizeAt(3);
-
-            int dW = scale_factor;
-            int dH = scale_factor;
-//            int outputHeight = inputHeight * scale_factor;
-//            int outputWidth = inputWidth * scale_factor;
-            int xDim = input->rankOf() - 2;
-            int yDim = input->rankOf() - 1;
-
-            int osz0 = output->sizeAt(0);
-            int osz1 = output->sizeAt(1);
-            int osz2 = output->sizeAt(2);
-            int osz3 = output->sizeAt(3);
-
-            int i0, i1, i2, i3, isrc, idst;
-            int iout[4];  // Output indices
-            int iin[4];  // Input indices
-
-            for (i0 = 0; i0 < osz0; i0++) {
-                iout[0] = i0;
-                iin[0] = i0;
-                for (i1 = 0; i1 < osz1; i1++) {
-                    iout[1] = i1;
-                    iin[1] = i1;
-                    for (i2 = 0; i2 < osz2; i2++) {
-                        iout[2] = i2;
-                        iin[2] = i2;
-                        for (i3 = 0; i3 < osz3; i3++) {
-                            iout[3] = i3;
-                            iin[3] = i3;
-
-                            // set the indices for the upsampled dimensions
-                            iin[xDim] = iout[xDim] / dW;
-                            iin[yDim] = iout[yDim] / dH;
-
-                            idst = i0 * output->stridesOf()[0] + i1 * output->stridesOf()[1] + i2 * output->stridesOf()[2];
-                            isrc = iin[0] * input->stridesOf()[0] + iin[1] * input->stridesOf()[1] + iin[2] * input->stridesOf()[2];
-
-                            // in our case rank of input is always 4
-                            idst += i3 * output->stridesOf()[3];
-                            isrc += iin[3]* input->stridesOf()[3];
-
-
-                            output->getBuffer()[idst] = input->getBuffer()[isrc];
-                        }
-                    }
-                }
-            }
-
-            STORE_RESULT(*output);
-
-            return ND4J_STATUS_OK;
-        }
-
-        /**
-         * Upsampling backprop implementation, based on pytorch
-         *
-         * Input[0] - preoutput result
-         * Input[1] - gradients from next node/layer
-         *
-         * Output[0] - gradient for this node
-         *
-         * IArgs map:
-         * IArgs[0] - scale factor
-         */
-        DECLARE_CONFIGURABLE_OP(upsampling_bp, 2, 1, false, 0, 1) {
-            //NDArray<T>* input = block.getVariables().at(0)->getNDArray();
-            NDArray<T>* gradientNext = block.getVariables().at(1)->getNDArray();
-            NDArray<T>* output = this->getZ(block);
-            int scale_factor = block.getIArguments()->at(0);
-
-
-            int dW = scale_factor;
-            int dH = scale_factor;
-            int xDim = output->rankOf() - 2;
-            int yDim = output->rankOf() - 1;
-
-            // dims
-            int idim = output->rankOf();  // Guaranteed to be between 3 and 5
-            int isz0 = output->sizeAt(0);
-            int isz1 = output->sizeAt(1);
-            int isz2 = output->sizeAt(2);
-            int isz3 = 1;
-            if (idim > 3) {
-                isz3 = output->sizeAt(3);
-            }
-
-            output->assign(0.0);
-
-            // perform the upsampling
-            int i0, i1, i2, i3, isrc, idst, x, y;
-            int iin[4];  // Input indices
-            int iout[4];  // Output indices
-
-            for (i0 = 0; i0 < isz0; i0++) {
-                iin[0] = i0;
-                iout[0] = i0;
-                for (i1 = 0; i1 < isz1; i1++) {
-                    iin[1] = i1;
-                    iout[1] = i1;
-                    for (i2 = 0; i2 < isz2; i2++) {
-                        iin[2] = i2;
-                        iout[2] = i2;
-                        for (i3 = 0; i3 < isz3; i3++) {
-                            iin[3] = i3;
-                            iout[3] = i3;
-
-                            idst = i0 * output->stridesOf()[0] + i1 * output->stridesOf()[1] + i2 * output->stridesOf()[2];
-                            if (idim > 3) {
-                                idst += i3 * output->stridesOf()[3];
-                            }
-
-                            // Now accumulate the gradients from gradOutput
-                            for (y = 0; y < dH; y++) {
-                                for (x = 0; x < dW; x++) {
-                                    iout[xDim] = dW * iin[xDim] + x;
-                                    iout[yDim] = dH * iin[yDim] + y;
-                                    isrc = iout[0] * gradientNext->stridesOf()[0] + iout[1] * gradientNext->stridesOf()[1] + iout[2] * gradientNext->stridesOf()[2];
-                                    if (idim > 3) {
-                                        isrc += iout[3] * gradientNext->stridesOf()[3];
-                                    }
-                                    output->getBuffer()[idst] += gradientNext->getBuffer()[isrc];
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            STORE_RESULT(*output);
-
-            return ND4J_STATUS_OK;
-        }
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_OP(softmax, 2, 1, false) {
@@ -737,7 +603,6 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(scatterupdate, scatter_update);
-
 
 //////////////////////////////////////////////////////////////////////////
         DECLARE_CONFIGURABLE_OP(relu, 1, 1, true, 1, 0) {

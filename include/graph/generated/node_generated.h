@@ -44,6 +44,38 @@ inline OpType (&EnumValuesOpType())[10] {
   return values;
 }
 
+enum OpClass {
+  OpClass_TRANFSFORM = 0,
+  OpClass_REDUCTION = 1,
+  OpClass_MULTIPLICATOR = 2,
+  OpClass_MIN = OpClass_TRANFSFORM,
+  OpClass_MAX = OpClass_MULTIPLICATOR
+};
+
+inline OpClass (&EnumValuesOpClass())[3] {
+  static OpClass values[] = {
+    OpClass_TRANFSFORM,
+    OpClass_REDUCTION,
+    OpClass_MULTIPLICATOR
+  };
+  return values;
+}
+
+inline const char **EnumNamesOpClass() {
+  static const char *names[] = {
+    "TRANFSFORM",
+    "REDUCTION",
+    "MULTIPLICATOR",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameOpClass(OpClass e) {
+  const size_t index = static_cast<int>(e);
+  return EnumNamesOpClass()[index];
+}
+
 enum DataType {
   DataType_INHERIT = 0,
   DataType_HALF = 1,

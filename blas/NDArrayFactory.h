@@ -19,6 +19,9 @@ namespace nd4j {
         static ArrayList<T>* allTensorsAlongDimension(NDArray<T>* ndArray, std::vector<int> &dimensions);
 
         template<typename T>
+        static ArrayList<T>* allExamples(NDArray<T>* ndArray);
+
+        template<typename T>
         static ArrayList<T>* allTensorsAlongDimension(NDArray<T>* ndArray, std::initializer_list<int> dimensions);
 
         template<typename T>

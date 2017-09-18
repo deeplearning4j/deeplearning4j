@@ -6,37 +6,40 @@
 #define LIBND4J_ARRAYLIST_H
 
 #include <NDArray.h>
+#include <vector>
 
-template <typename T>
-class ArrayList {
-private:
-    std::vector<nd4j::NDArray<T>*> _content;
+namespace  nd4j {
+    template<typename T>
+    class ArrayList {
+    private:
+        std::vector<nd4j::NDArray<T> *> _content;
 
-public:
-    // default constructor
-    ArrayList() {
-        //
-    }
+    public:
+        // default constructor
+        ArrayList() {
+            //
+        }
 
-    // default destructor
-    ~ArrayList() {
-        for(auto v: _content)
-            delete v;
-    }
-
-
-    int size() {
-        return _content.size();
-    }
-
-    nd4j::NDArray<T>* at(unsigned long idx) {
-        return _content.at(idx);
-    }
+        // default destructor
+        ~ArrayList() {
+            for (auto v: _content)
+                delete v;
+        }
 
 
-    void push_back(nd4j::NDArray<T>* array) {
-        _content.push_back(array);
-    }
-};
+        int size() {
+            return _content.size();
+        }
+
+        nd4j::NDArray<T> *at(unsigned long idx) {
+            return _content.at(idx);
+        }
+
+
+        void push_back(nd4j::NDArray<T> *array) {
+            _content.push_back(array);
+        }
+    };
+}
 
 #endif //LIBND4J_ARRAYLIST_H

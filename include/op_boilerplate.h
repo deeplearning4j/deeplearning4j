@@ -818,7 +818,8 @@
 
 
 /// graph definitions
-#define REQUIRE_OK(A)  if (nd4j::ops::resultHelper( (A), #A, __FILE__, __LINE__ ) != 0) return nd4j::ops::resultHelper( (A), #A, __FILE__, __LINE__ );
+#define REQUIRE_OK(A)  if (nd4j::ops::resultHelper( (A), #A, __FILE__, __LINE__ ) != 0) return ND4J_STATUS_VALIDATION;
+#define REQUIRE_TRUE(...) if (nd4j::ops::conditionHelper(__FILE__, __LINE__, __VA_ARGS__) != 0) return ND4J_STATUS_VALIDATION;
 
 
 #define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)   DECLARE_OP_UNIQ(__COUNTER__, NAME, NIN, NOUT, INPLACEABLE)
@@ -826,12 +827,22 @@
                                                 class NAME: public nd4j::ops::DeclarableOp<T> { \
                                                 public:\
                                                     NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE) { } \
+                                                    nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block); \
                                                 protected: \
                                                     Nd4jStatus validateAndExecute(Block<T>& block); \
                                                 };\
                                                 static nd4j::ops::__registratorFloat<NAME<float>> zzz_register_opf_##NAME; \
                                                 static nd4j::ops::__registratorHalf<NAME<float16>> zzz_register_oph_##NAME; \
                                                 static nd4j::ops::__registratorDouble<NAME<double>> zzz_register_opd_##NAME; \
+                                                                             \
+                                                template <typename T>\
+                                                nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block) { \
+                                                    int* newshape; \
+                                                    ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int); \
+                                                    memcpy(newshape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0))); \
+                                                    auto shapeList = new nd4j::ShapeList(newshape); \
+                                                    return shapeList; \
+                                                } \
                                                 template <typename T> \
                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
 
@@ -843,20 +854,52 @@
                                                 class NAME: public nd4j::ops::DeclarableOp<T> { \
                                                 public:\
                                                     NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, true) { } \
+                                                    nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block); \
                                                 protected: \
                                                     Nd4jStatus validateAndExecute(Block<T>& block); \
                                                 };\
                                                 static nd4j::ops::__registratorFloat<NAME<float>> zzz_register_opf_##NAME; \
                                                 static nd4j::ops::__registratorDouble<NAME<double>> zzz_register_opd_##NAME; \
                                                 static nd4j::ops::__registratorHalf<NAME<float16>> zzz_register_oph_##NAME; \
+                                                                             \
+                                                template <typename T>\
+                                                nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block) { \
+                                                    int* newshape; \
+                                                    ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int); \
+                                                    memcpy(newshape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0))); \
+                                                    auto shapeList = new nd4j::ShapeList(newshape); \
+                                                    return shapeList; \
+                                                } \
                                                 template <typename T> \
                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
-
 
 #define DECLARE_CONFIGURABLE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     template <typename T> \
                                                                                 class NAME: public nd4j::ops::DeclarableOp<T> { \
                                                                                 public:\
                                                                                     NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { } \
+                                                                                    nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block); \
+                                                                                protected: \
+                                                                                    Nd4jStatus validateAndExecute(Block<T>& block); \
+                                                                                };\
+                                                                                static nd4j::ops::__registratorFloat<NAME<float>> zzz_register_opf_##NAME; \
+                                                                                static nd4j::ops::__registratorHalf<NAME<float16>> zzz_register_oph_##NAME; \
+                                                                                static nd4j::ops::__registratorDouble<NAME<double>> zzz_register_opd_##NAME; \
+                                                                                                                                                             \
+                                                                                template <typename T>\
+                                                                                nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block) { \
+                                                                                    int* newshape; \
+                                                                                    ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int); \
+                                                                                    memcpy(newshape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0))); \
+                                                                                    auto shapeList = new nd4j::ShapeList(newshape); \
+                                                                                    return shapeList; \
+                                                                                } \
+                                                                                template <typename T> \
+                                                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
+
+#define DECLARE_REDUCTION_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     template <typename T> \
+                                                                                class NAME: public nd4j::ops::DeclarableReductionOp<T> { \
+                                                                                public:\
+                                                                                    NAME() : nd4j::ops::DeclarableReductionOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { } \
                                                                                 protected: \
                                                                                     Nd4jStatus validateAndExecute(Block<T>& block); \
                                                                                 };\
@@ -866,6 +909,23 @@
                                                                                 template <typename T> \
                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
 
+
+#define DECLARE_CUSTOM_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)     template <typename T> \
+                                                                                class NAME: public nd4j::ops::DeclarableCustomOp<T> { \
+                                                                                public:\
+                                                                                    NAME() : nd4j::ops::DeclarableCustomOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { } \
+                                                                                    nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block); \
+                                                                                protected: \
+                                                                                    Nd4jStatus validateAndExecute(Block<T>& block); \
+                                                                                };\
+                                                                                static nd4j::ops::__registratorFloat<NAME<float>> zzz_register_opf_##NAME; \
+                                                                                static nd4j::ops::__registratorHalf<NAME<float16>> zzz_register_oph_##NAME; \
+                                                                                static nd4j::ops::__registratorDouble<NAME<double>> zzz_register_opd_##NAME; \
+                                                                                template <typename T> \
+                                                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Block<T>& block)
+// this declaration MUST follow DECLARE_CUSTOM_OP
+#define DECLARE_SHAPE_FN(NAME)                                              template<typename T>\
+                                                                            nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block)
 
 #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
 

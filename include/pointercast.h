@@ -20,6 +20,8 @@ typedef int Nd4jStatus;
 #define ND4J_STATUS_BAD_GRADIENTS 8
 #define ND4J_STATUS_BAD_BIAS      9
 
+#define ND4J_STATUS_VALIDATION      20
+
 #define ND4J_STATUS_BAD_GRAPH      30
 #define ND4J_STATUS_BAD_LENGTH      31
 #define ND4J_STATUS_BAD_DIMENSIONS      32

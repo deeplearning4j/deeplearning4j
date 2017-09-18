@@ -357,6 +357,21 @@ TEST_F(NDArrayTest, TestReduceScalar1) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, TestReduceScalar2) {
+    float *c = new float[4] {-1, -2, -3, -4};
+    auto *array = new NDArray<float>(c, cShape);
+
+    ASSERT_EQ(-10, array->reduceNumber<simdOps::Sum<float>>(nullptr));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, TestReduceScalar3) {
+    auto *array = new NDArray<float>(arr1, shape1);
+
+    ASSERT_EQ(21, array->reduceNumber<simdOps::Sum<float>>(nullptr));
+}
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestApplyTransform1) {
     float *c = new float[4] {-1, -2, -3, -4};
     auto *array = new NDArray<float>(c, cShape);

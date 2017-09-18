@@ -17,11 +17,6 @@
 #include <graph/generated/config_generated.h>
 #include <ExecutorConfiguration.h>
 
-/*
-template<typename K, typename V>
-using MapIterator = typename std::map<K,V>::iterator;
-*/
-
 namespace nd4j {
     namespace graph {
 
@@ -63,7 +58,13 @@ namespace nd4j {
             // this method will build structured representation of graph
             Nd4jStatus buildGraph();
 
+            // this method will return estimated memory size (in bytes) required for 1 full graph execution round
+            Nd4jIndex estimateRequiredMemory();
+
+            // this method returns number of root nodes in this graph
             int rootNodes();
+
+            // this method returns total number of nodes in this graph
             int totalNodes();
 
             /**
@@ -112,6 +113,164 @@ namespace nd4j {
             void addOutput(int32_t id);
         };
     }
+}
+
+template <typename T>
+Nd4jIndex nd4j::graph::Graph<T>::estimateRequiredMemory() {
+
+    Nd4jIndex result = 0L;
+    Nd4jIndex lastStep = 0L;
+
+    std::vector<int *> shapes;
+    std::map<std::pair<int,int>, int*> shapesMap;
+
+    // we loop in similar way to execution
+    for (int l = 0; l < (int) _onion->size(); l++) {
+        int layerSize = _onion->count(l) == 1 ? _onion->at(l)->size() : 0;
+
+
+        for (int n = 0; n < layerSize; n++) {
+            Node<T>* node = _onion->at(l)->at(n);
+
+            /*
+             * Limited number of options here:
+             *
+             * 1) Op is inplace, so adds nothing to total
+             * 2) Op is not inplace, and 1:1 transform
+             * 3) Op is reduction (i.e. sum)
+             * 4) Op is multiplicator (i.e. im2col)
+             */
+            if (node->hasCustomOp()) {
+                if (node->isInplace())
+                    continue;
+
+                auto op = node->getCustomOp();
+                auto in = node->input()->at(0);
+
+                auto block = node->getBlock();
+                std::vector<int*> inputShapes;
+                int *oldShape;
+                for (auto v: *node->input()) {
+                    if (v.first < 0) {
+                        inputShapes.push_back(_variableSpace->getVariable(v.first)->getNDArray()->getShapeInfo());
+                    } else {
+                        inputShapes.push_back(shapesMap.at(v));
+                        shape::printShapeInfoLinear(shapesMap.at(v));
+                    }
+                }
+
+                ShapeList inSha(inputShapes);
+                auto outSha = op->calculateOutputShape(&inSha, *block);
+
+                int cnt = 0;
+                for (auto newShape: *outSha->asVector()) {
+                    std::pair<int, int> pairAddr(node->id(), cnt++);
+                    std::pair<std::pair<int, int>, int *> pairShape(pairAddr, newShape);
+
+                    shapesMap.insert(pairShape);
+
+                    if (!block->isInplace())
+                        result += shape::length(newShape) * sizeof(T);
+
+                    shape::printShapeInfoLinear(newShape);
+
+                    shapes.push_back(newShape);
+                }
+
+                delete outSha;
+            } else if (node->getOpClass() == OpClass_TRANFSFORM) {
+                auto vec = node->input();
+
+                auto in = node->input()->at(0);
+                if (in.first < 0) {
+
+                    auto x = _variableSpace->getVariable(in);
+                    auto z = _variableSpace->getVariable(node->id());
+
+                    int *newShape = new int[shape::shapeInfoLength(x->getNDArray()->getShapeInfo())];
+                    memcpy(newShape, x->getNDArray()->getShapeInfo(), shape::shapeInfoByteLength(x->getNDArray()->getShapeInfo()));
+
+                    std::pair<int, int> pairAddr(node->id(), 0);
+                    std::pair<std::pair<int, int>, int *> pairShape(pairAddr, newShape);
+
+                    shapesMap.insert(pairShape);
+
+                    if (!node->isInplace())
+                        result += shape::length(newShape) * sizeof(T);
+
+                    shapes.push_back(newShape);
+                } else {
+                    auto prevShape = shapesMap.at(in);
+
+                    int *newShape = new int[shape::shapeInfoLength(prevShape)];
+                    memcpy(newShape, prevShape, shape::shapeInfoByteLength(prevShape));
+
+                    std::pair<int, int> pairAddr(node->id(), 0);
+                    std::pair<std::pair<int, int>, int *> pairShape(pairAddr, newShape);
+
+                    shapesMap.insert(pairShape);
+
+                    if (!node->isInplace())
+                        result += shape::length(newShape) * sizeof(T);
+
+                    shapes.push_back(newShape);
+                }
+
+            } else if (node->getOpClass() == OpClass_REDUCTION) {
+                int *newShape = nullptr;
+
+                // if that's scalar output - we don't give a fuck about previous node
+                if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
+                    newShape = new int[8];
+
+                    newShape[0] = 2;
+                    newShape[1] = 1;
+                    newShape[2] = 1;
+                    newShape[3] = 1;
+                    newShape[4] = 1;
+                    newShape[5] = 0;
+                    newShape[6] = 1;
+                    newShape[7] = 99;
+
+                } else {
+                    auto in = node->input()->at(0);
+
+                    int *oldShape = nullptr;
+                    // calculate tads here
+                    if (in.first < 0) {
+                        auto x = _variableSpace->getVariable(in)->getNDArray();
+
+                        oldShape = x->getShapeInfo();
+                    } else {
+
+                        oldShape = shapesMap.at(in);
+                    }
+
+                    //shape::TAD tad(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
+                    Nd4jIndex numTads = shape::tadLength(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
+                    int *shape = new int[2]{1, (int) numTads};
+                    newShape = shape::shapeBuffer(2, shape);
+                }
+
+                std::pair<int, int> pairAddr(node->id(), 0);
+                std::pair<std::pair<int, int>, int *> pairShape(pairAddr, newShape);
+
+                shapesMap.insert(pairShape);
+
+                result += shape::length(newShape) * sizeof(T);
+
+                shapes.push_back(newShape);
+            } else if (node->getOpClass() == OpClass_MULTIPLICATOR) {
+                // can't be in non-special op
+            }
+        }
+    }
+
+    // this is the only place where we deallocate shapes.
+    for (auto v: shapes)
+        delete[] v;
+
+    return result;
 }
 
 template <typename T>
@@ -200,6 +359,16 @@ void nd4j::graph::Graph<T>::addNode(nd4j::graph::Node<T> *node) {
 
     if (node->hasCustomOp()) {
         // custom ops require Block inside. but we'll set it inside buildGraph
+
+
+        auto block = new Block<T>(node->id(), _variableSpace);
+        node->setBlock(block);
+
+        for (uint32_t e = 0; e < node->input()->size(); e++) {
+            auto var = _variableSpace->getVariable(node->input()->at(e));
+
+            block->getVariables().push_back(var);
+        }
 
         // and might have > 1 output
         if (node->getCustomOp()->getOpDescriptor()->getNumberOfOutputs() > 1) {
@@ -308,6 +477,17 @@ Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
                         expandOnion(maxLayer);
 
                     this->injectNode(node);
+
+                    if (node->hasCustomOp()) {
+                        auto block = new Block<T>(node->id(), _variableSpace);
+                        node->setBlock(block);
+
+                        for (uint32_t e = 0; e < node->input()->size(); e++) {
+                            auto var = _variableSpace->getVariable(node->input()->at(e));
+
+                            block->getVariables().push_back(var);
+                        }
+                    }
                 } else
                     continue;
 
@@ -351,7 +531,6 @@ Nd4jStatus nd4j::graph::Graph<T>::buildGraph() {
                 _unmapped.erase(node->id());
             }
         }
-
 
         // second pass is mover, we'll be moving onion layers around here
     }

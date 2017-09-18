@@ -46,6 +46,7 @@ namespace nd4j {
             nd4j::graph::Variable<T> *getVariable(std::pair<int,int>& pair);
             nd4j::graph::Variable<T> *getVariable(std::string *symbol);
 
+            void putVariable(std::pair<int,int>& pair, NDArray<T> *array);
             void putVariable(std::pair<int,int>& pair, Variable<T> *variable);
             void putVariable(int32_t id, Variable<T> *variable);
             void putVariable(int32_t id, NDArray<T> *array);
@@ -145,6 +146,14 @@ template <typename T>
 Nd4jIndex nd4j::graph::VariableSpace<T>::totalMemory() {
     return externalMemory() + internalMemory();
 }
+
+
+template <typename T>
+void nd4j::graph::VariableSpace<T>::putVariable(std::pair<int,int>& pair, NDArray<T> *array) {
+    auto variable = new Variable<T>(array);
+    this->putVariable(pair, variable);
+}
+
 
 template <typename T>
 void nd4j::graph::VariableSpace<T>::putVariable(std::pair<int,int>& pair, Variable<T> *variable) {

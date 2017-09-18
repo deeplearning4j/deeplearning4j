@@ -7,6 +7,7 @@
 
 #include <string>
 #include <helpers/helper_hash.h>
+#include <graph/generated/node_generated.h>
 
 namespace nd4j {
     namespace ops {
@@ -19,6 +20,8 @@ namespace nd4j {
 
             int _numInputs;
             int _numOutputs;
+
+            nd4j::graph::OpClass _opClass;
 
             bool _divergent;
             bool _allowsInplace;
@@ -42,6 +45,9 @@ namespace nd4j {
                 _allowsInplace = allowsInplace;
                 _hash = nd4j::ops::HashHelper::getInstance()->getLongHash(tmp);
                 _divergent = false;
+
+                // just default value
+                _opClass = nd4j::graph::OpClass_TRANFSFORM;
             }
 
             // constructor for configurable op

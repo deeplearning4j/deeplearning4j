@@ -15,6 +15,12 @@ enum OpType:byte {
     VARIABLE = 119,
 }
 
+enum OpClass:byte {
+    TRANFSFORM = 0,
+    REDUCTION = 1,
+    MULTIPLICATOR = 2,
+}
+
 enum DataType:byte {
     INHERIT,
     HALF,

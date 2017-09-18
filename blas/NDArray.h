@@ -135,6 +135,8 @@ namespace nd4j {
             return sizeof(T);
         }
 
+        bool isContiguous();
+
         // print information about array shape
         void printShapeInfo(const char * msg = nullptr) const {
             //shape::printShapeInfo(_shapeInfo);
@@ -163,6 +165,10 @@ namespace nd4j {
 
         // Returns true if these two NDArrays have same shape
         inline bool isSameShape(const NDArray<T> *other) const;
+        inline bool isSameShape(std::initializer_list<int> shape);
+        inline bool isSameShape(std::initializer_list<Nd4jIndex> shape);
+        inline bool isSameShape(std::vector<int>& shape);
+        inline bool isSameShape(std::vector<Nd4jIndex >& shape);
 
 		// Returns true if these two NDArrays have same shape
         inline bool isSameShapeStrict(const NDArray<T> *other) const;
@@ -349,9 +355,48 @@ namespace nd4j {
                 return false;
 
         return true;
-    }	
+    }
 
-// returns true if these two NDArrays have same _shapeInfo
+    template<typename T>
+    inline bool NDArray<T>::isSameShape(std::initializer_list<int> other) {
+        std::vector<int> shp(other);
+        return isSameShape(shp);
+    }
+
+    template<typename T>
+    inline bool NDArray<T>::isSameShape(std::initializer_list<Nd4jIndex> other) {
+        std::vector<Nd4jIndex> shp(other);
+        return isSameShape(shp);
+    }
+
+    template<typename T>
+    inline bool NDArray<T>::isSameShape(std::vector<Nd4jIndex>& other) {
+        if (this->rankOf() != other.size())
+            return false;
+
+        for (int e = 0; e < this->rankOf(); e++) {
+            if (this->shapeOf()[e] != (int) other.at(e))
+                return false;
+        }
+
+        return true;
+    }
+
+
+    template<typename T>
+    inline bool NDArray<T>::isSameShape(std::vector<int>& other) {
+        if (this->rankOf() != other.size())
+            return false;
+
+        for (int e = 0; e < this->rankOf(); e++) {
+            if (this->shapeOf()[e] != other.at(e))
+                return false;
+        }
+
+        return true;
+    }
+
+    // returns true if these two NDArrays have same _shapeInfo
 // still the definition of inline function must be in header file
     template<typename T>
     inline bool NDArray<T>::isSameShapeStrict(const NDArray<T> *other) const {        

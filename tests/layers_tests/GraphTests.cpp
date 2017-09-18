@@ -10,6 +10,7 @@
 #include <graph/Graph.h>
 #include <NDArray.h>
 #include <ops/declarable/declarable_ops.h>
+#include <ops/declarable/generic/parity_ops.h>
 
 using namespace nd4j::graph;
 
@@ -832,4 +833,131 @@ TEST_F(GraphTests, TestDivergentNode1) {
 
     ASSERT_TRUE(nodeY->isDivergencePoint());
     ASSERT_TRUE(nodeY->isActive());
+}
+
+
+TEST_F(GraphTests, MemoryEstimationTest1) {
+    Graph<float> graph;
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0);
+
+    graph.getVariableSpace()->putVariable(-1, x);
+
+    auto nodeA0 = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeA1 = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {});
+    nodeA1->markInplace(false);
+
+    graph.addNode(nodeA0);
+    graph.addNode(nodeA1);
+
+    ASSERT_EQ(2, graph.totalNodes());
+    ASSERT_EQ(1, graph.rootNodes());
+
+    auto memReq = graph.estimateRequiredMemory();
+
+    ASSERT_EQ(25 * x->sizeOfT(), memReq);
+}
+
+TEST_F(GraphTests, MemoryEstimationTest2) {
+    Graph<float> graph;
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0);
+
+    graph.getVariableSpace()->putVariable(-1, x);
+
+    auto nodeA0 = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeA1 = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {});
+    //nodeA1->markInplace(false);
+
+    graph.addNode(nodeA0);
+    graph.addNode(nodeA1);
+
+    ASSERT_EQ(2, graph.totalNodes());
+    ASSERT_EQ(1, graph.rootNodes());
+
+    auto memReq = graph.estimateRequiredMemory();
+
+    ASSERT_EQ(0, memReq);
+}
+
+TEST_F(GraphTests, MemoryEstimationTest3) {
+    Graph<float> graph;
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0);
+
+    graph.getVariableSpace()->putVariable(-1, x);
+
+    auto nodeA0 = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeA1 = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {3});
+    auto nodeA2 = new Node<float>(OpType_ACCUMULATION, 0, 3, {2}, {}, {});
+    nodeA1->markInplace(false);
+
+    graph.addNode(nodeA0);
+    graph.addNode(nodeA1);
+    graph.addNode(nodeA2);
+
+    ASSERT_EQ(3, graph.totalNodes());
+    ASSERT_EQ(1, graph.rootNodes());
+
+    auto memReq = graph.estimateRequiredMemory();
+
+    ASSERT_EQ(26 * x->sizeOfT(), memReq);
+}
+
+TEST_F(GraphTests, MemoryEstimationTest4) {
+    Graph<float> graph;
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0);
+
+    graph.getVariableSpace()->putVariable(-1, x);
+
+    auto nodeA0 = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeA1 = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {3});
+    auto nodeA2 = new Node<float>(OpType_ACCUMULATION, 0, 3, {2}, {}, {1});
+    nodeA1->markInplace(false);
+
+    graph.addNode(nodeA0);
+    graph.addNode(nodeA1);
+    graph.addNode(nodeA2);
+
+    ASSERT_EQ(3, graph.totalNodes());
+    ASSERT_EQ(1, graph.rootNodes());
+
+    auto memReq = graph.estimateRequiredMemory();
+
+    ASSERT_EQ(30 * x->sizeOfT(), memReq);
+}
+
+TEST_F(GraphTests, MemoryEstimationTest5) {
+    Graph<float> graph;
+
+    auto x = new NDArray<float>(5, 5, 'c');
+    x->assign(-2.0);
+
+    graph.getVariableSpace()->putVariable(-1, x);
+
+    auto nodeA0 = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {2});
+    auto nodeA1 = new Node<float>(OpType_TRANSFORM, 0, 2, {1}, {3});
+    auto nodeA2 = new Node<float>(OpType_CUSTOM, 0, 3, {2}, {}, {});
+    nodeA1->markInplace(false);
+
+    nd4j::ops::testcustom<float> op;
+    nodeA2->setCustomOp(&op);
+
+    graph.addNode(nodeA0);
+    graph.addNode(nodeA1);
+    graph.addNode(nodeA2);
+
+    graph.buildGraph();
+
+    ASSERT_EQ(3, graph.totalNodes());
+    ASSERT_EQ(1, graph.rootNodes());
+
+    auto memReq = graph.estimateRequiredMemory();
+
+    ASSERT_EQ((25 + 100) * x->sizeOfT(), memReq);
 }

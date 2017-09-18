@@ -15,12 +15,30 @@
 #include <helpers/helper_hash.h>
 #include <memory/Workspace.h>
 #include <memory/MemoryRegistrator.h>
+#include <ShapeList.h>
 
 
 using namespace nd4j::graph;
 
 namespace nd4j {
     namespace ops {
+
+        Nd4jStatus conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...) {
+            if (!condition) {
+                va_list args;
+
+                printf("Error at [%s:%i:%i]:\n", file, line, argNumber);
+                va_start(args, format);
+                vprintf(format, args);
+                va_end(args);
+                printf("\n");
+                fflush(stdout);
+
+                return ND4J_STATUS_BAD_PARAMS;
+            }
+            return ND4J_STATUS_OK;
+        }
+
 
         template<typename T>
         Nd4jStatus resultHelper(T status, const char *func, const char *file, int line) {
@@ -56,6 +74,10 @@ namespace nd4j {
             bool allocateResult(Block<T>& block, int* shape);
             void storeResult(Block<T> &block, int outputNumber, NDArray<T>& array);
             nd4j::NDArray<T> *getZ(Block<T>& block, int inputId = 0);
+
+            bool prepareOutputs(Block<T>& block);
+
+            //std::vector<int>* calculateOutputShape(std::vector<int>* inputShape, nd4j::graph::Block<T>& block);
         public:
             DeclarableOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace) {
                 _descriptor = new OpDescriptor(numInputs, numOutputs, opName, allowsInplace);
@@ -79,6 +101,8 @@ namespace nd4j {
                 return _descriptor;
             }
 
+            virtual ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Block<T>& block) = 0;
+
             /**
              * Returns opName
              *
@@ -89,7 +113,7 @@ namespace nd4j {
             }
 
             Nd4jIndex getOpHash() {
-                return 0;
+                return _descriptor->getHash();
             }
 
             /**
@@ -122,6 +146,44 @@ namespace nd4j {
             Nd4jStatus validateArguments(Block<T>& block);
         };
 
+
+        template <typename T>
+        class DeclarableReductionOp : public nd4j::ops::DeclarableOp<T> {
+        protected:
+            /**
+             * This method executes this Op
+             */
+            virtual Nd4jStatus validateAndExecute(Block<T>& block) = 0;
+        public:
+            DeclarableReductionOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) : nd4j::ops::DeclarableOp<T>(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
+                //
+            }
+
+            ~DeclarableReductionOp()  {
+                //
+            }
+
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Block<T>& block);
+        };
+
+        template <typename T>
+        class DeclarableCustomOp : public nd4j::ops::DeclarableOp<T> {
+        protected:
+            /**
+             * This method executes this Op
+             */
+            virtual Nd4jStatus validateAndExecute(Block<T>& block) = 0;
+        public:
+            DeclarableCustomOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) : nd4j::ops::DeclarableOp<T>(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
+                //
+            }
+
+            ~DeclarableCustomOp()  {
+                //
+            }
+
+            virtual ShapeList* calculateOutputShape(ShapeList* inputShapes, nd4j::graph::Block<T>& block) = 0;
+        };
 
         class OpRegistrator {
         private:
@@ -438,6 +500,67 @@ namespace nd4j {
 nd4j::ops::OpRegistrator* nd4j::ops::OpRegistrator::_INSTANCE = 0;
 
 template <typename T>
+nd4j::ShapeList* nd4j::ops::DeclarableReductionOp<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Block<T>& block)  {
+    int numDims = block.getIArguments()->at(0);
+    std::vector<int> dims;
+    for (int e = 0; e < numDims; e++)
+        dims.push_back(block.getIArguments()->at(e+1));
+
+    if (numDims > 1)
+        std::sort(dims.begin(), dims.end());
+
+    // special case - output is scalar
+    if (numDims == 1 && dims.at(0) == MAX_INT) {
+        int* newShape;
+        ALLOCATE(newShape, block.getWorkspace(), 8, int);
+
+        newShape[0] = 2;
+        newShape[1] = 1;
+        newShape[2] = 1;
+        newShape[3] = 1;
+        newShape[4] = 1;
+        newShape[5] = 0;
+        newShape[6] = 1;
+        newShape[7] = 99;
+
+        return new ShapeList(newShape);
+    }
+
+    shape::TAD tad(inputShape->at(0), dims.data(), numDims);
+    tad.createTadOnlyShapeInfo();
+
+    Nd4jIndex tadLength = shape::tadLength(inputShape->at(0), dims.data(), numDims);
+    Nd4jIndex numTads = shape::length(inputShape->at(0)) /  tadLength;
+
+    int* newShape;
+    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+
+    newShape[0] = 2;
+    newShape[1] = 1;
+    newShape[2] = numTads;
+    newShape[3] = numTads;
+    newShape[4] = 1;
+    newShape[5] = 0;
+    newShape[6] = 1;
+    newShape[7] = 99;
+
+    return new ShapeList(newShape);
+}
+
+/*
+template <typename T>
+int* nd4j::ops::DeclarableOp<T>::calculateOutputShape(int* inputShape, nd4j::graph::Block<T>& block) {
+    // default implementation suits transform, so just returns the same shape
+
+    int* newshape;
+    ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape), int);
+    memcpy(newshape, inputShape, shape::shapeInfoByteLength(inputShape));
+
+    return newshape;
+}
+*/
+
+template <typename T>
 nd4j::NDArray<T>* nd4j::ops::DeclarableOp<T>::getZ(Block<T>& block, int inputId) {
     NDArray<T>* z = nullptr;
 
@@ -453,6 +576,41 @@ nd4j::NDArray<T>* nd4j::ops::DeclarableOp<T>::getZ(Block<T>& block, int inputId)
     }
 
     return z;
+}
+
+template <typename T>
+bool nd4j::ops::DeclarableOp<T>::prepareOutputs(Block<T> &block) {
+    auto workspace = block.getWorkspace();
+
+    if (block.isInplace()) {
+        // do nothing, getZ result will do the trick
+    } else {
+        // if op is not inplace - we should pre-allocate arrays
+
+        ShapeList inSha;
+
+        int cntIn = 0;
+        for (auto var: block.getVariables()) {
+            NDArray<T> *array = var->getNDArray();
+            inSha.push_back(array->getShapeInfo());
+
+            array->printShapeInfo("prepOutput");
+            cntIn++;
+        }
+        nd4j_printf("Input shapes: %i\n", cntIn);
+
+        auto outSha = this->calculateOutputShape(&inSha, block);
+        int cnt = 0;
+        nd4j_printf("Output shapes: %i; Rank_0: %i\n", outSha->size(), outSha->at(0)[0]);
+        for (auto out: *outSha->asVector()) {
+            auto outArr = new NDArray<T>(out, workspace);
+
+            std::pair<int, int> pair(block.getNodeId(), cnt++);
+            block.getVariableSpace()->putVariable(pair, outArr);
+        }
+    }
+
+    return true;
 }
 
 template <typename T>
@@ -532,8 +690,14 @@ Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(Block<T>* block) {
     else
         throw std::invalid_argument("Block is NULL");
 
+    // basic validation: ensure inputs are set
     REQUIRE_OK(this->validateNonEmptyInput(*block));
+
+    // ensure number of IArgs, TArgs match our expectations
     REQUIRE_OK(this->validateArguments(*block));
+
+    // this method will allocate output NDArrays for this op
+    this->prepareOutputs(*block);
 
     return this->validateAndExecute(*block);
 }
