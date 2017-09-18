@@ -83,6 +83,8 @@ Batch Normalization does what is says: it normalizes mini-batches as they're fed
 ### <a name="bayes">Bayes Theorem</a> 
 Bayes’ Theorem is *a mathematical framework for integrating new evidence with prior beliefs.* For example, suppose you’re sitting in your quiet suburban home and you hear something that sounds like a lion roaring. You have some prior beliefs that lions are unlikely to be near your house, so you figure that it’s probably not a lion. Probably it’s some weird machine of your neighbor’s that just happens to sound like a lion, or some kids pranking you by playing lion noises, or something. You end up believing that there’s probably no lion nearby, but you do have a slightly higher probability of there being a lion nearby than you had before you heard the roaring noise. Bayes’ Theorem is just this kind of reasoning converted to math. [source](http://slatestarcodex.com/2016/09/12/its-bayes-all-the-way-up/)
 
+* [Bayes Rules: A Theoretical Guide](https://arbital.com/p/bayes_rule/?l=1zq)
+
 ### <a name="bidirectional">Bidirectional Recurrent Neural Networks</a> 
 A Bidirectional RNN is composed of two RNNs that process data in opposite directions. One reads a given sequence from start to finish; the other reads it from finish to start. Bidirectional RNNs are employed in NLP for translation problems, among other use cases. Deeplearning4j's implementation of [bidirectional Graves LSTMs is here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/recurrent/GravesBidirectionalLSTM.java).
 
