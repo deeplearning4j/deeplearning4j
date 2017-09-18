@@ -200,10 +200,11 @@ public abstract class DifferentialFunction implements Differential {
     public  List<DifferentialFunction> diff(List<DifferentialFunction> i_v1) {
         List<DifferentialFunction> vals = doDiff(i_v1);
         for(int i = 0; i < vals.size(); i++) {
-            DifferentialFunction differentialFunction = vals.get(i);
-            DifferentialFunction arg = args()[i];
-            if(arg.getGradient() != null)
-                f().addi(arg.getGradient(),differentialFunction);
+            DifferentialFunction differentialFunction = sameDiff.setupFunction(vals.get(i));
+            DifferentialFunction arg = sameDiff.setupFunction(args()[i]);
+            DifferentialFunction grad = arg.getGradient() != null ? sameDiff.setupFunction(arg.getGradient()) : null;
+            if(grad != null)
+                f().addi(differentialFunction,grad);
             else
                 arg.setGradient(differentialFunction);
             differentialFunction.setGradFunction(true);

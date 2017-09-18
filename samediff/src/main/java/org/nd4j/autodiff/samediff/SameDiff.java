@@ -8,10 +8,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
-import org.nd4j.autodiff.functions.Constant;
-import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.functions.Variable;
+import org.nd4j.autodiff.functions.*;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
@@ -3086,7 +3083,7 @@ public class SameDiff {
                     sameDiff.addVariable(initialGradVar);
 
 
-
+                    Set<DifferentialFunction> seen = new HashSet<>();
                     for(OpExecAction action : opOrder) {
                         if(action == null || action.getOpState() == null) {
                             log.warn("Action op state is null");
@@ -3099,26 +3096,43 @@ public class SameDiff {
                         //clear out all the variables
                         List<SDVariable> functionVars = debugMode ? new ArrayList<>(2) : null;
 
-                        for(DifferentialFunction differentialFunction : backwardResult) {
-                            SDVariable add = SDVariable.builder()
-                                    .arr(null).differentialFunction(differentialFunction)
-                                    .vertexId(differentialFunction.resultVertexId())
-                                    .shape(differentialFunction.getResultShape())
-                                    .sameDiff(sameDiff)
-                                    .varName(sameDiff.generateVariableName(differentialFunction.functionName(),
-                                            true,
-                                            differentialFunction))
-                                    .build();
-
-                            sameDiff.addVariable(add);
-                            SDVariable forwardVar = sameDiff.getVertexIdToVariable().get(action.getOutputId());
-                            add.setForwardVariable(forwardVar);
+                        for(int i = 0; i < backwardResult.size(); i++) {
+                            DifferentialFunction differentialFunction = backwardResult.get(i);
+                            DifferentialFunction x  = sameDiff.setupFunction(currFunction.args()[i]);
+                            if(!seen.contains(x)) {
+                                seen.add(x);
 
 
-                            if (isDebugMode()) {
-                                if(add.gradient() != null)
-                                    sameDiff.addVariable(add.gradient());
-                                functionVars.add(add);
+                                SDVariable forwardVar = sameDiff.getVertexIdToVariable().get(x.resultVertexId());
+                                SDVariable add = SDVariable.builder()
+                                        .arr(null).differentialFunction(differentialFunction)
+                                        .vertexId(differentialFunction.resultVertexId())
+                                        .shape(differentialFunction.getResultShape())
+                                        .sameDiff(sameDiff)
+                                        .varName(forwardVar.getVarName() + "-grad")
+                                        .build();
+
+                                sameDiff.addVariable(add);
+                                forwardVar.setGradient(add);
+                                add.setForwardVariable(forwardVar);
+
+
+                                if (isDebugMode()) {
+                                    if (add.gradient() != null)
+                                        sameDiff.addVariable(add.gradient());
+                                    functionVars.add(add);
+                                }
+                            }
+
+                            else {
+                                SDVariable forwardVar = sameDiff.getVertexIdToVariable().get(x.resultVertexId());
+                                SDVariable grad = forwardVar.gradient();
+                                grad.setVertexId(differentialFunction.resultVertexId());
+                                grad.setDifferentialFunction(differentialFunction);
+                                sameDiff.getVertexIdToVariable().put(differentialFunction.resultVertexId(),grad);
+                                grad.setVarName(sameDiff.generateVariableName(differentialFunction.functionName(),
+                                        true,
+                                        differentialFunction));
                             }
                         }
 
@@ -3127,43 +3141,6 @@ public class SameDiff {
                         }
 
                     }
-
-
-
-                    /**
-                     * Op order is wrong here.
-                     * There is an edge case with logistic regression where
-                     * it executes sigmoid in the wrong order
-                     * when it encounters 1- activation.
-                     *
-                     * What it *should* do is when it sees sigmoid
-                     * to activate that operation first
-                     * before the 1- activation
-                     * to ensure the proper gradient exists.
-                     *
-                     * The other frameworks dynamically find
-                     * the right dependencies
-                     * and add them as necessary.
-                     * We need to ensure our sort mechanism does the same.
-                     *
-                     * The debugging situation to watch is
-                     * the:
-                     * cand_funcs
-                     *
-                     * which contains the function execution order.
-                     * The function execution order for our case should be:
-                     * 1 - output -> sigmoid -> 1- predictions
-                     *
-                     * Right now, it is 1 - predictions -> sigmoid.
-                     *
-                     * Another thing to look in to is whether output_grad
-                     * propagates properly as well.
-                     *
-                     * The goal here should be to build a minimal test
-                     * that reproduces this wrong behavior
-                     * for transitive dependencies.
-                     */
-
 
 
                     if(sameDiff.isDebugMode()) {
@@ -3278,8 +3255,8 @@ public class SameDiff {
                 SDVariable add = SDVariable.builder()
                         .differentialFunction(opExecAction.getOpState().getDifferentialFunction())
                         .sameDiff(this)
-                        .varName(generateVariableName(opExecAction.getOpState().getOpName(),true,
-                                functions.toArray(new SDVariable[functions.size()])))
+                        .varName(!functions.isEmpty() ? generateVariableName(opExecAction.getOpState().getOpName(),true,
+                                functions.toArray(new SDVariable[functions.size()])) : opExecAction.getOpState().getOpName() + "-" + UUID.randomUUID().toString())
                         .arr(op.z())
                         .shape(op.z().shape())
                         .vertexId(opExecAction.getOutputId())

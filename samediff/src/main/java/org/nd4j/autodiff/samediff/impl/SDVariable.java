@@ -3,6 +3,8 @@ package org.nd4j.autodiff.samediff.impl;
 import com.google.common.base.Preconditions;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.Variable;
@@ -34,6 +36,8 @@ import java.util.Map;
 public class SDVariable  implements Serializable {
     private INDArray arr;
     private Variable arrayField;
+    @Getter
+    @Setter
     private String varName;
     private SameDiff sameDiff;
     private int[] shape;

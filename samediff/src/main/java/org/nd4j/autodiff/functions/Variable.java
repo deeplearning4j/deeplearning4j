@@ -37,11 +37,10 @@ public class Variable extends DifferentialFunction {
             throw new IllegalArgumentException("Input not null value.");
         }
 
-        if(i_v instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) i_v;
-            validateDifferentialFunctionsameDiff(arrayField);
-            this.vertexId = arrayField.getVertex().vertexID();
-        }
+        ArrayField arrayField = i_v;
+        validateDifferentialFunctionsameDiff(arrayField);
+        this.vertexId = arrayField.getVertex().vertexID();
+
 
     }
 
@@ -112,11 +111,11 @@ public class Variable extends DifferentialFunction {
     public List<DifferentialFunction> doDiff(List<DifferentialFunction> i_v) {
         //default value is 1.0 (constant)
         List<DifferentialFunction> ret = new ArrayList<>();
-       if(i_v == this)
-           ret.add(sameDiff.setupFunction(f().one(i_v.get(0)
-                   .getResultShape())));
-           else
-               ret.add(sameDiff.setupFunction(f().zero(i_v.get(0).getResultShape())));
+        if(i_v == this)
+            ret.add(sameDiff.setupFunction(f().one(i_v.get(0)
+                    .getResultShape())));
+        else
+            ret.add(sameDiff.setupFunction(f().zero(i_v.get(0).getResultShape())));
         return ret;
 
 
