@@ -474,6 +474,7 @@ namespace simdOps {
 			int *resultShapeBuffer,
 			T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
+
 			int kernelWidth = (int)extraParams[0];
 			int kernelHeight = (int)extraParams[1];
 			int strideX = (int)extraParams[2];
@@ -482,141 +483,74 @@ namespace simdOps {
 			int padHeight = (int)extraParams[5];
 			int dX = (int)extraParams[6];			//Dilation, width/x dimension
 			int dY = (int)extraParams[7];			//Dilation, height/y dimension
-			bool isSameMode = extraParams[8] > 0.0;
+			int kSize = kernelWidth * kernelHeight;
 
-			int outArrayOffset = 0;
 			int *outShape = shape::shapeOf(resultShapeBuffer);
+			char resultOrder = shape::order(resultShapeBuffer);
 			int *outStride = shape::stride(resultShapeBuffer);
 
-			int inArrayOffset = 0;
 			int *inShape = shape::shapeOf(xShapeBuffer);
 			int *inStride = shape::stride(xShapeBuffer);
 
-            bool padding = isSameMode || padHeight > 0 || padWidth > 0;
+			int samples = inShape[0];
+			int depth = inShape[1];
+			int height = inShape[2];
+			int width = inShape[3];
 
-			int exampleFrom = 0;
-			int exampleTo = inShape[0];
-			int depthFrom = 0;
-			int depthTo = inShape[1];
-			int yOutFrom = 0;
-			int yOutTo = outShape[4];
-			int xOutFrom = 0;
-			int xOutTo = outShape[5];
 
-			T *dIn = dx;
-			T *dOut = result;
+			int strideex = inStride[0];
+			int stridech = inStride[1];
+			int strideh = inStride[2];
+			int stridew = inStride[3];
 
-			int tadsPerThread = (exampleTo - exampleFrom) + (depthTo - depthFrom) / 4;
-			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+			int height_col = outShape[4];
+			int width_col = outShape[5];
 
-#pragma omp parallel for num_threads(num_threads) if (num_threads>1) collapse(2) proc_bind(AFFINITY) default(shared)
-			for (int ex = exampleFrom; ex < exampleTo; ex++) {
-				for (int d = depthFrom; d < depthTo; d++) {
-					int outIndices[6];
-					int inIndices[4];
+			int n = samples * depth * height_col * width_col;
 
-					int inStride2 = inStride[2];
-					int inStride3 = inStride[3];
-					int outStride2 = outStride[2];
-					int outStride3 = outStride[3];
-					int inShape2 = inShape[2];
-					int inShape3 = inShape[3];
+#pragma omp parallel for schedule(guided) proc_bind(close)
+			for (int index = 0; index < n; index++) {
+				int h_index = index / width_col;
+				int h_col = h_index % height_col;
+				int w_col = index % width_col;
 
-					inIndices[0] = ex;
-					inIndices[1] = d;
-					outIndices[0] = ex;
-					outIndices[1] = d;
+				int c_im = h_index / height_col;
+				int c_col = c_im * kSize;
 
-					for (int x = xOutFrom; x < xOutTo; x++) {  //Along width
-						for (int y = yOutFrom; y < yOutTo; y++) {  //along height
-							outIndices[4] = y;
-							outIndices[5] = x;
-							int baseOffsetOut = getOffsetUnsafe6(outArrayOffset, outShape, outStride,
-								outIndices);
+				int depth_im = c_im % depth;
+				int num_im = c_im / depth;
+				int h_offset = h_col * strideY - padHeight;
+				int w_offset = w_col * strideX - padWidth;
 
-							if (padding) {
-								int i = y * strideY -
-									padHeight;    //index along height of first element of patch in original img
-								int j = x * strideX -
-									padWidth;     //index along width of first element in patch in original img
-								inIndices[2] = i;   //along height
-								inIndices[3] = j;   //along width
+				T* data_col_ptr = result;
 
-								int baseOffsetIn = getOffsetUnsafe4(inArrayOffset, inShape, inStride,
-									inIndices);
-								if (outStride2 <= outStride3) {
-									//Want dimension 2 (along height) in inner loop for cache reasons
-									for (int patchX = 0; patchX < kernelWidth; patchX++) {
-										int outBufferIdxX = baseOffsetOut + patchX * outStride3;
-										int inBufferIdxX = baseOffsetIn + patchX * dX * inStride3;
-										for (int patchY = 0; patchY < kernelHeight; patchY++) {
-											if (i + patchY * dY < 0 || j + patchX * dX < 0 || i + patchY * dY >= inShape2 ||
-												j + patchX * dX >= inShape3)
-												dOut[outBufferIdxX + patchY * outStride2] = 0; //padding
-											else {
-												dOut[outBufferIdxX + patchY * outStride2] = dIn[inBufferIdxX +
-													patchY * dY * inStride2];
-											}
-										}
-									}
-								}
-								else {
-									//Want dimension 3 in inner loop for cache reasons
-									for (int patchY = 0; patchY < kernelHeight; patchY++) {
-										int outBufferIdxY = baseOffsetOut + patchY * outStride2;
-										int inBufferIdxY = baseOffsetIn + patchY * dY * inStride2;
-										for (int patchX = 0; patchX < kernelWidth; patchX++) {
-											if (i + patchY * dY < 0 || j + patchX * dX < 0 || i + patchY * dY >= inShape[2] ||
-												j + patchX * dX >= inShape[3])
-												dOut[outBufferIdxY + patchX * outStride3] = 0.0; //padding
-											else {
-												dOut[outBufferIdxY + patchX * outStride3] = dIn[inBufferIdxY +
-													patchX * dX * inStride3];
-											}
-										}
-									}
-								}
-							}
-							else {
-								//No padding
-								int i = y *
-									strideY;    //index along height of first element of patch in original img
-								int j = x *
-									strideX;     //index along width of first element in patch in original img
-								inIndices[2] = i;   //along height
-								inIndices[3] = j;   //along width
+				int i_c = (c_col * height_col + h_col) * width_col + w_col;
+				data_col_ptr += (c_col * height_col + h_col) * width_col + w_col;
 
-								int baseOffsetIn = getOffsetUnsafe4(inArrayOffset, inShape, inStride,
-									inIndices);
-								if (outStride2 <= outStride3) {
-									//Want dimension 2 (along height) in inner loop for cache reasons
-									for (int patchX = 0; patchX < kernelWidth; patchX++) {
-										int outBufferIdxX = baseOffsetOut + patchX * outStride3;
-										int inBufferIdxX = baseOffsetIn + patchX * dX * inStride3;
-										for (int patchY = 0; patchY < kernelHeight; patchY++) {
-											dOut[outBufferIdxX + patchY * outStride2] = dIn[inBufferIdxX +
-												patchY * dY * inStride2];
-										}
-									}
-								}
-								else {
-									//Want dimension 3 in inner loop for cache reasons
-									for (int patchY = 0; patchY < kernelHeight; patchY++) {
-										int outBufferIdxY = baseOffsetOut + patchY * outStride2;
-										int inBufferIdxY = baseOffsetIn + patchY * dY * inStride2;
-										for (int patchX = 0; patchX < kernelWidth; patchX++) {
-											dOut[outBufferIdxY + patchX * outStride3] = dIn[inBufferIdxY +
-												patchX * dX * inStride3];
-										}
-									}
-								}
-							}
+				T* data_im_ptr = dx;
+
+				data_im_ptr += num_im * strideex + depth_im * stridech + h_offset * strideh + w_offset*stridew;
+
+				for (int i = 0; i < kernelHeight; ++i) {
+					for (int j = 0; j < kernelWidth; ++j) {
+						int h_im = h_offset + i * dY;
+						int w_im = w_offset + j * dX;
+						int i_f = 0;
+						int i_c_temp = i_c;
+						for (int dim = 5; dim >= 0; dim--) {
+							i_f += (i_c_temp % outShape[dim])  * outStride[dim];
+							i_c_temp = i_c_temp / outShape[dim];
 						}
+						if (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width){
+							result[i_f] = data_im_ptr[i * dY * strideh + j * dX * stridew];
+						} else result[i_f] = 0;
+
+						//result[i_f] = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
+						data_col_ptr += height_col * width_col;
+						i_c += height_col * width_col;
 					}
 				}
 			}
-
 		}
 
 		op_def static T op(T d1, T *params) {
@@ -957,142 +891,92 @@ namespace simdOps {
 			T *result,
 			int *resultShapeBuffer,
 			T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
-			int inOffset = 0;
-			int *inShape = shape::shapeOf(xShapeBuffer);
-			int *inStride = shape::stride(xShapeBuffer);
 
-			int kernelHeight = inShape[2];
-			int kernelWidth = inShape[3];
-			/* int strideY, int strideX, int padHeight, int padWidth, int imgHeight, int imgWidth, int dilationW, int dilationH */
-			int strideX = (int)extraParams[0];
-			int strideY = (int)extraParams[1];
-			int padWidth = (int)extraParams[2];
-			int padHeight = (int)extraParams[3];
-			int dX = (int)extraParams[6];			//Dilation in width/x dimension
-			int dY = (int)extraParams[7];			//Dilation in height/y dimension
+            int *inShape = shape::shapeOf(xShapeBuffer);
+            int *inStride = shape::stride(xShapeBuffer);
+
+            int strideex = inStride[0];
+            int stridech = inStride[1];
+            int stridekrow = inStride[2];
+            int stridekcol = inStride[3];
+            int striderow = inStride[4];
+            int stridecol = inStride[5];
+
+            int kernelHeight = inShape[2];
+            int kernelWidth = inShape[3];
+
+            // C
+
+            int strideX = (int)extraParams[0];
+            int strideY = (int)extraParams[1];
+            int padWidth = (int)extraParams[2];
+            int padHeight = (int)extraParams[3];
+            int imgHeight = (int)extraParams[4];
+            int imgWidth = (int)extraParams[5];
+            int dX = (int)extraParams[6];			//Dilation in width/x dimension
+            int dY = (int)extraParams[7];			//Dilation in height/y dimension
+
+            int *outShape = shape::shapeOf(resultShapeBuffer);
+            char resultOrder = shape::order(resultShapeBuffer);
+            int *outStride = shape::stride(resultShapeBuffer);
+
+            int samples = outShape[0];
+            int depth = outShape[1];
+            int imgH = outShape[2];
+            int imgW = outShape[3];
+
+            int height_col = inShape[4];//(imgHeight + 2 * padHeight - kernelHeight) / strideX + 1;
+            int width_col = inShape[5];//(imgWidth + 2 * padWidth - kernelWidth) / strideY + 1;
+
+            int n = samples * depth * imgHeight * imgWidth;
+
+            //Effective kernel size, accounting for dilation
+            int kEffectiveW = kernelWidth + (kernelWidth - 1) * (dX - 1);
+            int kEffectiveH = kernelHeight + (kernelHeight - 1) * (dY - 1);
+
+#pragma omp parallel for schedule(guided) proc_bind(close)
+            for (int i = 0; i < n; i++) {
+                T val = 0;
+                int w_im = i % imgWidth + padWidth;
+                int h_im = (i / imgWidth) % imgHeight + padHeight;
+                int c_im = i / (imgWidth * imgHeight);
+
+                int num_im = c_im / depth;
+                int depth_im = c_im % depth;
+
+                // compute the start and end of the output
+                // These are the indexes for dimensions ??? in the 6d col matrix
+                int w_col_start = (w_im < kEffectiveW) ? 0 : (w_im - kEffectiveW) / strideX + 1;
+                int w_col_end = nd4j::math::nd4j_min<int>(w_im / strideX + 1, width_col);
+
+                int h_col_start = (h_im < kEffectiveH) ? 0 : (h_im - kEffectiveH) / strideY + 1;
+                int h_col_end = nd4j::math::nd4j_min<int>(h_im / strideY + 1, height_col);
 
 
-			int exampleFrom = 0;
-			int exampleTo = inShape[0];
-			int depthFrom = 0;
-			int depthTo = inShape[1];
+                //Iterate over col entries in the 6d array... these are added up
+                for (int h_col = h_col_start; h_col < h_col_end; h_col += 1) {
+                    for (int w_col = w_col_start; w_col < w_col_end; w_col += 1) {
+                        int h_k = (h_im - h_col * strideY);
+                        int w_k = (w_im - w_col * strideX);
 
-			int outArrayOffset = 0;
-			int *outShape = shape::shapeOf(resultShapeBuffer);
-			int *outStride = shape::stride(resultShapeBuffer);
+                        if(h_k % dY == 0 && w_k % dX == 0){
+                            h_k /= dY;
+                            w_k /= dX;
 
-
-			int tadsPerThread = (exampleTo - exampleFrom) + (depthTo - depthFrom) / 4;
-			int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-			num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-
-			T *fIn = dx;
-			T *fOut = result;
-#pragma omp parallel for num_threads(num_threads) if (num_threads>1) collapse(2) proc_bind(AFFINITY) default(shared)
-			for (int ex = exampleFrom; ex < exampleTo; ex++) {
-				for (int d = depthFrom; d < depthTo; d++) {
-					int outIndices[4];
-					int inIndices[6];
-
-					int inStride2 = inStride[2];
-					int inStride3 = inStride[3];
-					int outStride2 = outStride[2];
-					int outStride3 = outStride[3];
-					int outShape2 = outShape[2];
-					int outShape3 = outShape[3];
-
-					int yOutTo = inShape[4];
-					int xOutTo = inShape[5];
-
-
-					bool padding = true;	//isSameMode || padHeight > 0 || padWidth > 0;
-					inIndices[0] = ex;
-					inIndices[1] = d;
-					outIndices[0] = ex;
-					outIndices[1] = d;
-
-					for (int x = 0; x < xOutTo; x++) {  //Patch number along width
-						for (int y = 0; y < yOutTo; y++) {  //Patch number along height
-							inIndices[4] = y;   //patch number (along height)
-							inIndices[5] = x;   //patch number (along width)
-							int baseOffsetIn = getOffsetUnsafe6(inOffset, inShape, inStride, inIndices);
-
-							if (padding) {
-								//index along height of first element of patch in original img
-								int i = y * strideY - padHeight;
-								//index along width of first element in patch in original img
-								int j = x * strideX - padWidth;
-								outIndices[2] = i;  //along height
-								outIndices[3] = j;  //along width
-
-								int baseOffsetOut = getOffsetUnsafe4(outArrayOffset, outShape, outStride,
-									outIndices);
-
-								if (inStride2 <= inStride3) {
-									//Want dimension 2 (along height) in inner loop for cache efficiency
-									for (int patchX = 0; patchX < kernelWidth; patchX++) {
-										if (j + patchX * dX < 0 || j + patchX * dX >= outShape3)
-											continue;
-
-										for (int patchY = 0; patchY < kernelHeight; patchY++) {
-											if (i + patchY * dY < 0 || i + patchY * dY >= outShape2)
-												continue;
-											fOut[baseOffsetOut + patchY * dY * outStride2 + patchX * dX * outStride3] +=
-												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-										}
-									}
-								}
-								else {
-									//Want dimension 3 (along width) in inner loop for cache efficiency
-									for (int patchY = 0; patchY < kernelHeight; patchY++) {
-										if (i + patchY * dY < 0 || i + patchY * dY >= outShape2)
-											continue;
-										for (int patchX = 0; patchX < kernelWidth; patchX++) {
-											if (j + patchX * dX < 0 || j + patchX * dX >= outShape3)
-												continue;
-											fOut[baseOffsetOut + patchY * dY * outStride2 + patchX * dX * outStride3] +=
-												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-										}
-									}
-								}
-							}
-							else {
-								//No padding
-								int i = y *
-									strideY;    //index along height of first element of patch in output img
-								int j = x *
-									strideX;     //index along width of first element in patch in output img
-
-								outIndices[2] = i;
-								outIndices[3] = j;
-
-								int baseOffsetOut = getOffsetUnsafe4(outArrayOffset, outShape, outStride,
-									outIndices);
-
-								if (inStride2 <= inStride3) {
-									//Want dimension 2 (along height) in inner loop for cache efficiency
-									for (int patchX = 0; patchX < kernelWidth; patchX++) {
-										for (int patchY = 0; patchY < kernelHeight; patchY++) {
-											fOut[baseOffsetOut + patchY * dY * outStride2 + patchX * dX * outStride3] +=
-												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-										}
-									}
-								}
-								else {
-									//Want dimension 3 (along width) in inner loop for cache efficiency
-									for (int patchY = 0; patchY < kernelHeight; patchY++) {
-										for (int patchX = 0; patchX < kernelWidth; patchX++) {
-											fOut[baseOffsetOut + patchY * dY * outStride2 + patchX * dX * outStride3] +=
-												fIn[baseOffsetIn + patchY * inStride2 + patchX * inStride3];
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-
+                            int data_col_index = num_im * strideex + depth_im * stridech + h_k * stridekrow + w_k * stridekcol + h_col * striderow + w_col * stridecol;
+                            val += dx[data_col_index];
+                        }
+                    }
+                }
+                int i_f = 0;
+                int i_c = i;
+                for (int dim = 3; dim >= 0; dim--)
+                {
+                    i_f += (i_c % outShape[dim])  * outStride[dim];
+                    i_c = i_c / outShape[dim];
+                }
+                result[i_f] += val;
+            }
 
 		}
 
