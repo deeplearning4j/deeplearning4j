@@ -60,7 +60,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
     public Activations activate(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set (L2NormalizeVertex " + vertexName
-                            + " idx " + vertexIndex + ")");
+                            + " idx " + getIndex() + ")");
 
         // L2 norm along all dimensions except 0, unless user-specified
         // x / |x|2
@@ -82,7 +82,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
     public Gradients backpropGradient(Gradients gradient) {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: errors not set (L2NormalizeVertex " + vertexName
-                            + " idx " + vertexIndex + ")");
+                            + " idx " + getIndex() + ")");
         INDArray epsilon = gradient.get(0);
 
         INDArray x = input.get(0);

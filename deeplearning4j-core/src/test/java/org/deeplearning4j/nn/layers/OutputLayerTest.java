@@ -350,7 +350,7 @@ public class OutputLayerTest {
                     labels3d.putScalar(new int[] {i, idx, j}, 1.0f);
                 }
             }
-            INDArray labels2d = proc.backprop(gf.create(labels3d), miniBatchSize).get(0);
+            INDArray labels2d = proc.backprop(gf.create(labels3d), miniBatchSize, true).get(0);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
@@ -367,7 +367,7 @@ public class OutputLayerTest {
             mln.init();
 
             INDArray out2d = mln.feedForward(input).get(2);
-            INDArray out3d = proc.preProcess(af.create(out2d), miniBatchSize).get(0);
+            INDArray out3d = proc.preProcess(af.create(out2d), miniBatchSize, true).get(0);
 
             MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder().seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)

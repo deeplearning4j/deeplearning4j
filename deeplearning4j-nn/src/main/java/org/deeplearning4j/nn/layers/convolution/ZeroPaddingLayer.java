@@ -41,6 +41,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Gradients backpropGradient(Gradients gradients) {
+        INDArray input = this.input.get(0);
         INDArray epsilon = gradients.get(0);
         int[] inShape = input.shape();
 
@@ -54,6 +55,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Activations activate(boolean training) {
+        INDArray input = this.input.get(0);
         int[] inShape = input.shape();
         int outH = inShape[2] + padding[0] + padding[1];
         int outW = inShape[3] + padding[2] + padding[3];

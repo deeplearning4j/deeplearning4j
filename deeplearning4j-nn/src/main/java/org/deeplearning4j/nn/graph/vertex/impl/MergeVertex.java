@@ -76,7 +76,7 @@ public class MergeVertex extends BaseGraphVertex {
         int nOut = 0;
         fwdPassRank = input.get(0).rank();
         for (int i = 0; i < input.size(); i++) {
-            int[] currShape = inputs[i].shape();
+            int[] currShape = input.get(i).shape();
             if (fwdPassRank != currShape.length) {
                 throw new IllegalStateException(
                                 "Cannot merge activations with different ranks: first activations have rank "
@@ -88,13 +88,13 @@ public class MergeVertex extends BaseGraphVertex {
                 throw new IllegalStateException(
                                 "Cannot merge activations with different number of examples (activations[0] shape: "
                                                 + Arrays.toString(input.get(0).shape()) + ", activations[" + i
-                                                + "] shape: " + Arrays.toString(inputs[i].shape()));
+                                                + "] shape: " + Arrays.toString(input.get(i).shape()));
             }
 
             nOut += currShape[1]; //Same dimension for all of CNNs, FF, RNNs
         }
 
-        INDArray out = Nd4j.hstack(inputs);
+        INDArray out = Nd4j.hstack(input.getAsArray());
         return ActivationsFactory.getInstance().create(out);
     }
 

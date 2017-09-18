@@ -30,10 +30,6 @@ public class Convolution1DLayer extends ConvolutionLayer {
         super(conf);
     }
 
-    public Convolution1DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     @Override
     public Gradients backpropGradient(Gradients gradients) {
         INDArray epsilon = gradients.get(0);
@@ -43,10 +39,12 @@ public class Convolution1DLayer extends ConvolutionLayer {
                             + Arrays.toString(epsilon.shape())
                             + ". Expected rank 3 array with shape [minibatchSize, features, length]. " + layerId());
 
+        INDArray input = this.input.get(0);
+
         // add singleton fourth dimension to input and next layer's epsilon
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
         INDArray origInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        this.input.set(0, input.reshape(input.size(0), input.size(1), input.size(2), 1));
 
         // call 2D ConvolutionLayer's backpropGradient method
         gradients.set(0, epsilon);
@@ -55,7 +53,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
         // remove singleton fourth dimension from input and current epsilon
         epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
-        input = origInput;
+        this.input.set(0, origInput);
 
         return GradientsFactory.getInstance().create(epsNext, gradientEpsNext.getParameterGradients());
     }
@@ -67,14 +65,15 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
     @Override
     public INDArray preOutput(boolean training) {
+        INDArray input = this.input.get(0);
         INDArray origInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+        this.input.set(0, input.reshape(input.size(0), input.size(1), input.size(2), 1));
 
         // call 2D ConvolutionLayer's activate method
         INDArray preOutput = super.preOutput(training);
 
         // remove singleton fourth dimension from output activations
-        input = origInput;
+        this.input.set(0, origInput);
         preOutput = preOutput.reshape(preOutput.size(0), preOutput.size(1), preOutput.size(2));
 
         return preOutput;

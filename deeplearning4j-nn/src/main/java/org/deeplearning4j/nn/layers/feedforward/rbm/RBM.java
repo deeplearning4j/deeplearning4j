@@ -78,11 +78,6 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
         this.seed = conf.getSeed();
     }
 
-    public RBM(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-        this.seed = conf.getSeed();
-    }
-
     /**
      *
      */
@@ -117,6 +112,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
 
     @Override
     public void computeGradientAndScore() {
+        INDArray input = this.input.get(0);
         int k = layerConf().getK();
 
         //POSITIVE PHASE
@@ -443,20 +439,21 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
             applyDropOutIfNecessary(training);
         }
         //reconstructed: propUp ----> hidden propDown to transform
-        INDArray propUp = propUp(input, training);
+        INDArray propUp = propUp(input.get(0), training);
         return ActivationsFactory.getInstance().create(propUp);
     }
 
     @Override
     public Gradients backpropGradient(Gradients gradients) {
+        INDArray input = this.input.get(0);
         INDArray epsilon = gradients.get(0);
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input, true);
         INDArray activationDerivative = propUpDerivative(z);
         INDArray delta = epsilon.muli(activationDerivative);
 
-        if (maskArray != null) {
-            delta.muliColumnVector(maskArray);
+        if (this.input.getMask(0) != null) {
+            delta.muliColumnVector(this.input.getMask(0));
         }
 
         Gradient ret = new DefaultGradient();

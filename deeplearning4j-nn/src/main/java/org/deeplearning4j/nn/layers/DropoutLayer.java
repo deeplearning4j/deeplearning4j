@@ -18,16 +18,12 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
         super(conf);
     }
 
-    public DropoutLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     @Override
     public Gradients backpropGradient(Gradients epsilon) {
         INDArray delta = epsilon.get(0).dup();
 
-        if (maskArray != null) {
-            delta.muliColumnVector(maskArray);
+        if (this.input.getMask(0) != null) {
+            delta.muliColumnVector(this.input.getMask(0));
         }
 
         Gradient ret = new DefaultGradient();
@@ -41,11 +37,11 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
         }
         applyDropOutIfNecessary(training);
 
-        if (maskArray != null) {
-            input.muliColumnVector(maskArray);
+        if (this.input.getMask(0) != null) {
+            input.get(0).muliColumnVector(this.input.getMask(0));
         }
 
-        return input;
+        return input.get(0);
     }
 
     @Override

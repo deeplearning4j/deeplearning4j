@@ -51,10 +51,6 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         super(conf);
     }
 
-    public GravesLSTM(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     @Override
     public Gradient gradient() {
         throw new UnsupportedOperationException(
@@ -93,7 +89,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         }
 
 
-        Gradients p = LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
+        Gradients p = LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input.get(0),
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,
                         GravesLSTMParamInitializer.BIAS_KEY, gradientViews, this.input.getMask(0), true, null);
@@ -133,7 +129,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         final INDArray biases = getParamWithNoise(GravesLSTMParamInitializer.BIAS_KEY, training); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
 
         FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
-                        this.input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
+                        this.input.get(0), recurrentWeights, inputWeights, biases, training, prevOutputActivations,
                         prevMemCellState, forBackprop || (cacheMode != CacheMode.NONE && training), true,
                         GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, this.input.getMask(0), true, null,
                         forBackprop ? cacheMode : CacheMode.NONE);

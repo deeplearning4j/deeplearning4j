@@ -34,7 +34,7 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
     }
 
     @Override
-    public Activations preProcess(Activations a, int miniBatchSize) {
+    public Activations preProcess(Activations a, int miniBatchSize, boolean train) {
         if(a.size() != 1){
             throw new IllegalArgumentException("Cannot preprocess input: Activations must have exactly 1 array. Got: "
                     + a.size());
@@ -48,12 +48,12 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
          */
         INDArray permuted = input.permute(0, 2, 3, 1);
         Activations a2 = ActivationsFactory.getInstance().create(permuted, a.getMask(0), a.getMaskState(0));
-        return super.preProcess(a2, miniBatchSize);
+        return super.preProcess(a2, miniBatchSize, train);
     }
 
     @Override
-    public Gradients backprop(Gradients g, int miniBatchSize) {
-        Gradients gReshaped = super.backprop(g, miniBatchSize);
+    public Gradients backprop(Gradients g, int miniBatchSize, boolean train) {
+        Gradients gReshaped = super.backprop(g, miniBatchSize, train);
         gReshaped.set(0, gReshaped.get(0).permute(0, 3, 1, 2));
         return gReshaped;
     }

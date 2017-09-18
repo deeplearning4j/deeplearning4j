@@ -63,6 +63,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
+        INDArray input = this.input.get(0);
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
         INDArray preOut = preOutput2d(training);
@@ -75,7 +76,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
         INDArray centersForExamples = labels.mmul(centers);
 
-        //        double intraClassScore = intraClassLoss.computeScore(centersForExamples, input, Activation.IDENTITY.getActivationFunction(), maskArray, false);
+        //        double intraClassScore = intraClassLoss.computeScore(centersForExamples, input, Activation.IDENTITY.getActivationFunction(), this.input.getMask(0), false);
         INDArray norm2DifferenceSquared = input.sub(centersForExamples).norm2(1);
         norm2DifferenceSquared.muli(norm2DifferenceSquared);
 
@@ -91,7 +92,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         // now calculate the inter-class score component
         double interClassScore = interClassLoss.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(),
-                        maskArray, false);
+                        this.input.getMask(0), false);
 
         double score = interClassScore + intraClassScore;
 
@@ -113,6 +114,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
+        INDArray input = this.input.get(0);
         INDArray preOut = preOutput2d(false);
 
         // calculate the intra-class score component
@@ -123,7 +125,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         // calculate the inter-class score component
         ILossFunction interClassLoss = layerConf().getLossFn();
         INDArray scoreArray = interClassLoss.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(),
-                        maskArray);
+                        this.input.getMask(0));
         scoreArray.addi(intraClassScoreArray.muli(layerConf().getLambda() / 2));
 
         double l1l2 = fullNetworkL1 + fullNetworkL2;
@@ -153,6 +155,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
     @Override
     public Gradients backpropGradient(Gradients epsilon) {
+        INDArray input = this.input.get(0);
         Gradients pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         INDArray delta = pair.get(0);
 
@@ -183,6 +186,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
     private Gradients getGradientsAndDelta(INDArray preOut) {
+        INDArray input = this.input.get(0);
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray labels2d = getLabels2d();
         if (labels2d.size(1) != preOut.size(1)) {
@@ -191,7 +195,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
                                             + " number of outputs (nOut = " + preOut.size(1) + ") " + layerId());
         }
 
-        INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);
+        INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), this.input.getMask(0));
 
         Gradient gradient = new DefaultGradient();
 

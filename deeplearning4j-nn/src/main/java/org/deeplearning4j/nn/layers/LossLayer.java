@@ -70,10 +70,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         super(conf);
     }
 
-    public LossLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     @Override
     public void init() {
         //No op
@@ -122,12 +118,13 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
+        INDArray input = this.input.get(0);
         INDArray preOut = input;
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
-        //double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFunction(), maskArray, false);
-        double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray,
+        //double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFunction(), this.input.getMask(0), false);
+        double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), this.input.getMask(0),
                         false);
         score += fullNetworkL1 + fullNetworkL2;
         score /= getInputMiniBatchSize();
@@ -147,11 +144,12 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
+        INDArray input = this.input.get(0);
         INDArray preOut = input;
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
-                        lossFunction.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray);
+                        lossFunction.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(), this.input.getMask(0));
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
@@ -163,6 +161,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     public void computeGradientAndScore() {
         if (input == null || labels == null)
             return;
+        INDArray input = this.input.get(0);
 
         INDArray preOut = input;
         Gradients pair = getGradientsAndDelta(preOut);
@@ -183,7 +182,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     @Override
     public Gradients backpropGradient(Gradients epsilon) {
-        return getGradientsAndDelta(input);
+        return getGradientsAndDelta(input.get(0));
     }
 
 
@@ -191,7 +190,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     private Gradients getGradientsAndDelta(INDArray preOut) {
         // delta calculation
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray delta = lossFunction.computeGradient(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray);
+        INDArray delta = lossFunction.computeGradient(getLabels2d(), preOut, layerConf().getActivationFn(), this.input.getMask(0));
 
         // grab the empty gradient
         Gradient gradient = new DefaultGradient();
@@ -225,11 +224,12 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     @Override
     public Activations activate(boolean training) {
+        INDArray input = this.input.get(0);
         INDArray z = input;
         INDArray ret = layerConf().getActivationFn().getActivation(z.dup(), training);
 
-        if (maskArray != null) {
-            ret.muliColumnVector(maskArray);
+        if (this.input.getMask(0) != null) {
+            ret.muliColumnVector(this.input.getMask(0));
         }
 
         return ActivationsFactory.getInstance().create(ret);

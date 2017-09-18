@@ -63,10 +63,6 @@ public class GravesBidirectionalLSTM
         super(conf);
     }
 
-    public GravesBidirectionalLSTM(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
     @Override
     public Gradient gradient() {
         throw new UnsupportedOperationException("Not supported " + layerId());
@@ -96,13 +92,13 @@ public class GravesBidirectionalLSTM
         final FwdPassReturn fwdPass = activateHelperDirectional(true, null, null, true, true);
 
         final Gradients forwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
-                        this.layerConf().getGateActivationFn(), this.input,
+                        this.layerConf().getGateActivationFn(), this.input.get(0),
                         getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                         getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS), epsilon,
                         truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS,
-                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, maskArray, true,
+                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, this.input.getMask(0), true,
                         null);
 
 
@@ -110,13 +106,13 @@ public class GravesBidirectionalLSTM
         final FwdPassReturn backPass = activateHelperDirectional(true, null, null, true, false);
 
         final Gradients backwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
-                        this.layerConf().getGateActivationFn(), this.input,
+                        this.layerConf().getGateActivationFn(), this.input.get(0),
                         getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
                         getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS), epsilon,
                         truncatedBPTT, tbpttBackwardLength, backPass, false,
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS,
-                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, maskArray, true,
+                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, this.input.getMask(0), true,
                         null);
 
 
@@ -174,20 +170,20 @@ public class GravesBidirectionalLSTM
         } else {
 
             forwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
-                            this.input, getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
+                            this.input.get(0), getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
                             forBackprop || (cacheMode != CacheMode.NONE && training), true,
-                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray, true, null,
+                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, this.input.getMask(0), true, null,
                             forBackprop ? cacheMode : CacheMode.NONE);
 
             backwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
-                            this.input,
+                            this.input.get(0),
                             getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
                             forBackprop || (cacheMode != CacheMode.NONE && training), false,
-                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray, true, null,
+                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, this.input.getMask(0), true, null,
                             forBackprop ? cacheMode : CacheMode.NONE);
 
             cachedPassForward = forwardsEval;
@@ -231,9 +227,9 @@ public class GravesBidirectionalLSTM
                 biasKey = GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS;
             }
 
-            return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
+            return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input.get(0),
                             getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training,
-                            prevOutputActivations, prevMemCellState, forBackprop, forwards, inputKey, maskArray, true,
+                            prevOutputActivations, prevMemCellState, forBackprop, forwards, inputKey, this.input.getMask(0), true,
                             null, forBackprop ? cacheMode : CacheMode.NONE);
         }
     }
@@ -260,7 +256,7 @@ public class GravesBidirectionalLSTM
 
 
 //    @Override
-//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
+//    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray this.input.getMask(0), MaskState currentMaskState,
 //                    int minibatchSize) {
 //        //Bidirectional RNNs operate differently to standard RNNs from a masking perspective
 //        //Specifically, the masks are applied regardless of the mask state
@@ -268,9 +264,9 @@ public class GravesBidirectionalLSTM
 //        // even though the normal RNN has marked the current mask state as 'passthrough'
 //        //Consequently, the mask is marked as active again
 //
-//        this.maskArray = maskArray;
+//        this.this.input.getMask(0) = this.input.getMask(0);
 //        this.maskState = currentMaskState;
 //
-//        return new Pair<>(maskArray, MaskState.Active);
+//        return new Pair<>(this.input.getMask(0), MaskState.Active);
 //    }
 }

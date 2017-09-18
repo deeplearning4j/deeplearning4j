@@ -16,13 +16,13 @@ import org.nd4j.linalg.primitives.Pair;
 public class MyCustomPreprocessor implements InputPreProcessor {
 
     @Override
-    public Activations preProcess(Activations input, int miniBatchSize) {
+    public Activations preProcess(Activations input, int miniBatchSize, boolean train) {
         input.get(0).add(1.0);
         return input;
     }
 
     @Override
-    public Gradients backprop(Gradients output, int miniBatchSize) {
+    public Gradients backprop(Gradients output, int miniBatchSize, boolean train) {
         return output;
     }
 

@@ -228,8 +228,8 @@ public class TestVariableLengthTSCG {
             FeedForwardToRnnPreProcessor temp = new FeedForwardToRnnPreProcessor();
             INDArray l0Before = activations2.get("0");
             INDArray l1Before = activations2.get("1");
-            INDArray l0After = temp.preProcess(af.create(l0Before), nExamples).get(0);
-            INDArray l1After = temp.preProcess(af.create(l1Before), nExamples).get(0);
+            INDArray l0After = temp.preProcess(af.create(l0Before), nExamples, true).get(0);
+            INDArray l1After = temp.preProcess(af.create(l1Before), nExamples, true).get(0);
 
             for (int j = 0; j < nExamples; j++) {
                 for (int k = 0; k < nIn; k++) {
