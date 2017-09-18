@@ -21,6 +21,9 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,14 +37,20 @@ import org.nd4j.linalg.factory.Nd4j;
 public class BinomialSamplingPreProcessor extends BaseInputPreProcessor {
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
-        return Nd4j.getDistributions().createBinomial(1, input).sample(input.shape());
+    public Activations preProcess(Activations input, int miniBatchSize) {
+        Activations out = ActivationsFactory.getInstance().create(input.getAsArray(),
+                input.getMaskAsArray(), input.getMaskStateAsArray());
+        for(int i=0; i<input.size(); i++ ){
+            INDArray arr = input.get(i);
+            out.set(i, Nd4j.getDistributions().createBinomial(1, arr).sample(arr.shape()));
+        }
+        return out;
     }
 
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
-        return output; //No op?
+    public Gradients backprop(Gradients gradients, int miniBatchSize) {
+        return gradients;   //No op
     }
 
     @Override

@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.multilayer;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -28,6 +29,8 @@ import java.util.Random;
 import static org.junit.Assert.*;
 
 public class TestVariableLengthTS {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     @Test
     public void testVariableLengthSimple() {
@@ -224,8 +227,8 @@ public class TestVariableLengthTS {
             FeedForwardToRnnPreProcessor temp = new FeedForwardToRnnPreProcessor();
             INDArray l0Before = activations2.get(1);
             INDArray l1Before = activations2.get(2);
-            INDArray l0After = temp.preProcess(l0Before, nExamples);
-            INDArray l1After = temp.preProcess(l1Before, nExamples);
+            INDArray l0After = temp.preProcess(af.create(l0Before), nExamples).get(0);
+            INDArray l1After = temp.preProcess(af.create(l1Before), nExamples).get(0);
 
             for (int j = 0; j < nExamples; j++) {
                 for (int k = 0; k < nIn; k++) {

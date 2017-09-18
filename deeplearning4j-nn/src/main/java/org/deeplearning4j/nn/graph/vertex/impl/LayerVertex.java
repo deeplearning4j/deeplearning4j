@@ -333,9 +333,7 @@ public class LayerVertex extends BaseGraphVertex {
         }
 
         if (layerPreProcessor != null) {
-            INDArray eps = pair.get(0);
-            eps = layerPreProcessor.backprop(eps, graph.batchSize());
-            pair.set(0, eps);
+            pair = layerPreProcessor.backprop(pair, graph.batchSize());
         }
 
         //Layers always have single activations input -> always have single epsilon output during backprop
@@ -351,7 +349,8 @@ public class LayerVertex extends BaseGraphVertex {
 
         INDArray currInput = inputs[0];
         if (layerPreProcessor != null) {
-            currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
+//            currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
+            throw new UnsupportedOperationException("Not yet reimplemented");
         }
         layer.setInput(inputNumber, currInput);
     }

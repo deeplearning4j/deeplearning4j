@@ -18,10 +18,12 @@
 
 package org.deeplearning4j.nn.layers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -58,9 +60,11 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 9/1/14.
  */
+@Slf4j
 public class OutputLayerTest {
-    private static final Logger log = LoggerFactory.getLogger(OutputLayerTest.class);
 
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
+    private static final GradientsFactory gf = GradientsFactory.getInstance();
 
     @Test
     public void testIris2() {
@@ -346,7 +350,7 @@ public class OutputLayerTest {
                     labels3d.putScalar(new int[] {i, idx, j}, 1.0f);
                 }
             }
-            INDArray labels2d = proc.backprop(labels3d, miniBatchSize);
+            INDArray labels2d = proc.backprop(gf.create(labels3d), miniBatchSize).get(0);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
@@ -363,7 +367,7 @@ public class OutputLayerTest {
             mln.init();
 
             INDArray out2d = mln.feedForward(input).get(2);
-            INDArray out3d = proc.preProcess(out2d, miniBatchSize);
+            INDArray out3d = proc.preProcess(af.create(out2d), miniBatchSize).get(0);
 
             MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder().seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)

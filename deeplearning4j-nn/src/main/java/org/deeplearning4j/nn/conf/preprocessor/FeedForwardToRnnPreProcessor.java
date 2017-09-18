@@ -3,6 +3,10 @@ package org.deeplearning4j.nn.conf.preprocessor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.util.TimeSeriesUtils;
@@ -31,7 +35,12 @@ import java.util.Arrays;
 public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public Activations preProcess(Activations a, int miniBatchSize) {
+        if(a.size() != 1){
+            throw new IllegalArgumentException("Cannot preprocess input: Activations must have exactly 1 array. Got: "
+                    + a.size());
+        }
+        INDArray input = a.get(0);
         //Need to reshape FF activations (2d) activations to 3d (for input into RNN layer)
         if (input.rank() != 2)
             throw new IllegalArgumentException(
@@ -41,11 +50,18 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
 
         int[] shape = input.shape();
         INDArray reshaped = input.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
-        return reshaped.permute(0, 2, 1);
+        INDArray ret = reshaped.permute(0, 2, 1);
+        Pair<INDArray, MaskState> p = feedForwardMaskArray(a.getMask(0), a.getMaskState(0), miniBatchSize);
+        return ActivationsFactory.getInstance().create(ret, p.getFirst(), p.getSecond());
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public Gradients backprop(Gradients g, int miniBatchSize) {
+        if(g.size() != 1){
+            throw new IllegalArgumentException("Cannot preprocess activation gradients: Activation gradients must have " +
+                    "exactly 1 array. Got: " + g.size());
+        }
+        INDArray output = g.get(0);
         //Need to reshape RNN epsilons (3d) to 2d (for use in FF layer backprop calculations)
         if (output.rank() != 3)
             throw new IllegalArgumentException(
@@ -53,12 +69,19 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
         if (output.ordering() != 'f')
             output = output.dup('f');
         int[] shape = output.shape();
-        if (shape[0] == 1)
-            return output.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
-        if (shape[2] == 1)
-            return output.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
-        INDArray permuted = output.permute(0, 2, 1); //Permute, so we get correct order after reshaping
-        return permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        INDArray ret = null;
+        if (shape[0] == 1) {
+            ret = output.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
+        } else if (shape[2] == 1) {
+            ret = output.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
+        }
+
+        if(ret == null) {
+            INDArray permuted = output.permute(0, 2, 1); //Permute, so we get correct order after reshaping
+            ret = permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        }
+
+        return GradientsFactory.getInstance().create(ret, g.getParameterGradients());
     }
 
     @Override
@@ -87,7 +110,6 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
         }
     }
 
-    @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
         //Assume mask array is 1d - a mask array that has been reshaped from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]

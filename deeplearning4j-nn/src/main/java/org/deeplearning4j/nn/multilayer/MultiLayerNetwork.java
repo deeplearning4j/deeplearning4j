@@ -314,7 +314,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
         INDArray layerInput = features;
         if (layerIdx == 0 && getLayerWiseConfigurations().getInputPreProcess(0) != null) {
-            layerInput = getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input, input.size(0));
+            layerInput = getLayerWiseConfigurations().getInputPreProcess(0).preProcess(
+                    ActivationsFactory.getInstance().create(input), input.size(0)).get(0);
         }
 
         Layer layer = layers[layerIdx];
@@ -677,8 +678,13 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
      * @return the activation from the previous layer
      */
     public INDArray activationFromPrevLayer(int curr, INDArray input, boolean training) {
-        if (getLayerWiseConfigurations().getInputPreProcess(curr) != null)
-            input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input, getInputMiniBatchSize());
+        if (getLayerWiseConfigurations().getInputPreProcess(curr) != null){
+            Activations a = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(
+                    ActivationsFactory.getInstance().create(input), getInputMiniBatchSize());
+            input = a.get(0);
+            ActivationsFactory.getInstance().release(a);
+        }
+
         INDArray ret = layers[curr].activate(ActivationsFactory.getInstance().create(input, null, null), training).get(0);
         return ret;
     }
@@ -813,8 +819,12 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     public List<INDArray> feedForward(INDArray input) {
         if (input == null)
             throw new IllegalStateException("Unable to perform feed forward; no input found");
-        else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input, input.size(0)));
+        else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null) {
+            Activations a = getLayerWiseConfigurations().getInputPreProcess(0).preProcess(
+                    ActivationsFactory.getInstance().create(input), input.size(0));
+            setInput(a.get(0));
+            ActivationsFactory.getInstance().release(a);
+        }
         else
             setInput(input);
         return feedForward();
@@ -1167,9 +1177,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                                 currPair.getParameterGradients().flatteningOrderForVariable(origName)));
             }
             if (getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null)
-                currPair = GradientsFactory.getInstance().create(this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
-                                                .backprop(currPair.get(0), getInputMiniBatchSize()),
-                        currPair.getParameterGradients());
+                currPair = this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
+                        .backprop(currPair, getInputMiniBatchSize());
 
             layerFrom = numLayers - 2;
         } else {
@@ -1208,13 +1217,9 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                     gradientList.addFirst(triple);
 
                 //Pass epsilon through input processor before passing to next layer (if applicable)
-                if (getLayerWiseConfigurations().getInputPreProcess(j) != null)
-                    currPair = GradientsFactory.getInstance().create(
-                            getLayerWiseConfigurations().getInputPreProcess(j)
-                                    .backprop(currPair.get(0), getInputMiniBatchSize()),  //TODO multiple activations
-                            currPair.getParameterGradients()
-                    );
-
+                if (getLayerWiseConfigurations().getInputPreProcess(j) != null) {
+                    currPair = getLayerWiseConfigurations().getInputPreProcess(j).backprop(currPair, getInputMiniBatchSize());
+                }
 
                 //log.info("This layer space: {}", ((Nd4jWorkspace) ws).getThisCycleAllocations());
             } catch (Exception e) {
@@ -1373,8 +1378,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
         GradientsFactory gf = GradientsFactory.getInstance();
         if (getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null){
-            currPair = gf.create(this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
-                    .backprop(currPair.get(0), getInputMiniBatchSize()), currPair.getParameterGradients());
+            currPair = this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
+                    .backprop(currPair, getInputMiniBatchSize());
         }
 
 
@@ -1403,9 +1408,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
             //Pass epsilon through input processor before passing to next layer (if applicable)
             if (getLayerWiseConfigurations().getInputPreProcess(j) != null){
-                currPair = gf.create(getLayerWiseConfigurations().getInputPreProcess(j)
-                                .backprop(currPair.get(0), getInputMiniBatchSize()),
-                            currPair.getParameterGradients());
+                currPair = getLayerWiseConfigurations().getInputPreProcess(j).backprop(currPair, getInputMiniBatchSize());
             }
 
         }
@@ -1808,7 +1811,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
                 IOutputLayer ol = (IOutputLayer) getOutputLayer();
                 INDArray olInput = activations.get(n - 1);
                 if (getLayerWiseConfigurations().getInputPreProcess(n - 1) != null) {
-                    olInput = getLayerWiseConfigurations().getInputPreProcess(n - 1).preProcess(olInput, input.size(0));
+                    olInput = getLayerWiseConfigurations().getInputPreProcess(n - 1)
+                            .preProcess(ActivationsFactory.getInstance().create(olInput), input.size(0)).get(0);
                 }
                 ol.setInput(0, olInput); //Feedforward doesn't include output layer for efficiency
                 ol.setLabels(data.getLabels());
@@ -1915,7 +1919,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
             INDArray actSecondLastLayer = activations.get(activations.size() - 1);
             if (layerWiseConfigurations.getInputPreProcess(layers.length - 1) != null)
                 actSecondLastLayer = layerWiseConfigurations.getInputPreProcess(layers.length - 1)
-                                .preProcess(actSecondLastLayer, getInputMiniBatchSize());
+                                .preProcess(ActivationsFactory.getInstance().create(actSecondLastLayer), getInputMiniBatchSize()).get(0);
             getOutputLayer().setInput(0, actSecondLastLayer);
             //Then: compute gradients
             backprop();
@@ -2304,7 +2308,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
         boolean inputIs2d = input.get(0).rank() == 2;
         for (int i = 0; i < layers.length; i++) {
             if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
-                input.set(0, getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input.get(0), getInputMiniBatchSize()));
+                input.set(0, getLayerWiseConfigurations().getInputPreProcess(i)
+                        .preProcess(input, getInputMiniBatchSize()).get(0));
             }
             if (layers[i] instanceof RecurrentLayer) {
                 input = ((RecurrentLayer) layers[i]).rnnTimeStep(input);
@@ -2381,7 +2386,8 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
         for (int i = 0; i < layers.length; i++) {
             if (getLayerWiseConfigurations().getInputPreProcess(i) != null)
-                currInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(currInput, input.size(0));
+                currInput = getLayerWiseConfigurations().getInputPreProcess(i)
+                        .preProcess(ActivationsFactory.getInstance().create(currInput), input.size(0)).get(0);
             if (layers[i] instanceof RecurrentLayer) {
                 currInput = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(currInput, training,
                                 storeLastForTBPTT);

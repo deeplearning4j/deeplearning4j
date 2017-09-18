@@ -47,14 +47,13 @@ public class PreprocessorVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        return ActivationsFactory.getInstance().create(preProcessor.preProcess(inputs[0], graph.batchSize()));
+        Activations a = ActivationsFactory.getInstance().create(inputs, null, null);
+        return preProcessor.preProcess(a, graph.batchSize());
     }
 
     @Override
     public Gradients backpropGradient(Gradients gradient) {
-        INDArray epsilon = gradient.get(0);
-        epsilon = preProcessor.backprop(epsilon, graph.batchSize());
-        return GradientsFactory.getInstance().create(epsilon, null);
+        return preProcessor.backprop(gradient, -1); //TODO
     }
 
     @Override
@@ -77,6 +76,7 @@ public class PreprocessorVertex extends BaseGraphVertex {
             return null;
         }
 
-        return preProcessor.feedForwardMaskArray(maskArrays[0], currentMaskState, minibatchSize);
+//        return preProcessor.feedForwardMaskArray(maskArrays[0], currentMaskState, minibatchSize);
+        throw new UnsupportedOperationException();
     }
 }

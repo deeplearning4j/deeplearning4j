@@ -36,6 +36,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.NoOpUpdater;
 import org.nd4j.linalg.learning.RmsPropUpdater;
+import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -438,7 +439,7 @@ public class BatchNormalizationTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.RMSPROP).seed(12345).list()
+                        .updater(new RmsProp()).seed(12345).list()
                         .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.IDENTITY).build())
                         .layer(1, new BatchNormalization.Builder().build())
@@ -501,7 +502,7 @@ public class BatchNormalizationTest {
         //First, Mnist data as 2d input (NOT taking into account convolution property)
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.RMSPROP).seed(12345)
+                        .updater(new RmsProp()).seed(12345)
                         .list().layer(0,
                                         new BatchNormalization.Builder().nIn(10).nOut(10).eps(1e-5).decay(0.95)
                                                         .build())
@@ -557,7 +558,7 @@ public class BatchNormalizationTest {
         //First, Mnist data as 2d input (NOT taking into account convolution property)
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.RMSPROP).seed(12345).list()
+                        .updater(new RmsProp()).seed(12345).list()
                         .layer(0, new BatchNormalization.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.IDENTITY).nOut(10).build())

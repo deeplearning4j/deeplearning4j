@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -28,6 +30,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 public class TestVariableLengthTSCG {
+
+    private static final ActivationsFactory af = ActivationsFactory.getInstance();
 
     @Test
     public void testVariableLengthSimple() {
@@ -224,8 +228,8 @@ public class TestVariableLengthTSCG {
             FeedForwardToRnnPreProcessor temp = new FeedForwardToRnnPreProcessor();
             INDArray l0Before = activations2.get("0");
             INDArray l1Before = activations2.get("1");
-            INDArray l0After = temp.preProcess(l0Before, nExamples);
-            INDArray l1After = temp.preProcess(l1Before, nExamples);
+            INDArray l0After = temp.preProcess(af.create(l0Before), nExamples).get(0);
+            INDArray l1After = temp.preProcess(af.create(l1Before), nExamples).get(0);
 
             for (int j = 0; j < nExamples; j++) {
                 for (int k = 0; k < nIn; k++) {

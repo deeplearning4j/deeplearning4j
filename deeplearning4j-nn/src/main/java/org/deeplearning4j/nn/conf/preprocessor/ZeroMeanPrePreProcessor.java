@@ -20,6 +20,9 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -33,14 +36,20 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class ZeroMeanPrePreProcessor extends BaseInputPreProcessor {
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
-        INDArray columnMeans = input.mean(0);
-        input.subiRowVector(columnMeans);
-        return input;
+    public Activations preProcess(Activations a, int miniBatchSize) {
+        Activations out = ActivationsFactory.getInstance().create(a.getAsArray(),
+                a.getMaskAsArray(), a.getMaskStateAsArray());
+        for(int i=0; i<a.size(); i++ ) {
+            INDArray input = a.get(i);
+            INDArray columnMeans = input.mean(0);
+            input.subiRowVector(columnMeans);
+        }
+
+        return out;
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public Gradients backprop(Gradients output, int miniBatchSize) {
         return output;
     }
 

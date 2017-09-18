@@ -665,6 +665,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                         String... layerInputs) {
             NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
             builder.layer(layer);
+//            addVertex(layerName, new LayerVertex(builder.build(), preProcessor), layerInputs);
             addVertex(layerName, new LayerVertex(builder.build(), preProcessor), layerInputs);
             layer.setLayerName(layerName);
             return this;
