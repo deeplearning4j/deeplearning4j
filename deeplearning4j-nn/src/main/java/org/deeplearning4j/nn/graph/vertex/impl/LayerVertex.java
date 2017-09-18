@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -46,9 +47,11 @@ import java.util.Map;
  * LayerVertex is a GraphVertex with a neural network Layer (and, optionally an {@link InputPreProcessor}) in it
  *
  * @author Alex Black
+ * @deprecated No longer required - kept for legacy reasons
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Deprecated
 public class LayerVertex extends BaseGraphVertex {
 
     private Layer layer;
@@ -70,32 +73,182 @@ public class LayerVertex extends BaseGraphVertex {
         this.inputs = new INDArray[layer.numInputs()];
     }
 
-    public void setLayerAsFrozen() {
-        if (this.layer instanceof FrozenLayer)
-            return;
 
-        this.layer = new FrozenLayer(this.layer);
-        this.layer.conf().getLayer().setLayerName(vertexName);
+    @Override
+    public int numInputs(){
+        return layer.numInputs();
     }
 
     @Override
-    public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
-        return layer.paramTable();
+    public int numOutputs(){
+        return layer.numOutputs();
     }
 
-    /**
-     * The number of parameters for the model
-     *
-     * @return the number of parameters for the model
-     */
     @Override
-    public int numParams() {
+    public int batchSize(){
+        return layer.batchSize();
+    }
+
+    @Override
+    public INDArray input(){
+        return layer.input();
+    }
+
+
+    // ----- Parameter Methods -----
+    @Override
+    public INDArray params(){
+        return layer.params();
+    }
+
+    @Override
+    public int numParams(){
         return layer.numParams();
     }
 
     @Override
-    public int numParams(boolean backwards) {
-        return numParams(backwards);
+    public int numParams(boolean backwards){
+        return layer.numParams(backwards);
+    }
+
+    @Override
+    public void setParams(INDArray params){
+        layer.setParams(params);
+    }
+
+    @Override
+    public void setParamsViewArray(INDArray params){
+        layer.setParamsViewArray(params);
+    }
+
+    @Override
+    public INDArray getParam(String param){
+        return layer.getParam(param);
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable(){
+        return layer.paramTable();
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable(boolean backpropParamsOnly){
+        return layer.paramTable(backpropParamsOnly);
+    }
+
+//    @Override
+//    public void setParamTable(Map<String, INDArray> paramTable){
+//        layer.setParamTable(paramTable);
+//    }
+
+    @Override
+    public void setParam(String key, INDArray val){
+        layer.setParam(key, val);
+    }
+
+    @Override
+    public double calcL2(boolean backpropOnlyParams){
+        return layer.calcL2(backpropOnlyParams);
+    }
+
+    @Override
+    public double calcL1(boolean backpropOnlyParams){
+        return layer.calcL1(backpropOnlyParams);
+    }
+
+
+
+
+
+    // ----- Forward Pass Methods -----
+
+    @Override
+    public Activations activate(boolean training){
+        return layer.activate(training);
+    }
+
+    @Override
+    public Activations activate(Activations input, boolean training){
+        return layer.activate(input, training);
+    }
+
+    @Override
+    public Activations activate(Activations input){
+        return layer.activate(input);
+    }
+
+    @Override
+    public void setInputs(INDArray... inputs){
+        layer.setInputs(inputs);
+    }
+
+    @Override
+    public INDArray getInput(int inputNumber){
+        return layer.getInput(inputNumber);
+    }
+
+    @Override
+    public void setInputMiniBatchSize(int size){
+        layer.setInputMiniBatchSize(size);
+    }
+
+    @Override
+    public int getInputMiniBatchSize(){
+        return layer.getInputMiniBatchSize();
+    }
+
+    @Override
+    public void setMaskArray(int idx, INDArray maskArray){
+        layer.setMaskArray(idx, maskArray);
+    }
+
+    @Override
+    public INDArray getMaskArray(int idx){
+        return layer.getMaskArray(idx);
+    }
+
+
+
+    // ----- Gradient Methods -----
+
+    @Override
+    public Gradient gradient(){
+        return layer.gradient();
+    }
+
+
+    @Override
+    public INDArray getGradientsViewArray(){
+        return layer.getGradientsViewArray();
+    }
+
+    @Override
+    public void setBackpropGradientsViewArray(INDArray gradients){
+        layer.setBackpropGradientsViewArray(gradients);
+    }
+
+    @Override
+    public void update(Gradient gradient){
+        layer.update(gradient);
+    }
+
+
+    // ----- General Methods -----
+
+    @Override
+    public String getName(){
+        return layer.getName();
+    }
+
+    @Override
+    public void clear(){
+        layer.clear();
+    }
+
+
+    @Override
+    public void applyConstraints(int iteration, int epoch){
+        layer.applyConstraints(iteration, epoch);
     }
 
     @Override
@@ -104,16 +257,59 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    public boolean isOutputVertex() {
-        return outputVertex || layer instanceof BaseOutputLayer;
+    public void setConf(NeuralNetConfiguration conf){
+        layer.setConf(conf);
     }
 
     @Override
-    public Activations activate(boolean training) {
-        if (!canDoForward())
-            throw new IllegalStateException("Cannot do forward pass: all inputs not set");
+    public void setCacheMode(CacheMode mode){
+        layer.setCacheMode(mode);
+    }
 
-        return layer.activate(training);
+    @Override
+    public void setIndex(int index){
+        layer.setIndex(index);
+    }
+
+    @Override
+    public int getIndex(){
+        return layer.getIndex();
+    }
+
+    @Override
+    public int getIterationCount(){
+        return layer.getIterationCount();
+    }
+
+    @Override
+    public int getEpochCount(){
+        return layer.getEpochCount();
+    }
+
+    @Override
+    public void setIterationCount(int iterationCount){
+        layer.setIterationCount(iterationCount);
+    }
+
+    @Override
+    public void setEpochCount(int epochCount){
+        layer.setEpochCount(epochCount);
+    }
+
+    @Override
+    public boolean isPretrainLayer(){
+        return layer.isPretrainLayer();
+    }
+
+
+    @Override
+    public void clearNoiseWeightParams(){
+        layer.clearNoiseWeightParams();
+    }
+
+    @Override
+    protected Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -158,61 +354,5 @@ public class LayerVertex extends BaseGraphVertex {
             currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
         }
         layer.setInput(inputNumber, currInput);
-    }
-
-    @Override
-    public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
-        layer.setBackpropGradientsViewArray(backpropGradientsViewArray);
-    }
-
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
-                    int minibatchSize) {
-        if (maskArrays == null || maskArrays.length == 0) {
-            return new Pair<>(null, currentMaskState);
-        }
-
-        if (layerPreProcessor != null) {
-            Pair<INDArray, MaskState> pair =
-                            layerPreProcessor.feedForwardMaskArray(maskArrays[0], currentMaskState, minibatchSize);
-            if (pair == null) {
-                maskArrays[0] = null;
-                currentMaskState = null;
-            } else {
-                maskArrays[0] = pair.getFirst();
-                currentMaskState = pair.getSecond();
-            }
-        }
-
-//        return layer.feedForwardMaskArray(maskArrays[0], currentMaskState, minibatchSize);
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("LayerVertex(id=").append(vertexIndex).append(",name=\"").append(vertexName).append("\")");
-        return sb.toString();
-    }
-
-    @Override
-    public boolean canDoBackward() {
-        if (!isOutputVertex()) {
-            //inputs to frozen layer go unchecked, so could be null
-            if (getLayer() instanceof FrozenLayer) {
-                return true;
-            } else {
-                return super.canDoBackward();
-            }
-        }
-
-        for (INDArray input : inputs) {
-            if (input == null) {
-                return false;
-            }
-        }
-
-        return true;
     }
 }

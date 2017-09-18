@@ -403,7 +403,7 @@ public class OutputLayerTest {
 
             //Check labels and inputs for output layer:
             OutputLayer ol = (OutputLayer) mln.getOutputLayer();
-            assertArrayEquals(ol.getInput().shape(), new int[] {miniBatchSize * timeSeriesLength, layerSize});
+            assertArrayEquals(ol.getInput(0).shape(), new int[] {miniBatchSize * timeSeriesLength, layerSize});
             assertArrayEquals(ol.getLabels().shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
 
             RnnOutputLayer rnnol = (RnnOutputLayer) mlnRnn.getOutputLayer();

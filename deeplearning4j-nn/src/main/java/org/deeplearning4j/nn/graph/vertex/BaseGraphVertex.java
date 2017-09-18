@@ -89,14 +89,6 @@ public abstract class BaseGraphVertex extends AbstractLayer {
     @Override
     public abstract String toString();
 
-
-//    @Override
-//    public Gradients backpropGradient(Gradients epsilons) {
-//        Pair<Gradient,INDArray[]> backward = doBackward(false); //TODO
-//
-//        return GradientsFactory.getInstance().create(backward.getFirst(), backward.getSecond());
-//    }
-
     @Override
     public boolean isPretrainLayer() {
         return false;
@@ -106,8 +98,6 @@ public abstract class BaseGraphVertex extends AbstractLayer {
     public void clearNoiseWeightParams() {
 
     }
-
-//    protected abstract Pair<Gradient,INDArray[]> backpropGradient(Gradients gradient);
 
     protected abstract Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
                                                                               int minibatchSize);

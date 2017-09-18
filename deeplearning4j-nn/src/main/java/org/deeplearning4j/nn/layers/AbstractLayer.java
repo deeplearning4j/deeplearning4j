@@ -43,6 +43,7 @@ import java.util.*;
 @NoArgsConstructor
 public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer> implements Layer {
 
+    @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
     protected INDArray input;
     @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
     protected INDArray preOutput;
@@ -111,9 +112,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
     }
 
+    public void setInput(INDArray input){
+        setInput(0, input);
+    }
+
     @Override
     public void setInput(int inputNumber, INDArray input){
-        if(inputNumber != 0) throw new IllegalArgumentException("Index must be 0: got " + inputNumber);
+        if(inputNumber != 0)
+            throw new IllegalArgumentException("Index must be 0: got " + inputNumber);
         this.input = input;
         dropoutApplied = false;
     }
@@ -215,7 +221,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public Activations activate(Activations input, boolean training) {
-        setInput(input.get(0));
+        setInput(0, input.get(0));
         return activate(training);
     }
 

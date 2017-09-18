@@ -164,7 +164,7 @@ public class RBMTests {
         rbm.setBackpropGradientsViewArray(Nd4j.create(1, rbm.numParams()));
         INDArray rand2 = Nd4j.rand(new int[] {1, rbm.numParams()});
         rbm.setParams(rand2);
-        rbm.setInput(Nd4j.zeros(6));
+        rbm.setInput(0, Nd4j.zeros(6));
         rbm.computeGradientAndScore();
         INDArray getParams = rbm.params();
         assertEquals(rand2, getParams);
@@ -223,7 +223,7 @@ public class RBMTests {
 
         RBM rbm = getRBMLayer(10, 5, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1,
                         LossFunctions.LossFunction.MSE);
-        rbm.setInput(input);
+        rbm.setInput(0, input);
         rbm.setBackpropGradientsViewArray(Nd4j.create(1, rbm.numParams()));
         rbm.computeGradientAndScore();
         Pair<Gradient, Double> pair = rbm.gradientAndScore();
