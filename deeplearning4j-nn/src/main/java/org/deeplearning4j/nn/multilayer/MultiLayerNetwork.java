@@ -1930,7 +1930,9 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
     @Override
     public INDArray getInput(int inputNumber) {
-        return null;
+        if(input == null)
+            return null;
+        return input.get(inputNumber);
     }
 
 
