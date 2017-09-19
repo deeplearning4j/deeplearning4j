@@ -83,11 +83,6 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    public int batchSize(){
-        return layer.batchSize();
-    }
-
-    @Override
     public INDArray input(){
         return layer.input();
     }

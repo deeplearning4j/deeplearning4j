@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.layers;
 
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -38,5 +40,6 @@ public class OutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.laye
     public OutputLayer(NeuralNetConfiguration conf) {
         super(conf);
     }
+
 
 }

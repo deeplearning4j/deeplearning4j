@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -131,6 +132,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         protected GradientNormalization gradientNormalization = null;
         protected double gradientNormalizationThreshold = Double.NaN;
         protected IWeightNoise weightNoise;
+        protected InputPreProcessor preProcessor;
 
         /**
          * Set the activation function for the layer. This overload can be used for custom {@link IActivation} instances
@@ -278,6 +280,11 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         public T weightNoise(IWeightNoise weightNoise){
             this.weightNoise = weightNoise;
             return (T)this;
+        }
+
+        public T preprocessor(InputPreProcessor preProcessor){
+            this.preProcessor = preProcessor;
+            return (T) this;
         }
     }
 }

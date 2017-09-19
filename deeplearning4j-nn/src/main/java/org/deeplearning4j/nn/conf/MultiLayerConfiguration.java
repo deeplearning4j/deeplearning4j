@@ -55,7 +55,7 @@ import java.util.*;
 public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     protected List<NeuralNetConfiguration> confs;
-    protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
+//    protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
     protected boolean pretrain = false;
     protected boolean backprop = true;
     protected BackpropType backpropType = BackpropType.Standard;
@@ -287,13 +287,13 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 clone.confs = list;
             }
 
-            if (clone.inputPreProcessors != null) {
-                Map<Integer, InputPreProcessor> map = new HashMap<>();
-                for (Map.Entry<Integer, InputPreProcessor> entry : clone.inputPreProcessors.entrySet()) {
-                    map.put(entry.getKey(), entry.getValue().clone());
-                }
-                clone.inputPreProcessors = map;
-            }
+//            if (clone.inputPreProcessors != null) {
+//                Map<Integer, InputPreProcessor> map = new HashMap<>();
+//                for (Map.Entry<Integer, InputPreProcessor> entry : clone.inputPreProcessors.entrySet()) {
+//                    map.put(entry.getKey(), entry.getValue().clone());
+//                }
+//                clone.inputPreProcessors = map;
+//            }
 
             clone.inferenceWorkspaceMode = this.inferenceWorkspaceMode;
             clone.trainingWorkspaceMode = this.trainingWorkspaceMode;
@@ -306,9 +306,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         }
     }
 
-    public InputPreProcessor getInputPreProcess(int curr) {
-        return inputPreProcessors.get(curr);
-    }
+//    public InputPreProcessor getInputPreProcess(int curr) {
+//        return inputPreProcessors.get(curr);
+//    }
 
     /**
      * Get a {@link MemoryReport} for the given MultiLayerConfiguration. This is used to estimate the
@@ -327,12 +327,12 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 layerName = String.valueOf(i);
             }
 
-            //Pass input type through preprocessor, if necessary
-            InputPreProcessor preproc = getInputPreProcess(i);
-            //TODO memory requirements for preprocessor
-            if (preproc != null) {
-                inputType = preproc.getOutputType(inputType);
-            }
+//            //Pass input type through preprocessor, if necessary
+//            InputPreProcessor preproc = getInputPreProcess(i);
+//            //TODO memory requirements for preprocessor
+//            if (preproc != null) {
+//                inputType = preproc.getOutputType(inputType);
+//            }
 
             LayerMemoryReport report = confs.get(i).getLayer().getMemoryReport(inputType);
             memoryReportMap.put(layerName, report);
@@ -560,7 +560,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.confs = this.confs;
             conf.pretrain = pretrain;
             conf.backprop = backprop;
-            conf.inputPreProcessors = inputPreProcessors;
+//            conf.inputPreProcessors = inputPreProcessors;
             conf.backpropType = backpropType;
             conf.tbpttFwdLength = tbpttFwdLength;
             conf.tbpttBackLength = tbpttBackLength;

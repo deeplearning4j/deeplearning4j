@@ -281,9 +281,16 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public void fit(INDArray data) {
-        //no-op
-
+        throw new UnsupportedOperationException("Cannot fit output layers in an unsupervised way from features" +
+                " array only");
     }
+
+    @Override
+    public void fit(Activations data){
+        throw new UnsupportedOperationException("Cannot fit output layers in an unsupervised way from features" +
+                " array(s) only");
+    }
+
 
     @Override
     public INDArray getLabels() {

@@ -22,6 +22,7 @@ package org.deeplearning4j.nn.api;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.CacheMode;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -43,12 +44,6 @@ public interface Layer {
     int numInputs();
 
     int numOutputs();
-
-    /**
-     * The current inputs batch size
-     * @return the current inputs batch size
-     */
-    int batchSize();
 
     /**
      * The input/feature matrix for the model
@@ -206,9 +201,10 @@ public interface Layer {
      * @param idx Index of the mask array
      * @param maskArray Mask array to set
      */
+    @Deprecated
     void setMaskArray(int idx, INDArray maskArray);
 
-
+    @Deprecated
     INDArray getMaskArray(int idx);
 
 
@@ -335,4 +331,7 @@ public interface Layer {
 
 
     void clearNoiseWeightParams();
+
+
+    InputPreProcessor getPreProcessor();
 }

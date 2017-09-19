@@ -2,6 +2,8 @@ package org.deeplearning4j.nn.layers.feedforward.embedding;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -297,10 +299,10 @@ public class EmbeddingLayerTest {
                 }
             }
 
-            net.setLayerMaskArrays(inputMask, null);
-            net2.setLayerMaskArrays(inputMask, null);
-            List<INDArray> actEmbedding = net.feedForward(inEmbedding, false);
-            List<INDArray> actDense = net2.feedForward(inDense, false);
+            Activations aEmbedding = ActivationsFactory.getInstance().create(inEmbedding, inputMask);
+            Activations aDense = ActivationsFactory.getInstance().create(inDense, inputMask);
+            List<Activations> actEmbedding = net.feedForward(aEmbedding, false);
+            List<Activations> actDense = net2.feedForward(aDense, false);
             for (int i = 1; i < actEmbedding.size(); i++) {
                 assertEquals(actDense.get(i), actEmbedding.get(i));
             }

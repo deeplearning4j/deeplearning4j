@@ -2,6 +2,7 @@ package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -418,8 +419,9 @@ public class BNGradientCheckTest {
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
-                        new INDArray[] {labels});
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
+                        ActivationsFactory.getInstance().create(input),
+                        new INDArray[] {labels}, null);
 
         assertTrue(gradOK);
     }
@@ -513,7 +515,7 @@ public class BNGradientCheckTest {
 
                         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
-                                        new INDArray[] {input}, new INDArray[] {labels});
+                                ActivationsFactory.getInstance().create(input), new INDArray[] {labels}, null);
 
                         assertTrue(gradOK);
                     }

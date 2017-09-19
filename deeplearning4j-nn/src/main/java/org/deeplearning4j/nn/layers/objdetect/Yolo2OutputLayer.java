@@ -575,7 +575,12 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public void fit(INDArray data) {
+        throw new UnsupportedOperationException("Cannot fit Yolo2OutputLayer from activations only (without labels)");
+    }
 
+    @Override
+    public void fit(Activations data) {
+        throw new UnsupportedOperationException("Cannot fit Yolo2OutputLayer from activations only (without labels)");
     }
 
     @Override

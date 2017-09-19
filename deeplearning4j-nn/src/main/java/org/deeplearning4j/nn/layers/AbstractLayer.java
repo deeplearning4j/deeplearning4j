@@ -252,14 +252,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public int batchSize() {
-        if(input == null){
-            return -1;
-        }
-        return input.get(0).size(0);
-    }
-
-    @Override
     public NeuralNetConfiguration conf() {
         return conf;
     }
@@ -379,5 +371,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
                 lc.applyConstraint(this, iteration, epoch);
             }
         }
+    }
+
+
+    @Override
+    public InputPreProcessor getPreProcessor() {
+        if(conf != null){
+            return conf.getLayer().getPreProcessor();
+        }
+        return null;
     }
 }

@@ -28,4 +28,21 @@ public interface Activations {
 
     MaskState[] getMaskStateAsArray();
 
+    void setFromArray(INDArray[] activations);
+
+    void setMaskFromArray(INDArray[] mask, MaskState[] maskStates);
+
+    /**
+     *
+     * @param workspaceId
+     * @return              This, after leveraging any attached arrays (inc. masks) to the specified workspace
+     */
+    Activations leverageTo(String workspaceId);
+
+    /**
+     *
+     * @return              This, after migrating any attached arrays (inc. masks) to the current workspace
+     */
+    Activations migrate();
+
 }

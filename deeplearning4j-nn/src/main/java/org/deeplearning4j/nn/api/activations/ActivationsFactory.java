@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.api.activations;
 import org.deeplearning4j.nn.api.MaskState;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ActivationsFactory {
@@ -26,7 +27,6 @@ public class ActivationsFactory {
     private AtomicLong triplesStart = new AtomicLong(-1);
     private AtomicLong triplesEnd = new AtomicLong(-1);
 
-
     private ActivationsFactory(){
         this(DEFAULT_CACHE_SIZE);
     }
@@ -49,6 +49,17 @@ public class ActivationsFactory {
         } else if(activations instanceof ActivationsTriple){
             set(activations, triples, triplesStart, triplesEnd);
         }
+
+        //TODO: use an IdentityHashMap (Set) to avoid multiple releases of the same activations value
+        //This will require a hashcode() implementation that allows for O(1) comparisons/checks - like a simple
+        // counter...
+    }
+
+    public void release(Collection<? extends Activations> activations){
+        //TODO duplicates check
+        for(Activations a : activations){
+            release(a);
+        }
     }
 
     public Activations create(int size){
@@ -68,6 +79,10 @@ public class ActivationsFactory {
 
     public Activations create(INDArray activations){
         return create(activations, null, null);
+    }
+
+    public Activations create(INDArray activations, INDArray mask){
+        return create(activations, mask, (mask == null ? null : MaskState.Active ));
     }
 
     public Activations create(INDArray activations, INDArray mask, MaskState maskState) {

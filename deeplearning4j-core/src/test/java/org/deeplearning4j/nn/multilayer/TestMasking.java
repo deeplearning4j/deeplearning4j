@@ -188,6 +188,7 @@ public class TestMasking {
                 graph.setLayerMaskArrays(null, new INDArray[] {labelMask});
 
                 graph.setInputs(features);
+//                graph.setMaskArray(0, labelMask);
                 graph.setLabels(labels);
                 graph.computeGradientAndScore();
 

@@ -184,7 +184,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
         Pair<Gradient, Double> pair = model.gradientAndScore();
         score = pair.getSecond();
-        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
+        updateGradientAccordingToParams(pair.getFirst(), model, model.getInputMiniBatchSize());
         return pair;
     }
 

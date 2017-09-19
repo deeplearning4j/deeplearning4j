@@ -48,8 +48,6 @@ public class TransferLearning {
         private List<INDArray> appendParams = new ArrayList<>(); //these could be new arrays, and views from origParams
         private List<NeuralNetConfiguration> appendConfs = new ArrayList<>();
 
-        private Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
-
         private InputType inputType;
 
         /**
@@ -59,8 +57,6 @@ public class TransferLearning {
         public Builder(MultiLayerNetwork origModel) {
             this.origModel = origModel;
             this.origConf = origModel.getLayerWiseConfigurations().clone();
-
-            this.inputPreProcessors = origConf.getInputPreProcessors();
         }
 
         /**
@@ -252,18 +248,6 @@ public class TransferLearning {
         }
 
         /**
-         * Specify the preprocessor for the added layers
-         * for cases where they cannot be inferred automatically.
-         *
-         * @param processor to be used on the data
-         * @return Builder
-         */
-        public Builder setInputPreProcessor(int layer, InputPreProcessor processor) {
-            inputPreProcessors.put(layer, processor);
-            return this;
-        }
-
-        /**
          * Returns a model with the fine tune configuration and specified architecture changes.
          * .init() need not be called. Can be directly fit.
          *
@@ -344,9 +328,6 @@ public class TransferLearning {
             int i = 0;
             while (i < popN) {
                 Integer layerNum = origModel.getnLayers() - i;
-                if (inputPreProcessors.containsKey(layerNum)) {
-                    inputPreProcessors.remove(layerNum);
-                }
                 editedConfs.remove(editedConfs.size() - 1);
                 editedParams.remove(editedParams.size() - 1);
                 i++;
@@ -435,7 +416,7 @@ public class TransferLearning {
                 }
             }
 
-            MultiLayerConfiguration conf = new MultiLayerConfiguration.Builder().inputPreProcessors(inputPreProcessors)
+            MultiLayerConfiguration conf = new MultiLayerConfiguration.Builder()
                             .setInputType(this.inputType).confs(allConfs).build();
             if (finetuneConfiguration != null) {
                 finetuneConfiguration.applyToMultiLayerConfiguration(conf);

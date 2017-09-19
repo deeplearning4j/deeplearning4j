@@ -1,7 +1,9 @@
 package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -450,9 +452,9 @@ public class GradientCheckTestsComputationGraph {
         inMask.putRow(0, Nd4j.create(new double[] {1, 1, 1, 0, 0}));
         inMask.putRow(1, Nd4j.create(new double[] {1, 1, 1, 1, 0}));
         inMask.putRow(2, Nd4j.create(new double[] {1, 1, 1, 1, 1}));
-        graph.setLayerMaskArrays(new INDArray[] {inMask}, null);
         gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input}, new INDArray[] {labels});
+                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
+                ActivationsFactory.getInstance().create(input, inMask), new INDArray[] {labels}, null);
 
         assertTrue(msg, gradOK);
     }
@@ -1092,11 +1094,10 @@ public class GradientCheckTestsComputationGraph {
                     System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            graph.setLayerMaskArrays(new INDArray[] {inMask1, inMask2}, null);
-
             boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {in1, in2},
-                            new INDArray[] {labels1, labels2});
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
+                            ActivationsFactory.getInstance().createPair(in1, in2, inMask1, inMask1, MaskState.Active, MaskState.Active),
+                            new INDArray[] {labels1, labels2}, null);
 
             assertTrue(testName, gradOK);
         }

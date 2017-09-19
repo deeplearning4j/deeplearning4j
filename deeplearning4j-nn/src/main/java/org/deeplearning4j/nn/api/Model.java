@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.api;
 
+import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -90,6 +91,8 @@ public interface Model extends Layer {
      * @param data the data to fit the model to
      */
     void fit(INDArray data);
+
+    void fit(Activations data);
 
     /**
      * Train the model based on the datasetiterator

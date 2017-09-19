@@ -47,4 +47,66 @@ public abstract class BaseActivations implements Activations {
         }
         return out;
     }
+
+    @Override
+    public void setFromArray(INDArray[] activations){
+        if(activations == null){
+            for( int i=0; i<size(); i++ ){
+                set(i, null);
+            }
+        } else {
+            if(activations.length != size()){
+                throw new IllegalArgumentException("Cannot set activations from array: activations size is " + size()
+                        + " but got " + activations.length + " arrays as input");
+            }
+            for( int i=0; i<size(); i++ ){
+                set(i, activations[i]);
+            }
+        }
+    }
+
+    @Override
+    public void setMaskFromArray(INDArray[] masks, MaskState[] maskStates){
+        if(masks == null){
+            for( int i=0; i<size(); i++ ){
+                setMask(i, null);
+                setMaskState(i, null);
+            }
+        } else {
+            if(masks.length != size()){
+                throw new IllegalArgumentException("Cannot set masks from array: activations size is " + size()
+                        + " but got " + masks.length + " arrays as input");
+            }
+            for( int i=0; i<size(); i++ ){
+                setMask(i, masks[i]);
+                setMaskState(i, maskStates == null ? MaskState.Active : maskStates[i]);
+            }
+        }
+    }
+
+    @Override
+    public Activations leverageTo(String workspaceId){
+        for( int i=0; i<size(); i++ ){
+            if(get(i) != null && get(i).isAttached()){
+                set(i, get(i).leverageTo(workspaceId));
+            }
+            if(getMask(i) != null && getMask(i).isAttached()){
+                setMask(i, getMask(i).leverageTo(workspaceId));
+            }
+        }
+        return this;
+    }
+
+    @Override
+    public Activations migrate(){
+        for( int i=0; i<size(); i++ ){
+            if(get(i) != null ){
+                set(i, get(i).migrate());
+            }
+            if(getMask(i) != null){
+                setMask(i, getMask(i).migrate());
+            }
+        }
+        return this;
+    }
 }

@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.variational.CompositeReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.LossFunctionWrapper;
@@ -525,6 +526,14 @@ public class VariationalAutoencoder implements Model {
     }
 
     @Override
+    public void fit(Activations data) {
+        if(data.getMask(0) != null){
+            throw new UnsupportedOperationException("Cannot fit VAE layer in unsupervised way with mask arrays (not yet implemented)");
+        }
+        fit(data.get(0));
+    }
+
+    @Override
     public void fit(DataSetIterator iter) {
         while(iter.hasNext()){
             fit(iter.next());
@@ -549,11 +558,6 @@ public class VariationalAutoencoder implements Model {
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         return new Pair<>(gradient(), score());
-    }
-
-    @Override
-    public int batchSize() {
-        return input.size(0);
     }
 
     @Override
@@ -911,6 +915,11 @@ public class VariationalAutoencoder implements Model {
     @Override
     public void clearNoiseWeightParams() {
         weightNoiseParams.clear();
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessor() {
+        return layerConf().getPreProcessor();
     }
 
 

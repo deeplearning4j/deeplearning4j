@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.CacheMode;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -335,6 +336,11 @@ public class TestOptimizers {
         }
 
         @Override
+        public void fit(Activations data) {
+
+        }
+
+        @Override
         public void fit(DataSetIterator iter) {
 
         }
@@ -407,6 +413,11 @@ public class TestOptimizers {
         @Override
         public void clearNoiseWeightParams() {
 
+        }
+
+        @Override
+        public InputPreProcessor getPreProcessor() {
+            return null;
         }
     }
 
@@ -553,6 +564,11 @@ public class TestOptimizers {
         }
 
         @Override
+        public void fit(Activations data) {
+
+        }
+
+        @Override
         public void fit(DataSetIterator iter) {
 
         }
@@ -626,6 +642,11 @@ public class TestOptimizers {
         @Override
         public void clearNoiseWeightParams() {
 
+        }
+
+        @Override
+        public InputPreProcessor getPreProcessor() {
+            return null;
         }
     }
 
@@ -781,6 +802,11 @@ public class TestOptimizers {
         }
 
         @Override
+        public void fit(Activations data) {
+
+        }
+
+        @Override
         public void fit(DataSetIterator iter) {
 
         }
@@ -853,6 +879,11 @@ public class TestOptimizers {
         @Override
         public void clearNoiseWeightParams() {
 
+        }
+
+        @Override
+        public InputPreProcessor getPreProcessor() {
+            return null;
         }
     }
 
@@ -989,11 +1020,6 @@ public class TestOptimizers {
         public Pair<Gradient, Double> gradientAndScore() {
             computeGradientAndScore();
             return new Pair<>(gradient(), score());
-        }
-
-        @Override
-        public int batchSize() {
-            return 1;
         }
 
         @Override

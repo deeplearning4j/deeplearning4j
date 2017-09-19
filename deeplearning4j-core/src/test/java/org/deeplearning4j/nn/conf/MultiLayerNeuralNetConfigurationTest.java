@@ -206,10 +206,6 @@ public class MultiLayerNeuralNetConfigurationTest {
         for (int i = 0; i < conf.getConfs().size(); i++) {
             assertNotSame(conf.getConf(i), conf2.getConf(i));
         }
-        assertNotSame(conf.getInputPreProcessors(), conf2.getInputPreProcessors());
-        for (Integer layer : conf.getInputPreProcessors().keySet()) {
-            assertNotSame(conf.getInputPreProcess(layer), conf2.getInputPreProcess(layer));
-        }
     }
 
     @Test

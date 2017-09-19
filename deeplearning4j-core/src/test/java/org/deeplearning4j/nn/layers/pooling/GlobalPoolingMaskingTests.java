@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.pooling;
 
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -72,9 +73,9 @@ public class GlobalPoolingMaskingTests {
             }
 
             net.setLayerMaskArrays(mask, null);
-            INDArray outputMasked = net.output(input);
+            INDArray outputMasked = net.output(ActivationsFactory.getInstance().create(input, mask), true);
 
-            net.clearLayerMaskArrays();
+            net.clear();
 
             for (int i = 0; i < miniBatchSize; i++) {
                 INDArray maskRow = mask.getRow(i);
@@ -131,7 +132,7 @@ public class GlobalPoolingMaskingTests {
             net.setLayerMaskArrays(maskArray, null);
 
             INDArray outMasked = net.output(inToBeMasked);
-            net.clearLayerMaskArrays();
+            net.clear();
 
             int numSteps = width - 1;
             INDArray subset = inToBeMasked.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.all(),
@@ -194,7 +195,7 @@ public class GlobalPoolingMaskingTests {
             net.setLayerMaskArrays(maskArray, null);
 
             INDArray outMasked = net.output(inToBeMasked);
-            net.clearLayerMaskArrays();
+            net.clear();
 
             int numSteps = height - 1;
             INDArray subset = inToBeMasked.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.all(),
@@ -259,7 +260,7 @@ public class GlobalPoolingMaskingTests {
             net.setLayerMaskArrays(maskArray, null);
 
             INDArray outMasked = net.output(inToBeMasked);
-            net.clearLayerMaskArrays();
+            net.clear();
 
             for (int i = 0; i < minibatch; i++) {
                 System.out.println(i);
@@ -318,7 +319,7 @@ public class GlobalPoolingMaskingTests {
             net.setLayerMaskArrays(maskArray, null);
 
             INDArray outMasked = net.output(inToBeMasked);
-            net.clearLayerMaskArrays();
+            net.clear();
 
             for (int i = 0; i < minibatch; i++) {
                 System.out.println(i);

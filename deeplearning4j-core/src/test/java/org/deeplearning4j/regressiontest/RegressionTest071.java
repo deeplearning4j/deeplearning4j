@@ -171,7 +171,8 @@ public class RegressionTest071 {
         assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l0.getIUpdater());
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
 
-        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+//        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+        fail();
 
         int numParams = net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());

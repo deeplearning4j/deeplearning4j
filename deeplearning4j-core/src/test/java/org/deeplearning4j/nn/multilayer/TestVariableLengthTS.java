@@ -432,7 +432,7 @@ public class TestVariableLengthTS {
         net.setLayerMaskArrays(featuresMask, labelsMask);
         INDArray outMasked = net.output(input);
 
-        net.clearLayerMaskArrays();
+        net.clear();
 
         //Check forward pass:
         for (int i = 0; i < minibatch; i++) {
@@ -512,7 +512,7 @@ public class TestVariableLengthTS {
 
                 net.setLayerMaskArrays(featuresMask, null);
                 INDArray outMasked = net.output(input);
-                net.clearLayerMaskArrays();
+                net.clear();
 
                 for (int i = 0; i < minibatch; i++) {
                     INDArrayIndex[] idx = new INDArrayIndex[] {NDArrayIndex.interval(i, i, true), NDArrayIndex.all(),

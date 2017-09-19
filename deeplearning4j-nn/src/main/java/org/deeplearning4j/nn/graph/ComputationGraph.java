@@ -164,9 +164,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private int numOutputArrays;
 
     //Current inputs, labels, input mask arrays and label mask arrays
-    private transient INDArray[] inputs;
+    private transient Activations input;
+//    private transient INDArray[] inputs;
     private transient INDArray[] labels;
-    private transient INDArray[] inputMaskArrays;
+//    private transient INDArray[] inputMaskArrays;
     private transient INDArray[] labelMaskArrays;
 
     private NeuralNetConfiguration defaultConfiguration;
@@ -184,7 +185,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         this.configuration = configuration;
         this.numInputArrays = configuration.getNetworkInputs().size();
         this.numOutputArrays = configuration.getNetworkOutputs().size();
-        this.inputs = new INDArray[numInputArrays];
+        this.input = ActivationsFactory.getInstance().create(numInputArrays);
         this.labels = new INDArray[numOutputArrays];
         this.defaultConfiguration = configuration.getDefaultConfiguration();
     }
@@ -293,21 +294,21 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     @Override
     public void setInput(int inputNum, INDArray input) {
-        if (inputs == null) {
-            //May be null after clear()
-            inputs = new INDArray[numInputArrays];
-        }
-        inputs[inputNum] = input;
+        this.input.set(inputNum, input);
+    }
+
+    public void setInput(Activations input){
+        this.input = input;
     }
 
     @Override
     public void setInputMiniBatchSize(int size) {
-
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
     public int getInputMiniBatchSize() {
-        return 0;
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
@@ -333,30 +334,28 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             throw new IllegalArgumentException("Invalid input array: network has " + numInputArrays
                     + " inputs, but array is of length " + inputs.length);
         }
-        this.inputs = inputs;
+        input.setFromArray(inputs);
     }
 
     /**
      * Get the previously set input for the ComputationGraph
      */
     public INDArray getInput(int inputNum) {
-        if (inputs == null)
-            return null;
-        return inputs[inputNum];
+        return input.get(inputNum);
     }
 
     /**
      * Get the previously set inputs for the ComputationGraph
      */
     public INDArray[] getInputs() {
-        return inputs;
+        return input.getAsArray();
     }
 
     /**
      * Get the previously set feature/input mask arrays for the ComputationGraph
      */
     public INDArray[] getInputMaskArrays() {
-        return inputMaskArrays;
+        return input.getMaskAsArray();
     }
 
     /**
@@ -846,7 +845,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 //                                if (gvInputVertex.contains(current.getName())) {
                                 if (gvInputVertex.contains(current.getName())) {
                                     VertexIndices[] inputsTo = gvOutputVertices.get(current.getName());
-                                    INDArray input = inputs[current.getIndex()];
+                                    INDArray input = this.input.get(current.getIndex());
 
                                     for (VertexIndices v : inputsTo) {
                                         int vIdx = v.getVertexIndex();
@@ -904,10 +903,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             fit(new INDArray[]{dataSet.getFeatures()}, new INDArray[]{dataSet.getLabels()});
         }
 
-        if (hasMaskArrays)
-            clearLayerMaskArrays();
-
-        clearLayersStates();
+        clear();
     }
 
     /**
@@ -973,14 +969,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 //migrate(next);
 
                 boolean hasMaskArrays = next.hasMaskArrays();
-                if (hasMaskArrays) {
-                    INDArray[] fMask = (next.getFeaturesMaskArray() != null
-                            ? new INDArray[]{next.getFeaturesMaskArray()} : null);
-                    INDArray[] lMask = (next.getLabelsMaskArray() != null ? new INDArray[]{next.getLabelsMaskArray()}
-                            : null);
-                    setLayerMaskArrays(fMask, lMask);
-                }
-
                 if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
                     doTruncatedBPTT(new INDArray[]{next.getFeatures()}, new INDArray[]{next.getLabels()},
                             (hasMaskArrays ? new INDArray[]{next.getFeaturesMaskArray()} : null),
@@ -1002,9 +990,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
 
-                if (hasMaskArrays) {
-                    clearLayerMaskArrays();
-                }
+                clear();
 
                 time1 = System.currentTimeMillis();
             }
@@ -1037,8 +1023,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public void fit(MultiDataSet multiDataSet) {
         fit(multiDataSet.getFeatures(), multiDataSet.getLabels(), multiDataSet.getFeaturesMaskArrays(),
                 multiDataSet.getLabelsMaskArrays());
-        if (multiDataSet.hasMaskArrays())
-            clearLayerMaskArrays();
     }
 
     /**
@@ -1094,12 +1078,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             next.getLabelsMaskArrays());
                 } else {
                     boolean hasMaskArrays = next.hasMaskArrays();
-                    if (hasMaskArrays) {
-                        setLayerMaskArrays(next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
-                    }
-
                     setInputs(next.getFeatures());
                     setLabels(next.getLabels());
+                    if(hasMaskArrays){
+                        input.setMaskFromArray(next.getFeaturesMaskArrays(), null);
+                    }
                     if (solver == null) {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                             solver = new Solver.Builder().configure(defaultConfiguration).listeners(listeners)
@@ -1113,9 +1096,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         }
                     }
 
-                    if (hasMaskArrays) {
-                        clearLayerMaskArrays();
-                    }
+                    clear();
                 }
 
                 Nd4j.getMemoryManager().invokeGcOccasionally();
@@ -1192,7 +1173,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         setInputs(inputs);
         setLabels(labels);
-        setLayerMaskArrays(featureMaskArrays, labelMaskArrays);
+//        setLayerMaskArrays(featureMaskArrays, labelMaskArrays);
         update(TaskUtils.buildTask(inputs, labels));
 
         MemoryWorkspace workspace =
@@ -1230,11 +1211,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
-        if (featureMaskArrays != null || labelMaskArrays != null) {
-            clearLayerMaskArrays();
-        }
-
-        clearLayersStates();
+        clear();
     }
 
     /**
@@ -1358,7 +1335,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         synchronizeIterEpochCounts();
         //Calculate activations (which are stored in each layer, and used in backprop)
         if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-            Map<String, INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);
+            Map<String, INDArray> activations = rnnActivateUsingStoredState(input.getAsArray(), true, true);
             if (trainingListeners.size() > 0) {
                 try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                     for (TrainingListener tl : trainingListeners) {
@@ -1508,7 +1485,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 if (gvInputVertex.contains(current.getName())) {
                     VertexIndices[] inputsTo = gvOutputVertices.get(current.getName());
                     // pushing out copy to parent workspace
-                    INDArray input = inputs[current.getIndex()].leverageTo(workspaceExternal);
+                    INDArray input = this.input.get(current.getIndex()).leverageTo(workspaceExternal);
 
 
                     layerActivations.put(current.getName(), input);
@@ -1894,6 +1871,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     }
 
+    @Override
+    public InputPreProcessor getPreProcessor() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Calculate the L2 regularization term for all layers in the entire network. This is the sum of the L2 terms
      * for each layer individually
@@ -2106,7 +2088,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public double score(MultiDataSet dataSet, boolean training) {
         boolean hasMaskArrays = dataSet.hasMaskArrays();
         if (hasMaskArrays) {
-            setLayerMaskArrays(dataSet.getFeaturesMaskArrays(), dataSet.getLabelsMaskArrays());
+            input.setMaskFromArray(dataSet.getFeaturesMaskArrays(), null);
+            labelMaskArrays = dataSet.getLabelsMaskArrays();
         }
 
         double score = 0.0;
@@ -2144,9 +2127,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
 
-        if (hasMaskArrays)
-            clearLayerMaskArrays();
-
+        clear();
         return score;
     }
 
@@ -2179,8 +2160,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public INDArray scoreExamples(MultiDataSet data, boolean addRegularizationTerms) {
         boolean hasMaskArray = data.hasMaskArrays();
-        if (hasMaskArray)
-            setLayerMaskArrays(data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
+        if (hasMaskArray) {
+            input.setMaskFromArray(data.getFeaturesMaskArrays(), null);
+            labelMaskArrays = data.getLabelsMaskArrays();
+        }
         feedForward(data.getFeatures(), false);
         setLabels(data.getLabels());
 
@@ -2210,8 +2193,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             l2 = 0.0;
         }
 
-        if (hasMaskArray)
-            clearLayerMaskArrays();
+        clear();
         return out;
     }
 
@@ -2221,7 +2203,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public void fit() {
-        fit(inputs, labels, inputMaskArrays, labelMaskArrays);
+        fit(input.getAsArray(), labels, input.getMaskAsArray(), labelMaskArrays);
     }
 
     @Override
@@ -2352,6 +2334,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
+    public void fit(Activations data) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Gradient gradient() {
         return gradient;
     }
@@ -2372,11 +2359,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public int batchSize() {
-        return inputs[0].size(0);
-    }
-
-    @Override
     public NeuralNetConfiguration conf() {
         return defaultConfiguration;
     }
@@ -2389,7 +2371,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     @Override
     public INDArray input() {
         if (numInputArrays == 1)
-            return (inputs != null ? inputs[0] : null);
+            return (input != null ? input.get(0) : null);
         else
             throw new UnsupportedOperationException(
                     "Cannot return single input: ComputationGraph  has multiple inputs");
@@ -2480,9 +2462,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public void clear() {
-        inputs = null;
+        input.clear();
         labels = null;
-        inputMaskArrays = null;
         labelMaskArrays = null;
     }
 
@@ -2515,7 +2496,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer (or unmodified otherwise).
      */
     public INDArray[] rnnTimeStep(INDArray... inputs) {
-        this.inputs = inputs;
+        this.input.clear();
+        this.input.setFromArray(inputs);
         //Idea: if 2d in, want 2d out
         boolean inputIs2d = true;
         for (INDArray i : inputs) {
@@ -2587,7 +2569,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
-        this.inputs = null;
+        this.input.clear();
         return outputs;
     }
 
@@ -2783,7 +2765,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                     setInputs(newInputs);
                     setLabels(newLabels);
-                    setLayerMaskArrays(newFeatureMasks, newLabelMasks);
+                    input.setMaskFromArray(newFeatureMasks, null);
+                    labelMaskArrays = newLabelMasks;
 
                     if (solver == null) {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -2805,10 +2788,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         rnnClearPreviousState();
-
-        if (featureMasks != null || labelMasks != null) {
-            clearLayerMaskArrays();
-        }
+        clear();
     }
 
     /**
@@ -2875,100 +2855,107 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         return layerActivations;
     }
 
+//    /**
+//     * Set the mask arrays for features and labels. Mask arrays are typically used in situations such as one-to-many
+//     * and many-to-one learning with recurrent neural networks, as well as for supporting time series of varying lengths
+//     * within the same minibatch.<br>
+//     * For example, with RNN data sets with input of shape [miniBatchSize,nIn,timeSeriesLength] and outputs of shape
+//     * [miniBatchSize,nOut,timeSeriesLength], the features and mask arrays will have shape [miniBatchSize,timeSeriesLength]
+//     * and contain values 0 or 1 at each element (to specify whether a given input/example is present - or merely padding -
+//     * at a given time step).<br>
+//     * <b>NOTE</b>: This method is not usually used directly. Instead, the various feedForward and fit methods handle setting
+//     * of masking internally.
+//     *
+//     * @param featureMaskArrays Mask array for features (input)
+//     * @param labelMaskArrays   Mask array for labels (output)
+//     * @see #clearLayerMaskArrays()
+//     */
+//    public void setLayerMaskArrays(INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
+//        this.clearLayerMaskArrays();
+//        this.inputMaskArrays = featureMaskArrays;
+//        this.labelMaskArrays = labelMaskArrays;
+//
+//        if (featureMaskArrays != null) {
+//            if (featureMaskArrays.length != numInputArrays) {
+//                throw new IllegalArgumentException("Invalid number of feature mask arrays");
+//            }
+//
+//            int minibatchSize = -1;
+//            for (INDArray i : featureMaskArrays) {
+//                if (i != null) {
+//                    minibatchSize = i.size(0);
+//                }
+//            }
+//
+//            //Here: need to do forward pass through the network according to the topological ordering of the network
+//
+//            Map<Integer, Pair<INDArray, MaskState>> map = new HashMap<>();
+//            for (int i = 0; i < topologicalOrder.length; i++) {
+//                Layer current = vertices[topologicalOrder[i]];
+//
+//                if (gvInputVertex.contains(current.getName())) {
+//                    INDArray fMask = featureMaskArrays[current.getIndex()];
+//                    map.put(current.getIndex(), new Pair<>(fMask, MaskState.Active));
+//                } else {
+//                    VertexIndices[] inputVertices = gvInputVertices.get(current.getName());
+//
+//                    //Now: work out the mask arrays to feed forward...
+//                    INDArray[] inputMasks = null; //new INDArray[inputVertices.length];
+//                    MaskState maskState = null;
+//                    for (int j = 0; j < inputVertices.length; j++) {
+//                        Pair<INDArray, MaskState> p = map.get(inputVertices[j].getVertexIndex());
+//                        if (p != null) {
+//                            if (inputMasks == null) {
+//                                inputMasks = new INDArray[inputVertices.length];
+//                            }
+//                            inputMasks[j] = p.getFirst();
+//                            if (maskState == null || maskState == MaskState.Passthrough) {
+//                                maskState = p.getSecond();
+//                            }
+//                        }
+//                    }
+//
+//                    Pair<INDArray, MaskState> outPair = null;   //TODO
+////                            current.feedForwardMaskArrays(inputMasks, maskState, minibatchSize);
+//                    map.put(topologicalOrder[i], outPair);
+//                }
+//            }
+//        }
+//
+//        if (labelMaskArrays != null) {
+//            if (labelMaskArrays.length != numOutputArrays) {
+//                throw new IllegalArgumentException("Invalid number of label mask arrays");
+//            }
+//            for (int i = 0; i < labelMaskArrays.length; i++) {
+//                if (labelMaskArrays[i] == null) {
+//                    // This output doesn't have a mask, we can skip it.
+//                    continue;
+//                }
+//                String outputName = configuration.getNetworkOutputs().get(i);
+//                Layer v = verticesMap.get(outputName);
+//                Layer ol = v;
+//                ol.setMaskArray(0, labelMaskArrays[i]);
+//            }
+//        }
+//    }
+
     /**
-     * Set the mask arrays for features and labels. Mask arrays are typically used in situations such as one-to-many
-     * and many-to-one learning with recurrent neural networks, as well as for supporting time series of varying lengths
-     * within the same minibatch.<br>
-     * For example, with RNN data sets with input of shape [miniBatchSize,nIn,timeSeriesLength] and outputs of shape
-     * [miniBatchSize,nOut,timeSeriesLength], the features and mask arrays will have shape [miniBatchSize,timeSeriesLength]
-     * and contain values 0 or 1 at each element (to specify whether a given input/example is present - or merely padding -
-     * at a given time step).<br>
-     * <b>NOTE</b>: This method is not usually used directly. Instead, the various feedForward and fit methods handle setting
-     * of masking internally.
-     *
-     * @param featureMaskArrays Mask array for features (input)
-     * @param labelMaskArrays   Mask array for labels (output)
-     * @see #clearLayerMaskArrays()
-     */
+          * Set the mask arrays for features and labels. Mask arrays are typically used in situations such as one-to-many
+          * and many-to-one learning with recurrent neural networks, as well as for supporting time series of varying lengths
+          * within the same minibatch.<br>
+          * For example, with RNN data sets with input of shape [miniBatchSize,nIn,timeSeriesLength] and outputs of shape
+          * [miniBatchSize,nOut,timeSeriesLength], the features and mask arrays will have shape [miniBatchSize,timeSeriesLength]
+          * and contain values 0 or 1 at each element (to specify whether a given input/example is present - or merely padding -
+          * at a given time step).<br>
+          * <b>NOTE</b>: This method is not usually used directly. Instead, the various feedForward and fit methods handle setting
+          * of masking internally.
+          *
+          * @param featureMaskArrays Mask array for features (input)
+          * @param labelMaskArrays   Mask array for labels (output)
+          */
     public void setLayerMaskArrays(INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
-        this.clearLayerMaskArrays();
-        this.inputMaskArrays = featureMaskArrays;
+        this.input.setMaskFromArray(featureMaskArrays, null);
         this.labelMaskArrays = labelMaskArrays;
-
-        if (featureMaskArrays != null) {
-            if (featureMaskArrays.length != numInputArrays) {
-                throw new IllegalArgumentException("Invalid number of feature mask arrays");
-            }
-
-            int minibatchSize = -1;
-            for (INDArray i : featureMaskArrays) {
-                if (i != null) {
-                    minibatchSize = i.size(0);
-                }
-            }
-
-            //Here: need to do forward pass through the network according to the topological ordering of the network
-
-            Map<Integer, Pair<INDArray, MaskState>> map = new HashMap<>();
-            for (int i = 0; i < topologicalOrder.length; i++) {
-                Layer current = vertices[topologicalOrder[i]];
-
-                if (gvInputVertex.contains(current.getName())) {
-                    INDArray fMask = featureMaskArrays[current.getIndex()];
-                    map.put(current.getIndex(), new Pair<>(fMask, MaskState.Active));
-                } else {
-                    VertexIndices[] inputVertices = gvInputVertices.get(current.getName());
-
-                    //Now: work out the mask arrays to feed forward...
-                    INDArray[] inputMasks = null; //new INDArray[inputVertices.length];
-                    MaskState maskState = null;
-                    for (int j = 0; j < inputVertices.length; j++) {
-                        Pair<INDArray, MaskState> p = map.get(inputVertices[j].getVertexIndex());
-                        if (p != null) {
-                            if (inputMasks == null) {
-                                inputMasks = new INDArray[inputVertices.length];
-                            }
-                            inputMasks[j] = p.getFirst();
-                            if (maskState == null || maskState == MaskState.Passthrough) {
-                                maskState = p.getSecond();
-                            }
-                        }
-                    }
-
-                    Pair<INDArray, MaskState> outPair = null;   //TODO
-//                            current.feedForwardMaskArrays(inputMasks, maskState, minibatchSize);
-                    map.put(topologicalOrder[i], outPair);
-                }
-            }
-        }
-
-        if (labelMaskArrays != null) {
-            if (labelMaskArrays.length != numOutputArrays) {
-                throw new IllegalArgumentException("Invalid number of label mask arrays");
-            }
-            for (int i = 0; i < labelMaskArrays.length; i++) {
-                if (labelMaskArrays[i] == null) {
-                    // This output doesn't have a mask, we can skip it.
-                    continue;
-                }
-                String outputName = configuration.getNetworkOutputs().get(i);
-                Layer v = verticesMap.get(outputName);
-                Layer ol = v;
-                ol.setMaskArray(0, labelMaskArrays[i]);
-            }
-        }
-    }
-
-    /**
-     * Remove the mask arrays from all layers.<br>
-     * See {@link #setLayerMaskArrays(INDArray[], INDArray[])} for details on mask arrays.
-     */
-    public void clearLayerMaskArrays() {
-        for (Layer layer : layers) {
-            layer.setMaskArray(0, null);
-        }
-        this.inputMaskArrays = null;
-        this.labelMaskArrays = null;
     }
 
     /**
@@ -3184,16 +3171,17 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 INDArray labels = next.getLabels();
                 INDArray labelMask = next.getLabelsMaskArray();
 
+                input.setMask(0, featuresMask);
+                input.setMaskState(0, featuresMask == null ? null : MaskState.Active);
+                labelMaskArrays = labelMask == null ? null : new INDArray[]{labelMask};
 
-                setLayerMaskArrays(featuresMask == null ? null : new INDArray[]{featuresMask},
-                        labelMask == null ? null : new INDArray[]{labelMask});
                 INDArray[] out = silentOutput(false, features);
 
                 for (T evaluation : evaluations)
                     evaluation.eval(labels, out[0], labelMask);
             }
 
-            clearLayerMaskArrays();
+            clear();
         }
 
         if (iterator.asyncSupported())
@@ -3250,7 +3238,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 INDArray[] labelMasks = next.getLabelsMaskArrays();
                 INDArray labelMask = next.getLabelsMaskArray(0);
 
-                setLayerMaskArrays(featuresMasks, labelMasks);
+                input.setMaskFromArray(featuresMasks, null);
+                this.labelMaskArrays = labelMasks;
                 INDArray[] out = silentOutput(false, features);
 
                 try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
@@ -3259,7 +3248,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
             }
 
-            clearLayerMaskArrays();
+            clear();
         }
 
         if (iterator.asyncSupported())

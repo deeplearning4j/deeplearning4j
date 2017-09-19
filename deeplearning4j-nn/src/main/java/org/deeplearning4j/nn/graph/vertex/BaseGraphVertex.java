@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -82,5 +83,12 @@ public abstract class BaseGraphVertex extends AbstractLayer {
 
     public boolean canDoBackward(){
         return true;    //TODO remove
+    }
+
+
+    @Override
+    public InputPreProcessor getPreProcessor() {
+        //TODO support preprocessors for vertices...
+        return null;
     }
 }

@@ -691,9 +691,9 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         ModelInfo modelInfo = getModelInfo(model);
         int examplesThisMinibatch = 0;
         if (model instanceof MultiLayerNetwork) {
-            examplesThisMinibatch = ((MultiLayerNetwork) model).batchSize();
+            examplesThisMinibatch = ((MultiLayerNetwork) model).getInputMiniBatchSize();
         } else if (model instanceof ComputationGraph) {
-            examplesThisMinibatch = ((ComputationGraph) model).batchSize();
+            examplesThisMinibatch = ((ComputationGraph) model).getInputMiniBatchSize();
         } else if (model instanceof Layer) {
             examplesThisMinibatch = ((Layer) model).getInputMiniBatchSize();
         }

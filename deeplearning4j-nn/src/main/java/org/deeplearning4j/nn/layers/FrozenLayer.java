@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.CacheMode;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -166,11 +167,6 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public int batchSize() {
-        return insideLayer.batchSize();
-    }
-
-    @Override
     public NeuralNetConfiguration conf() {
         return insideLayer.conf();
     }
@@ -295,6 +291,11 @@ public class FrozenLayer implements Layer {
     @Override
     public void clearNoiseWeightParams() {
         insideLayer.clearNoiseWeightParams();
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessor() {
+        return insideLayer.getPreProcessor();
     }
 
 //    @Override

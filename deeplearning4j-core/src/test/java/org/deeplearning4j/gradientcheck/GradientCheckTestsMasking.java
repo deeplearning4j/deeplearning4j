@@ -1,5 +1,7 @@
 package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -117,10 +119,9 @@ public class GradientCheckTestsMasking {
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
 
-                mln.setLayerMaskArrays(null, maskArr);
-
+                Activations a = ActivationsFactory.getInstance().create(input);
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, a, labels, maskArr);
 
                 String msg = "gradientCheckMaskingOutputSimple() - timeSeriesLength=" + timeSeriesLength
                                 + ", miniBatchSize=" + 1;
@@ -181,8 +182,7 @@ public class GradientCheckTestsMasking {
                 }
             }
 
-            mln.setLayerMaskArrays(mask, mask);
-
+            Activations a = ActivationsFactory.getInstance().create(input, mask);
             if (PRINT_RESULTS) {
                 System.out.println("testBidirectionalLSTMMasking() - testNum = " + testNum++);
                 for (int j = 0; j < mln.getnLayers(); j++)
@@ -190,7 +190,7 @@ public class GradientCheckTestsMasking {
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, a, labels, mask);
 
             assertTrue(gradOK);
         }
@@ -258,7 +258,6 @@ public class GradientCheckTestsMasking {
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
 
-                net.setLayerMaskArrays(null, labelMask);
                 INDArray[] fl = LossFunctionGradientCheck.getFeaturesAndLabels(lf, minibatch, nIn, nOut, 12345);
                 INDArray features = fl[0];
                 INDArray labels = fl[1];
@@ -269,7 +268,7 @@ public class GradientCheckTestsMasking {
                 System.out.println(msg);
 
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels);
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, null, labels, labelMask);
 
                 assertTrue(msg, gradOK);
             }
@@ -352,7 +351,6 @@ public class GradientCheckTestsMasking {
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
 
-                net.setLayerMaskArrays(null, labelMask);
                 INDArray[] fl = LossFunctionGradientCheck.getFeaturesAndLabels(lf, new int[] {minibatch, nIn, tsLength},
                                 new int[] {minibatch, nOut, tsLength}, 12345);
                 INDArray features = fl[0];
@@ -364,7 +362,8 @@ public class GradientCheckTestsMasking {
                 System.out.println(msg);
 
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels);
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, null,
+                                labels, labelMask);
 
                 assertTrue(msg, gradOK);
 
@@ -384,11 +383,10 @@ public class GradientCheckTestsMasking {
                 ComputationGraph graph = new ComputationGraph(cg);
                 graph.init();
 
-                net.setLayerMaskArrays(null, labelMask);
-
                 gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
-                                new INDArray[] {features}, new INDArray[] {labels});
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
+                        ActivationsFactory.getInstance().create(features),
+                        new INDArray[]{labels}, new INDArray[]{labelMask});
 
                 assertTrue(msg + " (compgraph)", gradOK);
             }

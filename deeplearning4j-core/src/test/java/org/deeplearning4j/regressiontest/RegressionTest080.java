@@ -182,7 +182,8 @@ public class RegressionTest080 {
         assertEquals(0.96, r.getRmsDecay(), 1e-6);
         assertEquals(0.15, r.getLearningRate(), 1e-6);
 
-        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+//        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+        fail();
 
         int numParams = net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());

@@ -2,6 +2,8 @@ package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.activations.Activations;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
@@ -96,6 +98,19 @@ public class GradientCheckUtil {
         }
     }
 
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
+                                         INDArray input, INDArray labels) {
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input, null, labels, null);
+    }
+
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
+                                         INDArray input, INDArray inputMask,
+                                         INDArray labels, INDArray labelsMask) {
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError,
+                ActivationsFactory.getInstance().create(input, inputMask), labels, labelsMask);
+    }
     /**
      * Check backprop gradients for a MultiLayerNetwork.
      * @param mln MultiLayerNetwork to test. This must be initialized.
@@ -111,7 +126,8 @@ public class GradientCheckUtil {
      * @return true if gradients are passed, false otherwise.
      */
     public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
-                    double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, INDArray labels) {
+                                 double minAbsoluteError, boolean print, boolean exitOnFirstError, Activations input,
+                                         INDArray labels, INDArray labelsMask) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -176,7 +192,7 @@ public class GradientCheckUtil {
         Pair<Gradient, Double> gradAndScore = mln.gradientAndScore();
 
         Updater updater = UpdaterCreator.getUpdater(mln);
-        updater.update(mln, gradAndScore.getFirst(), 0, 0, mln.batchSize());
+        updater.update(mln, gradAndScore.getFirst(), 0, 0, mln.getInputMiniBatchSize());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = mln.params().dup(); //need dup: params are a *view* of full parameters
@@ -194,7 +210,7 @@ public class GradientCheckUtil {
 
         int totalNFailures = 0;
         double maxError = 0.0;
-        DataSet ds = new DataSet(input, labels);
+        DataSet ds = new DataSet(input.get(0), labels, input.getMask(0), labelsMask);
         int currParamNameIdx = 0;
 
         INDArray params = mln.params(); //Assumption here: params is a view that we can modify in-place
@@ -265,6 +281,13 @@ public class GradientCheckUtil {
     }
 
 
+    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
+                                         INDArray[] labels) {
+        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError,
+                ActivationsFactory.getInstance().create(inputs, null, null), labels, null);
+    }
+
 
     /**Check backprop gradients for a ComputationGraph
      * @param graph ComputationGraph to test. This must be initialized.
@@ -280,15 +303,15 @@ public class GradientCheckUtil {
      * @return true if gradients are passed, false otherwise.
      */
     public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
-                    double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
-                    INDArray[] labels) {
+                    double minAbsoluteError, boolean print, boolean exitOnFirstError, Activations inputs,
+                    INDArray[] labels, INDArray[] labelsMasks) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
         if (maxRelError <= 0.0 || maxRelError > 0.25)
             throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
 
-        if (graph.getNumInputArrays() != inputs.length)
+        if (graph.getNumInputArrays() != inputs.size())
             throw new IllegalArgumentException("Invalid input arrays: expect " + graph.getNumInputArrays() + " inputs");
         if (graph.getNumOutputArrays() != labels.length)
             throw new IllegalArgumentException(
@@ -349,8 +372,7 @@ public class GradientCheckUtil {
             }
         }
 
-        for (int i = 0; i < inputs.length; i++)
-            graph.setInput(i, inputs[i]);
+        graph.setInput(inputs);
         for (int i = 0; i < labels.length; i++)
             graph.setLabel(i, labels[i]);
 
@@ -358,7 +380,7 @@ public class GradientCheckUtil {
         Pair<Gradient, Double> gradAndScore = graph.gradientAndScore();
 
         ComputationGraphUpdater updater = new ComputationGraphUpdater(graph);
-        updater.update(gradAndScore.getFirst(), 0, 0, graph.batchSize());
+        updater.update(gradAndScore.getFirst(), 0, 0, graph.getInputMiniBatchSize());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = graph.params().dup(); //need dup: params are a *view* of full parameters
@@ -376,7 +398,7 @@ public class GradientCheckUtil {
         int currParamNameIdx = 0;
         int totalNFailures = 0;
         double maxError = 0.0;
-        MultiDataSet mds = new MultiDataSet(inputs, labels);
+        MultiDataSet mds = new MultiDataSet(inputs.getAsArray(), labels);
         INDArray params = graph.params(); //Assumption here: params is a view that we can modify in-place
         for (int i = 0; i < nParams; i++) {
             //Get param name
@@ -474,7 +496,7 @@ public class GradientCheckUtil {
         Pair<Gradient, Double> gradAndScore = layer.gradientAndScore();
 
         Updater updater = UpdaterCreator.getUpdater(layer);
-        updater.update(layer, gradAndScore.getFirst(), 0, 0, layer.batchSize());
+        updater.update(layer, gradAndScore.getFirst(), 0, 0, layer.getInputMiniBatchSize());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = layer.params().dup(); //need dup: params are a *view* of full parameters

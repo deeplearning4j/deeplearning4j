@@ -312,9 +312,9 @@ public class TransferLearningMLNTest {
                                         .activation(Activation.SOFTMAX).nIn(50).nOut(4) //4 possible shapes: circle, square, arc, line
                                         .weightInit(WeightInit.XAVIER)
                                         .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
-                                        .gradientNormalizationThreshold(10).build())
-                        .setInputPreProcessor(3, new CnnToFeedForwardPreProcessor(7, 7, 10))
-                        .setInputPreProcessor(4, new FeedForwardToRnnPreProcessor()).build();
+                                        .gradientNormalizationThreshold(10).build()).build();
+//                        .setInputPreProcessor(3, new CnnToFeedForwardPreProcessor(7, 7, 10))
+//                        .setInputPreProcessor(4, new FeedForwardToRnnPreProcessor()).build();
 
         //modelNow should have the same architecture as modelExpectedArch
         assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(0).toJson(),
@@ -540,8 +540,8 @@ public class TransferLearningMLNTest {
                         .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(300).nOut(150).build())
                         .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(150).nOut(50).build())
                         .addLayer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                        .activation(Activation.SOFTMAX).nIn(50).nOut(10).build())
-                        .setInputPreProcessor(2, new CnnToFeedForwardPreProcessor(12, 12, 20)).build();
+                                        .activation(Activation.SOFTMAX).nIn(50).nOut(10).build()).build();
+//                        .setInputPreProcessor(2, new CnnToFeedForwardPreProcessor(12, 12, 20)).build();
 
 
         MultiLayerNetwork notFrozen = new MultiLayerNetwork(equivalentConf.list()

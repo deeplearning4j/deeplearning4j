@@ -387,10 +387,10 @@ public class TestPreProcessors {
                                                         .nOut(8).build())
                                         .layer(3, new RnnOutputLayer.Builder().nIn(8).nOut(9).build()).build();
         //Expect preprocessors: layer1: FF->RNN; 2: RNN->FF; 3: FF->RNN
-        assertEquals(3, conf1.getInputPreProcessors().size());
-        assertTrue(conf1.getInputPreProcess(1) instanceof FeedForwardToRnnPreProcessor);
-        assertTrue(conf1.getInputPreProcess(2) instanceof RnnToFeedForwardPreProcessor);
-        assertTrue(conf1.getInputPreProcess(3) instanceof FeedForwardToRnnPreProcessor);
+//        assertEquals(3, conf1.getConf().getInputPreProcessors().size());
+        assertTrue(conf1.getConf(1).getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
+        assertTrue(conf1.getConf(2).getLayer().getPreProcessor() instanceof RnnToFeedForwardPreProcessor);
+        assertTrue(conf1.getConf(3).getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
 
 
         //FF-> CNN, CNN-> FF, FF->RNN
@@ -401,10 +401,9 @@ public class TestPreProcessors {
                         .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
         //Expect preprocessors: 0: FF->CNN; 1: CNN->FF; 2: FF->RNN
-        assertEquals(3, conf2.getInputPreProcessors().size());
-        assertTrue(conf2.getInputPreProcess(0) instanceof FeedForwardToCnnPreProcessor);
-        assertTrue(conf2.getInputPreProcess(1) instanceof CnnToFeedForwardPreProcessor);
-        assertTrue(conf2.getInputPreProcess(2) instanceof FeedForwardToRnnPreProcessor);
+        assertTrue(conf2.getConf(1).getLayer().getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
+        assertTrue(conf2.getConf(2).getLayer().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        assertTrue(conf2.getConf(3).getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
 
         //CNN-> FF, FF->RNN - InputType.convolutional instead of convolutionalFlat
         MultiLayerConfiguration conf2a = new NeuralNetConfiguration.Builder().list()
@@ -414,9 +413,8 @@ public class TestPreProcessors {
                         .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).build())
                         .setInputType(InputType.convolutional(28, 28, 1)).build();
         //Expect preprocessors: 1: CNN->FF; 2: FF->RNN
-        assertEquals(2, conf2a.getInputPreProcessors().size());
-        assertTrue(conf2a.getInputPreProcess(1) instanceof CnnToFeedForwardPreProcessor);
-        assertTrue(conf2a.getInputPreProcess(2) instanceof FeedForwardToRnnPreProcessor);
+        assertTrue(conf2a.getConf(1).getLayer().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
+        assertTrue(conf2a.getConf(2).getLayer().getPreProcessor() instanceof FeedForwardToRnnPreProcessor);
 
 
         //FF->CNN and CNN->RNN:
@@ -427,9 +425,8 @@ public class TestPreProcessors {
                         .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
         //Expect preprocessors: 0: FF->CNN, 1: CNN->RNN;
-        assertEquals(2, conf3.getInputPreProcessors().size());
-        assertTrue(conf3.getInputPreProcess(0) instanceof FeedForwardToCnnPreProcessor);
-        assertTrue(conf3.getInputPreProcess(1) instanceof CnnToRnnPreProcessor);
+        assertTrue(conf3.getConf(0).getLayer().getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
+        assertTrue(conf3.getConf(1).getLayer().getPreProcessor() instanceof CnnToRnnPreProcessor);
     }
 
     @Test
@@ -452,14 +449,14 @@ public class TestPreProcessors {
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).backprop(true)
                         .pretrain(false).build();
 
-        assertNotNull(conf.getInputPreProcess(0));
-        assertNotNull(conf.getInputPreProcess(1));
+        assertNotNull(conf.getConf(0).getLayer().getPreProcessor());
+        assertNotNull(conf.getConf(1).getLayer().getPreProcessor());
 
-        assertTrue(conf.getInputPreProcess(0) instanceof FeedForwardToCnnPreProcessor);
-        assertTrue(conf.getInputPreProcess(1) instanceof CnnToFeedForwardPreProcessor);
+        assertTrue(conf.getConf(0).getLayer().getPreProcessor() instanceof FeedForwardToCnnPreProcessor);
+        assertTrue(conf.getConf(1).getLayer().getPreProcessor() instanceof CnnToFeedForwardPreProcessor);
 
-        FeedForwardToCnnPreProcessor ffcnn = (FeedForwardToCnnPreProcessor) conf.getInputPreProcess(0);
-        CnnToFeedForwardPreProcessor cnnff = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(1);
+        FeedForwardToCnnPreProcessor ffcnn = (FeedForwardToCnnPreProcessor) conf.getConf(0).getLayer().getPreProcessor();
+        CnnToFeedForwardPreProcessor cnnff = (CnnToFeedForwardPreProcessor) conf.getConf(1).getLayer().getPreProcessor();
 
         assertEquals(28, ffcnn.getInputHeight());
         assertEquals(28, ffcnn.getInputWidth());

@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.graph.graphnodes;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.activations.ActivationsFactory;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.gradients.GradientsFactory;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -202,15 +203,13 @@ public class TestGraphNodes {
         inMask.putRow(0, Nd4j.create(new double[] {1, 1, 1, 0, 0, 0}));
         inMask.putRow(1, Nd4j.create(new double[] {1, 1, 1, 1, 0, 0}));
         inMask.putRow(2, Nd4j.create(new double[] {1, 1, 1, 1, 1, 0}));
-        graph.setLayerMaskArrays(new INDArray[] {inMask}, null);
 
         expOut = Nd4j.zeros(3, 5);
         expOut.putRow(0, in.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(2)));
         expOut.putRow(1, in.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.point(3)));
         expOut.putRow(2, in.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.point(4)));
 
-        gv.setInput(0, in);
-        outFwd = gv.activate(true).get(0);
+        outFwd = gv.activate(ActivationsFactory.getInstance().create(in, inMask)).get(0);
         assertEquals(expOut, outFwd);
 
         String json = conf.toJson();

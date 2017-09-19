@@ -47,7 +47,7 @@ public class PreprocessorVertex extends BaseGraphVertex {
 
     @Override
     public Activations activate(boolean training) {
-        return preProcessor.preProcess(input, graph.batchSize(), training);
+        return preProcessor.preProcess(input, graph.getInputMiniBatchSize(), training);
     }
 
     @Override
