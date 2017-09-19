@@ -404,6 +404,10 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                     List<String> paramkeys = l.conf().getLayer().initializer().paramKeys(l.conf().getLayer());
                     for(String s : paramkeys){
                         double lr = conf.getLayer().getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
+                        if(Double.isNaN(lr)){
+                            //Edge case: No-Op updater, AdaDelta etc - don't have a LR hence return NaN for IUpdater.getLearningRate
+                            lr = 0.0;
+                        }
                         lrs.put(layerIdx + "_" + s, lr);
                     }
                     layerIdx++;
@@ -415,6 +419,10 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                     List<String> paramkeys = l.conf().getLayer().initializer().paramKeys(l.conf().getLayer());
                     for(String s : paramkeys){
                         double lr = conf.getLayer().getUpdaterByParam(s).getLearningRate(l.getIterationCount(), l.getEpochCount());
+                        if(Double.isNaN(lr)){
+                            //Edge case: No-Op updater, AdaDelta etc - don't have a LR hence return NaN for IUpdater.getLearningRate
+                            lr = 0.0;
+                        }
                         lrs.put(layerName + "_" + s, lr);
                     }
                 }
