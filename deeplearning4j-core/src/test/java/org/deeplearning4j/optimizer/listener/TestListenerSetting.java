@@ -133,15 +133,7 @@ public class TestListenerSetting {
         }
 
         @Override
-        public boolean invoked() {
-            return false;
-        }
-
-        @Override
-        public void invoke() {}
-
-        @Override
-        public void iterationDone(Model model, int iteration) {}
+        public void iterationDone(Model model, int iteration, int epoch) {}
     }
 
 }

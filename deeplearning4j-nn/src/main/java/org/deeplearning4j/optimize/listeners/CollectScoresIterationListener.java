@@ -41,17 +41,7 @@ public class CollectScoresIterationListener implements IterationListener {
     }
 
     @Override
-    public boolean invoked() {
-        return false;
-    }
-
-    @Override
-    public void invoke() {
-
-    }
-
-    @Override
-    public void iterationDone(Model model, int iteration) {
+    public void iterationDone(Model model, int iteration, int epoch) {
         if (++iterationCount % frequency == 0) {
             double score = model.score();
             scoreVsIter.add(new Pair<>(iterationCount, score));

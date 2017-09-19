@@ -483,7 +483,7 @@ public class BarnesHutTsne implements Model {
 
 
                 if (iterationListener != null) {
-                    iterationListener.iterationDone(this, i);
+                    iterationListener.iterationDone(this, i, 0);
                 }
                 log.info("Error at iteration " + i + " is " + score());
             }

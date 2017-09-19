@@ -50,17 +50,7 @@ public class TimeIterationListener implements IterationListener {
     }
 
     @Override
-    public boolean invoked() {
-        return invoked;
-    }
-
-    @Override
-    public void invoke() {
-        invoked = true;
-    }
-
-    @Override
-    public void iterationDone(Model model, int iteration) {
+    public void iterationDone(Model model, int iteration, int epoch) {
         long currentIteration = iterationCounter.incrementAndGet();
         long elapsed = System.currentTimeMillis() - start;
         long remaining = (iterationCount - currentIteration) * elapsed / currentIteration;
