@@ -49,7 +49,8 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                         NDArrayIndex.interval(padding[0], padding[0] + inShape[2]),
                         NDArrayIndex.interval(padding[2], padding[2] + inShape[3]));
 
-        return GradientsFactory.getInstance().create(epsNext, EMPTY_GRADIENT);
+        Gradients g = GradientsFactory.getInstance().create(epsNext, EMPTY_GRADIENT);
+        return backpropPreprocessor(g);
     }
 
 

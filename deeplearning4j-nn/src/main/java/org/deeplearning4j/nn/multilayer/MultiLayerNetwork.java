@@ -1921,7 +1921,11 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
     public void setInput(int inputNumber, INDArray input) {
         if(inputNumber != 0)
             throw new IllegalArgumentException();
-        setInput(input);
+        if(this.input == null){
+            this.input = ActivationsFactory.getInstance().create(input);
+        } else {
+            this.input.set(0, input);
+        }
     }
 
     @Override
@@ -2158,7 +2162,7 @@ public class MultiLayerNetwork implements Serializable, Model, NeuralNetwork {
 
     @Override
     public int getInputMiniBatchSize() {
-        if(input == null){
+        if(input == null || input.get(0) == null){
             return -1;
         }
         return getInput(0).size(0);

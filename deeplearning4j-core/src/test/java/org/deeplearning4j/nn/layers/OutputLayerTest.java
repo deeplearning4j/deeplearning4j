@@ -49,8 +49,6 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Random;
@@ -350,7 +348,7 @@ public class OutputLayerTest {
                     labels3d.putScalar(new int[] {i, idx, j}, 1.0f);
                 }
             }
-            INDArray labels2d = proc.backprop(gf.create(labels3d), miniBatchSize, true).get(0);
+            INDArray labels2d = proc.backprop(gf.create(labels3d), miniBatchSize).get(0);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)

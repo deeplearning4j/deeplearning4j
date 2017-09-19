@@ -443,9 +443,8 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
      */
     @Override
     public Activations activate(boolean training) {
-        if (training && conf.getLayer().getIDropout() != null) {
-            applyDropOutIfNecessary(training);
-        }
+        applyPreprocessorIfNecessary(training);
+        applyDropOutIfNecessary(training);
         //reconstructed: propUp ----> hidden propDown to transform
         INDArray propUp = propUp(input.get(0), training);
         return ActivationsFactory.getInstance().create(propUp);
@@ -478,7 +477,8 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
 
         INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
 
-        return GradientsFactory.getInstance().create(epsilonNext, ret);
+        Gradients g = GradientsFactory.getInstance().create(epsilonNext, ret);
+        return backpropPreprocessor(g);
     }
 
     @Override

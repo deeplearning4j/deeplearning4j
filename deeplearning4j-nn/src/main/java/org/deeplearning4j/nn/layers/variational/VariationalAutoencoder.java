@@ -725,7 +725,11 @@ public class VariationalAutoencoder implements Model {
             epsilon = weights.mmul(currentDelta.transpose()).transpose();
         }
 
-        return GradientsFactory.getInstance().create(epsilon, gradient);
+        Gradients g = GradientsFactory.getInstance().create(epsilon, gradient);
+        if(layerConf().getPreProcessor() != null){
+            return layerConf().getPreProcessor().backprop(g, input.size(0));
+        }
+        return g;
     }
 
     public INDArray preOutput(boolean training) {

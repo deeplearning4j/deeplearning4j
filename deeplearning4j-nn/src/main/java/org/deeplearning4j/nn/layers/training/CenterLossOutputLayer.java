@@ -172,7 +172,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         weightNoiseParams.clear();
 
-        return GradientsFactory.getInstance().create(epsilonNext, pair.getParameterGradients());
+        Gradients g = GradientsFactory.getInstance().create(epsilonNext, pair.getParameterGradients());
+        return backpropPreprocessor(g);
     }
 
     /**

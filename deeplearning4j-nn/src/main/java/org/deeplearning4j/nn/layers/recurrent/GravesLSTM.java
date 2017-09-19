@@ -95,8 +95,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
                         GravesLSTMParamInitializer.BIAS_KEY, gradientViews, this.input.getMask(0), true, null);
 
         weightNoiseParams.clear();
-
-        return p;
+        return backpropPreprocessor(p);
     }
 
     @Override

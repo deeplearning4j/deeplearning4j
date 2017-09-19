@@ -68,7 +68,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public Gradients backprop(Gradients gradients, int miniBatchSize, boolean training) {
+    public Gradients backprop(Gradients gradients, int miniBatchSize) {
         if(gradients.size() != 1){
             throw new IllegalArgumentException("Cannot preprocess activation gradients: Activation gradients must have " +
                     "exactly 1 array. Got: " + gradients.size());

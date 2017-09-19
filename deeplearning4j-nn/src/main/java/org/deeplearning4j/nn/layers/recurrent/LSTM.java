@@ -121,7 +121,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
                         LSTMParamInitializer.BIAS_KEY, gradientViews, null, false, helper);
 
         weightNoiseParams.clear();
-        return p;
+        return backpropPreprocessor(p);
     }
 
     @Override

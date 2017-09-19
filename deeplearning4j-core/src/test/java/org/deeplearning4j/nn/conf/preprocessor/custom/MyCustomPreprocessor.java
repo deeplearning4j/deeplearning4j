@@ -22,7 +22,7 @@ public class MyCustomPreprocessor implements InputPreProcessor {
     }
 
     @Override
-    public Gradients backprop(Gradients output, int miniBatchSize, boolean train) {
+    public Gradients backprop(Gradients output, int miniBatchSize) {
         return output;
     }
 

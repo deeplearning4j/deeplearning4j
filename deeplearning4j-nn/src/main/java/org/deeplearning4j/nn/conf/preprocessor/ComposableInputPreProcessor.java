@@ -20,13 +20,10 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -52,11 +49,11 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public Gradients backprop(Gradients output, int miniBatchSize, boolean training) {
+    public Gradients backprop(Gradients output, int miniBatchSize) {
         //Apply input preprocessors in opposite order for backprop (compared to forward pass)
         //For example, CNNtoFF + FFtoRNN, need to do backprop in order of FFtoRNN + CNNtoFF
         for (int i = inputPreProcessors.length - 1; i >= 0; i--) {
-            output = inputPreProcessors[i].backprop(output, miniBatchSize, training);
+            output = inputPreProcessors[i].backprop(output, miniBatchSize);
         }
         return output;
     }

@@ -141,8 +141,8 @@ public class GravesBidirectionalLSTM
         final INDArray combinedEpsilon = forwardEpsilon.addi(backwardsEpsilon);
 
         //sum the errors that were back-propagated
-        return GradientsFactory.getInstance().create(combinedEpsilon, correctOrderedGradient);
-
+        Gradients g = GradientsFactory.getInstance().create(combinedEpsilon, correctOrderedGradient);
+        return backpropPreprocessor(g);
     }
 
     @Override

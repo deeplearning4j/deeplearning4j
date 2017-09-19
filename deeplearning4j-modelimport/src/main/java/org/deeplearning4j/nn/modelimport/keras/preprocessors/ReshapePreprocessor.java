@@ -94,7 +94,7 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public Gradients backprop(Gradients g, int miniBatchSize, boolean training) {
+    public Gradients backprop(Gradients g, int miniBatchSize) {
         if(g.size() != 1){
             throw new IllegalArgumentException("Cannot preprocess activation gradients: Activation gradients must have " +
                     "exactly 1 array. Got: " + g.size());

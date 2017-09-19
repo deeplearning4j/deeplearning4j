@@ -84,8 +84,8 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradientsView);
         }
 
-//        return new Pair<>(ret, null); //Don't bother returning epsilons: no layer below this one...
-        return GradientsFactory.getInstance().create(null, ret);
+        Gradients g = GradientsFactory.getInstance().create(null, ret); //Can't return epsilons: no layer below this one...
+        return backpropPreprocessor(g);
     }
 
     @Override

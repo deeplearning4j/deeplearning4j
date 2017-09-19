@@ -54,7 +54,7 @@ public class UnitVarianceProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public Gradients backprop(Gradients g, int miniBatchSize, boolean training) {
+    public Gradients backprop(Gradients g, int miniBatchSize) {
         return g; //no-op
     }
 

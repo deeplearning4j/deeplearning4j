@@ -20,21 +20,18 @@ package org.deeplearning4j.nn.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.activations.ActivationsFactory;
+import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
 
@@ -286,7 +283,17 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     protected void applyPreprocessorIfNecessary(boolean training){
+        if(!preprocessorApplied && layerConf().getPreProcessor() != null){
+            input = layerConf().getPreProcessor().preProcess(input, input.get(0).size(0), training);        //TODO MINIBATCH SIZE
+            preprocessorApplied = true;
+        }
+    }
 
+    protected Gradients backpropPreprocessor(Gradients gradients){
+        if(layerConf().getPreProcessor() != null){
+            return layerConf().getPreProcessor().backprop(gradients, input.get(0).size(0));       //TODO MINIBATCH SIZE
+        }
+        return gradients;
     }
 
     /**

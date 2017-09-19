@@ -97,8 +97,8 @@ public class CNNProcessorTest {
                         INDArray epsilon4_f = Nd4j.create(convShape, 'f');
                         epsilon4_c.assign(convAct_c);
                         epsilon4_f.assign(convAct_f);
-                        INDArray epsilon2_c = convProcessor.backprop(gf.create(epsilon4_c), -1, true).get(0);
-                        INDArray epsilon2_f = convProcessor.backprop(gf.create(epsilon4_f), -1, true).get(0);
+                        INDArray epsilon2_c = convProcessor.backprop(gf.create(epsilon4_c), -1).get(0);
+                        INDArray epsilon2_f = convProcessor.backprop(gf.create(epsilon4_f), -1).get(0);
                         assertEquals(ffInput_c, epsilon2_c);
                         assertEquals(ffInput_c, epsilon2_f);
                     }
@@ -113,7 +113,7 @@ public class CNNProcessorTest {
         FeedForwardToCnnPreProcessor convProcessor = new FeedForwardToCnnPreProcessor(rows, cols, 1);
         convProcessor.preProcess(af.create(in2D), -1, true);
 
-        INDArray check2to2 = convProcessor.backprop(gf.create(in2D), -1, true).get(0);
+        INDArray check2to2 = convProcessor.backprop(gf.create(in2D), -1).get(0);
         int val2to2 = check2to2.shape().length;
         assertTrue(val2to2 == 2);
         assertEquals(Nd4j.create(1, 784), check2to2);
@@ -123,12 +123,12 @@ public class CNNProcessorTest {
     public void testCnnToFeedForwardProcessor() {
         CnnToFeedForwardPreProcessor convProcessor = new CnnToFeedForwardPreProcessor(rows, cols, 1);
 
-        INDArray check2to4 = convProcessor.backprop(gf.create(in2D), -1, true).get(0);
+        INDArray check2to4 = convProcessor.backprop(gf.create(in2D), -1).get(0);
         int val2to4 = check2to4.shape().length;
         assertTrue(val2to4 == 4);
         assertEquals(Nd4j.create(1, 1, 28, 28), check2to4);
 
-        INDArray check4to4 = convProcessor.backprop(gf.create(in4D), -1, true).get(0);
+        INDArray check4to4 = convProcessor.backprop(gf.create(in4D), -1).get(0);
         int val4to4 = check4to4.shape().length;
         assertTrue(val4to4 == 4);
         assertEquals(Nd4j.create(20, 1, 28, 28), check4to4);
@@ -201,8 +201,8 @@ public class CNNProcessorTest {
                         INDArray epsilon2_f = Nd4j.create(ffActShape, 'f');
                         epsilon2_c.assign(ffAct_c);
                         epsilon2_f.assign(ffAct_c);
-                        INDArray epsilon4_c = convProcessor.backprop(gf.create(epsilon2_c), -1, true).get(0);
-                        INDArray epsilon4_f = convProcessor.backprop(gf.create(epsilon2_f), -1, true).get(0);
+                        INDArray epsilon4_c = convProcessor.backprop(gf.create(epsilon2_c), -1).get(0);
+                        INDArray epsilon4_f = convProcessor.backprop(gf.create(epsilon2_f), -1).get(0);
                         assertEquals(convInput_c, epsilon4_c);
                         assertEquals(convInput_c, epsilon4_f);
                     }

@@ -263,7 +263,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
         }
 
-        return GradientsFactory.getInstance().create(epsilonNd, retGradient);
+        Gradients g = GradientsFactory.getInstance().create(epsilonNd, retGradient);
+        return backpropPreprocessor(g);
     }
 
     private INDArray epsilonHelperFullArray(INDArray inputArray, INDArray epsilon, int[] poolDim) {

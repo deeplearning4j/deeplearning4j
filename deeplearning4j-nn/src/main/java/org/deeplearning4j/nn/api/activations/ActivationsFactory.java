@@ -39,6 +39,8 @@ public class ActivationsFactory {
     }
 
     public void release(Activations activations){
+        //No op - for now
+        /*
         if(activations == null) return;
         activations.clear();
 
@@ -53,6 +55,7 @@ public class ActivationsFactory {
         //TODO: use an IdentityHashMap (Set) to avoid multiple releases of the same activations value
         //This will require a hashcode() implementation that allows for O(1) comparisons/checks - like a simple
         // counter...
+        */
     }
 
     public void release(Collection<? extends Activations> activations){

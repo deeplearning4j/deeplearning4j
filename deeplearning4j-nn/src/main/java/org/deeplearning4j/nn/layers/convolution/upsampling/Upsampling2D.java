@@ -96,10 +96,12 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
                 .build();
         Nd4j.getExecutioner().exec(op);
 
-        return GradientsFactory.getInstance().create(reshapedEpsilon, gradient);
+        Gradients g = GradientsFactory.getInstance().create(reshapedEpsilon, gradient);
+        return backpropPreprocessor(g);
     }
 
     public INDArray preOutput(boolean training, boolean forBackprop) {
+        applyPreprocessorIfNecessary(training);
         applyDropOutIfNecessary(training);
         INDArray input = this.input.get(0);
 
@@ -140,6 +142,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Activations activate(boolean training) {
+        applyPreprocessorIfNecessary(training);
         applyDropOutIfNecessary(training);
 
         if (cacheMode == null)

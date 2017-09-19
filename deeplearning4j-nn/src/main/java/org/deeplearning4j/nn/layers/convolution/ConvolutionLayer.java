@@ -216,7 +216,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         weightNoiseParams.clear();
 
-        return GradientsFactory.getInstance().create(epsNext, retGradient);
+        Gradients g = GradientsFactory.getInstance().create(epsNext, retGradient);
+        return backpropPreprocessor(g);
     }
 
     /**
@@ -382,7 +383,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
-
+        applyPreprocessorIfNecessary(training);
         applyDropOutIfNecessary(training);
 
         INDArray z = preOutput(training);

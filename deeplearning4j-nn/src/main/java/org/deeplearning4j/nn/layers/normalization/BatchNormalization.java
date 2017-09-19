@@ -203,7 +203,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                                             + layerId());
         }
 
-        return GradientsFactory.getInstance().create(nextEpsilon, retGradient);
+        Gradients g = GradientsFactory.getInstance().create(nextEpsilon, retGradient);
+        return backpropPreprocessor(g);
     }
 
     @Override

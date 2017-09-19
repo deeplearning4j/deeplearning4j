@@ -103,7 +103,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         weightNoiseParams.clear();
 
-        return GradientsFactory.getInstance().create(epsilonNext, ret);
+        Gradients g = GradientsFactory.getInstance().create(epsilonNext, ret);
+        return backpropPreprocessor(g);
     }
 
     @Override
@@ -241,6 +242,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     public INDArray preOutput(boolean training) {
+        applyPreprocessorIfNecessary(training);
         applyDropOutIfNecessary(training);
         INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training);
         INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);

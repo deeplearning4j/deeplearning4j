@@ -348,7 +348,7 @@ public class ParallelWrapper implements AutoCloseable {
                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
                         MultiLayerNetwork workerModel = (MultiLayerNetwork) zoo[cnt].getModel();
                         updaters.add(workerModel.getUpdater().getStateViewArray());
-                        batchSize += workerModel.batchSize();
+                        batchSize += workerModel.getInputMiniBatchSize();
                     }
 
                     Nd4j.averageAndPropagate(null, updaters);
@@ -366,7 +366,7 @@ public class ParallelWrapper implements AutoCloseable {
                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
                         ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
                         updaters.add(workerModel.getUpdater().getStateViewArray());
-                        batchSize += workerModel.batchSize();
+                        batchSize += workerModel.getInputMiniBatchSize();
                     }
                     Nd4j.averageAndPropagate(null, updaters);
                 }

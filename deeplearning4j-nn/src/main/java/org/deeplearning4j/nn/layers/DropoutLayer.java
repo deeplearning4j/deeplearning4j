@@ -27,14 +27,16 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
         }
 
         Gradient ret = new DefaultGradient();
-        return GradientsFactory.getInstance().create(delta, ret);
+        Gradients g = GradientsFactory.getInstance().create(delta, ret);
+        return backpropPreprocessor(g);
     }
 
     @Override
     public INDArray preOutput(boolean training) {
-        if (input == null) {
+        if (input == null || input.get(0) == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
+        applyPreprocessorIfNecessary(training);
         applyDropOutIfNecessary(training);
 
         if (this.input.getMask(0) != null) {

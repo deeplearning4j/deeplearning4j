@@ -19,14 +19,9 @@
 package org.deeplearning4j.nn.conf;
 
 
-import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.activations.Activations;
 import org.deeplearning4j.nn.api.gradients.Gradients;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.preprocessor.*;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -68,7 +63,7 @@ public interface InputPreProcessor extends Serializable, Cloneable {
      * @param miniBatchSize
      * @return the reverse of the pre preProcess step (if any)
      */
-    Gradients backprop(Gradients gradients, int miniBatchSize, boolean training);
+    Gradients backprop(Gradients gradients, int miniBatchSize);
 
     InputPreProcessor clone();
 

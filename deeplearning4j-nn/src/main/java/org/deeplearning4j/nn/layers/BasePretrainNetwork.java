@@ -269,6 +269,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     @Override
     public  void fit(){
+        applyPreprocessorIfNecessary(true);
         applyDropOutIfNecessary(true);
         if (solver == null) {
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();

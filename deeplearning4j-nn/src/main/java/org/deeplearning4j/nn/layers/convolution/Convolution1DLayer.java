@@ -55,7 +55,8 @@ public class Convolution1DLayer extends ConvolutionLayer {
         epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
         this.input.set(0, origInput);
 
-        return GradientsFactory.getInstance().create(epsNext, gradientEpsNext.getParameterGradients());
+        Gradients g = GradientsFactory.getInstance().create(epsNext, gradientEpsNext.getParameterGradients());
+        return backpropPreprocessor(g);
     }
 
     @Override

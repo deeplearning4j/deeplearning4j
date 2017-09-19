@@ -49,7 +49,7 @@ public class BinomialSamplingPreProcessor extends BaseInputPreProcessor {
 
 
     @Override
-    public Gradients backprop(Gradients gradients, int miniBatchSize, boolean training) {
+    public Gradients backprop(Gradients gradients, int miniBatchSize) {
         return gradients;   //No op
     }
 

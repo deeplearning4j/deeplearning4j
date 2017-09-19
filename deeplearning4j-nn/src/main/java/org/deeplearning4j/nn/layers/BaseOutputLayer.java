@@ -154,7 +154,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
         // So this is instead done in MultiLayerNetwork/CompGraph backprop methods
 
-        return GradientsFactory.getInstance().create(epsilonNext, pair.getParameterGradients());
+        Gradients g = GradientsFactory.getInstance().create(epsilonNext, pair.getParameterGradients());
+        return backpropPreprocessor(g);
     }
 
     /**
@@ -239,6 +240,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public void fit(INDArray input, INDArray labels) {
         setInput(input);
         setLabels(labels);
+        applyPreprocessorIfNecessary(true);
         applyDropOutIfNecessary(true);
         if (solver == null) {
             solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();

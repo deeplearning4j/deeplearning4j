@@ -91,7 +91,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     public Gradients backpropGradient(Gradients epsilon) {
         INDArray epsOut = computeBackpropGradientAndScore();
 
-        return GradientsFactory.getInstance().create(epsOut, EMPTY_GRADIENT);
+        Gradients g = GradientsFactory.getInstance().create(epsOut, EMPTY_GRADIENT);
+        return backpropPreprocessor(g);
     }
 
     private INDArray computeBackpropGradientAndScore(){

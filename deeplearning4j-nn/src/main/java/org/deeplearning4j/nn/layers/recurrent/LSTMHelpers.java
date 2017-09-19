@@ -693,7 +693,7 @@ public class LSTMHelpers {
         retGradient.gradientForVariable().put(recurrentWeightKey, rwGradientsOut);
         retGradient.gradientForVariable().put(biasWeightKey, bGradientsOut);
 
-        return GradientsFactory.getInstance().create(epsilon, retGradient);
+        return GradientsFactory.getInstance().create(epsilonNext, retGradient);
     }
 
 

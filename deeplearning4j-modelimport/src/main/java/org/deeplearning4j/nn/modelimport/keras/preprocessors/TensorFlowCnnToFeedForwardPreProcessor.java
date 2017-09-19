@@ -52,8 +52,8 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
     }
 
     @Override
-    public Gradients backprop(Gradients g, int miniBatchSize, boolean train) {
-        Gradients gReshaped = super.backprop(g, miniBatchSize, train);
+    public Gradients backprop(Gradients g, int miniBatchSize) {
+        Gradients gReshaped = super.backprop(g, miniBatchSize);
         gReshaped.set(0, gReshaped.get(0).permute(0, 3, 1, 2));
         return gReshaped;
     }

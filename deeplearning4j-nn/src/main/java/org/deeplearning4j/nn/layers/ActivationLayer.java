@@ -54,7 +54,9 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         }
 
         Gradient ret = new DefaultGradient();
-        return GradientsFactory.getInstance().create(delta, ret);
+
+        Gradients g = GradientsFactory.getInstance().create(delta, ret);
+        return backpropPreprocessor(g);
     }
 
     @Override
@@ -62,6 +64,7 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         if (input == null) {
             throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
         }
+        applyPreprocessorIfNecessary(training);
         applyDropOutIfNecessary(training);
 
         INDArray input = this.input.get(0);

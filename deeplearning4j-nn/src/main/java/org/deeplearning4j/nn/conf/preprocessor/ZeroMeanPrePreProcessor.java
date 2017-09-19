@@ -49,7 +49,7 @@ public class ZeroMeanPrePreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public Gradients backprop(Gradients output, int miniBatchSize, boolean training) {
+    public Gradients backprop(Gradients output, int miniBatchSize) {
         return output;
     }
 

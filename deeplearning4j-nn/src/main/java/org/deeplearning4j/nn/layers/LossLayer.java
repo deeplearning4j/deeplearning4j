@@ -195,7 +195,8 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         // grab the empty gradient
         Gradient gradient = new DefaultGradient();
 
-        return GradientsFactory.getInstance().create(delta, gradient);
+        Gradients g = GradientsFactory.getInstance().create(delta, gradient);
+        return backpropPreprocessor(g);
     }
 
     /**

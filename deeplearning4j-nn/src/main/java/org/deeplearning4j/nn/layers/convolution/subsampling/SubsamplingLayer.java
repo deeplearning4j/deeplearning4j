@@ -216,7 +216,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 numerator.muliColumnVector(denom.rdivi(epsilon1d));
                 break;
             case NONE:
-                return GradientsFactory.getInstance().create(epsilon, retGradient);
+                return backpropPreprocessor(GradientsFactory.getInstance().create(epsilon, retGradient));
             default:
                 throw new IllegalStateException("Unknown or unsupported pooling type: " + layerConf().getPoolingType()
                                 + " " + layerId());
@@ -233,15 +233,15 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         if (layerConf().getPoolingType() == PoolingType.AVG)
             outEpsilon.divi(ArrayUtil.prod(layerConf().getKernelSize()));
-        return GradientsFactory.getInstance().create(outEpsilon, retGradient);
+        Gradients g = GradientsFactory.getInstance().create(outEpsilon, retGradient);
+        return backpropPreprocessor(g);
     }
 
 
     @Override
     public Activations activate(boolean training) {
-        if (training && !dropoutApplied && layerConf().getIDropout() != null) {
-            applyDropOutIfNecessary(true);
-        }
+        applyPreprocessorIfNecessary(training);
+        applyDropOutIfNecessary(true);
         INDArray input = this.input.get(0);
 
         //Input validation: expect rank 4 matrix

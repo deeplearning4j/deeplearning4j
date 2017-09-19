@@ -359,8 +359,8 @@ public class ComputationGraphTestRNN {
         graphTBPTT.init();
 
         assertTrue(graphTBPTT.getConfiguration().getBackpropType() == BackpropType.TruncatedBPTT);
-        assertTrue(graphTBPTT.getConfiguration().getTbpttFwdLength() == timeSeriesLength);
-        assertTrue(graphTBPTT.getConfiguration().getTbpttBackLength() == timeSeriesLength);
+        assertEquals(timeSeriesLength, graphTBPTT.getConfiguration().getTbpttFwdLength());
+        assertEquals(timeSeriesLength, graphTBPTT.getConfiguration().getTbpttBackLength());
 
         INDArray inputData = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
         INDArray labels = Nd4j.rand(new int[] {miniBatchSize, nOut, timeSeriesLength});

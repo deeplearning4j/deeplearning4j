@@ -72,7 +72,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         if (input.rank() == 3) {
             //Case when called from RnnOutputLayer
             INDArray inputTemp = input;
-            input = TimeSeriesUtils.reshape3dTo2d(input);
+            this.input.set(0, TimeSeriesUtils.reshape3dTo2d(input));
             INDArray out = super.preOutput(training);
             this.input.set(0, inputTemp);
             return out;
@@ -101,6 +101,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Activations output(boolean training) {
+        applyPreprocessorIfNecessary(training);
         INDArray input = this.input.get(0);
         //Assume that input is 3d
         if (input.rank() != 3)

@@ -125,8 +125,8 @@ public class LocalResponseNormalization
 
         // gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}    - rearranged for more in-place ops
         INDArray nextEpsilon = epsilon.mul(scale).subi(sumPart.muli(input.get(0)).divi(unitScale).muli(2 * alpha * beta));
-//        return new Pair<>(retGradient, nextEpsilon);
-        return GradientsFactory.getInstance().create(nextEpsilon, retGradient);
+        Gradients g = GradientsFactory.getInstance().create(nextEpsilon, retGradient);
+        return backpropPreprocessor(g);
     }
 
     @Override
