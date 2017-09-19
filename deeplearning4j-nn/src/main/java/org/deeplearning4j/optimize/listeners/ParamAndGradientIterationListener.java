@@ -87,19 +87,8 @@ public class ParamAndGradientIterationListener implements IterationListener {
         this.delimiter = delimiter;
     }
 
-
     @Override
-    public boolean invoked() {
-        return invoked;
-    }
-
-    @Override
-    public void invoke() {
-        invoked = true;
-    }
-
-    @Override
-    public void iterationDone(Model model, int iteration) {
+    public void iterationDone(Model model, int iteration, int epoch) {
         totalIterationCount++;
 
         if (totalIterationCount == 1 && printHeader) {

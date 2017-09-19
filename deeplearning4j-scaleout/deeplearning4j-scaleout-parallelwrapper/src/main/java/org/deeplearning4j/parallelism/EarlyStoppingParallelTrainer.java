@@ -324,18 +324,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
         }
 
         @Override
-        public boolean invoked() {
-            return invoked;
-        }
-
-        @Override
-        public void invoke() {
-            this.invoked = true;
-        }
-
-        @Override
-        public void iterationDone(Model model, int iteration) {
-            invoke();
+        public void iterationDone(Model model, int iteration, int epoch) {
             //Check per-iteration termination conditions
             double latestScore = model.score();
             trainer.setLatestScore(latestScore);

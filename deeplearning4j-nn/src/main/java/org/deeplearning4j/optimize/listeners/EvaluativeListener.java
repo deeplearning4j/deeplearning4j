@@ -145,29 +145,13 @@ public class EvaluativeListener implements TrainingListener {
     }
 
     /**
-     * Get if listener invoked
-     */
-    @Override
-    public boolean invoked() {
-        return false;
-    }
-
-    /**
-     * Change invoke to true
-     */
-    @Override
-    public void invoke() {
-
-    }
-
-    /**
      * Event listener for each iteration
      *
      * @param model     the model iterating
      * @param iteration the iteration
      */
     @Override
-    public void iterationDone(Model model, int iteration) {
+    public void iterationDone(Model model, int iteration, int epoch) {
         // no-op
     }
 

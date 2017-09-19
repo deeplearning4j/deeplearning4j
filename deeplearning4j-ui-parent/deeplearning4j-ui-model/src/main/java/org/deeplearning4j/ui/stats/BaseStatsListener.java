@@ -210,16 +210,6 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     }
 
     @Override
-    public boolean invoked() {
-        return modelInfos.size() > 0;
-    }
-
-    @Override
-    public void invoke() {
-
-    }
-
-    @Override
     public void onEpochStart(Model model) {
 
     }
@@ -293,7 +283,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
     }
 
     @Override
-    public void iterationDone(Model model, int iteration) {
+    public void iterationDone(Model model, int iteration, int epoch) {
         StatsUpdateConfiguration config = updateConfig;
 
         ModelInfo modelInfo = getModelInfo(model);

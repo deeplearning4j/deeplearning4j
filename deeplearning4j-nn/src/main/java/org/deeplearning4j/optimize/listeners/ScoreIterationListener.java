@@ -45,21 +45,10 @@ public class ScoreIterationListener implements IterationListener {
     public ScoreIterationListener() {}
 
     @Override
-    public boolean invoked() {
-        return invoked;
-    }
-
-    @Override
-    public void invoke() {
-        this.invoked = true;
-    }
-
-    @Override
-    public void iterationDone(Model model, int iteration) {
+    public void iterationDone(Model model, int iteration, int epoch) {
         if (printIterations <= 0)
             printIterations = 1;
         if (iterCount % printIterations == 0) {
-            invoke();
             double result = model.score();
             log.info("Score at iteration " + iterCount + " is " + result);
         }

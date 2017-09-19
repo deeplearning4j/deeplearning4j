@@ -487,16 +487,9 @@ public class GravesBidirectionalLSTMTest {
         final MultiLayerNetwork net = new MultiLayerNetwork(conf);
 
         final IterationListener scoreSaver = new IterationListener() {
-            @Override
-            public boolean invoked() {
-                return false;
-            }
 
             @Override
-            public void invoke() {}
-
-            @Override
-            public void iterationDone(Model model, int iteration) {
+            public void iterationDone(Model model, int iteration, int epoch) {
                 score = model.score();
             }
         };

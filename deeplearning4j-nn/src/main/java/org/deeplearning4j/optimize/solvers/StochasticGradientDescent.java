@@ -85,9 +85,10 @@ public class StochasticGradientDescent extends BaseOptimizer {
             model.setParams(params);
 
             int iterationCount = BaseOptimizer.getIterationCount(model);
+            int epochCount = BaseOptimizer.getEpochCount(model);
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 for (IterationListener listener : iterationListeners)
-                    listener.iterationDone(model, iterationCount);
+                    listener.iterationDone(model, iterationCount, epochCount);
             }
 
             checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
