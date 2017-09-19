@@ -67,6 +67,9 @@ public class FineTuneConfiguration {
     protected Integer tbpttFwdLength;
     protected Integer tbpttBackLength;
 
+    protected WorkspaceMode trainingWorkspaceMode;
+    protected WorkspaceMode inferenceWorkspaceMode;
+
     //Lombok builder. Note that the code below ADDS OR OVERRIDES the lombok implementation; the final builder class
     // is the composite of the lombok parts and the parts defined here
     //partial implementation to allow public no-arg constructor (lombok default is package private)
@@ -268,6 +271,10 @@ public class FineTuneConfiguration {
             confBuilder.setGradientNormalization(gradientNormalization);
         if (gradientNormalizationThreshold != null)
             confBuilder.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+        if (trainingWorkspaceMode != null)
+            confBuilder.trainingWorkspaceMode(trainingWorkspaceMode);
+        if (inferenceWorkspaceMode != null)
+            confBuilder.inferenceWorkspaceMode(inferenceWorkspaceMode);
         return confBuilder;
     }
 
