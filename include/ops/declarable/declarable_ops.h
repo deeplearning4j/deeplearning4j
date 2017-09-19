@@ -594,20 +594,30 @@ bool nd4j::ops::DeclarableOp<T>::prepareOutputs(Block<T> &block) {
             NDArray<T> *array = var->getNDArray();
             inSha.push_back(array->getShapeInfo());
 
-            array->printShapeInfo("prepOutput");
+            //array->printShapeInfo("prepOutput");
             cntIn++;
         }
-        nd4j_printf("Input shapes: %i\n", cntIn);
+        //nd4j_printf("Input shapes: %i\n", cntIn);
 
         auto outSha = this->calculateOutputShape(&inSha, block);
         int cnt = 0;
-        nd4j_printf("Output shapes: %i; Rank_0: %i\n", outSha->size(), outSha->at(0)[0]);
+        //nd4j_printf("Output shapes: %i; Rank_0: %i\n", outSha->size(), outSha->at(0)[0]);
         for (auto out: *outSha->asVector()) {
+            // we need to check, if Z is really needed
+            std::pair<int, int> pair(block.getNodeId(), cnt++);
+            if (block.getVariableSpace()->hasVariable(pair)) {
+                auto var = block.getVariableSpace()->getVariable(pair);
+                if (var->getNDArray() != nullptr && var->getNDArray()->nonNull())
+                    continue;
+            }
+
             auto outArr = new NDArray<T>(out, workspace);
 
-            std::pair<int, int> pair(block.getNodeId(), cnt++);
             block.getVariableSpace()->putVariable(pair, outArr);
         }
+
+        outSha->destroy();
+        delete outSha;
     }
 
     return true;
