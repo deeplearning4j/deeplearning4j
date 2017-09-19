@@ -1215,7 +1215,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             i++;
         }
 
-        Map<Integer, Set<Integer>> inputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex receives input from
+        Map<Integer, Set<Integer>> inputEdges = new LinkedHashMap<>(); //key: vertex. Values: vertices that the key vertex receives input from. And type is LinkedHashMap for the stable topological sort
         Map<Integer, Set<Integer>> outputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex outputs to
 
         for (String s : configuration.getNetworkInputs()) {
