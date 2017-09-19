@@ -75,7 +75,13 @@ public abstract class AbstractBinaryFunction extends DifferentialFunction {
 
             this.sameDiff = sameDiff;
 
-            addEdges(sameDiff,i_v1,i_v2,functionName(),opType,i_v1.getResultShape(),null);
+            addEdges(sameDiff,
+                    i_v1,
+                    i_v2,
+                    functionName(),
+                    opType,
+                    i_v1.getResultShape(),
+                    null);
         } else {
             throw new IllegalArgumentException("Input not null variables.");
         }

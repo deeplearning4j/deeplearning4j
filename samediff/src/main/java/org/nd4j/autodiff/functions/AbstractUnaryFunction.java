@@ -99,7 +99,7 @@ public abstract class AbstractUnaryFunction extends DifferentialFunction {
         validateFunctionReference(i_v1);
         ArrayField v1 = i_v1.getValue(true);
         validateDifferentialFunctionsameDiff(v1);
-        NDArrayInformation information =    NDArrayInformation.builder()
+        NDArrayInformation information =   inPlace ? i_v1.getResult() :  NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString())
                 .id(opName + "(" + v1.getInput().getId() + " -> " +
                         v1.getInput().getId() + ")")

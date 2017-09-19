@@ -237,6 +237,13 @@ public abstract class DifferentialFunction implements Differential {
 
     }
 
+    /**
+     * Get the result
+     * @return
+     */
+    public NDArrayInformation getResult() {
+        return opState.getResult();
+    }
 
     protected void addEdges(SameDiff sameDiff,
                             DifferentialFunction i_v1,
@@ -270,7 +277,7 @@ public abstract class DifferentialFunction implements Differential {
         validateDifferentialFunctionsameDiff(v1);
         validateDifferentialFunctionsameDiff(v2);
 
-        NDArrayInformation arrInfo = NDArrayInformation.builder()
+        NDArrayInformation arrInfo = inPlace ?  i_v1.getResult() : NDArrayInformation.builder()
                 .arrId(UUID.randomUUID().toString())
                 .id(opName +"(" + v1.getInput().getId() + "," + v2.getInput().getId() + ")")
                 .shape(shape).build();
@@ -278,6 +285,7 @@ public abstract class DifferentialFunction implements Differential {
         if(vertex == null) {
             vertex = (NDArrayVertex) sameDiff.graph().getVertex(vertexId);
         }
+
         NDArrayVertex newVertex = new NDArrayVertex(
                 sameDiff,
                 sameDiff.getGraph().nextVertexId(),
@@ -296,9 +304,7 @@ public abstract class DifferentialFunction implements Differential {
         if(i_v1.equals(i_v2)) {
             NDArrayVertex dupVertex = new NDArrayVertex(sameDiff,sameDiff.getGraph().nextVertexId(),
                     Math.max(i_v1.getVertex().depth(),i_v2.getVertex().getDepth()) + 1,
-                    NDArrayInformation.builder().arrId(v1.getInput().getArrId())
-                            .shape(v1.getInput().getShape())
-                            .id(v1.getInput().getId()).build());
+                    arrInfo);
             //update vertex id
             v2VertexId = dupVertex.vertexID();
             sameDiff.getGraph().addVertex(dupVertex);

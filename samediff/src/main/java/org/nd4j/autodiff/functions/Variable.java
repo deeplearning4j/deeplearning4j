@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.Getter;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.ArrayList;
@@ -121,6 +122,10 @@ public class Variable extends DifferentialFunction {
 
     }
 
+    @Override
+    public NDArrayInformation getResult() {
+        return m_x.getInput();
+    }
 
     /**
      * Get the result shape for this function

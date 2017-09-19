@@ -130,6 +130,15 @@ public class SDVariable  implements Serializable {
             this.gradient.setForwardVariable(this);
         }
 
+        if(this.gradient != null && this.gradient.getArr() == null) {
+            if(arrayField != null)
+                this.gradient.setArr(sameDiff.getNDArray(arrayField.getGradient().getOpState().getResult()));
+            else {
+                this.gradient.setArr(sameDiff.getNDArray(differentialFunction.getGradient().getOpState().getResult()));
+
+            }
+        }
+
         return gradient;
     }
 
